@@ -6,8 +6,15 @@ import {
   Calendar,
   Building2,
   Coins,
+  ArrowLeft,
 } from "lucide-react";
-import { fmt, fmtDate, fmtMoney, initials, getFileUrl } from "../detailtab/Employeehelpers";
+import {
+  fmt,
+  fmtDate,
+  fmtMoney,
+  initials,
+  getFileUrl,
+} from "../detailtab/Employeehelpers";
 import { QuickStat } from "../detailtab/Employeeuiprimitives";
 
 interface Props {
@@ -15,6 +22,7 @@ interface Props {
   fullName: string;
   currency: string;
   erpBase?: string;
+  onBack?: () => void;
 }
 
 export const EmployeeSidebar: React.FC<Props> = ({
@@ -22,21 +30,30 @@ export const EmployeeSidebar: React.FC<Props> = ({
   fullName,
   currency,
   erpBase = "",
+  onBack,
 }) => {
   const avatarUrl = emp.image ? getFileUrl(emp.image, erpBase) : null;
 
   return (
     <div className="bg-card rounded-xl border border-theme shadow-sm sticky top-2 overflow-hidden">
-      {/* ── Avatar header ── */}
       <div className="bg-primary px-4 py-6 text-center relative">
+        <button
+          type="button"
+          onClick={() => onBack?.()}
+          className="absolute top-3 left-3 z-20 w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-all duration-200"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
             backgroundImage:
               "radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)",
             backgroundSize: "24px 24px",
           }}
         />
+
         {avatarUrl ? (
           <img
             src={avatarUrl}
@@ -48,10 +65,15 @@ export const EmployeeSidebar: React.FC<Props> = ({
             {initials(emp)}
           </div>
         )}
-        <h3 className="text-white text-sm font-bold leading-snug">{fullName}</h3>
-        <p className="text-white/70 text-[11px] mt-0.5">{fmt(emp.designation)}</p>
-      </div>
 
+        <h3 className="text-white text-sm font-bold leading-snug">
+          {fullName}
+        </h3>
+
+        <p className="text-white/70 text-[11px] mt-0.5">
+          {fmt(emp.designation)}
+        </p>
+      </div>
       {/* ── Employee ID ── */}
       <div className="px-4 py-2.5 border-b border-theme bg-app text-center">
         <p className="text-[9px] uppercase tracking-widest text-muted font-bold mb-0.5">
