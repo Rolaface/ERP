@@ -42,11 +42,11 @@ export interface LeaveApplication {
  * GET /api/resource/Leave Application
  * Gets all leave applications.
  */
-export async function getAllLeaveApplications(): Promise<LeaveApplication[]> {
+export async function getAllLeaveApplications(filters?: any[][]): Promise<LeaveApplication[]> {
   try {
     const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> = await api.get(
       LEAVE_APP_RESOURCE.getAll,
-      { params: { fields: '["*"]', limit_page_length: 0 } }
+      { params: { fields: '["*"]', limit_page_length: 0, filters: JSON.stringify(filters) } }
     );
 
     return resp.data?.data || [];

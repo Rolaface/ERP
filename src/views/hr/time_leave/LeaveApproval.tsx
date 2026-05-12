@@ -1,196 +1,257 @@
 import React, { useState, useEffect } from "react";
-import { FaCheckCircle, FaTimesCircle, FaClipboardList } from "react-icons/fa";
-import { getPendingLeaveRequests } from "../../../api/leaveApi";
-import { updateLeaveStatus } from "../../../api/leaveApi";
-import type { LeaveUI } from "../../../types/leave/uiLeave";
-import { mapLeaveFromApi } from "../../../types/leave/leaveMapper";
-import { closeSwal, showApiError, showLoading, showSuccess } from "../../../utils/alert";
+import { MoreHorizontal, CheckCircle, XCircle, Ban } from "lucide-react";
 
-/*  Component  */
-const LeaveManagment: React.FC = () => {
-  const [requests, setRequests] = useState<LeaveUI[]>([]);
+import {
+  getAllLeaveApplications,
+  updateLeaveApplication,
+} from "../../../api/leaveApplicationApi";
+import { showApiError, showSuccess, showConfirm } from "../../../utils/alert";
+import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable";
+import Table from "../../../components/ui/Table/Table";
+import StatusBadge from "../../../components/ui/Table/StatusBadge";
+import type { Column } from "../../../components/ui/Table/type";
 
-  const [loading, setLoading] = useState(false);
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectingLeaveId, setRejectingLeaveId] = useState<string | null>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
+// ─── Dropdown Menu Component ───────────────────────────────────────────
+interface MenuAction {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
+  dividerBefore?: boolean;
+}
 
-  useEffect(() => {
-    const fetchLeaves = async () => {
-      setLoading(true);
-      try {
-        const res = await getPendingLeaveRequests(1, 50);
-        setRequests((res.data?.leaves || []).map(mapLeaveFromApi));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeaves();
-  }, []);
-
- const approveLeave = async (id: string) => {
-  try {
-    setActionLoadingId(id);
-
-    showLoading("Approving Leave...");
-
-    await updateLeaveStatus({
-      leaveId: id,
-      status: "Approved",
-    });
-
-    closeSwal();
-
-    setRequests((prev) => prev.filter((r) => r.id !== id));
-
-    showSuccess("Leave approved successfully");
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  } finally {
-    setActionLoadingId(null);
-  }
-};
-
-
- const rejectLeave = async (id: string) => {
-  try {
-    setActionLoadingId(id);
-
-    showLoading("Rejecting Leave...");
-
-    await updateLeaveStatus({
-      leaveId: id,
-      status: "Rejected",
-      rejectionReason,
-    });
-
-    closeSwal();
-
-    setRequests((prev) => prev.filter((r) => r.id !== id));
-
-    showSuccess("Leave rejected successfully");
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  } finally {
-    setActionLoadingId(null);
-  }
-};
-
+const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
+  if (actions.length === 0)
+    return <span className="text-gray-400 pl-2">-</span>;
 
   return (
-    <div className="bg-app">
-      <div className="max-w-7xl mx-auto bg-card border border-theme rounded-2xl overflow-hidden">
-        <div className="flex flex-col lg:flex-row">
-          <div className="w-full p-6">
-            <h3 className="text-lg font-bold text-main flex items-center gap-2 mb-4">
-              <FaClipboardList />
-              Leave Requests
-            </h3>
-
-            <div className="space-y-4 max-h-[520px] overflow-auto">
-              {requests.map((req) => (
-                <div
-                  key={req.id}
-                  className="bg-card border border-theme rounded-xl p-4"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-semibold text-main">
-                        {req.employeeName}
-                      </div>
-
-                      <div className="text-sm text-muted">
-                        {req.leaveType} • {req.startDate} → {req.endDate} (
-                        {req.totalDays} days)
-                      </div>
-                    </div>
-
-                    <span className="text-xs px-2 py-1 rounded-lg capitalize bg-app border border-theme">
-                      {req.status}
-                    </span>
-                  </div>
-
-                  <p className="italic text-sm mt-2">“{req.reason}”</p>
-
-                  {req.status === "Pending" && (
-                    <div className="mt-4 flex gap-3">
-                      <button
-                        disabled={actionLoadingId === req.id}
-                        onClick={() => approveLeave(req.id)}
-                        className="px-4 py-2 bg-primary rounded-xl text-sm flex items-center gap-2 disabled:opacity-50"
-                      >
-                        <FaCheckCircle />
-                        Approve
-                      </button>
-
-                      <button
-                        disabled={actionLoadingId === req.id}
-                        onClick={() => {
-                          setRejectingLeaveId(req.id);
-                          setRejectionReason("");
-                          setShowRejectDialog(true);
-                        }}
-                        className="px-4 py-2 border border-theme rounded-xl text-sm flex items-center gap-2 disabled:opacity-50"
-                      >
-                        <FaTimesCircle />
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {showRejectDialog && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-card rounded-xl p-6 w-[420px] border border-theme">
-            <h3 className="text-lg font-bold text-main mb-2">Reject Leave</h3>
-
-            <p className="text-sm text-muted mb-3">
-              Please provide a reason for rejecting this leave.
-            </p>
-
-            <textarea
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="Enter rejection reason"
-              className="w-full p-3 text-sm rounded-lg bg-app border border-theme resize-none"
-              rows={3}
-            />
-
-            <div className="mt-4 flex justify-end gap-3">
-              <button
-                onClick={() => setShowRejectDialog(false)}
-                className="px-4 py-2 text-sm border border-theme rounded-lg"
+    <div className="flex justify-center">
+      <PortalDropdown
+        align="right"
+        trigger={
+          <button
+            type="button"
+            className="w-7 h-7 flex items-center justify-center rounded-md transition text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+          >
+            <MoreHorizontal size={15} />
+          </button>
+        }
+      >
+        {actions.map((action, i) => (
+          <React.Fragment key={i}>
+            {action.dividerBefore && (
+              <div className="border-t border-gray-200 my-1" />
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                action.onClick();
+              }}
+              className={`
+                w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
+                ${
+                  action.danger
+                    ? "text-red-600 hover:bg-red-50"
+                    : "text-gray-700 hover:bg-gray-100"
+                }
+              `}
+            >
+              <span
+                className={action.danger ? "text-red-600" : "text-gray-500"}
               >
-                Cancel
-              </button>
-
-              <button
-                disabled={!rejectionReason.trim() || !rejectingLeaveId}
-                onClick={async () => {
-                  await rejectLeave(rejectingLeaveId!);
-                  setShowRejectDialog(false);
-                  setRejectingLeaveId(null);
-                  setRejectionReason("");
-                }}
-                className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg disabled:opacity-50"
-              >
-                Reject Leave
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                {action.icon}
+              </span>
+              {action.label}
+            </button>
+          </React.Fragment>
+        ))}
+      </PortalDropdown>
     </div>
   );
 };
 
-export default LeaveManagment;
+// ─── Main Component ────────────────────────────────────────────────────────
+export default function LeaveApply() {
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  // Pagination states for the Table component
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    getAllLeaveApplied();
+  }, [showHistory]);
+
+  const getAllLeaveApplied = async () => {
+    try {
+      setIsLoading(true);
+      const filters = showHistory
+        ? [["status", "in", ["Approved", "Rejected"]]]
+        : [["status", "=", "Open"]];
+
+      const response = await getAllLeaveApplications(filters);
+      setData(response || []);
+    } catch (err) {
+      console.error("Failed to Fetch Transactions", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (
+    id: string,
+    status: string,
+    docstatus?: string,
+  ) => {
+    if (status === "Cancelled" || status === "Rejected") {
+      const isConfirmed = await showConfirm(
+        `Are you sure you want to ${status.toLowerCase()} this leave application?`,
+        {
+          title: `${status === "Cancelled" ? "Cancel" : "Reject"} Leave`,
+          confirmButtonText: `Yes, ${status === "Cancelled" ? "Cancel" : "Reject"}`,
+          confirmButtonColor: "#ef4444",
+        },
+      );
+      if (!isConfirmed) return;
+    }
+
+    try {
+      setIsLoading(true);
+      const payload: any = { status };
+      if (docstatus) payload.docstatus = docstatus;
+
+      await updateLeaveApplication(id, payload);
+
+      showSuccess(
+        `Leave application has been ${status.toLowerCase()} successfully.`,
+      );
+      getAllLeaveApplied();
+    } catch (err: any) {
+      showApiError(
+        err?.response?.data?.message ||
+          err?.message ||
+          `Failed to update status.`,
+      );
+      setIsLoading(false);
+    }
+  };
+
+  const columns: Column<any>[] = [
+    {
+      key: "leave_type",
+      header: "Leave Type",
+      align: "left",
+      render: (e) => <span className="font-medium">{e.leave_type || "-"}</span>,
+    },
+    { key: "from_date", header: "From Date", align: "left" },
+    {
+      key: "to_date",
+      header: "To Date",
+      align: "left",
+      render: (e) => (e.half_day === 1 ? "Half Day" : e.to_date || "-"),
+    },
+    {
+      key: "description",
+      header: "Reason",
+      align: "left",
+      render: (e) => (
+        <div className="max-w-xs truncate" title={e.description}>
+          {e.description || "-"}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      align: "left",
+      render: (e) => <StatusBadge status={e.status || "Open"} />,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (e) => {
+        const leaveId = e.name || e.id;
+        const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(
+          e.status,
+        );
+        const actions: MenuAction[] = [];
+
+        if (!isActionDone) {
+          actions.push({
+            label: "Approve",
+            icon: <CheckCircle size={14} className="text-green-600" />,
+            onClick: () => handleStatusUpdate(leaveId, "Approved", "1"),
+            dividerBefore: true,
+          });
+          actions.push({
+            label: "Reject",
+            icon: <XCircle size={14} />,
+            onClick: () => handleStatusUpdate(leaveId, "Rejected", "1"),
+            danger: true,
+          });
+        }
+
+        if (e.status !== "Cancelled") {
+          actions.push({
+            label: "Cancel Leave",
+            icon: <Ban size={14} />,
+            onClick: () => handleStatusUpdate(leaveId, "Cancelled"),
+            danger: true,
+            dividerBefore: actions.length > 0,
+          });
+        }
+
+        return <RowActionMenu actions={actions} />;
+      },
+    },
+  ];
+
+  return (
+    <div className=" space-y-2">
+      {/* <div className="flex items-center justify-between mb-2">
+  <label className="flex items-center gap-2 text-sm">
+    <input
+      type="checkbox"
+      checked={showHistory}
+      onChange={(e) => setShowHistory(e.target.checked)}
+    />
+    Show Leave History
+  </label>
+</div> */}
+      <Table
+        extraFilters={
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showHistory}
+              onChange={(e) => setShowHistory(e.target.checked)}
+              className="cursor-pointer"
+            />
+            Show Leave History
+          </label>
+        }
+        loading={isLoading}
+        columns={columns}
+        data={data}
+        showToolbar
+        searchValue={searchTerm}
+        onSearch={setSearchTerm}
+        enableColumnSelector
+        currentPage={page}
+        pageSize={pageSize}
+        totalItems={data.length}
+        totalPages={Math.ceil(data.length / pageSize) || 1}
+        pageSizeOptions={[10, 25, 50]}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+        onPageChange={setPage}
+      />
+    </div>
+  );
+}
