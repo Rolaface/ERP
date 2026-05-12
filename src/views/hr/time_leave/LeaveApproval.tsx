@@ -72,7 +72,7 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
 };
 
 // ─── Main Component ────────────────────────────────────────────────────────
-export default function LeaveApply() {
+export default function LeaveApproval() {
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -175,7 +175,7 @@ export default function LeaveApply() {
       align: "center",
       render: (e) => {
         const leaveId = e.name || e.id;
-        const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(
+        const isActionDone = ["Approved", "Rejected"].includes(
           e.status,
         );
         const actions: MenuAction[] = [];
@@ -195,15 +195,15 @@ export default function LeaveApply() {
           });
         }
 
-        if (e.status !== "Cancelled") {
-          actions.push({
-            label: "Cancel Leave",
-            icon: <Ban size={14} />,
-            onClick: () => handleStatusUpdate(leaveId, "Cancelled"),
-            danger: true,
-            dividerBefore: actions.length > 0,
-          });
-        }
+        // if (e.status !== "Cancelled") {
+        //   actions.push({
+        //     label: "Cancel Leave",
+        //     icon: <Ban size={14} />,
+        //     onClick: () => handleStatusUpdate(leaveId, "Cancelled"),
+        //     danger: true,
+        //     dividerBefore: actions.length > 0,
+        //   });
+        // }
 
         return <RowActionMenu actions={actions} />;
       },
