@@ -4,7 +4,7 @@ import {
   Save,
   AlertTriangle,
   Users,
-  DollarSign,
+  Banknote,
   Calendar,
   Clock,
   CheckCircle,
@@ -69,7 +69,7 @@ export default function CompanyMappingTab() {
         <div className="bg-white rounded-lg border-2 border-gray-200 p-6 hover:border-purple-300 transition-colors">
           <div className="flex items-start">
             <div className="p-3 bg-green-100 rounded-lg mr-4 flex-shrink-0">
-              <DollarSign className="w-6 h-6 text-green-600" />
+              <Banknote className="w-6 h-6 text-green-600" />
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -377,7 +377,7 @@ function HistoryItem({
   const getIcon = () => {
     switch (type) {
       case "salary":
-        return <DollarSign className="w-3 h-3" />;
+        return <Banknote className="w-3 h-3" />;
       case "leave":
         return <Calendar className="w-3 h-3" />;
       default:

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  DollarSign, Shield, FileText, TrendingDown, CreditCard,
+  Banknote, Shield, FileText, TrendingDown, CreditCard,
 } from "lucide-react";
 import { useAuth }                  from "../../../context/AuthContext";
 import { getEmployeeById }          from "../../../api/employeeapi";
@@ -278,7 +278,7 @@ const LoanAdvanceTab: React.FC = () => (
 // ─── Tab config ───────────────────────────────────────────────────────────────
 
 const FINANCIALS_TABS = [
-  { id: "compensation", label: "Compensation",  icon: <DollarSign size={14} /> },
+  { id: "compensation", label: "Compensation",  icon: <Banknote size={14} /> },
   { id: "insurance",    label: "Insurance",     icon: <Shield     size={14} /> },
   { id: "salary-slip",  label: "Salary Slip",   icon: <FileText   size={14} /> },
   { id: "income-tax",   label: "Income Tax",    icon: <TrendingDown size={14} /> },

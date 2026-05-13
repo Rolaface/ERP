@@ -6,7 +6,7 @@ import {
   closeSwal,
 } from "../../../utils/alert";
 import { ShieldCheck } from "lucide-react";
-import { User, Briefcase, DollarSign, FileText } from "lucide-react";
+import { User, Briefcase, Banknote, FileText } from "lucide-react";
 import {
   uploadEmployeeDocument,
   getEmployeeDocuments,
@@ -45,7 +45,7 @@ const TABS = [
     icon: <ShieldCheck size={14} />,
   },
   { id: "employment", label: "Employment", icon: <Briefcase size={14} /> },
-  { id: "compensation", label: "Compensation", icon: <DollarSign size={14} /> },
+  { id: "compensation", label: "Compensation", icon: <Banknote size={14} /> },
   { id: "salarySlip", label: "Salary Slip", icon: <FileText size={14} /> },
   { id: "documents", label: "Documents", icon: <FileText size={14} /> },
 ];

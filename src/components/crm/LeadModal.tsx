@@ -16,7 +16,7 @@ import {
   Briefcase,
   MapPin,
   FileText,
-  DollarSign,
+  Banknote,
   Users,
   Image as ImageIcon,
   Check,
@@ -318,7 +318,7 @@ const LeadModal: React.FC<LeadModalProps> = ({ isOpen, onClose, onSubmit }) => {
                     value={form.annualRevenue ?? ""}
                     onChange={handleNumber}
                     placeholder="e.g. 500000"
-                    icon={<DollarSign className="w-4 h-4" />}
+                    icon={<Banknote className="w-4 h-4" />}
                   />
                   <Input
                     label="No. of Employees"

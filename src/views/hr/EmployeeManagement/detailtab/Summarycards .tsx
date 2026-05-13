@@ -1,5 +1,5 @@
 import React from "react";
-import { DollarSign, TrendingUp, Wallet, Clock } from "lucide-react";
+import { Banknote, TrendingUp, Wallet, Clock } from "lucide-react";
 import type { SummaryStats } from "./salarytypes";
 import { formatCurrency } from "../detailtab/salarysliphelper";
 
@@ -51,7 +51,7 @@ export const SummaryCards: React.FC<Props> = ({ stats, currentYear }) => {
         title="Total Paid This Year"
         value={formatCurrency(totalPaidThisYear, currency)}
         subtitle={`Jan – Dec ${currentYear}`}
-        icon={<DollarSign className="w-5 h-5 text-success" />}
+        icon={<Banknote className="w-5 h-5 text-success" />}
         colorClass="text-success"
         iconBg="bg-success/10"
       />

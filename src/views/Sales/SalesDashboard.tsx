@@ -16,7 +16,7 @@ import {
   Cell,
 } from "recharts";
 import {
-  DollarSign,
+  Banknote,
   FileText,
   FileSignature,
   Receipt,
@@ -262,7 +262,7 @@ const SalesDashboard: React.FC = () => {
     {
       label: "Debit Notes",
       value: String(summaryData?.totalSalesDebitNotes ?? 0),
-      icon: DollarSign,
+      icon: Banknote,
       gradient: "from-purple-500 to-purple-600",
     },
   ];

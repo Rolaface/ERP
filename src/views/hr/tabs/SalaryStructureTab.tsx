@@ -5,7 +5,7 @@ import {
   Trash2,
   Save,
   X,
-  DollarSign,
+  Banknote,
   Check,
   AlertTriangle,
 } from "lucide-react";
@@ -137,7 +137,7 @@ const handleDelete = async (id: string) => {
 
       {structures.length === 0 && (
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-          <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <Banknote className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 mb-4">No salary structures created yet</p>
           <button
             onClick={handleCreateNew}
@@ -555,7 +555,7 @@ function StructureModal({
             <div className="col-span-1">
               <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200 p-4 sticky top-4">
                 <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
+                  <Banknote className="w-4 h-4" />
                   Preview Calculation
                 </h4>
 
