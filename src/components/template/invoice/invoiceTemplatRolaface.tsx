@@ -109,11 +109,11 @@ doc.setFontSize(8);
   if (compEmail) { doc.text(compEmail, M, curY); curY += 4; }
 
   const logoRightX = MR;
-  const logoTopY = 11;
+  const logoTopY = 14;
 
   if (company?.documents?.companyLogoUrl) {
     try {
-     doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 60, logoTopY, 60, 50);
+     doc.addImage(px(company.documents.companyLogoUrl), "PNG", logoRightX - 65, logoTopY, 65, 22);
     } catch {}
   } else {
 
@@ -123,13 +123,13 @@ doc.setFontSize(8);
     doc.text((compName || "COMPANY").toUpperCase(), logoRightX, logoTopY + 10, { align: "right" });
   }
 
-  curY = Math.max(curY, logoTopY + 45);
+  curY = Math.max(curY, logoTopY + 25);
   curY += 4;
 
 
 
   const billToX = M;
-  const metaX = W / 2 + 40; 
+  const metaX = W / 2 + 45; 
   const col2ValX = MR;       
 
 

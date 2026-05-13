@@ -581,7 +581,7 @@ const handleSave = useCallback(async () => {
                   <li className="text-xs flex items-start gap-2">
                     <span className="text-primary-700 font-bold mt-0.5">•</span>
                     <span className="text-muted">
-                      Supported formats: {ACCEPTED_EXTENSIONS.join(", ")}
+                      Preferred formats: {ACCEPTED_EXTENSIONS.join(", ")}
                     </span>
                   </li>
                   <li className="text-xs flex items-start gap-2">

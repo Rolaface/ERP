@@ -3,9 +3,10 @@ import Table from "../../components/ui/Table/Table";
 import { Wallet } from "lucide-react";
 import {
   getAllModeOfPayment,
+  getModeOfPaymentByName,
   updateModeOfPaymentStatus,
 } from "../../api/BankAccountApi";
-import { showApiError, showSuccess } from "../../utils/alert";
+import { closeSwal, showApiError, showLoading, showSuccess } from "../../utils/alert";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -50,7 +51,12 @@ const ModeOfPaymentSetup: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
+const handleEdit = (name: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  openModeOfPaymentModal({ name }, true, {  
+    onSuccess: () => fetchData(),
+  });
+};
   const handleToggle = async (row: any) => {
     const previous = row.enabled;
     try {
@@ -64,7 +70,6 @@ const ModeOfPaymentSetup: React.FC = () => {
       setActionLoadingId(null);
     }
   };
-
   const columns: Column<any>[] = [
     { key: "name", header: "Mode" },
     { key: "type", header: "Type" },
