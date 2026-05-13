@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Users, FileText, TrendingUp, DollarSign, Package } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Users, FileText, TrendingUp, DollarSign, Package, ArrowLeftRight } from 'lucide-react';
 import LineChart from '../components/charts/LineChart';
 import UserMenu from '../layout/UserMenu';
 import { 
@@ -14,23 +14,28 @@ import {
   getInventoryChart
 } from '../api/dashboardApi';
 import BarChart from '../components/charts/BarChart';
+import { useHRView } from '../hooks/permission/useHRView';
 
 const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
 
 const Dashboard = () => {
+  // HR view mode — only used to render the switch button
+  const { viewMode, canSwitchView, toggleViewMode } = useHRView();
+  const isEmployeeView = viewMode === "employee";
+
   // 1. Independent Loading States
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingSales, setLoadingSales] = useState(true);
   const [loadingPurchase, setLoadingPurchase] = useState(true);
-const [loadingInventory, setLoadingInventory] = useState(true);
+  const [loadingInventory, setLoadingInventory] = useState(true);
   const [inventoryYear, setInventoryYear] = useState(availableYears[0]);
   const [inventoryMode, setInventoryMode] = useState<'value' | 'quantity'>('value');
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   // 2. Independent Filter States for Charts
   const [salesYear, setSalesYear] = useState(availableYears[0]);
-  const [salesInterval, setSalesInterval] = useState('Monthly'); // Add this line
+  const [salesInterval, setSalesInterval] = useState('Monthly');
   const [purchaseYear, setPurchaseYear] = useState(availableYears[0]);
-const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this line
+  const [purchaseInterval, setPurchaseInterval] = useState('Monthly');
   // 3. Data States
   const [summaryData, setSummaryData] = useState<DashboardSummaryResponse['data'] | null>(null);
   const [notesData, setNotesData] = useState<DashboardNotesResponse['data'] | null>(null);
@@ -61,7 +66,7 @@ const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this
     return () => { mounted = false; };
   }, []);
 
- // --- Fetch Inventory Chart independently ---
+  // --- Fetch Inventory Chart independently ---
   useEffect(() => {
     let mounted = true;
     const fetchInventory = async () => {
@@ -72,7 +77,6 @@ const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this
         if (mounted) {
           const rawData = inv?.data as any;
 
-          // 1. If backend already returns an array, use it directly
           if (Array.isArray(rawData)) {
             setInventoryData(rawData);
           } 
@@ -115,12 +119,11 @@ const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this
     return () => { mounted = false; };
   }, [inventoryYear, inventoryMode]);
 
- useEffect(() => {
+  useEffect(() => {
     let mounted = true;
     const fetchSales = async () => {
       setLoadingSales(true);
       try {
-        // Pass the interval here
         const sales = await getSalesChart({ year: salesYear, interval: salesInterval });
         if (mounted) setSalesData(sales?.data || null);
       } catch (e) {
@@ -133,12 +136,11 @@ const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this
     return () => { mounted = false; };
   }, [salesYear, salesInterval]);
 
- useEffect(() => {
+  useEffect(() => {
     let mounted = true;
     const fetchPurchase = async () => {
       setLoadingPurchase(true);
       try {
-        // Pass the interval here
         const purchase = await getPurchaseChart({ year: purchaseYear, interval: purchaseInterval });
         if (mounted) setPurchaseData(purchase?.data || null);
       } catch (e) {
@@ -157,7 +159,26 @@ const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this
       {/* Header */}
       <div className="flex justify-between items-center mb-4 shrink-0">
         <h1 className="text-xl font-bold text-gray-800">Dashboard Summary</h1>
-        <UserMenu />
+        <div className="flex items-center gap-3">
+          {/* View switch button — only visible to users who have both employee + professional roles */}
+          {canSwitchView && (
+            <button
+              onClick={toggleViewMode}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
+                border transition-all duration-200
+                ${isEmployeeView
+                  ? "border-blue-500 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                  : "border-gray-300 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }
+              `}
+            >
+              <ArrowLeftRight size={13} />
+              {isEmployeeView ? "Switch to Professional View" : "Switch to Employee View"}
+            </button>
+          )}
+          <UserMenu />
+        </div>
       </div>
 
       <div className="flex flex-1 gap-4 min-h-0">
@@ -204,24 +225,6 @@ const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this
 
           {/* 4 Charts (2x2 Grid) */}
           <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 min-h-0">
-            {/* <LineChart 
-              title="SALES CHART" 
-              loading={loadingSales} 
-              trendData={salesData?.trend} 
-              metrics={[
-                { key: 'receivable', name: 'Receivable', color: '#3b82f6' },
-                { key: 'received', name: 'Received', color: '#10b981' }
-              ]} 
-              filterNode={
-                <select 
-                  value={salesYear} 
-                  onChange={e => setSalesYear(e.target.value)}
-                  className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-                >
-                  {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              }
-            /> */}
             <LineChart 
               title="SALES CHART" 
               loading={loadingSales} 
@@ -284,35 +287,32 @@ const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this
               }
             />
             
-            {/* Empty Placeholders */}
             <LineChart title="EXPENSE CHART" loading={loadingSummary} trendData={{}} metrics={[]} />
-            {/* <LineChart title="INVENTORY CHART" loading={loadingSummary} trendData={{}} metrics={[]} /> */}
             <BarChart 
-  title="INVENTORY CHART" 
-  loading={loadingInventory} 
-  data={inventoryData} 
-  mode={inventoryMode}
-  filterNode={
-    <div className="flex gap-2">
-      <select 
-        value={inventoryMode} 
-        onChange={e => setInventoryMode(e.target.value as 'value' | 'quantity')}
-        className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-      >
-        <option value="value">By Value</option>
-        <option value="quantity">By Qty</option>
-      </select>
-      <select 
-        value={inventoryYear} 
-        onChange={e => setInventoryYear(e.target.value)}
-        className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-      >
-        {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-      </select>
-    </div>
-  }
-/>
-            
+              title="INVENTORY CHART" 
+              loading={loadingInventory} 
+              data={inventoryData} 
+              mode={inventoryMode}
+              filterNode={
+                <div className="flex gap-2">
+                  <select 
+                    value={inventoryMode} 
+                    onChange={e => setInventoryMode(e.target.value as 'value' | 'quantity')}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <option value="value">By Value</option>
+                    <option value="quantity">By Qty</option>
+                  </select>
+                  <select 
+                    value={inventoryYear} 
+                    onChange={e => setInventoryYear(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              }
+            />
           </div>
         </div>
 
@@ -363,7 +363,6 @@ const [purchaseInterval, setPurchaseInterval] = useState('Monthly'); // Add this
 // --- Sub-Components ---
 const InfoBox = ({ title, icon, loading, children }: { title: string, icon?: React.ReactNode, loading: boolean, children: React.ReactNode }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center">
-    {/* <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{title}</h3> */}
     <div className="flex items-center gap-2 mb-1">
       {icon && <span className="text-gray-400">{icon}</span>}
       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{title}</h3>

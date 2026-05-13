@@ -14,23 +14,22 @@ import {
 import { openLeaveApplyModal } from "../../../store/modalStore";
 import { showApiError, showSuccess, showConfirm } from "../../../utils/alert";
 import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable";
-
-import Table from "../../../components/ui/Table/Table";
-import StatusBadge from "../../../components/ui/Table/StatusBadge";
+import Table        from "../../../components/ui/Table/Table";
+import StatusBadge  from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
 
-// ─── Dropdown Menu Component ───────────────────────────────────────────
+// ─── Dropdown Menu ────────────────────────────────────────────────────────────
+
 interface MenuAction {
-  label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  danger?: boolean;
+  label:        string;
+  icon:         React.ReactNode;
+  onClick:      () => void;
+  danger?:      boolean;
   dividerBefore?: boolean;
 }
 
 const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
-  if (actions.length === 0)
-    return <span className="text-gray-400 pl-2">-</span>;
+  if (actions.length === 0) return <span className="text-gray-400 pl-2">-</span>;
 
   return (
     <div className="flex justify-center">
@@ -58,16 +57,13 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
               }}
               className={`
                 w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
-                ${
-                  action.danger
-                    ? "text-red-600 hover:bg-red-50"
-                    : "text-gray-700 hover:bg-gray-100"
+                ${action.danger
+                  ? "text-red-600 hover:bg-red-50"
+                  : "text-gray-700 hover:bg-gray-100"
                 }
               `}
             >
-              <span
-                className={action.danger ? "text-red-600" : "text-gray-500"}
-              >
+              <span className={action.danger ? "text-red-600" : "text-gray-500"}>
                 {action.icon}
               </span>
               {action.label}
@@ -79,42 +75,47 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
   );
 };
 
-// ─── Main Component ────────────────────────────────────────────────────────
-export default function LeaveApply() {
-  const [data, setData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+// ─── Props ────────────────────────────────────────────────────────────────────
 
-  // Pagination states for the Table component
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+interface LeaveApplyTableProps {
+  onAfterApply?: () => void;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
+  const [data,       setData]       = useState<any[]>([]);
+  const [isLoading,  setIsLoading]  = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page,       setPage]       = useState(1);
+  const [pageSize,   setPageSize]   = useState(10);
 
   useEffect(() => {
-    getAllLeaveApplied();
+    fetchLeaves();
   }, []);
 
-  const getAllLeaveApplied = async () => {
+  const fetchLeaves = async () => {
     try {
       setIsLoading(true);
       const response = await getAllLeaveApplications();
       setData(response || []);
     } catch (err) {
-      console.error("Failed to Fetch Transactions", err);
+      console.error("Failed to fetch leave applications", err);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleStatusUpdate = async (
-    id: string,
-    status: string,
+    id:       string,
+    status:   string,
     doc_type?: string,
   ) => {
     if (status === "Cancelled" || status === "Rejected") {
       const isConfirmed = await showConfirm(
         `Are you sure you want to ${status.toLowerCase()} this leave application?`,
         {
-          title: `${status === "Cancelled" ? "Cancel" : "Reject"} Leave`,
+          title:             `${status === "Cancelled" ? "Cancel" : "Reject"} Leave`,
           confirmButtonText: `Yes, ${status === "Cancelled" ? "Cancel" : "Reject"}`,
           confirmButtonColor: "#ef4444",
         },
@@ -128,82 +129,83 @@ export default function LeaveApply() {
       if (doc_type) payload.doc_type = doc_type;
 
       await updateLeaveApplication(id, payload);
+      showSuccess(`Leave application has been ${status.toLowerCase()} successfully.`);
 
-      showSuccess(
-        `Leave application has been ${status.toLowerCase()} successfully.`,
-      );
-      getAllLeaveApplied();
+      await fetchLeaves();
+      onAfterApply?.();   // ← notify parent to refresh balance + recent
     } catch (err: any) {
       showApiError(
-        err?.response?.data?.message ||
-          err?.message ||
-          `Failed to update status.`,
+        err?.response?.data?.message ?? err?.message ?? "Failed to update status.",
       );
       setIsLoading(false);
     }
   };
 
   const handleAdd = () => {
-    openLeaveApplyModal();
+    openLeaveApplyModal(null, false, {
+      onSuccess: async () => {
+        await fetchLeaves();
+        onAfterApply?.();  // ← notify parent
+      },
+    });
   };
 
-  // ── Columns Configuration ────────────────────────────────────────────────
+  // ── Columns ───────────────────────────────────────────────────────────────
+
   const columns: Column<any>[] = [
     {
-      key: "leave_type",
+      key:    "leave_type",
       header: "Leave Type",
-      align: "left",
-      render: (e) => <span className="font-medium">{e.leave_type || "-"}</span>,
+      align:  "left",
+      render: (e) => <span className="font-medium">{e.leave_type || "—"}</span>,
     },
     { key: "from_date", header: "From Date", align: "left" },
     {
-      key: "to_date",
+      key:    "to_date",
       header: "To Date",
-      align: "left",
-      render: (e) => (e.half_day === 1 ? "Half Day" : e.to_date || "-"),
+      align:  "left",
+      render: (e) => (e.half_day === 1 ? "Half Day" : e.to_date || "—"),
     },
     {
-      key: "description",
+      key:    "description",
       header: "Reason",
-      align: "left",
+      align:  "left",
       render: (e) => (
         <div className="max-w-xs truncate" title={e.description}>
-          {e.description || "-"}
+          {e.description || "—"}
         </div>
       ),
     },
     {
-      key: "status",
+      key:    "status",
       header: "Status",
-      align: "left",
+      align:  "left",
       render: (e) => <StatusBadge status={e.status || "Open"} />,
     },
     {
-      key: "actions",
+      key:    "actions",
       header: "Actions",
-      align: "center",
+      align:  "center",
       render: (e) => {
-        const leaveId = e.name || e.id;
-        const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(
-          e.status
-        );
+        const leaveId     = e.name || e.id;
+        const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(e.status);
         const actions: MenuAction[] = [];
 
         if (!isActionDone) {
           actions.push({
-            label: "Edit",
-            icon: <Edit2 size={14} />,
+            label:   "Edit",
+            icon:    <Edit2 size={14} />,
             onClick: () => openLeaveApplyModal(e, true),
           });
           actions.push({
-            label: "Approve",
-            icon: <CheckCircle size={14} className="text-green-600" />,
-            onClick: () => handleStatusUpdate(leaveId, "Approved", "1"),
+            label:         "Approve",
+            icon:          <CheckCircle size={14} className="text-green-600" />,
+            onClick:       () => handleStatusUpdate(leaveId, "Approved", "1"),
             dividerBefore: true,
           });
           actions.push({
-            label: "Reject",
-            icon: <XCircle size={14} />,
+            label:  "Reject",
+            icon:   <XCircle size={14} />,
             onClick: () => handleStatusUpdate(leaveId, "Rejected", "1"),
             danger: true,
           });
@@ -211,10 +213,10 @@ export default function LeaveApply() {
 
         if (e.status !== "Cancelled") {
           actions.push({
-            label: "Cancel Leave",
-            icon: <Ban size={14} />,
-            onClick: () => handleStatusUpdate(leaveId, "Cancelled"),
-            danger: true,
+            label:         "Cancel Leave",
+            icon:          <Ban size={14} />,
+            onClick:       () => handleStatusUpdate(leaveId, "Cancelled"),
+            danger:        true,
             dividerBefore: actions.length > 0,
           });
         }
@@ -224,40 +226,29 @@ export default function LeaveApply() {
     },
   ];
 
-  // ── Render ───────────────────────────────────────────────────────────────
-  return (
-    <div className=" space-y-2">
-      {/* Header Section
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Leave Management</h1>
-        <p className="text-sm text-gray-500">
-          Manage and track your leave applications
-        </p>
-      </div> */}
+  // ── Render ────────────────────────────────────────────────────────────────
 
-      {/* Reusable Table UI */}
-      <Table
-        loading={isLoading}
-        columns={columns}
-        data={data}
-        showToolbar
-        searchValue={searchTerm}
-        onSearch={setSearchTerm}
-        enableAdd
-        addLabel="Apply for Leave"
-        onAdd={handleAdd}
-        enableColumnSelector
-        currentPage={page}
-        pageSize={pageSize}
-        totalItems={data.length} 
-        totalPages={Math.ceil(data.length / pageSize) || 1}
-        pageSizeOptions={[10, 25, 50]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-        onPageChange={setPage}
-      />
-    </div>
+  return (
+    <Table
+      loading={isLoading}
+      columns={columns}
+      data={data}
+      showToolbar
+      searchValue={searchTerm}
+      onSearch={setSearchTerm}
+      enableAdd
+      addLabel="Apply for Leave"
+      onAdd={handleAdd}
+      enableColumnSelector
+      currentPage={page}
+      pageSize={pageSize}
+      totalItems={data.length}
+      totalPages={Math.ceil(data.length / pageSize) || 1}
+      pageSizeOptions={[10, 25, 50]}
+      onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+      onPageChange={setPage}
+    />
   );
-} 
+};
+
+export default LeaveApplyTable;

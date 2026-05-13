@@ -29,6 +29,7 @@ export interface AuthUser {
   gender?: string | null;
   roles?: string[];
   permissions?: RawPermissionEntry[];  // ← stored from get_login_user
+  employeeId?: string;
 }
 
 // ─── Login ────────────────────────────────────────────────────────────────────
@@ -95,6 +96,7 @@ interface GetLoginUserResponse {
       gender: string | null;
       roles: string[];
       permission: RawPermissionEntry[];   
+       employeeId?: string;
     };
   };
 }
@@ -118,7 +120,8 @@ export const fetchLoginUser = async (): Promise<AuthUser> => {
     fullName:    d.fullName,
     gender:      d.gender,
     roles:       d.roles ?? [],
-    permissions: d.permission ?? [],  
+    permissions: d.permission ?? [],
+     employeeId:  d.employeeId,  
   };
 
   // Update localStorage with fresh data
