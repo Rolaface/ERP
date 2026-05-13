@@ -212,445 +212,507 @@ const EmployeeDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-full overflow-y-auto bg-app">
-      <div className="container-wide mx-auto px-4 lg:px-6 py-6 lg:py-8 space-y-6">
+    <div className="bg-app min-h-screen text-main overflow-y-auto">
+      <div className="container-wide mx-auto px-4 lg:px-6 py-6 lg:py-8">
 
-        {/* ───────────────── HERO ───────────────── */}
+        {/* DASHBOARD STACK */}
 
-        <section
-          className="
-            relative
-            overflow-hidden
-            rounded-[32px]
-            p-6
-            lg:p-8
-            text-white
-            shadow-[var(--shadow-lg)]
-          "
-          style={{
-            background: "var(--gradient-primary)",
-          }}
-        >
-          {/* Glow Layer */}
-          <div className="absolute inset-0 bg-radial-glow opacity-40 pointer-events-none" />
+        <div className="flex flex-col gap-6">
 
-          {/* Decorative */}
-          <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute right-10 bottom-0 w-32 h-32 rounded-full bg-white/10 blur-3xl" />
+          {/* ─────────────────────────────────────────────
+              1. HEADER ZONE
+          ───────────────────────────────────────────── */}
 
-          {/* Role Switch */}
-          <div className="absolute top-5 right-5 z-20">
-            <RoleSwitchButton />
-          </div>
+          <section id="dashboard-header-zone">
 
-          <div className="relative z-10 flex flex-col gap-2">
-            <p className="text-sm font-medium text-white/75">
-              {greeting}
-            </p>
+            {/* HERO */}
 
-            <h1
+            <section
               className="
-                text-3xl
-                lg:text-4xl
-                font-bold
-                tracking-tight
-                leading-tight
+                relative
+                overflow-hidden
+                rounded-[32px]
+                p-6
+                lg:p-8
+                text-white
+                shadow-[var(--shadow-lg)]
               "
+              style={{
+                background: "var(--gradient-primary)",
+              }}
             >
-              {user?.fullName ?? user?.username}
-            </h1>
+              {/* Glow Layer */}
 
-            <p className="text-sm text-white/70">
-              Employee ID: {user?.employeeId ?? "—"}
-            </p>
-          </div>
-        </section>
+              <div className="absolute inset-0 bg-radial-glow opacity-40 pointer-events-none" />
 
-        {/* ───────────────── QUICK STATS ───────────────── */}
+              {/* Decorative */}
 
-        <section className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          {[
-            {
-              label: "Days Present",
-              value: DUMMY_QUICK_STATS.daysPresent,
-              icon: <CheckCircle size={18} />,
-              iconBg: "bg-success/10",
-              iconColor: "text-success",
-            },
+              <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
 
-            {
-              label: "Days Absent",
-              value: DUMMY_QUICK_STATS.daysAbsent,
-              icon: <AlertCircle size={18} />,
-              iconBg: "bg-danger/10",
-              iconColor: "text-danger",
-            },
+              <div className="absolute right-10 bottom-0 w-32 h-32 rounded-full bg-white/10 blur-3xl" />
 
-            {
-              label: "Pending Leaves",
-              value: DUMMY_QUICK_STATS.pendingLeaves,
-              icon: <Clock size={18} />,
-              iconBg: "bg-warning/10",
-              iconColor: "text-warning",
-            },
+              {/* Role Switch */}
 
-            {
-              label: "Pending Expenses",
-              value: DUMMY_QUICK_STATS.pendingExpenses,
-              icon: <TrendingUp size={18} />,
-              iconBg: "bg-info/10",
-              iconColor: "text-info",
-            },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="
-                app-surface
-                card-interactive
-                interactive
-                rounded-[22px]
-                p-4
-                lg:p-5
-                flex
-                items-center
-                gap-4
-              "
-            >
-              <div
-                className={`
-                  ${stat.iconBg}
-                  ${stat.iconColor}
-
-                  w-11
-                  h-11
-                  rounded-2xl
-                  flex
-                  items-center
-                  justify-center
-                  shrink-0
-                `}
-              >
-                {stat.icon}
+              <div className="absolute top-5 right-5 z-20">
+                <RoleSwitchButton />
               </div>
 
-              <div className="min-w-0">
-                <p
+              <div className="relative z-10 flex flex-col gap-2">
+                <p className="text-sm font-medium text-white/75">
+                  {greeting}
+                </p>
+
+                <h1
                   className="
-                    text-2xl
+                    text-3xl
+                    lg:text-4xl
                     font-bold
-                    leading-none
-                    text-main
+                    tracking-tight
+                    leading-tight
                   "
                 >
-                  {stat.value}
-                </p>
+                  {user?.fullName ?? user?.username}
+                </h1>
 
-                <p
-                  className="
-                    mt-1
-                    text-xs
-                    font-medium
-                    text-muted
-                  "
-                >
-                  {stat.label}
+                <p className="text-sm text-white/70">
+                  Employee ID: {user?.employeeId ?? "—"}
                 </p>
               </div>
-            </div>
-          ))}
-        </section>
+            </section>
+          </section>
 
-        {/* ───────────────── MAIN GRID ───────────────── */}
+          {/* ─────────────────────────────────────────────
+              2. PRIORITY ZONE
+          ───────────────────────────────────────────── */}
 
-        <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <section id="dashboard-priority-zone">
 
-          {/* Leave Balance */}
+            {/* QUICK STATS */}
 
-          <SectionCard
-            title="Leave Balance"
-            className="xl:col-span-2"
-          >
-            <div className="space-y-5">
-              {DUMMY_LEAVE_SUMMARY.map((leave) => {
-                const pct = Math.round(
-                  (leave.used / leave.total) * 100
-                );
+            <section className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+              {[
+                {
+                  label: "Days Present",
+                  value: DUMMY_QUICK_STATS.daysPresent,
+                  icon: <CheckCircle size={18} />,
+                  iconBg: "bg-success/10",
+                  iconColor: "text-success",
+                },
 
-                return (
-                  <div key={leave.type} className="space-y-2">
-                    <div className="flex items-center justify-between gap-4">
-                      <span
-                        className="
-                          text-sm
-                          font-semibold
-                          text-main
-                        "
-                      >
-                        {leave.type}
-                      </span>
+                {
+                  label: "Days Absent",
+                  value: DUMMY_QUICK_STATS.daysAbsent,
+                  icon: <AlertCircle size={18} />,
+                  iconBg: "bg-danger/10",
+                  iconColor: "text-danger",
+                },
 
-                      <span
-                        className="
-                          text-xs
-                          font-medium
-                          text-muted
-                        "
-                      >
-                        {leave.remaining} / {leave.total} remaining
-                      </span>
-                    </div>
+                {
+                  label: "Pending Leaves",
+                  value: DUMMY_QUICK_STATS.pendingLeaves,
+                  icon: <Clock size={18} />,
+                  iconBg: "bg-warning/10",
+                  iconColor: "text-warning",
+                },
 
-                    <div
-                      className="
-                        h-2.5
-                        rounded-full
-                        overflow-hidden
-                        bg-[var(--row-hover)]
-                      "
-                    >
-                      <div
-                        className="
-                          h-full
-                          rounded-full
-                          transition-all
-                          duration-500
-                        "
-                        style={{
-                          width: `${pct}%`,
-                          background: leave.color,
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </SectionCard>
-
-          {/* Holidays */}
-
-          <SectionCard title="Upcoming Holidays">
-            <div className="space-y-3">
-              {DUMMY_UPCOMING_HOLIDAYS.map((holiday) => (
+                {
+                  label: "Pending Expenses",
+                  value: DUMMY_QUICK_STATS.pendingExpenses,
+                  icon: <TrendingUp size={18} />,
+                  iconBg: "bg-info/10",
+                  iconColor: "text-info",
+                },
+              ].map((stat) => (
                 <div
-                  key={holiday.name}
+                  key={stat.label}
                   className="
-                    group
+                    app-surface
+                    card-interactive
+                    interactive
+                    rounded-[22px]
+                    p-4
+                    lg:p-5
                     flex
                     items-center
-                    gap-3
-                    rounded-2xl
-                    p-3
-                    transition-all
-                    duration-200
-                    hover:bg-[var(--row-hover)]
+                    gap-4
                   "
                 >
                   <div
-                    className="
-                      w-10
-                      h-10
+                    className={`
+                      ${stat.iconBg}
+                      ${stat.iconColor}
+
+                      w-11
+                      h-11
                       rounded-2xl
-                      shrink-0
                       flex
                       items-center
                       justify-center
-                      bg-primary
-                      text-white
-                      shadow-sm
-                    "
+                      shrink-0
+                    `}
                   >
-                    <Sun size={16} />
+                    {stat.icon}
                   </div>
 
                   <div className="min-w-0">
                     <p
                       className="
-                        text-sm
-                        font-semibold
+                        text-2xl
+                        font-bold
+                        leading-none
                         text-main
-                        truncate
                       "
                     >
-                      {holiday.name}
+                      {stat.value}
                     </p>
 
                     <p
                       className="
-                        text-xs
-                        text-muted
                         mt-1
+                        text-xs
+                        font-medium
+                        text-muted
                       "
                     >
-                      {holiday.date} · {holiday.day}
+                      {stat.label}
                     </p>
                   </div>
                 </div>
               ))}
-            </div>
-          </SectionCard>
-        </section>
+            </section>
+          </section>
 
-        {/* ───────────────── BOTTOM GRID ───────────────── */}
+          {/* ─────────────────────────────────────────────
+              3. WORKSPACE ZONE
+          ───────────────────────────────────────────── */}
 
-        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <section id="dashboard-workspace-zone">
 
-          {/* Announcements */}
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6">
 
-          <SectionCard title="Announcements">
-            <div className="space-y-3">
-              {DUMMY_ANNOUNCEMENTS.map((a) => {
-                const cfg =
-                  typeConfig[a.type] ??
-                  typeConfig["announcement"];
+              {/* MAIN OPERATIONAL AREA */}
 
-                return (
-                  <div
-                    key={a.id}
-                    className="
-                      group
-                      relative
-                      overflow-hidden
-                      rounded-2xl
-                      border
-                      border-theme
-                      p-4
-                      transition-all
-                      duration-200
-                      hover:bg-[var(--row-hover)]
-                    "
+              <main className="min-w-0 flex flex-col gap-6">
+
+                {/* LEAVE + HOLIDAYS */}
+
+                <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+                  {/* Leave Balance */}
+
+                  <SectionCard
+                    title="Leave Balance"
+                    className="xl:col-span-2"
                   >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`
-                          ${cfg.bg}
-                          ${cfg.text}
+                    <div className="space-y-5">
+                      {DUMMY_LEAVE_SUMMARY.map((leave) => {
+                        const pct = Math.round(
+                          (leave.used / leave.total) * 100
+                        );
 
-                          mt-0.5
-                          w-10
-                          h-10
-                          rounded-2xl
-                          flex
-                          items-center
-                          justify-center
-                          shrink-0
-                        `}
-                      >
-                        {cfg.icon}
-                      </div>
+                        return (
+                          <div key={leave.type} className="space-y-2">
+                            <div className="flex items-center justify-between gap-4">
+                              <span
+                                className="
+                                  text-sm
+                                  font-semibold
+                                  text-main
+                                "
+                              >
+                                {leave.type}
+                              </span>
 
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className="
-                            text-sm
-                            font-semibold
-                            leading-relaxed
-                            text-main
-                          "
-                        >
-                          {a.title}
-                        </p>
+                              <span
+                                className="
+                                  text-xs
+                                  font-medium
+                                  text-muted
+                                "
+                              >
+                                {leave.remaining} / {leave.total} remaining
+                              </span>
+                            </div>
 
-                        <p
-                          className="
-                            text-xs
-                            text-muted
-                            mt-2
-                          "
-                        >
-                          {a.date}
-                        </p>
-                      </div>
-
-                      {a.priority === "high" && (
-                        <span
-                          className="
-                            badge
-                            bg-danger
-                            shrink-0
-                            text-[10px]
-                            tracking-wide
-                          "
-                        >
-                          URGENT
-                        </span>
-                      )}
+                            <div
+                              className="
+                                h-2.5
+                                rounded-full
+                                overflow-hidden
+                                bg-[var(--row-hover)]
+                              "
+                            >
+                              <div
+                                className="
+                                  h-full
+                                  rounded-full
+                                  transition-all
+                                  duration-500
+                                "
+                                style={{
+                                  width: `${pct}%`,
+                                  background: leave.color,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                );
-              })}
+                  </SectionCard>
+
+                  {/* Holidays */}
+
+                  <SectionCard title="Upcoming Holidays">
+                    <div className="space-y-3">
+                      {DUMMY_UPCOMING_HOLIDAYS.map((holiday) => (
+                        <div
+                          key={holiday.name}
+                          className="
+                            group
+                            flex
+                            items-center
+                            gap-3
+                            rounded-2xl
+                            p-3
+                            transition-all
+                            duration-200
+                            hover:bg-[var(--row-hover)]
+                          "
+                        >
+                          <div
+                            className="
+                              w-10
+                              h-10
+                              rounded-2xl
+                              shrink-0
+                              flex
+                              items-center
+                              justify-center
+                              bg-primary
+                              text-white
+                              shadow-sm
+                            "
+                          >
+                            <Sun size={16} />
+                          </div>
+
+                          <div className="min-w-0">
+                            <p
+                              className="
+                                text-sm
+                                font-semibold
+                                text-main
+                                truncate
+                              "
+                            >
+                              {holiday.name}
+                            </p>
+
+                            <p
+                              className="
+                                text-xs
+                                text-muted
+                                mt-1
+                              "
+                            >
+                              {holiday.date} · {holiday.day}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </SectionCard>
+                </section>
+
+                {/* BOTTOM GRID */}
+
+                <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+                  {/* Announcements */}
+
+                  <SectionCard title="Announcements">
+                    <div className="space-y-3">
+                      {DUMMY_ANNOUNCEMENTS.map((a) => {
+                        const cfg =
+                          typeConfig[a.type] ??
+                          typeConfig["announcement"];
+
+                        return (
+                          <div
+                            key={a.id}
+                            className="
+                              group
+                              relative
+                              overflow-hidden
+                              rounded-2xl
+                              border
+                              border-theme
+                              p-4
+                              transition-all
+                              duration-200
+                              hover:bg-[var(--row-hover)]
+                            "
+                          >
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={`
+                                  ${cfg.bg}
+                                  ${cfg.text}
+
+                                  mt-0.5
+                                  w-10
+                                  h-10
+                                  rounded-2xl
+                                  flex
+                                  items-center
+                                  justify-center
+                                  shrink-0
+                                `}
+                              >
+                                {cfg.icon}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className="
+                                    text-sm
+                                    font-semibold
+                                    leading-relaxed
+                                    text-main
+                                  "
+                                >
+                                  {a.title}
+                                </p>
+
+                                <p
+                                  className="
+                                    text-xs
+                                    text-muted
+                                    mt-2
+                                  "
+                                >
+                                  {a.date}
+                                </p>
+                              </div>
+
+                              {a.priority === "high" && (
+                                <span
+                                  className="
+                                    badge
+                                    bg-danger
+                                    shrink-0
+                                    text-[10px]
+                                    tracking-wide
+                                  "
+                                >
+                                  URGENT
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </SectionCard>
+
+                  {/* Events */}
+
+                  <SectionCard title="Upcoming Events">
+                    <div className="space-y-3">
+                      {DUMMY_EVENTS.map((event, i) => {
+                        const cfg =
+                          typeConfig[event.type] ??
+                          typeConfig["event"];
+
+                        return (
+                          <div
+                            key={i}
+                            className="
+                              flex
+                              items-center
+                              gap-3
+                              rounded-2xl
+                              border
+                              border-theme
+                              p-4
+                              transition-all
+                              duration-200
+                              hover:bg-[var(--row-hover)]
+                            "
+                          >
+                            <div
+                              className={`
+                                ${cfg.bg}
+                                ${cfg.text}
+
+                                w-10
+                                h-10
+                                rounded-2xl
+                                flex
+                                items-center
+                                justify-center
+                                shrink-0
+                              `}
+                            >
+                              {cfg.icon}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className="
+                                  text-sm
+                                  font-semibold
+                                  text-main
+                                "
+                              >
+                                {event.title}
+                              </p>
+
+                              <p
+                                className="
+                                  text-xs
+                                  text-muted
+                                  mt-1
+                                "
+                              >
+                                {event.date}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </SectionCard>
+                </section>
+              </main>
+
+              {/* SIDE INTELLIGENCE RAIL */}
+
+              <aside className="flex flex-col gap-6">
+
+                {/* Future widgets:
+                    - Quick Actions
+                    - Pending Approvals
+                    - Activity Feed
+                    - AI Insights
+                    - Notifications
+                */}
+
+              </aside>
             </div>
-          </SectionCard>
+          </section>
 
-          {/* Events */}
+          {/* ─────────────────────────────────────────────
+              4. INSIGHTS ZONE
+          ───────────────────────────────────────────── */}
 
-          <SectionCard title="Upcoming Events">
-            <div className="space-y-3">
-              {DUMMY_EVENTS.map((event, i) => {
-                const cfg =
-                  typeConfig[event.type] ??
-                  typeConfig["event"];
+          <section id="dashboard-insights-zone">
 
-                return (
-                  <div
-                    key={i}
-                    className="
-                      flex
-                      items-center
-                      gap-3
-                      rounded-2xl
-                      border
-                      border-theme
-                      p-4
-                      transition-all
-                      duration-200
-                      hover:bg-[var(--row-hover)]
-                    "
-                  >
-                    <div
-                      className={`
-                        ${cfg.bg}
-                        ${cfg.text}
+            {/* Future analytics/charts */}
 
-                        w-10
-                        h-10
-                        rounded-2xl
-                        flex
-                        items-center
-                        justify-center
-                        shrink-0
-                      `}
-                    >
-                      {cfg.icon}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="
-                          text-sm
-                          font-semibold
-                          text-main
-                        "
-                      >
-                        {event.title}
-                      </p>
-
-                      <p
-                        className="
-                          text-xs
-                          text-muted
-                          mt-1
-                        "
-                      >
-                        {event.date}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </SectionCard>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   );
