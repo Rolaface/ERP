@@ -1,5 +1,5 @@
 import React from "react";
-import { Building2, Users, DollarSign, MapPin, FileText } from "lucide-react";
+import { Building2, Users, Banknote, MapPin, FileText } from "lucide-react";
 import { SupplierInfoTab } from "./SupplierInfoTab";
 import { useSupplierForm } from "../../../hooks/useSupplierForm";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
@@ -27,7 +27,7 @@ interface SupplierModalProps {
 
 const tabs: { key: SupplierTab; icon: typeof Building2; label: string }[] = [
   { key: "supplier", icon: Building2, label: "Supplier" },
-  { key: "payment", icon: DollarSign, label: "Bank Details" },
+  { key: "payment", icon: Banknote, label: "Bank Details" },
   { key: "address", icon: MapPin, label: "Address" },
   { key: "terms", icon: FileText, label: "Terms" },
 ];

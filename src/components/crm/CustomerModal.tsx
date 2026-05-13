@@ -1,5 +1,5 @@
 import React from "react";
-import { Building2, DollarSign, FileText, MapPin, Users,User } from "lucide-react";
+import { Building2, Banknote, FileText, MapPin, Users,User } from "lucide-react";
 import Tooltip from "../Tooltip";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
 import TermsAndCondition from "../TermsAndCondition";
@@ -126,7 +126,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   }`}
               >
                 {tab === "details" && <User className="w-4 h-4" />}
-                {tab === "bank" && <DollarSign className="w-4 h-4" />}
+                {tab === "bank" && <Banknote className="w-4 h-4" />}
                 {tab === "terms" && <FileText className="w-4 h-4" />}
                 {tab === "address" && <MapPin className="w-4 h-4" />}
                 {tab === "details"

@@ -273,7 +273,7 @@ const handleReset = async () => {
         {/* TABS */}
         <div className="bg-app border-b flex">
           {[
-            { id: "financial", label: "Financial Config", icon: FaCoins },
+            { id: "financial", label: "Financial Configuration", icon: FaCoins },
             { id: "accounts", label: "Account Setup", icon: FaDollarSign },
           ].map((t) => (
             <button
@@ -284,7 +284,7 @@ const handleReset = async () => {
               }`}
             >
               <t.icon />
-              {t.label}
+              {t.label} 
             </button>
           ))}
         </div>

@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -131,6 +131,7 @@ export const API = {
     getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
     ModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.create`,
+    UpdateModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.update`,
     GetModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get`,
     GetDefaultAccounts: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.get_default_accounts`,
     UpdateStatusModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.update`,

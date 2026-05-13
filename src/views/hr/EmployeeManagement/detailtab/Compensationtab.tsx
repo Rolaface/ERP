@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  DollarSign,
+  Banknote,
   CreditCard,
   TrendingUp,
   TrendingDown,
@@ -123,7 +123,7 @@ const PayrollKpiStrip: React.FC<PayrollKpiStripProps> = ({
       label: "Annual CTC",
       annual: ctcAnnual,
       currency,
-      icon: <DollarSign className="w-3.5 h-3.5" />,
+      icon: <Banknote className="w-3.5 h-3.5" />,
       accentClass: "text-primary",
       bgClass: "bg-primary/5 dark:bg-primary/8",
       borderClass: "border-primary/15 dark:border-primary/20",

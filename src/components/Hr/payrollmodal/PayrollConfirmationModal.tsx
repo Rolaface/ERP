@@ -1,6 +1,6 @@
 // PayrollConfirmationModal.tsx
 import React from "react";
-import { X, CheckCircle, AlertCircle, Users, DollarSign } from "lucide-react";
+import { X, CheckCircle, AlertCircle, Users, Banknote } from "lucide-react";
 import type { PayrollRecord } from "../../../types/payrolltypes";
 
 interface PayrollConfirmationModalProps {
@@ -60,7 +60,7 @@ export const PayrollConfirmationModal: React.FC<PayrollConfirmationModalProps> =
 
             <div className="bg-app rounded-lg p-4 border border-theme">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-5 h-5 text muted" />
+                <Banknote className="w-5 h-5 text muted" />
                 <p className="text-xs text-muted font-medium">Gross Total</p>
               </div>
               <p className="text-2xl font-bold text-muted">

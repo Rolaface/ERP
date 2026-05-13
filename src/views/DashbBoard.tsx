@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Users, FileText, TrendingUp, DollarSign, Package, ArrowLeftRight } from 'lucide-react';
+import { Users, FileText, TrendingUp, Banknote, Package, ArrowLeftRight } from 'lucide-react';
 import LineChart from '../components/charts/LineChart';
 import UserMenu from '../layout/UserMenu';
 import { 
@@ -196,7 +196,7 @@ const Dashboard = () => {
             </InfoBox>
 
             <InfoBox title="Purchase" loading={loadingSummary}
-            icon={<DollarSign size={16} className="text-green-500" />}>
+            icon={<Banknote size={16} className="text-green-500" />}>
               <div className="text-lg font-bold text-amber-600">{currencyFormatter.format(summaryData?.purchase?.totalPurchase || 0)}</div>
               <div className="text-xs text-gray-500 flex justify-between mt-1">
                 <span>Count: {summaryData?.purchase?.purchaseCount || 0}</span>
@@ -349,7 +349,7 @@ const Dashboard = () => {
                 title={notesData?.topSellingItemValue?.itemName || 'N/A'} 
                 value={currencyFormatter.format(notesData?.topSellingItemValue?.value || 0)} 
                 subTitle={notesData?.topSellingItemValue?.itemCode}
-                icon={<DollarSign size={16} className="text-purple-500" />} 
+                icon={<Banknote size={16} className="text-purple-500" />} 
               />
             </div>
           )}

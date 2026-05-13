@@ -1,6 +1,6 @@
 // LeaveEncashment.tsx
 import React from "react";
-import { ArrowLeft, Plus, DollarSign } from "lucide-react";
+import { ArrowLeft, Plus, Banknote } from "lucide-react";
 
 export interface LeaveEncashmentProps {
   onAdd: () => void;
@@ -48,7 +48,7 @@ export const LeaveEncashment: React.FC<LeaveEncashmentProps> = ({
       <div className="p-16 flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="mb-6 w-20 h-20 mx-auto rounded-2xl bg-card border border-theme inline-flex items-center justify-center">
-            <DollarSign size={40} className="text-muted" />
+            <Banknote size={40} className="text-muted" />
           </div>
           <h3 className="text-lg font-semibold text-main mb-2">
             No Leave Encashments Yet

@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, CheckCircle, Clock, DollarSign } from "lucide-react";
+import { Users, CheckCircle, Clock, Banknote } from "lucide-react";
 
 interface KPICardsProps {
   totalRecords: number;
@@ -88,7 +88,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
       <Chip
         label="Payout"
         value={`₹${(totalPayout / 1000).toFixed(0)}K`}
-        icon={<DollarSign className="w-3.5 h-3.5" />}
+        icon={<Banknote className="w-3.5 h-3.5" />}
         accent="primary"
       />
 
