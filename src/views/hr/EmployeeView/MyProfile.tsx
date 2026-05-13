@@ -57,6 +57,7 @@ const MyProfile: React.FC<MyProfileProps> = ({ isPureEmployee = false }) => {
       employee={employee}
       onBack={undefined}
       onDocumentUploaded={refreshProfile}
+      hideFinancialTabs={true}
     />
   );
 };
