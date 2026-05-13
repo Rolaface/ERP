@@ -9,6 +9,8 @@ import {
 import { useAuth }             from "../../../context/AuthContext";
 import LeaveApplyTable         from "./LeaveApply";
 import LeaveApproval           from "./LeaveApproval";
+import { showApiError } from "../../../utils/alert";
+import { getEmployeeDetailsById } from "../../../api/employeeapi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +89,9 @@ const EmployeeLeaveSection: React.FC = () => {
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [loadingRecent,  setLoadingRecent]  = useState(true);
   const [refreshKey,     setRefreshKey]     = useState(0);
+  const [empDetails, setEmpDetails] = useState<any>(null);
+  const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
+  const [isLoading,  setIsLoading]  = useState(true);
 
   const fetchBalances = useCallback(async () => {
     if (!user?.employeeId) { setLoadingBalance(false); return; }
@@ -109,6 +114,30 @@ const EmployeeLeaveSection: React.FC = () => {
       setLoadingBalance(false);
     }
   }, [user?.employeeId]);
+
+  useEffect(() => {
+    if (!user?.employeeId) return;
+
+    const fetchEmployeeData = async () => {
+      try {
+        const detailsRes = await getEmployeeDetailsById(user.employeeId!);
+        const detailsData = detailsRes?.message?.data ?? detailsRes?.data ?? detailsRes;
+        
+        if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
+        if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
+      } catch (err: any) {
+        showApiError(
+          err?.response?.data?.message ?? err?.message ?? "Failed to fetch API.",
+        );
+      } finally {
+        // This ensures loading is set to false whether the API succeeds OR fails
+        setIsLoading(false); 
+      }
+    };
+
+    fetchEmployeeData();
+  }, [user?.employeeId]);
+  
 
   const fetchRecent = useCallback(async () => {
     if (!user?.employeeId) { setLoadingRecent(false); return; }
@@ -142,17 +171,37 @@ const EmployeeLeaveSection: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Leave Balance */}
+     {/* Leave Balance */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold uppercase tracking-widest text-[var(--muted)]">Leave Balance</h2>
         </div>
-        {loadingBalance ? (
+        
+        {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[1,2,3,4].map((i) => <div key={i} className="h-24 rounded-xl bg-[var(--row-hover)] animate-pulse" />)}
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 rounded-xl bg-[var(--row-hover)] animate-pulse" />
+            ))}
           </div>
-        ) : balances.length > 0 ? (
+        ) : leaveBalances.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {balances.map((b, i) => <BalanceCard key={b.leaveType} balance={b} color={CARD_COLORS[i % CARD_COLORS.length]} />)}
+            {leaveBalances.map((leave, idx) => {
+              // Map the getEmployeeDetailsById response to the BalanceCard props
+              const balanceData = {
+                leaveType: leave.leave_type,
+                total: Number((leave.new_leaves_allocated + leave.opening_balance).toFixed(1)),
+                used: Number(leave.leaves_taken.toFixed(1)),
+                remaining: Number(leave.balance.toFixed(1)),
+              };
+
+              return (
+                <BalanceCard 
+                  key={idx} 
+                  balance={balanceData} 
+                  color={CARD_COLORS[idx % CARD_COLORS.length]} 
+                />
+              );
+            })}
           </div>
         ) : (
           <div className="flex items-center gap-2 text-sm text-[var(--muted)] py-2">

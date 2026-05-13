@@ -341,14 +341,14 @@ const Dashboard = () => {
                 label="Top Item By Qty" 
                 title={notesData?.topSellingItemQty?.itemName || 'N/A'} 
                 value={`${notesData?.topSellingItemQty?.quantity || 0} Units`} 
-                subTitle={notesData?.topSellingItemQty?.itemCode}
+                // subTitle={notesData?.topSellingItemQty?.itemCode}
                 icon={<Package size={16} className="text-emerald-500" />} 
               />
               <NoteItem 
                 label="Top Item By Value" 
                 title={notesData?.topSellingItemValue?.itemName || 'N/A'} 
                 value={currencyFormatter.format(notesData?.topSellingItemValue?.value || 0)} 
-                subTitle={notesData?.topSellingItemValue?.itemCode}
+                // subTitle={notesData?.topSellingItemValue?.itemCode}
                 icon={<DollarSign size={16} className="text-purple-500" />} 
               />
             </div>
