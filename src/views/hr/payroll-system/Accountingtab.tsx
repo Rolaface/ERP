@@ -116,37 +116,9 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         </div> */}
       </div>
 
-      {/* Summary card */}
-      {data.selectedEmployees.length > 0 && (
-        <div className="rounded-xl border border-success/30 bg-success/5 p-5">
-          <p className="text-xs font-extrabold text-success uppercase tracking-wider mb-4">
-            Payroll Summary
-          </p>
-          <div className="grid grid-cols-4 gap-4">
-            {[
-              { label: "Employees", value: data.selectedEmployees.length },
-              {
-                label: "Est. Gross",
-                value: `₹${totalGross.toLocaleString("en-IN")}`,
-              },
-              { label: "Currency", value: data.currency },
-              { label: "Frequency", value: data.payrollFrequency || "—" },
-            ].map(({ label, value }) => (
-              <div key={label}>
-                <p className="text-[10px] text-success/70 uppercase tracking-wider">
-                  {label}
-                </p>
-                <p className="text-lg font-extrabold text-success mt-0.5">
-                  {value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+     
 
-      {/* Statutory note */}
-      <div className="rounded-xl bg-info/5 border border-info/20 p-4"></div>
+     
     </div>
   );
 };
