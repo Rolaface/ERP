@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
-
-import { FaReceipt } from "react-icons/fa";
+import { Receipt } from "lucide-react";
 import type { Column } from "../../components/ui/Table/type";
-
+import {
+  AppPage,
+  AppPageHeader,
+  AppPageBody,
+} from "../../components/ui/app-shell";
 import { getAllPayments } from "../../api/CustomerPayment";
 import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openPaymentEntryModal } from "../../store/modalStore";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
-// API Response Type
 
 interface PaymentAPI {
   paymentId: string;
@@ -36,13 +40,15 @@ type PaymentRow = {
   partyType?: string;
 };
 
+const PAYMENT_ENTRY_MODULE = "Payment Entry";
+
 const PaymentEntry: React.FC = () => {
   const [data, setData] = useState<PaymentRow[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
+  const { can } = usePermission();
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -68,9 +74,7 @@ const PaymentEntry: React.FC = () => {
         partyName: p.partyName || "—",
         mode: p.paymentMode || "—",
         amount: Number(p.amount) || 0,
-        paymentDate: p.paymentDate
-          ? new Date(p.paymentDate).toLocaleDateString("en-IN")
-          : "-",
+        paymentDate: p.paymentDate || "-",
       }));
 
       setData(mapped);
@@ -94,19 +98,30 @@ const PaymentEntry: React.FC = () => {
     return () => clearTimeout(delay);
   }, [fetchPayments]);
 
-  /**
-   * TABLE COLUMNS
-   */
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
+
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+
   const columns: Column<PaymentRow>[] = [
     {
       key: "id",
-      header: "P.Id",
+      header: "P Id",
       render: (row) => row.id || "-",
     },
     {
       key: "paymentDate",
       header: "Payment Date",
-      render: (row) => row.paymentDate || "-",
+      render: (row) => row.paymentDate ? formatDate(row.paymentDate) : "-",
     },
     {
       key: "partyType",
@@ -136,48 +151,52 @@ const PaymentEntry: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
+    <AppPage>
       {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
-          <FaReceipt className="text-primary" />
-          Payment Entry
-        </h1>
-      </div>
+      <AppPageHeader
+        title="Payment Entry"
+        description="Manage customer and supplier payment transactions."
+        icon={<Receipt />}
+      />
 
       {/* TABLE */}
-      <Table
-        columns={columns}
-        data={data}
-        loading={loading}
-        rowKey={(r) => r.id}
-        searchValue={searchTerm}
-        enableColumnSelector
-        tableId="payment-entry"
-        onSearch={(q) => {
-          setSearchTerm(q);
-          setPage(1);
-        }}
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50, 100]}
-        onPageChange={setPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-        showToolbar
-        enableAdd
-        addLabel="Add Payment Entry"
-        onAdd={() =>
-          openPaymentEntryModal(null, false, {
-            onSuccess: () => fetchPayments(),
-          })
-        }
-      />
-    </div>
+      <AppPageBody>
+        <Table
+          columns={columns}
+          data={data}
+          loading={loading}
+          rowKey={(r) => r.id}
+          searchValue={searchTerm}
+          enableColumnSelector
+          tableId="payment-entry"
+          onSearch={(q) => {
+            setSearchTerm(q);
+            setPage(1);
+          }}
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          showToolbar
+          enableAdd={can(PAYMENT_ENTRY_MODULE, "create")}
+          addLabel="Add Payment Entry"
+          onAdd={
+            can(PAYMENT_ENTRY_MODULE, "create")
+              ? () =>
+                openPaymentEntryModal(null, false, {
+                  onSuccess: () => fetchPayments(),
+                })
+              : undefined
+          }
+        />
+      </AppPageBody>
+    </AppPage>
   );
 };
 

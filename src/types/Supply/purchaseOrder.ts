@@ -258,7 +258,7 @@ export const emptyPOForm: PurchaseOrderFormData = {
   status: "Draft",
   destnCountryCd: "",
   shippingRule: "",
-  incoterm: "EXW",
+  incoterm: "",
   taxesChargesTemplate: "",
   costCenter: "",
   project: "",

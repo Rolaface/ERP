@@ -1,16 +1,27 @@
 import React, { useEffect, useState, useCallback } from "react";
 import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
 import CustomerGroupModal from "../../components/customerGroup/CustomerGroupModal";
-import { FaUsersCog } from "react-icons/fa";
+import { Users } from "lucide-react"
 import type { Column } from "../../components/ui/Table/type";
 import { getCustomerGroupTree } from "../../api/customerApi";
 import { Folder, FolderOpen, Plus } from "lucide-react";
+import {
+  AppPage,
+  AppPageHeader,
+  AppPageBody,
+} from "../../components/ui/app-shell";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
+
+
+const CUSTOMER_GROUP_MODULE = "Customer Group";
 
 const CustomerGroup: React.FC = () => {
   const [treeData, setTreeData] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { can } = usePermission();
 
   const normalizeCustomerGroups = (nodes: any[]): any[] => {
     return nodes.map((node) => ({
@@ -28,8 +39,7 @@ const CustomerGroup: React.FC = () => {
     try {
       setLoading(true);
       const res = await getCustomerGroupTree();
-      const normalized = normalizeCustomerGroups(res);
-      setTreeData(normalized);
+      setTreeData(normalizeCustomerGroups(res));
     } catch (err) {
       console.error("Error fetching customer groups:", err);
     } finally {
@@ -57,19 +67,28 @@ const CustomerGroup: React.FC = () => {
       align: "right",
       render: (row) => (
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100">
-          <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
-            Edit
-          </button>
-
-          {row.isGroup && (
+          <PermissionGate
+            module={CUSTOMER_GROUP_MODULE}
+            action="write"
+          >
             <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
-              Add Child
+              Edit
             </button>
-          )}
-
-          <button className="text-xs px-2 py-1 hover:bg-row-hover rounded text-red-500">
-            Delete
-          </button>
+          </PermissionGate>
+          {row.isGroup &&
+            can(CUSTOMER_GROUP_MODULE, "create") && (
+              <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
+                Add Child
+              </button>
+            )}
+          <PermissionGate
+            module={CUSTOMER_GROUP_MODULE}
+            action="delete"
+          >
+            <button className="text-xs px-2 py-1 hover:bg-row-hover rounded text-red-500">
+              Delete
+            </button>
+          </PermissionGate>
         </div>
       ),
     },
@@ -85,50 +104,54 @@ const CustomerGroup: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-semibold flex items-center gap-2 mb-4">
-        <FaUsersCog className="text-primary" />
-        Customer Groups
-      </h1>
-
-      <ExpandableTreeTable
-        columns={columns}
-        data={treeData}
-        childrenKey="children"
-        nodeKey={(node) => node.id}
-        showToolbar
-        searchValue={search}
-        onSearch={setSearch}
-        toolbarPlaceholder="Search customer groups..."
-        showExpandControls
-        onRefresh={fetchTree}
-        defaultExpandDepth={0}
-        indentSize={18}
-        loading={loading}
-        emptyMessage="No customer groups found"
-        expandIconRender={expandIcon}
-        extraFilters={
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded text-xs"
-          >
-            <Plus size={12} />
-            New
-          </button>
-        }
+    <AppPage>
+      <AppPageHeader
+        title="Customer Groups"
+        description="Manage customer group hierarchy and structure."
+        icon={<Users />}
       />
-
-      {showModal && (
-        <CustomerGroupModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          onSubmit={() => {
-            setShowModal(false);
-            fetchTree();
-          }}
+      <AppPageBody>
+        <ExpandableTreeTable
+          columns={columns}
+          data={treeData}
+          childrenKey="children"
+          nodeKey={(node) => node.id}
+          showToolbar
+          searchValue={search}
+          onSearch={setSearch}
+          toolbarPlaceholder="Search customer groups..."
+          showExpandControls
+          onRefresh={fetchTree}
+          defaultExpandDepth={0}
+          indentSize={18}
+          loading={loading}
+          emptyMessage="No customer groups found"
+          expandIconRender={expandIcon}
+          extraFilters={
+            can(CUSTOMER_GROUP_MODULE, "create") ? (
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded text-xs"
+              >
+                <Plus size={12} />
+                Add
+              </button>
+            ) : null
+          }
         />
-      )}
-    </div>
+
+        {showModal && (
+          <CustomerGroupModal
+            isOpen={showModal}
+            onClose={() => setShowModal(false)}
+            onSubmit={() => {
+              setShowModal(false);
+              fetchTree();
+            }}
+          />
+        )}
+      </AppPageBody>
+    </AppPage>
   );
 };
 

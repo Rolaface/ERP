@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useOutletContext } from "react-router-dom";
 import {
   X,
   Search,
   FileText,
-  Plus,
   Mail,
   Building2,
   FileBarChart,
@@ -24,43 +22,17 @@ import {
   CalendarDays,
   ChevronRight,
   Layers,
-  Clock,
 } from "lucide-react";
 import type { Supplier } from "../../types/Supply/supplier";
 import SupplierStatement from "./SupplierStatement";
-import PurchaseOrderModal from "../../components/procurement/PurchaseOrderModal";
 import SupplierPurchaseOrders from "./SupplierPurchaseOrders";
 import SupplierPurchaseInvoices from "./SupplierPurchaseInvoices";
 import SupplierBankDetails from "./SupplierBankDetails";
 import { getSupplierStatement } from "../../api/statementApi";
-import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
 import type { BankAccount } from "../../types/BankAccount/bank";
-import PaymentEntryModal from "../PaymentEntry/PaymentEntryModal";
 import SupplierDetailViewPayments from "./SupplierDetailViewPayment";
+import { showApiError } from "../../utils/alert";
 
-// ─── API RESPONSE SHAPE (from message.data) ──────────────────────────────────
-// supplier.id                       → "SUP-2026-00008"
-// supplier.name                     → display name  (NOT supplierName)
-// supplier.type                     → "Company" | "Individual"
-// supplier.tpin
-// supplier.currency
-// supplier.supplierTaxCategory      → tax category  (NOT taxCategory)
-// supplier.supplierGroup
-// supplier.status                   → "Active"
-// supplier.createdAt                → "2026-04-11 14:01:56..."  (NOT dateOfAddition)
-// supplier.contacts[]
-//   .id / .firstName / .lastName / .fullName
-//   .email / .mobile / .phone
-//   .isPrimary / .isBilling / .status
-// supplier.addresses[]
-//   .id / .type ("Billing"|"Shipping")
-//   .line1 / .line2 / .city / .county / .state / .postalCode / .country
-//   .isPrimary / .isShipping
-// supplier.terms.Buying             (capital B)
-//   .general / .delivery / .cancellation / .warranty / .liability
-//   .payment.phases[]  { id, name, percentage, condition, credit_days }
-//   .payment.dueDates / .lateCharges / .taxes / .notes
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
   supplier: Supplier;
@@ -100,15 +72,9 @@ const SupplierDetailView: React.FC<Props> = ({
   onSupplierSelect,
   onEdit,
 }) => {
-  const { openPICreate } = useOutletContext<{ openPICreate: () => void }>();
-   const { openPOCreate } = useOutletContext<{ openPOCreate: () => void }>();
-    // const { openPICreate } = useOutletContext<{ openPICreate: () => void }>();
   
-
   const [searchTerm,       setSearchTerm]       = useState("");
   const [activeTab,        setActiveTab]        = useState<TabId>("overview");
-  const [showPOModal,      setShowPOModal]      = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showBankModal,    setShowBankModal]    = useState(false);
   const [statement,        setStatement]        = useState<any>(null);
   const [statementLoading, setStatementLoading] = useState(false);
@@ -117,30 +83,17 @@ const SupplierDetailView: React.FC<Props> = ({
   const [mobileDrawer,     setMobileDrawer]     = useState(false);
 
   const bankAccountsRefresh = useRef<(() => void) | null>(null);
-
-  // ── DERIVED: correct field mapping from API response ─────────────────────
-  // name comes as `name` in new API (not `supplierName`)
   const supplierId   = (supplier as any)?.id   ?? (supplier as any)?.supplierId;
   const supplierName = (supplier as any)?.name ?? supplier?.supplierName ?? (supplier as any)?.supplierName;
-
-  // supplierTaxCategory is the correct key from API (not taxCategory)
   const taxCategory  = (supplier as any)?.supplierTaxCategory ?? (supplier as any)?.taxCategory ?? supplier?.taxCategory;
-
-  // createdAt from API (not dateOfAddition)
   const createdAt    = (supplier as any)?.createdAt ?? supplier?.dateOfAddition;
-
-  // contacts[] — primary contact
   const contacts = (supplier as any)?.contacts ?? supplier?.contacts ?? [];
   const primaryContact = contacts.find((c: any) => c.isPrimary) ?? contacts[0];
-
-  // addresses[] — billing address
   const addresses    = (supplier as any)?.addresses ?? supplier?.addresses ?? [];
   const billingAddr  = addresses.find((a: any) => a.type === "Billing") ?? addresses[0];
-
-  // terms.Buying (capital B) — fall back to terms.buying for legacy
   const terms = (supplier?.terms as any)?.Buying ?? (supplier?.terms as any)?.buying;
 
-  // Format billing address into readable lines
+ 
   const billingLines = billingAddr
     ? [
         [billingAddr.line1, billingAddr.line2].filter(Boolean).join(", "),
@@ -149,7 +102,7 @@ const SupplierDetailView: React.FC<Props> = ({
       ].filter(Boolean)
     : [];
 
-  // sidebar filter
+  
   const q = searchTerm.trim().toLowerCase();
   const filteredSuppliers = suppliers.filter((s) => {
     const sName = ((s as any).name ?? s.supplierName ?? "").toLowerCase();
@@ -164,7 +117,7 @@ const SupplierDetailView: React.FC<Props> = ({
     return false;
   };
 
-  // statement loader
+ 
   useEffect(() => {
     if (activeTab !== "statement" || !supplierId) return;
     const load = async () => {
@@ -173,7 +126,7 @@ const SupplierDetailView: React.FC<Props> = ({
         const res = await getSupplierStatement(supplierId);
         if (res?.message.status_code === 200) setStatement(res.message.data);
       } catch (err) {
-        console.error("Failed to load supplier statement", err);
+        showApiError(err);
       } finally {
         setStatementLoading(false);
       }
@@ -181,37 +134,40 @@ const SupplierDetailView: React.FC<Props> = ({
     load();
   }, [activeTab, supplierId]);
 
-  // action button per tab
   const renderActionButton = () => {
     switch (activeTab) {
       case "purchase-orders":
-        return (
-          <button onClick={() => openPOCreate()}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> New PO
-          </button>
-        );
+        // return (
+        //   <button onClick={() => openPOCreate()}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> New PO
+        //   </button>
+        // );
+        return null;
       case "bills":
-        return (
-          <button onClick={() => openPICreate()}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> New Invoice
-          </button>
-        );
+        // return (
+        //   <button onClick={() => openPICreate()}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> New Invoice
+        //   </button>
+        // );
+        return null;
       case "bank-accounts":
-        return (
-          <button onClick={() => { setEditingRow(null); setShowBankModal(true); }}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> Add Bank
-          </button>
-        );
+        // return (
+        //   <button onClick={() => { setEditingRow(null); setShowBankModal(true); }}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> Add Bank
+        //   </button>
+        // );
+        return null;
       case "payments":
-        return (
-          <button onClick={() => setShowPaymentModal(true)}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> Make Payment
-          </button>
-        );
+        // return (
+        //   <button onClick={() => setShowPaymentModal(true)}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> Make Payment
+        //   </button>
+        // );
+        return null;
       default:
         return null;
     }
@@ -329,12 +285,12 @@ const SupplierDetailView: React.FC<Props> = ({
               Added {fmtDate(createdAt)}
             </span>
           )}
-          <button
+          {/* <button
             onClick={() => onEdit(supplier)}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold border border-theme rounded-lg text-main hover:bg-row-hover transition-all"
           >
             Edit
-          </button>
+          </button> */}
           {renderActionButton()}
         </div>
       </header>
@@ -582,7 +538,7 @@ const SupplierDetailView: React.FC<Props> = ({
 
             {/* ════ BANK ACCOUNTS ═══════════════════════════════════════ */}
             {activeTab === "bank-accounts" && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <SupplierBankDetails
                   supplierName={supplierId}
                   onAdd={(refresh) => { bankAccountsRefresh.current = refresh; }}
@@ -593,21 +549,21 @@ const SupplierDetailView: React.FC<Props> = ({
 
             {/* ════ PURCHASE ORDERS ════════════════════════════════════ */}
             {activeTab === "purchase-orders" && supplierName && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <SupplierPurchaseOrders supplierName={supplierId} />
               </div>
             )}
 
             {/* ════ BILLS ══════════════════════════════════════════════ */}
             {activeTab === "bills" && supplierName && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <SupplierPurchaseInvoices supplierName={supplierId} />
               </div>
             )}
 
             {/* ════ PAYMENTS ═══════════════════════════════════════════ */}
             {activeTab === "payments" && supplierName && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <SupplierDetailViewPayments supplierName={supplierName} />
               </div>
             )}
@@ -632,7 +588,6 @@ const SupplierDetailView: React.FC<Props> = ({
                 <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
                   <FileText size={28} />
                 </div>
-                <h3 className="text-sm font-bold text-main">No statement available</h3>
                 <p className="text-[10px] text-muted font-bold uppercase mt-1">Statement data could not be loaded</p>
               </div>
             )}
@@ -641,9 +596,9 @@ const SupplierDetailView: React.FC<Props> = ({
       </div>
 
       {/* ── MODALS ── */}
-      <PurchaseOrderModal isOpen={showPOModal} onClose={() => setShowPOModal(false)} />
+      {/* <PurchaseOrderModal isOpen={showPOModal} onClose={() => setShowPOModal(false)} /> */}
 
-      <PaymentEntryModal
+      {/* <PaymentEntryModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         
@@ -656,7 +611,7 @@ const SupplierDetailView: React.FC<Props> = ({
         partyName={supplierName}
         defaultAccountFor="Supplier"
         initialData={editingRow}
-      />
+      /> */}
     </div>
   );
 };

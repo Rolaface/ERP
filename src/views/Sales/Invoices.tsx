@@ -17,7 +17,7 @@ import {
   editSalesInvoice,
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
-import { generateInvoicePDF } from "../../components/template/invoice/InvoiceTemplate1";
+import { generateInvoicePDF } from "../../components/template/invoice/invoiceTemplatRolaface";
 import PdfPreviewModal from "./PdfPreviewModal";
 import InvoiceDetailModal, { type InvoiceDetail } from "./InvoiceDetailsModal";
 import {
@@ -27,7 +27,6 @@ import {
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
-  ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
@@ -43,9 +42,10 @@ import {
 import type { InvoiceStatus } from "../../types/invoice";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { Copy } from "lucide-react";
+
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -80,6 +80,11 @@ interface InvoiceTableProps {
   onExportInvoice?: () => void;
 }
 
+
+const SALES_MODULE = "Sales Invoice";
+const PAYMENT_MODULE = "Payment Entry";
+
+
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const { openInvoiceEdit } = useOutletContext<OutletContextType>();
   const mountedRef = useRef(true);
@@ -95,6 +100,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
 
+  const { can } = usePermission();
   // ── Drawer (same pattern as ProformaInvoicesTable)
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<InvoiceDetail | null>(null);
@@ -155,7 +161,16 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         filters.from_date,
         filters.to_date,
       );
-      if (!res || res.status_code !== 200) return;
+
+      if (!res || res.status_code !== 200) {
+        showApiError(res || "Failed to fetch invoices");
+
+        setInvoices([]);
+        setTotalPages(1);
+        setTotalItems(0);
+
+        return;
+      }
 
       if (!mountedRef.current) return;
 
@@ -178,6 +193,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       setInvoices(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || mapped.length);
+    } catch (err) {
+      showApiError(err);
+
+      setInvoices([]);
+      setTotalPages(1);
+      setTotalItems(0);
     } finally {
       if (mountedRef.current) {
         setIsFetching(false);
@@ -462,14 +483,26 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   };
 
-  // ── PDF preview modal close (kept — do not remove)
+
   const handleClosePdf = () => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
     setPdfUrl(null);
     setSelectedInvoice(null);
     setPdfOpen(false);
   };
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
 
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
   const handleRowStatusChange = async (
     invoiceNumber: string,
     status: InvoiceStatus,
@@ -502,7 +535,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         return;
       }
 
-      // ✅ WHY THIS KOLAVERI DI?
+
       const updatedStatus = res.message.data?.status;
 
       setInvoices((prev) =>
@@ -562,41 +595,25 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       {
         key: "invoiceNumber",
         header: "Invoice No",
-        align: "center",
+        align: "left",
         sortable: true,
-        render: (inv) => {
-          const id = inv.invoiceNumber || "";
-          const shortId = id ? `--${id.slice(-4)}` : "-";
-
-          const handleCopy = (e: React.MouseEvent) => {
-            e.stopPropagation();
-            navigator.clipboard.writeText(id);
-          };
-
-          return (
-            <div className="flex items-center justify-center gap-1 group">
-              <span className="font-mono text-sm">
-                {shortId}
-              </span>
-
-              <button
-                onClick={handleCopy}
-                className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-                title="Copy full Invoice ID"
-              >
-                <Copy size={14} />
-              </button>
-            </div>
-          );
-        },
-        tooltip: (inv) => inv.invoiceNumber,
+        render: (inv) => (
+          <div className="py-1.5">
+            <span className="block">
+              {inv.invoiceNumber}
+            </span>
+          </div>
+        ),
+        tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
       },
       {
         key: "invoiceType",
-        header: "Type",
+        header: "Tax Type",
         align: "center",
         render: (inv) => (
-          <span className="whitespace-nowrap">{inv.invoiceType}</span>
+          <div className="py-1.5">
+            <span className="block">{inv.invoiceType}</span>
+          </div>
         ),
         tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
       },
@@ -606,7 +623,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "left",
         sortable: true,
         render: (inv) => (
-          <span className="block font-medium">{inv.customerName}</span>
+          <div className="py-1.5">
+            <span className="block font-medium">{inv.customerName}</span>
+          </div>
         ),
         tooltip: (inv) => `Customer: ${inv.customerName}`,
       },
@@ -615,9 +634,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Date",
         align: "center",
         render: (inv) => (
-          <span className="text-sm whitespace-nowrap">
-            {inv.dateOfInvoice.toLocaleDateString()}
-          </span>
+          <div className="py-1.5">
+            <span className="block">
+              {formatDate(inv.dateOfInvoice)}
+            </span>
+          </div>
         ),
       },
       {
@@ -626,9 +647,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <span className="text-sm whitespace-nowrap">
-            {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
-          </span>
+          <div className="py-1.5">
+            <span className="block">
+              {inv.dueDate ? formatDate(inv.dueDate) : "—"}
+            </span>
+          </div>
         ),
       },
       {
@@ -637,9 +660,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <span className="tabular-nums font-medium whitespace-nowrap">
-            {inv.total.toLocaleString()} {inv.currency}
-          </span>
+          <div className="py-1.5">
+            <span className="block whitespace-nowrap">
+              {inv.total.toLocaleString()} {inv.currency}
+            </span>
+          </div>
         ),
         tooltip: (inv) =>
           `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
@@ -650,18 +675,20 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <span className="tabular-nums font-medium whitespace-nowrap">
-            {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
-          </span>
+          <div className="py-1.5">
+            <span className="block whitespace-nowrap">
+              {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
+            </span>
+          </div>
         ),
         tooltip: (inv) =>
-          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency}`,
+          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency} `,
       },
       {
         key: "invoiceStatus",
         header: "Status",
         align: "center",
-        render: (inv) => <StatusBadge status={inv.invoiceStatus} />,
+        render: (inv) => <div className="py-1.5"><StatusBadge status={inv.invoiceStatus} /></div>,
       },
       {
         key: "actions",
@@ -674,46 +701,49 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
               onClick={(e) => handleView(inv.invoiceNumber, e)}
               iconOnly
             />
-            <ActionButton
-              type="edit"
-              onClick={(e) => handleEdit(inv.invoiceNumber, e)}
-              iconOnly
-              disabled={inv.invoiceStatus !== "Draft"}
-              title={
-                inv.invoiceStatus !== "Draft"
-                  ? "Only Draft invoices can be edited"
-                  : "Edit Invoice"
-              }
-            />
+            <PermissionGate module={SALES_MODULE} action="write">
+              <ActionButton
+                type="edit"
+                onClick={(e) => handleEdit(inv.invoiceNumber, e)}
+                iconOnly
+                disabled={inv.invoiceStatus !== "Draft"}
+                title={
+                  inv.invoiceStatus !== "Draft"
+                    ? "Only Draft invoices can be edited"
+                    : "Edit Invoice"
+                }
+              />
+            </PermissionGate>
             <ActionMenu
               showDownload
               onDownload={(e) => handleDownload(inv, e)}
-              onDelete={(e) => handleDelete(inv.invoiceNumber, e)}
+              // Delete — needs delete permission
+              {...(can(SALES_MODULE, "delete")
+                ? { onDelete: (e) => handleDelete(inv.invoiceNumber, e) }
+                : {})}
               customActions={[
+                // Receive Payment — needs Payment Entry create
                 ...(inv.invoiceStatus !== "Draft" &&
                   inv.invoiceStatus !== "Cancelled" &&
-                  inv.outstandingAmount > 0
-                  ? [
-                    {
-                      label: "Receive Payment",
-                      onClick: () => handleReceivePayment(inv),
-                    },
-                  ]
+                  inv.outstandingAmount > 0 &&
+                  can(PAYMENT_MODULE, "create")
+                  ? [{ label: "Receive Payment", onClick: () => handleReceivePayment(inv) }]
                   : []),
                 {
                   label: "View PDF",
                   onClick: () => handlePreviewPDF(inv),
                 },
-                ...(STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
-                  (status) => ({
-                    label: `Mark as ${status}`,
+                // Status transitions — needs write
+                ...(can(SALES_MODULE, "write")
+                  ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
+                    label: status === "Approved" ? "Approve" : status,
                     danger: status === "Paid",
-                    onClick: () =>
-                      handleRowStatusChange(inv.invoiceNumber, status),
-                  }),
-                ),
+                    onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
+                  }))
+                  : []),
               ]}
             />
+
           </div>
         ),
       },
@@ -744,11 +774,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           setSearchTerm(q);
           setPage(1);
         }}
-        enableAdd
+        enableAdd={can(SALES_MODULE, "create")}
         addLabel="Add Invoice"
         onAdd={onAddInvoice}
         enableColumnSelector
-        enableExport
+        enableExport={can(SALES_MODULE, "export")}
         onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}

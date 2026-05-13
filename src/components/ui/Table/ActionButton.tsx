@@ -1,12 +1,19 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { Eye, Edit, Trash2, Download, MoreVertical } from "lucide-react";
+import { Eye, Edit, Trash2, Download, MoreVertical, Play } from "lucide-react";
 
 /* ======================================================
    ACTION BUTTON
 ====================================================== */
 
-type ActionType = "view" | "edit" | "delete" | "download" | "custom";
+// 1. Extend the union type
+type ActionType =
+  | "view"
+  | "edit"
+  | "delete"
+  | "download"
+  | "run-payroll"
+  | "custom";
 
 interface ActionButtonProps {
   type: ActionType;
@@ -32,11 +39,18 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   const getIcon = () => {
     if (icon) return icon;
     switch (type) {
-      case "view": return <Eye className="w-4 h-4" />;
-      case "edit": return <Edit className="w-4 h-4" />;
-      case "delete": return <Trash2 className="w-4 h-4" />;
-      case "download": return <Download className="w-4 h-4" />;
-      default: return <MoreVertical className="w-4 h-4" />;
+      case "view":
+        return <Eye className="w-4 h-4" />;
+      case "edit":
+        return <Edit className="w-4 h-4" />;
+      case "delete":
+        return <Trash2 className="w-4 h-4" />;
+      case "download":
+        return <Download className="w-4 h-4" />;
+      case "run-payroll":
+        return <Play className="w-4 h-4" />;
+      default:
+        return <MoreVertical className="w-4 h-4" />;
     }
   };
 
@@ -44,11 +58,16 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     if (label === null) return null;
     if (label) return label;
     switch (type) {
-      case "view": return "View";
-      case "edit": return "Edit";
-      case "delete": return "Delete";
-      case "download": return "Download";
-      default: return "Action";
+      case "view":
+        return "View";
+      case "edit":
+        return "Edit";
+      case "delete":
+        return "Delete";
+      case "download":
+        return "Download";
+      default:
+        return "Action";
     }
   };
 
@@ -56,6 +75,8 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
     primary: "text-primary hover:bg-row-hover hover:text-primary",
     secondary: "text-muted hover:bg-row-hover hover:text-main",
     danger: "text-red-500 hover:bg-row-hover hover:text-red-600",
+    success:
+      "bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-lg font-medium text-sm transition-all",
   };
 
   const base = iconOnly
@@ -65,7 +86,10 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   return (
     <button
       type="button"
-      onClick={(e) => { e.stopPropagation(); onClick?.(e); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(e);
+      }}
       disabled={disabled}
       aria-label={getLabel() ?? undefined}
       title={title ?? getLabel() ?? undefined}
@@ -97,6 +121,7 @@ interface ActionMenuProps {
   onEdit?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
   onDelete?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
   onDownload?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
+  onDisable?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
 
   editLabel?: string;
   deleteLabel?: string;
@@ -119,6 +144,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   onEdit,
   onDelete,
   onDownload,
+  onDisable,
   editLabel,
   deleteLabel,
   downloadLabel,
@@ -146,9 +172,10 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const menuH = menuRef.current.offsetHeight;
     const spaceBelow = window.innerHeight - triggerRect.bottom;
-    const top = spaceBelow >= menuH + 8
-      ? triggerRect.bottom + 6       // open downward
-      : triggerRect.top - menuH - 6; // flip upward — real height used
+    const top =
+      spaceBelow >= menuH + 8
+        ? triggerRect.bottom + 6 // open downward
+        : triggerRect.top - menuH - 6; // flip upward — real height used
     const left = Math.max(8, triggerRect.right - 192);
     setCoords({ top, left });
   }, [open]);
@@ -161,10 +188,13 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
       if (
         menuRef.current?.contains(e.target as Node) ||
         triggerRef.current?.contains(e.target as Node)
-      ) return;
+      )
+        return;
       setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     const onScroll = () => setOpen(false);
 
     document.addEventListener("mousedown", onDoc);
@@ -180,94 +210,129 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   // ── Portal dropdown ──
   const dropdown = open
     ? ReactDOM.createPortal(
-      <div
-        ref={menuRef}
-        role="menu"
-        aria-label="Actions"
-        onClick={(e) => e.stopPropagation()}
-        style={{ top: coords.top, left: coords.left }}
-        className="fixed w-48 bg-card border border-[var(--border)] rounded-lg shadow-2xl z-[9999] py-2"
-      >
-        {/* Custom actions */}
-        {customActions?.map((action, index) => {
-          if (action.divider) {
-            return (
-              <div
-                key={`divider-${index}`}
-                className="my-1 border-t border-[var(--border)]"
-              />
-            );
-          }
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label="Actions"
+          onClick={(e) => e.stopPropagation()}
+          style={{ top: coords.top, left: coords.left }}
+          className="fixed w-48 bg-card border border-[var(--border)] rounded-lg shadow-2xl z-[9999] py-2"
+        >
+          {/* Custom actions */}
+          {customActions?.map((action, index) => {
+            if (action.divider) {
+              return (
+                <div
+                  key={`divider-${index}`}
+                  className="my-1 border-t border-[var(--border)]"
+                />
+              );
+            }
 
-          return (
-            <button
-              key={action.label}
-              type="button"
-              disabled={action.disabled} 
-              onClick={() => {
-                if (action.disabled) return; 
-                setOpen(false);
-                action.onClick?.();
-              }}
-              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2
+            return (
+              <button
+                key={action.label}
+                type="button"
+                disabled={action.disabled}
+                onClick={() => {
+                  if (action.disabled) return;
+                  setOpen(false);
+                  action.onClick?.();
+                }}
+                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2
     ${action.danger ? "text-red-500" : "text-main"}
     ${action.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-row-hover"}
   `}
+                role="menuitem"
+              >
+                {action.icon && <span className="w-4 h-4">{action.icon}</span>}
+                {action.label}
+              </button>
+            );
+          })}
+
+          {customActions &&
+            customActions.length > 0 &&
+            (onEdit ||
+              onDisable ||
+              onDelete ||
+              (showDownload && onDownload)) && (
+              <div className="my-1 border-t border-[var(--border)]" />
+            )}
+
+          {/* Edit */}
+          {onEdit && (
+            <button
+              type="button"
+              onClick={(e) => {
+                setOpen(false);
+                onEdit(e);
+              }}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 text-main"
               role="menuitem"
             >
-              {action.icon && <span className="w-4 h-4">{action.icon}</span>}
-              {action.label}
+              <Edit className="w-4 h-4 text-muted" />
+              <span>{editLabel ?? "Edit"}</span>
             </button>
-          );
-        })}
+          )}
+          {onDisable && (
+            <button
+              type="button"
+              onClick={(e) => {
+                setOpen(false);
+                onDisable(e);
+              }}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 text-amber-600"
+              role="menuitem"
+            >
+              <span className="w-4 h-4 flex items-center justify-center">
+                ⛔
+              </span>
 
-        {customActions && customActions.length > 0 && (onEdit || onDelete || (showDownload && onDownload)) && (
-          <div className="my-1 border-t border-[var(--border)]" />
-        )}
+              <span>Disable</span>
+            </button>
+          )}
 
-        {/* Edit */}
-        {onEdit && (
-          <button
-            type="button"
-            onClick={(e) => { setOpen(false); onEdit(e); }}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 text-main"
-            role="menuitem"
-          >
-            <Edit className="w-4 h-4 text-muted" />
-            <span>{editLabel ?? "Edit"}</span>
-          </button>
-        )}
+          {/* Download */}
+          {showDownload && onDownload && (
+            <button
+              type="button"
+              onClick={(e) => {
+                setOpen(false);
+                onDownload(e);
+              }}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 text-main"
+              role="menuitem"
+            >
+              <Download className="w-4 h-4 text-muted" />
+              <span>{downloadLabel ?? "Download"}</span>
+            </button>
+          )}
 
-        {/* Download */}
-        {showDownload && onDownload && (
-          <button
-            type="button"
-            onClick={(e) => { setOpen(false); onDownload(e); }}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 text-main"
-            role="menuitem"
-          >
-            <Download className="w-4 h-4 text-muted" />
-            <span>{downloadLabel ?? "Download"}</span>
-          </button>
-        )}
-
-        {/* Delete */}
-        {onDelete && (
-          <button
-            type="button"
-            onClick={(e) => { setOpen(false); onDelete(e); }}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2"
-            role="menuitem"
-          >
-            <Trash2 className="w-4 h-4 text-red-500" />
-            <span className={deleteVariant === "danger" ? "text-red-500" : "text-main"}>
-              {deleteLabel ?? "Delete"}
-            </span>
-          </button>
-        )}
-      </div>,
-      document.body
-    )
+          {/* Delete */}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => {
+                setOpen(false);
+                onDelete(e);
+              }}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2"
+              role="menuitem"
+            >
+              <Trash2 className="w-4 h-4 text-red-500" />
+              <span
+                className={
+                  deleteVariant === "danger" ? "text-red-500" : "text-main"
+                }
+              >
+                {deleteLabel ?? "Delete"}
+              </span>
+            </button>
+          )}
+        </div>,
+        document.body,
+      )
     : null;
 
   return (

@@ -9,12 +9,15 @@ export async function getAllEmployees(
   page: number = 1,
   page_size: number = 200,
   status: string = "Active",
+  search?: string,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(EmployeeAPI.getAll, {
     params: {
       page,
       page_size,
+      search,
       status,
+     ...(search ? { search } : {}),
     },
   });
 
@@ -43,19 +46,6 @@ export async function deleteEmployeeById(id: string): Promise<any> {
   return resp.data;
 }
 
-export async function updateEmployeeDocuments(payload: FormData): Promise<any> {
-  const resp: AxiosResponse = await api.put(
-    EmployeeAPI.updateDocuments,
-    payload,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    },
-  );
-
-  return resp.data;
-}
 
 export async function verifyEmployeeIdentity(
   type: "NRC" | "SSN",
@@ -79,5 +69,33 @@ export async function getCurrentCeiling(): Promise<any> {
   return resp.data;
 }
 
+export async function uploadEmployeePhoto(
+  employeeId: string,
+  file: File
+): Promise<any> {
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  const resp: AxiosResponse = await api.post(
+    `${EmployeeAPI.Dp}?id=${employeeId}`,  
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
 
+  return resp.data;
+}
 
+export async function updateEmployeeStatus(
+  id: string,
+  status: "Active" | "Inactive" | "Suspended" | "Left"
+): Promise<any> {
+  const url = `${EmployeeAPI.updateStatus}?id=${id}&status=${status}`;
+
+  const resp: AxiosResponse = await api.patch(url);
+
+  return resp.data;
+}

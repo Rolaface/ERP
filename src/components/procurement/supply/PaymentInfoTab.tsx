@@ -4,7 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 import { getAllBankAccounts } from "../../../api/BankAccountApi";
 import { showApiError } from "../../../utils/alert";
-import Table from "../../ui/Table/Table";
+import ModalTable from "../../ui/Table/ModalTableInside";
 import type { Column } from "../../ui/Table/type";
 import { openBankAccountModal } from "../../../store/modalStore";
 interface PaymentInfoTabProps {
@@ -12,7 +12,7 @@ interface PaymentInfoTabProps {
   onChange: (e: React.ChangeEvent<any>) => void;
   errors?: { bankAccount?: string };
   isEditMode?: boolean;
-  partyType: "Supplier" | "Customer" | "Company";
+  partyType: "Supplier" | "Customer" | "Company"|"Employee";
   partyName: string;
   currency?: string;
    partyId?: string;
@@ -35,24 +35,28 @@ const columns: Column<any>[] = useMemo(() => [
   {
     key: "bankName",
     header: "Bank",
-    sortable: true,
+    width: "18%",
   },
   {
     key: "accountHolder",
     header: "Account Holder",
+    width: "22%",
   },
   {
     key: "accountNumber",
     header: "Account Number",
+    width: "20%",
   },
   {
     key: "sortCode",
     header: "IFSC",
+    width: "15%",
   },
   {
     key: "isDefault",
     header: "Default",
     align: "center",
+    width: "12%",
     render: (row: any) =>
       row.isDefault ? (
         <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
@@ -66,6 +70,7 @@ const columns: Column<any>[] = useMemo(() => [
     key: "actions",
     header: "",
     align: "right",
+    width: "13%",
     render: (row: any) => (
       <button
         onClick={(e) => {
@@ -106,7 +111,7 @@ const columns: Column<any>[] = useMemo(() => [
           target: { name: "bankAccounts", value: mapped },
         } as any);
       } catch (err) {
-        showApiError("Failed to load bank accounts");
+        showApiError(err);
       } finally {
         setLoadingAccounts(false);
       }
@@ -236,22 +241,17 @@ const columns: Column<any>[] = useMemo(() => [
       )}
 
       {/* ACCOUNTS LIST — edit mode */}
-    {isEditMode && (
+{isEditMode && (
   <div className="flex-1 min-h-0">
-    <Table
+    <ModalTable
       columns={columns}
       data={accounts}
       loading={loadingAccounts}
       emptyMessage="No bank accounts added yet"
       rowKey={(row) => row.id}
-      showToolbar
-      
-    
-
     />
   </div>
 )}
-
       
     </div>
   );

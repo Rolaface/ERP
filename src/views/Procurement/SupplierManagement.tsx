@@ -20,7 +20,9 @@ import { showApiError, showSuccess } from "../../utils/alert";
 
 import { openPaymentEntryModal } from "../../store/modalStore";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
-import { Copy } from "lucide-react";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
+import { fireManagedSwal } from "../../utils/swalManager";
 
 type OutletContextType = {
   openSupplierCreate: () => void;
@@ -31,7 +33,11 @@ interface Props {
   onAdd?: () => void;
 }
 
+const SUPPLIER_MODULE = "Supplier";
+const PAYMENT_MODULE  = "Payment Entry";
+
 const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
+   const { can } = usePermission();
   const { openSupplierCreate, openSupplierEdit } =
     useOutletContext<OutletContextType>();
 
@@ -223,9 +229,15 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
   const handleDeleteSupplier = async (supplier: Supplier) => {
     if (!supplier.supplierId) return;
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${supplier.supplierName}?`,
-    );
+    const confirmed = await fireManagedSwal({
+         icon: "warning",
+         title: "Are you sure?",
+         text: `Delete supplier ${supplier.supplierId}?`,
+         showCancelButton: true,
+         confirmButtonColor: "#ef4444",
+         cancelButtonColor: "#6b7280",
+         confirmButtonText: "Yes, delete",
+       });
 
     if (!confirmed) return;
 
@@ -246,41 +258,27 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     {
       key: "supplierID",
       header: "ID",
-      align: "center",
- render: (supplier) => {
-  const id = supplier.supplierId || "";
-  const shortId = id ? `--${id.slice(-4)}` : "-";
-
-  return (
-    <div className="flex items-center justify-center gap-1 group">
-      <span className="font-mono text-sm">
-        {shortId}
-      </span>
-
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        }}
-        className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-500"
-        title="Copy full ID"
-      >
-        <Copy size={14} />
-      </button>
-    </div>
-  );
-},
+      align: "left",
+      render: (supplier) => (
+         <div className="py-1.5">
+        <span className="block text-sm">
+          {supplier.supplierId || "-"}
+        </span>
+        </div>
+        
+      ),
       tooltip: (supplier) => supplier.supplierId || "-",
     },
     {
       key: "supplierName",
       header: "Name",
       align: "center",
-      maxWidth: "250px",
       render: (supplier) => (
-        <span className="block truncate text-sm">
+        <div className="py-1.5">
+        <span className="block text-sm">
           {supplier.supplierName || "-"}
         </span>
+        </div>
       ),
       tooltip: (supplier) => {
         const name = supplier.supplierName || "";
@@ -292,7 +290,9 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Tax Category",
       align: "center",
       render: (supplier) => (
-        <span className="block truncate text-sm">{supplier.taxCategory || "-"}</span>
+        <div className="py-1.5">
+          <span className="block text-sm">{supplier.taxCategory || "-"}</span>
+        </div>
       ),
       tooltip: (supplier) => supplier.taxCategory || "-",
     },
@@ -301,7 +301,9 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Phone",
       align: "center",
       render: (supplier) => (
-        <span className="block truncate text-sm">{supplier.phoneNo || "-"}</span>
+        <div className="py-1.5">
+          <span className="block text-sm">{supplier.phoneNo || "-"}</span>
+        </div>
       ),
       tooltip: (supplier) => supplier.phoneNo || "-",
     },
@@ -311,11 +313,13 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       align: "center",
       render: (supplier) =>
         supplier.tpin ? (
-          <code className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+          <code className="inline-flex max-w-full rounded bg-row-hover px-2 py-0.5 text-xs text-main">
             {supplier.tpin}
           </code>
         ) : (
-          <span className="text-muted">-</span>
+          <div className="py-1.5">
+            <span className="text-muted">-</span>
+          </div>
         ),
       tooltip: (supplier) => supplier.tpin || "-",
     },
@@ -324,9 +328,11 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Currency",
       align: "center",
       render: (supplier) => (
-        <span className="inline-flex max-w-full truncate rounded bg-row-hover px-2 py-0.5 text-xs text-main">
-          {supplier.currency || "-"}
-        </span>
+        <div className="py-1.5">
+          <span className="inline-flex max-w-full  rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+            {supplier.currency || "-"}
+          </span>
+        </div>
       ),
       tooltip: (supplier) => supplier.currency || "-",
     },
@@ -334,41 +340,52 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       key: "status",
       header: "Status",
       align: "center",
-      render: (supplier) => <StatusBadge status={supplier.status || "active"} />,
+      render: (supplier) => (
+        <div className="py-1.5">
+          <StatusBadge status={supplier.status || "active"} />
+        </div>
+      ),
     },
-    {
+  {
       key: "actions",
       header: "Actions",
       align: "center",
       render: (supplier) => (
         <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={() => handleRowClick(supplier)}
-            iconOnly
-          />
 
-          <ActionButton
-            type="edit"
-            onClick={(e) => {
-              e?.stopPropagation();
-              handleEditSupplier(supplier);
-            }}
-            iconOnly
-            title="Edit Supplier"
-          />
+          {/* View — always if can read */}
+          <PermissionGate module={SUPPLIER_MODULE} action="read">
+            <ActionButton
+              type="view"
+              onClick={() => handleRowClick(supplier)}
+              iconOnly
+            />
+          </PermissionGate>
+
+          {/* Edit — needs write */}
+          <PermissionGate module={SUPPLIER_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => { e?.stopPropagation(); handleEditSupplier(supplier); }}
+              iconOnly
+              title="Edit Supplier"
+            />
+          </PermissionGate>
 
           <ActionMenu
-            onDelete={() => handleDeleteSupplier(supplier)}
+            // Delete — needs delete
+            {...(can(SUPPLIER_MODULE, "delete")
+              ? { onDelete: () => handleDeleteSupplier(supplier) }
+              : {})}
             customActions={[
-              {
-                label: "Make Payment",
-                onClick: () => handleMakePayment(supplier),
-              },
-              {
-                label: "Make Advance Payment",
-                onClick: () => handleMakeAdvancePayment(supplier),
-              },
+              // Make Payment — needs Payment Entry create
+              ...(can(PAYMENT_MODULE, "create")
+                ? [{ label: "Make Payment", onClick: () => handleMakePayment(supplier) }]
+                : []),
+              // Advance Payment — needs Payment Entry create
+              ...(can(PAYMENT_MODULE, "create")
+                ? [{ label: "Make Advance Payment", onClick: () => handleMakeAdvancePayment(supplier) }]
+                : []),
             ]}
           />
         </ActionGroup>
@@ -395,10 +412,11 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
           pageSizeOptions={[10, 25, 50, 100]}
           searchValue={searchTerm}
           onSearch={setSearchTerm}
-          enableAdd
+          enableAdd={can(SUPPLIER_MODULE, "create")} 
           addLabel="Add Supplier"
           onAdd={handleAddSupplier}
           enableColumnSelector
+          enableExport={can(SUPPLIER_MODULE, "export")}  
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}

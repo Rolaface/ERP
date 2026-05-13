@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { CreditCard, FileText, AlertCircle, X, Loader2 } from "lucide-react";
+import { CreditCard, FileText, Receipt, X, Loader2 } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
@@ -17,7 +17,6 @@ import {
   showSuccess,
   showApiError,
 } from "../../utils/alert";
-import type { AllocationResult } from "../../types/paymententryrecord.types";
 import { fetchCostCenters, fetchProjects } from "../../api/getAllApi";
 
 type TabType = "details" | "invoices" | "taxes";
@@ -31,11 +30,11 @@ const ALL_TABS = [
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (data?: any) => void; 
+  onSubmit?: (data?: any) => void;
   onSuccess?: (paymentEntryName: string) => void;
-  modalId: string; 
+  modalId: string;
 
-  customerId?: string; 
+  customerId?: string;
   defaultValues?: {
     paymentType?: "Pay" | "Receive" | "Internal Transfer";
     partyType?: string;
@@ -43,7 +42,7 @@ interface Props {
     partyId?: string;
     amount?: number;
     referenceName?: string;
-    referenceType?: "Purchase Order" | "Purchase Invoice"|"Sales Invoice";
+    referenceType?: "Purchase Order" | "Purchase Invoice" | "Sales Invoice";
     date?: string;
   };
 }
@@ -121,7 +120,7 @@ function buildPayload(
   const payload: CreatePaymentEntryPayload = {
     payment_type: form?.paymentType ?? "Pay",
     party_type: form?.partyType ?? "",
-   party_id: form?.partyId || "",
+    party_id: form?.partyId || "",
     mode_of_payment: form?.mode ?? "",
     payment_date: form?.date ?? new Date().toISOString().split("T")[0],
     reference_no: form?.referenceNo ?? "",
@@ -131,12 +130,12 @@ function buildPayload(
     exchange_rate: exchangeRate,
 
     paid_from: form?.glFrom ?? "",
-    paid_from_bank_account: form?.companyBankAccount ?? "",
+    paid_from_bank_account: form?.companyBankAccountId ?? "",
     paid_from_account_currency: form?.currencyFrom ?? "",
     paid_from_amount: paymentAmount,
 
     paid_to: form?.glTo ?? "",
-    paid_to_bank_account: form?.partyBankAccount ?? "",
+    paid_to_bank_account: form?.partyBankAccountId ?? "",
     paid_to_account_currency: form?.currencyTo ?? "",
     paid_to_amount: receivedAmount,
 
@@ -160,8 +159,8 @@ function validateForm(form: Record<string, any>): string | null {
 
   if (!form?.date) return "Payment Date is required.";
   if (!form?.mode) return "Mode of Payment is required.";
-  if (!form?.glFrom) return "Account (GL) — Paid From is required.";   
-  if (!form?.glTo) return "Account (GL) — Paid To is required.";      
+  if (!form?.glFrom) return "Account (GL) — Paid From is required.";
+  if (!form?.glTo) return "Account (GL) — Paid To is required.";
 
   const fromCurrency = String(form?.currencyFrom ?? "").trim();
   const toCurrency = String(form?.currencyTo ?? "").trim();
@@ -173,7 +172,7 @@ function validateForm(form: Record<string, any>): string | null {
   }
 
   const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
-  if (!amount || amount <= 0) return "Please enter a valid payment amount."; 
+  if (!amount || amount <= 0) return "Please enter a valid payment amount.";
 
   return null;
 }
@@ -187,10 +186,12 @@ const getInitialForm = () => ({
   glTo: "",
   currencyFrom: "",
   currencyTo: "",
-  companyBankAccount: "",
-  partyBankAccount: "",
+  companyBankAccountId: "",
+  companyBankAccountName: "",
+  partyBankAccountId: "",
+  partyBankAccountName: "",
   amount: "",
- 
+
   amountTo: "",
   referenceNo: "",
   referenceDate: "",
@@ -212,7 +213,7 @@ const PaymentEntryModal: React.FC<Props> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>("details");
   const [form, setForm] = useState<Record<string, any>>({});
-  const [error, setError] = useState<string | null>(null);
+  // const [error, setError] = useState<string | null>(null);
   const [taxesMounted, setTaxesMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAllocating, setIsAllocating] = useState(false);
@@ -222,12 +223,11 @@ const PaymentEntryModal: React.FC<Props> = ({
   const prevAmountRef = useRef<number>(0);
 
   const isAdvanceFromPO =
-  defaultValues?.referenceType === "Purchase Order";
+    defaultValues?.referenceType === "Purchase Order";
   const isInternalTransfer = form?.paymentType === "Internal Transfer";
   const resetModalState = useCallback(() => {
     setForm(getInitialForm());
     setActiveTab("details");
-    setError(null);
     setTaxesMounted(false);
     setIsSaving(false);
     setIsAllocating(false);
@@ -250,14 +250,14 @@ const PaymentEntryModal: React.FC<Props> = ({
     if (!isOpen) return;
 
     const base: Record<string, any> = {
-  ...getInitialForm(),   
-  ...(defaultValues ?? {}) 
-};
+      ...getInitialForm(),
+      ...(defaultValues ?? {})
+    };
 
-if (customerId) {
-  base.partyId = customerId;
-  base.partyType = "Customer"; 
-}
+    if (customerId) {
+      base.partyId = customerId;
+      base.partyType = "Customer";
+    }
     if (defaultValues?.referenceType) {
       base.referenceType = defaultValues.referenceType;
     } else if (base.referenceName && !base.referenceType) {
@@ -299,13 +299,12 @@ if (customerId) {
 
     setForm(base);
     setActiveTab("details");
-    setError(null);
     setTaxesMounted(false);
     setIsSaving(false);
     // If party + amount pre-filled, start in allocating state so sidebar
     // never flashes wrong Advance value
     setIsAllocating(hasPartyAndAmount && !isAdvanceFromPO);
-  }, [isOpen,defaultValues]);
+  }, [isOpen, defaultValues]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -336,7 +335,7 @@ if (customerId) {
     return () => { cancelled = true; };
   }, [isOpen]);
 
-    // ── Watch amountFrom — set isAllocating=true immediately when amount
+  // ── Watch amountFrom — set isAllocating=true immediately when amount
   //    changes AND party is selected, BEFORE InvoiceList has a chance to react
   // ──────────────────────────────────────────────────────────────────────────
   const amountFrom = Number(form?.amountFrom ?? form?.amount ?? 0);
@@ -362,44 +361,44 @@ if (customerId) {
   const advance = isAllocating ? 0 : Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
-const getResetPartyState = (prev: any, name: string, value: string) => ({
-  ...prev,
-  [name]: value,
-  partyId: name === "partyName" ? prev.partyId : "",
-  allocatedAmount: 0,
-  selectedInvoices: [],
-  allocations: {},
-});
-
-const getOptimisticAmountState = (prev: Record<string, any>, name: string, value: string) => {
-  const numericValue = Number(value) || 0;
-  
-  if (numericValue === 0) {
-    const isRef = Boolean(prev.referenceName);
-    return { 
-      [name]: value, 
-      fifoTrigger: Date.now(), 
-      allocatedAmount: 0, 
-      allocations: isRef ? { [prev.referenceName]: 0 } : {}, 
-      selectedInvoices: isRef ? [prev.referenceName] : [] 
-    };
-  }
-const isRef = Boolean(prev.referenceName);
-  const outstanding = Number(prev.totalOutstanding || 0);
-
-  return {
+  const getResetPartyState = (prev: any, name: string, value: string) => ({
+    ...prev,
     [name]: value,
-    allocatedAmount: isRef ? numericValue : Math.min(numericValue, outstanding),
-    ...(isRef && {
-      allocations: { ...prev.allocations, [prev.referenceName]: numericValue },
-      selectedInvoices: Array.from(new Set([...(prev.selectedInvoices || []), prev.referenceName])),
-    }),
-  };
-};
+    partyId: name === "partyName" ? prev.partyId : "",
+    allocatedAmount: 0,
+    selectedInvoices: [],
+    allocations: {},
+  });
 
-useEffect(() => {
+  const getOptimisticAmountState = (prev: Record<string, any>, name: string, value: string) => {
+    const numericValue = Number(value) || 0;
+
+    if (numericValue === 0) {
+      const isRef = Boolean(prev.referenceName);
+      return {
+        [name]: value,
+        fifoTrigger: Date.now(),
+        allocatedAmount: 0,
+        allocations: isRef ? { [prev.referenceName]: 0 } : {},
+        selectedInvoices: isRef ? [prev.referenceName] : []
+      };
+    }
+    const isRef = Boolean(prev.referenceName);
+    const outstanding = Number(prev.totalOutstanding || 0);
+
+    return {
+      [name]: value,
+      allocatedAmount: isRef ? numericValue : Math.min(numericValue, outstanding),
+      ...(isRef && {
+        allocations: { ...prev.allocations, [prev.referenceName]: numericValue },
+        selectedInvoices: Array.from(new Set([...(prev.selectedInvoices || []), prev.referenceName])),
+      }),
+    };
+  };
+
+  useEffect(() => {
     const amount = Number(form?.amountFrom ?? form?.amount ?? 0);
-    
+
     if (amount === 0 || form?.referenceName) return;
 
     const timeoutId = setTimeout(() => {
@@ -413,16 +412,15 @@ useEffect(() => {
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = e.target;
-      setError(null);
 
       if (name === "amount" || name === "amountFrom") {
         setIsAllocating(true);
       }
 
       setForm((prev) => {
-       if (name === "partyType" || name === "partyName") {
-  return getResetPartyState(prev, name, value);
-}
+        if (name === "partyType" || name === "partyName") {
+          return getResetPartyState(prev, name, value);
+        }
         if (name === "amount" || name === "amountFrom") {
           return { ...prev, ...getOptimisticAmountState(prev, name, value) };
         }
@@ -455,14 +453,13 @@ useEffect(() => {
           };
         }
         const currentAmount = Number(prev.amountFrom ?? prev.amount ?? 0);
-        
-    if (
-  !prev.referenceName &&
-  currentAmount > 0 &&
-  updates.allocatedAmount === 0 &&
-  (!updates.allocations || Object.keys(updates.allocations).length === 0)
-)
-         {
+
+        if (
+          !prev.referenceName &&
+          currentAmount > 0 &&
+          updates.allocatedAmount === 0 &&
+          (!updates.allocations || Object.keys(updates.allocations).length === 0)
+        ) {
           const { allocatedAmount, allocations, selectedInvoices, ...safeUpdates } = updates;
           return Object.keys(safeUpdates).length ? { ...prev, ...safeUpdates } : prev;
         }
@@ -475,7 +472,7 @@ useEffect(() => {
         }
 
         if (
-          updates.allocatedAmount !== undefined && 
+          updates.allocatedAmount !== undefined &&
           Number(updates.allocatedAmount) > currentAmount
         ) {
           return prev;
@@ -483,7 +480,7 @@ useEffect(() => {
 
         return { ...prev, ...updates };
       });
-      setError((prev) => (prev ? null : prev));
+      // setError((prev) => (prev ? null : prev));
     },
     [],
   );
@@ -505,48 +502,47 @@ useEffect(() => {
   }, []);
 
   // ── Save ───────────────────────────────────────────────────────────────────
-const handleSave = useCallback(async () => {
-  const validationError = validateForm(form);
-  if (validationError) {
-    setError(validationError);
-    setActiveTab("details");
-    showApiError(validationError);   
-    return;
-  }
-
-  setError(null);
-  setIsSaving(true);
-  showLoading("Creating Payment Entry…");
-
-  try {
-    const payload = buildPayload(form);
-    const response = await createPaymentEntry(payload);
-
-    closeSwal();
-
-
-  if (response?.status === "success") {
-  showSuccess(response.message || "Payment created successfully");
-
-  const paymentId = response.data?.paymentId || "";
-
-  await onSubmit?.(paymentId);   
-  onSuccess?.(paymentId);
-
-  resetModalState();
-  onClose();
-}else {
-      // fallback if backend sends unexpected structure
-      showApiError(response);
+  const handleSave = useCallback(async () => {
+    const validationError = validateForm(form);
+    if (validationError) {
+      // setError(validationError);
+      setActiveTab("details");
+      showApiError(validationError);
+      return;
     }
 
-  } catch (err: any) {
-    closeSwal();
-    showApiError(err);
-  } finally {
-    setIsSaving(false);
-  }
-}, [form, onClose, onSuccess, resetModalState]);
+    setIsSaving(true);
+    showLoading("Creating Payment Entry…");
+
+    try {
+      const payload = buildPayload(form);
+      const response = await createPaymentEntry(payload);
+
+      closeSwal();
+
+
+      if (response?.status === "success") {
+        showSuccess(response.message || "Payment created successfully");
+
+        const paymentId = response.data?.paymentId || "";
+
+        await onSubmit?.(paymentId);
+        onSuccess?.(paymentId);
+
+        resetModalState();
+        onClose();
+      } else {
+        // fallback if backend sends unexpected structure
+        showApiError(response);
+      }
+
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [form, onClose, onSuccess, resetModalState]);
 
   const invoiceListForm = {
     partyType: form?.partyType,
@@ -590,19 +586,19 @@ const handleSave = useCallback(async () => {
 
   return (
     <MinimizableModal
-     modalId={modalId}
+      modalId={modalId}
       isOpen={isOpen}
       onClose={() => {
         resetModalState();
         onClose();
       }}
-      title="Payment Entry"
+      title="Create Payment Entry"
       subtitle={
         isAdvanceFromPO
           ? `Advance payment against PO: ${defaultValues?.referenceName}`
           : "Pay or receive payment from Customer / Supplier / Employee / Shareholder"
       }
-      icon={CreditCard}
+      icon={Receipt}
       footer={footer}
       customWidth="62vw"
       height="95vh"
@@ -615,11 +611,10 @@ const handleSave = useCallback(async () => {
               <button
                 key={t.key}
                 onClick={() => goToTab(t.key)}
-                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${
-                  activeTab === t.key
-                    ? "text-primary border-b-2 border-primary"
-                    : "text-muted hover:text-main"
-                }`}
+                className={`py-3 text-sm font-medium flex items-center gap-2 transition-colors ${activeTab === t.key
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted hover:text-main"
+                  }`}
               >
                 <t.icon size={15} />
                 {t.label}
@@ -629,7 +624,7 @@ const handleSave = useCallback(async () => {
         </div>
 
         {/* ── Validation error banner ── */}
-        {error && (
+        {/* {error && (
           <div className="mx-6 mt-4 flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-lg flex-shrink-0">
             <AlertCircle size={15} className="text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-red-700 flex-1 leading-relaxed">{error}</p>
@@ -637,7 +632,7 @@ const handleSave = useCallback(async () => {
               <X size={13} />
             </button>
           </div>
-        )}
+        )} */}
 
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 overflow-auto p-6">
@@ -695,9 +690,8 @@ const handleSave = useCallback(async () => {
                 {form?.totalOutstanding == null ? (
                   <p className="text-[11px] text-muted animate-pulse">Loading…</p>
                 ) : (
-                  <p className={`text-sm font-semibold ${
-                    Number(form.totalOutstanding) > 0 ? "text-amber-500" : "text-emerald-600"
-                  }`}>
+                  <p className={`text-sm font-semibold ${Number(form.totalOutstanding) > 0 ? "text-amber-500" : "text-emerald-600"
+                    }`}>
                     {Number(form.totalOutstanding).toLocaleString()}
                   </p>
                 )}
@@ -767,9 +761,8 @@ const handleSave = useCallback(async () => {
                     <p className="text-[11px] text-muted animate-pulse">Calculating…</p>
                   ) : (
                     <>
-                      <p className={`text-xs font-semibold ${
-                        advance > 0 && paymentAmount > 0 ? "text-amber-500" : "text-emerald-600"
-                      }`}>
+                      <p className={`text-xs font-semibold ${advance > 0 && paymentAmount > 0 ? "text-amber-500" : "text-emerald-600"
+                        }`}>
                         {paymentAmount > 0 ? advance.toLocaleString() : "—"}
                       </p>
                       {advance > 0 && paymentAmount > 0 && (

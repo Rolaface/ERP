@@ -1,4 +1,14 @@
 import React, { useEffect } from "react";
+import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
+import SearchSelect2 from "../../ui/modal/SearchSelect2";
+import {
+  getAllDepartments,
+  getAllGrades,
+  getAllDesignations,
+  getAllEmploymentTypes
+} from "../../../api/utils/frappeUtilsApi";
+import { getAllEmployees } from "../../../api/employeeapi";
+import DatePickerInput from "../../calendar/DatePickerInput";
 
 type EmploymentTabProps = {
   formData: any;
@@ -9,237 +19,211 @@ type EmploymentTabProps = {
   hrManagers: { name: string; employeeId: string }[];
 };
 
+const EMPLOYMENT_STATUS_OPTIONS = [
+  { label: "Active", value: "Active" },
+  { label: "Inactive", value: "Inactive" },
+  { label: "Suspended", value: "Suspended" },
+  { label: "Left", value: "Left" },
+];
+
+const SHIFT_OPTIONS = [
+  { label: "Day", value: "Day" },
+  { label: "Night", value: "Night" },
+  { label: "Split", value: "Split" },
+];
+
 const EmploymentTab: React.FC<EmploymentTabProps> = ({
   formData,
   handleInputChange,
-  departments,
-  Level,
-  managers,
+
   hrManagers,
 }) => {
   const isContractBased =
-    formData.employeeType === "Contract" ||
-    formData.employeeType === "Temporary" ||
-    formData.employeeType === "Intern";
+    formData.employment_type === "Contract" ||
+    formData.employment_type === "Temporary" ||
+    formData.employment_type === "Intern";
+
   useEffect(() => {
     if (!isContractBased && formData.contractEndDate) {
       handleInputChange("contractEndDate", "");
     }
   }, [formData.employeeType]);
+const fetchEmployeeOptions = async (q: string) => {
+  const res = await getAllEmployees(1, 200);
+
+  return (res.data || [])
+    .filter((emp: any) =>
+      `${emp.employee_name} ${emp.name}`
+        .toLowerCase()
+        .includes(q.toLowerCase()),
+    )
+    .map((emp: any) => ({
+      label: emp.employee_name,
+      value: emp.name,
+      meta: {
+        employeeId: emp.name,
+      },
+    }));
+};
+  const hrManagerOptions = hrManagers.map((mgr) => ({
+    label: mgr.name,
+    value: mgr.employeeId,
+  }));
+
+  const fetchDepartmentOptions = async (q: string) => {
+    const data = await getAllDepartments(q);
+
+    return data;
+  };
+  const fetchGradeOptions = async (q: string) => {
+    const data = await getAllGrades(q);
+
+    return data;
+  };
+  const fetchDesignationOptions = async (q: string) => {
+    const data = await getAllDesignations(q);
+
+    return data;
+  };
+  const fetchEmploymentTypeOptions = async (q: string) => {
+    const data = await getAllEmploymentTypes(q);
+
+    return data;
+  };
+
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-5">
-      <div className="bg-card p-5 rounded-lg border border-theme space-y-4">
-        <h4 className="text-xs font-semibold text-main uppercase tracking-wide">
+    <div className="max-w-4xl mx-auto space-y-3">
+      {/* Employment Details */}
+      <div className="bg-card p-3 rounded-lg border border-theme">
+        <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Employment Details
         </h4>
-        <div className="grid grid-cols-2 gap-4">
-          {/* <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Employee ID
-            </label>
-            <input
-              type="text"
-              value={formData.employeeId}
-              onChange={(e) => handleInputChange("employeeId", e.target.value)}
-              disabled
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg focus:outline-none focus:outline-none focus:border-primary  focus:ring-primary/20"
-            />
-          </div> */}
+        <div className="grid grid-cols-3 gap-2.5">
+          <SearchSelect2
+            label="Department"
+            value={formData.department}
+            placeholder="Search Department..."
+            fetchOptions={fetchDepartmentOptions}
+            onChange={(value) => handleInputChange("department", value)}
+          />
 
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Department * <span className="text-danger">*</span>
-            </label>
-            <select
-              value={formData.department}
-              onChange={(e) => handleInputChange("department", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg  focus:outline-none focus:border-primary  focus:ring-primary/20"
-            >
-              <option value="">Select Department</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Level <span className="text-danger">*</span>
-            </label>
-            <select
-              value={formData.level}
-              onChange={(e) => handleInputChange("level", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg  focus:outline-none focus:border-primary  focus:ring-primary/20"
-            >
-              <option value="">Select Level</option>
-              {Level.map((lvl) => (
-                <option key={lvl} value={lvl}>
-                  {lvl}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SearchSelect2
+            label="Grade"
+            value={formData.grade}
+            placeholder="Search Grade..."
+            fetchOptions={fetchGradeOptions}
+            onChange={(value) => handleInputChange("grade", value)}
+          />
 
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Job Title <span className="text-danger">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.jobTitle}
-              onChange={(e) => handleInputChange("jobTitle", e.target.value)}
-              placeholder="e.g., Software Developer"
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg  focus:outline-none focus:border-primary  focus:ring-primary/20"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Reporting Manager <span className="text-danger">*</span>
-            </label>
+          <SearchSelect2
+            label="Designation"
+            value={formData.designation}
+            placeholder="Search Designation..."
+            fetchOptions={fetchDesignationOptions}
+            onChange={(value) => handleInputChange("designation", value)}
+          />
 
-            <select
-              value={formData.reportingManager}
-              onChange={(e) =>
-                handleInputChange("reportingManager", e.target.value)
-              }
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg
-   focus:outline-none focus:border-primary  focus:ring-primary/20"
-            >
-              <option value="">Select Reporting Manager</option>
+          <SearchSelect2
+            label="Employee Type"
+            value={formData.employment_type}
+            placeholder="Search Employee Type..."
+            fetchOptions={fetchEmploymentTypeOptions}
+            onChange={(value) => handleInputChange("employment_type", value)}
+          />
 
-              {managers.map((mgr) => (
-  <option value={mgr.employeeId}>{mgr.name}</option>
-))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              HR Manager <span className="text-danger">*</span>
-            </label>
-            <select
-              value={formData.hrManager}
-              onChange={(e) => handleInputChange("hrManager", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg
-      focus:outline-none focus:border-primary  focus:ring-primary/20"
-            >
-              <option value="">Select HR Manager</option>
+          <ModalSelect
+            label="Employment Status"
+            name="employmentStatus"
+            value={formData.employmentStatus}
+            onChange={(e) =>
+              handleInputChange("employmentStatus", e.target.value)
+            }
+            options={EMPLOYMENT_STATUS_OPTIONS}
+          />
 
-              {hrManagers.map((mgr) => (
-  <option value={mgr.employeeId}>{mgr.name}</option>
-))}
-            </select>
-          </div>
+          <ModalSelect
+            label="Shift"
+            name="shift"
+            value={formData.shift}
+            onChange={(e) => handleInputChange("shift", e.target.value)}
+            options={SHIFT_OPTIONS}
+          />
+        </div>
+      </div>
 
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Employee Type * <span className="text-danger">*</span>
-            </label>
-            <select
-              value={formData.employeeType}
-              onChange={(e) =>
-                handleInputChange("employeeType", e.target.value)
-              }
-              className="w-full px-2 py-2 text-sm border border-theme bg-card text-main  rounded-lg  focus:outline-none focus:border-primary  focus:ring-primary/20"
-            >
-              <option>Permanent</option>
-              <option>Contract</option>
-              <option>Temporary</option>
-              <option>Intern</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Employment Status
-            </label>
-            <select
-              value={formData.employmentStatus}
-              onChange={(e) =>
-                handleInputChange("employmentStatus", e.target.value)
-              }
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg  focus:outline-none focus:border-primary  focus:ring-primary/20"
-            >
-              <option>Active</option>
-              <option>Inactive</option>
-              <option>Suspended</option>
-              <option>Terminated</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Engagement Date *<span className="text-danger">*</span>
-            </label>
-            <input
-              type="date"
-              value={formData.engagementDate}
-              onChange={(e) =>
-                handleInputChange("engagementDate", e.target.value)
-              }
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg  focus:outline-none focus:border-primary  focus:ring-primary/20"
-            />
-          </div>
+      {/* Reporting & Dates */}
+      <div className="bg-card p-3 rounded-lg border border-theme">
+        <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
+          Reporting & Dates
+        </h4>
+        <div className="grid grid-cols-3 gap-2.5">
+<SearchSelect2
+  label="Reporting To"
+  value={formData.reportingToLabel}
+  placeholder="Search Employee..."
+  fetchOptions={fetchEmployeeOptions}
+  onChange={(value, option) => {
+    handleInputChange(
+      "reports_to",
+      value,
+    );
 
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Contract End Date
-              {isContractBased && <span className="text-danger"> *</span>}
-            </label>
+    handleInputChange(
+      "reportingToLabel",
+      option?.label || "",
+    );
+  }}
+/>
+          
 
-            <input
-              type="date"
-              value={formData.contractEndDate}
-              onChange={(e) =>
-                handleInputChange("contractEndDate", e.target.value)
-              }
-              disabled={!isContractBased}
-              className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none 
-      ${
-        isContractBased
-          ? "border-theme bg-card text-main focus:border-primary  focus:ring-primary/20"
-          : "bg-app text-muted cursor-not-allowed border-theme opacity-70"
-      }`}
-            />
-          </div>
+          {/* <ModalInput
+            label="Probation Period (months)"
+            name="probationPeriod"
+            type="number"
+            value={formData.probationPeriod}
+            onChange={(e) =>
+              handleInputChange("probationPeriod", e.target.value)
+            }
+          /> */}
 
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Probation Period (months)
-            </label>
-            <input
-              type="number"
-              value={formData.probationPeriod}
-              onChange={(e) =>
-                handleInputChange("probationPeriod", e.target.value)
-              }
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg focus:outline-none focus:border-primary  focus:ring-primary/20"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Work Address
-            </label>
-            <input
-              type="text"
-              value={formData.workAddress}
-              onChange={(e) => handleInputChange("workAddress", e.target.value)}
-              placeholder="Office Address"
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg  focus:outline-none focus:border-primary  focus:ring-primary/20"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-main mb-1 font-medium">
-              Work Location
-            </label>
-            <input
-              type="text"
-              value={formData.workLocation}
-              onChange={(e) =>
-                handleInputChange("workLocation", e.target.value)
-              }
-              placeholder="Office location"
-              className="w-full px-3 py-2 text-sm border border-theme bg-card text-main  rounded-lg  focus:outline-none focus:border-primary  focus:ring-primary/20"
-            />
-          </div>
+          <DatePickerInput
+            label="Date of Joining"
+            name="dateOfJoining"
+            value={formData.dateOfJoining}
+            onChange={handleInputChange}
+          />
+
+          <DatePickerInput
+            label="Contract End Date"
+            name="contractEndDate"
+            value={formData.contractEndDate}
+            onChange={handleInputChange}
+            disabled={!isContractBased}
+          />
+
+        </div>
+        {!isContractBased && (
+          <p className="text-[10px] text-muted mt-1.5">
+            Contract end date only applies to Contract, Temporary, or Intern
+            employees.
+          </p>
+        )}
+      </div>
+
+      {/* Work Location */}
+      <div className="bg-card p-3 rounded-lg border border-theme">
+        <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
+          Work Location
+        </h4>
+        <div className="grid grid-cols-2 gap-2.5">
+          <ModalInput
+            label="Branch"
+            name="workLocation"
+            value={formData.workLocation}
+            onChange={(e) => handleInputChange("workLocation", e.target.value)}
+            placeholder="e.g., Main HQ"
+          />
+         
         </div>
       </div>
     </div>

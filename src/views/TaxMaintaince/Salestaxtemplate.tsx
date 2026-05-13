@@ -16,8 +16,11 @@ import type {
   SalesTaxTemplateSummary,
   SalesTaxTemplateFormData,
 } from "../../types/tax/salesTemplate";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
-// ─── Component ────────────────────────────────────────────────────────────────
+const SALES_TAX_TEMPLATE_MODULE =
+  "Sales Taxes and Charges Template";
 
 const SalesTaxTemplate: React.FC = () => {
   const [templates, setTemplates] = useState<SalesTaxTemplateSummary[]>([]);
@@ -29,10 +32,11 @@ const SalesTaxTemplate: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const { can } = usePermission();
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
- 
+
   const { createSalesTax, updateSalesTax, updateStatus, deleteSalesTax } =
     useSalesTaxTemplate();
 
@@ -79,7 +83,7 @@ const SalesTaxTemplate: React.FC = () => {
       false,
       {
         callback: async (formData: SalesTaxTemplateFormData) => {
-          await createSalesTax(formData); 
+          await createSalesTax(formData);
           await fetchTemplates();
         },
       },
@@ -90,21 +94,21 @@ const SalesTaxTemplate: React.FC = () => {
     );
   };
 
-const openEdit = async (row: SalesTaxTemplateSummary) => {
-  try {
-    setLoading(true);
+  const openEdit = async (row: SalesTaxTemplateSummary) => {
+    try {
+      setLoading(true);
 
-    const res = await getSalesTemplateById(row.name);
-    const data = res?.data;
+      const res = await getSalesTemplateById(row.name);
+      const data = res?.data;
 
-    const formData: SalesTaxTemplateFormData = {
-      name: data?.name,
-      title: data?.title || "",
-      disabled: data?.disabled ?? 0,
-      tax_category: data?.tax_category || "",
-      taxes:
-        Array.isArray(data?.taxes) && data.taxes.length > 0
-          ? data.taxes.map((t: any) => ({
+      const formData: SalesTaxTemplateFormData = {
+        name: data?.name,
+        title: data?.title || "",
+        disabled: data?.disabled ?? 0,
+        tax_category: data?.tax_category || "",
+        taxes:
+          Array.isArray(data?.taxes) && data.taxes.length > 0
+            ? data.taxes.map((t: any) => ({
               name: t.name,
               charge_type: t.charge_type,
               account_head: t.account_head || "",
@@ -112,30 +116,30 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
               tax_amount: Number(t.tax_amount) || 0,
               description: t.description || "",
             }))
-          : [{ charge_type: "On Net Total", account_head: "", rate: 0, tax_amount: 0, description: "" }],
-    };
+            : [{ charge_type: "On Net Total", account_head: "", rate: 0, tax_amount: 0, description: "" }],
+      };
 
 
-    openSalesTaxTemplateModal(
-      formData,
-      true,
-      {
-        callback: async (formData: SalesTaxTemplateFormData) => {
-          await updateSalesTax(formData);
-          await fetchTemplates();
+      openSalesTaxTemplateModal(
+        formData,
+        true,
+        {
+          callback: async (formData: SalesTaxTemplateFormData) => {
+            await updateSalesTax(formData);
+            await fetchTemplates();
+          },
         },
-      },
-      {
-        title: "Edit Sales Tax Template",
-        subtitle: "Update charges and tax rates",
-      }
-    );
-  } catch (error) {
-    showApiError(error);
-  } finally {
-    setLoading(false);
-  }
-};
+        {
+          title: "Edit Sales Tax Template",
+          subtitle: "Update charges and tax rates",
+        }
+      );
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -182,7 +186,7 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
 
     if (!confirm.isConfirmed) return;
 
-    await deleteSalesTax(name); 
+    await deleteSalesTax(name);
     await fetchTemplates();
   };
 
@@ -197,17 +201,19 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
         const isExpanded = expandedRows.has(tc.name);
         if (tc.taxes.length === 0) return <span className="w-7 h-7 block" />;
         return (
-          <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
-            {isExpanded ? (
-              <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </span>
+          <div className="py-1.5">
+            <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
+              {isExpanded ? (
+                <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </span>
+          </div>
         );
       },
     },
@@ -217,9 +223,11 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
       align: "left",
       render: (tc) => (
         <Tooltip content={tc.title}>
-          <span className="cursor-pointer font-medium text-main text-xs">
-            {tc.title}
-          </span>
+          <div className="py-1.5">
+            <span className="cursor-pointer font-medium text-main text-xs">
+              {tc.title}
+            </span>
+          </div>
         </Tooltip>
       ),
     },
@@ -228,9 +236,12 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
       header: "Category",
       align: "left",
       render: (tc) => (
-        <span className="text-xs text-muted">
-          {tc.tax_category || <span className="italic text-muted/60">—</span>}
-        </span>
+        <div className="py-1.5">
+          <span className="text-xs text-muted">
+            {tc.tax_category || <span className="italic text-muted/60">—</span>}
+          </span>
+        </div>
+
       ),
     },
     {
@@ -241,9 +252,11 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
         if (tc.taxes.length === 0)
           return <span className="text-xs text-muted">None</span>;
         return (
-          <span className="text-xs text-muted">
-            {tc.taxes.length} charge{tc.taxes.length === 1 ? "" : "s"}
-          </span>
+          <div className="py-1.5">
+            <span className="text-xs text-muted">
+              {tc.taxes.length} charge{tc.taxes.length === 1 ? "" : "s"}
+            </span>
+          </div>
         );
       },
     },
@@ -252,16 +265,18 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
       header: "Status",
       align: "left",
       render: (tc) => (
-        <code
-          className={[
-            "text-xs px-2 py-1 rounded",
-            tc.disabled
-              ? "bg-danger/10 text-danger"
-              : "bg-success/10 text-success",
-          ].join(" ")}
-        >
-          {tc.disabled ? "Disabled" : "Enabled"}
-        </code>
+        <div className="py-1.5">
+          <code
+            className={[
+              "text-xs px-2 py-1 rounded",
+              tc.disabled
+                ? "bg-danger/10 text-danger"
+                : "bg-success/10 text-success",
+            ].join(" ")}
+          >
+            {tc.disabled ? "Disabled" : "Enabled"}
+          </code>
+        </div>
       ),
     },
     {
@@ -270,21 +285,38 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
       align: "center",
       render: (tc) => (
         <ActionGroup>
-          
-          <ActionMenu
-            onEdit={(e) => handleEdit(tc, e as React.MouseEvent)}
-            onDelete={(e) => handleDelete(tc.name, e as React.MouseEvent)}
-            customActions={[
-              {
-                label: tc.disabled ? "Enable" : "Disable",
-                onClick: () =>
-                  handleToggleStatus(tc, {
-                    stopPropagation: () => {},
-                  } as React.MouseEvent),
-                danger: !tc.disabled,
-              },
-            ]}
-          />
+
+          {(can(SALES_TAX_TEMPLATE_MODULE, "write") ||
+            can(SALES_TAX_TEMPLATE_MODULE, "delete")) && (
+              <ActionMenu
+                {...(can(SALES_TAX_TEMPLATE_MODULE, "write")
+                  ? {
+                    onEdit: (e) =>
+                      handleEdit(tc, e as React.MouseEvent),
+                  }
+                  : {})}
+                {...(can(SALES_TAX_TEMPLATE_MODULE, "delete")
+                  ? {
+                    onDelete: (e) =>
+                      handleDelete(tc.name, e as React.MouseEvent),
+                  }
+                  : {})}
+                customActions={
+                  can(SALES_TAX_TEMPLATE_MODULE, "write")
+                    ? [
+                      {
+                        label: tc.disabled ? "Enable" : "Disable",
+                        onClick: () =>
+                          handleToggleStatus(tc, {
+                            stopPropagation: () => { },
+                          } as React.MouseEvent),
+                        danger: !tc.disabled,
+                      },
+                    ]
+                    : []
+                }
+              />
+            )}
         </ActionGroup>
       ),
     },
@@ -390,7 +422,7 @@ const openEdit = async (row: SalesTaxTemplateSummary) => {
         setSearchTerm(val);
         setPage(1);
       }}
-      enableAdd
+      enableAdd={can(SALES_TAX_TEMPLATE_MODULE, "create")}
       addLabel="Add Sales Tax Template"
       onAdd={openCreate}
       enableColumnSelector

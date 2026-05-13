@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import { getAllQuotations } from "../../api/quotationApi";
+import { showApiError } from "../../utils/alert";
+
 
 interface Quotation {
   id: string;
@@ -50,7 +52,7 @@ const CustomerQuotations = ({ customerId }: Props) => {
         setTotalPages(payload?.pagination?.totalPages || 1);
         setTotalItems(payload?.pagination?.total || 0);
       } catch (err) {
-        console.error("Quotation fetch failed", err);
+        showApiError(err);
       } finally {
         setLoading(false);
       }

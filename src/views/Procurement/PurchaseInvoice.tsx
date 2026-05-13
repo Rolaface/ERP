@@ -38,7 +38,8 @@ import {
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { Copy } from "lucide-react";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
 interface Purchaseinvoice {
   pId: string;
@@ -82,7 +83,7 @@ const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
 
 const invoiceStatusOptions = [
   { label: "Draft", value: "Draft" },
-  { label: "Submitted", value: "Submitted" },
+  { label: "Approved", value: "Submitted" },
   { label: "Unpaid", value: "Unpaid" },
   { label: "Paid", value: "Paid" },
   { label: "Party Paid", value: "Party Paid" },
@@ -93,6 +94,9 @@ type OutletContextType = {
   openPICreate: () => void;
   openPIEdit: (pId: string | number) => void;
 };
+
+const PI_MODULE = "Purchase Invoice";
+const PAYMENT_MODULE = "Payment Entry";
 
 const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   onAdd,
@@ -109,7 +113,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
   const [company, setCompany] = useState<any | null>(null);
-
+  const { can } = usePermission();
   // ── PDF preview modal
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
@@ -470,38 +474,33 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       showApiError(err);
     }
   };
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
 
-  // ── Columns ─────────────────────────────────
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+
+
   const columns: Column<Purchaseinvoice>[] = [
     {
       key: "pId",
       header: "PI ID",
-      align: "center",
-      render: (o) => {
-        const id = o.pId || "";
-        const shortId = id ? `--${id.slice(-4)}` : "—";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center justify-center gap-1 group">
-            <span className="font-mono text-sm">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full PI ID"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
+      align: "left",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.pId || "—"}
+          </span>
+        </div>
+      ),
       tooltip: (o) => o.pId || "—",
     },
     {
@@ -509,9 +508,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Supplier",
       align: "center",
       render: (o) => (
-        <span className="block">
-          {o.supplier || "—"}
-        </span>
+        <div className="py-1.5">
+          <span className="block">
+            {o.supplier || "—"}
+          </span>
+        </div>
       ),
       tooltip: (o) => o.supplier || "—",
     },
@@ -519,12 +520,26 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       key: "podate",
       header: "PI Date",
       align: "center",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.podate ? formatDate(o.podate) : "—"}
+          </span>
+        </div>
+      ),
       tooltip: (o) => o.podate || "—",
     },
     {
       key: "deliveryDate",
       header: "Delivery Date",
       align: "center",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.deliveryDate ? formatDate(o.deliveryDate) : "—"}
+          </span>
+        </div>
+      ),
       tooltip: (o) => o.deliveryDate || "—",
     },
     {
@@ -532,9 +547,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Amount",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.amount || 0).toFixed(2)}
-        </code>
+        <div className="py-1.5">
+          <code className="block whitespace-nowrap">
+            {Number(o.amount || 0).toFixed(2)}
+          </code>
+        </div>
       ),
       tooltip: (o) => o.amount || "—",
     },
@@ -543,9 +560,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Grand Total",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.grandTotalWithTax || 0).toFixed(2)}
-        </code>
+        <div className="py-1.5">
+          <code className="block whitespace-nowrap">
+            {Number(o.grandTotalWithTax || 0).toFixed(2)}
+          </code>
+        </div>
       ),
       tooltip: (o) => o.grandTotalWithTax || "—",
     },
@@ -554,9 +573,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       header: "Outstanding",
       align: "center",
       render: (o) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {Number(o.outstanding_amount || 0).toFixed(2)}
-        </code>
+        <div className="py-1.5">
+          <code className="block whitespace-nowrap">
+            {Number(o.outstanding_amount || 0).toFixed(2)}
+          </code>
+        </div>
       ),
       tooltip: (o) => o.outstanding_amount || "—",
     },
@@ -564,7 +585,13 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       key: "status",
       header: "Status",
       align: "left",
-      render: (o) => <StatusBadge status={o.status} />,
+      render: (o) => (
+        <div className="py-1.5">
+          <StatusBadge
+            status={o.status === "Submitted" ? "Approved" : o.status}
+          />
+        </div>
+      ),
     },
     {
       key: "actions",
@@ -572,46 +599,46 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       align: "center",
       render: (o) => (
         <ActionGroup>
+
           <ActionButton
             type="view"
             onClick={(e) => handleViewClick(o.pId, e)}
             iconOnly
           />
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(o, e)}
-            iconOnly
-            disabled={o.status !== "Draft"}
-            title={
-              o.status !== "Draft"
-                ? "Only Draft purchase invoices can be edited"
-                : "Edit Purchase Invoice"
-            }
-          />
-          <ActionMenu
-            onDelete={(e) => handleDelete(o, e as any)}
-            customActions={[
-              {
-                label: "View PDF",
-                onClick: () => handleOpenPDF(o),
-              },
 
-              ...(Number(o.outstanding_amount || 0) > 0
-                ? [
-                  {
-                    label: "Make Payment",
-                    onClick: () => handleMakePayment(o.pId),
-                  },
-                ]
+          {/* Edit — needs write + Draft status */}
+          <PermissionGate module={PI_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(o, e)}
+              iconOnly
+              disabled={o.status !== "Draft"}
+              title={o.status !== "Draft" ? "Only Draft invoices can be edited" : "Edit Purchase Invoice"}
+            />
+          </PermissionGate>
+
+          <ActionMenu
+            // Delete — needs delete
+            {...(can(PI_MODULE, "delete")
+              ? { onDelete: (e) => handleDelete(o, e as any) }
+              : {})}
+            customActions={[
+              { label: "View PDF", onClick: () => handleOpenPDF(o) },
+
+              // Make Payment — needs Payment Entry create + outstanding > 0
+              ...(can(PAYMENT_MODULE, "create") && Number(o.outstanding_amount || 0) > 0
+                ? [{ label: "Make Payment", onClick: () => handleMakePayment(o.pId) }]
                 : []),
 
-              ...(STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-                (status) => ({
-                  label: `Mark as ${status}`,
+              // Status transitions — needs write
+              ...(can(PI_MODULE, "write")
+                ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map((status) => ({
+                  label: status === "Submitted" ? "Approve" : status === "Cancelled" ? "Cancel" : status,
+                  
                   danger: status === "Cancelled" || status === "Debit Note Issued",
                   onClick: () => handleStatusChange(o.pId, status),
-                }),
-              ),
+                }))
+                : []),
             ]}
           />
         </ActionGroup>
@@ -629,10 +656,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}
-        enableAdd
+        enableAdd={can(PI_MODULE, "create")}
         addLabel="Add Purchase Invoice"
         onAdd={handleAddClick}
-        enableExport
+        enableExport={can(PI_MODULE, "export")}
         onExport={handleExportExcel}
         enableColumnSelector
         currentPage={page}

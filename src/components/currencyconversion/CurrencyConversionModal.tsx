@@ -6,6 +6,7 @@ import { ModalInput } from "../../components/ui/modal/modalComponent";
 import { showApiError } from "../../utils/alert";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
+import { Repeat } from "lucide-react";
 
 // ─────────────────────────────────────────────
 // Types
@@ -167,8 +168,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
         isSelling:    form.isSelling,
       });
       onClose();
-    } catch (error) {
-      showApiError(error);
+    } catch (err) {
+      showApiError(err);
     } finally {
       setSubmitting(false);
     }
@@ -201,7 +202,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title="Currency Exchange"
+      icon={Repeat}
+      title="Create Currency Exchange"
       subtitle={editData ? "Edit exchange rate" : "Add exchange rate"}
       footer={footer}
       customWidth="58vw"

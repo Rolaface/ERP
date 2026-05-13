@@ -1,339 +1,385 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { getDashboardSummary } from '../api/dashboardApi';
-import { ChartSkeleton } from '../components/ChartSkeleton';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Users, FileText, TrendingUp, DollarSign, Package, ArrowLeftRight } from 'lucide-react';
+import LineChart from '../components/charts/LineChart';
 import UserMenu from '../layout/UserMenu';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import { DollarSign, FileText, TrendingUp, Users } from 'lucide-react';
-import {
-  AppMetricCard,
-  AppPage,
-  AppPageHeader,
-  AppSectionCard,
-} from '../components/ui/app-shell';
+import { 
+  getDashboardSummary, 
+  getDashboardNotes, 
+  getSalesChart, 
+  getPurchaseChart,
+  DashboardSummaryResponse,
+  DashboardNotesResponse,
+  SalesChartResponse,
+  PurchaseChartResponse,
+  getInventoryChart
+} from '../api/dashboardApi';
+import BarChart from '../components/charts/BarChart';
+import { useHRView } from '../hooks/permission/useHRView';
+
+const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
 
 const Dashboard = () => {
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [summaryData, setSummaryData] = useState<{
-    totalCustomers: number;
-    totalSuppliers: number;
-    totalSalesInvoices: number;
-    totalPurchaseInvoices: number;
-    totalSalesAmount: number;
-    monthlySalesGraph: { labels: string[]; data: number[] };
-    recentSales: Array<{
-      name: string;
-      customer: string;
-      posting_date: string;
-      grand_total: number;
-    }>;
-  } | null>(null);
+  // HR view mode — only used to render the switch button
+  const { viewMode, canSwitchView, toggleViewMode } = useHRView();
+  const isEmployeeView = viewMode === "employee";
 
-  const [monthlyTrendData, setMonthlyTrendData] = useState<
-    Array<{ name: string; revenue: number }>
-  >([]);
+  // 1. Independent Loading States
+  const [loadingSummary, setLoadingSummary] = useState(true);
+  const [loadingSales, setLoadingSales] = useState(true);
+  const [loadingPurchase, setLoadingPurchase] = useState(true);
+  const [loadingInventory, setLoadingInventory] = useState(true);
+  const [inventoryYear, setInventoryYear] = useState(availableYears[0]);
+  const [inventoryMode, setInventoryMode] = useState<'value' | 'quantity'>('value');
+  const [inventoryData, setInventoryData] = useState<any[]>([]);
+  // 2. Independent Filter States for Charts
+  const [salesYear, setSalesYear] = useState(availableYears[0]);
+  const [salesInterval, setSalesInterval] = useState('Monthly');
+  const [purchaseYear, setPurchaseYear] = useState(availableYears[0]);
+  const [purchaseInterval, setPurchaseInterval] = useState('Monthly');
+  // 3. Data States
+  const [summaryData, setSummaryData] = useState<DashboardSummaryResponse['data'] | null>(null);
+  const [notesData, setNotesData] = useState<DashboardNotesResponse['data'] | null>(null);
+  const [salesData, setSalesData] = useState<SalesChartResponse['data'] | null>(null);
+  const [purchaseData, setPurchaseData] = useState<PurchaseChartResponse['data'] | null>(null);
 
-  const chartsLoading = summaryLoading || !summaryData;
+  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-IN', {
+    style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
+  }), []);
 
   useEffect(() => {
     let mounted = true;
-    const run = async () => {
+    const fetchGlobal = async () => {
+      setLoadingSummary(true);
       try {
-        setSummaryLoading(true);
-        setSummaryError(null);
-        setSummaryData(null);
-        setMonthlyTrendData([]);
-
-        const resp = await getDashboardSummary();
-        if (!mounted) return;
-        const d = resp.data;
-        setSummaryData({
-          totalCustomers: d.totalCustomers,
-          totalSuppliers: d.totalSuppliers,
-          totalSalesInvoices: d.totalSalesInvoices,
-          totalPurchaseInvoices: d.totalPurchaseInvoices,
-          totalSalesAmount: d.totalSalesAmount,
-          monthlySalesGraph: d.monthlySalesGraph,
-          recentSales: d.recentSales,
-        });
-
-        const labels = d.monthlySalesGraph?.labels ?? [];
-        const values = d.monthlySalesGraph?.data ?? [];
-        if (labels.length && labels.length === values.length) {
-          setMonthlyTrendData(
-            labels.map((name, i) => ({
-              name,
-              revenue: Number(values[i] ?? 0),
-            })),
-          );
+        const [summary, notes] = await Promise.all([getDashboardSummary(), getDashboardNotes()]);
+        if (mounted) {
+          setSummaryData(summary?.data || null);
+          setNotesData(notes?.data || null);
         }
-      } catch (e: any) {
-        if (!mounted) return;
-        setSummaryError(e?.message ?? 'Failed to load dashboard summary');
+      } catch (e) {
+        console.error("Error fetching summary:", e);
       } finally {
-        if (!mounted) return;
-        setSummaryLoading(false);
+        if (mounted) setLoadingSummary(false);
       }
     };
-
-    run();
-    return () => {
-      mounted = false;
-    };
+    fetchGlobal();
+    return () => { mounted = false; };
   }, []);
 
-  const currencyINR = useMemo(
-    () =>
-      new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-        maximumFractionDigits: 2,
-      }),
-    [],
-  );
+  // --- Fetch Inventory Chart independently ---
+  useEffect(() => {
+    let mounted = true;
+    const fetchInventory = async () => {
+      setLoadingInventory(true);
+      try {
+        const inv = await getInventoryChart({ year: inventoryYear, mode: inventoryMode });
+        
+        if (mounted) {
+          const rawData = inv?.data as any;
 
-  const dateWithDay = useMemo(
-    () =>
-      new Intl.DateTimeFormat('en-US', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
-    [],
-  );
+          if (Array.isArray(rawData)) {
+            setInventoryData(rawData);
+          } 
+          else if (rawData && typeof rawData === 'object') {
+            const itemMap = new Map();
 
-  const kpiCards = [
-    {
-      label: 'Total Customers',
-      value: String(summaryData?.totalCustomers ?? 0),
-      icon: Users,
-      gradient: 'from-blue-500 to-blue-600',
-    },
-    {
-      label: 'Total Suppliers',
-      value: String(summaryData?.totalSuppliers ?? 0),
-      icon: FileText,
-      gradient: 'from-amber-500 to-amber-600',
-    },
-    {
-      label: 'Sales Invoices',
-      value: String(summaryData?.totalSalesInvoices ?? 0),
-      icon: TrendingUp,
-      gradient: 'from-emerald-500 to-emerald-600',
-    },
-    {
-      label: 'Purchase Invoices',
-      value: String(summaryData?.totalPurchaseInvoices ?? 0),
-      icon: FileText,
-      gradient: 'from-sky-500 to-sky-600',
-    },
-    {
-      label: 'Total Sales Amount',
-      value: currencyINR.format(summaryData?.totalSalesAmount ?? 0),
-      icon: DollarSign,
-      gradient: 'from-purple-500 to-purple-600',
-    },
-  ];
+            const parseItem = (itemData: any, type: 'buy' | 'sell', metric: 'qty' | 'val') => {
+              if (!itemData || !itemData.itemName || itemData.itemName === 'N/A') return;
+              
+              const name = itemData.itemName;
+              if (!itemMap.has(name)) {
+                itemMap.set(name, { itemName: name, buyQty: 0, buyValue: 0, sellQty: 0, sellValue: 0 });
+              }
+              
+              const entry = itemMap.get(name);
+              if (type === 'buy' && metric === 'qty') entry.buyQty = itemData.quantity || 0;
+              if (type === 'buy' && metric === 'val') entry.buyValue = itemData.value || 0;
+              if (type === 'sell' && metric === 'qty') entry.sellQty = itemData.quantity || 0;
+              if (type === 'sell' && metric === 'val') entry.sellValue = itemData.value || 0;
+            };
 
-  const recentSalesRows = summaryData?.recentSales ?? [];
+            parseItem(rawData.buying?.topItemByQuantity, 'buy', 'qty');
+            parseItem(rawData.buying?.topItemByValue, 'buy', 'val');
+            parseItem(rawData.selling?.topItemByQuantity, 'sell', 'qty');
+            parseItem(rawData.selling?.topItemByValue, 'sell', 'val');
 
-  const recentSalesChartData = useMemo(
-    () =>
-      [...recentSalesRows]
-        .sort((a, b) => Number(b.grand_total ?? 0) - Number(a.grand_total ?? 0))
-        .slice(0, 10)
-        .map((r) => ({
-          name: r.name,
-          total: Number(r.grand_total ?? 0),
-          customer: r.customer,
-          posting_date: r.posting_date,
-        })),
-    [recentSalesRows],
-  );
+            setInventoryData(Array.from(itemMap.values()));
+          } else {
+            setInventoryData([]);
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching inventory chart:", e);
+      } finally {
+        if (mounted) setLoadingInventory(false);
+      }
+    };
+    
+    fetchInventory();
+    return () => { mounted = false; };
+  }, [inventoryYear, inventoryMode]);
 
-  const salesByCustomerChartData = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of recentSalesRows) {
-      const key = r.customer ?? 'Unknown';
-      map.set(key, (map.get(key) ?? 0) + Number(r.grand_total ?? 0));
-    }
-    return Array.from(map.entries())
-      .map(([name, total]) => ({ name, total }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
-  }, [recentSalesRows]);
+  useEffect(() => {
+    let mounted = true;
+    const fetchSales = async () => {
+      setLoadingSales(true);
+      try {
+        const sales = await getSalesChart({ year: salesYear, interval: salesInterval });
+        if (mounted) setSalesData(sales?.data || null);
+      } catch (e) {
+        console.error("Error fetching sales chart:", e);
+      } finally {
+        if (mounted) setLoadingSales(false);
+      }
+    };
+    fetchSales();
+    return () => { mounted = false; };
+  }, [salesYear, salesInterval]);
 
-  const totalsOverviewChartData = useMemo(
-    () => [
-      { name: 'Customers', value: Number(summaryData?.totalCustomers ?? 0) },
-      { name: 'Suppliers', value: Number(summaryData?.totalSuppliers ?? 0) },
-      { name: 'Sales Invoices', value: Number(summaryData?.totalSalesInvoices ?? 0) },
-      { name: 'Purchase Invoices', value: Number(summaryData?.totalPurchaseInvoices ?? 0) },
-    ],
-    [summaryData],
-  );
+  useEffect(() => {
+    let mounted = true;
+    const fetchPurchase = async () => {
+      setLoadingPurchase(true);
+      try {
+        const purchase = await getPurchaseChart({ year: purchaseYear, interval: purchaseInterval });
+        if (mounted) setPurchaseData(purchase?.data || null);
+      } catch (e) {
+        console.error("Error fetching purchase chart:", e);
+      } finally {
+        if (mounted) setLoadingPurchase(false);
+      }
+    };
+    fetchPurchase();
+    return () => { mounted = false; };
+  }, [purchaseYear, purchaseInterval]);
 
   return (
-    <AppPage>
-      <AppPageHeader
-        title="Dashboard"
-        description="Business overview and key performance trends"
-        actions={
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right leading-tight sm:block">
-              <div className="text-sm font-bold text-main">Admin User</div>
-              <div className="text-xs font-semibold text-muted">Administrator</div>
-            </div>
-            <UserMenu />
-          </div>
-        }
-      />
-
-      {summaryLoading && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm font-semibold text-blue-700">
-          Loading dashboard summary...
+    <div className="flex h-screen w-full flex-col bg-gray-50 p-4 overflow-hidden">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4 shrink-0">
+        <h1 className="text-xl font-bold text-gray-800">Dashboard Summary</h1>
+        <div className="flex items-center gap-3">
+          {/* View switch button — only visible to users who have both employee + professional roles */}
+          {canSwitchView && (
+            <button
+              onClick={toggleViewMode}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
+                border transition-all duration-200
+                ${isEmployeeView
+                  ? "border-blue-500 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                  : "border-gray-300 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }
+              `}
+            >
+              <ArrowLeftRight size={13} />
+              {isEmployeeView ? "Switch to Professional View" : "Switch to Employee View"}
+            </button>
+          )}
+          <UserMenu />
         </div>
-      )}
+      </div>
 
-      {summaryError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
-          {summaryError}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {chartsLoading
-          ? Array.from({ length: 5 }).map((_, idx) => (
-              <div key={idx} className="app-surface min-h-[124px] animate-pulse p-6">
-                <div className="flex h-full items-center justify-between">
-                  <div>
-                    <div className="h-3 w-28 rounded bg-gray-300" />
-                    <div className="mt-3 h-8 w-20 rounded bg-gray-300" />
-                  </div>
-                  <div className="h-12 w-12 rounded-xl border border-gray-300 bg-gray-300" />
-                </div>
+      <div className="flex flex-1 gap-4 min-h-0">
+        
+        <div className="flex flex-1 flex-col gap-4 min-w-0">
+          
+          <div className="grid grid-cols-4 gap-4 shrink-0 h-[100px]">
+            <InfoBox title="Sales" loading={loadingSummary}
+            icon={<Users size={16} className="text-blue-500" />}>
+              <div className="text-lg font-bold text-blue-600">{currencyFormatter.format(summaryData?.sales?.totalSales || 0)}</div>
+              <div className="text-xs text-gray-500 flex justify-between mt-1">
+                <span>Count: {summaryData?.sales?.salesCount || 0}</span>
+                <span className="text-red-500">Overdue: {currencyFormatter.format(summaryData?.sales?.totalOverdue || 0)}</span>
               </div>
-            ))
-          : kpiCards.map((card, idx) => (
-              <AppMetricCard
-                key={idx}
-                label={card.label}
-                value={card.value}
-                icon={card.icon}
-                accentClassName={card.gradient}
+            </InfoBox>
+
+            <InfoBox title="Purchase" loading={loadingSummary}
+            icon={<DollarSign size={16} className="text-green-500" />}>
+              <div className="text-lg font-bold text-amber-600">{currencyFormatter.format(summaryData?.purchase?.totalPurchase || 0)}</div>
+              <div className="text-xs text-gray-500 flex justify-between mt-1">
+                <span>Count: {summaryData?.purchase?.purchaseCount || 0}</span>
+                <span className="text-red-500">Overdue: {currencyFormatter.format(summaryData?.purchase?.totalOverdue || 0)}</span>
+              </div>
+            </InfoBox>
+
+            <InfoBox title="Customer" loading={loadingSummary}
+            icon={<Users size={16} className="text-blue-500" />}>
+              <div className="text-lg font-bold text-emerald-600">{summaryData?.customer?.totalCustomers || 0}</div>
+              <div className="text-xs text-gray-500 flex justify-between mt-1">
+                <span>Active: {summaryData?.customer?.activeCustomers || 0}</span>
+                <span>Inactive: {summaryData?.customer?.inactiveCustomers || 0}</span>
+              </div>
+            </InfoBox>
+
+            <InfoBox title="Supplier" loading={loadingSummary}
+            icon={<FileText size={16} className="text-amber-500" />}>
+              <div className="text-lg font-bold text-purple-600">{summaryData?.supplier?.totalSuppliers || 0}</div>
+              <div className="text-xs text-gray-500 flex justify-between mt-1">
+                <span>Active: {summaryData?.supplier?.activeSuppliers || 0}</span>
+                <span>Inactive: {summaryData?.supplier?.inactiveSuppliers || 0}</span>
+              </div>
+            </InfoBox>
+          </div>
+
+          {/* 4 Charts (2x2 Grid) */}
+          <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 min-h-0">
+            <LineChart 
+              title="SALES CHART" 
+              loading={loadingSales} 
+              trendData={salesData?.trend} 
+              metrics={[
+                { key: 'receivable', name: 'Receivable', color: '#3b82f6' },
+                { key: 'received', name: 'Received', color: '#10b981' }
+              ]} 
+              filterNode={
+                <div className="flex gap-2">
+                  <select 
+                    value={salesInterval} 
+                    onChange={e => setSalesInterval(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Half-Yearly">Half-Yearly</option>
+                    <option value="Yearly">Yearly</option>
+                  </select>
+                  <select 
+                    value={salesYear} 
+                    onChange={e => setSalesYear(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              }
+            />
+            
+            <LineChart 
+              title="PURCHASE CHART" 
+              loading={loadingPurchase} 
+              trendData={purchaseData?.trend} 
+              metrics={[
+                { key: 'payable', name: 'Payable', color: '#f59e0b' },
+                { key: 'paid', name: 'Paid', color: '#ef4444' }
+              ]} 
+              filterNode={
+                <div className="flex gap-2">
+                  <select 
+                    value={purchaseInterval} 
+                    onChange={e => setPurchaseInterval(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Half-Yearly">Half-Yearly</option>
+                    <option value="Yearly">Yearly</option>
+                  </select>
+                  <select 
+                    value={purchaseYear} 
+                    onChange={e => setPurchaseYear(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              }
+            />
+            
+            <LineChart title="EXPENSE CHART" loading={loadingSummary} trendData={{}} metrics={[]} />
+            <BarChart 
+              title="INVENTORY CHART" 
+              loading={loadingInventory} 
+              data={inventoryData} 
+              mode={inventoryMode}
+              filterNode={
+                <div className="flex gap-2">
+                  <select 
+                    value={inventoryMode} 
+                    onChange={e => setInventoryMode(e.target.value as 'value' | 'quantity')}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <option value="value">By Value</option>
+                    <option value="quantity">By Qty</option>
+                  </select>
+                  <select 
+                    value={inventoryYear} 
+                    onChange={e => setInventoryYear(e.target.value)}
+                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              }
+            />
+          </div>
+        </div>
+
+        {/* RIGHT AREA (Vertical Notes) */}
+        <div className="w-[300px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col p-5 overflow-y-auto">
+          <h2 className="text-sm font-bold tracking-wider text-gray-800 border-b pb-2 mb-4 uppercase">Notes</h2>
+          {loadingSummary ? (
+            <div className="animate-pulse space-y-4">
+              {[1, 2, 3, 4].map(i => <div key={i} className="h-16 bg-gray-100 rounded-lg w-full"></div>)}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 flex-1">
+              <NoteItem 
+                label="Top Customer" 
+                title={notesData?.topCustomer?.name || 'N/A'} 
+                value={currencyFormatter.format(notesData?.topCustomer?.value || 0)} 
+                icon={<Users size={16} className="text-blue-500" />} 
               />
-            ))}
+              <NoteItem 
+                label="Top Supplier" 
+                title={notesData?.topSupplier?.name || 'N/A'} 
+                value={currencyFormatter.format(notesData?.topSupplier?.value || 0)} 
+                icon={<FileText size={16} className="text-amber-500" />} 
+              />
+              <NoteItem 
+                label="Top Item By Qty" 
+                title={notesData?.topSellingItemQty?.itemName || 'N/A'} 
+                value={`${notesData?.topSellingItemQty?.quantity || 0} Units`} 
+                subTitle={notesData?.topSellingItemQty?.itemCode}
+                icon={<Package size={16} className="text-emerald-500" />} 
+              />
+              <NoteItem 
+                label="Top Item By Value" 
+                title={notesData?.topSellingItemValue?.itemName || 'N/A'} 
+                value={currencyFormatter.format(notesData?.topSellingItemValue?.value || 0)} 
+                subTitle={notesData?.topSellingItemValue?.itemCode}
+                icon={<DollarSign size={16} className="text-purple-500" />} 
+              />
+            </div>
+          )}
+        </div>
+
       </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AppSectionCard title="Monthly Sales">
-          <div className="h-72 rounded-xl border border-[var(--border)] bg-card">
-            {chartsLoading ? (
-              <ChartSkeleton variant="line" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyTrendData} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
-                  <Tooltip formatter={(v: any) => currencyINR.format(Number(v ?? 0))} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="revenue" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Sales" />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </AppSectionCard>
-
-        <AppSectionCard title="Top 10 Invoices">
-          <div className="h-72 rounded-xl border border-[var(--border)] bg-card">
-            {chartsLoading ? (
-              <ChartSkeleton variant="bar" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={recentSalesChartData} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={48} />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
-                  <Tooltip
-                    formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
-                    labelFormatter={(
-                      _label: any,
-                      payload: readonly { payload?: { name?: string; customer?: string; posting_date?: string } }[],
-                    ) => {
-                      const p = payload?.[0]?.payload;
-                      const labelParts: string[] = [];
-                      if (p?.name) labelParts.push(p.name);
-                      if (p?.customer) labelParts.push(p.customer);
-                      if (p?.posting_date) {
-                        const d = new Date(p.posting_date);
-                        if (!Number.isNaN(d.getTime())) {
-                          labelParts.push(dateWithDay.format(d));
-                        }
-                      }
-                      return labelParts.join(' � ');
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="total" fill="#10b981" radius={[6, 6, 0, 0]} name="Total" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </AppSectionCard>
-
-        <AppSectionCard title="Top 10 Customers">
-          <div className="h-72 rounded-xl border border-[var(--border)] bg-card">
-            {chartsLoading ? (
-              <ChartSkeleton variant="bar" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesByCustomerChartData} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={52} />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
-                  <Tooltip formatter={(v: any) => currencyINR.format(Number(v ?? 0))} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="total" fill="#f59e0b" radius={[6, 6, 0, 0]} name="Total" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </AppSectionCard>
-
-        <AppSectionCard title="Totals Overview">
-          <div className="h-72 rounded-xl border border-[var(--border)] bg-card">
-            {chartsLoading ? (
-              <ChartSkeleton variant="bar" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={totalsOverviewChartData} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-10} textAnchor="end" height={44} />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} name="Count" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </AppSectionCard>
-      </div>
-    </AppPage>
+    </div>
   );
 };
+
+// --- Sub-Components ---
+const InfoBox = ({ title, icon, loading, children }: { title: string, icon?: React.ReactNode, loading: boolean, children: React.ReactNode }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center">
+    <div className="flex items-center gap-2 mb-1">
+      {icon && <span className="text-gray-400">{icon}</span>}
+      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{title}</h3>
+    </div>
+    {loading ? <div className="animate-pulse h-8 bg-gray-100 rounded w-full mt-1"></div> : children}
+  </div>
+);
+
+const NoteItem = ({ label, title, subTitle, value, icon }: any) => (
+  <div className="flex flex-col gap-1 p-3 rounded-lg bg-gray-50 border border-gray-100">
+    <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+      {icon} {label}
+    </div>
+    <div className="font-medium text-sm text-gray-800 truncate" title={title}>{title}</div>
+    {subTitle && subTitle !== 'N/A' && <div className="text-xs text-gray-400 truncate">Code: {subTitle}</div>}
+    <div className="text-base font-bold text-gray-900 mt-1">{value}</div>
+  </div>
+);
 
 export default Dashboard;

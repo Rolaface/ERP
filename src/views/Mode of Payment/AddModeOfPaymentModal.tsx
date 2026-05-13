@@ -6,7 +6,7 @@ import {
   ModalSelect,
 } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect";
-
+import { Wallet } from "lucide-react";
 import { useModeOfPaymentLogic } from "./useModeOfPaymentLogic";
 
 interface Props {
@@ -51,7 +51,8 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title="Add Mode of Payment"
+      icon={Wallet}
+      title="Create Mode of Payment"
       subtitle="Configure mode of payment"
       footer={footer}
       customWidth="60vw"

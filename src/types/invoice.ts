@@ -47,8 +47,8 @@ shippingAddress: string;
   chargeType: string;
   accountHead: string;
   description?: string;
-  rate: number;
-  taxAmount: number;
+  rate: number| null;
+  amount: number;
 }[];
   salesTaxTemplate:string;
   addresses?: {

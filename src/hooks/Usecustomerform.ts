@@ -53,7 +53,7 @@ export interface CustomerFormState {
   type: "" | "Company" | "Individual";
   tpin: string;
   currency: string;
-  onboardingBalance: number;
+  onboardingBalance?: number;
   displayName: string;
   customerGroup: string;
   accountNumber: string;
@@ -147,7 +147,7 @@ export const emptyForm: CustomerFormState = {
   type: "",
   tpin: "",
   currency: "",
-  onboardingBalance: 0,
+  onboardingBalance: undefined,
   displayName: "",
   customerGroup: "",
   accountNumber: "",
@@ -261,6 +261,24 @@ export function mapApiResponseToFormState(
     ];
   }
 
+  const billingAddress = addresses.find(
+    (a) => a.type === "Billing"
+  );
+
+  const shippingAddress = addresses.find(
+    (a) => a.type === "Shipping"
+  );
+
+  const sameAsBilling =
+    !!billingAddress &&
+    !!shippingAddress &&
+    billingAddress.line1 === shippingAddress.line1 &&
+    billingAddress.line2 === shippingAddress.line2 &&
+    billingAddress.city === shippingAddress.city &&
+    billingAddress.state === shippingAddress.state &&
+    billingAddress.postalCode === shippingAddress.postalCode &&
+    billingAddress.country === shippingAddress.country;
+
   return {
     id: data.id ?? "",
     name: data.name ?? "",
@@ -275,7 +293,7 @@ export function mapApiResponseToFormState(
     customerTaxCategory: data.customerTaxCategory ?? "",
     contacts,
     addresses,
-    sameAsBilling: false,
+    sameAsBilling,
     terms: data.terms ?? {
       selling: companySellingTerms ?? defaultSellingTerms,
     },
@@ -413,7 +431,7 @@ export function useCustomerForm({
 
   // ── Sync shipping ← billing when sameAsBilling ────────────────────────────
   useEffect(() => {
-    if (!form.sameAsBilling || isEditMode) return;
+    if (!form.sameAsBilling) return;
 
     const billing = form.addresses.find((a) => a.type === "Billing");
     if (!billing) return;
@@ -533,9 +551,6 @@ export function useCustomerForm({
     const pc = form.contacts.find((c) => c.isPrimary);
     if (!form.type) newErrors.type = "Type is required";
     if (!form.name?.trim()) newErrors.name = "Customer name is required";
-    if (!form.tpin?.trim()) newErrors.tpin = "TPIN is required";
-    if (!form.customerTaxCategory)
-      newErrors.customerTaxCategory = "Tax category is required";
     if (!form.currency) newErrors.currency = "Currency is required";
     if (!pc?.firstName?.trim())
       newErrors.contactFirstName = "First name is required";
@@ -570,9 +585,7 @@ export function useCustomerForm({
       if (!form.type) missing.push("Customer Type");
       if (!form.name) missing.push("Customer Name");
       if (!pc?.firstName) missing.push("Contact First Name");
-      if (!form.tpin) missing.push("TPIN");
       if (!pc?.mobileCode || !pc?.mobileNumber) missing.push("Mobile Number");
-      if (!form.customerTaxCategory) missing.push("Tax Category");
       if (!form.currency) missing.push("Currency");
       if (!pc?.email) missing.push("Email");
       return missing.length > 0

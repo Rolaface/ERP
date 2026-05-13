@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import { getAllPayments } from "../../api/CustomerPayment";
+import { showApiError } from "../../utils/alert";
 
 interface Payment {
   id: string;
@@ -49,7 +50,7 @@ const CustomerdetailviewPayment = ({ customerName }: Props) => {
         setTotalPages(res?.data?.pagination?.totalPages ?? 1);
         setTotalItems(res?.data?.pagination?.total ?? mapped.length);
       } catch (err) {
-        console.error("Payment fetch failed", err);
+        showApiError(err);
       } finally {
         setLoading(false);
       }

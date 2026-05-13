@@ -1,18 +1,33 @@
-import React, { useState, useMemo } from "react";
-import { FaTrash } from "react-icons/fa";
+import React, { useState, useMemo, useEffect } from "react";
+
 import Table from "../../components/ui/Table/Table";
 import { DateRangeFilter } from "../../components/ui/modal/DateRangeFilter";
 import type { Column } from "../../components/ui/Table/type";
-import AddAssetMovementModal from "../../components/FixedAsset/Addassetmovementmodal "; 
+
 import type { AssetMovementRecord, AssetMovementForm } from "../../types/Assetmovement.types";
 import { STATUS_CLASS_MAP } from "../../types/Assetmovement.types";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+import { openAssetMovementModal } from "../../store/modalStore";
+import {
+  getAssetMovements,
+  createAssetMovement,
+  deleteAssetMovement,
+} from "../../api/assetMovementapi";
+import ActionButton, {
+  ActionGroup,
+  ActionMenu,
+} from "../../components/ui/Table/ActionButton";
+import { usePermission } from "../../hooks/permission/usePermission";
 
 /* ─────────────────────────────────────────────
    ASSET MOVEMENT LIST PAGE
 ───────────────────────────────────────────── */
+const ASSET_MOVEMENT_MODULE = "Asset Movement";
+
 const AssetMovement: React.FC = () => {
   /* ── state ── */
   const [records, setRecords] = useState<AssetMovementRecord[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   const [page, setPage] = useState(1);
@@ -21,39 +36,28 @@ const AssetMovement: React.FC = () => {
   const [filters, setFilters] = useState({ from_date: "", to_date: "" });
   const [sortBy, setSortBy] = useState<keyof AssetMovementRecord | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const { can } = usePermission();
 
-  /* ── add record (from modal submit) ── */
-  const handleAddRecord = async (form: AssetMovementForm) => {
-    const newRecord: AssetMovementRecord = {
-      ...form,
-      id: Date.now().toString(),
-      status: "Draft",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setRecords((prev) => [newRecord, ...prev]);
-  };
 
   /* ── delete ── */
-  const handleDelete = (id: string) => {
-    setRecords((prev) => prev.filter((r) => r.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAssetMovement(id);
+      fetchMovements();
+    } catch (err) {
+      console.error("DELETE ERROR", err);
+    }
   };
 
   /* ── filter ── */
   const filteredData = useMemo(() => {
     return records.filter((r) => {
-      const q = searchTerm.toLowerCase();
-      const matchesSearch =
-        r.company.toLowerCase().includes(q) ||
-        r.purpose.toLowerCase().includes(q) ||
-        r.status.toLowerCase().includes(q);
-
       const txDate = new Date(r.transactionDate);
       const matchesDate =
         (!filters.from_date || txDate >= new Date(filters.from_date)) &&
         (!filters.to_date || txDate <= new Date(filters.to_date));
 
-      return matchesSearch && matchesDate;
+      return matchesDate;
     });
   }, [records, searchTerm, filters]);
 
@@ -90,6 +94,62 @@ const AssetMovement: React.FC = () => {
     setPage(1);
   };
 
+
+  const fetchMovements = async () => {
+    try {
+      setLoading(true);
+
+      const data = await getAssetMovements({
+        fields: [
+          "name",
+          "company",
+          "purpose",
+          "transaction_date",
+          "docstatus",
+        ],
+         search: searchTerm,
+      });
+
+      const mapped = data.map((item: any) => ({
+        id: item.name,
+        company: item.company,
+        purpose: item.purpose,
+        transactionDate: item.transaction_date,
+        status:
+          item.docstatus === 0
+            ? "Draft"
+            : item.docstatus === 1
+              ? "Submitted"
+              : "Cancelled",
+      }));
+
+      setRecords(mapped);
+    } catch (err) {
+      console.error("FETCH MOVEMENT ERROR", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshKey = useDataRefreshStore(
+    (state) => state.refreshFlags[REFRESH_KEYS.ASSET_MOVEMENT_LIST]
+  );
+  useEffect(() => {
+    fetchMovements();
+  }, [refreshKey, searchTerm]);
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
+
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+    if (typeof date === "string") {
+      const datePart = date.split("T")[0].split(" ")[0]; // handles both "T" and space separator
+      const [year, month, day] = datePart.split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
   /* ── columns ── */
   const columns: Column<AssetMovementRecord>[] = [
     {
@@ -97,9 +157,11 @@ const AssetMovement: React.FC = () => {
       header: "Movement ID",
       sortable: true,
       render: (row) => (
-        <span className="font-mono text-xs" style={{ color: "var(--primary)" }}>
-          #{row.id.slice(-6)}
-        </span>
+        <div className="py-1.5">
+          <span className="font-mono text-xs" style={{ color: "var(--primary)" }}>
+            #{row.id.slice(-6)}
+          </span>
+        </div>
       ),
     },
     {
@@ -112,9 +174,11 @@ const AssetMovement: React.FC = () => {
       header: "Purpose",
       sortable: true,
       render: (row) => (
-        <span className="badge">
-          {row.purpose || "—"}
-        </span>
+        <div className="py-1.5">
+          <span className="badge">
+            {row.purpose || "—"}
+          </span>
+        </div>
       ),
     },
     {
@@ -122,9 +186,11 @@ const AssetMovement: React.FC = () => {
       header: "Transaction Date",
       sortable: true,
       render: (row) => (
-        <span style={{ color: "var(--muted)", fontSize: 12 }}>
-          {row.transactionDate}
-        </span>
+        <div className="py-1.5">
+          <span style={{ color: "var(--muted)", fontSize: 12 }}>
+            {formatDate(row.transactionDate)}
+          </span>
+        </div>
       ),
     },
     {
@@ -132,25 +198,43 @@ const AssetMovement: React.FC = () => {
       header: "Status",
       sortable: true,
       render: (row) => (
-        <span
-          className={`badge ${STATUS_CLASS_MAP[row.status]}`}
-          style={{ padding: "2px 10px", borderRadius: 999, fontSize: 11 }}
-        >
-          {row.status}
-        </span>
+        <div className="py-1.5">
+          <span
+            className={`badge ${STATUS_CLASS_MAP[row.status]}`}
+            style={{ padding: "2px 10px", borderRadius: 999, fontSize: 11 }}
+          >
+            {row.status}
+          </span>
+        </div>
       ),
     },
     {
       key: "actions" as keyof AssetMovementRecord,
       header: "Actions",
       render: (row) => (
-        <button
-          onClick={() => handleDelete(row.id)}
-          className="text-red-500 hover:text-red-700 transition-colors"
-          title="Delete"
-        >
-          <FaTrash size={13} />
-        </button>
+        <ActionGroup>
+          <ActionButton
+            type="view"
+            onClick={() => console.log("view", row.id)}
+            iconOnly
+          />
+
+          {can(ASSET_MOVEMENT_MODULE, "write") && (
+            <ActionButton
+              type="edit"
+              onClick={() => console.log("edit", row.id)}
+              iconOnly
+            />
+          )}
+
+          <ActionMenu
+            {...(can(ASSET_MOVEMENT_MODULE, "delete")
+              ? {
+                onDelete: () => handleDelete(row.id),
+              }
+              : {})}
+          />
+        </ActionGroup>
       ),
     },
   ];
@@ -165,19 +249,20 @@ const AssetMovement: React.FC = () => {
         data={paginatedData}
         rowKey={(row) => row.id}
         tableId="asset-movement"
-        loading={false}
-        isFetching={false}
+        loading={loading}
+        isFetching={loading}
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => {
           setSearchTerm(q);
           setPage(1);
         }}
-        enableAdd
+        enableAdd={can(ASSET_MOVEMENT_MODULE, "create")}
         addLabel="New Movement"
-        onAdd={() => setShowModal(true)}
+        onAdd={() => openAssetMovementModal({ mode: "create" })}
+
         enableColumnSelector
-        enableExport
+        enableExport={can(ASSET_MOVEMENT_MODULE, "export")}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
@@ -203,11 +288,7 @@ const AssetMovement: React.FC = () => {
         }
       />
 
-      <AddAssetMovementModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onSubmit={handleAddRecord}
-      />
+
     </div>
   );
 };

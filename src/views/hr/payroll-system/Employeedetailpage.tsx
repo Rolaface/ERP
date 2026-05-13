@@ -1,4 +1,4 @@
-// EmployeeDetailPage.tsx — Full employee payroll detail view
+
 import React, { useState } from "react";
 import {
   ChevronLeft, Search, User, Mail, Briefcase, Calendar,
@@ -61,7 +61,7 @@ export const EmployeeDetailPage: React.FC<EmployeeDetailPageProps> = ({
   const netPct    = selected.grossPay > 0 ? Math.round((selected.netPay / selected.grossPay) * 100) : 0;
 
   return (
-    <div className="h-screen flex flex-col bg-app overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col bg-app overflow-hidden">
 
       {/* Top bar */}
       <header className="h-12 shrink-0 bg-card border-b border-theme px-5 flex items-center justify-between z-20">

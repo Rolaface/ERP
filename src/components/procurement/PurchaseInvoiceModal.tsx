@@ -75,6 +75,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     loading,
     setLoading,
     handleAddressSelect,
+      handleAddressRemove, 
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
   // ── Submit: runs full validatePI via handleSubmit ──────────
@@ -175,6 +176,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             onItemChange={handleItemChange}
             onAddItem={addItem}
             onRemoveItem={removeItem}
+            isEditMode={!!pId}
             onDuplicateItem={duplicateItem}
             getCurrencySymbol={getCurrencySymbol}
             onItemSelect={handleItemSelect}
@@ -192,10 +194,12 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             form={form}
             onFormChange={(e: any) => handleFormChange(e)}
             customShippingRule={customShippingRule}
+            isEditMode={!!pId}    
             setCustomShippingRule={setCustomShippingRule}
             customIncoterm={customIncoterm}
             setCustomIncoterm={setCustomIncoterm}
             supplierId={form.supplierId}
+           removedBoxes={new Set()}     
             selected={selected}
             setSelected={setSelected}
             selectedIds={selectedIds}
@@ -204,6 +208,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             setAddresses={setAddresses}
             loading={loading}
             setLoading={setLoading}
+            handleAddressRemove={handleAddressRemove} 
             handleAddressSelect={handleAddressSelect}
             handleCopyBillingToShipping={() => { }}
             handleCopySupplierToDispatch={() => { }}
@@ -250,6 +255,8 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
       setAddresses,
       loading,
       setLoading,
+      handleAddressRemove,
+      handleAddressSelect,
     ],
   );
 
@@ -258,11 +265,11 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={pId ? "Edit Purchase Invoice" : "New Purchase Invoice"}
+      title={pId ? "Edit Purchase Invoice" : "Create Purchase Invoice"}
       subtitle="Create and manage purchase invoice"
       icon={Receipt}
       customWidth="99vw"
-      height="93vh"
+      height="95vh"
       footer={footer}
     >
       <form
@@ -271,7 +278,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         onChange={() => markDirty()}
         className="h-full flex flex-col"
       >
-        {/* ── Tabs — freely navigable, NO validation on click ── */}
+ 
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             {tabs.map(({ key, icon: Icon, label }) => (

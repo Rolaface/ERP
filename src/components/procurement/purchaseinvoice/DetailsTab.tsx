@@ -32,6 +32,7 @@ interface DetailsTabProps {
   onDuplicateItem: (idx: number) => void;
   getCurrencySymbol: () => string;
   poLoading: boolean;
+  isEditMode?: boolean;
   poList: any[];
   onPOSelect: (po: any) => void;
   usePO: boolean;
@@ -111,6 +112,7 @@ export const DetailsTab = ({
   onPOSelect,
   usePO,
   onTogglePO,
+  isEditMode,
   onBulkItemChange,
 }: DetailsTabProps) => {
   const symbol = getCurrencySymbol();
@@ -136,29 +138,25 @@ export const DetailsTab = ({
     } as any);
   };
   useEffect(() => {
-    const setDefaultMode = async () => {
-      try {
-        const res = await getAllModeOfPayment(1, 10, "", 1);
-
-        const list = res?.data?.modeOfPayments || res?.data || [];
-
-        if (list.length && !form.paymentType) {
-          const first = list[0];
-
-          onFormChange({
-            target: {
-              name: "paymentType",
-              value: first.name || first.modeOfPayment,
-            },
-          } as any);
-        }
-      } catch (err) {
-        console.error("Default mode fetch failed", err);
+  if (isEditMode) return; // ← edit mode: don't set default, value comes from saved PI
+  const setDefaultMode = async () => {
+    try {
+      const res = await getAllModeOfPayment(1, 10, "", 1);
+      const list = res?.data?.modeOfPayments || res?.data || [];
+      if (list.length && !form.paymentType) {
+        const first = list[0];
+        onFormChange({
+          target: { name: "paymentType", value: first.name || first.modeOfPayment },
+        } as any);
       }
-    };
+    } catch (err) {
+      console.error("Default mode fetch failed", err);
+    }
+  };
+  setDefaultMode();
+}, [isEditMode]); 
 
-    setDefaultMode();
-  }, []);
+
   const handleTopWarehouseChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -284,7 +282,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="quantity"
-              value={it.quantity}
+              placeholder="1"
+              value={it.quantity === 1 ? "" : it.quantity}
               onChange={(e) => onItemChange(e, i)}
               className="w-[75px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -293,7 +292,7 @@ export const DetailsTab = ({
 
         {/* MFG DATE */}
         <td className="px-1 py-1">
-          <div style={{ width: "98px" }}>
+          <div style={{ width: "101px" }}>
             <DatePickerInput
               name="mfgDate"
               value={it.mfgDate || ""}
@@ -311,7 +310,7 @@ export const DetailsTab = ({
 
         {/* EXPIRY DATE */}
         <td className="px-1 py-1">
-          <div style={{ width: "98px" }}>
+          <div style={{ width: "101px" }}>
             <DatePickerInput
               name="expDate"
               value={it.expDate || ""}
@@ -333,7 +332,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="rate"
-              value={it.rate}
+              placeholder="0"
+             value={it.rate === 0 ? "" : it.rate}
               onChange={(e) => onItemChange(e, i)}
               className="w-[56px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -366,7 +366,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="discount"
-              value={it.discount ?? ""}
+              placeholder="0"
+              value={it.discount === 0 ? "" : it.discount}
               onChange={(e) => onItemChange(e, i)}
               className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
@@ -379,7 +380,8 @@ export const DetailsTab = ({
             <input
               type="number"
               name="vatRate"
-              value={it.vatRate}
+              placeholder="0"
+               value={it.vatRate === 0 ? "" : it.vatRate}
               onChange={(e) => onItemChange(e, i)}
               className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
               disabled

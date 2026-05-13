@@ -1,7 +1,3 @@
-import type { TermSection } from "./termsAndCondition";
-
-// ─── API RESPONSE SHAPES ──────────────────────────────────────────────────────
-
 export interface CustomerContact {
   id?: string;
   firstName: string;
@@ -60,70 +56,47 @@ export interface SellingTerms {
   payment: CustomerTermsPayment;
 }
 
-// ─── SUMMARY (used in list views / sidebar) ───────────────────────────────────
+
 
 export interface CustomerSummary {
   id: string;
-  name: string;                    // API sends `name` (not displayName)
+  name: string;                    
   tpin?: string;
-  customerTaxCategory?: string;    // API field name (not taxCategory)
-  displayName?: string;            // legacy / form field
+  customerTaxCategory?: string;    
+  displayName?: string;           
   type?: "" | "Company" | "Individual";
   customerGroup?: string;
   accountNumber?: string;
   currency?: string;
   onboardingBalance?: number;
   status?: "Active" | "Inactive" | string;
-  createdAt?: string;              // API timestamp
-
-  /** @deprecated use contacts[] instead */
+  createdAt?: string;             
   contactPerson?: string;
-  /** @deprecated use contacts[] instead */
   mobileCode?: string;
-  /** @deprecated use contacts[] instead */
   mobile?: string;
-  /** @deprecated use contacts[] instead */
   email?: string;
-  /** @deprecated */
   dateOfAddition?: string;
 }
 
-// ─── DETAIL (from GET /customer/:id) ─────────────────────────────────────────
+
 
 export interface CustomerDetail extends CustomerSummary {
-  // Structured arrays (new API shape)
   contacts?: CustomerContact[];
   addresses?: CustomerAddress[];
-
-  // terms — API sends terms.Selling (capital S)
   terms?: {
-    Selling?: SellingTerms;   // capital S — what API actually sends
-    selling?: SellingTerms;   // lowercase — kept for legacy compat
+    Selling?: SellingTerms;  
+    selling?: SellingTerms;  
   };
-
-  // Legacy flat address fields (old API / form compat)
-  /** @deprecated use addresses[] */
   billingAddressLine1?: string;
-  /** @deprecated use addresses[] */
   billingAddressLine2?: string;
-  /** @deprecated use addresses[] */
   billingPostalCode?: string;
-  /** @deprecated use addresses[] */
   billingCity?: string;
-  /** @deprecated use addresses[] */
   billingState?: string;
-  /** @deprecated use addresses[] */
   billingCountry?: string;
-  /** @deprecated use addresses[] */
   shippingAddressLine1?: string;
-  /** @deprecated use addresses[] */
   shippingAddressLine2?: string;
-  /** @deprecated use addresses[] */
   shippingPostalCode?: string;
-  /** @deprecated use addresses[] */
   shippingCity?: string;
-  /** @deprecated use addresses[] */
   shippingState?: string;
-  /** @deprecated use addresses[] */
   shippingCountry?: string;
 }

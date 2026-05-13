@@ -18,6 +18,14 @@ const Login = () => {
     error,
     handleSubmit,
     isSubmitting,
+    forgotOpen,
+    setForgotOpen,
+    forgotEmail,
+    setForgotEmail,
+    forgotStatus,
+    forgotMessage,
+    handleForgotPassword,
+    closeForgotModal,
   } = useLogin();
 
   const [rememberMe, setRememberMe] = useState(false);

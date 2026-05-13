@@ -1,11 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
-import { loginApi, logoutApi, AuthUser } from "../api/authService";
+import { loginApi, logoutApi, fetchLoginUser } from "../api/authService";
+import type { AuthUser } from "../api/authService";
 import { useCompanyStore } from "../store/companyStore";
-import { getCompanyById } from "../api/companySetupApi";
+import { useHRViewStore } from "../store/hrViewStore";
 
-
-const SID_KEY = "session_id";
+const SID_KEY  = "session_id";
+const USER_KEY = "auth_user";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -13,35 +14,73 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshPermissions: () => Promise<void>;   // ← manual trigger for role updates
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser]       = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ── On mount — restore from localStorage ────────────────────────────────
   useEffect(() => {
-    const sid = localStorage.getItem(SID_KEY);
-    const storedUser = localStorage.getItem("auth_user");
+    const sid        = localStorage.getItem(SID_KEY);
+    const storedUser = localStorage.getItem(USER_KEY);
 
     if (sid && storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch {
+        // corrupt storage — clear it
+        localStorage.removeItem(SID_KEY);
+        localStorage.removeItem(USER_KEY);
+      }
     }
 
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const loggedUser = await loginApi(email, password);
-    setUser(loggedUser);
-  };
+  // ── Login — call loginApi then fetchLoginUser for permissions ────────────
+  const login = useCallback(async (email: string, password: string) => {
+    // Step 1: authenticate, get sid + basic user info
+    const basicUser = await loginApi(email, password);
+    setUser(basicUser);
 
-const logout = async () => {
+    // Step 2: fetch full user with permissions
+    try {
+      const fullUser = await fetchLoginUser();
+      setUser(fullUser);
+    } catch (err) {
+      // permissions fetch failed — user is still logged in
+      // PermissionBootstrap will show error state
+      console.error("[AuthContext] fetchLoginUser failed after login:", err);
+    }
+  }, []);
+
+  // ── Refresh permissions — call on role/user update ───────────────────────
+  const refreshPermissions = useCallback(async () => {
+    if (!localStorage.getItem(SID_KEY)) return;  // not logged in
+
+    try {
+      const freshUser = await fetchLoginUser();
+      setUser(freshUser);
+    } catch (err) {
+      console.error("[AuthContext] refreshPermissions failed:", err);
+    }
+  }, []);
+
+  // ── Logout ───────────────────────────────────────────────────────────────
+const logout = useCallback(async () => {
+  const username = user?.username;
+  if (username) {
+    useHRViewStore.getState().clearViewMode(username);
+  }
   await logoutApi();
   setUser(null);
   useCompanyStore.getState().clearCompanyInfo();
-};
+}, [user]);
+
 
   return (
     <AuthContext.Provider
@@ -51,6 +90,7 @@ const logout = async () => {
         loading,
         login,
         logout,
+        refreshPermissions,
       }}
     >
       {children}

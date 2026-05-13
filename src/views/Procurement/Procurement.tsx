@@ -1,23 +1,27 @@
 import React, { Suspense, lazy, useState, useMemo, useCallback } from "react";
-import { useOutletContext, useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import ApprovalModal from "../../components/procurement/ApprovalModal";
 import {
-  FaClipboardList,
-  FaCheckCircle,
-  FaShoppingBag,
-  FaTachometerAlt,
-  FaFileSignature,
-  FaTruckLoading,
-  FaLandmark,
-  FaCreditCard,
-} from "react-icons/fa";
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  FileText,
+  ClipboardList,
+  CheckCircle2,
+  Receipt,
+  FileMinus,
+  BarChart3,
+  ShoppingBag
+} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
   AppPageHeader,
   AppTabs,
 } from "../../components/ui/app-shell";
-import AppSkeleton from "../../components/ui/AppSkeleton";
+import DebitNotesTable from "../Sales/DebitNotesTable";
+import { usePermission } from "../../hooks/permission/usePermission";
+import { useUrlTab } from "../../hooks/useUrlTab";
 
 const RFQsTable = lazy(() => import("./Rfqs"));
 const PurchaseOrdersTable = lazy(() => import("./PurchaseOrders"));
@@ -43,71 +47,125 @@ type OutletContextType = {
   openPOEdit: (poId: string | number) => void;
 };
 
-const procurementTabs = [
-  { id: "procurementdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
-  { id: "supplier", label: "Supplier Management", icon: <FaLandmark /> },
-  { id: "payments", label: "Payments", icon: <FaCreditCard /> },
-  { id: "rfqs", label: "RFQs", icon: <FaFileSignature /> },
-  { id: "orders", label: "Purchase Orders", icon: <FaClipboardList /> },
-  { id: "approvals", label: "Approvals", icon: <FaCheckCircle /> },
-  { id: "purchase", label: "Purchase Invoice", icon: <FaTruckLoading /> },
-  { id: "purchaseAnalytics", label: "Purchase Analytics", icon: <FaTruckLoading /> },
-];
+const iconProps = {
+  size: 16,
+  strokeWidth: 1.75,
+};
 
+const ALL_PROCUREMENT_TABS = [
+  {
+    id: "procurementdashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard {...iconProps} />,
+    module: null,
+  },
+  {
+    id: "supplier",
+    label: "Supplier Management",
+    icon: <Users {...iconProps} />,
+    module: "Supplier",
+    action: "read" as const, 
+  },
+  {
+    id: "payments",
+    label: "Payments",
+    icon: <CreditCard {...iconProps} />,
+    module: "Payment Entry",
+    action: "read" as const, 
+  },
+  {
+    id: "rfqs",
+    label: "RFQs",
+    icon: <FileText {...iconProps} />,
+    module: "Request For Quotation",
+    action: "read" as const, 
+  },
+  {
+    id: "orders",
+    label: "Purchase Orders",
+    icon: <ClipboardList {...iconProps} />,
+    module: "Purchase Order",
+    action: "read" as const, 
+  },
+  {
+    id: "purchase",
+    label: "Purchase Invoice",
+    icon: <Receipt {...iconProps} />,
+    module: "Purchase Invoice",
+    action: "read" as const, 
+  },
+  {
+    id: "debitNotes",
+    label: "Debit Notes",
+    icon: <FileMinus {...iconProps} />,
+    module: "Debit Note",
+    action: "read" as const, 
+  },
+  {
+    id: "purchaseAnalytics",
+    label: "Purchase Analytics",
+    icon: <BarChart3 {...iconProps} />,
+    module: "Purchase Invoice",
+    action: "report" as const, 
+  },
+];
 const DEFAULT_TAB = "procurementdashboard";
 
 const Procurement: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
+  const { can } = usePermission();                          
+
+  // Filter tabs based on permissions
+  const procurementTabs = useMemo(
+    () => ALL_PROCUREMENT_TABS.filter((t) => !t.module || can(t.module, t.action)),
+    [can]
+  );                                                        
+
+  const fallbackTab = procurementTabs[0]?.id ?? DEFAULT_TAB;
+  const [resolvedTab, handleTabChange] = useUrlTab({
+    tabs: procurementTabs,
+    defaultTab: fallbackTab,
+    basePath: "/procurement",
+  });
+          
   
-  const isDashboardTab = activeTab === "procurementdashboard";
-  const { openSupplierCreate, openPOCreate } =
-    useOutletContext<OutletContextType>();
+  const isDashboardTab = resolvedTab === "procurementdashboard";
+  const { openSupplierCreate, openPOCreate } = useOutletContext<OutletContextType>();
 
   const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [showGRModal, setShowGRModal] = useState(false);
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
-
-  const handleTabChange = useCallback((tabId: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("tab", tabId);
-    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  }, [navigate, location.pathname, searchParams]);
 
   const handleAdd = useCallback(() => {
-    if (activeTab === "supplier") openSupplierCreate();
-    else if (activeTab === "orders") openPOCreate();
-    else if (activeTab === "approvals") setShowApprovalModal(true);
-    else if (activeTab === "goodsreceipt") setShowGRModal(true);
-    else if (activeTab === "invoicematching") setShowInvoiceModal(true);
-  }, [activeTab, openSupplierCreate, openPOCreate]);
+    if (resolvedTab === "supplier") openSupplierCreate();
+    else if (resolvedTab === "orders") openPOCreate();
+    else if (resolvedTab === "approvals") setShowApprovalModal(true);
+  }, [resolvedTab, openSupplierCreate, openPOCreate]);
 
-  // Stable tab components - NO remounting on tab switch
   const tabComponents = useMemo(() => ({
     procurementdashboard: <Dashboard />,
-    supplier: <SupplierManagement onAdd={handleAdd} />,
-    rfqs: <RFQsTable onAdd={handleAdd} />,
-    orders: <PurchaseOrdersTable onAdd={handleAdd} />,
-    approvals: <ApprovalsSection onAdd={handleAdd} />,
-    purchase: <PurchaseInvoiceTable onAdd={handleAdd} />,
-    payments: <Payments />,
-    purchaseAnalytics: <PurchaseAnalytics />,
+    supplier:             <SupplierManagement onAdd={handleAdd} />,
+    rfqs:                 <RFQsTable onAdd={handleAdd} />,
+    orders:               <PurchaseOrdersTable onAdd={handleAdd} />,
+    approvals:            <ApprovalsSection onAdd={handleAdd} />,
+    purchase:             <PurchaseInvoiceTable onAdd={handleAdd} />,
+    payments:             <Payments />,
+    purchaseAnalytics:    <PurchaseAnalytics />,
+    debitNotes:           <DebitNotesTable />,
   }), [handleAdd]);
 
-  const currentTabComponent = tabComponents[activeTab as keyof typeof tabComponents] || <Dashboard />;
+  const currentTabComponent =
+    tabComponents[resolvedTab as keyof typeof tabComponents] ?? <Dashboard />;
 
   return (
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Procurement"
-        description="Supplier operations, approvals, and purchasing analytics in one layout system."
-        icon={<FaShoppingBag />}
+        description="Manage the full procurement cycle—from RFQs and POs to payments."
+        icon={<ShoppingBag size={20} strokeWidth={1.75} />}
       />
-      <AppTabs tabs={procurementTabs} activeTab={activeTab} onChange={handleTabChange} />
+      <AppTabs tabs={procurementTabs} activeTab={resolvedTab} onChange={handleTabChange} />
       <AppPageBody viewportLocked={isDashboardTab}>
-        {currentTabComponent}
+        <Suspense fallback={null}>
+          {currentTabComponent}
+        </Suspense>
       </AppPageBody>
 
       {showApprovalModal && (

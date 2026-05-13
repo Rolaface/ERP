@@ -146,44 +146,31 @@ const Items: React.FC = () => {
       header: "",
       align: "center",
       render: (row) => (
-        <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
-          {expandedRows[row.id]
-            ? <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
-            : <ChevronRight size={16} strokeWidth={2.5} />}
-        </span>
+        <div className="py-1.5">
+          <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
+            {expandedRows[row.id]
+              ? <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
+              : <ChevronRight size={16} strokeWidth={2.5} />}
+          </span>
+        </div>
       ),
     },
     {
       key: "itemCode",
       header: "Item Code",
-      render: (row) => {
-        const id = row.itemCode || "";
-        const shortId = id ? `--${id.slice(-4)}` : "-";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center gap-1 group">
-            <span className="font-mono text-xs font-medium text-main">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full Item Code"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
+       render: (row) => 
+       <div className="py-1.5">
+         <span className=" font-medium text-main">{row.itemCode}</span>
+       </div>,
     },
-    { key: "itemName", header: "Item Name", render: (row) => row.itemName },
-    { key: "description", header: "Description", render: (row) => row.description },
+    { key: "itemName", 
+      header: "Item Name", 
+      render: (row) =>
+       row.itemName 
+      },
+    { key: "description",
+       header: "Description",
+        render: (row) => row.description },
     {
       key: "packingUnit",
       header: "Packing Unit",
@@ -194,7 +181,7 @@ const Items: React.FC = () => {
     { key: "totalSellValue", header: "Total Sell Value", align: "right", render: (row) => `${row.sellCurrency} ${row.totalSellValue.toLocaleString("en-IN")}` },
   ];
 
-  // ─── RENDER ───────────────────────────────────────────────────────────────
+  
 
   return (
     <div className="h-full min-h-0">

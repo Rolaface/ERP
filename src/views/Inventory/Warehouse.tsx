@@ -5,7 +5,7 @@ import type { Column } from "../../components/ui/Table/type";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { getWarehouseTree, deleteWarehouseById } from "../../api/WarehouseApi";
-
+import { usePermission } from "../../hooks/permission/usePermission";
 import {
   AlertCircle,
   Loader2,
@@ -47,6 +47,8 @@ export interface WarehouseTreeResponse {
     warehouses: WarehouseNode[];
   };
 }
+
+const WAREHOUSE = "Warehouse";
 
 function normalizeWarehouses(nodes: WarehouseNode[]): WarehouseNode[] {
   return nodes.map((node) => ({
@@ -148,6 +150,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
 }) => {
   const outletContext = useOutletContext<OutletContextType>();
   const navigate = useNavigate();
+  const { can } = usePermission();
 
   const openWarehouseCreate =
     propOpenWarehouseCreate || outletContext?.openWarehouseCreate;
@@ -201,36 +204,36 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
   };
 
   const handleDelete = async (row: WarehouseNode) => {
-  const confirm = await fireManagedSwal({
-    icon: "warning",
-    title: "Are you sure?",
-    text: `Delete Warehouse "${row.warehouse_name}"?`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, delete",
-  });
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete Warehouse "${row.warehouse_name}"?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
 
-  if (!confirm.isConfirmed) return;
+    if (!confirm.isConfirmed) return;
 
-  try {
-    showLoading("Deleting Warehouse...");
-    const res = await deleteWarehouseById(row.name);
+    try {
+      showLoading("Deleting Warehouse...");
+      const res = await deleteWarehouseById(row.name);
 
-    if (!res || ![200, 202].includes(res.status)) {
+      if (!res || ![200, 202].includes(res.status)) {
+        closeSwal();
+        showApiError(res);
+        return;
+      }
+
       closeSwal();
-      showApiError(res);
-      return;
+      showSuccess(res.message || `Warehouse ${row.warehouse_name} deleted successfully`);
+      fetchTree();
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
     }
-
-    closeSwal();
-    showSuccess(res.message || `Warehouse ${row.warehouse_name} deleted successfully`);
-    fetchTree();
-  } catch (err: any) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+  };
 
   if (loading && treeData.length === 0) {
     return (
@@ -267,27 +270,35 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
       header: "Warehouse Name",
       align: "left",
       render: (row) => (
-        <span
-          className={
-            row.is_group ? "font-semibold text-main" : "font-normal text-main"
-          }
-        >
-          {row.warehouse_name}
-        </span>
+        <div className="py-1.5">
+          <span
+            className={
+              row.is_group ? "font-semibold text-main" : "font-normal text-main"
+            }
+          >
+            {row.warehouse_name}
+          </span>
+        </div>
       ),
     },
     {
       key: "name",
       header: "ID",
       align: "left",
-      render: (row) => <span className="text-xs text-muted">{row.name}</span>,
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="text-xs text-muted">{row.name}</span>
+        </div>
+      ),
     },
     {
       key: "company",
       header: "Company",
       align: "left",
       render: (row) => (
-        <span className="text-xs text-muted">{row.company}</span>
+        <div className="py-1.5">
+          <span className="text-xs text-muted">{row.company}</span>
+        </div>
       ),
     },
     {
@@ -298,9 +309,11 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
         if (row.bin_count === 0)
           return <span className="text-muted text-xs">—</span>;
         return (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {row.bin_count} Bins
-          </code>
+          <div className="py-1.5">
+            <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+              {row.bin_count} Bins
+            </code>
+          </div>
         );
       },
     },
@@ -310,36 +323,46 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
       align: "right",
       render: (row) => {
         const actions: MenuAction[] = [
-          {
-            label: "Edit",
-            icon: <Pencil size={12} />,
-            onClick: () => openWarehouseEdit(row.name, row),
-          },
+          ...(can(WAREHOUSE, "write")
+            ? [
+              {
+                label: "Edit",
+                icon: <Pencil size={12} />,
+                onClick: () => openWarehouseEdit(row.name, row),
+              },
+            ]
+            : []),
+
           ...(row.is_group === 1
             ? [
-                {
-                  label: "Add Child",
-                  icon: <GitBranch size={12} />,
-                  onClick: () => handleAddChild(row),
-                },
-              ]
+              {
+                label: "Add Child",
+                icon: <GitBranch size={12} />,
+                onClick: () => handleAddChild(row),
+              },
+            ]
             : [
-                {
-                  label: "View Stock",
-                  icon: <Boxes size={12} />,
-                  onClick: () =>
-                    navigate("/stock-balance", {
-                      state: { warehouse: row.name },
-                    }),
-                },
-              ]),
-          {
-            label: "Delete",
-            icon: <Trash2 size={12} />,
-            onClick: () => handleDelete(row),
-            danger: true,
-            dividerBefore: true,
-          },
+              {
+                label: "View Stock",
+                icon: <Boxes size={12} />,
+                onClick: () =>
+                  navigate("/stock-balance", {
+                    state: { warehouse: row.name },
+                  }),
+              },
+            ]),
+
+          ...(can(WAREHOUSE, "delete")
+            ? [
+              {
+                label: "Delete",
+                icon: <Trash2 size={12} />,
+                onClick: () => handleDelete(row),
+                danger: true,
+                dividerBefore: true,
+              },
+            ]
+            : []),
         ];
 
         return <RowActionMenu actions={actions} />;
@@ -367,19 +390,21 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
         emptyMessage="No warehouses found."
         expandIconRender={warehouseExpandIcon}
         extraFilters={
-          <button
-            type="button"
-            onClick={() =>
-              openWarehouseCreate({
-                parent: treeData[0]?.name,
-                onSuccess: fetchTree,
-              })
-            }
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
-          >
-            <Plus size={13} />
-            New Warehouse
-          </button>
+          can(WAREHOUSE, "create") ? (
+            <button
+              type="button"
+              onClick={() =>
+                openWarehouseCreate({
+                  parent: treeData[0]?.name,
+                  onSuccess: fetchTree,
+                })
+              }
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
+            >
+              <Plus size={13} />
+              Add Warehouse
+            </button>
+          ) : null
         }
       />
     </div>

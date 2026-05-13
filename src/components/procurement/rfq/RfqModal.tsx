@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo , useEffect } from "react";
 import { Building2, FileText } from "lucide-react";
 import { Button } from "../../ui/modal/formComponent";
 import { DetailsTab } from "./DetailsTab";
@@ -16,7 +16,8 @@ interface RfqModalProps {
   onClose: () => void;
   onSubmit?: (data: RfqFormData) => void;
   modalId: string;
-  initialData?: RfqFormData;
+  initialData?: unknown;
+  isEdit?: boolean;
 }
 
 /* ---------- TABS ---------- */
@@ -32,6 +33,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
   onSubmit,
   modalId,
   initialData,
+  isEdit = false,
 }) => {
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
@@ -51,11 +53,20 @@ const RfqModal: React.FC<RfqModalProps> = ({
     setTermsBuying,
     handleSubmit,
     saving,
+    fetchRFQById,
+    loading,
     reset,
   } = useRfqForm({
     onSuccess: onSubmit,
     onClose,
   });
+
+  // ADD this useEffect after the useRfqForm call
+  useEffect(() => {
+    if (isEdit && initialData && typeof initialData === "string") {
+      fetchRFQById(initialData);
+    }
+  }, [isEdit, initialData]);
 
   /* ---------- FOOTER  ---------- */
 
@@ -105,10 +116,10 @@ const RfqModal: React.FC<RfqModalProps> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title="New Request For Quotation"
-      subtitle="Create and send RFQ to suppliers"
-      icon={Building2}
-      customWidth="80vw"
+      title={isEdit ? `Edit RFQ` : "Create Request For Quotation"}
+      subtitle={isEdit ? `${initialData}` : "Create and send RFQ to suppliers"}
+      icon={FileText}
+      customWidth="73vw"
       height="81vh"
       footer={footer}
     >
@@ -120,7 +131,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
         onSubmit={async (e) => {
           e.preventDefault();
           resetDirty();
-          await handleSubmit(e);
+          await handleSubmit();
         }}
         className="h-full flex flex-col"
       >
@@ -151,7 +162,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
 
         {/* ---------- TAB BODY ---------- */}
 
-        <section className="flex-1 overflow-y-auto ">
+        <section className="flex-1 overflow-y-auto overflow-x-visible relative">
 
           {/* ===== DETAILS ===== */}
 
@@ -180,7 +191,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
 
           {activeTab === "terms" && (
             <TermsAndCondition
-              title="RFQ Terms & Conditions"
+              title="Terms & Conditions"
               terms={form.terms?.buying ?? null}
               setTerms={(updated) =>
                 setTermsBuying(updated)

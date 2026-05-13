@@ -1,16 +1,14 @@
-import React, { useState, Suspense, lazy, useCallback } from "react";
-import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import React, { useState, Suspense, lazy, useMemo } from "react";
 import {
-  FaBriefcase,
-  FaChartPie,
-  FaChartBar,
-  FaCalendar,
-  FaDollarSign,
-  FaFileInvoiceDollar,
-  FaMoneyCheckAlt,
-  FaWarehouse,
-  FaUniversity,
-} from "react-icons/fa";
+  BookOpen,
+  Scale,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  BarChart3,
+  FileBarChart,
+  Wallet,
+  Repeat
+} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
@@ -18,29 +16,86 @@ import {
   AppTabs,
 } from "../../components/ui/app-shell";
 import AppSkeleton from "../../components/ui/AppSkeleton";
+import { usePermission } from "../../hooks/permission/usePermission";
+import { useUrlTab } from "../../hooks/useUrlTab";
+
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
 
 const GeneralLedger = lazy(() => import("./GeneralLedger"));
-const TrialBalance  = lazy(() => import("./TrialBalance"));
-const ProfitLoss    = lazy(() => import("./ProfitLoss"));
-const BalanceSheet  = lazy(() => import("./BalanceSheet"));
-const CashFlow      = lazy(() => import("./CashFlow"));
+const TrialBalance = lazy(() => import("./TrialBalance"));
+const ProfitLoss = lazy(() => import("./ProfitLoss"));
+const BalanceSheet = lazy(() => import("./BalanceSheet"));
+const CashFlow = lazy(() => import("./CashFlow"));
 const AccountsReceivable = lazy(() => import("./AccountsReceivable"));
-const AccountsPayable    = lazy(() => import("./AccountsPayable"));
-const Banking            = lazy(() => import("./BankingModule"));
+const AccountsPayable = lazy(() => import("./AccountsPayable"));
+const Banking = lazy(() => import("./BankingModule"));
+
 
 // ─── Tab Definitions ──────────────────────────────────────────────────────────
 
+const iconProps = {
+  size: 16,
+  strokeWidth: 1.75,
+};
+
 const allTabs = [
-  { id: "gl",       label: "General Ledger", icon: <FaChartPie /> },
-  { id: "trial",    label: "Trial Balance",  icon: <FaChartBar /> },
-  { id: "ar",       label: "Receivables",    icon: <FaFileInvoiceDollar /> },
-  { id: "ap",       label: "Payables",       icon: <FaMoneyCheckAlt /> },
-  { id: "bank",     label: "Banking",        icon: <FaUniversity /> },
-  { id: "pl",       label: "Profit & Loss",  icon: <FaCalendar /> },
-  { id: "balance",  label: "Balance Sheet",  icon: <FaDollarSign /> },
-  { id: "cashflow", label: "Cash Flow",      icon: <FaBriefcase /> },
+  {
+    id: "gl",
+    label: "General Ledger",
+    icon: <BookOpen {...iconProps} />,
+    module: null,
+    action: "read" as const,
+  },
+  {
+    id: "trial",
+    label: "Trial Balance",
+    icon: <Scale {...iconProps} />,
+    module: null,
+    action: "read" as const,
+  },
+  {
+    id: "ar",
+    label: "Receivables",
+    icon: <ArrowDownCircle {...iconProps} />,
+    module: null,
+    action: "read" as const,
+  },
+  {
+    id: "ap",
+    label: "Payables",
+    icon: <ArrowUpCircle {...iconProps} />,
+    module: null,
+    action: "read" as const,
+  },
+
+  // {
+  //   id: "bank",
+  //   label: "Banking",
+  //   icon: <Landmark {...iconProps} />, 
+  // },
+
+  {
+    id: "pl",
+    label: "Profit & Loss",
+    icon: <BarChart3 {...iconProps} />,
+    module: null,
+    action: "read" as const,
+  },
+  {
+    id: "balance",
+    label: "Balance Sheet",
+    icon: <FileBarChart {...iconProps} />,
+    module: null,
+    action: "read" as const,
+  },
+  {
+    id: "cashflow",
+    label: "Cash Flow",
+    icon: <Repeat {...iconProps} />,
+    module: null,
+    action: "read" as const,
+  },
 ];
 
 const DEFAULT_TAB = "gl";
@@ -48,29 +103,27 @@ const DEFAULT_TAB = "gl";
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const AccountingModule: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate       = useNavigate();
-  const location       = useLocation();
-
-  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
-
-  const handleTabChange = useCallback(
-    (tabId: string) => {
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set("tab", tabId);
-      navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-    },
-    [navigate, location.pathname, searchParams]
+  const { can } = usePermission();
+  const accountingTabs = useMemo(
+    () => allTabs.filter((tab) => !tab.module || can(tab.module, tab.action)),
+    [can]
   );
 
+  const fallbackTab = accountingTabs[0]?.id ?? DEFAULT_TAB;
+  const [resolvedTab, handleTabChange] = useUrlTab({
+    tabs: accountingTabs,
+    defaultTab: fallbackTab,
+    basePath: "/accounting",
+  });
+
   // ── GL sub-tab state (owned here because GeneralLedger receives it as a prop) ──
-  const [glSubTab, setGlSubTab]   = useState<string>("chart");
+  const [glSubTab, setGlSubTab] = useState<string>("chart");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   // ─── Tab → Component map ──────────────────────────────────────────────────
 
   const renderTab = () => {
-    switch (activeTab) {
+    switch (resolvedTab) {
       case "gl":
         return (
           <GeneralLedger
@@ -80,10 +133,10 @@ const AccountingModule: React.FC = () => {
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             selectedFilter="all"
-            setSelectedFilter={() => {}}
+            setSelectedFilter={() => { }}
             showFilterDropdown={false}
-            setShowFilterDropdown={() => {}}
-            handleFilterSelect={() => {}}
+            setShowFilterDropdown={() => { }}
+            handleFilterSelect={() => { }}
             getFilterLabel={() => "All Accounts"}
             getFilterCount={() => 0}
             journalEntries={[]}
@@ -120,10 +173,10 @@ const AccountingModule: React.FC = () => {
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             selectedFilter="all"
-            setSelectedFilter={() => {}}
+            setSelectedFilter={() => { }}
             showFilterDropdown={false}
-            setShowFilterDropdown={() => {}}
-            handleFilterSelect={() => {}}
+            setShowFilterDropdown={() => { }}
+            handleFilterSelect={() => { }}
             getFilterLabel={() => "All Accounts"}
             getFilterCount={() => 0}
             journalEntries={[]}
@@ -138,10 +191,10 @@ const AccountingModule: React.FC = () => {
     <AppPage>
       <AppPageHeader
         title="Accounting"
-        description="Core ledgers, reports, and finance operations in the shared ERP layout."
-        icon={<FaBriefcase />}
+        description="Handle ledgers, reporting, and finance operations in one workflow"
+        icon={<Wallet />}
       />
-      <AppTabs tabs={allTabs} activeTab={activeTab} onChange={handleTabChange} />
+      <AppTabs tabs={accountingTabs} activeTab={resolvedTab} onChange={handleTabChange} />
       <AppPageBody>
         <Suspense fallback={<AppSkeleton />}>
           {renderTab()}

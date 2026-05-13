@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
-import { Building2 } from "lucide-react";
+import { Landmark } from "lucide-react";
 import { useBankAccLogic } from "./Usebankacclogic";
 import DatePickerInput from "../calendar/DatePickerInput";
 import SearchSelect2 from "../ui/modal/SearchSelect";
@@ -28,7 +28,7 @@ type Option = {
   meta?: Record<string, any>;
 };
 
-type AccountType = "Supplier" | "Customer" | "Company" | "Bank";
+type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Employee";
 
 const AddBankAccountModal: React.FC<Props> = ({
   isOpen,
@@ -153,9 +153,9 @@ const AddBankAccountModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title="Add Bank Account"
+      title="Create Bank Account"
       subtitle="Configure bank account for Companies or parties"
-      icon={Building2}
+      icon={Landmark}
       footer={footer}
       customWidth="60vw"
       height="65vh"
@@ -192,6 +192,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                 { label: "Supplier", value: "Supplier" },
                 { label: "Customer", value: "Customer" },
                 { label: "Company", value: "Company" },
+                { label: "Employee", value: "Employee" }, 
               ]}
               required
               disabled={!!defaultAccountFor}
@@ -351,6 +352,7 @@ const AddBankAccountModal: React.FC<Props> = ({
               <SearchSelect2
                 label="Reporting Account"
                 value={form.reportingAccount}
+                required
                 onChange={(_: string, option: Option) =>
                   setForm((prev) => ({
                     ...prev,

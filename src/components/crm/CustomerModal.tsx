@@ -1,5 +1,5 @@
 import React from "react";
-import { Building2, DollarSign, FileText, MapPin, User } from "lucide-react";
+import { Building2, DollarSign, FileText, MapPin, Users,User } from "lucide-react";
 import Tooltip from "../Tooltip";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
 import TermsAndCondition from "../TermsAndCondition";
@@ -96,13 +96,13 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={handleCloseWithWarning}
-      title={isEditMode ? "Edit Customer" : "Add New Customer"}
+      title={isEditMode ? "Edit Customer" : "Create Customer"}
       subtitle={
         isEditMode
           ? "Update customer information"
           : "Fill in the details to create a new customer"
       }
-      icon={isEditMode ? Building2 : User}
+      icon={isEditMode ? Building2 : Users}
       footer={footer}
       maxWidth="6xl"
       height="81vh"
@@ -231,8 +231,6 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     name="tpin"
                     value={form.tpin}
                     onChange={handleChange}
-                    required
-                    error={errors.tpin}
                     placeholder="Tax identification"
                   />
                 </Tooltip>
@@ -248,8 +246,6 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                         target: { name: "customerTaxCategory", value },
                       } as React.ChangeEvent<HTMLSelectElement>)
                     }
-                    error={errors.customerTaxCategory}
-                    required
                   />
                 </Tooltip>
 
@@ -269,12 +265,12 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   />
                 </Tooltip>
 
-                <Tooltip content={String(form.onboardingBalance || "0.00")}>
+                <Tooltip content={form.onboardingBalance ? String(form.onboardingBalance) : ""}>
                   <ModalInput
                     label="Onboard Balance"
                     name="onboardingBalance"
                     type="number"
-                    value={form.onboardingBalance}
+                    value={form.onboardingBalance ?? ""}
                     onChange={handleChange}
                     placeholder="0.00"
                     className="no-spinner"

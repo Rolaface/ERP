@@ -21,7 +21,7 @@ const fmt2 = (n: any) => Number(n ?? 0).toFixed(2);
 const parseAddressDisplay = (html: string): string[] => {
   if (!html) return [];
   return html
-    .split(/<br\s*\/?>/i)          // split on <br> or <br/>
+    .split(/<br\s*\/?>/i)        
     .map((l) => l.replace(/\n/g, "").trim())
     .filter(Boolean);
 };
@@ -148,7 +148,7 @@ export const generatePurchaseOrderPDF = async (
 
   const metaLines = [
     `PO Date: ${fmtDate(po.poDate)}`,
-    `Incoterm: ${po.incoterms ?? "-"}`,            // ✅ was: po.incoterm
+    `Incoterm: ${po.incoterms ?? "-"}`,           
     `Currency: ${cur}`,
   ];
 
@@ -161,15 +161,35 @@ export const generatePurchaseOrderPDF = async (
   const LH = 4.5;
   const PAD = 3;
   const gap = 3;
-  const colW = (W - M * 2 - gap * 2) / 3;
+const supplierL = parseAddressDisplay(po.supplierAddressDisplay);
+const dispatchL = parseAddressDisplay(
+  po.dispatchAddressDisplay || po.dispatchAddress
+);
+const shippingL = parseAddressDisplay(po.shippingAddressDisplay);
 
-  // ✅ NEW: Parse addresses from HTML display strings
-  const supplierL = parseAddressDisplay(po.supplierAddressDisplay);
-  const dispatchL = parseAddressDisplay(po.dispatchAddressDisplay);
-  const shippingL = parseAddressDisplay(po.shippingAddressDisplay);
+const addressBoxes = [
+  {
+    title: "Supplier",
+    lines: supplierL,
+    boldTop: po?.supplierName ?? "-",
+  },
+  ...(po.dispatchAddress
+    ? [
+        {
+          title: "Dispatch Address",
+          lines: dispatchL,
+          boldTop: po?.supplierName ?? "-",
+        },
+      ]
+    : []),
 
-  // ✅ REMOVED: supplierAddress.email / .phone — not available in new API response
-
+  {
+    title: "Ship To",
+    lines: shippingL,
+    boldTop: company?.companyName ?? "-",
+  },
+].filter((box) => box.lines && box.lines.length > 0);
+  const colCount = addressBoxes.length || 1;const colW = (W - M * 2 - gap * (colCount - 1)) / colCount;
   const calcBoxH = (lines: string[], hasBoldTop = false) => {
     let h = BOX_HDR + PAD * 2;
     if (hasBoldTop) h += LH + 1;
@@ -179,10 +199,8 @@ export const generatePurchaseOrderPDF = async (
     return h + 2;
   };
   const boxH = Math.max(
-    calcBoxH(supplierL, true),
-    calcBoxH(dispatchL),
-    calcBoxH(shippingL),
-  );
+  ...addressBoxes.map((b, i) => calcBoxH(b.lines, !!b.boldTop))
+);
 
   const drawBox = (
     bx: number,
@@ -220,21 +238,10 @@ export const generatePurchaseOrderPDF = async (
     });
   };
 
-  drawBox(M, "Supplier", supplierL, po?.supplierName ?? "-");
-drawBox(
-  M + colW + gap,
-  "Dispatch Address",
-  dispatchL,
-  po?.supplierName ?? "-"
-);
-
-drawBox(
-  M + (colW + gap) * 2,
-  "Ship To",
-  shippingL,
-  company?.companyName ?? "-"
-);
-
+addressBoxes.forEach((box, index) => {
+  const x = M + index * (colW + gap);
+  drawBox(x, box.title, box.lines, box.boldTop);
+});
   const afterBoxY = AY + boxH + 4;
 
   doc.setFont("helvetica");
@@ -261,9 +268,9 @@ drawBox(
     ],
     body: po.items.map((item: any, idx: number) => {
       const packing =
-        item.packingUnit && item.packingSize
-          ? `${item.packingUnit}×${item.packingSize}`
-          : "-";
+  item.packingUnit && item.packingSize
+    ? `${Math.abs(Math.round(Number(item.packingUnit)))}×${Math.abs(Math.round(Number(item.packingSize)))}`
+    : "-";
 
       
       const amount = Number(item.quantity ?? 0) * Number(item.rate ?? 0);
@@ -276,7 +283,9 @@ drawBox(
         idx + 1,
         item.itemName ?? "-",                       
         fmtDate(item.requiredBy),  
-         item.shelfLife ?? "-",                  
+      item.shelfLife
+  ? `${Math.abs(Math.floor(Number(item.shelfLife) / 30))}`
+  : "-",         
         packing,
         Math.round(Number(item.quantity ?? "-")),     
         item.uom ?? "-",
@@ -304,7 +313,7 @@ drawBox(
 
    columnStyles: {
   0: { cellWidth: 7, halign: "center" },   
-  1: { cellWidth: 32, halign: "center" },    
+  1: { cellWidth: 32, halign: "left" },    
   2: { cellWidth: 20, halign: "center" }, 
   3: { cellWidth: 18, halign: "center" },  
   4: { cellWidth: 14, halign: "center" }, 

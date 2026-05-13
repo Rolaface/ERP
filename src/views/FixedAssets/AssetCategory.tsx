@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
+import { getAssetCategories as fetchAssetCategoriesAPI } from "../../api/faapi";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -15,7 +16,8 @@ import {
 import { fireManagedSwal } from "../../utils/swalManager";
 import { Copy } from "lucide-react";
 import AssetCategoryModal from "../../components/FixedAsset/AssetCategoryModal";
-
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface AssetCategory {
@@ -27,9 +29,39 @@ interface AssetCategory {
   accounts: any[];
 }
 
-const getAssetCategories = async (_page: number, _pageSize: number, _filters: any) => {
-  // replace with real API call
-  return { data: [], pagination: { total_pages: 1, total: 0 } };
+const getAssetCategories = async (
+  page: number,
+  pageSize: number,
+  filters: any
+) => {
+  const data = await fetchAssetCategoriesAPI({
+    fields: [
+      "name",
+      "asset_category_name",
+
+      "non_depreciable_category",
+    ],
+    page,
+    page_size: pageSize,
+    search: filters?.search,
+  });
+
+  return {
+    data: data.map((item: any) => ({
+      id: item.name,
+      assetCategoryName: item.asset_category_name,
+      enableCapitalWorkInProgress:
+        item.enable_capital_work_in_progress === 1,
+      nonDepreciableCategory:
+        item.non_depreciable_category === 1,
+      financeBooks: [],
+      accounts: [],
+    })),
+    pagination: {
+      total_pages: 1,
+      total: data.length,
+    },
+  };
 };
 
 const getAssetCategoryById = async (_id: string) => {
@@ -42,6 +74,8 @@ const deleteAssetCategory = async (_id: string) => {
   return { status: 200 };
 };
 
+const ASSET_CATEGORY_MODULE = "Asset Category";
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const AssetCategoryTable: React.FC = () => {
@@ -53,6 +87,7 @@ const AssetCategoryTable: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const { can } = usePermission();
 
   // ── Modal state ─────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
@@ -151,11 +186,10 @@ const AssetCategoryTable: React.FC = () => {
   const columns: Column<AssetCategory>[] = [
     {
       key: "id",
-      header: "ID",
+      header: "Name",
       align: "center",
       render: (o) => {
         const id = o.id || "";
-        const shortId = id ? `****${id.slice(-4)}` : "—";
 
         const handleCopy = (e: React.MouseEvent) => {
           e.stopPropagation();
@@ -164,7 +198,9 @@ const AssetCategoryTable: React.FC = () => {
 
         return (
           <div className="flex items-center justify-center gap-1 group">
-            <span className="font-mono text-sm">{shortId}</span>
+            <span className="font-mono text-sm truncate max-w-[120px]">
+              {id || "—"}
+            </span>
             <button
               onClick={handleCopy}
               className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
@@ -181,7 +217,10 @@ const AssetCategoryTable: React.FC = () => {
       key: "assetCategoryName",
       header: "Category Name",
       align: "center",
-      render: (o) => <span className="block">{o.assetCategoryName || "—"}</span>,
+      render: (o) =>
+        <div className="py-1.5">
+          <span className="block">{o.assetCategoryName || "—"}</span>
+        </div>,
       tooltip: (o) => o.assetCategoryName || "—",
     },
     {
@@ -189,7 +228,9 @@ const AssetCategoryTable: React.FC = () => {
       header: "Capital WIP",
       align: "center",
       render: (o) => (
-        <StatusBadge status={o.enableCapitalWorkInProgress ? "Enabled" : "Disabled"} />
+        <div className="py-1.5">
+          <StatusBadge status={o.enableCapitalWorkInProgress ? "Enabled" : "Disabled"} />
+        </div>
       ),
     },
     {
@@ -197,7 +238,9 @@ const AssetCategoryTable: React.FC = () => {
       header: "Non-Depreciable",
       align: "center",
       render: (o) => (
-        <StatusBadge status={o.nonDepreciableCategory ? "Yes" : "No"} />
+        <div className="py-1.5">
+          <StatusBadge status={o.nonDepreciableCategory ? "Yes" : "No"} />
+        </div>
       ),
     },
     {
@@ -206,13 +249,20 @@ const AssetCategoryTable: React.FC = () => {
       align: "center",
       render: (o) => (
         <ActionGroup>
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEdit(o, e as any)}
-            iconOnly
-          />
+          {can(ASSET_CATEGORY_MODULE, "write") && (
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(o, e as any)}
+              iconOnly
+            />
+          )}
+
           <ActionMenu
-            onDelete={(e) => handleDelete(o, e as any)}
+            {...(can(ASSET_CATEGORY_MODULE, "delete")
+              ? {
+                onDelete: (e) => handleDelete(o, e as any),
+              }
+              : {})}
           />
         </ActionGroup>
       ),
@@ -229,7 +279,7 @@ const AssetCategoryTable: React.FC = () => {
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}
-        enableAdd
+        enableAdd={can(ASSET_CATEGORY_MODULE, "create")}
         addLabel="Add Asset Category"
         onAdd={handleAddClick}
         enableColumnSelector

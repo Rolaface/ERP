@@ -4,17 +4,21 @@ import { closeManagedSwal, fireManagedSwal } from "./swalManager";
 const extractErrorMessage = (error: any): string => {
   if (typeof error === "string") return error;
 
-if (error?.response?.data?.message) {
-  const msg = error.response.data.message;
+  const msg = error?.response?.data?.message;
 
-  if (typeof msg === "string") return msg;
-
-  if (typeof msg === "object" && msg?.message) {
-    return String(msg.message);
+  if (
+    typeof msg === "string" &&
+    msg.trim()
+  ) {
+    return msg.trim();
   }
 
-  return JSON.stringify(msg);
-}
+  if (
+    typeof msg === "object" &&
+    msg?.message
+  ) {
+    return String(msg.message).trim();
+  }
 
   if (error?.response?.data?._server_messages) {
     try {
@@ -155,4 +159,112 @@ export const showPOConflictDialog = async (
   if (result.isConfirmed) return "keep";
   if (result.isDenied) return "replace";
   return "cancel";
+};
+
+
+export const showStepLoader = (title: string, html: string) => {
+  fireManagedSwal({
+    title,
+    html,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    showConfirmButton: false,
+    didOpen: () => Swal.showLoading(),
+  });
+};
+
+// ── Final result after employee creation + photo upload ───────────────────────
+// Shows all collected info: success message, welcome email, warnings.
+export const showEmployeeCreationResult = async (options: {
+  employeeId: string;
+  successMessage: string;
+  welcomeMessage?: string;         // e.g. "Welcome email sent to..."
+  serverWarnings?: string[];       // e.g. username conflict notices
+  photoUploaded: boolean;
+  photoError?: string;
+}): Promise<void> => {
+  const { employeeId, successMessage, welcomeMessage, serverWarnings = [], photoUploaded, photoError } = options;
+
+  // ── Build HTML body ──────────────────────────────────────────────────────────
+  const rows: string[] = [];
+
+  // Employee ID badge
+  rows.push(`
+    <div style="display:inline-flex;align-items:center;gap:6px;background:#f0f9ff;border:1px solid #bae6fd;
+      borderRadius:8px;padding:5px 12px;marginBottom:12px;">
+      <span style="font-size:11px;color:#0369a1;font-weight:600;letter-spacing:0.04em;font-family:monospace">
+        ${employeeId}
+      </span>
+    </div>
+  `);
+
+  // Main success row
+  rows.push(`
+    <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:8px;text-align:left;">
+      <span style="color:#16a34a;font-size:15px;margin-top:1px;flex-shrink:0;">✓</span>
+      <span style="font-size:13px;color:#15803d;font-weight:600;line-height:1.5">${successMessage}</span>
+    </div>
+  `);
+
+  // Photo upload row
+  if (photoUploaded) {
+    rows.push(`
+      <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:8px;text-align:left;">
+        <span style="color:#16a34a;font-size:15px;margin-top:1px;flex-shrink:0;">✓</span>
+        <span style="font-size:13px;color:#15803d;font-weight:600;line-height:1.5">Profile photo uploaded successfully.</span>
+      </div>
+    `);
+  } else if (photoError) {
+    rows.push(`
+      <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:8px;text-align:left;">
+        <span style="color:#d97706;font-size:14px;margin-top:1px;flex-shrink:0;">⚠</span>
+        <span style="font-size:12.5px;color:#92400e;line-height:1.5">
+          Photo upload failed — you can add it later by editing the employee.
+        </span>
+      </div>
+    `);
+  }
+
+  // Divider before info items
+  if (welcomeMessage || serverWarnings.length > 0) {
+    rows.push(`<hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0;" />`);
+  }
+
+  // Welcome email notice
+  if (welcomeMessage) {
+    rows.push(`
+      <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:7px;text-align:left;
+        background:#f0f9ff;border-radius:8px;padding:9px 11px;">
+        <span style="color:#0284c7;font-size:13px;flex-shrink:0;margin-top:1px;">✉</span>
+        <span style="font-size:12px;color:#0369a1;line-height:1.6">${welcomeMessage}</span>
+      </div>
+    `);
+  }
+
+  // Server warnings (username conflict, email config etc.)
+  for (const w of serverWarnings) {
+    rows.push(`
+      <div style="display:flex;align-items:flex-start;gap:8px;marginBottom:6px;text-align:left;
+        background:#fffbeb;border-radius:8px;padding:8px 11px;">
+        <span style="color:#d97706;font-size:13px;flex-shrink:0;margin-top:1px;">⚠</span>
+        <span style="font-size:12px;color:#78350f;line-height:1.55">${w}</span>
+      </div>
+    `);
+  }
+
+  const icon = photoUploaded ? "success" : (photoError ? "warning" : "success");
+  const title = photoUploaded
+    ? "Employee Profile Complete"
+    : photoError
+      ? "Employee Saved — Photo Pending"
+      : "Employee Created Successfully";
+
+  await fireManagedSwal({
+    icon,
+    title,
+    html: `<div style="margin-top:4px">${rows.join("")}</div>`,
+    confirmButtonText: "Done",
+    confirmButtonColor: "#6366f1",
+    width: 480,
+  });
 };

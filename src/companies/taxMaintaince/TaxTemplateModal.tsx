@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Tag, Plus, Trash2 } from "lucide-react";
+import {  Plus, Trash2 , ReceiptText } from "lucide-react";
 
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -180,9 +180,9 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode ? "Edit Tax Template" : "Add Tax Template"}
-      subtitle="Create simple tax template"
-      icon={Tag}
+      title={isEditMode ? "Edit Tax Template" : "Create Tax Template"}
+      subtitle="Create tax template"
+      icon={ReceiptText}
       footer={footer}
       customWidth="46vw"
       height="66vh"
@@ -263,7 +263,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                           label=""
                           type="number"
                           name="tax_rate"
-                          value={row.tax_rate}
+                          value={row.tax_rate === 0 ? "" : row.tax_rate}
                           onChange={(e) => handleRowChange(actualIdx, e)}
                           error={errors[`tax_rate_${actualIdx}`]}
                           className="w-full no-spinner"

@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { Building2, MapPin, FileText } from "lucide-react";
+import React, { useCallback, useMemo } from "react";
+import { Building2, MapPin, FileText ,ClipboardList} from "lucide-react";
 import { Button } from "../ui/modal/formComponent";
 import { DetailsTab } from "./purchaseorder/DetailsTab";
 import { TaxTab } from "../procurement/purchaseorder/TaxTab";
@@ -75,6 +75,8 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     handleAddressSelect,
     handleCopyBillingToShipping,
     handleCopySupplierToDispatch,
+    handleAddressRemove,
+      removedBoxes,
   } = usePurchaseOrderForm({ isOpen, onSuccess: onSubmit, onClose, poId });
 
   const handleNext = useCallback(() => {
@@ -180,6 +182,9 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           onFormChange={handleFormChange}
           supplierId={form.supplierId}
           companyId={form.company}
+           isEditMode={!!poId}   
+           removedBoxes={removedBoxes}
+            handleAddressRemove={handleAddressRemove}   
           customShippingRule={customShippingRule}
           setCustomShippingRule={setCustomShippingRule}
           customIncoterm={customIncoterm}
@@ -222,9 +227,9 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={poId ? "Edit Purchase Order" : "New Purchase Order"}
+      title={poId ? "Edit Purchase Order" : "Create Purchase Order"}
       subtitle="Create and manage purchase order"
-      icon={Building2}
+      icon={ClipboardList}
       customWidth="95vw"
       height="88vh"
       footer={footer}

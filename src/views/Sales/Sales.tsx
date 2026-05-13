@@ -1,12 +1,15 @@
 import React, { Suspense, lazy, useMemo } from "react";
-import { useSearchParams, useNavigate, useLocation, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import {
-  FaMoneyBillWave,
-  FaTachometerAlt,
-  FaFileInvoice,
-  FaFileInvoiceDollar,
-  FaChartBar,
-} from "react-icons/fa";
+  LayoutDashboard,
+  FileSignature,
+  FileClock,
+  Receipt,
+  FileMinus,
+  BarChart3,
+  TrendingUp,
+  ShoppingCart
+} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
@@ -14,6 +17,9 @@ import {
   AppTabs,
 } from "../../components/ui/app-shell";
 import AppSkeleton from "../../components/ui/AppSkeleton";
+import { usePermission } from "../../hooks/permission/usePermission";
+import { useUrlTab } from "../../hooks/useUrlTab";
+
 
 const QuotationsTable = lazy(() => import("./Quotations"));
 const InvoiceTable = lazy(() => import("./Invoices"));
@@ -22,7 +28,6 @@ const POS = lazy(() => import("./POS"));
 const SalesDashboard = lazy(() => import("./SalesDashboard"));
 const ProformaInvoicesTable = lazy(() => import("./ProformaInvoice"));
 const CreditNotesTable = lazy(() => import("./CreditNotesTable"));
-const DebitNotesTable = lazy(() => import("./DebitNotesTable"));
 const SalesAnalytics = lazy(() => import("./SalesAnalytics"));
 
 type OutletContextType = {
@@ -40,44 +45,84 @@ type OutletContextType = {
   openPOEdit: (poId: string | number) => void;
 };
 
-const salesTabs = [
-  { id: "salesdashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
-  { id: "quotations", label: "Quotations", icon: <FaFileInvoice /> },
+const ALL_SALES_TAB = [
+  {
+    id: "salesdashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard size={16} strokeWidth={1.75} />,
+    module: null,
+  },
+  {
+    id: "quotations",
+    label: "Quotations",
+    icon: <FileSignature size={16} strokeWidth={1.75} />,
+    module: null,
+    action: "read" as const,
+  },
   {
     id: "proformaInvoice",
     label: "Proforma Invoice",
-    icon: <FaFileInvoiceDollar />,
+    icon: <FileClock size={16} strokeWidth={1.75} />,
+    module: null,
+    action: "read" as const,
   },
-  { id: "invoices", label: "Invoices", icon: <FaFileInvoiceDollar /> },
-  { id: "creditNotes", label: "Credit Notes", icon: <FaFileInvoiceDollar /> },
-  { id: "debitNotes", label: "Debit Notes", icon: <FaFileInvoiceDollar /> },
-  { id: "reports", label: "Reports", icon: <FaChartBar /> },
-  { id: "salesAnalytics", label: "Sales Analytics", icon: <FaChartBar /> },
+  {
+    id: "invoices",
+    label: "Invoices",
+    icon: <Receipt size={16} strokeWidth={1.75} />,
+    module: "Sales Invoice",
+    action: "read" as const,
+  },
+  {
+    id: "creditNotes",
+    label: "Credit Notes",
+    icon: <FileMinus size={16} strokeWidth={1.75} />,
+    module: "Sales Invoice",
+    action: "read" as const,
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: <BarChart3 size={16} strokeWidth={1.75} />,
+    module: "Sales Invoice",
+    action: "report" as const,    // ← report action
+  },
+  {
+    id: "salesAnalytics",
+    label: "Sales Analytics",
+    icon: <TrendingUp size={16} strokeWidth={1.75} />,
+    module: "Sales Invoice",
+    action: "report" as const,    // ← report action
+  },
 ];
 
 const DEFAULT_TAB = "salesdashboard";
 
 const SalesModule: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { can } = usePermission();       
+  
+   const salesTabs = useMemo(
+  () => ALL_SALES_TAB.filter((t) => !t.module || can(t.module, t.action)),
+  [can]
+);                                                       
+
   const { openInvoiceCreate, openProformaCreate, openQuotationCreate } =
     useOutletContext<OutletContextType>();
   
-  // Get active tab from URL query param, default to dashboard
-  const activeTab = searchParams.get("tab") || DEFAULT_TAB;
-  
-  const isDashboardTab = activeTab === "salesdashboard";
 
-  const handleTabChange = (tabId: string) => {
-    // Update URL with new tab, preserving other query params
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("tab", tabId);
-    navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
-  };
+  const fallbackTab = salesTabs[0]?.id ?? DEFAULT_TAB;
+  const [activeTab, handleTabChange] = useUrlTab({
+    tabs: salesTabs,
+    defaultTab: fallbackTab,
+    basePath: "/sales",
+  });
+  const resolvedTab = activeTab;
+
+
+  const isDashboardTab = resolvedTab === "salesdashboard";
 
   const renderTab = () => {
-    switch (activeTab) {
+    switch (resolvedTab) {
       case "salesdashboard":
         return <SalesDashboard />;
       case "quotations":
@@ -108,8 +153,6 @@ const SalesModule: React.FC = () => {
         return <POS />;
       case "creditNotes":
         return <CreditNotesTable />;
-      case "debitNotes":
-        return <DebitNotesTable />;
       case "reports":
         return <ReportTable />;
       case "salesAnalytics":
@@ -123,10 +166,10 @@ const SalesModule: React.FC = () => {
     <AppPage viewportLocked={isDashboardTab}>
       <AppPageHeader
         title="Sales"
-        description="Quotes, invoices and sales analytics in one workflow."
-        icon={<FaMoneyBillWave />}
+        description="End-to-end sales management"
+          icon={<ShoppingCart size={20} strokeWidth={1.75} />}
       />
-      <AppTabs tabs={salesTabs} activeTab={activeTab} onChange={handleTabChange} />
+      <AppTabs tabs={salesTabs} activeTab={resolvedTab} onChange={handleTabChange} />
       <AppPageBody viewportLocked={isDashboardTab}>
         <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>

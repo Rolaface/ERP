@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import { openBankAccountModal } from "../../store/modalStore";
-import { FaUniversity } from "react-icons/fa";
+import { Copy } from "lucide-react"
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -9,14 +9,22 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { getAllBankAccounts, updateBankAccountStatus } from "../../api/BankAccountApi";
-
+import {
+  AppPage,
+  AppPageHeader,
+  AppPageBody,
+} from "../../components/ui/app-shell";
 import { showApiError, showSuccess } from "../../utils/alert";
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 
 const mask = (val?: string) => {
   if (!val) return "—";
-  if (val.length <= 4) return "•".repeat(val.length);
-  return "•".repeat(val.length - 4) + val.slice(-4);
+  if (val.length <= 4) return "*".repeat(val.length);
+  return "*".repeat(val.length - 4) + val.slice(-4);
 };
+
+const BANK_ACCOUNT_MODULE = "Bank Account";
 
 const BankAccountSetup: React.FC = () => {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
@@ -28,7 +36,7 @@ const BankAccountSetup: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
+  const { can } = usePermission();
 
   const fetchAccounts = useCallback(async () => {
     try {
@@ -43,8 +51,8 @@ const BankAccountSetup: React.FC = () => {
       setBankAccounts(res.data || []);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);
-    } catch (err: any) {
-      showApiError(err?.message);
+    } catch (err) {
+      showApiError(err);
     } finally {
       setLoading(false);
     }
@@ -67,14 +75,12 @@ const BankAccountSetup: React.FC = () => {
       });
 
       await fetchAccounts();
-    } catch (err: any) {
-      showApiError(err.message);
+    } catch (err) {
+      showApiError(err);
     } finally {
       setActionLoadingId(null);
     }
   }, [fetchAccounts]);
-
-
 
 
 
@@ -89,84 +95,151 @@ const BankAccountSetup: React.FC = () => {
       });
 
       await fetchAccounts();
-    } catch (err: any) {
-      showApiError(err.message);
+    } catch (err) {
+      showApiError(err);
     } finally {
       setActionLoadingId(null);
     }
   }, [fetchAccounts]);
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
+
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
   const columns: Column<BankAccount>[] = [
     {
       key: "dateAdded",
       header: "Date Added",
-      render: (row) => row.dateAdded || "—",
+      align: "center",
+      tooltip: (row) => row.dateAdded ? formatDate(row.dateAdded) : "—",
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="block">{row.dateAdded ? formatDate(row.dateAdded) : "—"}</span>
+        </div>
+      ),
     },
     {
       key: "accountFor",
-      header: "Account For",
-      render: (row) =>
-        Number(row.isCompanyAccount) === 1
-          ? "Company"
-          : row.accountFor || "—",
+      header: "Acc For",
+      align: "center",
+      tooltip: (row) =>
+        Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—",
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="block">
+            {Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—"}
+          </span>
+        </div>
+      ),
     },
     {
       key: "bankName",
       header: "Bank",
+      align: "center",
+      tooltip: (row) => row.bankName || "—",
       render: (row) => (
-        <span className="font-semibold">{row.bankName}</span>
+        <div className="py-1.5">
+          <span className="block font-semibold">{row.bankName}</span>
+        </div>
       ),
     },
     {
       key: "accountNo",
-      header: "Account No",
+      header: "Acc No",
+      align: "center",
+      tooltip: (row) => row.accountNo || "—",
       render: (row) => (
-        <span title={row.accountNo || ""} className="cursor-pointer">
-          {mask(row.accountNo)}
-        </span>
+        <div className="py-1.5">
+          <span className="inline-flex items-center gap-1.5">
+            <code className="tracking-widest text-xs">{mask(row.accountNo)}</code>
+            {row.accountNo && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(row.accountNo!);
+                }}
+                className="text-gray-400 hover:text-blue-600 transition-colors cursor-pointer"
+                title="Copy account number"
+              >
+                <Copy size={13} />
+              </button>
+            )}
+          </span>
+        </div>
       ),
     },
     {
       key: "accountHolderName",
-      header: "Account Holder",
+      header: "Acc Holder",
+      align: "center",
+      tooltip: (row) => String(row.accountHolderName || "—"),
+      render: (row) => (
+        <div className="py-1.5">
+          <span className="block">{row.accountHolderName || "—"}</span>
+        </div>
+      ),
     },
     {
       key: "sortCode",
-      header: "IFSC / Sort Code",
+      header: "IFSC/Sort",
+      align: "center",
+      tooltip: (row) => row.sortCode || "—",
       render: (row) => (
-        <span title={row.sortCode || ""} className="cursor-pointer">
-          {mask(row.sortCode)}
-        </span>
+        <div className="py-1.5">
+          <span className="block">{(row.sortCode)}</span>
+        </div>
       ),
     },
     {
       key: "currency",
-      header: "currency",
+      header: "Currency",
+      align: "center",
+      tooltip: (row) => row.currency || "—",
       render: (row) => (
-        <span className="font-semibold">{row.currency}</span>
+        <div className="py-1.5">
+          <span className="block font-semibold">{row.currency}</span>
+        </div>
       ),
     },
-
-
     {
       key: "isDefault",
       header: "Default",
-      render: (row) =>
-        row.isDefault ? (
-          <span className="text-green-600 font-semibold">Yes</span>
-        ) : (
-          "—"
-        ),
+      align: "center",
+      tooltip: (row) => (row.isDefault ? "Default account" : "Not default"),
+      render: (row) => (
+        <div className="py-1.5">
+          {row.isDefault ? (
+            <span className="text-green-600 font-semibold">Yes</span>
+          ) : (
+            <span className="block">—</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "isDisabled",
       header: "Status",
-      render: (row) =>
-        row.isDisabled ? (
-          <span className="text-red-500 font-semibold">Disabled</span>
-        ) : (
-          <span className="text-green-600">Active</span>
-        ),
+      align: "right",
+      tooltip: (row) => (row.isDisabled ? "Disabled" : "Active"),
+      render: (row) => (
+        <div className="py-1.5">
+          {row.isDisabled ? (
+            <span className="text-red-500 font-semibold">Disabled</span>
+          ) : (
+            <span className="text-green-600">Active</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "actions",
@@ -174,24 +247,34 @@ const BankAccountSetup: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <ActionButton
-            type="edit"
-            onClick={() => console.log("EDIT:", row)}
-            iconOnly
-          />
+          <PermissionGate module={BANK_ACCOUNT_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={() =>
+                openBankAccountModal(row, true, {
+                  onSuccess: () => fetchAccounts(),
+                })
+              }
+              iconOnly
+            />
+          </PermissionGate>
           <ActionMenu
-            customActions={[
-              {
-                label: "Set Default",
-                onClick: () => handleSetDefault(row),
-                disabled: actionLoadingId === String(row.id)
-              },
-              {
-                label: row.isDisabled ? "Enable" : "Disable",
-                onClick: () => handleToggleDisable(row),
-                disabled: actionLoadingId === String(row.id)
-              },
-            ]}
+            customActions={
+              can(BANK_ACCOUNT_MODULE, "write")
+                ? [
+                  {
+                    label: "Set Default",
+                    onClick: () => handleSetDefault(row),
+                    disabled: actionLoadingId === String(row.id),
+                  },
+                  {
+                    label: row.isDisabled ? "Enable" : "Disable",
+                    onClick: () => handleToggleDisable(row),
+                    disabled: actionLoadingId === String(row.id),
+                  },
+                ]
+                : []
+            }
           />
         </ActionGroup>
       ),
@@ -199,43 +282,39 @@ const BankAccountSetup: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-main flex items-center gap-2">
-          <FaUniversity className="text-primary" />
-          Bank Accounts
-        </h1>
-      </div>
+    <AppPage>
+
 
       {/* TABLE */}
-      <Table
-        columns={columns}
-        data={bankAccounts}
-        loading={loading}
-        rowKey={(row) => String(row.id)}
-        showToolbar
-        searchValue={search}
-        onSearch={setSearch}
-        enableAdd
-        currentPage={page}
-        totalPages={totalPages}
-        enableColumnSelector
-        tableId="bank-accounts"
-        pageSize={pageSize}
-        totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
-        onPageChange={setPage}
-        addLabel="Add Bank Account"
-        onAdd={() => openBankAccountModal(null, false, {
-          onSuccess: () => fetchAccounts(),
-        })}
-      />
+      <AppPageBody>
+        <Table
+          columns={columns}
+          data={bankAccounts}
+          loading={loading}
+          rowKey={(row) => String(row.id)}
+          showToolbar
+          searchValue={search}
+          onSearch={setSearch}
+          enableAdd={can(BANK_ACCOUNT_MODULE, "create")}
+          currentPage={page}
+          totalPages={totalPages}
+          enableColumnSelector
+          tableId="bank-accounts"
+          pageSize={pageSize}
+          totalItems={totalItems}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          onPageChange={setPage}
+          addLabel="Add Bank Account"
+          onAdd={() => openBankAccountModal(null, false, {
+            onSuccess: () => fetchAccounts(),
+          })}
+        />
+      </AppPageBody>
 
 
 
-    </div>
+    </AppPage>
   );
 };
 

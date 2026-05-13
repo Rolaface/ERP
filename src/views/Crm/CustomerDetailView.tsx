@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
 import {
   X,
   Search,
   FileText,
   Receipt,
-  Plus,
   MapPin,
   Mail,
   Building2,
@@ -25,24 +23,14 @@ import {
   CalendarDays,
 } from "lucide-react";
 import type { CustomerDetail } from "../../types/customer";
-import QuotationModal from "../../components/sales/QuotationModal";
-import InvoiceModal from "../../components/sales/InvoiceModal";
 import CustomerStatement from "../Crm/CustomerStatement";
 import CustomerInvoices from "./CustomerInvoices";
 import CustomerQuotations from "./CustomerQuotations";
 import CustomerBankDetails from "./CustomerBankDetails";
-import AddBankAccountModal from "../../components/CompanySetup/AddBankAccountModal";
-import PaymentEntryModal from "../../views/PaymentEntry/PaymentEntryModal";
 import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
 import { getCustomerByCustomerCode } from "../../api/customerApi";
 
 
-
-type OutletContextType = {
-  openCustomerCreate: () => void;
-  openInvoiceCreate:()=>void;
-  openQuotationCreate: () => void;
-};
 
 interface Props {
   customerId: string;
@@ -95,18 +83,10 @@ const CustomerDetailView: React.FC<Props> = ({
   onBack,
   onCustomerSelect,
 }) => {
-  const { openCustomerCreate } = useOutletContext<OutletContextType>();
-  const { openInvoiceCreate } = useOutletContext<OutletContextType>();
-  const { openQuotationCreate } = useOutletContext<OutletContextType> ();
-
   const [searchTerm,          setSearchTerm]          = useState("");
   const [customer,            setCustomer]            = useState<CustomerDetail | null>(null);
   const [loading,             setLoading]             = useState(true);
   const [activeTab,           setActiveTab]           = useState<TabId>("overview");
-  const [showQuotationModal,  setShowQuotationModal]  = useState(false);
-  const [showInvoiceModal,    setShowInvoiceModal]    = useState(false);
-  const [showPaymentModal,    setShowPaymentModal]    = useState(false);
-  const [showBankAccountModal,setShowBankAccountModal]= useState(false);
   const [editingRow,          setEditingRow]          = useState<any>(null);
   const [sidebarOpen,         setSidebarOpen]         = useState(true);
   const [mobileDrawer,        setMobileDrawer]        = useState(false);
@@ -184,40 +164,45 @@ const CustomerDetailView: React.FC<Props> = ({
   const renderActionButton = () => {
     switch (activeTab) {
       case "overview":
-        return (
-          <button onClick={() => openCustomerCreate()}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> New Customer
-          </button>
-        );
+        // return (
+        //   <button onClick={() => openCustomerCreate()}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> New Customer
+        //   </button>
+        // );
+        return null;
       case "quotations":
-        return (
-          <button onClick={() => openQuotationCreate()}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> New Quotation
-          </button>
-        );
+        // return (
+        //   <button onClick={() => openQuotationCreate()}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> New Quotation
+        //   </button>
+        // );
+        return null;
       case "invoices":
-        return (
-          <button onClick={() => openInvoiceCreate()}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> New Invoice
-          </button>
-        );
+        // return (
+        //   <button onClick={() => openInvoiceCreate()}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> New Invoice
+        //   </button>
+        // );
+        return null;
       case "payments":
-        return (
-          <button onClick={() => setShowPaymentModal(true)}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> Receive Payment
-          </button>
-        );
+        // return (
+        //   <button onClick={() => setShowPaymentModal(true)}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> Receive Payment
+        //   </button>
+        // );
+        return null;
       case "bank":
-        return (
-          <button onClick={() => { setEditingRow(null); setShowBankAccountModal(true); }}
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-            <Plus size={13} /> Add Bank
-          </button>
-        );
+        // return (
+        //   <button onClick={() => { setEditingRow(null); setShowBankAccountModal(true); }}
+        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
+        //     <Plus size={13} /> Add Bank
+        //   </button>
+        // );
+        return null;
       default:
         return null;
     }
@@ -556,15 +541,14 @@ const CustomerDetailView: React.FC<Props> = ({
 
             {/* ════ BANK ════════════════════════════════════════════════ */}
             {activeTab === "bank" && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <CustomerBankDetails
                   customerName={(customer as any).id}
                   onAdd={(refresh) => {
                     setEditingRow(null);
                     refreshBankAccounts.current = refresh;
-                    setShowBankAccountModal(true);
                   }}
-                  onEdit={(row) => { setEditingRow(row); setShowBankAccountModal(true); }}
+                  onEdit={(row) => { setEditingRow(row); }}
                 />
               </div>
             )}
@@ -576,21 +560,21 @@ const CustomerDetailView: React.FC<Props> = ({
 
             {/* ════ QUOTATIONS ═════════════════════════════════════════ */}
             {activeTab === "quotations" && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <CustomerQuotations customerId={customer.id} />
               </div>
             )}
 
             {/* ════ INVOICES ═══════════════════════════════════════════ */}
             {activeTab === "invoices" && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <CustomerInvoices customerName={(customer as any).id} />
               </div>
             )}
 
             {/* ════ PAYMENTS ═══════════════════════════════════════════ */}
             {activeTab === "payments" && (
-              <div className="p-5 w-full min-w-0 overflow-hidden">
+              <div className="p-2 w-full min-w-0 overflow-hidden">
                 <CustomerdetailviewPayment customerName={(customer as any).name} />
               </div>
             )}
@@ -599,15 +583,15 @@ const CustomerDetailView: React.FC<Props> = ({
       </div>
 
       {/* ── MODALS ── */}
-      <QuotationModal  isOpen={showQuotationModal}  onClose={() => setShowQuotationModal(false)} />
-      <InvoiceModal    isOpen={showInvoiceModal}    onClose={() => setShowInvoiceModal(false)} />
-      <PaymentEntryModal
+      {/* <QuotationModal  isOpen={showQuotationModal}  onClose={() => setShowQuotationModal(false)} />
+      <InvoiceModal    isOpen={showInvoiceModal}    onClose={() => setShowInvoiceModal(false)} /> */}
+      {/* <PaymentEntryModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSuccess={() => setShowPaymentModal(false)}
         customerId={customer.id}
-      />
-      <AddBankAccountModal
+      /> */}
+      {/* <AddBankAccountModal
         isOpen={showBankAccountModal}
       
         onClose={() => { setShowBankAccountModal(false); setEditingRow(null); }}
@@ -616,7 +600,7 @@ const CustomerDetailView: React.FC<Props> = ({
         defaultAccountFor="Customer"
         initialData={editingRow}
          customerId={customer.id}
-      />
+      /> */}
     </div>
   );
 };

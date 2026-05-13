@@ -1,29 +1,65 @@
-
-
 import type { TermSection } from "../termsAndCondition";
 
-/*  SUPPLIER  */
+export interface RFQListItem {
+  name: string;
+  transaction_date: string;
+  schedule_date: string;
+  status: string;
+}
 
-export interface SupplierRow {
-  supplier: string;
-  contact: string;
-  email: string;
+export interface RFQPagination {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
+export interface RFQListResponse {
+  data: RFQListItem[];
+  pagination: RFQPagination;
+}
+
+
+export type SupplierRow = {
+  supplier: string;       
+  supplierName: string;  
+  contact: string;        
+  email: string;     
   sendEmail: boolean;
-}
-
-/*  ITEMS  */
-
-export interface ItemRow {
-  itemCode: string;
-  requiredDate: string;
+};
+ 
+export type ItemRow = {
+  itemCode: string;           
+  itemName: string;          
+  description: string;
+  uom: string;            
+  warehouse: string;         
   quantity: number;
-  uom: string;
-  warehouse: string;
-}
-
-/*  PAYMENT ROWS  */
-/* 👉 Optional — keep only if RFQ payment table needed */
-
+  requiredDate: string;
+  conversionFactor: number;
+};
+ 
+export const emptySupplier: SupplierRow = {
+  supplier: "",
+  supplierName: "",
+  contact: "",
+  email: "",
+  sendEmail: true,
+};
+ 
+export const emptyItem: ItemRow = {
+  itemCode: "",
+  itemName: "",
+  description: "",
+  uom: "",
+  warehouse: "",
+  quantity: 1,
+  requiredDate: "",
+  conversionFactor: 1,
+};
+ 
 export interface PaymentRow {
   paymentTerm: string;
   description: string;
@@ -60,22 +96,6 @@ export interface RfqFormData {
   sendPrint: boolean;
 }
 
-/*  EMPTY ROWS  */
-
-export const emptySupplier: SupplierRow = {
-  supplier: "",
-  contact: "",
-  email: "",
-  sendEmail: true,
-};
-
-export const emptyItem: ItemRow = {
-  itemCode: "",
-  requiredDate: new Date().toISOString().split("T")[0],
-  quantity: 0,
-  uom: "",
-  warehouse: "",
-};
 
 export const emptyPaymentRow: PaymentRow = {
   paymentTerm: "",

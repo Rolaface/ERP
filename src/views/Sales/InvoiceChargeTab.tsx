@@ -44,7 +44,7 @@ interface InvoiceChargesTabProps {
   selectedTemplate?: string;
   onTemplateSelect?: (templateName: string, taxes: TemplateTax[]) => void;
 
-  taxes: any[];   // ✅ ADD THIS
+  taxes: any[];   
   onTaxChange?: (index: number, field: string, value: any) => void; // ✅ ADD THIS
 }
 
@@ -94,7 +94,7 @@ onTaxChange,
   const selectedTemplateObj = templates.find((t) => t.name === selectedTemplate) ?? null;
 
   const chargesTotal = taxes.reduce(
-  (sum, t) => sum + (Number(t.taxAmount) || 0),
+  (sum, t) => sum + (Number(t.amount) || 0),
   0
 );
 
@@ -207,19 +207,19 @@ onTaxChange,
     <table className="w-full text-xs border-collapse">
       <thead>
         <tr className="bg-primary/5">
-          <th className="px-4 py-2 text-left">Account Head</th>
-          <th className="px-4 py-2 text-left">Charge Type</th>
-          <th className="px-4 py-2 text-right">Rate</th>
-          <th className="px-4 py-2 text-right">Amount</th>
-          <th className="px-4 py-2 text-left">Description</th>
-        </tr>
+  <th className="px-4 py-2 text-left w-[15%]">Account Head</th>
+  <th className="px-4 py-2 text-left w-[20%]">Charge Type</th>
+  <th className="px-4 py-2 text-left w-[12%]">Rate(%)</th>
+  <th className="px-4 py-2 text-left w-[12%]">Amount</th>
+  <th className="px-4 py-2 text-left w-[30%]">Description</th>
+</tr>
       </thead>
 
       <tbody>
         {taxes.map((tax, i) => (
           <tr key={i} className="border-t border-theme">
 
-            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
+           <td className="w-[15%] py-1 px-2">
               <input
                 value={tax.accountHead}
                 onChange={(e) =>
@@ -229,39 +229,39 @@ onTaxChange,
               />
             </td>
 
-            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
-              <input
-                value={tax.chargeType}
-                onChange={(e) =>
-                  onTaxChange?.(i, "chargeType", e.target.value)
-                }
-                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </td>
+           <td className="w-[20%] py-1 px-2">
+  <input
+    value={tax.chargeType}
+    readOnly
+    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary opacity-40 cursor-not-allowed"
+  />
+</td>
 
-            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
-              <input
-                type="number"
-                value={tax.rate}
-                onChange={(e) =>
-                  onTaxChange?.(i, "rate", e.target.value)
-                }
-                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-              />
-            </td>
+            <td className="w-[12%] py-1 px-2">
+  <input
+    type="number"
+    value={tax.rate ?? ""}
+    onChange={(e) => onTaxChange?.(i, "rate", e.target.value)}
+    disabled={tax.chargeType === "Actual"}
+    className={`w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner ${
+      tax.chargeType === "Actual" ? "opacity-40 cursor-not-allowed" : ""
+    }`}
+  />
+</td>
 
-            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
-              <input
-                type="number"
-                value={tax.taxAmount}
-                onChange={(e) =>
-                  onTaxChange?.(i, "taxAmount", e.target.value)
-                }
-                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-              />
-            </td>
+           <td className="w-[12%] py-1 px-2">
+  <input
+    type="number"
+    value={tax.amount ?? ""}
+    onChange={(e) => onTaxChange?.(i, "amount", e.target.value)}
+    disabled={tax.chargeType !== "Actual"}
+    className={`w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner ${
+      tax.chargeType !== "Actual" ? "opacity-40 cursor-not-allowed" : ""
+    }`}
+  />
+</td>
 
-            <td className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary">
+            <td className="w-[30%] py-1 px-2">
               <input
                 value={tax.description}
                 onChange={(e) =>

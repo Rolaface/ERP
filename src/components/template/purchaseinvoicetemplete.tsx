@@ -343,7 +343,10 @@ drawBox(
       ],
     ],
     body: pi.items.map((item: any, idx: number) => {
-      const packing = `${item.packingSize ?? "-"} x ${item.packingUnit ?? "-"}`;
+      const packing =
+  item.packingUnit && item.packingSize
+    ? `${Math.abs(Math.round(Number(item.packingUnit)))}×${Math.abs(Math.round(Number(item.packingSize)))}`
+    : "-";
 
       const tax = item.taxInfo?.[0];
 

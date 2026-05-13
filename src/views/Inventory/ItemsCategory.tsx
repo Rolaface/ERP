@@ -8,7 +8,7 @@ import {
   getItemGroupTree,
   deleteItemGroupById,
 } from "../../api/itemGroupApi";
-
+import { usePermission } from "../../hooks/permission/usePermission";
 import {
   AlertCircle,
   Loader2,
@@ -66,6 +66,9 @@ function matchItemGroupNode(node: ItemGroupNode, term: string): boolean {
     node.item_group_name.toLowerCase().includes(t)
   );
 }
+
+
+const ITEM_GROUP_MODULE = "Item Group";
 
 function itemGroupExpandIcon(
   _node: ItemGroupNode,
@@ -144,6 +147,7 @@ const ItemsCategory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { can } = usePermission();
 
   const fetchTree = useCallback(async () => {
     setLoading(true);
@@ -249,20 +253,26 @@ const ItemsCategory: React.FC = () => {
       header: "Group Name",
       align: "left",
       render: (row) => (
-        <span
-          className={
-            row.is_group ? "font-semibold text-main" : "font-normal text-main"
-          }
-        >
-          {row.item_group_name}
-        </span>
+        <div className="py-1.5">
+          <span
+            className={
+              row.is_group ? "font-semibold text-main" : "font-normal text-main"
+            }
+          >
+            {row.item_group_name}
+          </span>
+        </div>
+
       ),
     },
     {
       key: "name",
       header: "ID",
       align: "left",
-      render: (row) => <span className="text-xs text-muted">{row.name}</span>,
+      render: (row) =>
+        <div className="py-1.5">
+          <span className="text-xs text-muted">{row.name}</span>
+        </div>,
     },
     {
       key: "item_count",
@@ -271,9 +281,11 @@ const ItemsCategory: React.FC = () => {
       render: (row) => {
         if (row.item_count === 0) return <span className="text-muted text-xs">—</span>;
         return (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-            {row.item_count}
-          </code>
+          <div className="py-1.5">
+            <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+              {row.item_count}
+            </code>
+          </div>
         );
       },
     },
@@ -283,11 +295,16 @@ const ItemsCategory: React.FC = () => {
       align: "right",
       render: (row) => {
         const actions: MenuAction[] = [
-          {
-            label: "Edit",
-            icon: <Pencil size={12} />,
-            onClick: () => openCategoryEdit(row.name, row),
-          },
+          ...(can(ITEM_GROUP_MODULE, "write")
+            ? [
+              {
+                label: "Edit",
+                icon: <Pencil size={12} />,
+                onClick: () => openCategoryEdit(row.name, row),
+              },
+            ]
+            : []),
+
           ...(row.is_group === 1
             ? [
               {
@@ -306,15 +323,19 @@ const ItemsCategory: React.FC = () => {
                   }),
               },
             ]),
-          {
-            label: "Delete",
-            icon: <Trash2 size={12} />,
-            onClick: () => handleDelete(row),
-            danger: true,
-            dividerBefore: true,
-          },
-        ];
 
+          ...(can(ITEM_GROUP_MODULE, "delete")
+            ? [
+              {
+                label: "Delete",
+                icon: <Trash2 size={12} />,
+                onClick: () => handleDelete(row),
+                danger: true,
+                dividerBefore: true,
+              },
+            ]
+            : []),
+        ];
         return <RowActionMenu actions={actions} />;
       },
     },
@@ -340,19 +361,21 @@ const ItemsCategory: React.FC = () => {
         emptyMessage="No item groups found."
         expandIconRender={itemGroupExpandIcon}
         extraFilters={
-          <button
-            type="button"
-            onClick={() =>
-              openCategoryCreate({
-                parent: treeData?.[0]?.name,
-                onSuccess: fetchTree,
-              })
-            }
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
-          >
-            <Plus size={13} />
-            New Group
-          </button>
+          can(ITEM_GROUP_MODULE, "create") ? (
+            <button
+              type="button"
+              onClick={() =>
+                openCategoryCreate({
+                  parent: treeData?.[0]?.name,
+                  onSuccess: fetchTree,
+                })
+              }
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
+            >
+              <Plus size={13} />
+              Add Group
+            </button>
+          ) : null
         }
       />
 

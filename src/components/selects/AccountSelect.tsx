@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getComponentById } from "../../api/Accounting/JournalEntryApi";
+import { showApiError } from "../../utils/alert";
+import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 
 type Account = {
   name: string;
@@ -25,7 +27,7 @@ export default function AccountSelect({
   disabled = false,
 }: AccountSelectProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(false); // Changed to false initially
+  const [loading, setLoading] = useState(false); 
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
   
@@ -40,7 +42,9 @@ export default function AccountSelect({
       const res = await getComponentById(
         "Account",
         ["name", "account_currency"],
-        [["is_group", "=", 1]]
+        [["is_group", "=", 0]],
+        // { order_by: "creation desc" },
+        "creation desc"
       );
 
       const rawAccounts =
@@ -59,7 +63,7 @@ export default function AccountSelect({
         );
       }
     } catch (err) {
-      console.error("Failed to fetch account options", err);
+      showApiError(err|| parseFrappeError || "Failed to fetch account options");
     } finally {
       setLoading(false);
     }

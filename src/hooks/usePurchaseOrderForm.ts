@@ -169,10 +169,28 @@ export const usePurchaseOrderForm = ({
     setLoading: setAddressLoading,
     onFormChange: handleFormChange,
   });
+  const handleAddressRemove = useCallback(
+    (boxKey: BoxType) => {
+      setAddressSelected((prev) => ({ ...prev, [boxKey]: null }));
+      setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: "" }));
+      const formKeyMap: Record<BoxType, string> = {
+        companyBilling: "companyBillingAddress",
+        supplierBilling: "supplierAddress",
+        companyShipping: "shippingAddress",
+        supplierDispatch: "dispatchAddress",
+      };
+      handleFormChange({
+        target: {
+          name: `addresses.${formKeyMap[boxKey]}`,
+          value: { id: "", addressTitle: "", addressType: "", addressLine1: "", addressLine2: "", city: "", state: "", country: "", postalCode: "", phone: "", email: "" },
+        },
+      });
+    },
+    [handleFormChange],
+  );
 
   // ── Company addresses: load ONCE when modal opens ──
   const companyAddressLoadedRef = useRef(false);
-
 
   const handleBulkItemChange = useCallback(
     (field: keyof ItemRow, value: string) => {
@@ -309,10 +327,7 @@ export const usePurchaseOrderForm = ({
       hasLoadedRef.current = true
       const apiData = await getPurchaseOrderById(poId);
       const mapped = mapApiToUI(apiData);
-
       setForm(mapped);
-
-
       setAddressSelected((prev) => ({
         companyBilling: prev.companyBilling,
 
@@ -373,8 +388,16 @@ export const usePurchaseOrderForm = ({
 
 
       if (mapped.supplierId) {
-        loadAddressesForSupplier(mapped.supplierId, "supplierBilling");
-        loadAddressesForSupplier(mapped.supplierId, "supplierDispatch");
+        loadAddressesForSupplier(
+          mapped.supplierId,
+          "supplierBilling",
+          !!mapped.addresses.supplierAddress.id,
+        );
+        loadAddressesForSupplier(
+          mapped.supplierId,
+          "supplierDispatch",
+          !!mapped.addresses.dispatchAddress.id,
+        );
       }
       hasLoadedRef.current = true;
     };
@@ -464,10 +487,13 @@ export const usePurchaseOrderForm = ({
     }));
   };
 
-  // Fetches supplier addresses using the FRESH supplierId from the API response,
-  // not form.supplierId (which may still be stale at the time of the call).
+
   const loadAddressesForSupplier = useCallback(
-    async (freshSupplierId: string, boxKey: "supplierBilling" | "supplierDispatch") => {
+    async (
+      freshSupplierId: string,
+      boxKey: "supplierBilling" | "supplierDispatch",
+      autoSelect = true,
+    ) => {
       if (!freshSupplierId) return;
 
       const { getAddressList } = await import("../api/Adressapi");
@@ -485,7 +511,8 @@ export const usePurchaseOrderForm = ({
         const data = await getAddressList(apiParams);
         setAddressList((prev) => ({ ...prev, [boxKey]: data }));
 
-        if (data?.length > 0) {
+
+        if (autoSelect && data?.length > 0) {
           const first = data[0];
           setAddressSelected((prev) => ({ ...prev, [boxKey]: first }));
           setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: first.id }));
@@ -847,7 +874,7 @@ export const usePurchaseOrderForm = ({
         return { ...prev, items };
       });
     } catch (err) {
-      console.error("Failed to fetch item details", err);
+      showApiError(err);
     }
   }, [form.taxCategory]);
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -889,7 +916,10 @@ export const usePurchaseOrderForm = ({
       }
 
       showSuccess(
-        isEditMode ? "Purchase Order Updated" : "Purchase Order Created",
+        res?.message ||
+        (isEditMode
+          ? "Purchase Order Updated"
+          : "Purchase Order Created"),
       );
 
       useDataRefreshStore
@@ -985,5 +1015,6 @@ export const usePurchaseOrderForm = ({
     handleCopyBillingToShipping,
     handleCopySupplierToDispatch,
     loadAddresses,
+    handleAddressRemove,
   };
 };

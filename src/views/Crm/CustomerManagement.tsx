@@ -12,6 +12,7 @@ import {
   deleteCustomerById,
   getAllCustomers,
   getCustomerByCustomerCode,
+  updateCustomerStatus,
 } from "../../api/customerApi";
 import type { CustomerSummary, CustomerDetail } from "../../types/customer";
 import Table from "../../components/ui/Table/Table";
@@ -21,9 +22,13 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
-
+import { usePermission } from "../../hooks/permission/usePermission";
+import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import {
+  REFRESH_KEYS,
+  useDataRefreshStore,
+} from "../../store/dataRefreshStore";
 import { Copy } from "lucide-react";
 
 type OutletContextType = {
@@ -35,15 +40,18 @@ interface Props {
   onAdd: () => void;
 }
 
+const CUSTOMER_MODULE = "Customer";
+const PAYMENT_MODULE = "Payment Entry";
+
 const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
-  const {
-    openCustomerCreate,
-    openCustomerEdit
-  } =
+  const { openCustomerCreate, openCustomerEdit } =
     useOutletContext<OutletContextType>();
+  const { can } = usePermission();
 
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
 
   const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,7 +67,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
 
-
   const fetchCustomers = async () => {
     try {
       setCustLoading(true);
@@ -67,13 +74,13 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       const response = await getAllCustomers(
         page,
         pageSize,
-        taxCategory || undefined
+        taxCategory || undefined,
+        searchTerm || undefined,
       );
 
       setCustomers(response?.data || []);
       setTotalPages(response?.pagination?.total_pages || 1);
       setTotalItems(response?.pagination?.total || 0);
-
     } catch (error) {
       console.error("Error loading customers:", error);
       showApiError(error);
@@ -82,9 +89,14 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       setInitialLoad(false);
     }
   };
-  useEffect(() => {
-    fetchCustomers();
-  }, [page, pageSize, taxCategory]);
+useEffect(() => {
+  fetchCustomers();
+}, [page, pageSize, taxCategory, searchTerm]);
+
+useEffect(() => {
+  setPage(1);
+}, [searchTerm]);
+  
 
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CUSTOMER_LIST, () => {
@@ -95,7 +107,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   const fetchAllCustomers = async () => {
     try {
-      const response = await getAllCustomers(1, 1000, taxCategory);
+      const response = await getAllCustomers(1, 1000, taxCategory, searchTerm);
       setAllCustomers(response?.data || []);
     } catch (error) {
       console.error("Error loading all customers:", error);
@@ -125,7 +137,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         onSuccess: async () => {
           await handleCustomerSaved();
         },
-      }
+      },
     );
   };
 
@@ -195,7 +207,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       setSelectedCustomer(fullCustomer);
       setViewMode("detail");
     } catch (error) {
-     
       showApiError(error);
     } finally {
       setCustLoading(false);
@@ -207,47 +218,59 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setSelectedCustomer(null);
   };
 
+  const handleDisableCustomer = async (
+    customerId: string,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+
+    const result = await fireManagedSwal({
+      title: "Disable Customer?",
+      text: "Customer will be marked as inactive.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Disable",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      showLoading("Disabling Customer...");
+
+      await updateCustomerStatus(customerId, "inactive");
+
+      closeSwal();
+
+      showSuccess("Customer disabled successfully.");
+
+      triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
   const columns: Column<CustomerSummary>[] = [
     {
       key: "id",
       header: "Customer ID",
       align: "left",
-      render: (customer) => {
-        const id = customer.id || "";
-        const shortId = id ? `--${id.slice(-4)}` : "-";
-
-        const handleCopy = (e: React.MouseEvent) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(id);
-        };
-
-        return (
-          <div className="flex items-center justify-start gap-1 group">
-            <span className="font-mono text-sm">
-              {shortId}
-            </span>
-
-            <button
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-600"
-              title="Copy full Customer ID"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-        );
-      },
+      render: (customer) => (
+        <div className="py-1.5">
+          <span className="font-medium whitespace-nowrap">{customer.id}</span>
+        </div>
+      ),
       tooltip: (customer) => customer.id,
     },
     {
       key: "name",
       header: "Name",
       align: "left",
-      width: "280px",
       render: (customer) => (
-        <span className="cursor-pointer font-medium block">
-          {customer.name}
-        </span>
+        <div className="py-1.5">
+          <span className="cursor-pointer font-medium block">
+            {customer.name}
+          </span>
+        </div>
       ),
       tooltip: (customer) => customer.name,
     },
@@ -256,9 +279,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Type",
       align: "left",
       render: (customer) => (
-        <span className="text-muted whitespace-nowrap">
-          {customer.type ?? "-"}
-        </span>
+        <div className="py-1.5">
+          <span className="text-muted whitespace-nowrap">
+            {customer.type ?? "-"}
+          </span>
+        </div>
       ),
       tooltip: (customer) => customer.type ?? "-",
     },
@@ -267,9 +292,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "TPIN",
       align: "left",
       render: (customer) => (
-       <span className="font-mono text-sm tabular-nums whitespace-nowrap block text-left">
-          {customer.tpin}
-        </span>
+        <div className="py-1.5">
+          <span className="font-mono text-sm tabular-nums whitespace-nowrap block text-left">
+            {customer.tpin}
+          </span>
+        </div>
       ),
       tooltip: (customer) => customer.tpin,
     },
@@ -278,9 +305,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Tax Category",
       align: "left",
       render: (customer) => (
-        <span className="whitespace-nowrap">
-          {customer.customerTaxCategory ?? "-"}
-        </span>
+        <div className="py-1.5">
+          <span className="whitespace-nowrap">
+            {customer.customerTaxCategory ?? "-"}
+          </span>
+        </div>
       ),
       tooltip: (customer) => customer.customerTaxCategory ?? "-",
     },
@@ -289,9 +318,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Currency",
       align: "center",
       render: (customer) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main whitespace-nowrap block text-center">
-          {customer.currency}
-        </code>
+        <div className="py-1.5">
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main whitespace-nowrap block text-center">
+            {customer.currency}
+          </code>
+        </div>
       ),
       tooltip: (customer) => customer.currency,
     },
@@ -300,14 +331,17 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       header: "Status",
       align: "center",
       render: (customer) => (
-        <span
-          className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
-            ? "bg-green-100 text-green-700"
-            : "bg-gray-100 text-gray-600"
+        <div className="py-1.5">
+          <span
+            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
+              customer.status === "Active"
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-600"
             }`}
-        >
-          {customer.status}
-        </span>
+          >
+            {customer.status}
+          </span>
+        </div>
       ),
     },
     {
@@ -316,26 +350,45 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       align: "center",
       render: (customer) => (
         <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={() => handleRowClick(customer)}
-            iconOnly
-          />
+          {/* View — always shown if they can read */}
+          <PermissionGate module={CUSTOMER_MODULE} action="read">
+            <ActionButton
+              type="view"
+              onClick={() => handleRowClick(customer)}
+              iconOnly
+            />
+          </PermissionGate>
 
-          <ActionButton
-            type="edit"
-            onClick={(e) => handleEditCustomer(customer.id, e as any)}
-            iconOnly
-            title="Edit Customer"
-          />
+          {/* Edit — needs write */}
+          <PermissionGate module={CUSTOMER_MODULE} action="write">
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEditCustomer(customer.id, e as any)}
+              iconOnly
+              title="Edit Customer"
+            />
+          </PermissionGate>
 
+          {/* Delete + Receive Payment — inside ActionMenu */}
           <ActionMenu
-            onDelete={(e) => handleDelete(customer.id, e as any)}
+            {...(can(CUSTOMER_MODULE, "delete")
+              ? { onDelete: (e) => handleDelete(customer.id, e as any) }
+              : {})}
+            onDisable={
+              customer.status !== "Inactive"
+                ? (e) => handleDisableCustomer(customer.id, e as any)
+                : undefined
+            }
             customActions={[
-              {
-                label: "Receive Payment",
-                onClick: () => handleMakePayment(customer),
-              },
+              // Receive Payment only if user has Payment Entry create
+              ...(can(PAYMENT_MODULE, "create")
+                ? [
+                    {
+                      label: "Receive Payment",
+                      onClick: () => handleMakePayment(customer),
+                    },
+                  ]
+                : []),
             ]}
           />
         </ActionGroup>
@@ -355,11 +408,15 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
           onPageSizeChange={(size) => setPageSize(size)}
           pageSizeOptions={[10, 25, 50, 100]}
           searchValue={searchTerm}
-          onSearch={setSearchTerm}
-          enableAdd
+          onSearch={(q) => {
+  setSearchTerm(q);
+  setPage(1);
+}}
+          enableAdd={can(CUSTOMER_MODULE, "create")}
           addLabel="Add Customer"
           onAdd={handleAddCustomer}
           enableColumnSelector
+          enableExport={can(CUSTOMER_MODULE, "export")}
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}
@@ -391,8 +448,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
           onEdit={handleEditCustomer}
         />
       ) : null}
-
-
     </div>
   );
 };

@@ -1,4 +1,4 @@
-/* eslint-disable camelcase */
+
 import { useCallback, useEffect, useState } from "react";
 import { createItem, updateItemByItemCode } from "../api/itemApi";
 import { getItemGroupTree } from "../api/itemGroupApi";
@@ -19,6 +19,8 @@ import type { ModalSubmitHandler, ModalValidationError } from "../types/modal";
 import { getSupplierList } from "../api/lookupApi";
 import { showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
+import { all } from "axios";
+import { fi } from "date-fns/locale";
 
 interface ItemNestedInitialData extends Partial<ItemFormData> {
   vendorInfo?: Partial<
@@ -128,7 +130,7 @@ export const emptyForm: ItemFormData = {
   itemClassCode: "",
   itemTypeCode: "",
   originNationCode: "",
-  countryOfOrigin:"",
+  countryOfOrigin: "",
   packagingUnitCode: "",
   packingUnit: 1,
   packingSize: 1,
@@ -160,7 +162,9 @@ export const emptyForm: ItemFormData = {
   manufacturingDate: "",
   shelfLife: "",
   endOfLife: "",
-  trackInventory: false,
+  trackInventory: true,
+  allowSales: true,
+  allowPurchase: true,
   has_batch_no: false,
   batchNo: "",
   create_new_batch: false,
@@ -190,7 +194,10 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   dimensionWidth: form.dimensionWidth,
   dimensionHeight: form.dimensionHeight,
   brand: form.brand,
-  countryOfOrigin: form.originNationCode ,
+  countryOfOrigin: form.originNationCode,
+  is_stock_item: form.trackInventory,
+  is_sales_item: form.allowSales,
+  is_purchase_item: form.allowPurchase,
   vendorInfo: {
     preferredVendor: form.preferredVendor,
     salesAccount: form.salesAccount,
@@ -211,6 +218,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
     minStockLevel: form.minStockLevel,
     maxStockLevel: form.maxStockLevel,
   },
+
   ...(Number(form.itemTypeCode) !== 3 && {
     batchInfo: {
       has_batch_no: form.has_batch_no,
@@ -248,7 +256,7 @@ const mapApiToForm = (item: any) => {
     // INVENTORY
     brand: item.brand || "",
     weight: String(item.weight || ""),
-    weightUnit: (item.weightUnit || "").toLowerCase(), 
+    weightUnit: (item.weightUnit || "").toLowerCase(),
 
     dimensionLength: String(item.dimensionLength || ""),
     dimensionWidth: String(item.dimensionWidth || ""),
@@ -265,12 +273,10 @@ const mapApiToForm = (item: any) => {
     trackingMethod: item.inventoryInfo?.trackingMethod || "",
     reorderLevel: item.inventoryInfo?.reorderLevel || "",
     maxStockLevel: item.inventoryInfo?.maxStockLevel || "",
-    trackInventory:
-      !!item.inventoryInfo ||
-      !!item.batchInfo ||
-      !!item.inventoryInfo?.trackingMethod,
     minStockLevel: item.inventoryInfo?.minStockLevel || "",
-
+    trackInventory: Boolean(item.is_stock_item ?? true),
+    allowSales: Boolean(item.is_sales_item ?? true),
+    allowPurchase: Boolean(item.is_purchase_item ?? true),
     // BATCH
     has_batch_no: item.batchInfo?.has_batch_no || false,
     has_expiry_date: item.batchInfo?.has_expiry_date || false,
@@ -315,8 +321,8 @@ export const useItemForm = ({
       const response = (await getItemGroupTree()) as ItemGroupTreeResponse;
       const treeData = response.message?.data?.item_groups;
       setItemGroups(Array.isArray(treeData) ? flattenItemGroups(treeData) : []);
-    } catch {
-      showApiError("Error fetching item groups");
+    } catch (err) {
+      showApiError(err);
     } finally {
       setLoadingItemGroups(false);
     }
@@ -343,8 +349,8 @@ export const useItemForm = ({
       }));
 
       setSuppliers(mapped);
-    } catch {
-      showApiError("Error fetching suppliers");
+    } catch (err) {
+      showApiError(err);
     } finally {
       setLoadingSuppliers(false);
     }
@@ -394,11 +400,11 @@ export const useItemForm = ({
     return null;
   };
 
-const getTaxValidationError = (
-  taxRows: ItemTaxRow[],
-): ItemValidationError | null => {
-  return null;
-};
+  const getTaxValidationError = (
+    taxRows: ItemTaxRow[],
+  ): ItemValidationError | null => {
+    return null;
+  };
 
   const getValidationErrorForTab = (
     tab: ItemModalTab,
@@ -461,7 +467,7 @@ const getTaxValidationError = (
 
       if (!isSuccess) {
         closeSwal();
-        showApiError(response.message || "Something went wrong");
+        showApiError(response || "Something went wrong");
         return false;
       }
 
@@ -471,72 +477,68 @@ const getTaxValidationError = (
       if (canClose === false) return false;
       handleClose();
       return true;
-    } catch (error) {
+    }  catch (error) {
       closeSwal();
-      showApiError(
-        typeof error === "string"
-          ? error
-          : (error as any)?.message?.message || "Something went wrong",
-      );
+      showApiError(error);
       return false;
     } finally {
-      setLoading(false);
-    }
-  };
+    setLoading(false);
+  }
+};
 
-  const handleNext = (taxRows: ItemTaxRow[]) => {
-    const error = getValidationErrorForTab(activeTab, taxRows);
-    if (!validateAndShow(error)) return;
+const handleNext = (taxRows: ItemTaxRow[]) => {
+  const error = getValidationErrorForTab(activeTab, taxRows);
+  if (!validateAndShow(error)) return;
 
-    if (activeTab === "details") {
-      setActiveTab("taxDetails");
-      return;
-    }
+  if (activeTab === "details") {
+    setActiveTab("taxDetails");
+    return;
+  }
 
-    if (activeTab === "taxDetails" && !isServiceItem) {
-      setActiveTab("inventoryDetails");
-    }
-  };
+  if (activeTab === "taxDetails" && !isServiceItem && form.trackInventory) {
+    setActiveTab("inventoryDetails");
+  }
+};
 
-  const handleSave = async (
-    event: React.FormEvent | undefined,
-    taxRows: ItemTaxRow[],
-  ) => {
-    event?.preventDefault();
+const handleSave = async (
+  event: React.FormEvent | undefined,
+  taxRows: ItemTaxRow[],
+) => {
+  event?.preventDefault();
 
-    const error = getFirstValidationError(taxRows);
-    if (!validateAndShow(error)) return false;
+  const error = getFirstValidationError(taxRows);
+  if (!validateAndShow(error)) return false;
 
-    return saveItem(taxRows);
-  };
+  return saveItem(taxRows);
+};
 
-  const handleSubmit = async (
-    event: React.FormEvent,
-    taxRows: ItemTaxRow[],
-  ) => {
-    await handleSave(event, taxRows);
-  };
+const handleSubmit = async (
+  event: React.FormEvent,
+  taxRows: ItemTaxRow[],
+) => {
+  await handleSave(event, taxRows);
+};
 
-  return {
-    form,
-    setForm,
-    loading,
-    activeTab,
-    setActiveTab,
-    isServiceItem,
-    handleForm,
-    reset,
-    handleClose,
-    handleSubmit,
-    handleSave,
-    handleNext,
-    getFirstValidationError,
-    getValidationErrorForTab,
-    taxRows,
-    setTaxRows,
-    itemGroups,
-    loadingItemGroups,
-    suppliers,
-    loadingSuppliers,
-  };
+return {
+  form,
+  setForm,
+  loading,
+  activeTab,
+  setActiveTab,
+  isServiceItem,
+  handleForm,
+  reset,
+  handleClose,
+  handleSubmit,
+  handleSave,
+  handleNext,
+  getFirstValidationError,
+  getValidationErrorForTab,
+  taxRows,
+  setTaxRows,
+  itemGroups,
+  loadingItemGroups,
+  suppliers,
+  loadingSuppliers,
+};
 };
