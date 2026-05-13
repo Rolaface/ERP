@@ -32,8 +32,7 @@ const HrDashboard            = lazy(() => import("./HrDashboard"));
 const EmployeeManagement     = lazy<ComponentType<EmployeeManagementProps>>(
   () => import("./EmployeeManagement/EmployeeManagement")
 );
-const PerformanceDevelopment = lazy(() => import("./performance&growth/performancedevolpment"));
-const TimeAttendance         = lazy(() => import("./time_leave/Attendance"));
+
 const Leave                  = lazy<ComponentType<LeaveProps>>(
   () => import("./time_leave/LeaveManagementt")
 );
@@ -55,6 +54,7 @@ const EmployeeDocuments     = lazy(() => import("./EmployeeView/EmployeeDocument
 const EmployeeReports       = lazy(() => import("./EmployeeView/EmployeeReports"));
 const EmployeeReimbursement = lazy(() => import("./EmployeeView/EmployeeReimbursement"));
 const EmployeeCompliance    = lazy(() => import("./EmployeeView/EmployeeCompliance"));
+const EmployeeAppraisals = lazy(() => import("./EmployeeView/EmployeeAppraisals"));
 
 // ─── Employee tab IDs — must stay in sync with EMPLOYEE_HR_TABS in Sidebar.tsx
 
@@ -68,6 +68,7 @@ const EMPLOYEE_TAB_IDS = [
   "emp-reports",
   "emp-reimburse",
   "emp-compliance",
+  "emp-appraisals",
 ] as const;
 
 type EmployeeTabId = typeof EMPLOYEE_TAB_IDS[number];
@@ -91,10 +92,10 @@ const HrPayrollModule: React.FC = () => {
       ? [{ id: "leave",       label: "Leave Management",     icon: <FaClipboardList /> }]
       : []),
     ...(can("Attendance", "read")
-      ? [{ id: "attendance",  label: "Time & Attendance",    icon: <FaCalendarDay /> }]
+      ? [{ id: "attendance",  label: "Timesheet & Attendance",    icon: <FaCalendarDay /> }]
       : []),
     ...(can("Appraisal", "read")
-      ? [{ id: "performance", label: "Performance & Growth", icon: <FaChartLine /> }]
+      ? [{ id: "performance", label: "Appraisals", icon: <FaChartLine /> }]
       : []),
     ...(can("Payroll Entry", "read")
       ? [{ id: "payroll",     label: "Payroll",              icon: <FaMoneyCheckAlt /> }]
@@ -148,6 +149,7 @@ const HrPayrollModule: React.FC = () => {
         case "emp-reports":    return <EmployeeReports />;
         case "emp-reimburse":  return <EmployeeReimbursement />;
         case "emp-compliance": return <EmployeeCompliance />;
+        case "emp-appraisals": return <EmployeeAppraisals />;
         default:               return <EmployeeDashboard />;
       }
     }
@@ -155,10 +157,10 @@ const HrPayrollModule: React.FC = () => {
     switch (tab) {
       case "dashboard":   return <HrDashboard />;
       case "management":  return <EmployeeManagement isEmployeeView={false} />;
-      case "attendance":  return <TimeAttendance />;
+      case "attendance":  return <EmployeeTimesheet />;
+      case "performance": return <EmployeeAppraisals />;
       case "leave":       return <Leave isEmployeeView={false} />;
       case "payroll":     return <PayrollManagement />;
-      case "performance": return <PerformanceDevelopment />;
       case "setup":       return <HRSettingsPage />;
       default:            return <HrDashboard />;
     }

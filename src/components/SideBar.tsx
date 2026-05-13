@@ -24,6 +24,7 @@ import {
   FileText,
   BarChart2,
   ShieldCheck,
+  Star,
   User,
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
@@ -69,14 +70,15 @@ interface EmployeeTabItem {
 
 export const EMPLOYEE_HR_TABS: EmployeeTabItem[] = [
   { id: "emp-dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} strokeWidth={1.75} /> },
-  { id: "emp-financials", label: "Financials", icon: <Wallet size={16} strokeWidth={1.75} /> },
   { id: "emp-profile", label: "My Profile", icon: <User size={16} strokeWidth={1.75} /> },
   { id: "emp-leave", label: "Leave", icon: <Calendar size={16} strokeWidth={1.75} /> },
   { id: "emp-timesheet", label: "Timesheet & Attendance", icon: <Clock size={16} strokeWidth={1.75} /> },
-  { id: "emp-documents", label: "Documents", icon: <FileText size={16} strokeWidth={1.75} /> },
-  { id: "emp-reports", label: "Reports", icon: <BarChart2 size={16} strokeWidth={1.75} /> },
+  { id: "emp-financials", label: "Financials", icon: <Wallet size={16} strokeWidth={1.75} /> },
   { id: "emp-reimburse", label: "Reimbursement", icon: <Receipt size={16} strokeWidth={1.75} /> },
   { id: "emp-compliance", label: "Compliance", icon: <ShieldCheck size={16} strokeWidth={1.75} /> },
+  { id: "emp-appraisals", label: "Appraisals", icon: <Star size={16} strokeWidth={1.75} /> },
+  { id: "emp-documents", label: "Documents", icon: <FileText size={16} strokeWidth={1.75} /> },
+  { id: "emp-reports", label: "Reports", icon: <BarChart2 size={16} strokeWidth={1.75} /> },
 ];
 
 // ─── Main menu items ──────────────────────────────────────────────────────────
