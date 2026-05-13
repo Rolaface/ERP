@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Upload, FileText, Eye, Download, X } from "lucide-react";
 import { getFileUrl } from "../detailtab/Employeehelpers";
+import { ModalInput } from "../../../../components/ui/modal/modalComponent";
 
 // ─── Upload Modal ─────────────────────────────────────────────────────────────
 
@@ -42,17 +43,13 @@ export const DocumentUploadModal: React.FC<UploadModalProps> = ({
         </div>
 
         <div className="p-5 space-y-4">
-          <div>
-            <label className="text-[10px] uppercase tracking-wider font-semibold text-muted">
-              Document Name
-            </label>
-            <input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 w-full border border-theme rounded-lg px-3 py-2 text-xs bg-app text-main focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
-              placeholder="e.g. NRC Copy, Offer Letter"
-            />
-          </div>
+          <ModalInput
+            label="Document Name"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="e.g. NRC Copy, Offer Letter"
+            required
+          />
 
           <label className="block cursor-pointer">
             <div className="border-2 border-dashed border-theme rounded-lg p-5 text-center hover:border-primary/50 hover:bg-primary/5 transition">
@@ -183,8 +180,12 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
         <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-primary/5 flex items-center justify-center">
           <FileText className="w-7 h-7 text-muted/30" />
         </div>
-        <p className="text-xs font-semibold text-muted mb-1">No documents yet</p>
-        <p className="text-[10px] text-muted/60">Click Upload to attach files</p>
+        <p className="text-xs font-semibold text-muted mb-1">
+          No documents yet
+        </p>
+        <p className="text-[10px] text-muted/60">
+          Click Upload to attach files
+        </p>
       </div>
     )}
   </div>

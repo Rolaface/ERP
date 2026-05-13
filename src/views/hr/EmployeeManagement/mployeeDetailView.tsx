@@ -188,6 +188,13 @@ const EmployeeDetailView: React.FC<Props> = ({
           )}
         </div>
       </div>
+      
+      {showUploadModal && (
+        <DocumentUploadModal
+          onClose={() => setShowUploadModal(false)}
+          onUpload={handleUploadDocument}
+        />
+      )}
     </div>
   );
 };

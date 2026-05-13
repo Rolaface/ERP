@@ -688,14 +688,14 @@ const handlePrint = async () => {
       </div>
 
       {/* ── YTD STRIP ── */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* <div className="grid grid-cols-3 gap-3">
         <KpiCard label="Gross YTD" value={fmtCurrency(slip.currency, Number(slip.gross_year_to_date) || 0)}
           valueStyle={{ color: "var(--info)" }} icon={<TrendingUp className="w-4 h-4" />} />
         <KpiCard label="Net YTD" value={fmtCurrency(slip.currency, Number(slip.year_to_date) || 0)}
           valueStyle={{ color: "var(--success)" }} icon={<CheckCircle2 className="w-4 h-4" />} />
         <KpiCard label="Month to Date" value={fmtCurrency(slip.currency, Number(slip.month_to_date) || 0)}
           icon={<Calendar className="w-4 h-4" />} />
-      </div>
+      </div> */}
 
       {/* ── INCOME TAX — accordion ── */}
       <Accordion defaultOpen={!isNonTaxable}
