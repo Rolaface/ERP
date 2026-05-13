@@ -40,11 +40,11 @@ interface KpiChipProps {
   annual: number;
   currency: string;
   icon: React.ReactNode;
-  accentClass: string;       // text color for icon + value
-  bgClass: string;           // background tint
-  borderClass: string;       // border
-  iconBgClass: string;       // icon container bg
-  monoClass: string;         // monthly label color
+  accentClass: string; // text color for icon + value
+  bgClass: string; // background tint
+  borderClass: string; // border
+  iconBgClass: string; // icon container bg
+  monoClass: string; // monthly label color
 }
 
 const KpiChip: React.FC<KpiChipProps> = ({
@@ -81,12 +81,17 @@ const KpiChip: React.FC<KpiChipProps> = ({
       <p className="text-[9.5px] font-bold uppercase tracking-wider text-muted truncate mb-0.5">
         {label}
       </p>
-      <p className={`text-[14px] font-bold tabular-nums leading-none ${accentClass} truncate`}>
+      <p
+        className={`text-[14px] font-bold tabular-nums leading-none ${accentClass} truncate`}
+      >
         {fmtNum(annual, currency)}
         <span className="text-[9px] font-normal text-muted ml-1">p.a.</span>
       </p>
-      <p className={`text-[10px] font-mono tabular-nums mt-0.5 ${monoClass} truncate`}>
-        {fmtNum(monthly(annual), currency)}&thinsp;<span className="opacity-60">/ mo</span>
+      <p
+        className={`text-[10px] font-mono tabular-nums mt-0.5 ${monoClass} truncate`}
+      >
+        {fmtNum(monthly(annual), currency)}&thinsp;
+        <span className="opacity-60">/ month</span>
       </p>
     </div>
   </div>
@@ -174,14 +179,16 @@ const PayrollKpiStrip: React.FC<PayrollKpiStripProps> = ({
 function useCssVar(name: string, fallback: string): string {
   const [value, setValue] = React.useState(fallback);
   useEffect(() => {
-    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const v = getComputedStyle(document.documentElement)
+      .getPropertyValue(name)
+      .trim();
     if (v) setValue(v);
   }, [name]);
   return value;
 }
 
-const DED_COLOR  = "#f87171";   // red — stable across all themes
-const EARN_COLOR = "#34d399";   // emerald — stable across all themes
+const DED_COLOR = "#f87171"; // red — stable across all themes
+const EARN_COLOR = "#34d399"; // emerald — stable across all themes
 
 // ─── Compact Composition Panel ────────────────────────────────────────────────
 
@@ -194,68 +201,94 @@ const CompositionPanel: React.FC<{
   const primaryColor = useCssVar("--primary", "#6366f1");
 
   const total = gross || 1;
-  const netPct  = Math.round((net            / total) * 100);
-  const dedPct  = Math.round((deductionsTotal / total) * 100);
+  const netPct = Math.round((net / total) * 100);
+  const dedPct = Math.round((deductionsTotal / total) * 100);
   const earnPct = 100;
 
   // Three-segment donut: earnings, deductions, net-pay
   const pieData = [
-    { name: "Net Pay",        value: net,            color: primaryColor },
-    { name: "Deductions",     value: deductionsTotal, color: DED_COLOR   },
-    { name: "Gross Earnings", value: gross,           color: EARN_COLOR  },
+    { name: "Net Pay", value: net, color: primaryColor },
+    { name: "Deductions", value: deductionsTotal, color: DED_COLOR },
+    { name: "Gross Earnings", value: gross, color: EARN_COLOR },
   ];
 
   // Four right-side metric chips
   const metrics = [
     {
-      label:     "Gross Earnings",
-      monthly:   fmtNum(monthly(gross),           currency),
-      annual:    fmtNum(gross,                    currency),
-      pct:       earnPct,
-      dotColor:  EARN_COLOR,
-      valColor:  EARN_COLOR,
+      label: "Gross Earnings",
+      monthly: fmtNum(monthly(gross), currency),
+      annual: fmtNum(gross, currency),
+      pct: earnPct,
+      dotColor: EARN_COLOR,
+      valColor: EARN_COLOR,
       highlight: false,
     },
     {
-      label:     "Deductions",
-      monthly:   fmtNum(monthly(deductionsTotal), currency),
-      annual:    fmtNum(deductionsTotal,           currency),
-      pct:       dedPct,
-      dotColor:  DED_COLOR,
-      valColor:  DED_COLOR,
+      label: "Deductions",
+      monthly: fmtNum(monthly(deductionsTotal), currency),
+      annual: fmtNum(deductionsTotal, currency),
+      pct: dedPct,
+      dotColor: DED_COLOR,
+      valColor: DED_COLOR,
       highlight: false,
     },
     {
-      label:     "Net Compensation",
-      monthly:   fmtNum(monthly(net),             currency),
-      annual:    fmtNum(net,                       currency),
-      pct:       netPct,
-      dotColor:  primaryColor,
-      valColor:  primaryColor,
+      label: "Net Compensation",
+      monthly: fmtNum(monthly(net), currency),
+      annual: fmtNum(net, currency),
+      pct: netPct,
+      dotColor: primaryColor,
+      valColor: primaryColor,
       highlight: false,
     },
     {
-      label:     "Monthly In-Hand",
-      monthly:   fmtNum(monthly(net),             currency),
-      annual:    null,
-      pct:       null,
-      dotColor:  primaryColor,
-      valColor:  primaryColor,
+      label: "Monthly In-Hand",
+      monthly: fmtNum(monthly(net), currency),
+      annual: null,
+      pct: null,
+      dotColor: primaryColor,
+      valColor: primaryColor,
       highlight: true,
     },
   ] as const;
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
-    const { name, value } = payload[0].payload;
+
+    const { name, value, color } = payload[0].payload;
+
     return (
-      <div className="rounded-lg border border-[var(--border)] bg-card shadow-lg px-2.5 py-1.5">
-        <p className="text-[9px] font-bold uppercase tracking-wider text-muted mb-0.5">{name}</p>
-        <p className="text-[12px] font-bold text-main tabular-nums">
+      <div
+        className="
+        rounded-xl border border-[var(--border)]
+        bg-[var(--card)]
+        backdrop-blur-md
+        shadow-2xl
+        px-3 py-2
+        min-w-[140px]
+      "
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: color }}
+          />
+          <p className="text-[10px] font-semibold text-main leading-none">
+            {name}
+          </p>
+        </div>
+
+        <p className="text-[15px] font-bold tabular-nums text-main leading-tight">
           {fmtNum(monthly(value), currency)}
-          <span className="text-[9px] text-muted font-normal"> /mo</span>
         </p>
-        <p className="text-[9px] font-mono text-muted tabular-nums">{fmtNum(value, currency)} p.a.</p>
+
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-[9px] text-muted">Monthly</span>
+
+          <span className="text-[9px] font-mono text-muted">
+            {fmtNum(value, currency)}
+          </span>
+        </div>
       </div>
     );
   };
@@ -264,7 +297,6 @@ const CompositionPanel: React.FC<{
     <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
       {/* Single compact row: donut LEFT · metrics RIGHT */}
       <div className="flex items-center gap-0 px-4 py-3">
-
         {/* ── Donut: larger, breathing room, clean ── */}
         <div className="shrink-0 relative" style={{ width: 100, height: 100 }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -284,16 +316,30 @@ const CompositionPanel: React.FC<{
                 isAnimationActive={false}
               >
                 {pieData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} stroke="none" strokeWidth={0} />
+                  <Cell
+                    key={i}
+                    fill={entry.color}
+                    stroke="none"
+                    strokeWidth={0}
+                  />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={false}
+                wrapperStyle={{ outline: "none", zIndex: 50 }}
+              />
             </PieChart>
           </ResponsiveContainer>
           {/* Center: net % */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-[8px] font-bold uppercase tracking-wider text-muted leading-none mb-0.5">Net</span>
-            <span className="text-[16px] font-bold tabular-nums leading-none" style={{ color: primaryColor }}>
+            <span className="text-[8px] font-bold uppercase tracking-wider text-muted leading-none mb-0.5">
+              Net
+            </span>
+            <span
+              className="text-[16px] font-bold tabular-nums leading-none"
+              style={{ color: primaryColor }}
+            >
               {netPct}%
             </span>
           </div>
@@ -325,7 +371,9 @@ const CompositionPanel: React.FC<{
                 >
                   {m.monthly}
                   {!m.highlight && (
-                    <span className="text-[9px] font-normal text-muted ml-0.5">/mo</span>
+                    <span className="text-[9px] font-normal text-muted ml-0.5">
+                      /month
+                    </span>
                   )}
                 </p>
                 {m.annual && (
@@ -337,7 +385,9 @@ const CompositionPanel: React.FC<{
                   </p>
                 )}
                 {m.highlight && (
-                  <p className="text-[9px] text-muted leading-none mt-0.5">take-home</p>
+                  <p className="text-[9px] text-muted leading-none mt-0.5">
+                    take-home
+                  </p>
                 )}
               </div>
             </div>
@@ -356,7 +406,13 @@ const Sec: React.FC<{
   accent?: string;
   children: React.ReactNode;
   collapsible?: boolean;
-}> = ({ title, icon, accent = "text-primary", children, collapsible = false }) => {
+}> = ({
+  title,
+  icon,
+  accent = "text-primary",
+  children,
+  collapsible = false,
+}) => {
   const [open, setOpen] = useState(true);
   return (
     <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
@@ -366,10 +422,16 @@ const Sec: React.FC<{
       >
         <div className="flex items-center gap-2">
           <span className={`${accent}`}>{icon}</span>
-          <h3 className="text-[12px] font-bold text-main uppercase tracking-wider">{title}</h3>
+          <h3 className="text-[12px] font-bold text-main uppercase tracking-wider">
+            {title}
+          </h3>
         </div>
         {collapsible &&
-          (open ? <ChevronUp className="w-3.5 h-3.5 text-muted" /> : <ChevronDown className="w-3.5 h-3.5 text-muted" />)}
+          (open ? (
+            <ChevronUp className="w-3.5 h-3.5 text-muted" />
+          ) : (
+            <ChevronDown className="w-3.5 h-3.5 text-muted" />
+          ))}
       </div>
       {open && <div className="p-4">{children}</div>}
     </div>
@@ -386,46 +448,73 @@ const CompensationStatement: React.FC<{
   net: number;
   currency: string;
   hasSalaryStructure: boolean;
-}> = ({ earnings, deductions, gross, deductionsTotal, net, currency, hasSalaryStructure }) => {
+}> = ({
+  earnings,
+  deductions,
+  gross,
+  deductionsTotal,
+  net,
+  currency,
+  hasSalaryStructure,
+}) => {
   const primaryColor = useCssVar("--primary", "#6366f1");
 
   if (!hasSalaryStructure) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-card px-4 py-6 text-center">
-        <p className="text-[12px] text-muted">No salary structure assigned to this employee.</p>
+        <p className="text-[12px] text-muted">
+          No salary structure assigned to this employee.
+        </p>
       </div>
     );
   }
 
   // Pad the shorter list so both columns have equal row count
   const maxLen = Math.max(earnings.length, deductions.length);
-  const earnPadded  = [...earnings,   ...Array(Math.max(0, maxLen - earnings.length)).fill(null)];
-  const dedPadded   = [...deductions, ...Array(Math.max(0, maxLen - deductions.length)).fill(null)];
+  const earnPadded = [
+    ...earnings,
+    ...Array(Math.max(0, maxLen - earnings.length)).fill(null),
+  ];
+  const dedPadded = [
+    ...deductions,
+    ...Array(Math.max(0, maxLen - deductions.length)).fill(null),
+  ];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
-
       {/* ── Column headers ── */}
       <div className="grid grid-cols-2 border-b border-[var(--border)] bg-app">
         {/* Earnings header */}
         <div className="flex items-center justify-between px-3 py-2 border-r border-[var(--border)]">
-          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: EARN_COLOR }}>
+          <span
+            className="text-[9px] font-bold uppercase tracking-widest"
+            style={{ color: EARN_COLOR }}
+          >
             Earnings
           </span>
-          <span className="text-[9px] font-bold uppercase tracking-wider text-muted">Monthly</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-muted">
+            Monthly
+          </span>
         </div>
         {/* Deductions header */}
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: DED_COLOR }}>
+          <span
+            className="text-[9px] font-bold uppercase tracking-widest"
+            style={{ color: DED_COLOR }}
+          >
             Deductions
           </span>
-          <span className="text-[9px] font-bold uppercase tracking-wider text-muted">Monthly</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-muted">
+            Monthly
+          </span>
         </div>
       </div>
 
       {/* ── Side-by-side rows ── */}
       {maxLen === 0 ? (
-        <p className="px-4 py-4 text-[11px] text-muted text-center">No components defined.</p>
+        <p className="px-4 py-4 text-[11px] text-muted text-center">
+          No components defined.
+        </p>
       ) : (
         earnPadded.map((earn, i) => {
           const ded = dedPadded[i];
@@ -450,7 +539,9 @@ const CompensationStatement: React.FC<{
                     </span>
                   </>
                 ) : (
-                  <span className="text-muted opacity-0 select-none text-[11px]">—</span>
+                  <span className="text-muted opacity-0 select-none text-[11px]">
+                    —
+                  </span>
                 )}
               </div>
 
@@ -469,7 +560,9 @@ const CompensationStatement: React.FC<{
                     </span>
                   </>
                 ) : (
-                  <span className="text-muted opacity-0 select-none text-[11px]">—</span>
+                  <span className="text-muted opacity-0 select-none text-[11px]">
+                    —
+                  </span>
                 )}
               </div>
             </div>
@@ -481,37 +574,60 @@ const CompensationStatement: React.FC<{
       <div className="grid grid-cols-3 border-t-2 border-[var(--border)]">
         {/* Total Earnings */}
         <div className="px-3 py-2.5 border-r border-[var(--border)] bg-app">
-          <p className="text-[8.5px] font-bold uppercase tracking-wider text-muted mb-0.5">Total Earnings</p>
-          <p className="text-[13px] font-bold tabular-nums leading-tight" style={{ color: EARN_COLOR }}>
+          <p className="text-[8.5px] font-bold uppercase tracking-wider text-muted mb-0.5">
+            Total Earnings
+          </p>
+          <p
+            className="text-[13px] font-bold tabular-nums leading-tight"
+            style={{ color: EARN_COLOR }}
+          >
             {fmtNum(monthly(gross), currency)}
           </p>
-          <p className="text-[9px] font-mono text-muted tabular-nums">{fmtNum(gross, currency)}</p>
+          <p className="text-[9px] font-mono text-muted tabular-nums">
+            {fmtNum(gross, currency)}
+          </p>
         </div>
 
         {/* Total Deductions */}
         <div className="px-3 py-2.5 border-r border-[var(--border)] bg-app">
-          <p className="text-[8.5px] font-bold uppercase tracking-wider text-muted mb-0.5">Deductions</p>
-          <p className="text-[13px] font-bold tabular-nums leading-tight" style={{ color: DED_COLOR }}>
+          <p className="text-[8.5px] font-bold uppercase tracking-wider text-muted mb-0.5">
+            Deductions
+          </p>
+          <p
+            className="text-[13px] font-bold tabular-nums leading-tight"
+            style={{ color: DED_COLOR }}
+          >
             −{fmtNum(monthly(deductionsTotal), currency)}
           </p>
-          <p className="text-[9px] font-mono text-muted tabular-nums">−{fmtNum(deductionsTotal, currency)}</p>
+          <p className="text-[9px] font-mono text-muted tabular-nums">
+            −{fmtNum(deductionsTotal, currency)}
+          </p>
         </div>
 
         {/* Net Pay */}
         <div
           className="px-3 py-2.5"
-          style={{ background: `color-mix(in srgb, ${primaryColor} 6%, transparent)` }}
+          style={{
+            background: `color-mix(in srgb, ${primaryColor} 6%, transparent)`,
+          }}
         >
           <p
             className="text-[8.5px] font-bold uppercase tracking-wider mb-0.5"
-            style={{ color: `color-mix(in srgb, ${primaryColor} 65%, transparent)` }}
+            style={{
+              color: `color-mix(in srgb, ${primaryColor} 65%, transparent)`,
+            }}
           >
             Net Pay
           </p>
-          <p className="text-[13px] font-bold tabular-nums leading-tight" style={{ color: primaryColor }}>
+          <p
+            className="text-[13px] font-bold tabular-nums leading-tight"
+            style={{ color: primaryColor }}
+          >
             {fmtNum(monthly(net), currency)}
           </p>
-          <p className="text-[9px] font-mono text-muted tabular-nums">{fmtNum(net, currency)}</p>
+          <p className="text-[9px] font-mono text-muted tabular-nums">
+            {fmtNum(net, currency)}
+          </p>
         </div>
       </div>
     </div>
@@ -523,12 +639,18 @@ const CompensationStatement: React.FC<{
 const BankCard: React.FC<{ emp: any }> = ({ emp }) => {
   const hasBank = emp.bank_name || emp.bank_ac_no;
   return (
-    <div className={`rounded-xl border ${hasBank ? "border-[var(--border)]" : "border-dashed border-[var(--border)]"} overflow-hidden`}>
+    <div
+      className={`rounded-xl border ${hasBank ? "border-[var(--border)]" : "border-dashed border-[var(--border)]"} overflow-hidden`}
+    >
       <div className="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-900 dark:to-black px-5 py-4">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Payout Bank</p>
-            <p className="text-[15px] font-bold text-white">{fmt(emp.bank_name) || "Not configured"}</p>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+              Payout Bank
+            </p>
+            <p className="text-[15px] font-bold text-white">
+              {fmt(emp.bank_name) || "Not configured"}
+            </p>
           </div>
           <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
             <Building2 className="w-4 h-4 text-white/70" />
@@ -536,21 +658,33 @@ const BankCard: React.FC<{ emp: any }> = ({ emp }) => {
         </div>
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-[9px] text-slate-400 mb-0.5 uppercase tracking-wider">Account No.</p>
+            <p className="text-[9px] text-slate-400 mb-0.5 uppercase tracking-wider">
+              Account No.
+            </p>
             <p className="text-[14px] font-mono font-semibold text-white tracking-widest">
-              {emp.bank_ac_no ? emp.bank_ac_no.replace(/(.{4})/g, "$1 ").trim() : "•••• •••• ••••"}
+              {emp.bank_ac_no
+                ? emp.bank_ac_no.replace(/(.{4})/g, "$1 ").trim()
+                : "•••• •••• ••••"}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[9px] text-slate-400 mb-0.5 uppercase tracking-wider">Type</p>
-            <p className="text-[12px] font-semibold text-white">{fmt(emp.account_type) || "—"}</p>
+            <p className="text-[9px] text-slate-400 mb-0.5 uppercase tracking-wider">
+              Type
+            </p>
+            <p className="text-[12px] font-semibold text-white">
+              {fmt(emp.account_type) || "—"}
+            </p>
           </div>
         </div>
       </div>
       <div className="bg-slate-100 dark:bg-slate-800 px-5 py-2.5 flex items-center justify-between">
         <div>
-          <p className="text-[9px] text-muted uppercase tracking-wider">Branch Code</p>
-          <p className="text-[11px] font-mono font-semibold text-main">{fmt(emp.branch_code) || "—"}</p>
+          <p className="text-[9px] text-muted uppercase tracking-wider">
+            Branch Code
+          </p>
+          <p className="text-[11px] font-mono font-semibold text-main">
+            {fmt(emp.branch_code) || "—"}
+          </p>
         </div>
         <div className="flex items-center gap-1 text-[10px] text-muted">
           <CreditCard className="w-3 h-3" />
@@ -578,11 +712,16 @@ export const CompensationTab: React.FC<Props> = ({ emp, currency }) => {
 
   const salaryResult = useMemo(() => {
     if (!salaryStructure) return null;
-    return calculateSalary(emp.ctc || 0, structureToComponents(salaryStructure));
+    return calculateSalary(
+      emp.ctc || 0,
+      structureToComponents(salaryStructure),
+    );
   }, [salaryStructure, emp.ctc]);
 
-  const earnings = salaryResult?.components.filter((c) => c.type === "Earning") ?? [];
-  const deductions = salaryResult?.components.filter((c) => c.type === "Deduction") ?? [];
+  const earnings =
+    salaryResult?.components.filter((c) => c.type === "Earning") ?? [];
+  const deductions =
+    salaryResult?.components.filter((c) => c.type === "Deduction") ?? [];
   const gross = salaryResult?.gross ?? 0;
   const deductionsTotal = salaryResult?.deductionsTotal ?? 0;
   const net = salaryResult?.net ?? 0;
@@ -593,7 +732,10 @@ export const CompensationTab: React.FC<Props> = ({ emp, currency }) => {
       <div className="flex flex-col gap-4 animate-pulse">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-[68px] rounded-xl bg-gray-100 dark:bg-gray-800" />
+            <div
+              key={i}
+              className="h-[68px] rounded-xl bg-gray-100 dark:bg-gray-800"
+            />
           ))}
         </div>
         <div className="h-36 rounded-xl bg-gray-100 dark:bg-gray-800" />
@@ -637,7 +779,10 @@ export const CompensationTab: React.FC<Props> = ({ emp, currency }) => {
       />
 
       {/* ── 5. Bank & Payment Details ─────────────────────────────────────── */}
-      <Sec title="Bank & Payment Details" icon={<CreditCard className="w-3.5 h-3.5" />}>
+      <Sec
+        title="Bank & Payment Details"
+        icon={<CreditCard className="w-3.5 h-3.5" />}
+      >
         <BankCard emp={emp} />
       </Sec>
     </div>
