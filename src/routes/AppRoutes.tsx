@@ -8,6 +8,7 @@ import AppLayout from "../layout/AppLayout";
 import GLView from "../views/Accounting/glview";
 import { usePermission } from "../hooks/permission/usePermission";
 import type { PermissionAction } from "../store/permissionStore";
+import { useHRView } from "../hooks/permission/useHRView";
 
 const Dashboard = lazy(() => import("../views/DashbBoard"));
 const SalesModule = lazy(() => import("../views/Sales/Sales"));
@@ -58,6 +59,14 @@ const PermissionRoute: React.FC<PermissionRouteProps> = ({
   return hasAccess ? <>{children}</> : <Navigate to={redirectTo} replace />;
 };
 
+const DashboardRedirect: React.FC = () => {
+  const { isLoading } = usePermission();
+  const { viewMode }  = useHRView();
+  if (isLoading) return null;               // wait — no flash on hard refresh
+  if (viewMode === "employee") return <Navigate to="/hr/emp-dashboard" replace />;
+  return <Dashboard />;                     // professional/admin sees ERP dashboard
+};
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 const AppRoutes: React.FC = () => {
@@ -77,7 +86,7 @@ const AppRoutes: React.FC = () => {
           <Route element={<AppLayout />}>
 
             {/* Dashboard — always accessible */}
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<DashboardRedirect />} />
 
             {/* Sales — needs read on Sales Invoice */}
             <Route

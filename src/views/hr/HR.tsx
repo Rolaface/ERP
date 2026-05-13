@@ -1,93 +1,229 @@
-import React, { lazy, Suspense, useMemo } from "react";
+import React, { lazy, Suspense, useMemo, useEffect, ComponentType } from "react";
 import {
-  FaUserTie,
-  FaUserFriends,
-  FaClipboardList,
-  FaCalendarDay,
-  FaMoneyCheckAlt,
-  FaChartLine,
-  FaSlidersH,
+  FaUserTie, FaUserFriends, FaClipboardList,
+  FaCalendarDay, FaMoneyCheckAlt, FaChartLine, FaSlidersH,
 } from "react-icons/fa";
-
+import { ArrowLeftRight } from "lucide-react";
 import {
-  AppPage,
-  AppPageHeader,
-  AppPageBody,
+  AppPage, AppPageHeader, AppPageBody,
 } from "../../components/ui/app-shell";
-import AppSkeleton from "../../components/ui/AppSkeleton";
-import { useUrlTab } from "../../hooks/useUrlTab";
-import { HrPrimaryTabs } from "./components/HrTabLayout";
+import AppSkeleton        from "../../components/ui/AppSkeleton";
+import { useUrlTab }      from "../../hooks/useUrlTab";
+import { HrPrimaryTabs }  from "./components/HrTabLayout";
+import { usePermission }  from "../../hooks/permission/usePermission";
+import { useHRView }      from "../../hooks/permission/useHRView";
 
-const HrDashboard = lazy(() => import("./HrDashboard"));
-const EmployeeManagement = lazy(() => import("./EmployeeManagement/EmployeeManagement"));
+
+interface LeaveProps {
+  isEmployeeView?: boolean;
+}
+
+interface EmployeeManagementProps {
+  isEmployeeView?: boolean;
+}
+
+interface MyProfileProps {
+  isPureEmployee?: boolean;
+}
+
+// ── Professional view lazy imports ────────────────────────────────────────────
+
+const HrDashboard            = lazy(() => import("./HrDashboard"));
+const EmployeeManagement     = lazy<ComponentType<EmployeeManagementProps>>(
+  () => import("./EmployeeManagement/EmployeeManagement")
+);
 const PerformanceDevelopment = lazy(() => import("./performance&growth/performancedevolpment"));
-const TimeAttendance = lazy(() => import("./time_leave/Attendance"));
-const Leave = lazy(() => import("./time_leave/Leave"));
-const PayrollManagement = lazy(() => import("./payroll-system/PayrollManagement"));
-const HRSettingsPage = lazy(() => import("./hrsetup"));
+const TimeAttendance         = lazy(() => import("./time_leave/Attendance"));
+const Leave                  = lazy<ComponentType<LeaveProps>>(
+  () => import("./time_leave/LeaveManagementt")
+);
+const PayrollManagement      = lazy(() => import("./payroll-system/PayrollManagement"));
+const HRSettingsPage         = lazy(() => import("./hrsetup"));
 
-const navTabs = [
-  { key: "dashboard", label: "HR Dashboard", icon: <FaChartLine /> },
-  { key: "management", label: "Employee Management", icon: <FaUserFriends /> },
-  { key: "leave", label: "Leave Management", icon: <FaClipboardList /> },
-  { key: "attendance", label: "Time & Attendance", icon: <FaCalendarDay /> },
-  { key: "performance", label: "Performance & Growth", icon: <FaChartLine /> },
-  { key: "payroll", label: "Payroll", icon: <FaMoneyCheckAlt /> },
-  // { key: "compliance", label: "Compliance Management", icon: <FaClipboardList /> },
-  { key: "setup", label: "HR Setup", icon: <FaSlidersH /> },
-];
+// ── Employee view lazy imports ────────────────────────────────────────────────
+
+const EmployeeDashboard     = lazy(() => import("./EmployeeView/EmployeeDashboard"));
+const EmployeeFinancials    = lazy(() => import("./EmployeeView/EmployeeFinancials"));
+const MyProfile             = lazy<ComponentType<MyProfileProps>>(
+  () => import("./EmployeeView/MyProfile")
+);
+const EmployeeLeave         = lazy<ComponentType<LeaveProps>>(
+  () => import("./time_leave/LeaveManagementt")
+);
+const EmployeeTimesheet     = lazy(() => import("./EmployeeView/EmployeeTimesheet"));
+const EmployeeDocuments     = lazy(() => import("./EmployeeView/EmployeeDocuments"));
+const EmployeeReports       = lazy(() => import("./EmployeeView/EmployeeReports"));
+const EmployeeReimbursement = lazy(() => import("./EmployeeView/EmployeeReimbursement"));
+const EmployeeCompliance    = lazy(() => import("./EmployeeView/EmployeeCompliance"));
+
+// ─── Employee tab IDs — must stay in sync with EMPLOYEE_HR_TABS in Sidebar.tsx
+
+const EMPLOYEE_TAB_IDS = [
+  "emp-dashboard",
+  "emp-financials",
+  "emp-profile",
+  "emp-leave",
+  "emp-timesheet",
+  "emp-documents",
+  "emp-reports",
+  "emp-reimburse",
+  "emp-compliance",
+] as const;
+
+type EmployeeTabId = typeof EMPLOYEE_TAB_IDS[number];
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const HrPayrollModule: React.FC = () => {
-  const tabs = useMemo(
-    () =>
-      navTabs.map((t) => ({
-        id: t.key,
-        label: t.label,
-        icon: t.icon,
-      })),
+  const { can }                                                     = usePermission();
+  const { viewMode, canSwitchView, isPureEmployee, toggleViewMode } = useHRView();
+  const isEmployeeView = viewMode === "employee";
+
+  // ── Professional view tabs ────────────────────────────────────────────────
+  const professionalTabs = useMemo(() => [
+    ...(can("Employee", "read")
+      ? [{ id: "dashboard",   label: "HR Dashboard",         icon: <FaChartLine /> }]
+      : []),
+    ...(can("Employee", "read")
+      ? [{ id: "management",  label: "Employee Management",  icon: <FaUserFriends /> }]
+      : []),
+    ...(can("Leave Application", "read")
+      ? [{ id: "leave",       label: "Leave Management",     icon: <FaClipboardList /> }]
+      : []),
+    ...(can("Attendance", "read")
+      ? [{ id: "attendance",  label: "Time & Attendance",    icon: <FaCalendarDay /> }]
+      : []),
+    ...(can("Appraisal", "read")
+      ? [{ id: "performance", label: "Performance & Growth", icon: <FaChartLine /> }]
+      : []),
+    ...(can("Payroll Entry", "read")
+      ? [{ id: "payroll",     label: "Payroll",              icon: <FaMoneyCheckAlt /> }]
+      : []),
+    ...(
+      can("HR Settings",       "write") ||
+      can("Employee",          "write") ||
+      can("Payroll Entry",     "write") ||
+      can("Leave Application", "write") ||
+      can("Salary Slip",       "write")
+        ? [{ id: "setup",     label: "HR Setup",             icon: <FaSlidersH /> }]
+        : []
+    ),
+  ], [can]);
+
+  
+  const employeeTabs = useMemo(
+    () => EMPLOYEE_TAB_IDS.map((id) => ({ id, label: id, icon: null })),
     [],
   );
 
+  const visibleTabs = isEmployeeView ? employeeTabs : professionalTabs;
+
   const [tab, setTab] = useUrlTab({
-    tabs,
-    defaultTab: "dashboard",
-    basePath: "/hr",
+    tabs:       visibleTabs,
+    defaultTab: isEmployeeView
+      ? "emp-dashboard"
+      : (professionalTabs[0]?.id ?? "dashboard"),
+    basePath:   "/hr",
     pathPrefix: "/hr",
   });
 
-  const renderTab = () => {
+  // ── Reset tab on viewMode switch ──────────────────────────────────────────
+  useEffect(() => {
+    const exists = visibleTabs.some((t) => t.id === tab);
+    if (!exists && visibleTabs.length > 0) {
+      setTab(visibleTabs[0].id);
+    }
+  }, [viewMode]); 
+
+  // ── Render content ────────────────────────────────────────────────────────
+  const renderContent = () => {
+    if (isEmployeeView) {
+      switch (tab as EmployeeTabId) {
+        case "emp-dashboard":  return <EmployeeDashboard />;
+        case "emp-financials": return <EmployeeFinancials />;
+        case "emp-profile":    return <MyProfile isPureEmployee={isPureEmployee} />;
+        case "emp-leave":      return <EmployeeLeave isEmployeeView={true} />;
+        case "emp-timesheet":  return <EmployeeTimesheet />;
+        case "emp-documents":  return <EmployeeDocuments />;
+        case "emp-reports":    return <EmployeeReports />;
+        case "emp-reimburse":  return <EmployeeReimbursement />;
+        case "emp-compliance": return <EmployeeCompliance />;
+        default:               return <EmployeeDashboard />;
+      }
+    }
+
     switch (tab) {
-      case "dashboard":
-        return <HrDashboard />;
-      case "management":
-        return <EmployeeManagement />;
-      case "attendance":
-        return <TimeAttendance />;
-      case "leave":
-        return <Leave />;
-      case "payroll":
-        return <PayrollManagement />;
-      case "performance":
-        return <PerformanceDevelopment />;
-      case "setup":
-        return <HRSettingsPage />;
-      default:
-        return <HrDashboard />;
+      case "dashboard":   return <HrDashboard />;
+      case "management":  return <EmployeeManagement isEmployeeView={false} />;
+      case "attendance":  return <TimeAttendance />;
+      case "leave":       return <Leave isEmployeeView={false} />;
+      case "payroll":     return <PayrollManagement />;
+      case "performance": return <PerformanceDevelopment />;
+      case "setup":       return <HRSettingsPage />;
+      default:            return <HrDashboard />;
     }
   };
 
+  // ── Switch button — only shown in employee view (normal Dashboard not visible there)
+  // In professional view, normal Dashboard IS accessible so the button lives there instead.
+  const switchButton = canSwitchView && isEmployeeView ? (
+    <button
+      onClick={toggleViewMode}
+      className="
+        flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
+        border transition-all duration-200
+        border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_10%,transparent)]
+        text-[var(--primary)] hover:bg-[color-mix(in_srgb,var(--primary)_20%,transparent)]
+      "
+    >
+      <ArrowLeftRight size={13} />
+      Professional View
+    </button>
+  ) : null;
+
+  const isViewportLocked = tab === "dashboard" || tab === "emp-dashboard";
+
+  // ─── EMPLOYEE VIEW ────────────────────────────────────────────────────────
+  // Switch button shown here because normal Dashboard is not in the sidebar for employees
+  if (isEmployeeView) {
+    return (
+      <AppPage viewportLocked={isViewportLocked}>
+        <AppPageHeader
+          title="Human Resources"
+          icon={<FaUserTie />}
+          description="Manage employees, payroll, attendance, and compliance"
+          actions={switchButton}
+        />
+        {/* HrPrimaryTabs intentionally omitted — sidebar handles nav */}
+        <AppPageBody
+          className="px-4 py-3"
+          viewportLocked={isViewportLocked}
+        >
+          <Suspense fallback={<AppSkeleton />}>
+            {renderContent()}
+          </Suspense>
+        </AppPageBody>
+      </AppPage>
+    );
+  }
+
+  // ─── PROFESSIONAL VIEW ────────────────────────────────────────────────────
+  // No switch button here — it lives on the main Dashboard (always visible in pro view)
   return (
-    <AppPage viewportLocked={tab === "dashboard"}>
+    <AppPage viewportLocked={isViewportLocked}>
       <AppPageHeader
         title="Human Resources"
         icon={<FaUserTie />}
         description="Manage employees, payroll, attendance, and compliance"
       />
-
-      <HrPrimaryTabs tabs={tabs} activeTab={tab} onChange={setTab} />
-
-      <AppPageBody className="px-4 py-3" viewportLocked={tab === "dashboard"}>
-        <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
+      <HrPrimaryTabs tabs={professionalTabs} activeTab={tab} onChange={setTab} />
+      <AppPageBody
+        className="px-4 py-3"
+        viewportLocked={isViewportLocked}
+      >
+        <Suspense fallback={<AppSkeleton />}>
+          {renderContent()}
+        </Suspense>
       </AppPageBody>
     </AppPage>
   );

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { Calendar, Clock, Layers, Save, X } from "lucide-react";
+import { Calendar, Clock, Save, X } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import AdvancedCalendar from "../../../components/Hr/leave/Calendar";
 
@@ -10,12 +9,7 @@ import {
   updateLeaveApplication,
   type LeaveApplication,
 } from "../../../api/leaveApplicationApi";
-import { getAllEmployees, getEmployeeById } from "../../../api/employeeapi";
-import { getEmployeeLeaveBalanceReport } from "../../../api/leaveApi";
-
-// Types and Mappers
-import type { LeaveBalanceUI } from "../../../types/leave/leaveBalance";
-import { mapLeaveBalanceFromApi } from "../../../types/leave/leaveMapper";
+import { getEmployeeById } from "../../../api/employeeapi";
 import {
   closeSwal,
   showApiError,
@@ -23,25 +17,32 @@ import {
   showSuccess,
 } from "../../../utils/alert";
 
-import LeaveTypeSelect from "../../../components/selects/LeaveTypeSelect";
+import LeaveTypeSelect    from "../../../components/selects/LeaveTypeSelect";
 import { MinimizableModal } from "../../common/MinimizableModal";
+import { ModalInput }     from "../../ui/modal/modalComponent";
+import DatePickerInput from "../../calendar/DatePickerInput";
+import { useAuth }        from "../../../context/AuthContext";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type LeaveFormData = {
-  type: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  isHalfDay: boolean;
+  type:       string;
+  startDate:  string;
+  endDate:    string;
+  reason:     string;
+  isHalfDay:  boolean;
 };
 
 interface LeaveApplyModalProps {
-  modalId: string;
-  isOpen: boolean;
+  modalId:       string;
+  isOpen:        boolean;
   initialData?:  LeaveApplication | null;
-  onClose: () => void;
-  editLeaveId?: string | null;
-  onSuccess?: () => void;
+  onClose:       () => void;
+  editLeaveId?:  string | null;
+  onSuccess?:    () => void;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function LeaveApplyModal({
   modalId,
@@ -51,164 +52,76 @@ export default function LeaveApplyModal({
   editLeaveId,
   onSuccess,
 }: LeaveApplyModalProps) {
+  const { user } = useAuth();
+
+  // ── Form state ──────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<LeaveFormData>({
-    type: "",
+    type:      "",
     startDate: "",
-    endDate: "",
-    reason: "",
+    endDate:   "",
+    reason:    "",
     isHalfDay: false,
   });
-const editId = initialData?.name || initialData?.id;
-  const [selectedRange, setSelectedRange] = useState<DateRange | undefined>();
-  const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [employeeId, setEmployeeId] = useState<string>("HR-EMP-00001");
-  const [leaveApprover, setLeaveApprover] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
 
-  const isEditMode = Boolean(editLeaveId);
-  const [leaveBalance, setLeaveBalance] = useState<LeaveBalanceUI | null>(null);
-  const [balanceLoading, setBalanceLoading] = useState(false);
+  const editId       = initialData?.name || initialData?.id;
+  const isEditMode   = Boolean(editLeaveId || editId);
 
+  const [selectedRange,   setSelectedRange]   = useState<DateRange | undefined>();
+  const [loading,         setLoading]         = useState(false);
+  const [leaveApprover,   setLeaveApprover]   = useState<string>("");
+  const [leaveApproverId, setLeaveApproverId] = useState<string>("");
+
+  // ── On open: fetch logged-in employee to get leave_approver ─────────────
   useEffect(() => {
-    if (!editId || !isOpen) return;
+    if (!isOpen || !user?.employeeId) return;
+
+    const fetchApprover = async () => {
+      try {
+        const res  = await getEmployeeById(user.employeeId!);
+        const data = res?.message?.data ?? res?.data ?? res;
+        const approver = data?.leave_approver ?? "";
+        setLeaveApprover(approver);
+        setLeaveApproverId(approver);
+      } catch {
+        setLeaveApprover("");
+        setLeaveApproverId("");
+      }
+    };
+
+    fetchApprover();
+  }, [isOpen, user?.employeeId]);
+
+  // ── Edit mode: prefill form ──────────────────────────────────────────────
+  useEffect(() => {
+    const id = editLeaveId || editId;
+    if (!id || !isOpen) return;
 
     const fetchLeaveDetail = async () => {
       try {
-        const l = await getLeaveApplicationById(editId);
-        
-        setEmployeeId(String(l.employee));
+        const l = await getLeaveApplicationById(id);
         setFormData({
-          type: l.leave_type || "",
-          startDate: l.from_date || "",
-          endDate: l.to_date || "",
+          type:      l.leave_type  || "",
+          startDate: l.from_date   || "",
+          endDate:   l.to_date     || "",
           isHalfDay: l.half_day === 1,
-          reason: l.description || "",
+          reason:    l.description || "",
         });
       } catch (err) {
         console.error("Failed to fetch leave", err);
       }
     };
-
     fetchLeaveDetail();
-  }, [editId, isOpen]);
-  
-  // useEffect(() => {
-  //   if (!employeeId || !isOpen) {
-  //     setLeaveBalance(null);
-  //     return;
-  //   }
+  }, [editLeaveId, editId, isOpen]);
 
-  //   const fetchLeaveBalance = async () => {
-  //     try {
-  //       setBalanceLoading(true);
-  //       const res = await getEmployeeLeaveBalanceReport({
-  //         employeeId,
-  //         fromDate: "2026-01-01",
-  //         toDate: "2026-12-31",
-  //       });
-
-  //       const uiBalance = mapLeaveBalanceFromApi(res.data);
-  //       setLeaveBalance(uiBalance);
-  //     } catch (err) {
-  //       console.error("Failed to fetch leave balance", err);
-  //       setLeaveBalance(null);
-  //     } finally {
-  //       setBalanceLoading(false);
-  //     }
-  //   };
-
-  //   fetchLeaveBalance();
-  // }, [employeeId, isOpen]);
-
+  // ── Sync calendar with form dates ────────────────────────────────────────
   useEffect(() => {
-    if (!isOpen) return;
-    const fetchEmployees = async () => {
-      try {
-        const res = await getAllEmployees(1, 100);
-        // Extract directly from res.data based on your API response
-        setEmployees(res.data || []);
-      } catch (error) {
-        console.error("Failed to fetch employees", error);
-      }
-    };
-    fetchEmployees();
-  }, [isOpen]);
-
-  // 3. Handle Edit Mode Data Fetching
-  useEffect(() => {
-    if (!editLeaveId || !isOpen) return;
-
-    const fetchLeaveDetail = async () => {
-      try {
-        const l = await getLeaveApplicationById(editLeaveId);
-
-        setEmployeeId(String(l.employee));
-        setFormData({
-          type: l.leave_type || "",
-          startDate: l.from_date || "",
-          endDate: l.to_date || "",
-          isHalfDay: l.half_day === 1,
-          reason: l.description || "",
-        });
-      } catch (err) {
-        console.error("Failed to fetch leave", err);
-      }
-    };
-
-    fetchLeaveDetail();
-  }, [editLeaveId, isOpen]);
-
-  // 4. Sync Form Dates with Calendar
-  useEffect(() => {
-    if (!formData.startDate) {
-      setSelectedRange(undefined);
-      return;
-    }
+    if (!formData.startDate) { setSelectedRange(undefined); return; }
     const from = new Date(formData.startDate);
-    const to = formData.endDate ? new Date(formData.endDate) : undefined;
+    const to   = formData.endDate ? new Date(formData.endDate) : undefined;
     setSelectedRange({ from, to });
   }, [formData.startDate, formData.endDate]);
 
-  // 5. Fetch Reporting Manager
-  useEffect(() => {
-    if (!employeeId || !isOpen) {
-      setLeaveApprover(null);
-      return;
-    }
-
-    const fetchReportingManager = async () => {
-      try {
-        const empRes = await getEmployeeById(employeeId);
-        console.log("Response", empRes);
-        const emp = empRes?.data || empRes;
-        const managerEmployeeCode = emp?.employmentInfo?.reportingManager;
-
-        if (!managerEmployeeCode) {
-          setLeaveApprover(null);
-          return;
-        }
-
-        const manager = employees.find(
-          (e) => e.employeeId === managerEmployeeCode,
-        );
-
-        if (manager) {
-          setLeaveApprover({ id: manager.id, name: manager.name });
-        } else {
-          setLeaveApprover(null);
-        }
-      } catch (err) {
-        console.error("Failed to fetch reporting manager", err);
-        setLeaveApprover(null);
-      }
-    };
-
-    fetchReportingManager();
-  }, [employeeId, employees, isOpen]);
-
+  // ── Helpers ──────────────────────────────────────────────────────────────
   const formatLocalDate = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -216,117 +129,98 @@ const editId = initialData?.name || initialData?.id;
     return `${y}-${m}-${d}`;
   };
 
-  const calendarLeaves: any[] = [];
-
-  const handleRangeSelect = (range?: DateRange) => {
-    if (!range?.from) return;
-
-    setSelectedRange(range);
-    const from = formatLocalDate(range.from);
-    const to = range.to ? formatLocalDate(range.to) : "";
-
-    setFormData((p) => ({
-      ...p,
-      startDate: from,
-      endDate: p.isHalfDay ? from : to,
-    }));
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
-    const { id, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-
-    setFormData((p) => {
-      const updated = {
-        ...p,
-        [id]: type === "checkbox" ? checked : value,
-      };
-
-      // half day lock
-      if (id === "isHalfDay" && checked && p.startDate) {
-        updated.endDate = p.startDate;
-      }
-      if (id === "startDate" && p.isHalfDay) {
-        updated.endDate = value;
-      }
-
-      return updated;
-    });
-  };
-
   const isWeekend = (date: Date) => {
     const day = date.getDay();
     return day === 0 || day === 6;
   };
 
-  let totalDays = 0;
-  let workDays = 0;
+  // ── Day calculation ──────────────────────────────────────────────────────
+  let totalDays  = 0;
+  let workDays   = 0;
   let dayOffDays = 0;
 
   if (formData.startDate && formData.endDate) {
-    const start = new Date(formData.startDate + "T00:00:00");
-    const end = new Date(formData.endDate + "T00:00:00");
+    const start   = new Date(formData.startDate + "T00:00:00");
+    const end     = new Date(formData.endDate   + "T00:00:00");
     const current = new Date(start);
-
     while (current <= end) {
       totalDays++;
-      if (isWeekend(current)) {
-        dayOffDays++;
-      } else {
-        workDays++;
-      }
+      isWeekend(current) ? dayOffDays++ : workDays++;
       current.setDate(current.getDate() + 1);
     }
   }
 
-  const showSummary =
-    !!formData.startDate || !!formData.endDate || formData.isHalfDay;
+  const showSummary = !!formData.startDate || !!formData.endDate || formData.isHalfDay;
 
+  // ── Calendar range select ────────────────────────────────────────────────
+  const handleRangeSelect = (range?: DateRange) => {
+    if (!range?.from) return;
+    setSelectedRange(range);
+    const from = formatLocalDate(range.from);
+    const to   = range.to ? formatLocalDate(range.to) : "";
+    setFormData((p) => ({
+      ...p,
+      startDate: from,
+      endDate:   p.isHalfDay ? from : to,
+    }));
+  };
+
+
+  const handleDateChange = (name: string, value: string) => {
+    setFormData((p) => {
+      const updated = { ...p, [name]: value };
+      // If half-day is on and startDate changes, lock endDate to startDate
+      if (name === "startDate" && p.isHalfDay) updated.endDate = value;
+      return updated;
+    });
+  };
+
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
+    const { id, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    setFormData((p) => {
+      const updated = { ...p, [id]: type === "checkbox" ? checked : value };
+      if (id === "isHalfDay" && checked && p.startDate) updated.endDate = p.startDate;
+      return updated;
+    });
+  };
+
+  // ── Submit ───────────────────────────────────────────────────────────────
   const buildPayload = () => {
     const fromDate = formData.startDate;
-    const toDate = formData.isHalfDay ? fromDate : formData.endDate || fromDate;
-
+    const toDate   = formData.isHalfDay ? fromDate : formData.endDate || fromDate;
     return {
-      employee: employeeId,
+      employee:   user?.employeeId ?? "",   // always in payload, never shown in UI
       leave_type: formData.type,
-      from_date: fromDate,
-      to_date: toDate,
-      half_day: formData.isHalfDay ? 1 : (0 as 0 | 1),
+      from_date:  fromDate,
+      to_date:    toDate,
+      half_day:   formData.isHalfDay ? 1 : (0 as 0 | 1),
       ...(formData.isHalfDay && { half_day_date: fromDate }),
-      description: formData.reason,
-      status: "Open",
-      ...(leaveApprover?.id && { leave_approver: leaveApprover.id }),
+      description:    formData.reason,
+      status:         "Open",
+      ...(leaveApproverId && { leave_approver: leaveApproverId }),
     };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.type) {
-      showApiError("Leave Type is required");
-      return;
-    }
-    if (!formData.startDate) {
-      showApiError("Start date is required");
-      return;
-    }
+    if (!formData.type)      { showApiError("Leave Type is required"); return; }
+    if (!formData.startDate) { showApiError("Start date is required"); return; }
     if (!formData.isHalfDay && !formData.endDate) {
-      showApiError("End date is required");
-      return;
+      showApiError("End date is required"); return;
     }
 
     setLoading(true);
-
     try {
       showLoading(isEditMode ? "Updating Leave..." : "Applying Leave...");
       const payload = buildPayload();
+      const id      = editLeaveId || editId;
 
-      if (isEditMode && editLeaveId) {
-        await updateLeaveApplication(editLeaveId, payload);
+      if (isEditMode && id) {
+        await updateLeaveApplication(id, payload);
         closeSwal();
         showSuccess("Leave updated successfully");
       } else {
@@ -337,7 +231,7 @@ const editId = initialData?.name || initialData?.id;
 
       onSuccess?.();
       handleClose();
-    } catch (err: any) {
+    } catch (err) {
       closeSwal();
       showApiError(err);
     } finally {
@@ -345,26 +239,23 @@ const editId = initialData?.name || initialData?.id;
     }
   };
 
+  // ── Close / reset ────────────────────────────────────────────────────────
   const handleClose = () => {
-    setFormData({
-      type: "",
-      startDate: "",
-      endDate: "",
-      reason: "",
-      isHalfDay: false,
-    });
+    setFormData({ type: "", startDate: "", endDate: "", reason: "", isHalfDay: false });
     setSelectedRange(undefined);
-    setEmployeeId("");
-    setLeaveApprover(null);
+    setLeaveApprover("");
+    setLeaveApproverId("");
     onClose();
   };
 
   if (!isOpen) return null;
- const footer = (
+
+  // ── Footer ───────────────────────────────────────────────────────────────
+  const footer = (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
-        onClick={handleClose} // <--- Change this to handleClose
+        onClick={handleClose}
         className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]"
       >
         <X className="h-3.5 w-3.5" /> Cancel
@@ -372,7 +263,7 @@ const editId = initialData?.name || initialData?.id;
       <button
         type="submit"
         form="leave-form"
-        disabled={loading || balanceLoading}
+        disabled={loading}
         className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
@@ -381,213 +272,156 @@ const editId = initialData?.name || initialData?.id;
     </div>
   );
 
-return (
+  // ── Render ───────────────────────────────────────────────────────────────
+  return (
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
       onClose={handleClose}
       title={isEditMode ? "Edit Leave Application" : "New Leave Application"}
       subtitle="Request time off and check your calendar availability"
-      icon={Calendar} 
-      customWidth="65vw" // Wider width to accommodate the 5/7 grid split
+      icon={Calendar}
+      customWidth="65vw"
       height="auto"
       footer={footer}
     >
-      {/* Fixed-height scroll container so the modal doesn't stretch off-screen */}
-      <div 
-        className="p-4 sm:p-6 overflow-y-auto" 
-        style={{ maxHeight: "calc(85vh - 140px)" }}
-      >
+      <div className="p-4 sm:p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 140px)" }}>
         <div className="grid lg:grid-cols-12 gap-8">
-          
-          {/* LEFT: Calendar */}
+
+          {/* ── LEFT: Calendar ── */}
           <div className="lg:col-span-5 space-y-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-sub">
               Select Dates
             </p>
             <div className="rounded-xl border border-[var(--border)] bg-app p-4 shadow-sm">
               <AdvancedCalendar
-                leaves={calendarLeaves}
+                leaves={[]}
                 selectedRange={selectedRange}
                 onRangeSelect={handleRangeSelect}
               />
             </div>
-
-            {/* {leaveBalance && (
-              <div className="space-y-4 rounded-xl border border-[var(--border)] bg-app p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wider text-sub">
-                  Leave Balance Summary
-                </p>
-                <div className="grid grid-cols-3 gap-4 text-sm text-main">
-                  <div className="flex flex-col">
-                    <span className="text-sub text-xs mb-1">Allocated</span>
-                    <span className="font-semibold">
-                      {leaveBalance.summary.totalAllocated}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sub text-xs mb-1">Taken</span>
-                    <span className="font-semibold text-danger">
-                      {leaveBalance.summary.totalTaken}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sub text-xs mb-1">Available</span>
-                    <span className="font-semibold text-primary">
-                      {leaveBalance.summary.totalClosingBalance}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )} */}
           </div>
 
-          {/* RIGHT: Form */}
-           <div className="lg:col-span-7">
-              <form
-                id="leave-form"
-                onSubmit={handleSubmit}
-                className="space-y-5"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wider text-sub">
-                  Application Details
-                </p>
+          {/* ── RIGHT: Form ── */}
+          <div className="lg:col-span-7">
+            <form id="leave-form" onSubmit={handleSubmit} className="space-y-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-sub">
+                Application Details
+              </p>
 
-                <div className="grid md:grid-cols-2 gap-5">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-main">
-                      Employee <span className="text-danger">*</span>
-                    </label>
-                    <select
-                      value={employeeId}
-                      disabled={isEditMode}
-                      onChange={(e) => setEmployeeId(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-app text-main focus:border-primary focus:outline-none transition-colors disabled:opacity-60 disabled:bg-gray-50"
-                    >
-                      <option value="" disabled>
-                        Select an employee
-                      </option>
-                      {employees.map((emp) => (
-                        <option key={emp.name} value={emp.name}>
-                          {emp.employee_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <LeaveTypeSelect
-                      label="Leave Type"
-                      required
-                      value={formData.type}
-                      onChange={(type) =>
-                        setFormData((p) => ({ ...p, type: type.name }))
-                      }
-                      disabled={isEditMode || balanceLoading}
-                      className="w-full"
-                    />
-                  </div>
+              <div className="grid md:grid-cols-1 gap-5">
 
-                  <div className="space-y-1 md:col-span-2">
-                    <label className="text-xs font-semibold text-main">
-                      Leave Approver
-                    </label>
-                    <input
-                      disabled
-                      value={
-                        leaveApprover?.name || "No reporting manager assigned"
-                      }
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-gray-50 text-sub opacity-80 cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-
-             Date Grid
-           <div className="space-y-4 rounded-xl border border-[var(--border)] bg-app p-4 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <input
-                      type="checkbox"
-                      id="isHalfDay"
-                      checked={formData.isHalfDay}
-                      onChange={handleChange}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <label
-                      htmlFor="isHalfDay"
-                      className="text-sm font-medium text-main cursor-pointer"
-                    >
-                      Apply for Half Day
-                    </label>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-5">
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-main">
-                        From Date <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        id="startDate"
-                        value={formData.startDate}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-app text-main focus:border-primary focus:outline-none transition-colors"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-main">
-                        To Date <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        id="endDate"
-                        value={formData.endDate}
-                        onChange={handleChange}
-                        disabled={formData.isHalfDay}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-app text-main focus:border-primary focus:outline-none transition-colors disabled:opacity-60 disabled:bg-gray-50"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Dynamic Summary */}
-                  {showSummary && (
-                    <div className="mt-4 flex items-center gap-4 rounded-lg bg-[var(--border)]/30 px-3 py-2 text-xs text-main">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="h-4 w-4 text-primary" />
-                        <span className="font-semibold">Total Days:</span>{" "}
-                        {totalDays}
-                      </div>
-                      <div className="h-3 w-px bg-[var(--border)]"></div>
-                      <div>
-                        <span className="font-semibold">Work:</span> {workDays}
-                      </div>
-                      <div className="h-3 w-px bg-[var(--border)]"></div>
-                      <div>
-                        <span className="font-semibold text-sub">Day Off:</span>{" "}
-                        {dayOffDays}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-main">
-                    Reason
-                  </label>
-                  <textarea
-                    id="reason"
-                    value={formData.reason}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Brief description for your leave request..."
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-app text-main focus:border-primary focus:outline-none transition-colors resize-none"
+                {/* Employee — hidden from UI; value still in buildPayload() */}
+                <div className="hidden" aria-hidden="true">
+                  <ModalInput
+                    label="Employee"
+                    value={user?.employeeId || ""}
+                    disabled
+                    readOnly
                   />
                 </div>
-              </form>
-            </div>
-          
+
+                {/* Leave Type — now full width since Employee is hidden */}
+                <div className="flex flex-col min-w-0">
+                  <LeaveTypeSelect
+                    label="Leave Type"
+                    required
+                    value={formData.type}
+                    onChange={(lt) => setFormData((p) => ({ ...p, type: lt.name }))}
+                    disabled={isEditMode}
+                  />
+                </div>
+
+                {/* Leave Approver — auto-filled from employee record */}
+                <div>
+                  <ModalInput
+                    label="Leave Approver"
+                    value={leaveApprover || "No leave approver assigned"}
+                    disabled
+                    readOnly
+                  />
+                </div>
+              </div>
+
+              {/* ── Date section ── */}
+              <div className="space-y-4 rounded-xl border border-[var(--border)] bg-app p-4 shadow-sm">
+
+                {/* Half day toggle */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="isHalfDay"
+                    checked={formData.isHalfDay}
+                    onChange={handleChange}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="isHalfDay" className="text-sm font-medium text-main cursor-pointer">
+                    Apply for Half Day
+                  </label>
+                </div>
+
+                {/* From Date / To Date — using DatePickerInput */}
+                <div className="grid md:grid-cols-2 gap-5">
+                  <DatePickerInput
+                    label="From Date"
+                    name="startDate"
+                    value={formData.startDate}
+                    required
+                    onChange={handleDateChange}
+                  />
+                  <DatePickerInput
+                    label="To Date"
+                    name="endDate"
+                    value={formData.endDate}
+                    required={!formData.isHalfDay}
+                    disabled={formData.isHalfDay}
+                    onChange={handleDateChange}
+                  />
+                </div>
+
+                {/* ── Day summary ── */}
+                {showSummary && (
+                  <div className="flex items-center gap-3 rounded-lg bg-[var(--border)]/30 px-3 py-2 text-xs text-main">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="font-bold text-primary text-sm">{workDays}</span>
+                      <span className="font-bold text-main">Work Day{workDays !== 1 ? "s" : ""}</span>
+                    </div>
+
+                    <div className="h-3 w-px bg-[var(--border)]" />
+
+                    <div className="flex items-center gap-1 text-muted">
+                      <span>Total:</span>
+                      <span className="font-semibold text-main">{totalDays}</span>
+                    </div>
+
+                    <div className="h-3 w-px bg-[var(--border)]" />
+
+                    <div className="flex items-center gap-1 text-muted">
+                      <span>Day Off:</span>
+                      <span className="font-semibold text-main">{dayOffDays}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Reason ── */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-main">Reason</label>
+                <textarea
+                  id="reason"
+                  value={formData.reason}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Brief description for your leave request..."
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-app text-main focus:border-primary focus:outline-none transition-colors resize-none"
+                />
+              </div>
+            </form>
+          </div>
+
         </div>
       </div>
     </MinimizableModal>
   );
 }
-

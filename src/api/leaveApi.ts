@@ -24,11 +24,13 @@ export async function applyLeave(payload: ApplyLeavePayload): Promise<any> {
 export async function getAllEmployeeLeaveHistory(
   page: number = 1,
   pageSize: number = 100,
+  search?: string,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(LeaveAPI.getAll, {
     params: {
       page,
       page_size: pageSize,
+      ...(search ? { search } : {}),
     },
   });
 

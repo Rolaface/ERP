@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -18,7 +18,13 @@ import {
   Users2,
   LogOut,
   Landmark,
-  Calculator
+  Calculator,
+  Calendar,
+  Clock,
+  FileText,
+  BarChart2,
+  ShieldCheck,
+  User,
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -27,83 +33,105 @@ import LogoutConfirmModal from "./LogoutConfirmModal";
 import { useCompanyStore } from "../store/companyStore";
 import { MODAL_LAYER } from "../store/modalStore";
 import { usePermission } from "../hooks/permission/usePermission";
-
-
+import { useHRView } from "../hooks/permission/useHRView";
 
 const iconProps = { size: 18, strokeWidth: 1.75 };
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface MenuItem {
   name: string;
   to: string;
   icon: React.ReactNode;
-  /** API module names that gate this item. Empty = always show. */
+  /** Empty array = always visible */
   modules?: string[];
+  /** If true, hidden when user is in employee view */
+  hideInEmployeeView?: boolean;
 }
+
+interface SettingsItem {
+  to: string;
+  label: string;
+  icon: React.ReactNode;
+  modules?: string[];
+  /** If true, hidden when user is in employee view */
+  hideInEmployeeView?: boolean;
+}
+
+// ─── Employee HR sub-tabs ─────────────────────────────────────────────────────
+// Must stay in sync with EMPLOYEE_TAB_IDS in HrPayrollModule.tsx
+
+interface EmployeeTabItem {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+export const EMPLOYEE_HR_TABS: EmployeeTabItem[] = [
+  { id: "emp-dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} strokeWidth={1.75} /> },
+  { id: "emp-financials", label: "Financials", icon: <Wallet size={16} strokeWidth={1.75} /> },
+  { id: "emp-profile", label: "My Profile", icon: <User size={16} strokeWidth={1.75} /> },
+  { id: "emp-leave", label: "Leave", icon: <Calendar size={16} strokeWidth={1.75} /> },
+  { id: "emp-timesheet", label: "Timesheet & Attendance", icon: <Clock size={16} strokeWidth={1.75} /> },
+  { id: "emp-documents", label: "Documents", icon: <FileText size={16} strokeWidth={1.75} /> },
+  { id: "emp-reports", label: "Reports", icon: <BarChart2 size={16} strokeWidth={1.75} /> },
+  { id: "emp-reimburse", label: "Reimbursement", icon: <Receipt size={16} strokeWidth={1.75} /> },
+  { id: "emp-compliance", label: "Compliance", icon: <ShieldCheck size={16} strokeWidth={1.75} /> },
+];
+
+// ─── Main menu items ──────────────────────────────────────────────────────────
 
 const menuItems: MenuItem[] = [
   {
     name: "Dashboard",
     to: "/dashboard",
     icon: <LayoutDashboard {...iconProps} />,
-    modules: [], // always visible
+    modules: [],
+    hideInEmployeeView: true,   // ← hidden in employee view
   },
   {
     name: "Sales",
     to: "/sales",
     icon: <ShoppingCart {...iconProps} />,
     modules: ["Sales Invoice"],
+    hideInEmployeeView: true,
   },
   {
     name: "Customer",
     to: "/crm",
     icon: <Users {...iconProps} />,
     modules: ["Customer", "Payment Entry"],
+    hideInEmployeeView: true,
   },
   {
     name: "Procurement",
     to: "/procurement",
     icon: <ShoppingBag {...iconProps} />,
-    modules: [
-      "Supplier",
-      "Payment Entry",
-      "Request For Quotation",
-      "Purchase Order",
-      "Purchase Invoice",
-    ],
+    modules: ["Supplier", "Payment Entry", "Request For Quotation", "Purchase Order", "Purchase Invoice"],
+    hideInEmployeeView: true,
   },
   {
     name: "Inventory",
     to: "/inventory",
     icon: <Boxes {...iconProps} />,
     modules: ["Item", "Item Group", "Warehouse", "Stock Entry"],
+    hideInEmployeeView: true,
   },
   {
     name: "Accounting",
     to: "/accounting",
     icon: <Wallet {...iconProps} />,
     modules: ["GL Entry", "Journal Entry"],
+    hideInEmployeeView: true,
   },
   {
     name: "Assets",
     to: "/fasset",
     icon: <Building2 {...iconProps} />,
     modules: ["Asset Category", "Asset", "Asset Movement"],
-  },
-  {
-    name: "Human Resource",
-    to: "/hr",
-    icon: <UserCog {...iconProps} />,
-    modules: ["Employee", "Payroll Entry"],
+    hideInEmployeeView: true,
   },
 ];
-
-interface SettingsItem {
-  to: string;
-  label: string;
-  icon: React.ReactNode;
-  /** API module names that gate this item. Empty = always show. */
-  modules?: string[];
-}
 
 const settingsItems: SettingsItem[] = [
   {
@@ -111,62 +139,67 @@ const settingsItems: SettingsItem[] = [
     label: "Company Setup",
     icon: <Building2 {...iconProps} />,
     modules: ["Company"],
+    hideInEmployeeView: true,   // ← hidden in employee view
   },
   {
     to: "/userManagement",
     label: "User Management",
     icon: <Users2 {...iconProps} />,
     modules: ["User"],
+    hideInEmployeeView: true,
   },
   {
     to: "/bank-management",
     label: "Bank Management",
     icon: <Landmark {...iconProps} />,
     modules: ["Bank", "Bank Account"],
+    hideInEmployeeView: true,
   },
   {
     to: "/mode-of-payment-setup",
     label: "Mode of Payment",
     icon: <Wallet {...iconProps} />,
     modules: ["Mode of Payment"],
+    hideInEmployeeView: true,
   },
   {
     to: "/payment-entry",
     label: "Payment Entry",
     icon: <Receipt {...iconProps} />,
     modules: ["Payment Entry"],
+    hideInEmployeeView: true,
   },
   {
     to: "/currency-conversion",
     label: "Currency Exchange",
     icon: <Repeat {...iconProps} />,
     modules: ["Currency Exchange"],
+    hideInEmployeeView: true,
   },
   {
     to: "/customer-group",
     label: "Customer Group",
     icon: <Users {...iconProps} />,
     modules: ["Customer Group"],
+    hideInEmployeeView: true,
   },
   {
     to: "/Tax-Maintenance",
     label: "Tax Maintenance",
     icon: <Calculator {...iconProps} />,
-    modules: [
-      "Item Tax Template",
-      "Tax Category",
-      "Sales Taxes and Charges Template",
-    ],
+    modules: ["Item Tax Template", "Tax Category", "Sales Taxes and Charges Template"],
+    hideInEmployeeView: true,
   },
   {
     to: "/settings",
     label: "General Settings",
     icon: <Settings {...iconProps} />,
-    modules: [], // always visible — general app settings
+    modules: [],
+    hideInEmployeeView: true,   // ← hidden in employee view
   },
 ];
 
-/* ── Tooltip ── */
+// ─── Tooltip ─────────────────────────────────────────────────────────────────
 
 function Tooltip({ label }: { label: string }) {
   return (
@@ -185,58 +218,73 @@ function Tooltip({ label }: { label: string }) {
   );
 }
 
-/* ── Props ── */
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface SidebarProps {
   open: boolean;
   setOpen: (open: boolean) => void;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   SIDEBAR
-───────────────────────────────────────────────────────────────────────────── */
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────────────────────────────────────────
 
 const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const setCompanyInfo = useCompanyStore((s) => s.setCompanyInfo);
   const location = useLocation();
+  const navigate = useNavigate();
+
   const [company, setCompany] = useState<{ name: string; logo?: string } | null>(null);
   const { logout, user } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
 
-  // ── Permission hook ──────────────────────────────────────────────────────
   const { canAccessAnyOf, isLoading: permissionsLoading } = usePermission();
 
-  // ── Filter nav items based on permissions ────────────────────────────────
-  //
-  // We memoize so the filter only re-runs when permissions actually change,
-  // not on every render (e.g. hover, scroll).
-  //
+  // ── HR view mode ──────────────────────────────────────────────────────────
+  const { viewMode } = useHRView();
+  const isEmployeeView = viewMode === "employee";
+
+  const isHrRoute = location.pathname.startsWith("/hr");
+
+  const activeEmpTabId = useMemo(() => {
+    if (!isHrRoute) return EMPLOYEE_HR_TABS[0].id;
+    const segment = location.pathname.replace(/^\/hr\/?/, "").split("?")[0];
+    const found = EMPLOYEE_HR_TABS.find((t) => t.id === segment);
+    return found ? found.id : EMPLOYEE_HR_TABS[0].id;
+  }, [location.pathname, isHrRoute]);
+
+  // Navigate to an employee tab
+  const handleEmpTabClick = (tabId: string) => {
+    navigate(`/hr/${tabId}`);
+  };
+
+  // ── Permission-filtered items ─────────────────────────────────────────────
+
   const visibleMenuItems = useMemo(
     () =>
       menuItems.filter((item) => {
-
-        // No modules declared → always show (e.g. Dashboard)
+        if (isEmployeeView && item.hideInEmployeeView) return false;
         if (!item.modules || item.modules.length === 0) return true;
         return canAccessAnyOf(item.modules);
       }),
-    // canAccessAnyOf is a stable function reference from Zustand — safe dep
-    [canAccessAnyOf, permissionsLoading]
+    [canAccessAnyOf, permissionsLoading, isEmployeeView],
   );
 
   const visibleSettingsItems = useMemo(
     () =>
       settingsItems.filter((item) => {
+        if (isEmployeeView && item.hideInEmployeeView) return false;
         if (!item.modules || item.modules.length === 0) return true;
         return canAccessAnyOf(item.modules);
       }),
-    [canAccessAnyOf, permissionsLoading]
+    [canAccessAnyOf, permissionsLoading, isEmployeeView],
   );
 
-  // Settings section only appears if at least one settings sub-item is visible
+  const canSeeHr = canAccessAnyOf(["Employee", "Payroll Entry"]);
   const showSettingsSection = visibleSettingsItems.length > 0;
 
-  // ── User display ─────────────────────────────────────────────────────────
+  // ── User display ──────────────────────────────────────────────────────────
   const username = user?.fullName || user?.username || "User";
   const userInitials = username
     .split(" ")
@@ -249,7 +297,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     ? company.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "CO";
 
-  // ── Load company ─────────────────────────────────────────────────────────
+  // ── Load company ──────────────────────────────────────────────────────────
   useEffect(() => {
     const loadCompany = async () => {
       try {
@@ -266,7 +314,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         setCompanyInfo({
           companyName: data?.companyName,
           baseCurrency: data?.financialConfig?.baseCurrency,
-        })
+        });
       } catch (err) {
         console.error("Failed to load company:", err);
       }
@@ -275,22 +323,16 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   }, []);
 
   const isSettingsRoute = [
-    "/settings",
-    "/companySetup",
-    "/userManagement",
-    "/bank-management",
-    "/mode-of-payment-setup",
-    "/payment-entry",
-    "/currency-conversion",
-    "/customer-group",
-    "/Tax-Maintenance",
+    "/settings", "/companySetup", "/userManagement",
+    "/bank-management", "/mode-of-payment-setup", "/payment-entry",
+    "/currency-conversion", "/customer-group", "/Tax-Maintenance",
   ].some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
     if (!open) setSettingsOpen(false);
   }, [open]);
 
-  /* ── Render ── */
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
       <aside
@@ -298,7 +340,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           fixed inset-y-0 left-0 flex flex-col
           border-r border-[var(--border)] bg-sidebar
           transition-[width] duration-300 ease-out overflow-hidden
-          ${open ? "w-[var(--app-sidebar-width)]" : "w-[var(--app-sidebar-width-collapsed)]"}
+          ${open
+            ? "w-[var(--app-sidebar-width)]"
+            : "w-[var(--app-sidebar-width-collapsed)]"
+          }
         `}
         style={{ zIndex: MODAL_LAYER.sidebar }}
       >
@@ -310,7 +355,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               ${open ? "opacity-100 w-auto" : "opacity-0 w-0 pointer-events-none"}
             `}
           >
-            <span className="text-xl font-black tracking-tight text-primary select-none">ERP</span>
+            <span className="text-xl font-black tracking-tight text-primary select-none">
+              ERP
+            </span>
           </div>
           <button
             type="button"
@@ -324,8 +371,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
 
         {/* ── Company badge ── */}
         <div
-          className={`shrink-0 border-b border-[var(--border)] transition-all duration-300 ${open ? "px-4 py-4" : "px-2 py-3"
-            }`}
+          className={`
+            shrink-0 border-b border-[var(--border)] transition-all duration-300
+            ${open ? "px-4 py-4" : "px-2 py-3"}
+          `}
         >
           <div className={`flex items-center gap-3 ${open ? "" : "justify-center"}`}>
             <div
@@ -349,7 +398,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             <div
               className={`
                 flex flex-col min-w-0 transition-all duration-200
-                ${open ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden pointer-events-none"}
+                ${open
+                  ? "opacity-100 w-auto"
+                  : "opacity-0 w-0 overflow-hidden pointer-events-none"
+                }
               `}
             >
               <span className="truncate text-sm font-bold text-main leading-tight">
@@ -362,7 +414,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         {/* ── Nav ── */}
         <nav className="custom-scrollbar flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden px-2 py-3">
 
-          {/* ── Main menu items (permission-filtered) ── */}
+          {/* ── Regular menu items ── */}
           {visibleMenuItems.map((item) => (
             <NavLink
               key={item.name}
@@ -376,14 +428,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               }
             >
               <span
-                className={`flex h-10 shrink-0 items-center justify-center text-[17px] transition-all duration-300 ${open ? "w-10" : "w-full"
-                  }`}
+                className={`
+                  flex h-10 shrink-0 items-center justify-center text-[17px]
+                  transition-all duration-300 ${open ? "w-10" : "w-full"}
+                `}
               >
                 {item.icon}
               </span>
               <span
                 className={`
-                  truncate text-[14px] font-semibold tracking-tight transition-all duration-200 pr-3
+                  truncate text-[14px] font-semibold tracking-tight
+                  transition-all duration-200 pr-3
                   ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
                 `}
               >
@@ -393,7 +448,107 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             </NavLink>
           ))}
 
-          {/* ── Settings group (only if user can see at least one sub-item) ── */}
+          {/* ── HR Section ───────────────────────────────────────────────
+              Employee view  → flat employee tabs list
+              Professional   → single "Human Resource" NavLink
+          ────────────────────────────────────────────────────────────── */}
+          {canSeeHr && (
+            isEmployeeView ? (
+              <div className="pt-1">
+                {/* Section label (expanded only) */}
+                {/* {open && (
+                  <p className="px-3 pb-1 pt-0.5 text-[10px] font-black uppercase tracking-widest text-[var(--muted)]">
+                    Human Resources
+                  </p>
+                )} */}
+                {!open && (
+                  <div className="mx-3 mb-1 h-px bg-[var(--border)]" />
+                )}
+
+                <div className="space-y-0.5">
+                  {EMPLOYEE_HR_TABS.map((t) => {
+                    const isActive = isHrRoute && activeEmpTabId === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => handleEmpTabClick(t.id)}
+                        title={!open ? t.label : undefined}
+                        className={`
+                          group relative flex h-10 w-full items-center rounded-lg
+                          transition-all duration-150
+                          ${isActive
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "text-muted hover:bg-row-hover hover:text-main"
+                          }
+                        `}
+                      >
+                        {isActive && (
+                          <span
+                            className="
+                              absolute left-0 top-1/2 -translate-y-1/2
+                              h-5 w-0.5 rounded-r-full bg-primary
+                            "
+                          />
+                        )}
+                        <span
+                          className={`
+                            flex h-10 shrink-0 items-center justify-center text-[17px]
+                            transition-all duration-300 ${open ? "w-10" : "w-full"}
+                          `}
+                        >
+                          {t.icon}
+                        </span>
+                        <span
+                          className={`
+                            truncate text-[14px] font-semibold tracking-tight
+                            transition-all duration-200 pr-3
+                            ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
+                          `}
+                        >
+                          {t.label}
+                        </span>
+                        {!open && <Tooltip label={t.label} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              // Professional view — original single link
+              <NavLink
+                to="/hr"
+                className={({ isActive }) =>
+                  `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
+                  ${isActive
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted hover:bg-row-hover hover:text-main"
+                  }`
+                }
+              >
+                <span
+                  className={`
+                    flex h-10 shrink-0 items-center justify-center text-[17px]
+                    transition-all duration-300 ${open ? "w-10" : "w-full"}
+                  `}
+                >
+                  <UserCog {...iconProps} />
+                </span>
+                <span
+                  className={`
+                    truncate text-[14px] font-semibold tracking-tight
+                    transition-all duration-200 pr-3
+                    ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
+                  `}
+                >
+                  Human Resource
+                </span>
+                {!open && <Tooltip label="Human Resource" />}
+              </NavLink>
+            )
+          )}
+
+          {/* ── Settings ── */}
           {showSettingsSection && (
             <div className="pt-1">
               <button
@@ -409,14 +564,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 `}
               >
                 <span
-                  className={`flex h-10 shrink-0 items-center justify-center text-[17px] transition-all duration-300 ${open ? "w-10" : "w-full"
-                    }`}
+                  className={`
+                    flex h-10 shrink-0 items-center justify-center text-[17px]
+                    transition-all duration-300 ${open ? "w-10" : "w-full"}
+                  `}
                 >
                   <Settings size={18} />
                 </span>
                 <span
                   className={`
-                    flex-1 truncate text-left text-[14px] font-semibold tracking-tight transition-all duration-200
+                    flex-1 truncate text-left text-[14px] font-semibold tracking-tight
+                    transition-all duration-200
                     ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
                   `}
                 >
@@ -430,7 +588,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 {!open && <Tooltip label="Settings" />}
               </button>
 
-              {/* Settings submenu — permission-filtered */}
               {open && settingsOpen && (
                 <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-[var(--border)] pl-3">
                   {visibleSettingsItems.map((sub) => (
@@ -467,7 +624,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             <div
               className={`
                 flex min-w-0 flex-1 flex-col leading-tight transition-all duration-200
-                ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden pointer-events-none"}
+                ${open
+                  ? "opacity-100"
+                  : "opacity-0 w-0 overflow-hidden pointer-events-none"
+                }
               `}
             >
               <span className="truncate text-sm font-bold text-main">{username}</span>

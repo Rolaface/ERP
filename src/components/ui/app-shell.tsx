@@ -8,9 +8,6 @@ interface AppTabItem {
   icon?: React.ReactNode;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AppPage / AppPageBody / AppPageHeader  (unchanged)
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface AppPageProps {
   children: React.ReactNode;

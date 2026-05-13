@@ -1,22 +1,40 @@
 import React from "react";
-import { Users, UserCheck } from "lucide-react";
+import { Users , UserCheck } from "lucide-react";
 import { useUrlTab } from "../../../hooks/useUrlTab";
 import { HrSectionFrame } from "../components/HrTabLayout";
-
+import { usePermission } from "../../../hooks/permission/usePermission";
 import EmployeeDirectory from "./EmployeeDirectory";
-import Recruitment from "./Recruitment";
+import Recruitment from "../Recruitment";
 
-const EmployeeManagement: React.FC = () => {
+interface EmployeeManagementProps {
+  isEmployeeView?: boolean;
+}
+
+const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
+  isEmployeeView = false,
+}) => {
+  const { can } = usePermission();
+
+  // ── Permission-based flags ─────────────────────────────────────────────────
+  // When isEmployeeView = true → all mutating actions hidden
+  const canCreate = !isEmployeeView && can("Employee", "create");
+  const canEdit   = !isEmployeeView && can("Employee", "write");
+  const canDelete = !isEmployeeView && can("Employee", "delete");
+
   const tabs = [
-    { id: "directory", label: "Employee Directory", icon: <Users size={15} /> },
+    {
+      id:    "directory",
+      label: isEmployeeView ? "My Profile" : "Employee Directory",
+      icon:  <Users size={15} />,
+    },
     { id: "recruitment", label: "Recruitment", icon: <UserCheck size={15} /> },
   ];
 
   const [mainTab, setMainTab] = useUrlTab({
     tabs,
     defaultTab: "directory",
-    param: "employeeTab",
-    basePath: "/hr",
+    param:      "employeeTab",
+    basePath:   "/hr",
   });
 
   return (
@@ -25,7 +43,14 @@ const EmployeeManagement: React.FC = () => {
       activeTab={mainTab}
       onTabChange={setMainTab}
     >
-      {mainTab === "directory" && <EmployeeDirectory />}
+      {mainTab === "directory" && (
+        <EmployeeDirectory
+          isEmployeeView={isEmployeeView}
+          canCreate={canCreate}
+          canEdit={canEdit}
+          canDelete={canDelete}
+        />
+      )}
       {mainTab === "recruitment" && <Recruitment />}
     </HrSectionFrame>
   );
