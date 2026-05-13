@@ -573,7 +573,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
       title={isEdit ? "Edit Salary Structure" : "New Salary Structure"}
       subtitle="Build your payroll structure component by component"
       icon={LayoutList}
-      customWidth="70vw"
+      customWidth="50vw"
       height="78vh"
       footer={footer}
     >

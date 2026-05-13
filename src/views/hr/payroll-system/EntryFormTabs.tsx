@@ -54,17 +54,7 @@ const toDateStr = (d: Date): string => {
  *  when no posting date has been set yet (e.g. frequency selected first). */
 const todayStr = (): string => toDateStr(new Date());
 
-// ── ERPNext-style payroll period calculation ──────────────────────────────────
-/**
- * Mirrors ERPNext's `set_start_end_dates` logic in payroll_entry.py.
- *
- * Given a reference date (posting date or a manually set start date) and a
- * payroll frequency, returns the correct { startDate, endDate } pair exactly
- * as ERPNext would compute them.
- *
- * Frequencies supported (matching ERPNext doctype options):
- *   Daily | Weekly | Fortnightly | Bimonthly | Monthly
- */
+
 const getPayrollDateRange = (
   referenceDate: string,
   frequency: string
@@ -76,14 +66,14 @@ const getPayrollDateRange = (
 
   switch (frequency) {
     case "Daily": {
-      // Same day — ERPNext keeps start === end for daily payroll
+   
       const s = toDateStr(ref);
       return { startDate: s, endDate: s };
     }
 
     case "Weekly": {
-      // Week that contains the reference date (Mon → Sun, ERPNext convention)
-      const day = ref.getDay(); // 0 = Sun … 6 = Sat
+      
+      const day = ref.getDay(); 
       const diffToMon = day === 0 ? -6 : 1 - day;
       const monday = new Date(ref);
       monday.setDate(ref.getDate() + diffToMon);
@@ -100,9 +90,7 @@ const getPayrollDateRange = (
     }
 
     case "Bimonthly": {
-      // ERPNext splits the month into two halves:
-      //   1st–15th  →  start = 1st, end = 15th
-      //   16th–EOM  →  start = 16th, end = last day of month
+   
       const year = ref.getFullYear();
       const month = ref.getMonth();
       const dayOfMonth = ref.getDate();
@@ -119,7 +107,7 @@ const getPayrollDateRange = (
     }
 
     case "Monthly": {
-      // Full calendar month containing the reference date
+     
       const year = ref.getFullYear();
       const month = ref.getMonth();
       const start = new Date(year, month, 1);
@@ -127,7 +115,7 @@ const getPayrollDateRange = (
       return { startDate: toDateStr(start), endDate: toDateStr(end) };
     }
 
-    // Biweekly kept for backward-compat with any stored data — treat same as Fortnightly
+    
     case "Biweekly": {
       const end = new Date(ref);
       end.setDate(ref.getDate() + 13);
@@ -171,10 +159,7 @@ interface OverviewTabProps {
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => {
-  /**
-   * Applies a computed date range to the form state.
-   * Batches both fields so the parent only re-renders once per date resolution.
-   */
+  
   const applyDateRange = useCallback(
     (range: { startDate: string; endDate: string }) => {
       onChange("startDate", range.startDate);
@@ -183,9 +168,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => {
     [onChange]
   );
 
-  /**
-   * Fetch exchange rate helper — reused by both posting-date and currency changes.
-   */
+ 
   const refreshExchangeRate = useCallback(
     async (currency: string, postingDate: string) => {
       if (!currency || !postingDate) return;
@@ -203,29 +186,27 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => {
     },
     [onChange]
   );
+useEffect(() => {
+  if (!data.currency) {
+    const baseCurrency =
+      getBaseCurrencyFromStorage();
 
-  // ── On mount: if frequency is already set but dates are empty, auto-populate ─
-  // This covers the case where the form opens with "Monthly" pre-selected
-  // (e.g. from user preferences or a saved draft) and no dates have been filled.
+    if (baseCurrency) {
+      onChange("currency", baseCurrency);
+    }
+  }
+}, []);
+
   useEffect(() => {
     if (data.payrollFrequency && !data.startDate && !data.endDate) {
       const reference = data.postingDate || todayStr();
       const range = getPayrollDateRange(reference, data.payrollFrequency);
       if (range) applyDateRange(range);
     }
-    // Only run once on mount — exhaustive-deps intentionally omitted
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ 
   }, []);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
 
-  /**
-   * Posting date change:
-   *  1. Persist the new posting date.
-   *  2. If a frequency is already selected, recalculate the date range using
-   *     the new posting date as the reference (ERPNext behaviour).
-   *  3. Refresh exchange rate.
-   */
   const handlePostingDateChange = useCallback(
     async (_name: string, value: string) => {
       onChange("postingDate", value);
@@ -240,20 +221,14 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => {
     [data.payrollFrequency, data.currency, onChange, applyDateRange, refreshExchangeRate]
   );
 
-  /**
-   * Frequency change:
-   *  Use the posting date (preferred) or the current start date as reference,
-   *  then compute and apply the new date range — identical to ERPNext's
-   *  `payroll_frequency` onchange trigger.
-   */
+
   const handleFrequencyChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const frequency = e.target.value;
       onChange("payrollFrequency", frequency);
 
       if (frequency) {
-        // Prefer posting date → existing start date → today (so Monthly always
-        // resolves to a proper range even when the form is freshly opened)
+     
         const reference = data.postingDate || data.startDate || todayStr();
         const range = getPayrollDateRange(reference, frequency);
         if (range) applyDateRange(range);
@@ -262,12 +237,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => {
     [data.postingDate, data.startDate, onChange, applyDateRange]
   );
 
-  /**
-   * Start date manual change:
-   *  Allow free editing. If a frequency is set, recompute the end date from
-   *  the new start date so the period length stays consistent — mirrors how
-   *  ERPNext recalculates end_date when start_date is manually adjusted.
-   */
+
   const handleStartDateChange = useCallback(
     (_name: string, value: string) => {
       onChange("startDate", value);
@@ -283,9 +253,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => {
     [data.payrollFrequency, onChange]
   );
 
-  /**
-   * End date manual change — always allow free override (no auto-recalc).
-   */
+
   const handleEndDateChange = useCallback(
     (_name: string, value: string) => {
       onChange("endDate", value);
@@ -293,9 +261,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, onChange }) => {
     [onChange]
   );
 
-  /**
-   * Currency change — refresh exchange rate.
-   */
+  
+
   const handleCurrencyChange = useCallback(
     async (val: any) => {
       const value = typeof val === "string" ? val : val?.value;

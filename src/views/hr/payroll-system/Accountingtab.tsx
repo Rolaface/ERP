@@ -74,15 +74,15 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
               console.log("BANK RESP", resp);
 
               return (resp?.data || []).map((item: any) => ({
-                label: `${
-                  item.label || item.name || item.bankName || "Unknown Bank"
-                } (${item.currency || item.meta?.currency || ""})`,
+                label: `${item.bankName || "Unknown Bank"}${
+                  item.currency ? ` (${item.currency})` : ""
+                }`,
 
-                value: item.value || item.name || item.bankName || "",
+                value: item.id || item.name || "",
               }));
             }}
             onChange={(val: any) => {
-              const value = typeof val === "string" ? val : val?.value;
+              const value = typeof val === "string" ? val : val?.value || "";
 
               onChange("bankAccount", value);
             }}
@@ -99,7 +99,6 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         </div>
 
         <div>
-        
           <ProjectSelect
             value={data.project}
             onChange={(value: string) => onChange("project", value)}
@@ -117,7 +116,6 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         </div> */}
       </div>
 
-  
       {/* Summary card */}
       {data.selectedEmployees.length > 0 && (
         <div className="rounded-xl border border-success/30 bg-success/5 p-5">

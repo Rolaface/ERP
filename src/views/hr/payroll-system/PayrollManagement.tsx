@@ -16,10 +16,10 @@ import {
 } from "../../../utils/alert";
 import type { PayrollRecord, PayrollEntry } from "../../../types/payrolltypes";
 import { runPayrollValidation } from "./utils";
-import { PayrollDashboard }    from "./Payrolldashboard ";
-import { EmployeeDetailPage }  from "./Employeedetailpage";
-import { PayslipModal }        from "./PayslipModal";
-import { QuickCreateModal }    from "../../../components/Hr/payrollmodal/QuickCreatePayrollModal";
+import { PayrollDashboard } from "./Payrolldashboard ";
+import { EmployeeDetailPage } from "./Employeedetailpage";
+import { PayslipModal } from "./PayslipModal";
+import { QuickCreateModal } from "../../../components/Hr/payrollmodal/QuickCreatePayrollModal";
 import { PayrollValidationModal } from "../../../components/Hr/payrollmodal/payrollvalidationmodal";
 
 // ─── Payload builder ──────────────────────────────────────────────────────────
@@ -28,39 +28,46 @@ const buildPayload = (
   formData: PayrollEntry,
   empIds: string[],
 ): CreatePayrollEntryPayload => ({
-  payroll_frequency:   formData.payrollFrequency || "Monthly",
-  posting_date:        formData.postingDate,
-  start_date:          formData.startDate,
-  end_date:            formData.endDate,
-  exchange_rate:       formData.exchangeRate ?? 1,
+  payroll_frequency: formData.payrollFrequency || "Monthly",
+  posting_date: formData.postingDate,
+  start_date: formData.startDate,
+  end_date: formData.endDate,
+  exchange_rate: formData.exchangeRate ?? 1,
   payroll_payable_account: formData.payrollPayableAccount,
-  payment_account:     formData.paymentAccount,
-  bank_account:        formData.bankAccount ?? "",
-  employees:           empIds.map((id) => ({ employee: id, is_salary_withheld: 0 })),
+  payment_account: formData.paymentAccount,
+  bank_account:
+    typeof formData.bankAccount === "object" && formData.bankAccount !== null
+      ? (formData.bankAccount as any).value
+      : (formData.bankAccount ?? ""),
+  employees: empIds.map((id) => ({ employee: id, is_salary_withheld: 0 })),
   ...(formData.costCenter ? { cost_center: formData.costCenter } : {}),
-  ...(formData.project    ? { project:     formData.project }    : {}),
-  ...(formData.currency   ? { currency:    formData.currency }   : {}),
-  deduct_tax_for_unsubmitted_tax_exemption_proof:
-    formData.deductTaxForProof ? 1 : 0,
+  ...(formData.project ? { project: formData.project } : {}),
+  ...(formData.currency ? { currency: formData.currency } : {}),
+  deduct_tax_for_unsubmitted_tax_exemption_proof: formData.deductTaxForProof
+    ? 1
+    : 0,
   salary_slip_based_on_timesheet: formData.salarySlipTimesheet ? 1 : 0,
   validate_attendance: 0,
-  validate_holidays:   0,
+  validate_holidays: 0,
 });
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PayrollManagement() {
-  const [page, setPage]                   = useState(1);
-  const [totalPages, setTotalPages]       = useState(1);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
-  const [loading, setLoading]             = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showValidation, setShowValidation]   = useState(false);
-  const [selectedRecord, setSelectedRecord]   = useState<PayrollRecord | null>(null);
-  const [detailRecord, setDetailRecord]       = useState<PayrollRecord | null>(null);
-  const [selectedEmpIds, setSelectedEmpIds]   = useState<string[]>([]);
- type ValidationResult = ReturnType<typeof runPayrollValidation> | null;
-const [validationResult, setValidationResult] = useState<ValidationResult>(null);
+  const [showValidation, setShowValidation] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<PayrollRecord | null>(
+    null,
+  );
+  const [detailRecord, setDetailRecord] = useState<PayrollRecord | null>(null);
+  const [selectedEmpIds, setSelectedEmpIds] = useState<string[]>([]);
+  type ValidationResult = ReturnType<typeof runPayrollValidation> | null;
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // ── Data loading ───────────────────────────────────────────────────────────
@@ -189,23 +196,24 @@ const [validationResult, setValidationResult] = useState<ValidationResult>(null)
             showLoading("Loading Payroll");
             const payroll = await getPayrollEntryDetail((r as any).name);
             const mappedPayroll = {
-              payrollName:             payroll.name,
-              postingDate:             payroll.posting_date,
-              currency:                payroll.currency,
-              exchangeRate:            payroll.exchange_rate,
-              company:                 payroll.company,
-              payrollPayableAccount:   payroll.payroll_payable_account,
-              status:                  payroll.status,
-              salarySlipTimesheet:
-                payroll.salary_slip_based_on_timesheet === 1,
+              payrollName: payroll.name,
+              postingDate: payroll.posting_date,
+              currency: payroll.currency,
+              exchangeRate: payroll.exchange_rate,
+              company: payroll.company,
+              payrollPayableAccount: payroll.payroll_payable_account,
+              status: payroll.status,
+              salarySlipTimesheet: payroll.salary_slip_based_on_timesheet === 1,
               deductTaxForProof:
                 payroll.deduct_tax_for_unsubmitted_tax_exemption_proof === 1,
-              payrollFrequency:  payroll.payroll_frequency,
-              startDate:         payroll.start_date,
-              endDate:           payroll.end_date,
-              paymentAccount:    payroll.payment_account || "",
-              bankAccount:       payroll.bank_account    || "",
-              costCenter:        payroll.cost_center     || "",
+              payrollFrequency: payroll.payroll_frequency,
+              startDate: payroll.start_date,
+              endDate: payroll.end_date,
+              paymentAccount: payroll.payment_account || "",
+              bankAccount: payroll.bank_account || "",
+              project: payroll.project || "",
+              
+              costCenter: payroll.cost_center || "",
               selectedEmployees:
                 payroll.employees?.map((e: any) => e.employee) || [],
             };
