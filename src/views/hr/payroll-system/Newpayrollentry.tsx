@@ -206,7 +206,7 @@ const handleSubmit = async () => {
           <EmployeesTab
             data={formData}
             onChange={update}
-            employees={employees}
+            
           />
         )}
         {step === 2 && (

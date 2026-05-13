@@ -603,5 +603,6 @@ export const API = {
     getsalarystructure: `${ERP_BASE}/api/method/custom_hrms.api.search.get_salary_structures`,
     getleavepolicy: `${ERP_BASE}/api/method/custom_hrms.api.search.get_leave_policies`,
     getUsers: `${ERP_BASE}/api/method/custom_hrms.api.search.get_users`,
+    getPayrollEmployees:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_employee`
   },
 } as const;
