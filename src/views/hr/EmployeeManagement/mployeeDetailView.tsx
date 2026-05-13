@@ -56,6 +56,7 @@ type Props = {
   employee: any;
   onBack?: () => void;
   onDocumentUploaded: () => Promise<void>;
+   hideFinancialTabs?: boolean;
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -64,6 +65,7 @@ const EmployeeDetailView: React.FC<Props> = ({
   employee: emp,
   onBack,
   onDocumentUploaded,
+  hideFinancialTabs = false,
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>("personal");
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -75,6 +77,10 @@ const EmployeeDetailView: React.FC<Props> = ({
     .filter(Boolean)
     .join(" ");
   const currency = fmt(emp.salary_currency) || "";
+
+   const visibleTabs = hideFinancialTabs
+    ? TABS.filter((t) => t.id !== "compensation" && t.id !== "salarySlip")
+    : TABS;
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -155,7 +161,7 @@ const EmployeeDetailView: React.FC<Props> = ({
          * Payroll, etc. Zero extra styling needed; it matches out of the box.
          */}
         <AppSubTabs
-          tabs={TABS}
+          tabs={visibleTabs}  
           activeTab={activeTab}
           onChange={(id) => setActiveTab(id as TabId)}
         />
