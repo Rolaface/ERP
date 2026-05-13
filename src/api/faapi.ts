@@ -134,36 +134,19 @@ export async function getAssetCategories(
   paramsObj?: GetAssetCategoryParams
 ) {
   try {
-    const params = new URLSearchParams();
+    const start = paramsObj?.page && paramsObj?.page_size
+      ? (paramsObj.page - 1) * paramsObj.page_size
+      : undefined;
 
-    // fields
-    if (paramsObj?.fields?.length) {
-      params.append("fields", JSON.stringify(paramsObj.fields));
-    }
+    const query = buildListParams({
+      fields: paramsObj?.fields ?? ["name", "asset_category_name", "non_depreciable_category"],
+      start,
+      pageSize: paramsObj?.page_size,
+      search: paramsObj?.search,
+      searchFields: ["asset_category_name", "name"],
+    });
 
-    // filters
-    if (paramsObj?.filters?.length) {
-      params.append("filters", JSON.stringify(paramsObj.filters));
-    }
-
-    // search
-    if (paramsObj?.search?.trim()) {
-      params.append("search", paramsObj.search.trim());
-    }
-
-    // pagination (ERP format)
-    if (paramsObj?.page && paramsObj?.page_size) {
-      const start = (paramsObj.page - 1) * paramsObj.page_size;
-      params.append("limit_start", String(start));
-      params.append("limit_page_length", String(paramsObj.page_size));
-    }
-
-    const url = params.toString()
-      ? `${API.AssetsTypes.getall}?${params.toString()}`
-      : API.AssetsTypes.getall;
-
-    const resp: AxiosResponse = await api.get(url);
-
+    const resp: AxiosResponse = await api.get(`${API.AssetsTypes.getall}?${query}`);
     return resp?.data?.data ?? [];
   } catch (error) {
     console.error("GET ASSET CATEGORY ERROR:", error);

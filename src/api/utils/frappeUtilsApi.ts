@@ -149,3 +149,48 @@ export async function getalluser(
     );
   }
 }
+
+export async function getPayrollEmployees(filters: {
+  start_date: string;        // required
+  end_date: string;          // required
+  payroll_frequency?: string;
+  payroll_payable_account?: string;
+  currency?: string;
+  branch?: string;
+  department?: string;
+  designation?: string;
+  grade?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<any[]> {
+  try {
+    const params = new URLSearchParams();
+
+    // Required
+    params.append("start_date", filters.start_date);
+    params.append("end_date", filters.end_date);
+
+    // Optional — only append if truthy
+    if (filters.payroll_frequency)       params.append("payroll_frequency", filters.payroll_frequency);
+    if (filters.payroll_payable_account) params.append("payroll_payable_account", filters.payroll_payable_account);
+    if (filters.currency)                params.append("currency", filters.currency);
+    if (filters.branch)                  params.append("branch", filters.branch);
+    if (filters.department)              params.append("department", filters.department);
+    if (filters.designation)             params.append("designation", filters.designation);
+    if (filters.grade)                   params.append("grade", filters.grade);
+    if (filters.page)                    params.append("page", String(filters.page));
+    if (filters.page_size)               params.append("page_size", String(filters.page_size));
+
+    const resp: AxiosResponse = await api.get(
+      `${FrappeUtilsAPI.getPayrollEmployees}?${params.toString()}`
+    );
+
+    return resp.data?.data ?? [];
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to fetch payroll employees"
+    );
+  }
+}

@@ -75,6 +75,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         page,
         pageSize,
         taxCategory || undefined,
+        searchTerm || undefined,
       );
 
       setCustomers(response?.data || []);
@@ -88,9 +89,14 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       setInitialLoad(false);
     }
   };
-  useEffect(() => {
-    fetchCustomers();
-  }, [page, pageSize, taxCategory]);
+useEffect(() => {
+  fetchCustomers();
+}, [page, pageSize, taxCategory, searchTerm]);
+
+useEffect(() => {
+  setPage(1);
+}, [searchTerm]);
+  
 
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CUSTOMER_LIST, () => {
@@ -101,7 +107,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   const fetchAllCustomers = async () => {
     try {
-      const response = await getAllCustomers(1, 1000, taxCategory);
+      const response = await getAllCustomers(1, 1000, taxCategory, searchTerm);
       setAllCustomers(response?.data || []);
     } catch (error) {
       console.error("Error loading all customers:", error);
@@ -402,7 +408,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
           onPageSizeChange={(size) => setPageSize(size)}
           pageSizeOptions={[10, 25, 50, 100]}
           searchValue={searchTerm}
-          onSearch={setSearchTerm}
+          onSearch={(q) => {
+  setSearchTerm(q);
+  setPage(1);
+}}
           enableAdd={can(CUSTOMER_MODULE, "create")}
           addLabel="Add Customer"
           onAdd={handleAddCustomer}

@@ -10,12 +10,14 @@ export async function getAllCustomers(
   page: number = 1,
   page_size: number = 5,
   taxCategory?: string,
+  search?: string,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(CustomerAPI.getAll, {
     params: {
       page,
       page_size,
       ...(taxCategory && { taxCategory }),
+      ...(search && { search }),
     },
   });
   return resp.data;

@@ -37,6 +37,7 @@ const AssetRegister: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { can } = usePermission();
 
@@ -205,6 +206,7 @@ const AssetRegister: React.FC = () => {
         ],
         page,
         page_size: pageSize,
+        search: searchTerm,
 
       });
 
@@ -227,7 +229,7 @@ const AssetRegister: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize,]);
+  }, [page, pageSize,searchTerm]);
   useEffect(() => {
     fetchAssets();
   }, [fetchAssets, refreshKey]);
@@ -371,10 +373,11 @@ const AssetRegister: React.FC = () => {
 
         showToolbar
 
-        onSearch={(q) => {
-
-          setPage(1);
-        }}
+       searchValue={searchTerm}
+onSearch={(q) => {
+  setSearchTerm(q);
+  setPage(1);
+}}
 
         enableAdd={can(ASSET_MODULE, "create")}
         addLabel="Add Asset"

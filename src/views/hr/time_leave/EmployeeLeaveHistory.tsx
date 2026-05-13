@@ -1,27 +1,30 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Table from "../../../components/ui/Table/Table";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import ActionButton from "../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../components/ui/Table/type";
 import { useTableLogic } from "../../../components/ui/Table/useTableLogic";
-import { useEffect } from "react";
 import { getAllEmployeeLeaveHistory } from "../../../api/leaveApi";
 import type { LeaveUI } from "../../../types/leave/uiLeave";
 import { mapLeaveFromApi } from "../../../types/leave/leaveMapper";
 import EmployeeLeaveDetailModal from "../../../components/Hr/leave/EmployeeLeaveDetailModal";
+import { useAuth } from "../../../context/AuthContext";
+import { useHRView } from "../../../hooks/permission/useHRView";
 
-/* Component */
 const EmployeeHistory: React.FC = () => {
-  const [selectedLeave, setSelectedLeave] = useState<LeaveUI | null>(null);
+  const { user }      = useAuth();
+  const { viewMode }  = useHRView();
+
+  const isEmployeeView = viewMode === "employee";
+
+  const [selectedLeaveId, setSelectedLeaveId] = useState<string | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
+  const [loading, setLoading]   = useState(false);
+  const [page, setPage]         = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [searchTerm, setSearchTerm] = useState("");
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [leaves, setLeaves] = useState<LeaveUI[]>([]);
-  const [selectedLeaveId, setSelectedLeaveId] = useState<string | null>(null);
+  const [leaves, setLeaves]     = useState<LeaveUI[]>([]);
 
   const filteredData = useMemo(() => {
     return selectedEmployee
@@ -30,13 +33,24 @@ const EmployeeHistory: React.FC = () => {
   }, [leaves, selectedEmployee]);
 
   useEffect(() => {
-    const fetchEmployeeLeaves = async () => {
+    const fetchLeaves = async () => {
       setLoading(true);
       try {
-        const res = await getAllEmployeeLeaveHistory(page, pageSize);
+        // Employee view: search=employeeId → only own leave history
+        // Professional view: no filter → all employees
+        const searchParam = isEmployeeView
+          ? user?.employeeId
+          : undefined;
+
+        const res = await getAllEmployeeLeaveHistory(
+          page,
+          pageSize,
+          searchParam,
+        );
 
         const mapped = (res.data?.leaves || []).map(mapLeaveFromApi);
         setLeaves(mapped);
+
         const pg = res.data?.pagination;
         if (pg) {
           setTotalPages(pg.total_pages);
@@ -47,13 +61,13 @@ const EmployeeHistory: React.FC = () => {
       }
     };
 
-    fetchEmployeeLeaves();
-  }, [page, pageSize]);
+    fetchLeaves();
+  }, [page, pageSize, isEmployeeView, user?.employeeId]);
 
   const columns = useMemo<Column<LeaveUI>[]>(
     () => [
       {
-        key: "employee",
+        key:    "employee",
         header: "Employee",
         render: (l) => (
           <div>
@@ -64,39 +78,19 @@ const EmployeeHistory: React.FC = () => {
           </div>
         ),
       },
+      { key: "type",   header: "Type",   render: (l) => l.leaveType },
+      { key: "period", header: "Period", render: (l) => `${l.startDate} → ${l.endDate}` },
+      { key: "days",   header: "Days",   align: "center", render: (l) => l.totalDays },
+      { key: "appliedOn", header: "Applied", render: (l) => l.appliedOn },
       {
-        key: "type",
-        header: "Type",
-        render: (l) => l.leaveType,
-      },
-      {
-        key: "period",
-        header: "Period",
-        render: (l) => `${l.startDate} → ${l.endDate}`,
-      },
-      {
-        key: "days",
-        header: "Days",
-        align: "center",
-        render: (l) => l.totalDays,
-      },
-
-      
-      {
-        key: "appliedOn",
-        header: "Applied",
-        render: (l) => l.appliedOn,
-      },
-
-      {
-        key: "status",
+        key:    "status",
         header: "Status",
         render: (l) => <StatusBadge status={l.status} />,
       },
       {
-        key: "actions",
+        key:    "actions",
         header: "Actions",
-        align: "center",
+        align:  "center",
         render: (l) => (
           <ActionButton
             type="view"
@@ -109,93 +103,18 @@ const EmployeeHistory: React.FC = () => {
     [],
   );
 
-  const table = useTableLogic<LeaveUI>({
-    columns,
-    data: filteredData,
-  });
+  const table = useTableLogic<LeaveUI>({ columns, data: filteredData });
 
-  /* Filters */
   const historyFilters = (
     <>
-      {/* EMPLOYEE FILTER */}
-      {/* <div className="relative">
-        <select
-          value={selectedEmployee}
-          onChange={(e) => setSelectedEmployee(e.target.value)}
-          className="
-            appearance-none
-            px-4 py-2
-            pr-9
-            rounded-xl
-            border border-[var(--border)]
-            bg-app
-            text-[10px] font-black uppercase tracking-widest
-            text-muted
-            hover:text-primary hover:border-primary
-            focus:outline-none focus:ring-2 focus:ring-primary/10
-            cursor-pointer
-          "
-        >
-          <option value="">Employee: All</option>
-          {uniqueEmployees.map((emp) => (
-            <option key={emp.id} value={emp.id}>
-              {emp.name}
-            </option>
-          ))}
-        </select>
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
-          ▾
-        </span>
-      </div> */}
-
-      {/* DEPARTMENT FILTER */}
-      {/* <div className="relative">
-        <select
-          value={departmentFilter}
-          onChange={(e) => setDepartmentFilter(e.target.value)}
-          className="
-            appearance-none
-            px-4 py-2
-            pr-9
-            rounded-xl
-            border border-[var(--border)]
-            bg-app
-            text-[10px] font-black uppercase tracking-widest
-            text-muted
-            hover:text-primary hover:border-primary
-            focus:outline-none focus:ring-2 focus:ring-primary/10
-            cursor-pointer
-          "
-        >
-          <option value="">Department: All</option>
-          <option value="Engineering">Dept: Engineering</option>
-          <option value="HR">Dept: HR</option>
-          <option value="Sales">Dept: Sales</option>
-          <option value="Marketing">Dept: Marketing</option>
-        </select>
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
-          ▾
-        </span>
-      </div> */}
-
-      {/* YEAR FILTER */}
       <div className="relative">
         <select
           value={table.yearFilter}
           onChange={(e) => table.setYearFilter(e.target.value)}
-          className="
-            appearance-none
-            px-4 py-2
-            pr-9
-            rounded-xl
-            border border-[var(--border)]
-            bg-app
-            text-[10px] font-black uppercase tracking-widest
-            text-muted
-            hover:text-primary hover:border-primary
-            focus:outline-none focus:ring-2 focus:ring-primary/10
-            cursor-pointer
-          "
+          className="appearance-none px-4 py-2 pr-9 rounded-xl border border-[var(--border)]
+            bg-app text-[10px] font-black uppercase tracking-widest text-muted
+            hover:text-primary hover:border-primary focus:outline-none
+            focus:ring-2 focus:ring-primary/10 cursor-pointer"
         >
           <option value="">Year: All</option>
           <option value="2026">Year: 2026</option>
@@ -206,24 +125,14 @@ const EmployeeHistory: React.FC = () => {
         </span>
       </div>
 
-      {/* LEAVE TYPE FILTER */}
       <div className="relative">
         <select
           value={table.leaveTypeFilter}
           onChange={(e) => table.setLeaveTypeFilter(e.target.value)}
-          className="
-            appearance-none
-            px-4 py-2
-            pr-9
-            rounded-xl
-            border border-[var(--border)]
-            bg-app
-            text-[10px] font-black uppercase tracking-widest
-            text-muted
-            hover:text-primary hover:border-primary
-            focus:outline-none focus:ring-2 focus:ring-primary/10
-            cursor-pointer
-          "
+          className="appearance-none px-4 py-2 pr-9 rounded-xl border border-[var(--border)]
+            bg-app text-[10px] font-black uppercase tracking-widest text-muted
+            hover:text-primary hover:border-primary focus:outline-none
+            focus:ring-2 focus:ring-primary/10 cursor-pointer"
         >
           <option value="">Type: All</option>
           <option value="Casual Leave">Type: Casual</option>
@@ -239,7 +148,6 @@ const EmployeeHistory: React.FC = () => {
 
   return (
     <div className="p-8">
-      {/*  TABLE  */}
       <Table
         columns={columns}
         data={filteredData}
@@ -254,10 +162,7 @@ const EmployeeHistory: React.FC = () => {
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1); // reset page
-        }}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
       />
       <EmployeeLeaveDetailModal

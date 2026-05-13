@@ -8,8 +8,8 @@ export const EmployeeAPI = API.employee;
 export async function getAllEmployees(
   page: number = 1,
   page_size: number = 200,
-  search: string = "",
   status: string = "Active",
+  search?: string,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(EmployeeAPI.getAll, {
     params: {
@@ -17,6 +17,7 @@ export async function getAllEmployees(
       page_size,
       search,
       status,
+     ...(search ? { search } : {}),
     },
   });
 

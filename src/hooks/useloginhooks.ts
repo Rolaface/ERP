@@ -4,7 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import { getCompanyById } from "../api/companySetupApi";
 import { useCompanyStore } from "../store/companyStore";
 import { resetPasswordApi } from "../api/authService";
-
+import { getCurrencyList }
+  from "../api/lookupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 export const useLogin = () => {
@@ -69,14 +70,37 @@ export const useLogin = () => {
       const company = companyRes?.data;
 
       // 3. store in zustand
-      const { setCompanyInfo } = useCompanyStore.getState();
+const { setCompanyInfo } =
+  useCompanyStore.getState();
 
-      setCompanyInfo({
-        companyName: company?.companyName,
-        baseCurrency: company?.baseCurrency,
-      });
+const currencies =
+  await getCurrencyList({
+    search:
+      company?.baseCurrency,
+  });
 
-      console.log("Stored baseCurrency:", company?.baseCurrency);
+const matchedCurrency =
+  currencies.find(
+    (c) =>
+      c.name ===
+      company?.baseCurrency,
+  );
+
+setCompanyInfo({
+  companyName:
+    company?.companyName,
+
+  baseCurrency:
+    company?.baseCurrency,
+
+  currencySymbol:
+    matchedCurrency?.symbol ||
+    company?.baseCurrency ||
+    "",
+});
+
+
+
 
       // 4. navigate
       navigate("/dashboard");

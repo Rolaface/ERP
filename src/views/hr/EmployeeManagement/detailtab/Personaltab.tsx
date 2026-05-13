@@ -32,47 +32,29 @@ export const PersonalTab: React.FC<Props> = ({ emp, fullName }) => (
           label="Preferred Email"
           value={fmt(emp.prefered_email) || fmt(emp.prefered_contact_email)}
         />
-        <Field
-          label="Current Address"
-          value={fmt(emp.current_address)}
-          className="col-span-2"
-        />
-        <Field
-          label="Permanent Address"
-          value={fmt(emp.permanent_address)}
-          className="col-span-2"
-        />
+     <div className="col-span-2 grid grid-cols-2 gap-x-5">
+  <Field
+    label="Current Address"
+    value={fmt(emp.current_address)}
+  />
+
+  <Field
+    label="Permanent Address"
+    value={fmt(emp.permanent_address)}
+  />
+</div>
       </div>
     </Section>
 
     {/* ── Emergency Contact ── */}
-    <Section title="Emergency Contact" icon={<Shield className="w-3.5 h-3.5" />}>
+    <Section
+      title="Emergency Contact"
+      icon={<Shield className="w-3.5 h-3.5" />}
+    >
       <div className="grid grid-cols-3 gap-x-5 gap-y-4">
         <Field label="Contact Name" value={fmt(emp.person_to_be_contacted)} />
         <Field label="Relationship" value={fmt(emp.relation)} />
         <Field label="Phone" value={fmt(emp.emergency_phone_number)} />
-      </div>
-    </Section>
-
-    {/* ── Identity & Compliance ── */}
-    <Section
-      title="Identity & Compliance"
-      icon={<CreditCard className="w-3.5 h-3.5" />}
-    >
-      <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-        <Field label="Passport Number" value={fmt(emp.passport_number)} mono />
-        <Field label="Place of Issue" value={fmt(emp.place_of_issue)} />
-        <Field label="Date of Issue" value={fmtDate(emp.date_of_issue)} />
-        <Field label="Valid Upto" value={fmtDate(emp.valid_upto)} />
-        <Field
-          label="Health Insurance"
-          value={fmt(emp.health_insurance_provider)}
-        />
-        <Field
-          label="Insurance No."
-          value={fmt(emp.health_insurance_no)}
-          mono
-        />
       </div>
     </Section>
   </div>

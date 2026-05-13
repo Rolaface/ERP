@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { loginApi, logoutApi, fetchLoginUser } from "../api/authService";
 import type { AuthUser } from "../api/authService";
 import { useCompanyStore } from "../store/companyStore";
+import { useHRViewStore } from "../store/hrViewStore";
 
 const SID_KEY  = "session_id";
 const USER_KEY = "auth_user";
@@ -70,11 +71,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // ── Logout ───────────────────────────────────────────────────────────────
-  const logout = useCallback(async () => {
-    await logoutApi();
-    setUser(null);
-    useCompanyStore.getState().clearCompanyInfo();
-  }, []);
+const logout = useCallback(async () => {
+  const username = user?.username;
+  if (username) {
+    useHRViewStore.getState().clearViewMode(username);
+  }
+  await logoutApi();
+  setUser(null);
+  useCompanyStore.getState().clearCompanyInfo();
+}, [user]);
+
 
   return (
     <AuthContext.Provider

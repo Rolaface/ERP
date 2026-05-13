@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { ERP_BASE, API } from "../config/api";
+import { buildListParams } from "../api/utils/queryBuilder";
 
 const api = createAxiosInstance(ERP_BASE);
 
@@ -29,6 +30,7 @@ export async function createAssetMovement(payload: any) {
 /* GET ALL MOVEMENTS */
 /* ───────────────────────────────────────────── */
 
+
 export async function getAssetMovements(paramsObj?: {
   fields?: string[];
   filters?: any[];
@@ -37,32 +39,19 @@ export async function getAssetMovements(paramsObj?: {
   page_size?: number;
 }) {
   try {
-    const params = new URLSearchParams();
+    const start = paramsObj?.page && paramsObj?.page_size
+      ? (paramsObj.page - 1) * paramsObj.page_size
+      : undefined;
 
-    if (paramsObj?.fields?.length) {
-      params.append("fields", JSON.stringify(paramsObj.fields));
-    }
+    const query = buildListParams({
+      fields: paramsObj?.fields ?? ["name"],
+      start,
+      pageSize: paramsObj?.page_size,
+      search: paramsObj?.search,
+      searchFields: ["name", "company", "purpose"],
+    });
 
-    if (paramsObj?.filters?.length) {
-      params.append("filters", JSON.stringify(paramsObj.filters));
-    }
-
-    if (paramsObj?.search?.trim()) {
-      params.append("search", paramsObj.search.trim());
-    }
-
-    if (paramsObj?.page && paramsObj?.page_size) {
-      const start = (paramsObj.page - 1) * paramsObj.page_size;
-      params.append("limit_start", String(start));
-      params.append("limit_page_length", String(paramsObj.page_size));
-    }
-
-    const url = params.toString()
-      ? `${API.Assets.Movement}?${params.toString()}`
-      : API.Assets. Movement;
-
-    const resp: AxiosResponse = await api.get(url);
-
+    const resp: AxiosResponse = await api.get(`${API.Assets.Movement}?${query}`);
     return resp?.data?.data ?? [];
   } catch (error) {
     console.error("GET ASSET MOVEMENT ERROR:", error);

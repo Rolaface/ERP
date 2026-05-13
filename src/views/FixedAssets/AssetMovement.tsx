@@ -52,18 +52,12 @@ const AssetMovement: React.FC = () => {
   /* ── filter ── */
   const filteredData = useMemo(() => {
     return records.filter((r) => {
-      const q = searchTerm.toLowerCase();
-      const matchesSearch =
-        r.company.toLowerCase().includes(q) ||
-        r.purpose.toLowerCase().includes(q) ||
-        r.status.toLowerCase().includes(q);
-
       const txDate = new Date(r.transactionDate);
       const matchesDate =
         (!filters.from_date || txDate >= new Date(filters.from_date)) &&
         (!filters.to_date || txDate <= new Date(filters.to_date));
 
-      return matchesSearch && matchesDate;
+      return matchesDate;
     });
   }, [records, searchTerm, filters]);
 
@@ -113,6 +107,7 @@ const AssetMovement: React.FC = () => {
           "transaction_date",
           "docstatus",
         ],
+         search: searchTerm,
       });
 
       const mapped = data.map((item: any) => ({
@@ -141,7 +136,7 @@ const AssetMovement: React.FC = () => {
   );
   useEffect(() => {
     fetchMovements();
-  }, [refreshKey]);
+  }, [refreshKey, searchTerm]);
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 

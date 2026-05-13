@@ -1,12 +1,6 @@
 export type ComponentType = "Earning" | "Deduction";
 
-/**
- * Shape of a component as returned by the Salary Structure API.
- *
- * NOTE: The API returns `abbr` (not `salary_component_abbr`) on salary-detail
- * rows embedded inside a Salary Structure document.  Both field names are
- * accepted so the engine works regardless of which endpoint is called.
- */
+
 export interface SalaryComponentDef {
   salary_component: string;
   amount: number;
@@ -32,8 +26,8 @@ export type CalcContext = Record<string, number>;
 /** Per-component result */
 export interface ComponentResult {
   name: string;
-  key: string;            // normalized component name  e.g. "basic_salary"
-  abbrKey: string | null; // normalized abbreviation    e.g. "bs"
+  key: string;            
+  abbrKey: string | null; 
   amount: number;
   formula: string;
   isFormula: boolean;

@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-
 import {
   createPayrollEntry,
   getAllPayrollEntries,
@@ -17,21 +16,14 @@ import {
 } from "../../../utils/alert";
 import type { PayrollRecord, PayrollEntry } from "../../../types/payrolltypes";
 import { runPayrollValidation } from "./utils";
-
-// ── Sub-views ─────────────────────────────────────────────────────────────────
 import { PayrollDashboard } from "./Payrolldashboard ";
-
 import { EmployeeDetailPage } from "./Employeedetailpage";
-
-// ── Modals ────────────────────────────────────────────────────────────────────
 import { PayslipModal } from "./PayslipModal";
-
 import { QuickCreateModal } from "../../../components/Hr/payrollmodal/QuickCreatePayrollModal";
 import { PayrollValidationModal } from "../../../components/Hr/payrollmodal/payrollvalidationmodal";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PAYLOAD BUILDER
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Payload builder ──────────────────────────────────────────────────────────
+
 const buildPayload = (
   formData: PayrollEntry,
   empIds: string[],
@@ -43,7 +35,10 @@ const buildPayload = (
   exchange_rate: formData.exchangeRate ?? 1,
   payroll_payable_account: formData.payrollPayableAccount,
   payment_account: formData.paymentAccount,
-  bank_account: formData.bankAccount ?? "",
+  bank_account:
+    typeof formData.bankAccount === "object" && formData.bankAccount !== null
+      ? (formData.bankAccount as any).value
+      : (formData.bankAccount ?? ""),
   employees: empIds.map((id) => ({ employee: id, is_salary_withheld: 0 })),
   ...(formData.costCenter ? { cost_center: formData.costCenter } : {}),
   ...(formData.project ? { project: formData.project } : {}),
@@ -56,28 +51,27 @@ const buildPayload = (
   validate_holidays: 0,
 });
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function PayrollManagement() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
-
   const [showValidation, setShowValidation] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<PayrollRecord | null>(
     null,
   );
-
   const [detailRecord, setDetailRecord] = useState<PayrollRecord | null>(null);
   const [selectedEmpIds, setSelectedEmpIds] = useState<string[]>([]);
-  const [validationResult, setValidationResult] = useState<ReturnType<
-    typeof runPayrollValidation
-  > | null>(null);
+  type ValidationResult = ReturnType<typeof runPayrollValidation> | null;
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // ── Data loading ───────────────────────────────────────────────────────────
+
   const loadPayrollEntries = async () => {
     try {
       setLoading(true);
@@ -94,8 +88,9 @@ export default function PayrollManagement() {
   useEffect(() => {
     loadPayrollEntries();
   }, [page]);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
-  //
+
   const handleCreatePayroll = async (
     empIds: string[],
     formData?: PayrollEntry,
@@ -118,7 +113,7 @@ export default function PayrollManagement() {
     } catch (error) {
       closeSwal();
       showApiError(error);
-      throw error; // ← THIS is the critical missing line
+      throw error;
     }
   };
 
@@ -133,7 +128,6 @@ export default function PayrollManagement() {
       await loadPayrollEntries();
     } catch (error) {
       closeSwal();
-      console.error(error);
       showApiError(error);
     }
   };
@@ -179,7 +173,6 @@ export default function PayrollManagement() {
       />
     );
 
-  // ── Dashboard ──────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-app overflow-hidden">
       <PayrollDashboard
@@ -193,8 +186,6 @@ export default function PayrollManagement() {
           openPayrollModal(null, false, {
             onSubmit: async ({ empIds, formData }: any) => {
               await handleCreatePayroll(empIds, formData);
-              // loadPayrollEntries is already called inside handleCreatePayroll
-              // no need to call it again here
             },
           })
         }
@@ -203,9 +194,7 @@ export default function PayrollManagement() {
         onEditRecord={async (r) => {
           try {
             showLoading("Loading Payroll");
-
             const payroll = await getPayrollEntryDetail((r as any).name);
-
             const mappedPayroll = {
               payrollName: payroll.name,
               postingDate: payroll.posting_date,
@@ -222,33 +211,29 @@ export default function PayrollManagement() {
               endDate: payroll.end_date,
               paymentAccount: payroll.payment_account || "",
               bankAccount: payroll.bank_account || "",
+              project: payroll.project || "",
+              
               costCenter: payroll.cost_center || "",
               selectedEmployees:
-                payroll.employees?.map((e) => e.employee) || [],
+                payroll.employees?.map((e: any) => e.employee) || [],
             };
-
             closeSwal();
-
             openPayrollModal(mappedPayroll, true, {
               onSubmit: async ({ formData }: any) => {
                 try {
                   showLoading("Updating Payroll");
-
                   const payload = buildPayload(
                     formData,
                     formData.selectedEmployees || [],
                   );
-
                   await updatePayrollEntry(payroll.name, payload);
-
                   closeSwal();
                   await loadPayrollEntries();
                   showSuccess("Payroll updated successfully");
-                  // ← remove "return true" entirely, void is fine
                 } catch (error) {
                   closeSwal();
                   showApiError(error);
-                  throw error; // ← throw keeps modal open, no boolean needed
+                  throw error;
                 }
               },
             });
@@ -260,7 +245,6 @@ export default function PayrollManagement() {
         onViewDetails={(r) => setDetailRecord(r)}
       />
 
-      {/* ── Quick Create Modal ───────────────────────────────────────────── */}
       <QuickCreateModal
         show={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -280,7 +264,6 @@ export default function PayrollManagement() {
         onCreate={() => handleCreatePayroll(selectedEmpIds)}
       />
 
-      {/* ── Validation Modal ─────────────────────────────────────────────── */}
       <PayrollValidationModal
         show={showValidation}
         result={validationResult}
@@ -295,7 +278,6 @@ export default function PayrollManagement() {
         }
       />
 
-      {/* ── Payslip Modal ────────────────────────────────────────────────── */}
       <PayslipModal
         record={selectedRecord}
         onClose={() => setSelectedRecord(null)}

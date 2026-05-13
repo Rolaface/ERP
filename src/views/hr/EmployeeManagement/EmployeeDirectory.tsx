@@ -1,56 +1,59 @@
 import React, { useEffect, useState, useCallback } from "react";
-
 import {
-  showApiError,
-  showSuccess,
-  showLoading,
-  closeSwal,
+  showApiError, showSuccess, showLoading, closeSwal,
 } from "../../../utils/alert";
 import { fireManagedSwal } from "../../../utils/swalManager";
 import {
-  getAllEmployees,
-  getEmployeeById,
-  deleteEmployeeById,updateEmployeeStatus
+  getAllEmployees, getEmployeeById,
+  deleteEmployeeById, updateEmployeeStatus,
 } from "../../../api/employeeapi";
-import { AppPage, AppPageBody } from "../../../components/ui/app-shell";
+import { AppPageBody } from "../../../components/ui/app-shell";
 import { openEmployeeModal } from "../../../store/modalStore";
-
 import Table from "../../../components/ui/Table/Table";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import ActionButton, {
-  ActionGroup,
-  ActionMenu,
+  ActionGroup, ActionMenu,
 } from "../../../components/ui/Table/ActionButton";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../../store/dataRefreshStore";
-
-// ── NEW: self-contained avatar + name cell ────────────────────────────────────
 import EmployeeNameCell from "../../../components/ui/Table/Employeenamecell";
-// ─────────────────────────────────────────────────────────────────────────────
-
 import type { Column } from "../../../components/ui/Table/type";
 import type { EmployeeSummary } from "../../../types/employee";
 import EmployeeDetailView from "../EmployeeManagement/mployeeDetailView";
+import { useAuth } from "../../../context/AuthContext";
+
+interface EmployeeDirectoryProps {
+  isEmployeeView?: boolean;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}
 
 const unwrapEmployee = (res: any): any =>
   res?.message?.data ?? res?.data ?? res;
 
-const EmployeeDirectory: React.FC = () => {
+const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
+  isEmployeeView = false,
+  canCreate = false,
+  canEdit = false,
+  canDelete = false,
+}) => {
+  const { user } = useAuth();
+
   const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
-  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
+  const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
 
   // ── View detail ──────────────────────────────────────────────────────────
+
   const handleViewEmployee = async (id: string) => {
     try {
       showLoading("Loading Employee...");
@@ -71,19 +74,23 @@ const EmployeeDirectory: React.FC = () => {
     setSelectedEmployee(unwrapEmployee(res));
   };
 
-  // ── Fetch list ───────────────────────────────────────────────────────────
+
+
   const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getAllEmployees(page, pageSize, searchTerm);
+
+      const searchParam = isEmployeeView
+        ? user?.employeeId   // filter by logged-in user's own ID
+        : searchTerm || undefined;
+
+      const res = await getAllEmployees(page, pageSize, "Active", searchParam);
 
       const mapped = (res.data || []).map((e: any) => ({
         id: e.name,
         employeeId: e.name,
         name: e.employee_name,
-        // ── avatar image from API ──────────────────────────────────────────
         image: e.image ?? null,
-        // ─────────────────────────────────────────────────────────────────
         jobTitle: e.designation,
         department: e.department || "-",
         workLocation: e.branch || "-",
@@ -98,36 +105,34 @@ const EmployeeDirectory: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, isEmployeeView, user?.employeeId]);
 
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
-  
+
 
 
   useEffect(() => {
-  setPage(1);
-}, [searchTerm]);
+    setPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(
       REFRESH_KEYS.EMPLOYEE_LIST,
-      fetchEmployees
+      fetchEmployees,
     );
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchEmployees]);
 
-  // ── Add ──────────────────────────────────────────────────────────────────
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
   const handleAdd = () => {
     openEmployeeModal(null, false, {
-      onSuccess: () => {
-        triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
-      },
+      onSuccess: () => triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST),
     });
   };
 
-  // ── Edit ─────────────────────────────────────────────────────────────────
   const handleEdit = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -141,42 +146,31 @@ const EmployeeDirectory: React.FC = () => {
       showApiError(error);
     }
   };
-  const handleDisable = async (
-  id: string,
-  e: React.MouseEvent
-) => {
-  e.stopPropagation();
 
-  const result = await fireManagedSwal({
-    title: "Disable Employee?",
-    text: "Employee will be marked as inactive.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Yes, Disable",
-  });
+  const handleDisable = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const result = await fireManagedSwal({
+      title: "Disable Employee?",
+      text: "Employee will be marked as inactive.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Disable",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      showLoading("Disabling Employee...");
+      await updateEmployeeStatus(id, "Inactive");
+      closeSwal();
+      showSuccess("Employee disabled successfully");
+      triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
-  if (!result.isConfirmed) return;
-
-  try {
-    showLoading("Disabling Employee...");
-
-    await updateEmployeeStatus(id, "Inactive");
-
-    closeSwal();
-
-    showSuccess("Employee disabled successfully");
-
-    triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
-
-  // ── Delete ───────────────────────────────────────────────────────────────
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-
     const result = await fireManagedSwal({
       title: "Are you sure?",
       text: "This employee will be permanently deleted.",
@@ -186,9 +180,7 @@ const EmployeeDirectory: React.FC = () => {
       cancelButtonColor: "#6b7280",
       confirmButtonText: "Yes, delete",
     });
-
     if (!result.isConfirmed) return;
-
     try {
       showLoading("Deleting Employee...");
       await deleteEmployeeById(id);
@@ -202,23 +194,18 @@ const EmployeeDirectory: React.FC = () => {
   };
 
   // ── Columns ──────────────────────────────────────────────────────────────
+
   const columns: Column<EmployeeSummary>[] = [
     { key: "employeeId", header: "Employee ID", align: "left" },
-
-    // ── Name column: avatar + name via EmployeeNameCell ───────────────────
     {
       key: "name",
       header: "Name",
       align: "left",
       render: (e) => (
-        <EmployeeNameCell
-          name={e.name}
-          employeeId={e.id}
-          image={e.image}
-        />
+        <EmployeeNameCell name={e.name} employeeId={e.id} image={e.image} />
       ),
     },
-   
+
 
     { key: "jobTitle", header: "Job Title", align: "left" },
     {
@@ -249,21 +236,30 @@ const EmployeeDirectory: React.FC = () => {
             onClick={() => handleViewEmployee(e.id)}
             iconOnly
           />
-          <ActionMenu
-  onEdit={(ev) => handleEdit(e.id, ev as any)}
-  onDelete={(ev) => handleDelete(e.id, ev as any)}
-  onDisable={
-    e.status !== "Inactive"
-      ? (ev) => handleDisable(e.id, ev as any)
-      : undefined
-  }
-/>
+          {canEdit && (
+            <ActionButton
+              type="edit"
+              onClick={(ev) => handleEdit(e.id, ev as React.MouseEvent)}
+              iconOnly
+            />
+          )}
+          {(canEdit || canDelete) && (
+            <ActionMenu
+              {...(canEdit && e.status !== "Inactive"
+                ? { onDisable: (ev) => handleDisable(e.id, ev as React.MouseEvent) }
+                : {})}
+              {...(canDelete
+                ? { onDelete: (ev) => handleDelete(e.id, ev as React.MouseEvent) }
+                : {})}
+            />
+          )}
         </ActionGroup>
       ),
     },
   ];
 
   // ── Render ───────────────────────────────────────────────────────────────
+
   return (
     <AppPageBody>
       {viewMode === "table" ? (
@@ -271,26 +267,31 @@ const EmployeeDirectory: React.FC = () => {
           loading={loading}
           columns={columns}
           data={employees}
+          rowKey={(row) => row.id}
           showToolbar
           searchValue={searchTerm}
           onSearch={(q) => {
-  setSearchTerm(q);
-  setPage(1);
-}}
-          enableAdd
-          addLabel="Add Employee"
-          onAdd={handleAdd}
-          enableColumnSelector
-          currentPage={page}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={totalItems}
-          pageSizeOptions={[10, 25, 50, 100]}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
+            setSearchTerm(q);
             setPage(1);
           }}
-          onPageChange={setPage}
+          enableAdd
+          addLabel="Add Employee"
+          onAdd={canCreate ? handleAdd : undefined}
+
+          enableColumnSelector
+
+          // Pagination: hide in employee view
+          currentPage={isEmployeeView ? 1 : page}
+          totalPages={isEmployeeView ? 1 : totalPages}
+          pageSize={isEmployeeView ? totalItems || 1 : pageSize}
+          totalItems={totalItems}
+          pageSizeOptions={isEmployeeView ? undefined : [10, 25, 50, 100]}
+          onPageSizeChange={
+            isEmployeeView
+              ? undefined
+              : (size) => { setPageSize(size); setPage(1); }
+          }
+          onPageChange={isEmployeeView ? undefined : setPage}
         />
       ) : selectedEmployee ? (
         <EmployeeDetailView
