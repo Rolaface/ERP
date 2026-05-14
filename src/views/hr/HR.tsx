@@ -4,6 +4,7 @@ import {
   FaCalendarDay, FaMoneyCheckAlt, FaChartLine, FaSlidersH,
 } from "react-icons/fa";
 import { ArrowLeftRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   AppPage, AppPageHeader, AppPageBody,
 } from "../../components/ui/app-shell";
@@ -76,8 +77,9 @@ type EmployeeTabId = typeof EMPLOYEE_TAB_IDS[number];
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const HrPayrollModule: React.FC = () => {
-  const { can }                                                     = usePermission();
-  const { viewMode, canSwitchView, isPureEmployee, toggleViewMode } = useHRView();
+  const { can }                                                          = usePermission();
+  const { viewMode, canSwitchView, isPureEmployee, switchToProfessional } = useHRView();
+  const navigate       = useNavigate();
   const isEmployeeView = viewMode === "employee";
 
   // ── Professional view tabs ────────────────────────────────────────────────
@@ -177,10 +179,17 @@ const HrPayrollModule: React.FC = () => {
     }
   };
 
-  // ── Switch button ─────────────────────────────────────────────────────────
-  const switchButton = canSwitchView && isEmployeeView ? (
+  const isViewportLocked = tab === "dashboard" || tab === "emp-dashboard";
+
+  // ── Switch button — only in employee view header, only for dual-role users ─
+  // On click: switch to professional view AND navigate to main dashboard.
+  const switchButton = canSwitchView ? (
     <button
-      onClick={toggleViewMode}
+      type="button"
+      onClick={() => {
+        switchToProfessional();
+        navigate("/dashboard");
+      }}
       className="
         flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
         border transition-all duration-200
@@ -193,16 +202,13 @@ const HrPayrollModule: React.FC = () => {
     </button>
   ) : null;
 
-  const isViewportLocked = tab === "dashboard" || tab === "emp-dashboard";
-
   // ─── EMPLOYEE VIEW ────────────────────────────────────────────────────────
   if (isEmployeeView) {
     return (
       <AppPage viewportLocked={isViewportLocked}>
         <AppPageHeader
-          title="Human Resources"
+          title="Employee Portal"
           icon={<FaUserTie />}
-          description="Manage employees, payroll, attendance, and compliance"
           actions={switchButton}
         />
         <AppPageBody

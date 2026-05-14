@@ -145,7 +145,7 @@ const settingsItems: SettingsItem[] = [
   },
   {
     to: "/userManagement",
-    label: "User Management",
+    label: "User and Roles",
     icon: <Users2 {...iconProps} />,
     modules: ["User"],
     hideInEmployeeView: true,
