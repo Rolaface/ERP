@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MoreHorizontal, CheckCircle, XCircle, Ban } from "lucide-react";
+import { MoreHorizontal, CheckCircle, XCircle } from "lucide-react";
 
 import {
   getAllLeaveApplications,
@@ -10,6 +10,8 @@ import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable
 import Table from "../../../components/ui/Table/Table";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
+import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
+import { usePermission } from "../../../hooks/permission/usePermission";
 
 // ─── Dropdown Menu Component ───────────────────────────────────────────
 interface MenuAction {
@@ -73,26 +75,38 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
 
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function LeaveApproval() {
+  const { can } = usePermission();
+
+  // Permission flag — Approve / Reject require write on Leave Application
+  const canApproveReject = can("Leave Application", "write");
+
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showHistory, setShowHistory] = useState(false);
-  // Pagination states for the Table component
+  const [filters, setFilters] = useState({ from_date: "", to_date: "" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     getAllLeaveApplied();
-  }, [showHistory]);
+  }, [showHistory, filters.from_date, filters.to_date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getAllLeaveApplied = async () => {
     try {
       setIsLoading(true);
-      const filters = showHistory
-        ? [["status", "in", ["Approved", "Rejected"]]]
+      const apiFilters: any[] = showHistory
+        ? [["status", "in", ["Approved", "Rejected", "Open", "Cancelled"]]]
         : [["status", "=", "Open"]];
 
-      const response = await getAllLeaveApplications(filters);
+      if (filters.from_date) {
+        apiFilters.push(["from_date", ">=", filters.from_date]);
+      }
+      if (filters.to_date) {
+        apiFilters.push(["from_date", "<=", filters.to_date]);
+      }
+
+      const response = await getAllLeaveApplications(apiFilters);
       setData(response || []);
     } catch (err) {
       console.error("Failed to Fetch Transactions", err);
@@ -175,12 +189,11 @@ export default function LeaveApproval() {
       align: "center",
       render: (e) => {
         const leaveId = e.name || e.id;
-        const isActionDone = ["Approved", "Rejected"].includes(
-          e.status,
-        );
+        const isActionDone = ["Approved", "Rejected"].includes(e.status);
         const actions: MenuAction[] = [];
 
-        if (!isActionDone) {
+        // ── Approve / Reject require can("Leave Application", "write") ──────
+        if (canApproveReject && !isActionDone) {
           actions.push({
             label: "Approve",
             icon: <CheckCircle size={14} className="text-green-600" />,
@@ -195,44 +208,34 @@ export default function LeaveApproval() {
           });
         }
 
-        // if (e.status !== "Cancelled") {
-        //   actions.push({
-        //     label: "Cancel Leave",
-        //     icon: <Ban size={14} />,
-        //     onClick: () => handleStatusUpdate(leaveId, "Cancelled"),
-        //     danger: true,
-        //     dividerBefore: actions.length > 0,
-        //   });
-        // }
-
         return <RowActionMenu actions={actions} />;
       },
     },
   ];
 
   return (
-    <div className=" space-y-2">
-      {/* <div className="flex items-center justify-between mb-2">
-  <label className="flex items-center gap-2 text-sm">
-    <input
-      type="checkbox"
-      checked={showHistory}
-      onChange={(e) => setShowHistory(e.target.checked)}
-    />
-    Show Leave History
-  </label>
-</div> */}
+    <div className="space-y-2">
       <Table
         extraFilters={
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showHistory}
-              onChange={(e) => setShowHistory(e.target.checked)}
-              className="cursor-pointer"
+          <>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showHistory}
+                onChange={(e) => setShowHistory(e.target.checked)}
+                className="cursor-pointer"
+              />
+              Show Leave History
+            </label>
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({ ...prev, ...range }));
+                setPage(1);
+              }}
             />
-            Show Leave History
-          </label>
+          </>
         }
         loading={isLoading}
         columns={columns}
