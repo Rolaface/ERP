@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   Calendar,
   Bell,
@@ -12,7 +12,9 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../../../context/AuthContext";
-import RoleSwitchButton from "../roleswitchbutton";
+
+import OperationalPageHeader from "./EmployeeViewComponents/OperationalPageHeader";
+import KPIPriorityStrip from "./EmployeeViewComponents/KPIPriorityStrip";
 
 // ── Dummy data ────────────────────────────────────────────────────────────────
 
@@ -24,6 +26,7 @@ const DUMMY_LEAVE_SUMMARY = [
     remaining: 13,
     color: "var(--primary)",
   },
+
   {
     type: "Sick Leave",
     total: 12,
@@ -31,6 +34,7 @@ const DUMMY_LEAVE_SUMMARY = [
     remaining: 10,
     color: "var(--success)",
   },
+
   {
     type: "Casual Leave",
     total: 6,
@@ -38,6 +42,7 @@ const DUMMY_LEAVE_SUMMARY = [
     remaining: 5,
     color: "var(--info)",
   },
+
   {
     type: "Emergency Leave",
     total: 3,
@@ -55,6 +60,7 @@ const DUMMY_ANNOUNCEMENTS = [
     type: "holiday",
     priority: "high",
   },
+
   {
     id: "2",
     title: "Q3 Performance Reviews Start Next Week",
@@ -62,6 +68,7 @@ const DUMMY_ANNOUNCEMENTS = [
     type: "announcement",
     priority: "medium",
   },
+
   {
     id: "3",
     title: "New Leave Policy Effective June 1",
@@ -69,6 +76,7 @@ const DUMMY_ANNOUNCEMENTS = [
     type: "policy",
     priority: "medium",
   },
+
   {
     id: "4",
     title: "Team Building Event — Register by Friday",
@@ -79,17 +87,55 @@ const DUMMY_ANNOUNCEMENTS = [
 ];
 
 const DUMMY_UPCOMING_HOLIDAYS = [
-  { name: "Independence Day", date: "15 Aug 2026", day: "Saturday" },
-  { name: "Gandhi Jayanti", date: "02 Oct 2026", day: "Friday" },
-  { name: "Diwali", date: "20 Oct 2026", day: "Tuesday" },
-  { name: "Christmas", date: "25 Dec 2026", day: "Friday" },
+  {
+    name: "Independence Day",
+    date: "15 Aug 2026",
+    day: "Saturday",
+  },
+
+  {
+    name: "Gandhi Jayanti",
+    date: "02 Oct 2026",
+    day: "Friday",
+  },
+
+  {
+    name: "Diwali",
+    date: "20 Oct 2026",
+    day: "Tuesday",
+  },
+
+  {
+    name: "Christmas",
+    date: "25 Dec 2026",
+    day: "Friday",
+  },
 ];
 
 const DUMMY_EVENTS = [
-  { title: "Team Standup", date: "Today, 10:00 AM", type: "meeting" },
-  { title: "HR Policy Review", date: "Tomorrow, 2:00 PM", type: "review" },
-  { title: "Salary Disbursement", date: "30 May 2026", type: "payroll" },
-  { title: "Team Building Event", date: "16 May 2026", type: "event" },
+  {
+    title: "Team Standup",
+    date: "Today, 10:00 AM",
+    type: "meeting",
+  },
+
+  {
+    title: "HR Policy Review",
+    date: "Tomorrow, 2:00 PM",
+    type: "review",
+  },
+
+  {
+    title: "Salary Disbursement",
+    date: "30 May 2026",
+    type: "payroll",
+  },
+
+  {
+    title: "Team Building Event",
+    date: "16 May 2026",
+    type: "event",
+  },
 ];
 
 const DUMMY_QUICK_STATS = {
@@ -152,7 +198,7 @@ const typeConfig: Record<
   },
 };
 
-// ─── Shared Section Card ─────────────────────────────────────────────────────
+// ── Shared Section Card ──────────────────────────────────────────────────────
 
 interface SectionCardProps {
   title: string;
@@ -197,19 +243,100 @@ const SectionCard: React.FC<SectionCardProps> = ({
   );
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ── Component ────────────────────────────────────────────────────────────────
 
 const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
+  // ─────────────────────────────────────────────
+  // KPI DATA LAYER
+  // ─────────────────────────────────────────────
 
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
+  const KPI_ITEMS = [
+    {
+      id: "days-present",
 
-    return "Good evening";
-  }, []);
+      label: "Days Present",
+
+      value: DUMMY_QUICK_STATS.daysPresent,
+
+      icon: <CheckCircle size={20} />,
+
+      tone: "success" as const,
+
+      priority: "high" as const,
+
+      subtitle: "Attendance consistency this month",
+
+      trend: {
+        value: "+4%",
+        positive: true,
+      },
+    },
+
+    {
+      id: "days-absent",
+
+      label: "Days Absent",
+
+      value: DUMMY_QUICK_STATS.daysAbsent,
+
+      icon: <AlertCircle size={20} />,
+
+      tone: "danger" as const,
+
+      priority: "medium" as const,
+
+      subtitle: "Absence tracking overview",
+
+      trend: {
+        value: "-1%",
+        positive: true,
+      },
+    },
+
+    {
+      id: "pending-leaves",
+
+      label: "Pending Leaves",
+
+      value: DUMMY_QUICK_STATS.pendingLeaves,
+
+      icon: <Clock size={20} />,
+
+      tone: "warning" as const,
+
+      priority: "high" as const,
+
+      subtitle: "Awaiting HR approval",
+
+      trend: {
+        value: "+2",
+        positive: false,
+      },
+    },
+
+    {
+      id: "pending-expenses",
+
+      label: "Pending Expenses",
+
+      value: DUMMY_QUICK_STATS.pendingExpenses,
+
+      icon: <TrendingUp size={20} />,
+
+      tone: "info" as const,
+
+      priority: "medium" as const,
+
+      subtitle: "Expense claims under review",
+
+      trend: {
+        value: "+6%",
+        positive: false,
+      },
+    },
+  ];
 
   return (
     <div className="bg-app min-h-screen text-main overflow-y-auto">
@@ -225,60 +352,10 @@ const EmployeeDashboard: React.FC = () => {
 
           <section id="dashboard-header-zone">
 
-            {/* HERO */}
+            {/* EXECUTIVE CONTEXT LAYER */}
 
-            <section
-              className="
-                relative
-                overflow-hidden
-                rounded-[32px]
-                p-6
-                lg:p-8
-                text-white
-                shadow-[var(--shadow-lg)]
-              "
-              style={{
-                background: "var(--gradient-primary)",
-              }}
-            >
-              {/* Glow Layer */}
+            <OperationalPageHeader />
 
-              <div className="absolute inset-0 bg-radial-glow opacity-40 pointer-events-none" />
-
-              {/* Decorative */}
-
-              <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-
-              <div className="absolute right-10 bottom-0 w-32 h-32 rounded-full bg-white/10 blur-3xl" />
-
-              {/* Role Switch */}
-
-              <div className="absolute top-5 right-5 z-20">
-                <RoleSwitchButton />
-              </div>
-
-              <div className="relative z-10 flex flex-col gap-2">
-                <p className="text-sm font-medium text-white/75">
-                  {greeting}
-                </p>
-
-                <h1
-                  className="
-                    text-3xl
-                    lg:text-4xl
-                    font-bold
-                    tracking-tight
-                    leading-tight
-                  "
-                >
-                  {user?.fullName ?? user?.username}
-                </h1>
-
-                <p className="text-sm text-white/70">
-                  Employee ID: {user?.employeeId ?? "—"}
-                </p>
-              </div>
-            </section>
           </section>
 
           {/* ─────────────────────────────────────────────
@@ -287,99 +364,14 @@ const EmployeeDashboard: React.FC = () => {
 
           <section id="dashboard-priority-zone">
 
-            {/* QUICK STATS */}
+            {/* KPI PRIORITY STRIP */}
 
-            <section className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-              {[
-                {
-                  label: "Days Present",
-                  value: DUMMY_QUICK_STATS.daysPresent,
-                  icon: <CheckCircle size={18} />,
-                  iconBg: "bg-success/10",
-                  iconColor: "text-success",
-                },
+            <KPIPriorityStrip
+              title="Operational Snapshot"
+              description="Monitor your attendance, approvals, leave activity, and workforce operations in one unified priority layer."
+              items={KPI_ITEMS}
+            />
 
-                {
-                  label: "Days Absent",
-                  value: DUMMY_QUICK_STATS.daysAbsent,
-                  icon: <AlertCircle size={18} />,
-                  iconBg: "bg-danger/10",
-                  iconColor: "text-danger",
-                },
-
-                {
-                  label: "Pending Leaves",
-                  value: DUMMY_QUICK_STATS.pendingLeaves,
-                  icon: <Clock size={18} />,
-                  iconBg: "bg-warning/10",
-                  iconColor: "text-warning",
-                },
-
-                {
-                  label: "Pending Expenses",
-                  value: DUMMY_QUICK_STATS.pendingExpenses,
-                  icon: <TrendingUp size={18} />,
-                  iconBg: "bg-info/10",
-                  iconColor: "text-info",
-                },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="
-                    app-surface
-                    card-interactive
-                    interactive
-                    rounded-[22px]
-                    p-4
-                    lg:p-5
-                    flex
-                    items-center
-                    gap-4
-                  "
-                >
-                  <div
-                    className={`
-                      ${stat.iconBg}
-                      ${stat.iconColor}
-
-                      w-11
-                      h-11
-                      rounded-2xl
-                      flex
-                      items-center
-                      justify-center
-                      shrink-0
-                    `}
-                  >
-                    {stat.icon}
-                  </div>
-
-                  <div className="min-w-0">
-                    <p
-                      className="
-                        text-2xl
-                        font-bold
-                        leading-none
-                        text-main
-                      "
-                    >
-                      {stat.value}
-                    </p>
-
-                    <p
-                      className="
-                        mt-1
-                        text-xs
-                        font-medium
-                        text-muted
-                      "
-                    >
-                      {stat.label}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </section>
           </section>
 
           {/* ─────────────────────────────────────────────
@@ -411,7 +403,10 @@ const EmployeeDashboard: React.FC = () => {
                         );
 
                         return (
-                          <div key={leave.type} className="space-y-2">
+                          <div
+                            key={leave.type}
+                            className="space-y-2"
+                          >
                             <div className="flex items-center justify-between gap-4">
                               <span
                                 className="
@@ -523,9 +518,10 @@ const EmployeeDashboard: React.FC = () => {
                       ))}
                     </div>
                   </SectionCard>
+
                 </section>
 
-                {/* BOTTOM GRID */}
+                {/* ANNOUNCEMENTS + EVENTS */}
 
                 <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
@@ -684,6 +680,7 @@ const EmployeeDashboard: React.FC = () => {
                       })}
                     </div>
                   </SectionCard>
+
                 </section>
               </main>
 
@@ -699,8 +696,52 @@ const EmployeeDashboard: React.FC = () => {
                     - Notifications
                 */}
 
+                <SectionCard title="Workspace Intelligence">
+
+                  <div className="space-y-4">
+
+                    <div
+                      className="
+                        rounded-2xl
+                        border
+                        border-theme
+                        p-4
+                        bg-[var(--row-hover)]
+                      "
+                    >
+                      <p
+                        className="
+                          text-xs
+                          uppercase
+                          tracking-[0.14em]
+                          font-bold
+                          text-muted
+                        "
+                      >
+                        Next Phase
+                      </p>
+
+                      <p
+                        className="
+                          mt-2
+                          text-sm
+                          leading-relaxed
+                          text-main
+                        "
+                      >
+                        This rail will contain intelligent operational widgets,
+                        approval queues, AI insights, notifications, and
+                        employee productivity intelligence.
+                      </p>
+                    </div>
+
+                  </div>
+
+                </SectionCard>
+
               </aside>
             </div>
+
           </section>
 
           {/* ─────────────────────────────────────────────
@@ -709,7 +750,58 @@ const EmployeeDashboard: React.FC = () => {
 
           <section id="dashboard-insights-zone">
 
-            {/* Future analytics/charts */}
+            <div
+              className="
+                app-surface
+                edge-highlight
+                rounded-[28px]
+                p-6
+                min-h-[220px]
+
+                flex
+                items-center
+                justify-center
+              "
+            >
+              <div className="text-center max-w-xl">
+                <p
+                  className="
+                    text-[11px]
+                    uppercase
+                    tracking-[0.18em]
+                    font-bold
+                    text-muted
+                  "
+                >
+                  Future Analytics Layer
+                </p>
+
+                <h3
+                  className="
+                    mt-3
+                    text-2xl
+                    font-bold
+                    tracking-tight
+                    text-main
+                  "
+                >
+                  Workforce Insights & Predictive Analytics
+                </h3>
+
+                <p
+                  className="
+                    mt-3
+                    text-sm
+                    leading-relaxed
+                    text-muted
+                  "
+                >
+                  This zone is reserved for attendance analytics,
+                  productivity intelligence, predictive leave forecasting,
+                  workforce trends, and AI operational reporting.
+                </p>
+              </div>
+            </div>
 
           </section>
         </div>
