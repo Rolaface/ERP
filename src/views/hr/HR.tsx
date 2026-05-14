@@ -54,7 +54,7 @@ const EmployeeDocuments     = lazy(() => import("./EmployeeView/EmployeeDocument
 const EmployeeReports       = lazy(() => import("./EmployeeView/EmployeeReports"));
 const EmployeeReimbursement = lazy(() => import("./EmployeeView/EmployeeReimbursement"));
 const EmployeeCompliance    = lazy(() => import("./EmployeeView/EmployeeCompliance"));
-const EmployeeAppraisals = lazy(() => import("./EmployeeView/EmployeeAppraisals"));
+const EmployeeAppraisals    = lazy(() => import("./EmployeeView/EmployeeAppraisals"));
 
 // ─── Employee tab IDs — must stay in sync with EMPLOYEE_HR_TABS in Sidebar.tsx
 
@@ -83,35 +83,46 @@ const HrPayrollModule: React.FC = () => {
   // ── Professional view tabs ────────────────────────────────────────────────
   const professionalTabs = useMemo(() => [
     ...(can("Employee", "read")
-      ? [{ id: "dashboard",   label: "HR Dashboard",         icon: <FaChartLine /> }]
+      ? [{ id: "dashboard",   label: "HR Dashboard",           icon: <FaChartLine /> }]
       : []),
     ...(can("Employee", "read")
-      ? [{ id: "management",  label: "Employee Management",  icon: <FaUserFriends /> }]
+      ? [{ id: "management",  label: "Employee Management",    icon: <FaUserFriends /> }]
       : []),
     ...(can("Leave Application", "read")
-      ? [{ id: "leave",       label: "Leave Management",     icon: <FaClipboardList /> }]
+      ? [{ id: "leave",       label: "Leave Management",       icon: <FaClipboardList /> }]
       : []),
     ...(can("Attendance", "read")
-      ? [{ id: "attendance",  label: "Timesheet & Attendance",    icon: <FaCalendarDay /> }]
+      ? [{ id: "attendance",  label: "Timesheet & Attendance", icon: <FaCalendarDay /> }]
       : []),
     ...(can("Appraisal", "read")
-      ? [{ id: "performance", label: "Appraisals", icon: <FaChartLine /> }]
+      ? [{ id: "performance", label: "Appraisals",             icon: <FaChartLine /> }]
       : []),
     ...(can("Payroll Entry", "read")
-      ? [{ id: "payroll",     label: "Payroll",              icon: <FaMoneyCheckAlt /> }]
+      ? [{ id: "payroll",     label: "Payroll",                icon: <FaMoneyCheckAlt /> }]
       : []),
+
+    // ── HR Setup primary tab ──────────────────────────────────────────────
+    // Visible if the user has write OR create on any of the modules that
+    // have a sub-tab inside HRSettingsPage.  This mirrors the sub-tab
+    // guards in hrsetup.tsx exactly:
+    //   general → write|create on HR Settings
+    //   employee → create on Employee
+    //   payroll  → create on Payroll Entry
+    //   leave    → create on Leave Application
+    //   slip     → write|create on Salary Slip
     ...(
-      can("HR Settings",       "write") ||
-      can("Employee",          "write") ||
-      can("Payroll Entry",     "write") ||
-      can("Leave Application", "write") ||
-      can("Salary Slip",       "write")
-        ? [{ id: "setup",     label: "HR Setup",             icon: <FaSlidersH /> }]
+      can("HR Settings",       "write")  ||
+      can("HR Settings",       "create") ||
+      can("Employee",          "create") ||
+      can("Payroll Entry",     "create") ||
+      can("Leave Application", "create") ||
+      can("Salary Slip",       "write")  ||
+      can("Salary Slip",       "create")
+        ? [{ id: "setup", label: "HR Setup", icon: <FaSlidersH /> }]
         : []
     ),
   ], [can]);
 
-  
   const employeeTabs = useMemo(
     () => EMPLOYEE_TAB_IDS.map((id) => ({ id, label: id, icon: null })),
     [],
@@ -134,7 +145,7 @@ const HrPayrollModule: React.FC = () => {
     if (!exists && visibleTabs.length > 0) {
       setTab(visibleTabs[0].id);
     }
-  }, [viewMode]); 
+  }, [viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Render content ────────────────────────────────────────────────────────
   const renderContent = () => {
@@ -166,8 +177,7 @@ const HrPayrollModule: React.FC = () => {
     }
   };
 
-  // ── Switch button — only shown in employee view (normal Dashboard not visible there)
-  // In professional view, normal Dashboard IS accessible so the button lives there instead.
+  // ── Switch button ─────────────────────────────────────────────────────────
   const switchButton = canSwitchView && isEmployeeView ? (
     <button
       onClick={toggleViewMode}
@@ -186,7 +196,6 @@ const HrPayrollModule: React.FC = () => {
   const isViewportLocked = tab === "dashboard" || tab === "emp-dashboard";
 
   // ─── EMPLOYEE VIEW ────────────────────────────────────────────────────────
-  // Switch button shown here because normal Dashboard is not in the sidebar for employees
   if (isEmployeeView) {
     return (
       <AppPage viewportLocked={isViewportLocked}>
@@ -196,7 +205,6 @@ const HrPayrollModule: React.FC = () => {
           description="Manage employees, payroll, attendance, and compliance"
           actions={switchButton}
         />
-        {/* HrPrimaryTabs intentionally omitted — sidebar handles nav */}
         <AppPageBody
           className="px-4 py-3"
           viewportLocked={isViewportLocked}
@@ -210,7 +218,6 @@ const HrPayrollModule: React.FC = () => {
   }
 
   // ─── PROFESSIONAL VIEW ────────────────────────────────────────────────────
-  // No switch button here — it lives on the main Dashboard (always visible in pro view)
   return (
     <AppPage viewportLocked={isViewportLocked}>
       <AppPageHeader
