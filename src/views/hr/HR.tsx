@@ -4,6 +4,7 @@ import {
   FaCalendarDay, FaMoneyCheckAlt, FaChartLine, FaSlidersH,
 } from "react-icons/fa";
 import { ArrowLeftRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   AppPage, AppPageHeader, AppPageBody,
 } from "../../components/ui/app-shell";
@@ -54,7 +55,7 @@ const EmployeeDocuments     = lazy(() => import("./EmployeeView/EmployeeDocument
 const EmployeeReports       = lazy(() => import("./EmployeeView/EmployeeReports"));
 const EmployeeReimbursement = lazy(() => import("./EmployeeView/EmployeeReimbursement"));
 const EmployeeCompliance    = lazy(() => import("./EmployeeView/EmployeeCompliance"));
-const EmployeeAppraisals = lazy(() => import("./EmployeeView/EmployeeAppraisals"));
+const EmployeeAppraisals    = lazy(() => import("./EmployeeView/EmployeeAppraisals"));
 
 // ─── Employee tab IDs — must stay in sync with EMPLOYEE_HR_TABS in Sidebar.tsx
 
@@ -76,42 +77,54 @@ type EmployeeTabId = typeof EMPLOYEE_TAB_IDS[number];
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const HrPayrollModule: React.FC = () => {
-  const { can }                                                     = usePermission();
-  const { viewMode, canSwitchView, isPureEmployee, toggleViewMode } = useHRView();
+  const { can }                                                          = usePermission();
+  const { viewMode, canSwitchView, isPureEmployee, switchToProfessional } = useHRView();
+  const navigate       = useNavigate();
   const isEmployeeView = viewMode === "employee";
 
   // ── Professional view tabs ────────────────────────────────────────────────
   const professionalTabs = useMemo(() => [
     ...(can("Employee", "read")
-      ? [{ id: "dashboard",   label: "HR Dashboard",         icon: <FaChartLine /> }]
+      ? [{ id: "dashboard",   label: "HR Dashboard",           icon: <FaChartLine /> }]
       : []),
     ...(can("Employee", "read")
-      ? [{ id: "management",  label: "Employee Management",  icon: <FaUserFriends /> }]
+      ? [{ id: "management",  label: "Employee Management",    icon: <FaUserFriends /> }]
       : []),
     ...(can("Leave Application", "read")
-      ? [{ id: "leave",       label: "Leave Management",     icon: <FaClipboardList /> }]
+      ? [{ id: "leave",       label: "Leave Management",       icon: <FaClipboardList /> }]
       : []),
     ...(can("Attendance", "read")
-      ? [{ id: "attendance",  label: "Timesheet & Attendance",    icon: <FaCalendarDay /> }]
+      ? [{ id: "attendance",  label: "Timesheet & Attendance", icon: <FaCalendarDay /> }]
       : []),
     ...(can("Appraisal", "read")
-      ? [{ id: "performance", label: "Appraisals", icon: <FaChartLine /> }]
+      ? [{ id: "performance", label: "Appraisals",             icon: <FaChartLine /> }]
       : []),
     ...(can("Payroll Entry", "read")
-      ? [{ id: "payroll",     label: "Payroll",              icon: <FaMoneyCheckAlt /> }]
+      ? [{ id: "payroll",     label: "Payroll",                icon: <FaMoneyCheckAlt /> }]
       : []),
+
+    // ── HR Setup primary tab ──────────────────────────────────────────────
+    // Visible if the user has write OR create on any of the modules that
+    // have a sub-tab inside HRSettingsPage.  This mirrors the sub-tab
+    // guards in hrsetup.tsx exactly:
+    //   general → write|create on HR Settings
+    //   employee → create on Employee
+    //   payroll  → create on Payroll Entry
+    //   leave    → create on Leave Application
+    //   slip     → write|create on Salary Slip
     ...(
-      can("HR Settings",       "write") ||
-      can("Employee",          "write") ||
-      can("Payroll Entry",     "write") ||
-      can("Leave Application", "write") ||
-      can("Salary Slip",       "write")
-        ? [{ id: "setup",     label: "HR Setup",             icon: <FaSlidersH /> }]
+      can("HR Settings",       "write")  ||
+      can("HR Settings",       "create") ||
+      can("Employee",          "create") ||
+      can("Payroll Entry",     "create") ||
+      can("Leave Application", "create") ||
+      can("Salary Slip",       "write")  ||
+      can("Salary Slip",       "create")
+        ? [{ id: "setup", label: "HR Setup", icon: <FaSlidersH /> }]
         : []
     ),
   ], [can]);
 
-  
   const employeeTabs = useMemo(
     () => EMPLOYEE_TAB_IDS.map((id) => ({ id, label: id, icon: null })),
     [],
@@ -134,7 +147,7 @@ const HrPayrollModule: React.FC = () => {
     if (!exists && visibleTabs.length > 0) {
       setTab(visibleTabs[0].id);
     }
-  }, [viewMode]); 
+  }, [viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Render content ────────────────────────────────────────────────────────
   const renderContent = () => {
@@ -166,11 +179,17 @@ const HrPayrollModule: React.FC = () => {
     }
   };
 
-  // ── Switch button — only shown in employee view (normal Dashboard not visible there)
-  // In professional view, normal Dashboard IS accessible so the button lives there instead.
-  const switchButton = canSwitchView && isEmployeeView ? (
+  const isViewportLocked = tab === "dashboard" || tab === "emp-dashboard";
+
+  // ── Switch button — only in employee view header, only for dual-role users ─
+  // On click: switch to professional view AND navigate to main dashboard.
+  const switchButton = canSwitchView ? (
     <button
-      onClick={toggleViewMode}
+      type="button"
+      onClick={() => {
+        switchToProfessional();
+        navigate("/dashboard");
+      }}
       className="
         flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
         border transition-all duration-200
@@ -183,20 +202,15 @@ const HrPayrollModule: React.FC = () => {
     </button>
   ) : null;
 
-  const isViewportLocked = tab === "dashboard" || tab === "emp-dashboard";
-
   // ─── EMPLOYEE VIEW ────────────────────────────────────────────────────────
-  // Switch button shown here because normal Dashboard is not in the sidebar for employees
   if (isEmployeeView) {
     return (
       <AppPage viewportLocked={isViewportLocked}>
         <AppPageHeader
-          title="Human Resources"
+          title="Employee Portal"
           icon={<FaUserTie />}
-          description="Manage employees, payroll, attendance, and compliance"
           actions={switchButton}
         />
-        {/* HrPrimaryTabs intentionally omitted — sidebar handles nav */}
         <AppPageBody
           className="px-4 py-3"
           viewportLocked={isViewportLocked}
@@ -210,7 +224,6 @@ const HrPayrollModule: React.FC = () => {
   }
 
   // ─── PROFESSIONAL VIEW ────────────────────────────────────────────────────
-  // No switch button here — it lives on the main Dashboard (always visible in pro view)
   return (
     <AppPage viewportLocked={isViewportLocked}>
       <AppPageHeader

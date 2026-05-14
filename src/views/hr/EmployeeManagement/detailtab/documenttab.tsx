@@ -106,18 +106,21 @@ interface DocumentsTabProps {
   documents: any[];
   onOpenUploadModal: () => void;
   erpBase?: string;
+  hideUpload?: boolean; 
 }
 
 export const DocumentsTab: React.FC<DocumentsTabProps> = ({
   documents,
   onOpenUploadModal,
   erpBase = "",
+  hideUpload = false, 
 }) => (
   <div>
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-[11px] font-bold text-main uppercase tracking-wider">
         Documents
       </h3>
+      {!hideUpload && (
       <button
         onClick={onOpenUploadModal}
         className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg hover:opacity-90 transition"
@@ -125,6 +128,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
         <Upload className="w-3 h-3" />
         Upload
       </button>
+      )}
     </div>
 
     {documents && documents.length > 0 ? (
