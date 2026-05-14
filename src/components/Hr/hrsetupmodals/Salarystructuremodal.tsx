@@ -341,11 +341,11 @@ export const SalaryStructureModal: React.FC<Props> = ({
   const [rows, setRows] = useState<UnifiedRow[]>(INITIAL_ROWS);
   const [saving, setSaving] = useState(false);
   const [payroll_frequency, setPayrollFrequency] = useState("Monthly");
-const handleFrequencyChange = (
-  e: React.ChangeEvent<HTMLSelectElement>,
-) => {
-  setPayrollFrequency(e.target.value);
-};
+// const handleFrequencyChange = (
+//   e: React.ChangeEvent<HTMLSelectElement>,
+// ) => {
+//   setPayrollFrequency(e.target.value);
+// };
   useEffect(() => {
     const id = "ss-styles-v2";
     if (!document.getElementById(id)) {
@@ -597,7 +597,7 @@ const handleFrequencyChange = (
         <div
           style={{
             display: "grid",
-          gridTemplateColumns: "1fr 1.5fr 180px 120px",
+          gridTemplateColumns: "1fr 180px 120px",
             gap: 10,
             alignItems: "end",
           }}
@@ -611,7 +611,7 @@ const handleFrequencyChange = (
             required
           />
          
-           <ModalSelect
+           {/* <ModalSelect
                       label="Payroll Frequency"
                       value={payroll_frequency}
                       onChange={handleFrequencyChange}
@@ -622,7 +622,7 @@ const handleFrequencyChange = (
                       <option value="Fortnightly">Fortnightly</option>
                       <option value="Bimonthly">Bimonthly</option>
                       <option value="Monthly">Monthly</option>
-                    </ModalSelect>
+                    </ModalSelect> */}
           <ModalSelect
             label="Status"
             value={isActive}
