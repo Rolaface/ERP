@@ -23,22 +23,22 @@ interface Props {
   currency: string;
 }
 
-const fmtNum = (n: number, cur: string) =>
-  fmtMoney(n, cur) ??
-  `${cur} ${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-
 const DED_COLOR = "#f87171";
 const EARN_COLOR = "#34d399";
 
+const fmtNum = (n: number, cur: string): string =>
+  fmtMoney(n, cur) ??
+  `${cur} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 function useCssVar(name: string, fallback: string): string {
-  const [value, setValue] = React.useState(fallback);
+  const [val, setVal] = React.useState(fallback);
   useEffect(() => {
     const v = getComputedStyle(document.documentElement)
       .getPropertyValue(name)
       .trim();
-    if (v) setValue(v);
+    if (v) setVal(v);
   }, [name]);
-  return value;
+  return val;
 }
 
 // ─── KPI Chip ─────────────────────────────────────────────────────────────────
@@ -87,8 +87,8 @@ const KpiChip: React.FC<KpiChipProps> = ({
       <p
         className={`text-[10px] font-mono tabular-nums mt-0.5 ${monoClass} truncate`}
       >
-        {fmtNum(monthly, currency)}&thinsp;
-        <span className="opacity-60">/ month</span>
+        {fmtNum(monthly, currency)}
+        <span className="opacity-60"> / month</span>
       </p>
     </div>
   </div>
@@ -117,7 +117,7 @@ const PayrollKpiStrip: React.FC<{
     {(
       [
         {
-          label: "Monthly CTC",
+          label: "Base Salary",
           monthly: monthlyBase,
           icon: <Banknote className="w-3.5 h-3.5" />,
           accentClass: "text-primary",
@@ -127,7 +127,7 @@ const PayrollKpiStrip: React.FC<{
           monoClass: "text-primary/50",
         },
         {
-          label: `Gross · ${earningsCount}`,
+          label: `Gross Earnings · ${earningsCount}`,
           monthly: gross,
           icon: <TrendingUp className="w-3.5 h-3.5" />,
           accentClass: "text-emerald-600 dark:text-emerald-400",
@@ -137,7 +137,7 @@ const PayrollKpiStrip: React.FC<{
           monoClass: "text-emerald-600/50 dark:text-emerald-400/50",
         },
         {
-          label: `Deductions · ${deductionsCount}`,
+          label: `Total Deductions · ${deductionsCount}`,
           monthly: deductionsTotal,
           icon: <TrendingDown className="w-3.5 h-3.5" />,
           accentClass: "text-red-600 dark:text-red-400",
@@ -147,7 +147,7 @@ const PayrollKpiStrip: React.FC<{
           monoClass: "text-red-600/50 dark:text-red-400/50",
         },
         {
-          label: "Net Pay",
+          label: "Net Salary",
           monthly: net,
           icon: <Wallet className="w-3.5 h-3.5" />,
           accentClass: "text-violet-600 dark:text-violet-400",
@@ -177,8 +177,8 @@ const CompositionPanel: React.FC<{
   const dedPct = Math.round((deductionsTotal / total) * 100);
 
   const pieData = [
-    { name: "Net Pay", value: net, color: primaryColor },
-    { name: "Deductions", value: deductionsTotal, color: DED_COLOR },
+    { name: "Net Salary", value: net, color: primaryColor },
+    { name: "Total Deductions", value: deductionsTotal, color: DED_COLOR },
     { name: "Gross Earnings", value: gross, color: EARN_COLOR },
   ];
 
@@ -193,7 +193,7 @@ const CompositionPanel: React.FC<{
       highlight: false,
     },
     {
-      label: "Deductions",
+      label: "Total Deductions",
       val: deductionsTotal,
       annual: deductionsTotal * 12,
       pct: dedPct,
@@ -211,7 +211,7 @@ const CompositionPanel: React.FC<{
       highlight: false,
     },
     {
-      label: "Monthly In-Hand",
+      label: "In-Hand Salary",
       val: net,
       annual: null,
       pct: null,
@@ -225,7 +225,7 @@ const CompositionPanel: React.FC<{
     if (!active || !payload?.length) return null;
     const { name, value, color } = payload[0].payload;
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] backdrop-blur-md shadow-2xl px-3 py-2 min-w-[140px]">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] backdrop-blur-md shadow-2xl px-3 py-2 min-w-[148px]">
         <div className="flex items-center gap-2 mb-1">
           <span
             className="w-2 h-2 rounded-full"
@@ -239,9 +239,9 @@ const CompositionPanel: React.FC<{
           {fmtNum(value, currency)}
         </p>
         <div className="flex items-center justify-between mt-1">
-          <span className="text-[9px] text-muted">Monthly</span>
+          <span className="text-[9px] text-muted">/ month</span>
           <span className="text-[9px] font-mono text-muted">
-            {fmtNum(value * 12, currency)}
+            p.a. {fmtNum(value * 12, currency)}
           </span>
         </div>
       </div>
@@ -250,7 +250,7 @@ const CompositionPanel: React.FC<{
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
-      <div className="flex items-center gap-0 px-4 py-3">
+      <div className="flex items-center px-4 py-3">
         <div className="shrink-0 relative" style={{ width: 100, height: 100 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
@@ -320,21 +320,21 @@ const CompositionPanel: React.FC<{
                   {fmtNum(m.val, currency)}
                   {!m.highlight && (
                     <span className="text-[9px] font-normal text-muted ml-0.5">
-                      /month
+                      / month
                     </span>
                   )}
                 </p>
                 {m.annual != null && (
                   <p className="text-[9px] font-mono text-muted tabular-nums leading-none mt-0.5">
-                    {fmtNum(m.annual, currency)}
+                    {fmtNum(m.annual, currency)} p.a.
                     {m.pct != null && (
-                      <span className="ml-1 opacity-60">{m.pct}%</span>
+                      <span className="ml-1 opacity-60">· {m.pct}%</span>
                     )}
                   </p>
                 )}
                 {m.highlight && (
                   <p className="text-[9px] text-muted leading-none mt-0.5">
-                    take-home
+                    take-home / month
                   </p>
                 )}
               </div>
@@ -426,6 +426,33 @@ const CompensationStatement: React.FC<{
     ...Array(Math.max(0, maxLen - deductions.length)).fill(null),
   ];
 
+  const footer = [
+    {
+      label: "Gross Earnings",
+      val: gross,
+      color: EARN_COLOR,
+      prefix: "",
+      borderRight: true,
+      bg: "bg-app",
+    },
+    {
+      label: "Total Deductions",
+      val: deductionsTotal,
+      color: DED_COLOR,
+      prefix: "−",
+      borderRight: true,
+      bg: "bg-app",
+    },
+    {
+      label: "Net Salary",
+      val: net,
+      color: primaryColor,
+      prefix: "",
+      borderRight: false,
+      bg: "",
+    },
+  ];
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
       <div className="grid grid-cols-2 border-b border-[var(--border)] bg-app">
@@ -505,35 +532,7 @@ const CompensationStatement: React.FC<{
       )}
 
       <div className="grid grid-cols-3 border-t-2 border-[var(--border)]">
-        {[
-          {
-            label: "Total Earnings",
-            val: gross,
-            annualVal: gross * 12,
-            color: EARN_COLOR,
-            prefix: "",
-            borderRight: true,
-            bg: "bg-app",
-          },
-          {
-            label: "Deductions",
-            val: deductionsTotal,
-            annualVal: deductionsTotal * 12,
-            color: DED_COLOR,
-            prefix: "−",
-            borderRight: true,
-            bg: "bg-app",
-          },
-          {
-            label: "Net Pay",
-            val: net,
-            annualVal: net * 12,
-            color: primaryColor,
-            prefix: "",
-            borderRight: false,
-            bg: "",
-          },
-        ].map(({ label, val, annualVal, color, prefix, borderRight, bg }) => (
+        {footer.map(({ label, val, color, prefix, borderRight, bg }) => (
           <div
             key={label}
             className={`px-3 py-2.5 ${borderRight ? "border-r border-[var(--border)]" : ""} ${bg}`}
@@ -557,7 +556,7 @@ const CompensationStatement: React.FC<{
             </p>
             <p className="text-[9px] font-mono text-muted tabular-nums">
               {prefix}
-              {fmtNum(annualVal, currency)} p.a.
+              {fmtNum(val * 12, currency)} p.a.
             </p>
           </div>
         ))}
@@ -639,7 +638,6 @@ export const CompensationTab: React.FC<Props> = ({ emp, currency }) => {
       .finally(() => setLoading(false));
   }, [emp.salary_structure]);
 
-  // emp.base_salary is monthly
   const monthlyBase = emp.base_salary ?? emp.ctc ?? 0;
 
   const salaryResult = useMemo(() => {
