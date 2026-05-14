@@ -76,14 +76,14 @@ const [selectedEmployeeOption, setSelectedEmployeeOption] = useState<any>(undefi
 
       const filteredEmployees = query
         ? allEmployees.filter((emp: any) =>
-            emp.employee_name?.toLowerCase().includes(query.toLowerCase()) ||
-            emp.name?.toLowerCase().includes(query.toLowerCase())
+            emp.employee_name?.toLowerCase().includes(query.toLowerCase()) 
+        // || emp.name?.toLowerCase().includes(query.toLowerCase())
           )
         : allEmployees;
 
       return filteredEmployees.map((emp: any) => ({
-        label: `${emp.employee_name} (${emp.employee_number || emp.name})`,
-        value: emp.employee_number || emp.name,
+        label: `${emp.employee_name}`,
+        value: emp.name,
         raw: emp, 
       }));
     } catch (error) {
@@ -195,23 +195,15 @@ const fetchLeavePeriodsOptions = async (query: string) => {
     >
       <div className="space-y-5 pb-2">
         <div className="grid grid-cols-2 gap-4">
-          {/* <ModalInput
-            label="Employee ID"
-            value={form.employee}
-            onChange={(e) => set("employee", e.target.value)}
-            placeholder="e.g. HR-EMP-00001"
-            required
-            disabled={isEdit} // Core link generally cannot be changed
-          /> */}
+
 <SearchSelect2
             label="Select Employee"
             placeholder="Search by name..."
-            // Pass the label string to display (fallback to form.employee on first load if editing)
             value={selectedEmployeeOption ? selectedEmployeeOption.label : form.employee} 
             fetchOptions={fetchEmployeesOptions}
             onChange={(val, option) => {
-              setSelectedEmployeeOption(option); // Save the option to display its label
-              set("employee", val); // Continue sending just the ID to the database
+              setSelectedEmployeeOption(option); 
+              set("employee", val); 
             }}
             required={true}
           />
