@@ -18,7 +18,7 @@ export const PersonalTab: React.FC<Props> = ({ emp, fullName }) => (
         <Field label="Date of Birth" value={fmtDate(emp.date_of_birth)} />
         <Field label="Marital Status" value={fmt(emp.marital_status)} />
         <Field label="Blood Group" value={fmt(emp.blood_group)} />
-        <Field label="Salutation" value={fmt(emp.salutation)} />
+        {/* <Field label="Salutation" value={fmt(emp.salutation)} /> */}
       </div>
     </Section>
 
@@ -27,21 +27,21 @@ export const PersonalTab: React.FC<Props> = ({ emp, fullName }) => (
       <div className="grid grid-cols-2 gap-x-5 gap-y-4">
         <Field label="Personal Email" value={fmt(emp.personal_email)} />
         <Field label="Company Email" value={fmt(emp.company_email)} />
-        <Field label="Cell Number" value={fmt(emp.cell_number)} />
+        <Field label="Phone Number" value={fmt(emp.cell_number)} />
         <Field
           label="Preferred Email"
           value={fmt(emp.prefered_email) || fmt(emp.prefered_contact_email)}
         />
      <div className="col-span-2 grid grid-cols-2 gap-x-5">
   <Field
-    label="Current Address"
+    label="Address"
     value={fmt(emp.current_address)}
   />
 
-  <Field
+  {/* <Field
     label="Permanent Address"
     value={fmt(emp.permanent_address)}
-  />
+  /> */}
 </div>
       </div>
     </Section>
