@@ -177,7 +177,7 @@ const Dashboard = () => {
               {isEmployeeView ? "Switch to Professional View" : "Switch to Employee View"}
             </button>
           )}
-          <UserMenu />
+          {/* <UserMenu /> */}
         </div>
       </div>
 
