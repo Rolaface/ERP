@@ -194,6 +194,7 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     preferredContactMethod: data.prefered_contact_email || "",
     phoneNumber: data.cell_number || "",
     alternatePhone: data.alternate_phone || "",
+    employee_number:data.employee_number||"",
 
     // ── Address (best-effort parse from joined string) ────────
     street: addressParts[0] || "",
@@ -216,7 +217,7 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     employeeType: data.employee_type || "",
     employmentStatus: data.status || "Active",
     reportingToLabel: data.reports_to || "",
-    workLocation: data.branch || "",
+    branch: data.branch || "",
     dateOfJoining: data.date_of_joining || "",
     contractEndDate: data.contract_end_date || "",
     probationPeriod:
@@ -339,8 +340,9 @@ export function buildEmployeePayload(formData: Record<string, any>) {
     department: formData.department || "",
     reports_to: formData.reports_to || "",
     employment_type: formData.employment_type || null,
+    employee_number:formData.employee_number,
     grade: formData.grade || "",
-    branch: formData.workLocation || "",
+    branch: formData.branch || "",
     date_of_joining: formData.dateOfJoining || null,
     contract_end_date: formData.contractEndDate || null,
     notice_number_of_days: Number(formData.probationPeriod) || 0,
