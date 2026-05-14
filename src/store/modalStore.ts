@@ -44,7 +44,8 @@ export type ModalType =
   | "leaveType"
   | "leavePeriod"
   | "leavePolicy"
-  | "leavePolicyAssignment";
+  | "leavePolicyAssignment"
+  | "holidayList";
 
 export interface ModalContext {
   source?: string;
@@ -771,3 +772,21 @@ export const openLeavePolicyAssignmentModal = (
   useModalStore
     .getState()
     .openModal("leavePolicyAssignment", initialData, isEdit, context, meta); 
+
+export const openHolidayListModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) => {
+  console.debug("openHolidayListModal clicked", {
+    initialData,
+    isEdit,
+    context,
+    meta,
+  });
+
+  return useModalStore
+    .getState()
+    .openModal("holidayList", initialData, isEdit, context, meta);
+};
