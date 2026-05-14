@@ -351,7 +351,7 @@ export const API = {
     Bank: `${ERP_BASE}/api/resource/Bank`,
   },
     /* =========================
-   * STOCK
+   * expanse claims
    * ========================= */
 
   ExpenseClaim:{
