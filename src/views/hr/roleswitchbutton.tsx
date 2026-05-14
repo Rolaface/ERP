@@ -53,8 +53,8 @@ const RoleSwitchButton: React.FC<RoleSwitchButtonProps> = ({
       onClick={toggleViewMode}
       title={
         isEmployeeView
-          ? "Switch to Professional / Manager view"
-          : "Switch back to Employee view"
+          ? "Switch to Professional View"
+          : "Switch back to Employee View"
       }
       className={buttonClass}
     >
