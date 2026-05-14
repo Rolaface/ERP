@@ -17,9 +17,6 @@ import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable
 import Table        from "../../../components/ui/Table/Table";
 import StatusBadge  from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
-
-// ─── Dropdown Menu ────────────────────────────────────────────────────────────
-
 interface MenuAction {
   label:        string;
   icon:         React.ReactNode;
@@ -197,21 +194,21 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
             icon:    <Edit2 size={14} />,
             onClick: () => openLeaveApplyModal(e, true),
           });
-          actions.push({
-            label:         "Approve",
-            icon:          <CheckCircle size={14} className="text-green-600" />,
-            onClick:       () => handleStatusUpdate(leaveId, "Approved", "1"),
-            dividerBefore: true,
-          });
-          actions.push({
-            label:  "Reject",
-            icon:   <XCircle size={14} />,
-            onClick: () => handleStatusUpdate(leaveId, "Rejected", "1"),
-            danger: true,
-          });
+          // actions.push({
+          //   label:         "Approve",
+          //   icon:          <CheckCircle size={14} className="text-green-600" />,
+          //   onClick:       () => handleStatusUpdate(leaveId, "Approved", "1"),
+          //   dividerBefore: true,
+          // });
+          // actions.push({
+          //   label:  "Reject",
+          //   icon:   <XCircle size={14} />,
+          //   onClick: () => handleStatusUpdate(leaveId, "Rejected", "1"),
+          //   danger: true,
+          // });
         }
 
-        if (e.status !== "Cancelled") {
+        if (!isActionDone) {
           actions.push({
             label:         "Cancel Leave",
             icon:          <Ban size={14} />,

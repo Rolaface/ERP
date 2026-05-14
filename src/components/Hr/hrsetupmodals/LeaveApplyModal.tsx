@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Clock, Save, X } from "lucide-react";
+import { Calendar, Clock, Save, X, User, Briefcase, CalendarDays } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import AdvancedCalendar from "../../../components/Hr/leave/Calendar";
 
@@ -9,7 +9,7 @@ import {
   updateLeaveApplication,
   type LeaveApplication,
 } from "../../../api/leaveApplicationApi";
-import { getEmployeeById } from "../../../api/employeeapi";
+import { getEmployeeById, getEmployeeDetailsById } from "../../../api/employeeapi";
 import {
   closeSwal,
   showApiError,
@@ -70,28 +70,35 @@ export default function LeaveApplyModal({
   const [loading,         setLoading]         = useState(false);
   const [leaveApprover,   setLeaveApprover]   = useState<string>("");
   const [leaveApproverId, setLeaveApproverId] = useState<string>("");
+  const [empDetails, setEmpDetails] = useState<any>(null);
+  const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
 
-  // ── On open: fetch logged-in employee to get leave_approver ─────────────
   useEffect(() => {
     if (!isOpen || !user?.employeeId) return;
 
-    const fetchApprover = async () => {
+    const fetchEmployeeData = async () => {
       try {
-        const res  = await getEmployeeById(user.employeeId!);
+        const res = await getEmployeeById(user.employeeId!);
+        console.log("Res", res);
         const data = res?.message?.data ?? res?.data ?? res;
         const approver = data?.leave_approver ?? "";
         setLeaveApprover(approver);
         setLeaveApproverId(approver);
+
+        const detailsRes = await getEmployeeDetailsById(user.employeeId!);
+        const detailsData = detailsRes?.message?.data ?? detailsRes?.data ?? detailsRes;
+        
+        if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
+        if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
       } catch {
         setLeaveApprover("");
         setLeaveApproverId("");
       }
     };
 
-    fetchApprover();
+    fetchEmployeeData();
   }, [isOpen, user?.employeeId]);
 
-  // ── Edit mode: prefill form ──────────────────────────────────────────────
   useEffect(() => {
     const id = editLeaveId || editId;
     if (!id || !isOpen) return;
@@ -285,9 +292,11 @@ export default function LeaveApplyModal({
       height="auto"
       footer={footer}
     >
-      <div className="p-4 sm:p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 140px)" }}>
-        <div className="grid lg:grid-cols-12 gap-8">
-
+      {/* <div className="p-4 sm:p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 140px)" }}>
+        <div className="grid lg:grid-cols-12 gap-8"> */}
+<div className="p-4 sm:p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 140px)" }}>
+  <div className="flex flex-col lg:flex-row gap-6"> 
+      <div className="flex-1 grid lg:grid-cols-12 gap-8 order-2 lg:order-1">
           {/* ── LEFT: Calendar ── */}
           <div className="lg:col-span-5 space-y-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-sub">
@@ -421,7 +430,70 @@ export default function LeaveApplyModal({
           </div>
 
         </div>
+         <div className="w-full lg:w-[220px] flex-shrink-0 space-y-4 order-1 lg:order-2">
+      
+      {/* Employee Details */}
+      <div className="bg-card rounded-lg p-3 border border-[var(--border)]">
+        <h3 className="text-[12px] font-semibold text-main mb-2">Employee Details</h3>
+        <div className="flex flex-col gap-2 text-xs">
+          <div className="flex items-center gap-2 text-main font-medium">
+            <User size={14} className="text-muted shrink-0" />
+            <span className="truncate">{empDetails?.employee_name ?? "Loading..."}</span>
+          </div>
+          {/* <div className="flex items-center gap-2 text-[11px] text-muted">
+            <Briefcase size={12} className="shrink-0" />
+            <span className="truncate">{empDetails?.designation || "-"}</span>
+          </div> */}
+          {/* <div className="flex justify-between text-[11px]">
+            <span className="text-muted">Dept</span>
+            <span className="text-main font-medium truncate ml-2">
+              {empDetails?.department || "-"}
+            </span>
+          </div> */}
+          <div className="flex items-center gap-2 text-[11px] text-muted mt-1">
+            <CalendarDays size={12} className="shrink-0" />
+            Joined: {empDetails?.date_of_joining || "-"}
+          </div>
+        </div>
       </div>
+
+      {/* Leave Balances Summary */}
+      <div className="bg-card rounded-lg p-3 border border-[var(--border)]">
+        <h3 className="text-[13px] font-semibold text-main mb-2">Leave Balances</h3>
+        <div className="flex flex-col gap-3">
+          {leaveBalances.length > 0 ? (
+            leaveBalances.map((leave, idx) => (
+              <div key={idx} className="flex flex-col gap-1 border-b border-[var(--border)] pb-2 last:border-0 last:pb-0">
+                <span className="text-[11px] font-semibold text-main truncate" title={leave.leave_type}>
+                  {leave.leave_type}
+                </span>
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-muted">Total Allocated</span>
+                  <span className="font-medium text-main">
+                    {(leave.new_leaves_allocated + leave.opening_balance).toFixed(1)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-muted">Taken</span>
+                  <span className="font-medium text-main">{leave.leaves_taken.toFixed(1)}</span>
+                </div>
+                <div className="mt-1 p-1.5 bg-primary/10 rounded flex justify-between items-center">
+                  <span className="text-[10px] font-semibold text-primary">Balance</span>
+                  <span className="text-[11px] font-bold text-primary">
+                    {leave.balance.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <span className="text-xs text-muted">No balances found.</span>
+          )}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
     </MinimizableModal>
   );
 }

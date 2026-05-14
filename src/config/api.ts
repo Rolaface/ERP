@@ -200,7 +200,8 @@ export const API = {
     update: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee`,
     delete: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.delete_employee`,
     updateStatus:`${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee_status`,
-
+    employeeDetailsById: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.custom_employee_details`,
+    leaveApproverDetails: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_leave_approvers`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
   },
@@ -604,6 +605,7 @@ export const API = {
     getsalarystructure: `${ERP_BASE}/api/method/custom_hrms.api.search.get_salary_structures`,
     getleavepolicy: `${ERP_BASE}/api/method/custom_hrms.api.search.get_leave_policies`,
     getUsers: `${ERP_BASE}/api/method/custom_hrms.api.search.get_users`,
-    getPayrollEmployees:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_employee`
+    getPayrollEmployees:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_employee`,
+    getBranches:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_branches`,
   },
 } as const;

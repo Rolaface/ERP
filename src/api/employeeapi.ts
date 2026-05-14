@@ -99,3 +99,15 @@ export async function updateEmployeeStatus(
 
   return resp.data;
 }
+
+export async function getEmployeeDetailsById(employee_id: string): Promise<any> {
+  const url = `${EmployeeAPI.employeeDetailsById}?employee_id=${employee_id}`;
+  const resp: AxiosResponse = await api.get(url);
+  return resp.data || null;
+}
+export async function getLeaveApproverDetailsById(employee: string): Promise<any> {
+  const url = `${EmployeeAPI.leaveApproverDetails}?employee=${employee}`;
+  const resp: AxiosResponse = await api.get(url);
+  return resp.data || null;
+}
+ 

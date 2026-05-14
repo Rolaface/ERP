@@ -185,12 +185,32 @@ export async function getPayrollEmployees(filters: {
       `${FrappeUtilsAPI.getPayrollEmployees}?${params.toString()}`
     );
 
-    return resp.data?.data ?? [];
+  return resp.data?.data ?? [];
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
       error?.message ||
       "Failed to fetch payroll employees"
+    );
+  }
+}
+export async function getallbranches(
+  search?: string
+): Promise<any[]> {
+  try {
+    const url = search
+      ? `${FrappeUtilsAPI.getBranches}?search=${encodeURIComponent(search)}`
+      : FrappeUtilsAPI.getBranches;
+
+    const resp: AxiosResponse = await api.get(url);
+
+    return resp.data?.data ?? []; 
+
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to fetch branches"
     );
   }
 }
