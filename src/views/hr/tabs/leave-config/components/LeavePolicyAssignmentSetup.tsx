@@ -208,12 +208,12 @@ export function LeavePolicyAssignmentSetup() {
 
           return (
             <ActionGroup>
-              <ActionButton
+              {/* <ActionButton
                 type="edit"
                 iconOnly
                 onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
                 disabled={actionLoadingId === row.name}
-              />
+              /> */}
               {/* Only show the menu (three dots) if there are actions available */}
               {menuActions.length > 0 && (
                 <ActionMenu customActions={menuActions} />

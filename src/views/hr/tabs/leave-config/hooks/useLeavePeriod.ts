@@ -6,6 +6,7 @@ import {
   type LeavePeriod,
 } from "../../../../../api/leaveConfigApi";
 import { showApiError } from "../../../../../utils/alert";
+import { parseFrappeError } from "./parseFrappeError";
 
 export function useLeavePeriods() {
   const [rows, setRows] = useState<LeavePeriod[]>([]);
@@ -31,8 +32,9 @@ export function useLeavePeriods() {
       setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
       setRows(filtered.slice((page - 1) * pageSize, page * pageSize));
     } catch (err: any) {
-      showApiError(err?.message ?? "Failed to load leave periods");
-    } finally {
+      showApiError(parseFrappeError(err) || "Failed to load leave periods");
+    }
+    finally {
       setLoading(false);
     }
   }, [search, page, pageSize]);

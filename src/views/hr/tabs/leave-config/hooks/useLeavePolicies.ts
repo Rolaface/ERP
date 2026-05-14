@@ -6,6 +6,7 @@ import {
   type LeavePolicy,
 } from "../../../../../api/leaveConfigApi";
 import { showApiError } from "../../../../../utils/alert";
+import { parseFrappeError } from "./parseFrappeError";
 
 export function useLeavePolicies() {
   const [rows, setRows] = useState<LeavePolicy[]>([]);
@@ -32,7 +33,7 @@ export function useLeavePolicies() {
       setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
       setRows(filtered.slice((page - 1) * pageSize, page * pageSize));
     } catch (err: any) {
-      showApiError(err?.message ?? "Failed to load leave policies");
+      showApiError(parseFrappeError(err) ||"Failed to load leave policies");
     } finally {
       setLoading(false);
     }
