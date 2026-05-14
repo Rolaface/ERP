@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
+import * as XLSX from "xlsx";
 import {
   Edit2,
   Loader2,
   Users,
   AlertCircle,
-  Download,
+  FileSpreadsheet,
   CheckSquare,
   Square,
   ChevronUp,
@@ -15,6 +16,12 @@ import {
 import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
 import { getPayrollEmployees } from "../../../api/utils/frappeUtilsApi";
 import { getEmployeeById } from "../../../api/employeeapi";
+import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
+import {
+  getAllDepartments,
+  getAllDesignations,
+  getAllGrades,
+} from "../../../api/utils/frappeUtilsApi";
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
@@ -132,67 +139,79 @@ const fmtDate = (d: string) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CSV / Excel export — no external library, pure browser
+// Excel export — uses SheetJS (xlsx), opens a proper .xlsx in Excel / Sheets
 // ─────────────────────────────────────────────────────────────────────────────
-const exportCSV = (employees: RichEmployee[], selectedIds: string[]) => {
+const exportXLSX = (employees: RichEmployee[], selectedIds: string[]) => {
   const rows = employees.filter((e) => selectedIds.includes(e.id));
   if (!rows.length) return;
 
-  const headers = [
-    "Employee ID",
-    "Name",
-    "Department",
-    "Designation",
-    "Grade",
-    "Employment Type",
-    "Salary Structure",
-    "CTC (₹)",
-    "Salary Mode",
-    "Date of Joining",
-    "Holiday List",
-    "Cost Center",
-    "Status",
-    "Email",
-    "Branch",
+  const wsData = [
+    // Header row
+    [
+      "Employee ID",
+      "Name",
+      "Department",
+      "Designation",
+      "Grade",
+      "Employment Type",
+      "Salary Structure",
+      "CTC (₹)",
+      "Salary Mode",
+      "Date of Joining",
+      "Holiday List",
+      "Cost Center",
+      "Status",
+      "Email",
+      "Branch",
+    ],
+    // Data rows
+    ...rows.map((e) => [
+      e.id,
+      e.name,
+      e.department,
+      e.designation,
+      e.grade,
+      e.employmentType,
+      e.salaryStructure,
+      e.ctc ?? 0,
+      e.salaryMode,
+      e.joiningDate,
+      e.holidayList,
+      e.payrollCostCenter,
+      e.status,
+      e.email,
+      e.branch,
+    ]),
   ];
 
-  const esc = (v: any) => {
-    const s = String(v ?? "");
-    return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-  const csv = [
-    headers.map(esc).join(","),
-    ...rows.map((e) =>
-      [
-        e.id,
-        e.name,
-        e.department,
-        e.designation,
-        e.grade,
-        e.employmentType,
-        e.salaryStructure,
-        e.ctc ?? 0,
-        e.salaryMode,
-        e.joiningDate,
-        e.holidayList,
-        e.payrollCostCenter,
-        e.status,
-        e.email,
-        e.branch,
-      ]
-        .map(esc)
-        .join(","),
-    ),
-  ].join("\n");
+  // Column widths
+  ws["!cols"] = [
+    { wch: 14 }, // Employee ID
+    { wch: 24 }, // Name
+    { wch: 18 }, // Department
+    { wch: 20 }, // Designation
+    { wch: 10 }, // Grade
+    { wch: 16 }, // Employment Type
+    { wch: 22 }, // Salary Structure
+    { wch: 14 }, // CTC
+    { wch: 14 }, // Salary Mode
+    { wch: 16 }, // Date of Joining
+    { wch: 20 }, // Holiday List
+    { wch: 20 }, // Cost Center
+    { wch: 10 }, // Status
+    { wch: 28 }, // Email
+    { wch: 16 }, // Branch
+  ];
 
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const a = Object.assign(document.createElement("a"), {
-    href: URL.createObjectURL(blob),
-    download: `payroll_employees_${new Date().toISOString().slice(0, 10)}.csv`,
-  });
-  a.click();
-  URL.revokeObjectURL(a.href);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Payroll Employees");
+
+  XLSX.writeFile(
+    wb,
+    `payroll_employees_${new Date().toISOString().slice(0, 10)}.xlsx`,
+  );
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -271,6 +290,8 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const abortRef = useRef<AbortController | null>(null);
+
+  const [filterVersion, setFilterVersion] = useState(0);
 
   // ── Fetch list → then enrich each in parallel ───────────────────────────
   useEffect(() => {
@@ -361,6 +382,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
     data.department,
     data.designation,
     data.grade,
+    filterVersion,
   ]);
 
   // ── Client-side filter + sort ───────────────────────────────────────────
@@ -444,29 +466,103 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
     <div className="space-y-3 animate-[fadeIn_0.2s_ease]">
       {/* Filters */}
       <div className="grid grid-cols-4 gap-3">
-        {[
-          { field: "branch", label: "Branch", ph: "All branches" },
-          { field: "department", label: "Department", ph: "All departments" },
-          {
-            field: "designation",
-            label: "Designation",
-            ph: "All designations",
-          },
-          { field: "grade", label: "Grade", ph: "All grades" },
-        ].map(({ field, label, ph }) => (
-          <div key={field}>
-            <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
-              {label}
-            </label>
-            <input
-              type="text"
-              value={(data as any)[field] ?? ""}
-              onChange={(e) => onChange(field, e.target.value)}
-              placeholder={ph}
-              className="w-full h-9 px-3 bg-card border border-theme rounded-xl text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
-            />
-          </div>
-        ))}
+        <div>
+          <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
+            Branch
+          </label>
+          <SearchSelect2
+            label=""
+            value={data.departmentLabel || ""}
+            placeholder="Search departments..."
+            fetchOptions={async (q) => {
+              const res = await getAllDepartments(q);
+
+              return (res || []).map((dept: any) => ({
+                label: dept.label,
+                value: dept.value,
+              }));
+            }}
+            onChange={(value, option) => {
+              onChange("department", value);
+              onChange("departmentLabel", option.label);
+            }}
+          />
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
+            Department
+          </label>
+
+          <SearchSelect2
+            label=""
+            value={data.departmentLabel || ""}
+            placeholder="Search departments..."
+            fetchOptions={async (q) => {
+              const res = await getAllDepartments(q);
+
+              return (res || []).map((dept: any) => ({
+                label: dept.label,
+                value: dept.value,
+              }));
+            }}
+            onChange={(value, option) => {
+              onChange("department", value || "");
+              onChange("departmentLabel", value ? option.label : "");
+              setFilterVersion((v) => v + 1);
+            }}
+          />
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
+            Designation
+          </label>
+
+          <SearchSelect2
+            label=""
+            value={data.designationLabel || ""}
+            placeholder="Search designations..."
+            fetchOptions={async (q) => {
+              const res = await getAllDesignations(q);
+
+              return (res || []).map((des: any) => ({
+                label: des.label,
+                value: des.value,
+              }));
+            }}
+            onChange={(value, option) => {
+              onChange("designation", value || "");
+              onChange("designationLabel", value ? option.label : "");
+              setFilterVersion((v) => v + 1);
+            }}
+          />
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-extrabold text-muted mb-1.5 uppercase tracking-wider">
+            Grade
+          </label>
+
+          <SearchSelect2
+            label=""
+            value={data.gradeLabel || ""}
+            placeholder="Search grade..."
+            fetchOptions={async (q) => {
+              const res = await getAllGrades(q);
+
+              return (res || []).map((grades: any) => ({
+                label: grades.label,
+                value: grades.value,
+              }));
+            }}
+            onChange={(value, option) => {
+              onChange("grade", value || "");
+              onChange("gradeLabel", value ? option.label : "");
+              setFilterVersion((v) => v + 1);
+            }}
+          />
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -516,15 +612,15 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
             {data.selectedEmployees.length}/{employees.length} selected
           </span>
 
-          {/* Export */}
+          {/* Open in Excel */}
           <button
             type="button"
-            onClick={() => exportCSV(employees, data.selectedEmployees)}
+            onClick={() => exportXLSX(employees, data.selectedEmployees)}
             disabled={data.selectedEmployees.length === 0}
-            className="h-9 px-3.5 rounded-xl border border-theme bg-card hover:bg-primary/5 hover:border-primary/40 text-xs font-bold text-main transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="h-9 px-3.5 rounded-xl border border-theme bg-card hover:bg-emerald-500/5 hover:border-emerald-500/40 text-xs font-bold text-main transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
-            <Download className="w-3.5 h-3.5" />
-            Export CSV
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            Open in Excel
           </button>
         </div>
       </div>
@@ -871,7 +967,7 @@ const EmptyState: React.FC<{ hasDateRange: boolean }> = ({ hasDateRange }) => (
     ) : (
       <>
         <p className="text-sm font-semibold text-main">No employees found</p>
-        <p className="text-xs text-muted">Try adjusting the filters above</p>
+        <p className="text-xs text-muted">Try adjusting the filters </p>
       </>
     )}
   </div>

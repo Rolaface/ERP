@@ -114,7 +114,14 @@ export interface PayrollRecord {
   netPay: number;
 
   // Status
-  status: "Draft" | "Pending" | "Approved" | "Rejected" | "Processing" | "Paid" | "Failed";
+  status:
+    | "Draft"
+    | "Pending"
+    | "Approved"
+    | "Rejected"
+    | "Processing"
+    | "Paid"
+    | "Failed";
   paymentDate?: string;
   createdDate: string;
   approvedBy?: string;
@@ -138,8 +145,8 @@ export interface PayrollEntry {
   deductTaxForProof: boolean;
   payrollFrequency: string;
   startDate: string;
-  exchangeRate:number;
-  bankAccount:string;
+  exchangeRate: number;
+  bankAccount: string;
 
   endDate: string;
   paymentAccount: string;
@@ -149,8 +156,11 @@ export interface PayrollEntry {
   selectedEmployees: string[];
   branch?: string;
   department?: string;
+  departmentLabel?: string;
   designation?: string;
+  designationLabel?: string;
   grade?: string;
+  gradeLabel?:string;
 }
 
 // ── Validation types (ERP-grade pre-payroll validation) ──────────────────────
