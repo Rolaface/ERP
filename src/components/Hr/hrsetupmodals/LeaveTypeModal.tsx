@@ -81,9 +81,13 @@ export const LeaveTypeModal: React.FC<Props> = ({
       return;
     }
 
-    if (form.max_leaves_allowed < 0) {
+    if (form.max_leaves_allowed < 0 ) {
       showValidationError("Max leaves allowed cannot be negative");
       return;
+    }
+    if (!Number.isInteger(form.max_leaves_allowed)) {
+    showValidationError("Max leave allocation must be a whole number.");
+    return;
     }
     if (
       form.fraction_of_daily_salary_per_leave !== undefined &&
