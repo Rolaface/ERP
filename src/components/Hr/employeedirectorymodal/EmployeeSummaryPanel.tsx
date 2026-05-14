@@ -1,9 +1,5 @@
-import {
-  FaUser,
-  FaCamera,
-} from "react-icons/fa";
+import { FaUser, FaCamera } from "react-icons/fa";
 import React, { useRef, useState, useEffect } from "react";
-
 
 import { ERP_BASE } from "../../../config/api";
 
@@ -46,7 +42,7 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
   // 2. Existing photo from API (edit mode)
   // 3. Nothing → placeholder
   const existingUrl = getFullImageUrl(formData.existingPhotoUrl || "");
-  const displayUrl  = localPreview || existingUrl || null;
+  const displayUrl = localPreview || existingUrl || null;
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,21 +58,31 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
 
   const getStatusDot = (status: string) => {
     switch ((status || "").toLowerCase()) {
-      case "active":     return "bg-emerald-500";
-      case "inactive":   return "bg-gray-400";
-      case "suspended":  return "bg-amber-500";
-      case "terminated": return "bg-red-500";
-      default:           return "bg-gray-300";
+      case "active":
+        return "bg-emerald-500";
+      case "inactive":
+        return "bg-gray-400";
+      case "suspended":
+        return "bg-amber-500";
+      case "terminated":
+        return "bg-red-500";
+      default:
+        return "bg-gray-300";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch ((status || "").toLowerCase()) {
-      case "active":     return "text-emerald-500";
-      case "inactive":   return "text-gray-400";
-      case "suspended":  return "text-amber-500";
-      case "terminated": return "text-red-500";
-      default:           return "text-muted";
+      case "active":
+        return "text-emerald-500";
+      case "inactive":
+        return "text-gray-400";
+      case "suspended":
+        return "text-amber-500";
+      case "terminated":
+        return "text-red-500";
+      default:
+        return "text-muted";
     }
   };
 
@@ -102,9 +108,8 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
   );
 
   const grossMonthly = formData.grossSalary
-    ? `${formData.currency || ""} ${((parseFloat(formData.grossSalary) || 0) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo`.trim()
+    ? `${formData.currency || ""} ${(parseFloat(formData.grossSalary) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo`.trim()
     : undefined;
-
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
@@ -149,14 +154,14 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
           )}
         </div>
 
- <input
-  id="employee-photo-input"
-  type="file"
-  accept="image/*"
-  ref={fileInputRef}
-  hidden
-  onChange={handleUpload}
-/>
+        <input
+          id="employee-photo-input"
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          hidden
+          onChange={handleUpload}
+        />
         <h3 className="text-xs font-semibold text-main text-center leading-snug">
           {fullName || "New Employee"}
         </h3>
@@ -169,8 +174,12 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
 
         {formData.employmentStatus && (
           <div className="flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-app border border-theme">
-            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getStatusDot(formData.employmentStatus)}`} />
-            <span className={`text-[9px] font-semibold ${getStatusColor(formData.employmentStatus)}`}>
+            <span
+              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getStatusDot(formData.employmentStatus)}`}
+            />
+            <span
+              className={`text-[9px] font-semibold ${getStatusColor(formData.employmentStatus)}`}
+            >
               {formData.employmentStatus}
             </span>
           </div>
@@ -179,11 +188,14 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
 
       {/* Info rows */}
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0">
-        <Row label="Department"  value={formData.department} />
-        <Row label="Type"        value={formData.employeeType || formData.employment_type} />
-        <Row label="Grade"       value={formData.grade} />
-        <Row label="Joined"      value={formData.dateOfJoining} />
-        <Row label="Location"    value={formData.workLocation} />
+        <Row label="Department" value={formData.department} />
+        <Row
+          label="Type"
+          value={formData.employeeType || formData.employment_type}
+        />
+        <Row label="Grade" value={formData.grade} />
+        <Row label="Joined" value={formData.dateOfJoining} />
+        <Row label="Location" value={formData.workLocation} />
         <Row
           label="Basic"
           value={
@@ -193,13 +205,15 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
           }
         />
         <Row
-          label="Gross/month
-          "
+          label="Gross/month"
           value={grossMonthly}
           valueClass="text-primary font-semibold"
         />
-        <Row label="Leave"  value={formData.leavePolicyLabel || formData.leavePolicy} />
-        <Row label="Shift"  value={formData.shift} />
+        <Row
+          label="Leave"
+          value={formData.leavePolicyLabel || formData.leavePolicy}
+        />
+        <Row label="Shift" value={formData.shift} />
       </div>
     </div>
   );
