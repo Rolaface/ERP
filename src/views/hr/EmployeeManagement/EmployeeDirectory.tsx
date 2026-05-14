@@ -105,7 +105,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         image:        e.image ?? null,
         jobTitle:     e.designation,
         department:   e.department || "-",
-        workLocation: e.branch     || "-",
+        branch: e.branch     || "-",
         status:       e.status,
       }));
 
@@ -216,7 +216,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         </code>
       ),
     },
-    { key: "workLocation", header: "Location", align: "left" },
+    { key: "branch", header: "Branch", align: "left" },
     {
       key:    "status",
       header: "Status",
