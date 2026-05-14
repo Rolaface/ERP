@@ -181,8 +181,8 @@ export const DepartmentModal: React.FC<Props> = ({
       title={isEdit ? "Edit Department" : "New Department"}
       subtitle="Configure department hierarchy and approvers"
       icon={Building2}
-      maxWidth="2xl"
-      height="auto"
+      customWidth="52vw"
+      height="45vh"
       footer={footer}
     >
       <div className="bg-app">

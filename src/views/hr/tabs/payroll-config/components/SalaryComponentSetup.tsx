@@ -90,7 +90,7 @@ export function SalaryComponentSetup() {
       },
       {
         key: "salary_component",
-        header: "Component Name",
+        header: "Component",
         render: (row) => (
           <span className="font-medium text-main">
             {row.salary_component || "—"}
@@ -123,7 +123,7 @@ export function SalaryComponentSetup() {
       },
       {
         key: "formula",
-        header: "Formula / Amount",
+        header: "Formula",
         render: (row) =>
           row.amount_based_on_formula ? (
             <code className="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700">
