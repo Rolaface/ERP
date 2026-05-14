@@ -350,6 +350,14 @@ export const API = {
   Bank: {
     Bank: `${ERP_BASE}/api/resource/Bank`,
   },
+    /* =========================
+   * STOCK
+   * ========================= */
+
+  ExpenseClaim:{
+    Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
+    Claim_Type: `${ERP_BASE}/api/resource/Expense Claim Type`,
+  },
   /* =========================
    * STOCK
    * ========================= */

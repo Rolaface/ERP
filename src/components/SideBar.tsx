@@ -192,6 +192,12 @@ const settingsItems: SettingsItem[] = [
     modules: ["Item Tax Template", "Tax Category", "Sales Taxes and Charges Template"],
     hideInEmployeeView: true,
   },
+   {
+    to: "/Expense-Management",
+    label: "Expense Management",
+    icon: <Users {...iconProps} />,
+    modules: ["Expense History"],
+  },
   {
     to: "/settings",
     label: "General Settings",
