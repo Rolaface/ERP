@@ -8,7 +8,7 @@ import {
   AppTabs,
 } from "../../components/ui/app-shell";
 import ExpenseHistory from "./expenseManagemetTable";
-import ExpenseTypeTable from "./ExpenseTypeTable";
+import ExpenseTypeTable from "./expenseTypeTable";
 const ALL_EXPENSE_TABS = [
   {
     id: "expenseHistory",
