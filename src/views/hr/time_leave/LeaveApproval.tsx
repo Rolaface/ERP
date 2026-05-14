@@ -10,6 +10,8 @@ import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable
 import Table from "../../../components/ui/Table/Table";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
+import { FilterSelect } from "../../../components/ui/modal/modalComponent";
+import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
 
 // ─── Dropdown Menu Component ───────────────────────────────────────────
 interface MenuAction {
@@ -77,22 +79,30 @@ export default function LeaveApproval() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showHistory, setShowHistory] = useState(false);
+  const [filters, setFilters] = useState({ from_date: '', to_date: '' });
   // Pagination states for the Table component
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     getAllLeaveApplied();
-  }, [showHistory]);
+  }, [showHistory, filters.from_date, filters.to_date]);
 
   const getAllLeaveApplied = async () => {
     try {
       setIsLoading(true);
-      const filters = showHistory
-        ? [["status", "in", ["Approved", "Rejected"]]]
+      const apiFilters = showHistory
+        ? [["status", "in", ["Approved", "Rejected", "Open", "Cancelled"]]]
         : [["status", "=", "Open"]];
-
-      const response = await getAllLeaveApplications(filters);
+      if (filters.from_date) {
+      // Assuming you want to find leaves that start on or after the selected 'from' date
+      apiFilters.push(["from_date", ">=", filters.from_date]);
+    }
+    
+    if (filters.to_date) {
+      apiFilters.push(["from_date", "<=", filters.to_date]); 
+      }
+      const response = await getAllLeaveApplications(apiFilters);
       setData(response || []);
     } catch (err) {
       console.error("Failed to Fetch Transactions", err);
@@ -224,6 +234,7 @@ export default function LeaveApproval() {
 </div> */}
       <Table
         extraFilters={
+          <>
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
             <input
               type="checkbox"
@@ -233,6 +244,26 @@ export default function LeaveApproval() {
             />
             Show Leave History
           </label>
+          {/* <FilterSelect
+                        value={filters.status}
+                        options={statusOptions}
+                        onChange={(e) => {
+                          setFilters((prev) => ({
+                            ...prev,
+                            status: e.target.value || undefined,
+                          }));
+                          setPage(1);
+                        }}
+                      /> */}
+                      <DateRangeFilter
+                        from={filters.from_date}
+                        to={filters.to_date}
+                        onChange={(range) => {
+                          setFilters((prev) => ({ ...prev, ...range }));
+                          setPage(1);
+                        }}
+                      />
+                      </>
         }
         loading={isLoading}
         columns={columns}
