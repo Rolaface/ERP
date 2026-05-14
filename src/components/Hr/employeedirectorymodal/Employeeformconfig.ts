@@ -144,11 +144,7 @@ export const DEFAULT_FORM: Record<string, any> = {
   existingPhotoUrl: "",
 };
 
-// ─── Map API response → formData ─────────────────────────────────────────────
-/**
- * Maps the flat API response (from getEmployeeById) into the formData shape.
- * This is the ONLY place where API field names are translated to form field names.
- */
+
 export function mapEditDataToForm(data: any): Record<string, any> {
   // Parse the joined address back into parts if possible
   // The address is stored as a comma-separated string: "street, city, province, postal, country"
@@ -361,7 +357,7 @@ export function buildEmployeePayload(formData: Record<string, any>) {
     income_tax_slab: formData.Taxslab,
     base_salary: Number(formData.basicSalary) || 0,
     gross: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
-    ctc: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
+  ctc: (salaryResult?.gross ?? Number(formData.grossSalary) ?? 0) * 12,
     salary_mode: mapSalaryMode(formData.paymentMethod || ""),
     salary_currency: formData.currency || null,
 

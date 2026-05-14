@@ -38,7 +38,13 @@ export interface SalaryResult {
 export interface CompensationPayload {
   salary_structure: string | null;
   base_salary: number;
-  components: Array<{ name: string; key: string; abbrKey: string | null; amount: number; type: ComponentType }>;
+  components: Array<{
+    name: string;
+    key: string;
+    abbrKey: string | null;
+    amount: number;
+    type: ComponentType;
+  }>;
   gross: number;
   deductions_total: number;
   net: number;
@@ -61,7 +67,12 @@ const toAbbrKey = (abbr?: string | null): string | null =>
 const resolveAbbr = (comp: SalaryComponentDef) =>
   toAbbrKey(comp.abbr ?? comp.salary_component_abbr);
 
-const writeContext = (ctx: CalcContext, nameKey: string, abbrKey: string | null, value: number) => {
+const writeContext = (
+  ctx: CalcContext,
+  nameKey: string,
+  abbrKey: string | null,
+  value: number,
+) => {
   ctx[nameKey] = value;
   if (abbrKey) {
     ctx[abbrKey] = value;
@@ -75,7 +86,10 @@ export function evaluateFormula(formula: string, context: CalcContext): number {
   if (!formula?.trim()) return 0;
   try {
     // eslint-disable-next-line no-new-func
-    const fn = new Function(...Object.keys(context), `"use strict"; return (${formula});`);
+    const fn = new Function(
+      ...Object.keys(context),
+      `"use strict"; return (${formula});`,
+    );
     const result = fn(...Object.values(context));
     const n = typeof result === "number" ? result : parseFloat(result);
     return isFinite(n) ? parseFloat(n.toFixed(2)) : 0;
@@ -105,7 +119,11 @@ export function calculateSalary(
     if (comp.amount_based_on_formula === 1) continue;
 
     const { nameKey, abbrKey } = pairs[i];
-    const value = overrides[nameKey] ?? (abbrKey ? overrides[abbrKey] : undefined) ?? comp.amount ?? 0;
+    const value =
+      overrides[nameKey] ??
+      (abbrKey ? overrides[abbrKey] : undefined) ??
+      comp.amount ??
+      0;
     writeContext(ctx, nameKey, abbrKey, value);
   }
 
@@ -138,8 +156,12 @@ export function calculateSalary(
     type: comp.type,
   }));
 
-  const gross = resultComponents.filter((c) => c.type === "Earning").reduce((s, c) => s + c.amount, 0);
-  const deductionsTotal = resultComponents.filter((c) => c.type === "Deduction").reduce((s, c) => s + c.amount, 0);
+  const gross = resultComponents
+    .filter((c) => c.type === "Earning")
+    .reduce((s, c) => s + c.amount, 0);
+  const deductionsTotal = resultComponents
+    .filter((c) => c.type === "Deduction")
+    .reduce((s, c) => s + c.amount, 0);
 
   const breakdown: Record<string, number> = {};
   for (const { key, abbrKey, amount } of resultComponents) {
@@ -147,12 +169,20 @@ export function calculateSalary(
     if (abbrKey) breakdown[abbrKey] = amount;
   }
 
-  return { breakdown, components: resultComponents, gross, deductionsTotal, net: gross - deductionsTotal };
+  return {
+    breakdown,
+    components: resultComponents,
+    gross,
+    deductionsTotal,
+    net: gross - deductionsTotal,
+  };
 }
 
 // ─── API adapter ──────────────────────────────────────────────────────────────
 
-export function structureToComponents(structureData: Record<string, any>): SalaryComponentDef[] {
+export function structureToComponents(
+  structureData: Record<string, any>,
+): SalaryComponentDef[] {
   const normalize = (row: any, type: ComponentType): SalaryComponentDef => ({
     ...row,
     type,
@@ -162,7 +192,9 @@ export function structureToComponents(structureData: Record<string, any>): Salar
 
   return [
     ...(structureData.earnings ?? []).map((r: any) => normalize(r, "Earning")),
-    ...(structureData.deductions ?? []).map((r: any) => normalize(r, "Deduction")),
+    ...(structureData.deductions ?? []).map((r: any) =>
+      normalize(r, "Deduction"),
+    ),
   ];
 }
 
@@ -181,13 +213,22 @@ export function buildCompensationPayload(
   };
 
   const basicComp = result.components.find(
-    (c) => c.type === "Earning" && (c.abbrKey === "bs" || c.key === "basic_salary"),
+    (c) =>
+      c.type === "Earning" && (c.abbrKey === "bs" || c.key === "basic_salary"),
   );
 
   return {
     salary_structure: formData.salaryStructure ?? null,
     base_salary: basicComp?.amount ?? result.gross,
-    components: result.components.map(({ name, key, abbrKey, amount, type }) => ({ name, key, abbrKey, amount, type })),
+    components: result.components.map(
+      ({ name, key, abbrKey, amount, type }) => ({
+        name,
+        key,
+        abbrKey,
+        amount,
+        type,
+      }),
+    ),
     gross: result.gross,
     deductions_total: result.deductionsTotal,
     net: result.net,

@@ -128,7 +128,7 @@ export function SalaryStructureSetup() {
       },
       {
         key: "docstatus",
-        header: "Doc Status",
+        header: "Status",
         render: (row) => {
           const labels: Record<number, string> = {
             0: "Draft",

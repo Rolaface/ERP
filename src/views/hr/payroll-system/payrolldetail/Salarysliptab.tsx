@@ -763,11 +763,11 @@ export const SalarySlipTab: React.FC<Props> = ({ employee }) => {
           icon={<TrendingDown className="w-4 h-4" />}
         />
         <KpiCard
-          label="Annual CTC"
+          label="Projected Annual CTC"
           value={ctc ? fmtCurrency(slip.currency, ctc) : "—"}
           sub={
             ctc
-              ? `≈ ${fmtCurrency(slip.currency, Math.round(ctc / 12))}/mo`
+              ? `≈ ${fmtCurrency(slip.currency, Math.round(ctc / 12))}/month`
               : undefined
           }
           valueStyle={{ color: "var(--text)" }}
