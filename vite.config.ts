@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
    proxy: {
   "/api": {
-    target: "http://site1.local:8001",
+    // target: "http://site1.local:8001",
+         target: "http://erp.local:8001",
     changeOrigin: true,
     secure: true,
   },
