@@ -246,7 +246,7 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     currency: data.salary_currency || "",
     paymentMethod: data.salary_mode || "",
     paymentFrequency: data.payment_frequency || "",
-
+     Taxslab:data.income_tax_slab||"",
     // ── Bank ──────────────────────────────────────────────────
     accountNumber: data.bank_ac_no || "",
     bankName: data.bank_name || "",

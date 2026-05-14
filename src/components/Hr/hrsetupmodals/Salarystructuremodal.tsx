@@ -340,7 +340,12 @@ export const SalaryStructureModal: React.FC<Props> = ({
   const [description, setDescription] = useState("");
   const [rows, setRows] = useState<UnifiedRow[]>(INITIAL_ROWS);
   const [saving, setSaving] = useState(false);
-
+  const [payroll_frequency, setPayrollFrequency] = useState("Monthly");
+// const handleFrequencyChange = (
+//   e: React.ChangeEvent<HTMLSelectElement>,
+// ) => {
+//   setPayrollFrequency(e.target.value);
+// };
   useEffect(() => {
     const id = "ss-styles-v2";
     if (!document.getElementById(id)) {
@@ -356,6 +361,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
     setStructureName(initialData?.name ?? "");
     setIsActive(initialData?.is_active ?? "Yes");
     setDescription(initialData?.description ?? "");
+    setPayrollFrequency(initialData?.payroll_frequency ?? "Monthly");
     const unified = toUnified(
       initialData?.earnings ?? [],
       initialData?.deductions ?? [],
@@ -467,6 +473,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
         is_active: isActive,
         docstatus: 1 as const,
         description,
+        payroll_frequency,
         earnings,
         deductions,
       };
@@ -590,7 +597,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1.5fr 120px",
+          gridTemplateColumns: "1fr 180px 120px",
             gap: 10,
             alignItems: "end",
           }}
@@ -603,12 +610,19 @@ export const SalaryStructureModal: React.FC<Props> = ({
             placeholder="e.g. Fixed CTC Structure"
             required
           />
-          <ModalInput
-            label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional notes…"
-          />
+         
+           {/* <ModalSelect
+                      label="Payroll Frequency"
+                      value={payroll_frequency}
+                      onChange={handleFrequencyChange}
+                    >
+                      <option value="">Select frequency</option>
+                      <option value="Daily">Daily</option>
+                      <option value="Weekly">Weekly</option>
+                      <option value="Fortnightly">Fortnightly</option>
+                      <option value="Bimonthly">Bimonthly</option>
+                      <option value="Monthly">Monthly</option>
+                    </ModalSelect> */}
           <ModalSelect
             label="Status"
             value={isActive}

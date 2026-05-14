@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-
-
 type Option = {
   label: string;
   value: string;
@@ -238,6 +236,11 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                   {opt.label}
                 </div>
               ))}
+              {options.length === 0 && (
+                <div className="px-3 py-2 text-[12px] text-muted">
+                  No records found
+                </div>
+              )}
 
               {allowCustomInput &&
                 search &&

@@ -71,6 +71,7 @@ export interface SalaryStructure {
   earnings?: StructureComponentRow[];
   deductions?: StructureComponentRow[];
   description?: string;
+  payroll_frequency?:string;
 }
 
 export interface TaxSlabRow {
