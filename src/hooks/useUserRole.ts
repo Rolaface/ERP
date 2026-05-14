@@ -10,7 +10,7 @@ export const MODULE_STRUCTURE: Record<string, string[]> = {
   Inventory: ["Item", "Item Group", "Warehouse", "Stock Entry"],
   Accounting: ["Journal Entry","Account"],
   Assets: ["Asset Category", "Asset", "Asset Movement"],
-  HumanResource: ["Employee", "Payroll Entry","Salary Slip","Leave Application","Department","Employee","Payroll Entry","Salary Component"],
+  HumanResource: ["Employee", "Payroll Entry","Salary Slip","Leave Application"],
   Settings: ["Company", "User","Role","Bank", "Bank Account", "Mode of Payment", "Payment Entry", "Currency Exchange", "Customer Group", "Item Tax Template","Tax Category","Sales Taxes and Charges Template"],
 };
 
