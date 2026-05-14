@@ -2,10 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Users, FileText, TrendingUp, Banknote, Package, ArrowLeftRight } from 'lucide-react';
 import LineChart from '../components/charts/LineChart';
 import UserMenu from '../layout/UserMenu';
-import { 
-  getDashboardSummary, 
-  getDashboardNotes, 
-  getSalesChart, 
+import {
+  getDashboardSummary,
+  getDashboardNotes,
+  getSalesChart,
   getPurchaseChart,
   DashboardSummaryResponse,
   DashboardNotesResponse,
@@ -14,6 +14,8 @@ import {
   getInventoryChart
 } from '../api/dashboardApi';
 import BarChart from '../components/charts/BarChart';
+import ChatWindow from '../components/chat/ChatWindow';
+import { FEATURES } from '../config/features';
 import { useHRView } from '../hooks/permission/useHRView';
 
 const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
@@ -46,6 +48,8 @@ const Dashboard = () => {
     style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
   }), []);
 
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   useEffect(() => {
     let mounted = true;
     const fetchGlobal = async () => {
@@ -73,24 +77,24 @@ const Dashboard = () => {
       setLoadingInventory(true);
       try {
         const inv = await getInventoryChart({ year: inventoryYear, mode: inventoryMode });
-        
+
         if (mounted) {
           const rawData = inv?.data as any;
 
           if (Array.isArray(rawData)) {
             setInventoryData(rawData);
-          } 
+          }
           else if (rawData && typeof rawData === 'object') {
             const itemMap = new Map();
 
             const parseItem = (itemData: any, type: 'buy' | 'sell', metric: 'qty' | 'val') => {
               if (!itemData || !itemData.itemName || itemData.itemName === 'N/A') return;
-              
+
               const name = itemData.itemName;
               if (!itemMap.has(name)) {
                 itemMap.set(name, { itemName: name, buyQty: 0, buyValue: 0, sellQty: 0, sellValue: 0 });
               }
-              
+
               const entry = itemMap.get(name);
               if (type === 'buy' && metric === 'qty') entry.buyQty = itemData.quantity || 0;
               if (type === 'buy' && metric === 'val') entry.buyValue = itemData.value || 0;
@@ -114,7 +118,7 @@ const Dashboard = () => {
         if (mounted) setLoadingInventory(false);
       }
     };
-    
+
     fetchInventory();
     return () => { mounted = false; };
   }, [inventoryYear, inventoryMode]);
@@ -154,8 +158,8 @@ const Dashboard = () => {
   }, [purchaseYear, purchaseInterval]);
 
   return (
-    <div className="flex h-screen w-full flex-col bg-gray-50 p-4 overflow-hidden">
-      
+    <div className="flex h-screen w-full flex-col bg-gray-50 p-4">
+
       {/* Header */}
       <div className="flex justify-between items-center mb-4 shrink-0">
         <h1 className="text-xl font-bold text-gray-800">Dashboard Summary</h1>
@@ -182,12 +186,12 @@ const Dashboard = () => {
       </div>
 
       <div className="flex flex-1 gap-4 min-h-0">
-        
+
         <div className="flex flex-1 flex-col gap-4 min-w-0">
-          
+
           <div className="grid grid-cols-4 gap-4 shrink-0 h-[100px]">
             <InfoBox title="Sales" loading={loadingSummary}
-            icon={<Users size={16} className="text-blue-500" />}>
+              icon={<Users size={16} className="text-blue-500" />}>
               <div className="text-lg font-bold text-blue-600">{currencyFormatter.format(summaryData?.sales?.totalSales || 0)}</div>
               <div className="text-xs text-gray-500 flex justify-between mt-1">
                 <span>Count: {summaryData?.sales?.salesCount || 0}</span>
@@ -196,7 +200,7 @@ const Dashboard = () => {
             </InfoBox>
 
             <InfoBox title="Purchase" loading={loadingSummary}
-            icon={<Banknote size={16} className="text-green-500" />}>
+              icon={<Banknote size={16} className="text-green-500" />}>
               <div className="text-lg font-bold text-amber-600">{currencyFormatter.format(summaryData?.purchase?.totalPurchase || 0)}</div>
               <div className="text-xs text-gray-500 flex justify-between mt-1">
                 <span>Count: {summaryData?.purchase?.purchaseCount || 0}</span>
@@ -205,7 +209,7 @@ const Dashboard = () => {
             </InfoBox>
 
             <InfoBox title="Customer" loading={loadingSummary}
-            icon={<Users size={16} className="text-blue-500" />}>
+              icon={<Users size={16} className="text-blue-500" />}>
               <div className="text-lg font-bold text-emerald-600">{summaryData?.customer?.totalCustomers || 0}</div>
               <div className="text-xs text-gray-500 flex justify-between mt-1">
                 <span>Active: {summaryData?.customer?.activeCustomers || 0}</span>
@@ -214,7 +218,7 @@ const Dashboard = () => {
             </InfoBox>
 
             <InfoBox title="Supplier" loading={loadingSummary}
-            icon={<FileText size={16} className="text-amber-500" />}>
+              icon={<FileText size={16} className="text-amber-500" />}>
               <div className="text-lg font-bold text-purple-600">{summaryData?.supplier?.totalSuppliers || 0}</div>
               <div className="text-xs text-gray-500 flex justify-between mt-1">
                 <span>Active: {summaryData?.supplier?.activeSuppliers || 0}</span>
@@ -225,18 +229,18 @@ const Dashboard = () => {
 
           {/* 4 Charts (2x2 Grid) */}
           <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 min-h-0">
-            <LineChart 
-              title="SALES CHART" 
-              loading={loadingSales} 
-              trendData={salesData?.trend} 
+            <LineChart
+              title="SALES CHART"
+              loading={loadingSales}
+              trendData={salesData?.trend}
               metrics={[
                 { key: 'receivable', name: 'Receivable', color: '#3b82f6' },
                 { key: 'received', name: 'Received', color: '#10b981' }
-              ]} 
+              ]}
               filterNode={
                 <div className="flex gap-2">
-                  <select 
-                    value={salesInterval} 
+                  <select
+                    value={salesInterval}
                     onChange={e => setSalesInterval(e.target.value)}
                     className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
@@ -245,8 +249,8 @@ const Dashboard = () => {
                     <option value="Half-Yearly">Half-Yearly</option>
                     <option value="Yearly">Yearly</option>
                   </select>
-                  <select 
-                    value={salesYear} 
+                  <select
+                    value={salesYear}
                     onChange={e => setSalesYear(e.target.value)}
                     className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
@@ -255,19 +259,19 @@ const Dashboard = () => {
                 </div>
               }
             />
-            
-            <LineChart 
-              title="PURCHASE CHART" 
-              loading={loadingPurchase} 
-              trendData={purchaseData?.trend} 
+
+            <LineChart
+              title="PURCHASE CHART"
+              loading={loadingPurchase}
+              trendData={purchaseData?.trend}
               metrics={[
                 { key: 'payable', name: 'Payable', color: '#f59e0b' },
                 { key: 'paid', name: 'Paid', color: '#ef4444' }
-              ]} 
+              ]}
               filterNode={
                 <div className="flex gap-2">
-                  <select 
-                    value={purchaseInterval} 
+                  <select
+                    value={purchaseInterval}
                     onChange={e => setPurchaseInterval(e.target.value)}
                     className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
@@ -276,8 +280,8 @@ const Dashboard = () => {
                     <option value="Half-Yearly">Half-Yearly</option>
                     <option value="Yearly">Yearly</option>
                   </select>
-                  <select 
-                    value={purchaseYear} 
+                  <select
+                    value={purchaseYear}
                     onChange={e => setPurchaseYear(e.target.value)}
                     className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
@@ -286,25 +290,25 @@ const Dashboard = () => {
                 </div>
               }
             />
-            
+
             <LineChart title="EXPENSE CHART" loading={loadingSummary} trendData={{}} metrics={[]} />
-            <BarChart 
-              title="INVENTORY CHART" 
-              loading={loadingInventory} 
-              data={inventoryData} 
+            <BarChart
+              title="INVENTORY CHART"
+              loading={loadingInventory}
+              data={inventoryData}
               mode={inventoryMode}
               filterNode={
                 <div className="flex gap-2">
-                  <select 
-                    value={inventoryMode} 
+                  <select
+                    value={inventoryMode}
                     onChange={e => setInventoryMode(e.target.value as 'value' | 'quantity')}
                     className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     <option value="value">By Value</option>
                     <option value="quantity">By Qty</option>
                   </select>
-                  <select 
-                    value={inventoryYear} 
+                  <select
+                    value={inventoryYear}
                     onChange={e => setInventoryYear(e.target.value)}
                     className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
@@ -325,37 +329,46 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-4 flex-1">
-              <NoteItem 
-                label="Top Customer" 
-                title={notesData?.topCustomer?.name || 'N/A'} 
-                value={currencyFormatter.format(notesData?.topCustomer?.value || 0)} 
-                icon={<Users size={16} className="text-blue-500" />} 
+              <NoteItem
+                label="Top Customer"
+                title={notesData?.topCustomer?.name || 'N/A'}
+                value={currencyFormatter.format(notesData?.topCustomer?.value || 0)}
+                icon={<Users size={16} className="text-blue-500" />}
               />
-              <NoteItem 
-                label="Top Supplier" 
-                title={notesData?.topSupplier?.name || 'N/A'} 
-                value={currencyFormatter.format(notesData?.topSupplier?.value || 0)} 
-                icon={<FileText size={16} className="text-amber-500" />} 
+              <NoteItem
+                label="Top Supplier"
+                title={notesData?.topSupplier?.name || 'N/A'}
+                value={currencyFormatter.format(notesData?.topSupplier?.value || 0)}
+                icon={<FileText size={16} className="text-amber-500" />}
               />
-              <NoteItem 
-                label="Top Item By Qty" 
-                title={notesData?.topSellingItemQty?.itemName || 'N/A'} 
-                value={`${notesData?.topSellingItemQty?.quantity || 0} Units`} 
+              <NoteItem
+                label="Top Item By Qty"
+                title={notesData?.topSellingItemQty?.itemName || 'N/A'}
+                value={`${notesData?.topSellingItemQty?.quantity || 0} Units`}
                 subTitle={notesData?.topSellingItemQty?.itemCode}
-                icon={<Package size={16} className="text-emerald-500" />} 
+                icon={<Package size={16} className="text-emerald-500" />}
               />
-              <NoteItem 
-                label="Top Item By Value" 
-                title={notesData?.topSellingItemValue?.itemName || 'N/A'} 
-                value={currencyFormatter.format(notesData?.topSellingItemValue?.value || 0)} 
+              <NoteItem
+                label="Top Item By Value"
+                title={notesData?.topSellingItemValue?.itemName || 'N/A'}
+                value={currencyFormatter.format(notesData?.topSellingItemValue?.value || 0)}
                 subTitle={notesData?.topSellingItemValue?.itemCode}
-                icon={<Banknote size={16} className="text-purple-500" />} 
+                icon={<Banknote size={16} className="text-purple-500" />}
               />
             </div>
           )}
         </div>
 
       </div>
+            {/* FLOATING CHAT LAYER */}
+
+            
+      {FEATURES.CHAT_ENABLED && (
+        <ChatWindow
+          isOpen={isChatOpen}
+          onToggle={() => setIsChatOpen(prev => !prev)}
+        />
+      )}
     </div>
   );
 };
