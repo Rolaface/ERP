@@ -162,13 +162,12 @@ export function LeavePolicySetup() {
 
           return (
             <ActionGroup>
-              <ActionButton
+              {/* <ActionButton
                 type="edit"
                 iconOnly
-                // Pass row data and the fetchAll callback directly to the store
                 onClick={() => openLeavePolicyModal(row, true, { onSuccess: fetchAll })}
                 disabled={actionLoadingId === row.name || row.docstatus !== 0} // Disable edit if not Draft
-              />
+              /> */}
               {dropdownActions.length > 0 && (
                 <ActionMenu customActions={dropdownActions} />
               )}
