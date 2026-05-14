@@ -17,4 +17,6 @@ export const ROUTES = {
   CurrencyConversion: "/currency-conversion",
   CustomerGroup: "/customer-group",
   taxMaintenance: "/Tax-Maintenance",
+  expenseManagement: "/Expense-Management",
+
 };

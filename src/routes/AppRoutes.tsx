@@ -27,6 +27,7 @@ const PaymentEntry = lazy(() => import("../views/PaymentEntry/PaymentEntry"));
 const CurrencyConversion = lazy(() => import("../views/CurrencyConversion/currencyConversion"));
 const CustomerGroup = lazy(() => import("../views/Customergroup/CustomerGroup"));
 const TaxMaintenance = lazy(() => import("../views/TaxMaintaince/taxmaintaince"));
+const ExpenseManagement = lazy(() => import("../views/ExpenseManagement/expenseManagement"));
 
 
 import { Toaster } from "react-hot-toast";
@@ -257,6 +258,15 @@ const AppRoutes: React.FC = () => {
                 </PermissionRoute>
               }
             />
+              <Route
+              path="/Expense-Management"
+              element={
+                <PermissionRoute modules={["Expense History"]}>
+                  <ExpenseManagement />
+                </PermissionRoute>
+              }
+            />
+
 
             {/* Catch-all */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
