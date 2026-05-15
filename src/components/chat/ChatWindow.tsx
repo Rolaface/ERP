@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { MessageSquare, X } from 'lucide-react';
-import { sendMessage } from "../../api/chatApi"
 
 type ChatWindowProps = {
   isOpen: boolean;
@@ -27,6 +26,8 @@ const ChatWindow = ({ isOpen, onToggle }: ChatWindowProps) => {
   // STEP 5.1C — Input State
   const [input, setInput] = React.useState('');
 
+  const [isTyping, setIsTyping] = React.useState(false);
+
   // STEP 5.3A — Create Scroll Ref
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -38,43 +39,49 @@ const ChatWindow = ({ isOpen, onToggle }: ChatWindowProps) => {
   }, [messages]);
 
 
-const handleSendMessage = () => {
+  const handleSendMessage = () => {
 
-  const trimmedInput = input.trim();
+    const trimmedInput = input.trim();
 
-  // Prevent empty messages
-  if (!trimmedInput) return;
+    // Prevent empty messages
+    if (!trimmedInput) return;
 
-  // USER MESSAGE
-  const newMessage: Message = {
-    id: Date.now().toString(),
-    role: 'user',
-    content: trimmedInput,
-  };
-
-  // Render user message instantly
-  setMessages((prev) => [...prev, newMessage]);
-
-  // Clear input
-  setInput('');
-
-  // STEP 5.4 — Simulated Assistant Reply
-  setTimeout(() => {
-
-    const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: `You said: "${trimmedInput}"`,
+    // USER MESSAGE
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: trimmedInput,
     };
 
-    // Append assistant reply
-    setMessages((prev) => [
-      ...prev,
-      assistantMessage,
-    ]);
+    // Render user message instantly
+    setMessages((prev) => [...prev, newMessage]);
 
-  }, 1000);
-};
+    // Clear input
+    setInput('');
+
+    // STEP 5.5B — Start Typing State
+    setIsTyping(true);
+
+    // Simulated assistant delay
+    setTimeout(() => {
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `You said: "${trimmedInput}"`,
+      };
+
+      // Append assistant reply
+      setMessages((prev) => [
+        ...prev,
+        assistantMessage,
+      ]);
+
+      // STEP 5.5C — Stop Typing State
+      setIsTyping(false);
+
+    }, 1000);
+  };
 
   return (
     <>
@@ -175,6 +182,23 @@ const handleSendMessage = () => {
               {message.content}
             </div>
           ))}
+
+
+          {isTyping && (
+            <div
+              className="
+      bg-gray-100
+      text-gray-500
+      rounded-xl
+      p-3
+      text-sm
+      w-fit
+      animate-pulse
+    "
+            >
+              Typing...
+            </div>
+          )}
 
           {/* STEP 5.3C — Scroll Anchor */}
           <div ref={messagesEndRef} />
