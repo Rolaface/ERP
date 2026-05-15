@@ -40,6 +40,7 @@ const EMPTY_FORM: PayrollEntry = {
   payrollName: "",
   postingDate: new Date().toISOString().slice(0, 10),
   currency: DEFAULT_CURRENCY,
+  payrollMonth:"",
   exchangeRate: DEFAULT_EXCHANGE_RATE,
   company: DEFAULT_COMPANY,
   payrollPayableAccount: DEFAULT_PAYROLL_PAYABLE_ACCOUNT,

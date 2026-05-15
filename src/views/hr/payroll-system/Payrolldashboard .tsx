@@ -42,7 +42,7 @@ export const PayrollDashboard: React.FC<Props> = ({
   totalPages,
   onPageChange,
   canCreate = false,
-  canWrite  = false,
+  canWrite = false,
 }) => {
   const [searchQuery] = useState("");
   const [selectedDept] = useState("All");
@@ -54,9 +54,9 @@ export const PayrollDashboard: React.FC<Props> = ({
   const filtered = useMemo(
     () =>
       records.filter((r) => {
-        const deptOk   = selectedDept  === "All" || r.department === selectedDept;
-        const statusOk = filterStatus  === "All" || r.status     === filterStatus;
-        const q        = searchQuery.toLowerCase();
+        const deptOk = selectedDept === "All" || r.department === selectedDept;
+        const statusOk = filterStatus === "All" || r.status === filterStatus;
+        const q = searchQuery.toLowerCase();
         const searchOk =
           !q ||
           r.employeeName.toLowerCase().includes(q) ||
@@ -119,51 +119,51 @@ export const PayrollDashboard: React.FC<Props> = ({
     },
     {
       key: "actions",
+      align:"center",
       header: "Actions",
       render: (row) => (
-        <ActionGroup>
-          {/* View — always visible */}
-          <ActionButton
-            type="view"
-            iconOnly
-            variant="secondary"
-            onClick={() => setDetailEntryId(row.name)}
-            title="View details"
-          />
-          {/* Payslip — always visible */}
-          <ActionButton
-            type="download"
-            iconOnly
-            variant="secondary"
-            onClick={() => onViewPayslip(row)}
-            title="View payslip"
-          />
-          <ActionMenu
-            // ── Edit: only when user has Payroll Entry write ──────────────
-            {...(canWrite
-              ? { onEdit: () => onEditRecord(row), editLabel: "Edit Record" }
-              : {}
-            )}
-            onDelete={() => {
-              /* wire delete handler if needed */
-            }}
-            deleteLabel="Remove"
-            // ── Run Payroll: only when user has Payroll Entry create ──────
-            customActions={
-              canCreate
-                ? [
-                    {
-                      label:
-                        row.status === "Failed" ? "Re-Run Payroll" : "Run Payroll",
-                      icon: <Play className="w-4 h-4" />,
-                      onClick: () => onRunPayroll(row.name),
-                      disabled: !["Draft", "Failed"].includes(row.status),
-                    },
-                  ]
-                : []
-            }
-          />
-        </ActionGroup>
+        
+          <ActionGroup>
+            {/* View — always visible */}
+            <ActionButton
+              type="view"
+              iconOnly
+              variant="secondary"
+              onClick={() => setDetailEntryId(row.name)}
+              title="View details"
+            />
+
+            <ActionMenu
+              // ── Edit: only when user has Payroll Entry write ──────────────
+              {...(canWrite && row.status !== "Submitted"
+                ? {
+                    onEdit: () => onEditRecord(row),
+                    editLabel: "Edit Record",
+                  }
+                : {})}
+              onDelete={() => {
+                /* wire delete handler if needed */
+              }}
+              deleteLabel="Remove"
+              // ── Run Payroll: only when user has Payroll Entry create ──────
+              customActions={
+                canCreate
+                  ? [
+                      {
+                        label:
+                          row.status === "Failed"
+                            ? "Re-Run Payroll"
+                            : "Run Payroll",
+                        icon: <Play className="w-4 h-4" />,
+                        onClick: () => onRunPayroll(row.name),
+                        disabled: !["Draft", "Failed"].includes(row.status),
+                      },
+                    ]
+                  : []
+              }
+            />
+          </ActionGroup>
+       
       ),
     },
   ];
