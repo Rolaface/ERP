@@ -19,6 +19,7 @@ interface Props {
   onNewPayroll: () => void;
   onRunPayroll: (id: string) => void;
   onViewPayslip: (r: PayrollRecord) => void;
+  onDeleteRecord?: (r: PayrollRecord) => void;
   onEditRecord: (r: PayrollRecord) => void;
   currentPage: number;
   totalPages: number;
@@ -40,6 +41,7 @@ export const PayrollDashboard: React.FC<Props> = ({
   onEditRecord,
   currentPage,
   totalPages,
+  onDeleteRecord,
   onPageChange,
   canCreate = false,
   canWrite = false,
@@ -119,51 +121,47 @@ export const PayrollDashboard: React.FC<Props> = ({
     },
     {
       key: "actions",
-      align:"center",
+      align: "center",
       header: "Actions",
       render: (row) => (
-        
-          <ActionGroup>
-            {/* View — always visible */}
-            <ActionButton
-              type="view"
-              iconOnly
-              variant="secondary"
-              onClick={() => setDetailEntryId(row.name)}
-              title="View details"
-            />
+        <ActionGroup>
+          {/* View — always visible */}
+          <ActionButton
+            type="view"
+            iconOnly
+            variant="secondary"
+            onClick={() => setDetailEntryId(row.name)}
+            title="View details"
+          />
 
-            <ActionMenu
-              // ── Edit: only when user has Payroll Entry write ──────────────
-              {...(canWrite && row.status !== "Submitted"
-                ? {
-                    onEdit: () => onEditRecord(row),
-                    editLabel: "Edit Record",
-                  }
-                : {})}
-              onDelete={() => {
-                /* wire delete handler if needed */
-              }}
-              deleteLabel="Remove"
-              // ── Run Payroll: only when user has Payroll Entry create ──────
-              customActions={
-                canCreate
-                  ? [
-                      {
-                        label:
-                          row.status === "Failed"
-                            ? "Re-Run Payroll"
-                            : "Run Payroll",
-                        icon: <Play className="w-4 h-4" />,
-                        onClick: () => onRunPayroll(row.name),
-                        disabled: !["Draft", "Failed"].includes(row.status),
-                      },
-                    ]
-                  : []
-              }
-            />
-          </ActionGroup>
-       
+          <ActionMenu
+            // ── Edit: only when user has Payroll Entry write ──────────────
+            {...(canWrite && row.status !== "Submitted"
+              ? {
+                  onEdit: () => onEditRecord(row),
+                  editLabel: "Edit Record",
+                }
+              : {})}
+            onDelete={() => onDeleteRecord?.(row)}
+            deleteLabel="Delete"
+            // ── Run Payroll: only when user has Payroll Entry create ──────
+            customActions={
+              canCreate
+                ? [
+                    {
+                      label:
+                        row.status === "Failed"
+                          ? "Re-Run Payroll"
+                          : "Run Payroll",
+                      icon: <Play className="w-4 h-4" />,
+                      onClick: () => onRunPayroll(row.name),
+                      disabled: !["Draft", "Failed"].includes(row.status),
+                    },
+                  ]
+                : []
+            }
+          />
+        </ActionGroup>
       ),
     },
   ];

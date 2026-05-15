@@ -316,6 +316,22 @@ export async function updatePayrollEntry(
 
 return resp.data?.data || resp.data;
 }
+
+export async function deletePayrollEntry(
+  id: string,
+): Promise<any> {
+  const resp: AxiosResponse = await api.delete(
+    `${API.payroll.payrollentry.createpayrollentry}/${id}`,
+  );
+
+  if (resp.data?.success === false) {
+    throw new Error(
+      resp.data?.message || "Failed to delete payroll",
+    );
+  }
+
+  return resp.data?.data || resp.data;
+}
 export async function getSalarySlipDetail(name: string): Promise<SalarySlip> {
   const resp: AxiosResponse = await api.get(
     `/api/resource/Salary Slip/${encodeURIComponent(name)}`,
