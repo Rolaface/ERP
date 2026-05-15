@@ -24,6 +24,7 @@ import { createQuotation } from "../api/quotationApi";
 import { createItemGroupNode, renameItemGroup, updateItemGroupById } from "../api/itemGroupApi";
 import { createWarehouseNode, updateWarehouseById } from "../api/WarehouseApi";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
+import FloatingViewSwitch from "./FloatingViewSwitch";
 
 const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(true);
@@ -272,6 +273,7 @@ const openWarehouseEdit = (
             </div>
           </AppContentContainer>
         </AppMain>
+        <FloatingViewSwitch />
         <GlobalModalHandler />
       </AppShell>
     </QuickAddProvider>
