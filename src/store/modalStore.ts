@@ -38,7 +38,7 @@ export type ModalType =
   | "designation"
   | "grade"
   | "User"
-  |"Payrollperiod"
+  | "Payrollperiod"
   | "employeeType"
   | "employeeType"
   | "leaveType"
@@ -682,7 +682,7 @@ export const openLeaveApplyModal = (
     .getState()
     .openModal("leaveApply", initialData, isEdit, context, meta);
 
-    export const openTaxConfigModal = (
+export const openTaxConfigModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
@@ -692,7 +692,7 @@ export const openLeaveApplyModal = (
     .getState()
     .openModal("taxConfig", initialData, isEdit, context, meta);
 
-    export const openDepartmentModal = (
+export const openDepartmentModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
@@ -702,7 +702,7 @@ export const openLeaveApplyModal = (
     .getState()
     .openModal("department", initialData, isEdit, context, meta);
 
-    export const openDesignationModal = (
+export const openDesignationModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
@@ -712,7 +712,7 @@ export const openLeaveApplyModal = (
     .getState()
     .openModal("designation", initialData, isEdit, context, meta);
 
-    export const openGradeModal = (
+export const openGradeModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
@@ -732,7 +732,6 @@ export const openEmployeeTypeModal = (
     .getState()
     .openModal("employeeType", initialData, isEdit, context, meta);
 
-    
 export const openPayrollPeriodModal = (
   initialData?: unknown,
   isEdit = false,
@@ -751,8 +750,7 @@ export const openLeaveTypeModal = (
 ) =>
   useModalStore
     .getState()
-    .openModal("leaveType", initialData, isEdit, context, meta); 
-
+    .openModal("leaveType", initialData, isEdit, context, meta);
 
 export const openLeavePeriodModal = (
   initialData?: unknown,
@@ -762,7 +760,7 @@ export const openLeavePeriodModal = (
 ) =>
   useModalStore
     .getState()
-    .openModal("leavePeriod", initialData, isEdit, context, meta);   
+    .openModal("leavePeriod", initialData, isEdit, context, meta);
 
 export const openLeavePolicyModal = (
   initialData?: unknown,
@@ -772,7 +770,7 @@ export const openLeavePolicyModal = (
 ) =>
   useModalStore
     .getState()
-    .openModal("leavePolicy", initialData, isEdit, context, meta); 
+    .openModal("leavePolicy", initialData, isEdit, context, meta);
 
 export const openLeavePolicyAssignmentModal = (
   initialData?: unknown,
@@ -782,10 +780,9 @@ export const openLeavePolicyAssignmentModal = (
 ) =>
   useModalStore
     .getState()
-    .openModal("leavePolicyAssignment", initialData, isEdit, context, meta); 
+    .openModal("leavePolicyAssignment", initialData, isEdit, context, meta);
 
 export const openHolidayListModal = (
-  export const openExpenseTypeModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
@@ -802,6 +799,12 @@ export const openHolidayListModal = (
     .getState()
     .openModal("holidayList", initialData, isEdit, context, meta);
 };
+
+export const openExpenseTypeModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
 ) =>
   useModalStore
     .getState()
