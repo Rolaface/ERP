@@ -4,11 +4,9 @@ import {
   ArrowDownLeft,
   FileText,
 } from "lucide-react";
-import Table from "../../components/ui/Table/Table";
+import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { getCustomerStatement } from "../../api/statementApi";
 import { showApiError } from "../../utils/alert";
-
-/*  TYPES  */
 
 interface LedgerEntry {
   date: string;
@@ -43,8 +41,6 @@ interface CustomerStatementProps {
   customerId: string;
 }
 
-/*  COMPONENT  */
-
 const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
   const [data, setData] = useState<StatementData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,7 +53,6 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  /*  API  */
   useEffect(() => {
     if (!customerId) return;
 
@@ -75,8 +70,8 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
         } else {
           setError("Failed to load customer statement");
         }
-      } catch (err){
-       showApiError(err);
+      } catch (err) {
+        showApiError(err);
       } finally {
         setLoading(false);
       }
@@ -88,8 +83,6 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
   useEffect(() => {
     setPage(1);
   }, [customerId]);
-
-  /*  TABLE COLUMNS  */
 
   const statementColumns = [
     {
@@ -127,12 +120,9 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
               <FileText size={14} />
             )}
           </div>
-
           <div>
             <p className="text-xs font-bold text-main">{row.type}</p>
-            <p className="text-[9px] font-mono text-muted uppercase">
-              {row.ref}
-            </p>
+            <p className="text-[9px] font-mono text-muted uppercase">{row.ref}</p>
           </div>
         </div>
       ),
@@ -185,11 +175,8 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
     },
   ];
 
-  /*  TOTALS — server-side grand totals, not paginated ledger rows  */
   const totalDebit = data?.summary.totalDebit ?? 0;
   const totalCredit = data?.summary.totalCredit ?? 0;
-
-  /*  STATES  */
 
   if (loading) {
     return (
@@ -209,34 +196,14 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
 
   if (!data) return null;
 
-  /*  UI  */
-
   return (
     <div className="max-w-[1400px] mx-auto space-y-5 p-6">
-
-      {/* TOP ROW: KPI (left) + Aging (right) */}
       <div className="flex gap-4 items-stretch">
-
-        {/* KPI CARDS — LEFT */}
         <div className="grid grid-cols-3 gap-4 flex-[3]">
-          <SummaryCard
-            label="Total Debit"
-            value={totalDebit}
-            className="text-primary"
-          />
-          <SummaryCard
-            label="Total Credit"
-            value={totalCredit}
-            className="text-primary"
-          />
-          <SummaryCard
-            label="Net Outstanding"
-            value={data.summary.netOutstanding}
-            className="text-primary"
-          />
+          <SummaryCard label="Total Debit" value={totalDebit} className="text-primary" />
+          <SummaryCard label="Total Credit" value={totalCredit} className="text-primary" />
+          <SummaryCard label="Net Outstanding" value={data.summary.netOutstanding} className="text-primary" />
         </div>
-
-        {/* AGING — RIGHT (COMPACT) */}
         <div className="flex-[2] bg-card border border-theme rounded-2xl px-3 py-2">
           <div className="grid grid-cols-5 gap-2">
             <AgingCell compact label="Current" value={data.aging.current} active />
@@ -246,12 +213,10 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
             <AgingCell compact label="90+" value={data.aging["90_plus"]} />
           </div>
         </div>
-
       </div>
 
-      {/* TABLE */}
       <div className="bg-card border border-theme rounded-2xl overflow-hidden">
-        <Table
+        <ModalTable
           columns={statementColumns}
           data={data.ledger}
           showToolbar={false}
@@ -267,12 +232,10 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
           pageSizeOptions={[4, 10, 25]}
         />
       </div>
-
     </div>
   );
 };
 
-/*  SUB COMPONENTS  */
 const AgingCell = ({
   label,
   value,
@@ -319,9 +282,7 @@ const SummaryCard = ({
     <p className={`text-[9px] font-black uppercase tracking-widest ${className}`}>
       {label}
     </p>
-    <p className={`text-lg font-black ${className}`}>
-      {value.toLocaleString()}
-    </p>
+    <p className={`text-lg font-black ${className}`}>{value.toLocaleString()}</p>
   </div>
 );
 

@@ -5,10 +5,9 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
-import Table from "../../components/ui/Table/Table";
+import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { getPurchaseInvoices } from "../../api/procurement/PurchaseInvoiceApi";
 import { showApiError } from "../../utils/alert";
-
 
 interface PurchaseInvoice {
   pId: string;
@@ -32,19 +31,15 @@ const SupplierPurchaseInvoices = ({ supplierName }: Props) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  /* FETCH DATA */
-
   useEffect(() => {
     if (!supplierName) return;
 
     const loadInvoices = async () => {
       setLoading(true);
-
       try {
         const resp = await getPurchaseInvoices(page, pageSize, {
           supplier: supplierName,
         });
-
         setInvoices(resp?.data || []);
         setTotalPages(resp?.pagination?.total_pages || 1);
         setTotalItems(resp?.pagination?.total || 0);
@@ -62,35 +57,20 @@ const SupplierPurchaseInvoices = ({ supplierName }: Props) => {
     setPage(1);
   }, [supplierName]);
 
-  /* SUMMARY */
-
   const summary = useMemo(() => {
     const total = invoices.length;
-
     const draft = invoices.filter((i) => i.status === "Draft").length;
-
-    const submitted = invoices.filter(
-      (i) => i.status === "Submitted"
-    ).length;
-
-    const totalValue = invoices.reduce(
-      (sum, i) => sum + (i.grandTotal || 0),
-      0
-    );
-
+    const submitted = invoices.filter((i) => i.status === "Submitted").length;
+    const totalValue = invoices.reduce((sum, i) => sum + (i.grandTotal || 0), 0);
     return { total, draft, submitted, totalValue };
   }, [invoices]);
-
-  /* TABLE COLUMNS */
 
   const columns = [
     {
       key: "pId",
       header: "Bill No",
       render: (row: PurchaseInvoice) => (
-        <span className="text-xs font-black text-primary">
-          {row.pId}
-        </span>
+        <span className="text-xs font-black text-primary">{row.pId}</span>
       ),
     },
     {
@@ -145,42 +125,17 @@ const SupplierPurchaseInvoices = ({ supplierName }: Props) => {
     },
   ];
 
-  /* UI */
-
   return (
     <div className="max-w-[1400px] mx-auto">
-      {/* SUMMARY */}
-
       <div className="grid grid-cols-4 gap-2">
-        <SummaryCard
-          icon={<ClipboardList size={14} />}
-          label="Total Bills"
-          value={summary.total}
-        />
-
-        <SummaryCard
-          icon={<Clock size={14} />}
-          label="Draft"
-          value={summary.draft}
-        />
-
-        <SummaryCard
-          icon={<CheckCircle2 size={14} />}
-          label="Submitted"
-          value={summary.submitted}
-        />
-
-        <SummaryCard
-          icon={<FileText size={14} />}
-          label="Total Value"
-          value={`${summary.totalValue.toLocaleString()}`}
-        />
+        <SummaryCard icon={<ClipboardList size={14} />} label="Total Bills" value={summary.total} />
+        <SummaryCard icon={<Clock size={14} />} label="Draft" value={summary.draft} />
+        <SummaryCard icon={<CheckCircle2 size={14} />} label="Submitted" value={summary.submitted} />
+        <SummaryCard icon={<FileText size={14} />} label="Total Value" value={`${summary.totalValue.toLocaleString()}`} />
       </div>
 
-      {/* TABLE */}
-
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
-        <Table
+        <ModalTable
           columns={columns}
           data={invoices}
           loading={loading}
@@ -202,8 +157,6 @@ const SupplierPurchaseInvoices = ({ supplierName }: Props) => {
   );
 };
 
-/* SUMMARY CARD */
-
 const SummaryCard = ({
   icon,
   label,
@@ -214,15 +167,9 @@ const SummaryCard = ({
   value: string | number;
 }) => (
   <div className="bg-card border border-theme rounded-xl p-3 flex items-center gap-3">
-    <div className="p-2 rounded-lg bg-row-hover text-primary">
-      {icon}
-    </div>
-
+    <div className="p-2 rounded-lg bg-row-hover text-primary">{icon}</div>
     <div>
-      <p className="text-[9px] font-black uppercase tracking-widest text-muted">
-        {label}
-      </p>
-
+      <p className="text-[9px] font-black uppercase tracking-widest text-muted">{label}</p>
       <p className="text-lg font-black text-primary">{value}</p>
     </div>
   </div>

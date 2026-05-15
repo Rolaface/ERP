@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
-import Table from "../../components/ui/Table/Table";
+import ModalTable from "../../components/ui/Table/ModalTableInside";
 import type { Column } from "../../components/ui/Table/type";
 import {
   getAllBankAccounts,
@@ -34,13 +34,10 @@ const SupplierBankDetails: React.FC<Props> = ({
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-
   const fetchAccounts = useCallback(async () => {
     if (!supplierName) return;
-
     try {
       setLoading(true);
-
       const res = await getAllBankAccounts({
         party_type: "Supplier",
         party: supplierName,
@@ -51,13 +48,13 @@ const SupplierBankDetails: React.FC<Props> = ({
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);
       setBankAccounts(res.data);
-
     } catch (err: any) {
       showApiError(err);
     } finally {
       setLoading(false);
     }
   }, [supplierName]);
+
   const refresh = useCallback(() => {
     fetchAccounts();
   }, [fetchAccounts]);
@@ -65,14 +62,10 @@ const SupplierBankDetails: React.FC<Props> = ({
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
+
   useEffect(() => {
-    if (onAdd) {
-      onAdd(refresh);
-    }
+    if (onAdd) onAdd(refresh);
   }, [onAdd, refresh]);
-
-
-  /*  ACTIONS  */
 
   const handleSetDefault = useCallback(
     async (row: BankAccount) => {
@@ -80,16 +73,13 @@ const SupplierBankDetails: React.FC<Props> = ({
         showApiError("Disabled account cannot be default");
         return;
       }
-
       try {
         setActionLoadingId(String(row.id));
-
         await updateBankAccountStatus({
           bankAccountId: String(row.id),
           isDefault: 1,
           isDisabled: 0,
         });
-
         await fetchAccounts();
       } catch (err: any) {
         showApiError(err?.message);
@@ -97,20 +87,18 @@ const SupplierBankDetails: React.FC<Props> = ({
         setActionLoadingId(null);
       }
     },
-    [fetchAccounts]
+    [fetchAccounts],
   );
 
   const handleToggleDisable = useCallback(
     async (row: BankAccount) => {
       try {
         setActionLoadingId(String(row.id));
-
         await updateBankAccountStatus({
           bankAccountId: String(row.id),
           isDisabled: row.isDisabled ? 0 : 1,
           isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
         });
-
         await fetchAccounts();
       } catch (err: any) {
         showApiError(err?.message);
@@ -118,15 +106,13 @@ const SupplierBankDetails: React.FC<Props> = ({
         setActionLoadingId(null);
       }
     },
-    [fetchAccounts]
+    [fetchAccounts],
   );
-
-  /*  COLUMNS  */
 
   const columns: Column<BankAccount>[] = [
     {
       key: "dateAdded",
-      header: "Date Added",
+      header: "Date",
       render: (row) =>
         row.dateAdded
           ? new Date(row.dateAdded).toLocaleDateString("en-GB")
@@ -141,38 +127,32 @@ const SupplierBankDetails: React.FC<Props> = ({
     },
     {
       key: "accountNo",
-      header: "Account No",
+      header: "Acc No",
       render: (row) => (
-        <span
-          title={row.accountNo ? String(row.accountNo) : ""}
-          className="cursor-pointer"
-        >
+        <span title={row.accountNo ? String(row.accountNo) : ""} className="cursor-pointer">
           {mask(row.accountNo)}
         </span>
       ),
     },
     {
       key: "accountHolderName",
-      header: "Account Holder",
+      header: "Acc Holder",
       render: (row) => <span>{row.accountHolderName || "—"}</span>,
     },
     {
       key: "sortCode",
-      header: "IFSC / Sort Code",
+      header: "IFSC/Sort",
       render: (row) => (
-        <span
-          title={row.sortCode ? String(row.sortCode) : ""}
-          className="cursor-pointer"
-        >
+        <span title={row.sortCode ? String(row.sortCode) : ""} className="cursor-pointer">
           {mask(row.sortCode)}
         </span>
       ),
     },
-    {
-      key: "currency",
-      header: "Currency",
-      render: (row) => <span>{row.currency || "—"}</span>,
-    },
+    // {
+    //   key: "currency",
+    //   header: "Currency",
+    //   render: (row) => <span>{row.currency || "—"}</span>,
+    // },
     {
       key: "isDefault",
       header: "Default",
@@ -195,12 +175,10 @@ const SupplierBankDetails: React.FC<Props> = ({
     },
   ];
 
-  /*  UI  */
-
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
-        <Table
+        <ModalTable
           columns={columns}
           data={bankAccounts}
           loading={loading}
@@ -212,9 +190,7 @@ const SupplierBankDetails: React.FC<Props> = ({
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-
           pageSizeOptions={[10, 25, 50, 100]}
-
           onPageChange={setPage}
           onPageSizeChange={(size) => {
             setPageSize(size);
