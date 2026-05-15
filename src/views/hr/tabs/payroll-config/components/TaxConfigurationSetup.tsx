@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
-
-import Table from "../../../../../components/ui/Table/Table";
+import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -31,25 +30,16 @@ export function TaxConfigurationSetup() {
     fetchDetail,
   } = useTaxConfigs();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const triggerRefresh = useDataRefreshStore(
-    (state) => state.triggerRefresh
-  );
 
-  const subscribeToRefresh = useDataRefreshStore(
-    (state) => state.subscribeToRefresh
-  );
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
 
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(
-      REFRESH_KEYS.TAX_CONFIGURATION_LIST,
-      () => {
-        fetchAll();
-      }
-    );
-
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.TAX_CONFIGURATION_LIST, () => {
+      fetchAll();
+    });
     return unsubscribe;
   }, [subscribeToRefresh, fetchAll]);
-
 
   const handleEdit = useCallback(
     async (row: TaxConfig) => {
@@ -60,26 +50,20 @@ export function TaxConfigurationSetup() {
         true,
         {
           onSuccess: () => {
-            triggerRefresh(
-              REFRESH_KEYS.TAX_CONFIGURATION_LIST
-            );
+            triggerRefresh(REFRESH_KEYS.TAX_CONFIGURATION_LIST);
           },
         },
-        {
-          title: "Edit Tax Configuration",
-        },
+        { title: "Edit Tax Configuration" },
       );
     },
-    [fetchDetail, triggerRefresh]
+    [fetchDetail, triggerRefresh],
   );
 
   const handleDelete = useCallback(
     async (row: TaxConfig) => {
       if (!row.name) return;
-
       try {
         setActionLoadingId(row.name);
-
         const deleted = await confirmDelete({
           text: `Delete "${row.name}"?`,
           loadingText: "Deleting Tax Configuration...",
@@ -88,18 +72,14 @@ export function TaxConfigurationSetup() {
             await deleteTaxConfig(row.name!);
           },
         });
-
-        if (deleted) {
-          triggerRefresh(
-            REFRESH_KEYS.TAX_CONFIGURATION_LIST
-          );
-        }
+        if (deleted) triggerRefresh(REFRESH_KEYS.TAX_CONFIGURATION_LIST);
       } finally {
         setActionLoadingId(null);
       }
     },
     [triggerRefresh],
   );
+
   const columns: Column<TaxConfig>[] = useMemo(
     () => [
       {
@@ -110,15 +90,15 @@ export function TaxConfigurationSetup() {
         ),
         tooltip: (row) => row.name,
       },
-      {
-        key: "effective_from",
-        header: "Tax Type",
-        render: () => (
-          <span className="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-            Income Tax Slab
-          </span>
-        ),
-      },
+      // {
+      //   key: "effective_from",
+      //   header: "Tax Type",
+      //   render: () => (
+      //     <span className="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+      //       Income Tax Slab
+      //     </span>
+      //   ),
+      // },
       {
         key: "standard_tax_exemption_amount",
         header: "Value",
@@ -137,10 +117,11 @@ export function TaxConfigurationSetup() {
           const isActive = !row.disabled;
           return (
             <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${isActive
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                isActive
                   ? "bg-emerald-100 text-emerald-700"
                   : "bg-gray-100 text-gray-500"
-                }`}
+              }`}
             >
               {isActive ? "Active" : "Inactive"}
             </span>
@@ -176,49 +157,43 @@ export function TaxConfigurationSetup() {
   );
 
   return (
-    <>
-      <Table
-        columns={columns}
-        data={rows}
-        loading={loading}
-        rowKey={(row) => row.name ?? ""}
-        showToolbar
-        searchValue={search}
-        onSearch={(v) => {
-          setSearch(v);
-          setPage(1);
-        }}
-        enableAdd
-        addLabel="Add Tax"
-        onAdd={() =>
-          openTaxConfigModal(
-            null,
-            false,
-            {
-              onSuccess: () => {
-                triggerRefresh(
-                  REFRESH_KEYS.TAX_CONFIGURATION_LIST
-                );
-              },
+    <ModalTable
+      columns={columns}
+      data={rows}
+      loading={loading}
+      rowKey={(row) => row.name ?? ""}
+      showToolbar
+      searchValue={search}
+      onSearch={(v) => {
+        setSearch(v);
+        setPage(1);
+      }}
+      enableAdd
+      addLabel="Add Tax"
+      onAdd={() =>
+        openTaxConfigModal(
+          null,
+          false,
+          {
+            onSuccess: () => {
+              triggerRefresh(REFRESH_KEYS.TAX_CONFIGURATION_LIST);
             },
-            {
-              title: "New Tax Configuration",
-            },
-          )
-        }
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
-        onPageChange={setPage}
-        onPageSizeChange={(s) => {
-          setPageSize(s);
-          setPage(1);
-        }}
-        enableColumnSelector
-        tableId="tax-configurations"
-      />
-    </>
+          },
+          { title: "New Tax Configuration" },
+        )
+      }
+      currentPage={page}
+      totalPages={totalPages}
+      totalItems={totalItems}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 25, 50]}
+      onPageChange={setPage}
+      onPageSizeChange={(s) => {
+        setPageSize(s);
+        setPage(1);
+      }}
+      enableColumnSelector
+      tableId="tax-configurations"
+    />
   );
 }

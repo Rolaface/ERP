@@ -1,31 +1,45 @@
+// EmployeeDirectory.tsx
+// Permission pattern mirrors Invoices.tsx:
+//   enableAdd={can("Employee","create")}
+//   <PermissionGate module="Employee" action="write"> wraps Edit button
+//   Inline can() for Disable (write) and Delete (delete) in ActionMenu
+//
+// Props canCreate/canEdit/canDelete are still accepted from EmployeeManagement
+// so employee view can suppress all mutations — both layers work together.
+
 import React, { useEffect, useState, useCallback } from "react";
 import {
   showApiError, showSuccess, showLoading, closeSwal,
 } from "../../../utils/alert";
-import { fireManagedSwal } from "../../../utils/swalManager";
+import { fireManagedSwal }   from "../../../utils/swalManager";
 import {
   getAllEmployees, getEmployeeById,
   deleteEmployeeById, updateEmployeeStatus,
 } from "../../../api/employeeapi";
-import { AppPageBody } from "../../../components/ui/app-shell";
+import { AppPageBody }       from "../../../components/ui/app-shell";
 import { openEmployeeModal } from "../../../store/modalStore";
-import Table from "../../../components/ui/Table/Table";
-import StatusBadge from "../../../components/ui/Table/StatusBadge";
+import Table                 from "../../../components/ui/Table/Table";
+import StatusBadge           from "../../../components/ui/Table/StatusBadge";
 import ActionButton, {
   ActionGroup, ActionMenu,
-} from "../../../components/ui/Table/ActionButton";
+}                            from "../../../components/ui/Table/ActionButton";
+import PermissionGate        from "../../../views/PermissionGate"; 
+import { usePermission }     from "../../../hooks/permission/usePermission";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../../store/dataRefreshStore";
-import EmployeeNameCell from "../../../components/ui/Table/Employeenamecell";
-import type { Column } from "../../../components/ui/Table/type";
+import EmployeeNameCell      from "../../../components/ui/Table/Employeenamecell";
+import type { Column }       from "../../../components/ui/Table/type";
 import type { EmployeeSummary } from "../../../types/employee";
-import EmployeeDetailView from "../EmployeeManagement/mployeeDetailView";
-import { useAuth } from "../../../context/AuthContext";
+import EmployeeDetailView    from "../EmployeeManagement/mployeeDetailView";
+import { useAuth }           from "../../../context/AuthContext";
+
+// ── Module constant (mirrors SALES_MODULE in Invoices.tsx) ───────────────────
+const EMP_MODULE = "Employee";
 
 interface EmployeeDirectoryProps {
   isEmployeeView?: boolean;
-  canCreate?: boolean;
-  canEdit?: boolean;
-  canDelete?: boolean;
+  canCreate?:      boolean;  // from EmployeeManagement (employee-view guard)
+  canEdit?:        boolean;
+  canDelete?:      boolean;
 }
 
 const unwrapEmployee = (res: any): any =>
@@ -33,27 +47,27 @@ const unwrapEmployee = (res: any): any =>
 
 const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   isEmployeeView = false,
-  canCreate = false,
-  canEdit = false,
-  canDelete = false,
+  canCreate      = false,
+  canEdit        = false,
+  canDelete      = false,
 }) => {
-  const { user } = useAuth();
+  const { user }    = useAuth();
+  const { can }     = usePermission();   // ← inline permission checks (Invoices pattern)
 
-  const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [viewMode, setViewMode] = useState<"table" | "detail">("table");
+  const [employees,       setEmployees]       = useState<EmployeeSummary[]>([]);
+  const [searchTerm,      setSearchTerm]      = useState("");
+  const [loading,         setLoading]         = useState(true);
+  const [page,            setPage]            = useState(1);
+  const [pageSize,        setPageSize]        = useState(10);
+  const [totalPages,      setTotalPages]      = useState(1);
+  const [totalItems,      setTotalItems]      = useState(0);
+  const [viewMode,        setViewMode]        = useState<"table" | "detail">("table");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
-  const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
+  const triggerRefresh    = useDataRefreshStore((s) => s.triggerRefresh);
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
 
-  // ── View detail ──────────────────────────────────────────────────────────
-
+  // ── View detail ───────────────────────────────────────────────────────────
   const handleViewEmployee = async (id: string) => {
     try {
       showLoading("Loading Employee...");
@@ -74,32 +88,30 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     setSelectedEmployee(unwrapEmployee(res));
   };
 
-
-
+  // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
-
       const searchParam = isEmployeeView
-        ? user?.employeeId   // filter by logged-in user's own ID
+        ? user?.employeeId
         : searchTerm || undefined;
 
       const res = await getAllEmployees(page, pageSize, "Active", searchParam);
 
       const mapped = (res.data || []).map((e: any) => ({
-        id: e.name,
-        employeeId: e.name,
-        name: e.employee_name,
-        image: e.image ?? null,
-        jobTitle: e.designation,
-        department: e.department || "-",
-        workLocation: e.branch || "-",
-        status: e.status,
+        id:           e.name,
+        employeeId:   e.name,
+        name:         e.employee_name,
+        image:        e.image ?? null,
+        jobTitle:     e.designation,
+        department:   e.department || "-",
+        branch: e.branch     || "-",
+        status:       e.status,
       }));
 
       setEmployees(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
-      setTotalItems(res.pagination?.total || 0);
+      setTotalItems(res.pagination?.total       || 0);
     } catch (error) {
       showApiError(error);
     } finally {
@@ -107,26 +119,15 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     }
   }, [page, pageSize, searchTerm, isEmployeeView, user?.employeeId]);
 
-  useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
-
-
+  useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
+  useEffect(() => { setPage(1); },      [searchTerm]);
 
   useEffect(() => {
-    setPage(1);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToRefresh(
-      REFRESH_KEYS.EMPLOYEE_LIST,
-      fetchEmployees,
-    );
-    return () => unsubscribe();
+    const unsub = subscribeToRefresh(REFRESH_KEYS.EMPLOYEE_LIST, fetchEmployees);
+    return () => unsub();
   }, [subscribeToRefresh, fetchEmployees]);
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
-
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleAdd = () => {
     openEmployeeModal(null, false, {
       onSuccess: () => triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST),
@@ -137,7 +138,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     e.stopPropagation();
     try {
       showLoading("Fetching Employee...");
-      const res = await getEmployeeById(id);
+      const res          = await getEmployeeById(id);
       const employeeData = unwrapEmployee(res);
       closeSwal();
       openEmployeeModal(employeeData, true);
@@ -150,10 +151,10 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   const handleDisable = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const result = await fireManagedSwal({
-      title: "Disable Employee?",
-      text: "Employee will be marked as inactive.",
-      icon: "warning",
-      showCancelButton: true,
+      title:             "Disable Employee?",
+      text:              "Employee will be marked as inactive.",
+      icon:              "warning",
+      showCancelButton:  true,
       confirmButtonText: "Yes, Disable",
     });
     if (!result.isConfirmed) return;
@@ -172,13 +173,13 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const result = await fireManagedSwal({
-      title: "Are you sure?",
-      text: "This employee will be permanently deleted.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete",
+      title:               "Are you sure?",
+      text:                "This employee will be permanently deleted.",
+      icon:                "warning",
+      showCancelButton:    true,
+      confirmButtonColor:  "#ef4444",
+      cancelButtonColor:   "#6b7280",
+      confirmButtonText:   "Yes, delete",
     });
     if (!result.isConfirmed) return;
     try {
@@ -193,62 +194,66 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     }
   };
 
-  // ── Columns ──────────────────────────────────────────────────────────────
-
+  // ── Columns ───────────────────────────────────────────────────────────────
   const columns: Column<EmployeeSummary>[] = [
     { key: "employeeId", header: "Employee ID", align: "left" },
     {
-      key: "name",
+      key:    "name",
       header: "Name",
-      align: "left",
+      align:  "left",
       render: (e) => (
         <EmployeeNameCell name={e.name} employeeId={e.id} image={e.image} />
       ),
     },
-
-
     { key: "jobTitle", header: "Job Title", align: "left" },
     {
-      key: "department",
+      key:    "department",
       header: "Department",
-      align: "left",
+      align:  "left",
       render: (e) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
           {e.department}
         </code>
       ),
     },
-    { key: "workLocation", header: "Location", align: "left" },
+    { key: "branch", header: "Branch", align: "left" },
     {
-      key: "status",
+      key:    "status",
       header: "Status",
-      align: "left",
+      align:  "left",
       render: (e) => <StatusBadge status={e.status} />,
     },
     {
-      key: "actions",
+      key:    "actions",
       header: "Actions",
-      align: "center",
+      align:  "center",
       render: (e) => (
         <ActionGroup>
+          {/* View — always visible */}
           <ActionButton
             type="view"
             onClick={() => handleViewEmployee(e.id)}
             iconOnly
           />
-          {canEdit && (
-            <ActionButton
-              type="edit"
-              onClick={(ev) => handleEdit(e.id, ev as React.MouseEvent)}
-              iconOnly
-            />
+
+          {/* Edit — PermissionGate (Invoices pattern) + employee-view guard */}
+          {!isEmployeeView && (
+            <PermissionGate module={EMP_MODULE} action="write">
+              <ActionButton
+                type="edit"
+                onClick={(ev) => handleEdit(e.id, ev as React.MouseEvent)}
+                iconOnly
+              />
+            </PermissionGate>
           )}
-          {(canEdit || canDelete) && (
+
+          {/* Disable / Delete — inline can() (Invoices pattern) */}
+          {!isEmployeeView && (
             <ActionMenu
-              {...(canEdit && e.status !== "Inactive"
+              {...(can(EMP_MODULE, "write") && e.status !== "Inactive"
                 ? { onDisable: (ev) => handleDisable(e.id, ev as React.MouseEvent) }
                 : {})}
-              {...(canDelete
+              {...(can(EMP_MODULE, "delete")
                 ? { onDelete: (ev) => handleDelete(e.id, ev as React.MouseEvent) }
                 : {})}
             />
@@ -258,8 +263,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     },
   ];
 
-  // ── Render ───────────────────────────────────────────────────────────────
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <AppPageBody>
       {viewMode === "table" ? (
@@ -270,20 +274,21 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
           rowKey={(row) => row.id}
           showToolbar
           searchValue={searchTerm}
-          onSearch={(q) => {
-            setSearchTerm(q);
-            setPage(1);
-          }}
-          enableAdd
+          onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+
+          // ── Add button: enableAdd mirrors Invoices pattern ──────────────
+          // In professional view: can("Employee","create")
+          // In employee view:     always false (isEmployeeView guard)
+          enableAdd={!isEmployeeView && can(EMP_MODULE, "create")}
           addLabel="Add Employee"
-          onAdd={canCreate ? handleAdd : undefined}
+          onAdd={handleAdd}
 
           enableColumnSelector
 
-          // Pagination: hide in employee view
-          currentPage={isEmployeeView ? 1 : page}
-          totalPages={isEmployeeView ? 1 : totalPages}
-          pageSize={isEmployeeView ? totalItems || 1 : pageSize}
+          // Pagination: hidden in employee view
+          currentPage={isEmployeeView ? 1          : page}
+          totalPages={ isEmployeeView ? 1          : totalPages}
+          pageSize={   isEmployeeView ? totalItems || 1 : pageSize}
           totalItems={totalItems}
           pageSizeOptions={isEmployeeView ? undefined : [10, 25, 50, 100]}
           onPageSizeChange={

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-import Table from "../../../../../components/ui/Table/Table";
+import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -14,85 +13,69 @@ import {
   type Department,
 } from "../../../../../api/employeeConfigApi";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
-import { showApiError, showSuccess } from "../../../../../utils/alert";
+import { showApiError } from "../../../../../utils/alert";
 import { openDepartmentModal } from "../../../../../store/modalStore";
+
 export function DepartmentSetup() {
-  const [rows, setRows] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const [rows, setRows]                   = useState<Department[]>([]);
+  const [loading, setLoading]             = useState(false);
+  const [search, setSearch]               = useState("");
+  const [page, setPage]                   = useState(1);
+  const [pageSize, setPageSize]           = useState(10);
+  const [totalPages, setTotalPages]       = useState(1);
+  const [totalItems, setTotalItems]       = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
- 
-const fetchAll = useCallback(async () => {
-  try {
-    setLoading(true);
-
-    const start = (page - 1) * pageSize;
-const response = await getAllDepartments(start, pageSize, search);
-
-    setRows(response.data);
-setTotalItems(response.pagination.total);
-setTotalPages(response.pagination.total_pages);
-
-  } catch (err: any) {
-    showApiError(err?.message ?? "Failed to load departments");
-  } finally {
-    setLoading(false);
-  }
-}, [page, pageSize, search]);
+  const fetchAll = useCallback(async () => {
+    try {
+      setLoading(true);
+      const start    = (page - 1) * pageSize;
+      const response = await getAllDepartments(start, pageSize, search);
+      setRows(response.data);
+      setTotalItems(response.pagination.total);
+      setTotalPages(response.pagination.total_pages);
+    } catch (err: any) {
+      showApiError(err?.message ?? "Failed to load departments");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize, search]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
 
-  const handleEdit = useCallback(async (row: Department) => {
-    if (!row.name) return;
-    try {
-      const detail = await getDepartment(row.name);
-     openDepartmentModal(
-  detail,
-  true,
-  {
-    onSuccess: fetchAll,
-  },
-  {
-    title: "Edit Department",
-  },
-);
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to load department details");
-    }
-  }, []);
-
-const handleDelete = useCallback(
-  async (row: Department) => {
-    if (!row.name) return;
-
-    try {
-      setActionLoadingId(row.name);
-
-      const deleted = await confirmDelete({
-        text: `Delete "${row.department_name ?? row.name}"?`,
-        loadingText: "Deleting Department...",
-        successMessage: "Department deleted",
-        action: async () => {
-          await deleteDepartment(row.name!);
-        },
-      });
-
-      if (deleted) {
-        fetchAll();
+  const handleEdit = useCallback(
+    async (row: Department) => {
+      if (!row.name) return;
+      try {
+        const detail = await getDepartment(row.name);
+        openDepartmentModal(detail, true, { onSuccess: fetchAll }, { title: "Edit Department" });
+      } catch (err: any) {
+        showApiError(err?.message ?? "Failed to load department details");
       }
-    } finally {
-      setActionLoadingId(null);
-    }
-  },
-  [fetchAll],
-);
+    },
+    [fetchAll],
+  );
+
+  const handleDelete = useCallback(
+    async (row: Department) => {
+      if (!row.name) return;
+      try {
+        setActionLoadingId(row.name);
+        const deleted = await confirmDelete({
+          text: `Delete "${row.department_name ?? row.name}"?`,
+          loadingText: "Deleting Department...",
+          successMessage: "Department deleted",
+          action: async () => { await deleteDepartment(row.name!); },
+        });
+        if (deleted) fetchAll();
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [fetchAll],
+  );
 
   const columns: Column<Department>[] = useMemo(
     () => [
@@ -106,14 +89,11 @@ const handleDelete = useCallback(
         ),
         tooltip: (row) => row.department_name ?? row.name ?? "",
       },
-      
       {
         key: "parent_department",
         header: "Parent",
         render: (row) => (
-          <span className="text-sm text-sub">
-            {row.parent_department || "-"}
-          </span>
+          <span className="text-sm text-sub">{row.parent_department || "-"}</span>
         ),
         tooltip: (row) => row.parent_department ?? "",
       },
@@ -161,47 +141,30 @@ const handleDelete = useCallback(
   );
 
   return (
-    <>
-      <Table
-        columns={columns}
-        data={rows}
-        loading={loading}
-        rowKey={(row) => row.name ?? row.department_name}
-        showToolbar
-        searchValue={search}
-        onSearch={(v) => {
-          setSearch(v);
-          setPage(1);
-        }}
-        enableAdd
-        addLabel="Add Department"
+    <ModalTable
+      columns={columns}
+      data={rows}
+      loading={loading}
+      rowKey={(row) => row.name ?? row.department_name}
+      // Toolbar
+      showToolbar
+      searchValue={search}
+      onSearch={(v) => { setSearch(v); setPage(1); }}
+      enableAdd
+      addLabel="Add Department"
       onAdd={() =>
-  openDepartmentModal(
-    null,
-    false,
-    {
-      onSuccess: fetchAll,
-    },
-    {
-      title: "New Department",
-    },
-  )
-}
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
-        onPageChange={setPage}
-        onPageSizeChange={(s) => {
-          setPageSize(s);
-          setPage(1);
-        }}
-        enableColumnSelector
-        tableId="employee-departments"
-      />
-
-      
-    </>
+        openDepartmentModal(null, false, { onSuccess: fetchAll }, { title: "New Department" })
+      }
+      enableColumnSelector
+      tableId="employee-departments"
+      // Pagination
+      currentPage={page}
+      totalPages={totalPages}
+      totalItems={totalItems}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 25, 50]}
+      onPageChange={setPage}
+      onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+    />
   );
 }

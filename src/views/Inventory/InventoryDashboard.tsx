@@ -211,11 +211,11 @@ const InventoryDashboard: React.FC = () => {
               ))}
         </div>
 
-        {summaryError && (
+        {/* {summaryError && (
           <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-semibold">
             {summaryError}
           </div>
-        )}
+        )} */}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">

@@ -178,7 +178,7 @@ const Dashboard = () => {
               {isEmployeeView ? "Switch to Professional View" : "Switch to Employee View"}
             </button>
           )}
-          <UserMenu />
+          {/* <UserMenu /> */}
         </div>
       </div>
 
@@ -342,7 +342,7 @@ const Dashboard = () => {
                 label="Top Item By Qty"
                 title={notesData?.topSellingItemQty?.itemName || 'N/A'}
                 value={`${notesData?.topSellingItemQty?.quantity || 0} Units`}
-                subTitle={notesData?.topSellingItemQty?.itemCode}
+                // subTitle={notesData?.topSellingItemQty?.itemCode}
                 icon={<Package size={16} className="text-emerald-500" />}
               />
               <NoteItem
@@ -357,9 +357,9 @@ const Dashboard = () => {
         </div>
 
       </div>
-            {/* FLOATING CHAT LAYER */}
+      {/* FLOATING CHAT LAYER */}
 
-          
+
     </div>
   );
 };

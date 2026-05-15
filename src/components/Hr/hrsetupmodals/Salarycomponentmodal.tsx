@@ -203,7 +203,7 @@ const EMPTY: Omit<SalaryComponent, "name"> = {
   salary_component_abbr: "",
   type: "Earning",
   depends_on_payment_days: 1,
-  is_tax_applicable: 0,
+  is_tax_applicable: 1,
   amount_based_on_formula: 0,
   formula: "",
   amount: "" as any,
@@ -332,8 +332,10 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const handleTypeChange = (newType: SalaryComponentType) =>
     setForm((prev) => ({
       ...prev,
+      depends_on_payment_days: 1,
+      is_tax_applicable: newType === "Earning" ? 1 : 0,
       type: newType,
-      is_tax_applicable: 0,
+
       is_flexible_benefit: 0,
       pay_against_benefit_claim: 0,
       max_benefit_amount: 0,
@@ -414,6 +416,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
           }),
         }),
         ...(isDeduction && {
+            is_tax_applicable: 0,            
           variable_based_on_taxable_salary:
             form.variable_based_on_taxable_salary,
           is_income_tax_component: form.is_income_tax_component,
@@ -511,7 +514,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
               }
               required
             />
-           
           </div>
         </div>
 

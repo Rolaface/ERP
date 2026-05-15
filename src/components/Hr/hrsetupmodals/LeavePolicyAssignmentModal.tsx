@@ -43,7 +43,7 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<LeavePolicyAssignment>(EMPTY);
   const [saving, setSaving] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+const [selectedEmployeeOption, setSelectedEmployeeOption] = useState<any>(undefined);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
 
   useEffect(() => {
@@ -76,14 +76,14 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
 
       const filteredEmployees = query
         ? allEmployees.filter((emp: any) =>
-            emp.employee_name?.toLowerCase().includes(query.toLowerCase()) ||
-            emp.name?.toLowerCase().includes(query.toLowerCase())
+            emp.employee_name?.toLowerCase().includes(query.toLowerCase()) 
+        // || emp.name?.toLowerCase().includes(query.toLowerCase())
           )
         : allEmployees;
 
       return filteredEmployees.map((emp: any) => ({
-        label: `${emp.employee_name} (${emp.employee_number || emp.name})`,
-        value: emp.employee_number || emp.name,
+        label: `${emp.employee_name}`,
+        value: emp.name,
         raw: emp, 
       }));
     } catch (error) {
@@ -195,35 +195,18 @@ const fetchLeavePeriodsOptions = async (query: string) => {
     >
       <div className="space-y-5 pb-2">
         <div className="grid grid-cols-2 gap-4">
-          {/* <ModalInput
-            label="Employee ID"
-            value={form.employee}
-            onChange={(e) => set("employee", e.target.value)}
-            placeholder="e.g. HR-EMP-00001"
-            required
-            disabled={isEdit} // Core link generally cannot be changed
-          /> */}
-          <SearchSelect2
-  label="Select Employee"
-  placeholder="Search by name..."
-  value={selectedEmployeeId} 
-  fetchOptions={fetchEmployeesOptions}
-  onChange={(val, option) => {
-    setSelectedEmployeeId(val);
-    set("employee", val); 
-    console.log("Selected ID:", val);
-    console.log("Full Employee Object:", option.raw); 
-  }}
-  required={true}
-/>
-          {/* <ModalInput
-            label="Leave Policy"
-            value={form.leave_policy}
-            onChange={(e) => set("leave_policy", e.target.value)}
-            placeholder="e.g. HR-LPOL-2026-00001"
-            required
-            disabled={isEdit}
-          /> */}
+
+<SearchSelect2
+            label="Select Employee"
+            placeholder="Search by name..."
+            value={selectedEmployeeOption ? selectedEmployeeOption.label : form.employee} 
+            fetchOptions={fetchEmployeesOptions}
+            onChange={(val, option) => {
+              setSelectedEmployeeOption(option); 
+              set("employee", val); 
+            }}
+            required={true}
+          />
             
                  <PolicySelect
   label="Leave Policy"

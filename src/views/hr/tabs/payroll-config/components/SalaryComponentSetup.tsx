@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
-
-import Table from "../../../../../components/ui/Table/Table";
+import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -12,7 +11,6 @@ import {
   type SalaryComponent,
 } from "../../../../../api/payrollConfigApi";
 import { openSalaryComponentModal } from "../../../../../store/modalStore";
-
 import { useSalaryComponents } from "../hooks/useSalaryComponents";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 
@@ -32,33 +30,21 @@ export function SalaryComponentSetup() {
   } = useSalaryComponents();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-
-
-  const triggerRefresh = useDataRefreshStore(
-    (state) => state.triggerRefresh
-  );
-
-  const subscribeToRefresh = useDataRefreshStore(
-    (state) => state.subscribeToRefresh
-  );
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
+  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
 
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(
-      REFRESH_KEYS.SALARY_COMPONENT_LIST,
-      () => {
-        fetchAll();
-      }
-    );
-
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.SALARY_COMPONENT_LIST, () => {
+      fetchAll();
+    });
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchAll]);
+
   const handleDelete = useCallback(
     async (row: SalaryComponent) => {
       if (!row.name) return;
-
       try {
         setActionLoadingId(row.name);
-
         const deleted = await confirmDelete({
           text: `Delete "${row.salary_component}"?`,
           loadingText: "Deleting Component...",
@@ -67,16 +53,14 @@ export function SalaryComponentSetup() {
             await deleteSalaryComponent(row.name!);
           },
         });
-
-        if (deleted) {
-          triggerRefresh(REFRESH_KEYS.SALARY_COMPONENT_LIST);
-        }
+        if (deleted) triggerRefresh(REFRESH_KEYS.SALARY_COMPONENT_LIST);
       } finally {
         setActionLoadingId(null);
       }
     },
     [triggerRefresh],
   );
+
   const columns: Column<SalaryComponent>[] = useMemo(
     () => [
       {
@@ -90,11 +74,9 @@ export function SalaryComponentSetup() {
       },
       {
         key: "salary_component",
-        header: "Component Name",
+        header: "Component",
         render: (row) => (
-          <span className="font-medium text-main">
-            {row.salary_component || "—"}
-          </span>
+          <span className="font-medium text-main">{row.salary_component || "—"}</span>
         ),
         tooltip: (row) => row.salary_component,
       },
@@ -103,10 +85,11 @@ export function SalaryComponentSetup() {
         header: "Type",
         render: (row) => (
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.type === "Earning"
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-red-100 text-red-700"
-              }`}
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              row.type === "Earning"
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-red-100 text-red-700"
+            }`}
           >
             {row.type || "—"}
           </span>
@@ -123,7 +106,7 @@ export function SalaryComponentSetup() {
       },
       {
         key: "formula",
-        header: "Formula / Amount",
+        header: "Formula",
         render: (row) =>
           row.amount_based_on_formula ? (
             <code className="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700">
@@ -141,8 +124,9 @@ export function SalaryComponentSetup() {
         header: "Pay Days",
         render: (row) => (
           <span
-            className={`text-xs font-semibold ${row.depends_on_payment_days ? "text-blue-600" : "text-gray-400"
-              }`}
+            className={`text-xs font-semibold ${
+              row.depends_on_payment_days ? "text-blue-600" : "text-gray-400"
+            }`}
           >
             {row.depends_on_payment_days ? "Yes" : "No"}
           </span>
@@ -158,17 +142,11 @@ export function SalaryComponentSetup() {
               type="edit"
               iconOnly
               onClick={() =>
-                openSalaryComponentModal(
-                  row,
-                  true,
-                  {
-                    onSuccess: () => {
-                      triggerRefresh(
-                        REFRESH_KEYS.SALARY_COMPONENT_LIST
-                      );
-                    },
-                  }
-                )
+                openSalaryComponentModal(row, true, {
+                  onSuccess: () => {
+                    triggerRefresh(REFRESH_KEYS.SALARY_COMPONENT_LIST);
+                  },
+                })
               }
               disabled={actionLoadingId === row.name}
             />
@@ -185,48 +163,42 @@ export function SalaryComponentSetup() {
         ),
       },
     ],
-    [actionLoadingId, handleDelete, triggerRefresh]
+    [actionLoadingId, handleDelete, triggerRefresh],
   );
 
   return (
-    <>
-      <Table
-        columns={columns}
-        data={rows}
-        loading={loading}
-        rowKey={(row) => row.name ?? row.salary_component}
-        showToolbar
-        searchValue={search}
-        onSearch={(v) => {
-          setSearch(v);
-          setPage(1);
-        }}
-        enableAdd
-        addLabel="Add Component"
-        onAdd={() =>
-          openSalaryComponentModal(
-            undefined,
-            false,
-            {
-              onSuccess: () => {
-                triggerRefresh(REFRESH_KEYS.SALARY_COMPONENT_LIST);
-              },
-            }
-          )
-        }
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
-        onPageChange={setPage}
-        onPageSizeChange={(s) => {
-          setPageSize(s);
-          setPage(1);
-        }}
-        enableColumnSelector
-        tableId="salary-components"
-      />
-    </>
+    <ModalTable
+      columns={columns}
+      data={rows}
+      loading={loading}
+      rowKey={(row) => row.name ?? row.salary_component}
+      showToolbar
+      searchValue={search}
+      onSearch={(v) => {
+        setSearch(v);
+        setPage(1);
+      }}
+      enableAdd
+      addLabel="Add Component"
+      onAdd={() =>
+        openSalaryComponentModal(undefined, false, {
+          onSuccess: () => {
+            triggerRefresh(REFRESH_KEYS.SALARY_COMPONENT_LIST);
+          },
+        })
+      }
+      currentPage={page}
+      totalPages={totalPages}
+      totalItems={totalItems}
+      pageSize={pageSize}
+      pageSizeOptions={[10, 25, 50]}
+      onPageChange={setPage}
+      onPageSizeChange={(s) => {
+        setPageSize(s);
+        setPage(1);
+      }}
+      enableColumnSelector
+      tableId="salary-components"
+    />
   );
 }

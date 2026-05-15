@@ -5,7 +5,8 @@ import {
   getAllDepartments,
   getAllGrades,
   getAllDesignations,
-  getAllEmploymentTypes
+  getAllEmploymentTypes,
+  getallbranches,
 } from "../../../api/utils/frappeUtilsApi";
 import { getAllEmployees } from "../../../api/employeeapi";
 import DatePickerInput from "../../calendar/DatePickerInput";
@@ -48,23 +49,23 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
       handleInputChange("contractEndDate", "");
     }
   }, [formData.employeeType]);
-const fetchEmployeeOptions = async (q: string) => {
-  const res = await getAllEmployees(1, 200);
+  const fetchEmployeeOptions = async (q: string) => {
+    const res = await getAllEmployees(1, 200);
 
-  return (res.data || [])
-    .filter((emp: any) =>
-      `${emp.employee_name} ${emp.name}`
-        .toLowerCase()
-        .includes(q.toLowerCase()),
-    )
-    .map((emp: any) => ({
-      label: emp.employee_name,
-      value: emp.name,
-      meta: {
-        employeeId: emp.name,
-      },
-    }));
-};
+    return (res.data || [])
+      .filter((emp: any) =>
+        `${emp.employee_name} ${emp.name}`
+          .toLowerCase()
+          .includes(q.toLowerCase()),
+      )
+      .map((emp: any) => ({
+        label: emp.employee_name,
+        value: emp.name,
+        meta: {
+          employeeId: emp.name,
+        },
+      }));
+  };
   const hrManagerOptions = hrManagers.map((mgr) => ({
     label: mgr.name,
     value: mgr.employeeId,
@@ -87,6 +88,12 @@ const fetchEmployeeOptions = async (q: string) => {
   };
   const fetchEmploymentTypeOptions = async (q: string) => {
     const data = await getAllEmploymentTypes(q);
+
+    return data;
+  };
+
+  const fetchbranchoption = async (q: string) => {
+    const data = await getallbranches(q);
 
     return data;
   };
@@ -121,6 +128,14 @@ const fetchEmployeeOptions = async (q: string) => {
             placeholder="Search Designation..."
             fetchOptions={fetchDesignationOptions}
             onChange={(value) => handleInputChange("designation", value)}
+          />
+          <ModalInput
+            label="Employee Number"
+            name="employee_number"
+            value={formData.employee_number}
+            onChange={(e) =>
+              handleInputChange("employee_number", e.target.value)
+            }
           />
 
           <SearchSelect2
@@ -157,24 +172,17 @@ const fetchEmployeeOptions = async (q: string) => {
           Reporting & Dates
         </h4>
         <div className="grid grid-cols-3 gap-2.5">
-<SearchSelect2
-  label="Reporting To"
-  value={formData.reportingToLabel}
-  placeholder="Search Employee..."
-  fetchOptions={fetchEmployeeOptions}
-  onChange={(value, option) => {
-    handleInputChange(
-      "reports_to",
-      value,
-    );
+          <SearchSelect2
+            label="Reporting To"
+            value={formData.reportingToLabel}
+            placeholder="Search Employee..."
+            fetchOptions={fetchEmployeeOptions}
+            onChange={(value, option) => {
+              handleInputChange("reports_to", value);
 
-    handleInputChange(
-      "reportingToLabel",
-      option?.label || "",
-    );
-  }}
-/>
-          
+              handleInputChange("reportingToLabel", option?.label || "");
+            }}
+          />
 
           {/* <ModalInput
             label="Probation Period (months)"
@@ -200,7 +208,6 @@ const fetchEmployeeOptions = async (q: string) => {
             onChange={handleInputChange}
             disabled={!isContractBased}
           />
-
         </div>
         {!isContractBased && (
           <p className="text-[10px] text-muted mt-1.5">
@@ -216,14 +223,17 @@ const fetchEmployeeOptions = async (q: string) => {
           Work Location
         </h4>
         <div className="grid grid-cols-2 gap-2.5">
-          <ModalInput
-            label="Branch"
-            name="workLocation"
-            value={formData.workLocation}
-            onChange={(e) => handleInputChange("workLocation", e.target.value)}
-            placeholder="e.g., Main HQ"
+          <SearchSelect2
+            label=" branch"
+            value={formData.branch}
+            placeholder="Search branch..."
+            fetchOptions={fetchbranchoption}
+            onChange={(value, option) => {
+              handleInputChange("branch", value);
+
+              handleInputChange("branchLabel", option?.label || "");
+            }}
           />
-         
         </div>
       </div>
     </div>

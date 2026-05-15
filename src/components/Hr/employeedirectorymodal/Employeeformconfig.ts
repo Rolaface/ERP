@@ -144,11 +144,7 @@ export const DEFAULT_FORM: Record<string, any> = {
   existingPhotoUrl: "",
 };
 
-// ─── Map API response → formData ─────────────────────────────────────────────
-/**
- * Maps the flat API response (from getEmployeeById) into the formData shape.
- * This is the ONLY place where API field names are translated to form field names.
- */
+
 export function mapEditDataToForm(data: any): Record<string, any> {
   // Parse the joined address back into parts if possible
   // The address is stored as a comma-separated string: "street, city, province, postal, country"
@@ -194,6 +190,7 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     preferredContactMethod: data.prefered_contact_email || "",
     phoneNumber: data.cell_number || "",
     alternatePhone: data.alternate_phone || "",
+    employee_number:data.employee_number||"",
 
     // ── Address (best-effort parse from joined string) ────────
     street: addressParts[0] || "",
@@ -216,7 +213,7 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     employeeType: data.employee_type || "",
     employmentStatus: data.status || "Active",
     reportingToLabel: data.reports_to || "",
-    workLocation: data.branch || "",
+    branch: data.branch || "",
     dateOfJoining: data.date_of_joining || "",
     contractEndDate: data.contract_end_date || "",
     probationPeriod:
@@ -245,7 +242,7 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     currency: data.salary_currency || "",
     paymentMethod: data.salary_mode || "",
     paymentFrequency: data.payment_frequency || "",
-
+     Taxslab:data.income_tax_slab||"",
     // ── Bank ──────────────────────────────────────────────────
     accountNumber: data.bank_ac_no || "",
     bankName: data.bank_name || "",
@@ -339,8 +336,9 @@ export function buildEmployeePayload(formData: Record<string, any>) {
     department: formData.department || "",
     reports_to: formData.reports_to || "",
     employment_type: formData.employment_type || null,
+    employee_number:formData.employee_number,
     grade: formData.grade || "",
-    branch: formData.workLocation || "",
+    branch: formData.branch || "",
     date_of_joining: formData.dateOfJoining || null,
     contract_end_date: formData.contractEndDate || null,
     notice_number_of_days: Number(formData.probationPeriod) || 0,
@@ -359,7 +357,7 @@ export function buildEmployeePayload(formData: Record<string, any>) {
     income_tax_slab: formData.Taxslab,
     base_salary: Number(formData.basicSalary) || 0,
     gross: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
-    ctc: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
+  ctc: (salaryResult?.gross ?? Number(formData.grossSalary) ?? 0) * 12,
     salary_mode: mapSalaryMode(formData.paymentMethod || ""),
     salary_currency: formData.currency || null,
 

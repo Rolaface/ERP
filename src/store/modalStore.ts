@@ -44,7 +44,9 @@ export type ModalType =
   | "leaveType"
   | "leavePeriod"
   | "leavePolicy"
-  | "leavePolicyAssignment";
+  | "leavePolicyAssignment"
+  | "expense"
+  | "expenseType";
 
 export interface ModalContext {
   source?: string;
@@ -77,6 +79,15 @@ export interface ModalLayerPosition {
   backdrop: number;
   panel: number;
 }
+export const openExpenseModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("expense", initialData, isEdit, context, meta);
 
 export const MODAL_LAYER = {
   sidebar: 100,
@@ -771,3 +782,13 @@ export const openLeavePolicyAssignmentModal = (
   useModalStore
     .getState()
     .openModal("leavePolicyAssignment", initialData, isEdit, context, meta); 
+
+  export const openExpenseTypeModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("expenseType", initialData, isEdit, context, meta);
