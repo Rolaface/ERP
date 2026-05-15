@@ -100,12 +100,9 @@ const EmployeeDashboard: React.FC = () => {
           className="rounded-2xl p-6 text-white relative overflow-hidden"
           style={{ background: "var(--gradient-primary, var(--primary))" }}
         >
-          {/* ── Role switch button — top-right corner of banner ── */}
-          {/* RoleSwitchButton renders null when canSwitchView is false,
-              so pure employees and admins are unaffected */}
-          <div className="absolute top-4 right-4 z-20">
+          {/* <div className="absolute top-4 right-4 z-20">
             <RoleSwitchButton />
-          </div>
+          </div> */}
 
           <div className="relative z-10">
             <p className="text-sm font-medium opacity-80 mb-1">{greeting}</p>

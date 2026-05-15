@@ -45,7 +45,9 @@ export type ModalType =
   | "leavePeriod"
   | "leavePolicy"
   | "leavePolicyAssignment"
-  | "holidayList";
+  | "holidayList"
+  | "expense"
+  | "expenseType";
 
 export interface ModalContext {
   source?: string;
@@ -78,6 +80,15 @@ export interface ModalLayerPosition {
   backdrop: number;
   panel: number;
 }
+export const openExpenseModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("expense", initialData, isEdit, context, meta);
 
 export const MODAL_LAYER = {
   sidebar: 100,
@@ -774,6 +785,7 @@ export const openLeavePolicyAssignmentModal = (
     .openModal("leavePolicyAssignment", initialData, isEdit, context, meta); 
 
 export const openHolidayListModal = (
+  export const openExpenseTypeModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
@@ -790,3 +802,7 @@ export const openHolidayListModal = (
     .getState()
     .openModal("holidayList", initialData, isEdit, context, meta);
 };
+) =>
+  useModalStore
+    .getState()
+    .openModal("expenseType", initialData, isEdit, context, meta);

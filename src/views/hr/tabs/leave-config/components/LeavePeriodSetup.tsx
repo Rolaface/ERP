@@ -1,19 +1,20 @@
-// ─── LeavePeriodSetup.tsx ──────────────────────────────────────────────────────
 import { useCallback, useMemo, useState } from "react";
-
-import Table from "../../../../../components/ui/Table/Table";
+import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
 import {
+  updateLeavePeriod,
   deleteLeavePeriod,
   type LeavePeriod,
 } from "../../../../../api/leaveConfigApi";
 import { useLeavePeriods } from "../hooks/useLeavePeriod";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeavePeriodModal } from "../../../../../store/modalStore";
+import { showApiError } from "../../../../../utils/alert";
+import { parseFrappeError } from "../hooks/parseFrappeError";
 
 export function LeavePeriodSetup() {
   const {
@@ -29,15 +30,13 @@ export function LeavePeriodSetup() {
     totalItems,
     fetchAll,
   } = useLeavePeriods();
-  
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const handleDelete = useCallback(
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+   const handleDelete = useCallback(
     async (row: LeavePeriod) => {
       if (!row.name) return;
       try {
         setActionLoadingId(row.name);
-
         const deleted = await confirmDelete({
           text: `Delete "${row.name}"?`,
           loadingText: "Deleting Leave Period...",
@@ -50,11 +49,32 @@ export function LeavePeriodSetup() {
         if (deleted) {
           fetchAll();
         }
-      } finally {
+      } catch(err: any){
+        showApiError(parseFrappeError(err) || "Failed to delete Leave Period.");
+      }
+      finally {
         setActionLoadingId(null);
       }
     },
     [fetchAll],
+  );
+
+  const handleStatus = useCallback(
+    async (row: LeavePeriod) => {
+      if (!row.name) return;
+      try {
+        setActionLoadingId(row.name);
+        
+        const newStatus = row.is_active ? 0 : 1;
+        await updateLeavePeriod(row.name, { is_active: newStatus });
+        fetchAll();
+      } catch (error) {
+        showApiError(parseFrappeError(error) || "Failed to update status.");
+       } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [fetchAll]
   );
 
   const columns: Column<LeavePeriod>[] = useMemo(
@@ -63,27 +83,21 @@ export function LeavePeriodSetup() {
         key: "name",
         header: "Period Name",
         render: (row) => (
-          <span className="font-medium text-main">
-            {row.name || "—"}
-          </span>
+          <span className="font-medium text-main">{row.name || "—"}</span>
         ),
       },
       {
         key: "from_date",
         header: "From Date",
         render: (row) => (
-          <span className="text-sm text-sub">
-            {row.from_date || "—"}
-          </span>
+          <span className="text-sm text-sub">{row.from_date || "—"}</span>
         ),
       },
       {
         key: "to_date",
         header: "To Date",
         render: (row) => (
-          <span className="text-sm text-sub">
-            {row.to_date || "—"}
-          </span>
+          <span className="text-sm text-sub">{row.to_date || "—"}</span>
         ),
       },
       {
@@ -110,12 +124,16 @@ export function LeavePeriodSetup() {
             <ActionButton
               type="edit"
               iconOnly
-              // Use the global store action here
               onClick={() => openLeavePeriodModal(row, true, { onSuccess: fetchAll })}
               disabled={actionLoadingId === row.name}
             />
             <ActionMenu
               customActions={[
+                 {
+                  label: row.is_active? "Inactive" : "Active",
+                  onClick: () => handleStatus(row),
+                  disabled: actionLoadingId === row.name,
+                },
                 {
                   label: "Delete",
                   onClick: () => handleDelete(row),
@@ -127,11 +145,11 @@ export function LeavePeriodSetup() {
         ),
       },
     ],
-    [actionLoadingId, handleDelete, fetchAll],
+    [actionLoadingId, handleDelete, fetchAll, handleStatus],
   );
 
   return (
-    <Table
+    <ModalTable
       columns={columns}
       data={rows}
       loading={loading}
@@ -144,7 +162,6 @@ export function LeavePeriodSetup() {
       }}
       enableAdd
       addLabel="Add Leave Period"
-      // Open modal in "Add" mode (null row) and pass the fetch callback
       onAdd={() => openLeavePeriodModal(null, false, { onSuccess: fetchAll })}
       currentPage={page}
       totalPages={totalPages}

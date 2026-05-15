@@ -54,10 +54,10 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
   setForm((prev) => ({ ...prev, [key]: value }));
 
   const handleSave = async () => {
-    if (!form.name.trim()) {
-      showValidationError("Leave Period Name is required");
-      return;
-    }
+    // if (!form.name.trim()) {
+    //   showValidationError("Leave Period Name is required");
+    //   return;
+    // }
     if (!form.from_date) {
       showValidationError("From Date is required");
       return;
@@ -128,16 +128,16 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
       footer={footer}
     >
       <div className="space-y-5 pb-2">
-        <ModalInput
+        {/* <ModalInput
           label="Leave Period Name"
           value={form.name}
           onChange={(e) => set("name", e.target.value)}
           placeholder="e.g. Leave Period 2026"
           required
           disabled={isEdit} 
-        />
+        /> */}
 
-     <div className="grid grid-cols-2 gap-4">
+     <div className="grid grid-cols-3 gap-4">
   <DatePickerInput
     label="From Date"
     name="from_date"
@@ -157,18 +157,21 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     }
     required
   />
-</div>
 
-        <div className="space-y-4 rounded-xl border border-[var(--border)] bg-app p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-sub">
+
+        <div 
+        // className="space-y-4 rounded-xl border border-[var(--border)] bg-app p-4"
+        >
+          {/* <p className="text-xs font-semibold uppercase tracking-wider text-sub">
             Status
-          </p>
+          </p> */}
           <YesNoCheckbox
             name="is_active"
             label="Is Active"
             value={form.is_active ? "Y" : "N"}
             onChange={(name, value) => set("is_active", value === "Y" ? 1 : 0)}
           />
+        </div>
         </div>
       </div>
     </MinimizableModal>

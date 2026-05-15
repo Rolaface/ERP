@@ -19,10 +19,16 @@ interface Props {
   onNewPayroll: () => void;
   onRunPayroll: (id: string) => void;
   onViewPayslip: (r: PayrollRecord) => void;
+  onDeleteRecord?: (r: PayrollRecord) => void;
   onEditRecord: (r: PayrollRecord) => void;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  // ── Permission flags passed from PayrollManagement ──────────────────────
+  // canCreate → gates "New Payroll" button and "Run Payroll" action
+  // canWrite  → gates "Edit Record" action
+  canCreate?: boolean;
+  canWrite?: boolean;
 }
 
 export const PayrollDashboard: React.FC<Props> = ({
@@ -35,7 +41,10 @@ export const PayrollDashboard: React.FC<Props> = ({
   onEditRecord,
   currentPage,
   totalPages,
+  onDeleteRecord,
   onPageChange,
+  canCreate = false,
+  canWrite = false,
 }) => {
   const [searchQuery] = useState("");
   const [selectedDept] = useState("All");
@@ -59,14 +68,13 @@ export const PayrollDashboard: React.FC<Props> = ({
     [records, selectedDept, filterStatus, searchQuery],
   );
 
-  // ── Full-page detail view ──
+  // ── Full-page detail view ──────────────────────────────────────────────────
   if (detailEntryId) {
     return (
       <div className="flex-1 min-h-0 flex flex-col h-full">
         <PayrollEntryDetail
           payrollEntryId={detailEntryId}
           onBack={() => setDetailEntryId(null)}
-          // onViewSalarySlip={...} // wire when salary slip page/modal is ready
         />
       </div>
     );
@@ -113,9 +121,11 @@ export const PayrollDashboard: React.FC<Props> = ({
     },
     {
       key: "actions",
+      align: "center",
       header: "Actions",
       render: (row) => (
         <ActionGroup>
+          {/* View — always visible */}
           <ActionButton
             type="view"
             iconOnly
@@ -123,34 +133,33 @@ export const PayrollDashboard: React.FC<Props> = ({
             onClick={() => setDetailEntryId(row.name)}
             title="View details"
           />
-          <ActionButton
-            type="download"
-            iconOnly
-            variant="secondary"
-            onClick={() => onViewPayslip(row)}
-            title="View payslip"
-          />
+
           <ActionMenu
-            onEdit={() => onEditRecord(row)}
-            editLabel="Edit Record"
-            onDelete={() => {
-              /* wire delete handler if needed */
-            }}
-            deleteLabel="Remove"
-            customActions={[
-            {
-  label:
-    row.status === "Failed"
-      ? "Re-Run Payroll"
-      : "Run Payroll",
-
-  icon: <Play className="w-4 h-4" />,
-
-  onClick: () => onRunPayroll(row.name),
-
-  disabled: !["Draft", "Failed"].includes(row.status),
-},
-            ]}
+            // ── Edit: only when user has Payroll Entry write ──────────────
+            {...(canWrite && row.status !== "Submitted"
+              ? {
+                  onEdit: () => onEditRecord(row),
+                  editLabel: "Edit Record",
+                }
+              : {})}
+            onDelete={() => onDeleteRecord?.(row)}
+            deleteLabel="Delete"
+            // ── Run Payroll: only when user has Payroll Entry create ──────
+            customActions={
+              canCreate
+                ? [
+                    {
+                      label:
+                        row.status === "Failed"
+                          ? "Re-Run Payroll"
+                          : "Run Payroll",
+                      icon: <Play className="w-4 h-4" />,
+                      onClick: () => onRunPayroll(row.name),
+                      disabled: !["Draft", "Failed"].includes(row.status),
+                    },
+                  ]
+                : []
+            }
           />
         </ActionGroup>
       ),
@@ -163,7 +172,8 @@ export const PayrollDashboard: React.FC<Props> = ({
         <Table
           tableId="payroll-dashboard"
           showToolbar
-          enableAdd
+          // ── New Payroll button: only when user has Payroll Entry create ──
+          enableAdd={canCreate}
           addLabel="New Payroll"
           onAdd={onNewPayroll}
           columns={payrollColumns}

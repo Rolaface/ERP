@@ -6,6 +6,7 @@ import {
   type LeaveType,
 } from "../../../../../api/leaveConfigApi";
 import { showApiError } from "../../../../../utils/alert";
+import { parseFrappeError } from "./parseFrappeError";
 
 export function useLeaveTypes() {
   const [rows, setRows] = useState<LeaveType[]>([]);
@@ -31,7 +32,7 @@ export function useLeaveTypes() {
       setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
       setRows(filtered.slice((page - 1) * pageSize, page * pageSize));
     } catch (err: any) {
-      showApiError(err?.message ?? "Failed to load leave types");
+      showApiError(parseFrappeError(err) || "Failed to load leave types");
     } finally {
       setLoading(false);
     }

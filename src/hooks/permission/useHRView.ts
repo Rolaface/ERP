@@ -15,10 +15,10 @@ export interface HRViewContext {
 }
 
 export function useHRView(): HRViewContext {
-  const { user }      = useAuth();
-  const isAdmin       = usePermissionStore((s) => s.isAdmin);
-  const viewModes     = useHRViewStore((s) => s.viewModes);
-  const setViewMode   = useHRViewStore((s) => s.setViewMode);
+  const { user }    = useAuth();
+  const isAdmin     = usePermissionStore((s) => s.isAdmin);
+  const viewModes   = useHRViewStore((s) => s.viewModes);
+  const setViewMode = useHRViewStore((s) => s.setViewMode);
 
   const username = user?.username ?? "";
   const roles    = user?.roles    ?? [];
@@ -26,8 +26,7 @@ export function useHRView(): HRViewContext {
   const hasEmployeeRole = roles.includes("Employee");
   const hasOtherRoles   = roles.some((r) => r !== "Employee");
 
-
-
+  // ── Admin: always professional, no switching ──────────────────────────────
   if (isAdmin) {
     return {
       viewMode:             "professional",
@@ -39,20 +38,50 @@ export function useHRView(): HRViewContext {
     };
   }
 
+  // ── Pure professional (no Employee role at all) ───────────────────────────
+  // e.g. PROCUREMENT-only, HR Manager-only, etc.
+  // Always professional view, no switch button, ignore persisted viewMode.
+  if (!hasEmployeeRole) {
+    return {
+      viewMode:             "professional",
+      canSwitchView:        false,
+      isPureEmployee:       false,
+      switchToProfessional: () => {},
+      switchToEmployee:     () => {},
+      toggleViewMode:       () => {},
+    };
+  }
+
+  // ── Pure employee (Employee role only, no other roles) ───────────────────
+  // Always employee view, no switch button.
   const isPureEmployee = hasEmployeeRole && !hasOtherRoles;
-  const canSwitchView  = hasEmployeeRole && hasOtherRoles;
+  if (isPureEmployee) {
+    return {
+      viewMode:             "employee",
+      canSwitchView:        false,
+      isPureEmployee:       true,
+      switchToProfessional: () => {},
+      switchToEmployee:     () => {},
+      toggleViewMode:       () => {},
+    };
+  }
+
+  // ── Dual role (Employee + other roles) ───────────────────────────────────
+  // Has switch button. Persisted viewMode applies, default to "employee"
+  // since they have the Employee role and that's the safer starting point.
+  const canSwitchView = true;
   const viewMode: HRViewMode = viewModes[username] ?? "employee";
 
   return {
     viewMode,
     canSwitchView,
-    isPureEmployee,
+    isPureEmployee: false,
     switchToProfessional: () => setViewMode(username, "professional"),
     switchToEmployee:     () => setViewMode(username, "employee"),
     toggleViewMode:       () =>
       setViewMode(
         username,
-        viewMode === "employee" ? "professional" : "employee"
+        viewMode === "employee" ? "professional" : "employee",
       ),
   };
 }

@@ -145,7 +145,7 @@ const settingsItems: SettingsItem[] = [
   },
   {
     to: "/userManagement",
-    label: "User Management",
+    label: "User and Roles",
     icon: <Users2 {...iconProps} />,
     modules: ["User"],
     hideInEmployeeView: true,
@@ -191,6 +191,12 @@ const settingsItems: SettingsItem[] = [
     icon: <Calculator {...iconProps} />,
     modules: ["Item Tax Template", "Tax Category", "Sales Taxes and Charges Template"],
     hideInEmployeeView: true,
+  },
+   {
+    to: "/Expense-Management",
+    label: "Expense Management",
+    icon: <Users {...iconProps} />,
+    modules: ["Expense History"],
   },
   {
     to: "/settings",

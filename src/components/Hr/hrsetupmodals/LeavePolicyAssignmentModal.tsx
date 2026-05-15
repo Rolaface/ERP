@@ -26,6 +26,7 @@ interface Props {
 
 const EMPTY: LeavePolicyAssignment = {
   employee: "",
+  employee_name: "",
   leave_policy: "",
   assignment_based_on: "Leave Period",
   leave_period: "",
@@ -43,7 +44,7 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<LeavePolicyAssignment>(EMPTY);
   const [saving, setSaving] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+const [selectedEmployeeOption, setSelectedEmployeeOption] = useState<any>(undefined);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
         initialData
           ? {
               employee: initialData.employee ?? "",
+              employee_name: initialData.employee_name,
               leave_policy: initialData.leave_policy ?? "",
               assignment_based_on: initialData.assignment_based_on ?? "Leave Period",
               leave_period: initialData.leave_period ?? "",
@@ -76,14 +78,14 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
 
       const filteredEmployees = query
         ? allEmployees.filter((emp: any) =>
-            emp.employee_name?.toLowerCase().includes(query.toLowerCase()) ||
-            emp.name?.toLowerCase().includes(query.toLowerCase())
+            emp.employee_name?.toLowerCase().includes(query.toLowerCase()) 
+        // || emp.name?.toLowerCase().includes(query.toLowerCase())
           )
         : allEmployees;
 
       return filteredEmployees.map((emp: any) => ({
-        label: `${emp.employee_name} (${emp.employee_number || emp.name})`,
-        value: emp.employee_number || emp.name,
+        label: `${emp.employee_name}`,
+        value: emp.name,
         raw: emp, 
       }));
     } catch (error) {
@@ -159,7 +161,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
     }
   };
 
-  const footer = (
+  const footer = !isEdit ? (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -179,7 +181,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
         {saving ? "Saving…" : isEdit ? "Update Assignment" : "Create Assignment"}
       </button>
     </div>
-  );
+  ): null;
 
   return (
     <MinimizableModal
@@ -195,35 +197,19 @@ const fetchLeavePeriodsOptions = async (query: string) => {
     >
       <div className="space-y-5 pb-2">
         <div className="grid grid-cols-2 gap-4">
-          {/* <ModalInput
-            label="Employee ID"
-            value={form.employee}
-            onChange={(e) => set("employee", e.target.value)}
-            placeholder="e.g. HR-EMP-00001"
-            required
-            disabled={isEdit} // Core link generally cannot be changed
-          /> */}
-          <SearchSelect2
-  label="Select Employee"
-  placeholder="Search by name..."
-  value={selectedEmployeeId} 
-  fetchOptions={fetchEmployeesOptions}
-  onChange={(val, option) => {
-    setSelectedEmployeeId(val);
-    set("employee", val); 
-    console.log("Selected ID:", val);
-    console.log("Full Employee Object:", option.raw); 
-  }}
-  required={true}
-/>
-          {/* <ModalInput
-            label="Leave Policy"
-            value={form.leave_policy}
-            onChange={(e) => set("leave_policy", e.target.value)}
-            placeholder="e.g. HR-LPOL-2026-00001"
-            required
+
+<SearchSelect2
+            label="Select Employee"
+            placeholder="Search by name..."
+            value={selectedEmployeeOption ? selectedEmployeeOption.label : form.employee} 
+            fetchOptions={fetchEmployeesOptions}
+            onChange={(val, option) => {
+              setSelectedEmployeeOption(option); 
+              set("employee", val); 
+            }}
+            required={true}
             disabled={isEdit}
-          /> */}
+          />
             
                  <PolicySelect
   label="Leave Policy"
@@ -261,7 +247,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
              <SearchSelect2
         label="Leave Period"
         placeholder="Search leave period (e.g., HR-LPR-...)"
-        value={selectedPeriod}
+        value={form.leave_period}
         fetchOptions={fetchLeavePeriodsOptions}
         onChange={(val) => {
           setSelectedPeriod(val);
@@ -269,6 +255,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
           console.log("Selected Leave Period Name:", val); 
         }}
         required={true}
+        disabled={isEdit}
       />
             )}
           </div>
@@ -281,6 +268,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
               label="Carry Forward Unused Leaves"
               value={form.carry_forward ? "Y" : "N"}
               onChange={(name, value) => set("carry_forward", value === "Y" ? 1 : 0)}
+              disabled={isEdit}
             />
             
             {/* {!isEdit && (

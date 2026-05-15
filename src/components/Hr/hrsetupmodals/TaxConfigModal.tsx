@@ -82,7 +82,8 @@ const makeEmptyCharge = (): TaxChargeDraftRow => ({
 });
 
 const DEFAULT_SLABS: TaxSlabDraftRow[] = [
-  makeEmptySlab(),
+  // makeEmptySlab(),
+  { ...makeEmptySlab(), from_amount: 1 }, 
   makeEmptySlab(),
   makeEmptySlab(),
   makeEmptySlab(),
@@ -174,25 +175,35 @@ export const TaxConfigModal: React.FC<Props> = ({
 
   const addSlab = () => {
     const newTotal = totalSlabs + 1;
-
+    const lastSlab = form.slabs?.[form.slabs.length - 1];
+  const lastTo = lastSlab ? numberForPayload(lastSlab.to_amount) : 0;
     setForm((prev) => ({
       ...prev,
-      slabs: [...(prev.slabs ?? []), makeEmptySlab()],
+      // slabs: [...(prev.slabs ?? []), makeEmptySlab()],
+      slabs: [...(prev.slabs ?? []), { ...makeEmptySlab(), from_amount: lastTo + 1 }],
+
     }));
 
     setSlabPage(Math.max(0, Math.ceil(newTotal / ITEMS_PER_PAGE) - 1));
   };
 
-  const updateSlab = <K extends keyof TaxSlabDraftRow>(
-    idx: number,
-    key: K,
-    value: TaxSlabDraftRow[K],
-  ) =>
-    setForm((prev) => {
-      const slabs = [...(prev.slabs ?? [])];
-      slabs[idx] = { ...slabs[idx], [key]: value };
-      return { ...prev, slabs };
-    });
+ const updateSlab = <K extends keyof TaxSlabDraftRow>(
+  idx: number,
+  key: K,
+  value: TaxSlabDraftRow[K],
+) =>
+  setForm((prev) => {
+    const slabs = [...(prev.slabs ?? [])];
+    slabs[idx] = { ...slabs[idx], [key]: value };
+
+    // Auto-update next slab's from_amount when to_amount changes
+    if (key === "to_amount" && idx + 1 < slabs.length) {
+      const nextFrom = value === "" ? "" : Number(value) + 1;
+      slabs[idx + 1] = { ...slabs[idx + 1], from_amount: nextFrom };
+    }
+
+    return { ...prev, slabs };
+  });
 
   const removeSlab = (idx: number) =>
     setForm((prev) => ({
@@ -336,7 +347,7 @@ export const TaxConfigModal: React.FC<Props> = ({
       ),
     }));
 
-  const footer = (
+  const footer = !isEdit ?(
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -356,7 +367,7 @@ export const TaxConfigModal: React.FC<Props> = ({
         {saving ? "Saving..." : isEdit ? "Update Tax" : "Create Tax"}
       </button>
     </div>
-  );
+  ): null;
 
   return (
     <MinimizableModal
@@ -386,6 +397,7 @@ export const TaxConfigModal: React.FC<Props> = ({
   <DatePickerInput
     label="Effective From"
     name="effective_from"
+    disabled={isEdit}
     value={form.effective_from}
     onChange={(_, value) => set("effective_from", value)}
     required
@@ -396,6 +408,7 @@ export const TaxConfigModal: React.FC<Props> = ({
             <ModalInput
               label="Exemption Amount"
               type="number"
+              disabled={isEdit}
               value={form.standard_tax_exemption_amount}
               placeholder="0"
               className="no-spinner"
@@ -409,6 +422,7 @@ export const TaxConfigModal: React.FC<Props> = ({
             <ModalInput
               label="Tax Relief Limit"
               type="number"
+              disabled={isEdit}
               value={form.tax_relief_limit}
               placeholder="0"
               className="no-spinner"
@@ -420,6 +434,7 @@ export const TaxConfigModal: React.FC<Props> = ({
             <YesNoCheckbox
               name="active"
               label="Active"
+              disabled={isEdit}
               value={form.disabled ? "N" : "Y"}
               onChange={(_, value) => set("disabled", value === "Y" ? 0 : 1)}
             />
@@ -429,6 +444,7 @@ export const TaxConfigModal: React.FC<Props> = ({
             <YesNoCheckbox
               name="allow_tax_exemption"
               label="Allow Tax Exemption"
+              disabled={isEdit}
               value={form.allow_tax_exemption ? "Y" : "N"}
               onChange={(_, value) =>
                 set("allow_tax_exemption", value === "Y" ? 1 : 0)
@@ -474,6 +490,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                   <ModalInput
                     label=""
                     type="number"
+                    disabled={isEdit}
                     className="no-spinner"
                     value={row.from_amount}
                     placeholder="0"
@@ -486,6 +503,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
+                    disabled={isEdit}
                     value={row.to_amount}
                     placeholder="0"
                     onChange={(e) =>
@@ -497,6 +515,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
+                    disabled={isEdit}
                     value={row.percent_deduction}
                     placeholder="0"
                     onChange={(e) =>
@@ -507,6 +526,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => removeSlab(idx)}
+                    disabled={isEdit}
                     className="flex items-center justify-center rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -522,6 +542,7 @@ export const TaxConfigModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={addSlab}
+                disabled={isEdit}
                 className="btn btn-outline rounded-lg px-4 py-1.5 text-[11px] font-semibold"
               >
                 + Add Slab
@@ -613,6 +634,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                   <ModalInput
                     label=""
                     value={row.description}
+                    disabled={isEdit}
                     placeholder="e.g. NHIMA"
                     onChange={(e) =>
                       updateCharge(idx, "description", e.target.value)
@@ -622,6 +644,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                   <ModalInput
                     label=""
                     type="number"
+                    disabled={isEdit}
                     className="no-spinner"
                     value={row.percent}
                     placeholder="0"
@@ -634,6 +657,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
+                    disabled={isEdit}
                     value={row.min_taxable_income}
                     placeholder="0"
                     onChange={(e) =>
@@ -645,6 +669,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                     label=""
                     type="number"
                     className="no-spinner"
+                    disabled={isEdit}
                     value={row.max_taxable_income}
                     placeholder="0"
                     onChange={(e) =>
@@ -655,6 +680,7 @@ export const TaxConfigModal: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => removeCharge(idx)}
+                    disabled={isEdit}
                     className="flex items-center justify-center rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -669,6 +695,7 @@ export const TaxConfigModal: React.FC<Props> = ({
     <button
       type="button"
       onClick={addCharge}
+      disabled={isEdit}
       className="btn btn-outline rounded-lg px-4 py-1.5 text-[11px] font-semibold"
     >
       + Add Row

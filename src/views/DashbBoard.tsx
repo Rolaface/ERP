@@ -348,7 +348,7 @@ const Dashboard = () => {
                 label="Top Item By Value" 
                 title={notesData?.topSellingItemValue?.itemName || 'N/A'} 
                 value={currencyFormatter.format(notesData?.topSellingItemValue?.value || 0)} 
-                subTitle={notesData?.topSellingItemValue?.itemCode}
+                // subTitle={notesData?.topSellingItemValue?.itemCode}
                 icon={<Banknote size={16} className="text-purple-500" />} 
               />
             </div>

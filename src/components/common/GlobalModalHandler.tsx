@@ -34,6 +34,9 @@ const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
 const ProformaInvoiceModal = lazy(
   () => import("../sales/ProformaInvoiceModal"),
 );
+const ExpenseModal = lazy(
+  () => import("../../components/expense/addExpenseModal"),
+);
 const QuotationModal = lazy(() => import("../sales/QuotationModal"));
 const PurchaseOrderModal = lazy(
   () => import("../procurement/PurchaseOrderModal"),
@@ -192,6 +195,9 @@ const getInitialData = <T,>(value: unknown): T | null =>
 const getRecordInitialData = (
   value: unknown,
 ): Record<string, unknown> | null => (isRecord(value) ? value : null);
+const ExpenseTypeModal = lazy(
+  () => import("../../components/expense/addExpenseTypeModal"),
+);
 
 const getModalSeedValue = (
   value: unknown,
@@ -361,6 +367,26 @@ const GlobalModalHandler: React.FC = () => {
             pId={getModalSeedValue(modal.initialData, "pId")}
           />,
         );
+        case "expense":
+  return wrappedModal(
+    <ExpenseModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+    />,
+  );
+  case "expenseType":
+  return wrappedModal(
+    <ExpenseTypeModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+    />,
+  );
       case "JournalEntries":
         return wrappedModal(
           <JournalEntriesModal

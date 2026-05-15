@@ -1,19 +1,16 @@
-// ─── LeavePolicyAssignmentSetup.tsx ──────────────────────────────────────────
 import { useCallback, useMemo, useState } from "react";
-
-import Table from "../../../../../components/ui/Table/Table";
+import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-
 import {
   deleteLeavePolicyAssignment,
   updateLeavePolicyAssignment,
   type LeavePolicyAssignment,
 } from "../../../../../api/leaveConfigApi";
-import { showApiError, showSuccess } from "../../../../../utils/alert";
+import { showApiError } from "../../../../../utils/alert";
 import { useLeavePolicyAssignments } from "../hooks/useLeavePolicyAssignments";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeavePolicyAssignmentModal } from "../../../../../store/modalStore";
@@ -32,7 +29,7 @@ export function LeavePolicyAssignmentSetup() {
     totalItems,
     fetchAll,
   } = useLeavePolicyAssignments();
-  
+
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const handleDelete = useCallback(
@@ -44,7 +41,6 @@ export function LeavePolicyAssignmentSetup() {
       }
       try {
         setActionLoadingId(row.name);
-
         const deleted = await confirmDelete({
           text: `Delete "${row.name}"?`,
           loadingText: "Deleting Leave Policy Assignment..",
@@ -53,10 +49,7 @@ export function LeavePolicyAssignmentSetup() {
             await deleteLeavePolicyAssignment(row.name!);
           },
         });
-
-        if (deleted) {
-          fetchAll();
-        }
+        if (deleted) fetchAll();
       } finally {
         setActionLoadingId(null);
       }
@@ -69,7 +62,6 @@ export function LeavePolicyAssignmentSetup() {
       if (!row.name) return;
       try {
         setActionLoadingId(row.name);
-
         const cancelled = await confirmDelete({
           text: `Cancel assignment for "${row.employee}"?`,
           loadingText: "Cancelling Leave Policy Assignment..",
@@ -78,19 +70,16 @@ export function LeavePolicyAssignmentSetup() {
             await updateLeavePolicyAssignment(row.name!, { docstatus: 2 });
           },
         });
-
-        if (cancelled) {
-          fetchAll();
-        }
+        if (cancelled) fetchAll();
       } catch (err) {
-         // showApiError is already imported in your file
-         showApiError("Failed to cancel assignment"); 
+        showApiError("Failed to cancel assignment");
       } finally {
         setActionLoadingId(null);
       }
     },
     [fetchAll],
   );
+
   const columns: Column<LeavePolicyAssignment>[] = useMemo(
     () => [
       {
@@ -98,7 +87,7 @@ export function LeavePolicyAssignmentSetup() {
         header: "Employee",
         render: (row) => (
           <span className="font-medium text-main">
-            {row.employee || "—"}
+            {row.employee_name || "—"}
           </span>
         ),
       },
@@ -106,9 +95,7 @@ export function LeavePolicyAssignmentSetup() {
         key: "leave_policy",
         header: "Leave Policy",
         render: (row) => (
-          <span className="text-sm text-sub">
-            {row.leave_policy || "—"}
-          </span>
+          <span className="text-sm text-sub">{row.leave_policy || "—"}</span>
         ),
       },
       {
@@ -147,48 +134,24 @@ export function LeavePolicyAssignmentSetup() {
             1: { label: "Submitted", class: "bg-blue-100 text-blue-700" },
             2: { label: "Cancelled", class: "bg-red-100 text-red-700" },
           };
-          const status = statusMap[row.docstatus as keyof typeof statusMap] || statusMap[0];
+          const status =
+            statusMap[row.docstatus as keyof typeof statusMap] || statusMap[0];
           return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.class}`}>
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.class}`}
+            >
               {status.label}
             </span>
           );
         },
       },
-      // {
-      //   key: "actions",
-      //   header: "Actions",
-      //   align: "center",
-      //   render: (row) => (
-      //     <ActionGroup>
-      //       <ActionButton
-      //         type="edit"
-      //         iconOnly
-      //         // Pass row data and the fetchAll callback directly to the global store
-      //         onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
-      //         disabled={actionLoadingId === row.name || row.docstatus === 1}
-      //       />
-      //       <ActionMenu
-      //         customActions={[
-      //           {
-      //             label: "Delete",
-      //             onClick: () => handleDelete(row),
-      //             disabled: actionLoadingId === row.name || row.docstatus === 1,
-      //           },
-      //         ]}
-      //       />
-      //     </ActionGroup>
-      //   ),
-      // },
       {
         key: "actions",
         header: "Actions",
         align: "center",
         render: (row) => {
-          // Dynamically build the menu list based on docstatus
           const menuActions = [];
           
-          // Show "Cancel" only if submitted
           if (row.docstatus === 1) {
             menuActions.push({
               label: "Cancel",
@@ -197,7 +160,6 @@ export function LeavePolicyAssignmentSetup() {
             });
           }
           
-          // Show "Delete" only if Draft (0) or Cancelled (2)
           if (row.docstatus === 0 || row.docstatus === 2) {
             menuActions.push({
               label: "Delete",
@@ -205,17 +167,14 @@ export function LeavePolicyAssignmentSetup() {
               disabled: actionLoadingId === row.name,
             });
           }
-
           return (
             <ActionGroup>
               <ActionButton
-                type="edit"
+                type="view"
                 iconOnly
                 onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
-                disabled={actionLoadingId === row.name}
               />
-              {/* Only show the menu (three dots) if there are actions available */}
-              {menuActions.length > 0 && (
+               {menuActions.length > 0 && (
                 <ActionMenu customActions={menuActions} />
               )}
             </ActionGroup>
@@ -223,12 +182,11 @@ export function LeavePolicyAssignmentSetup() {
         },
       },
     ],
-    // Ensure fetchAll is included in the dependency array
     [actionLoadingId, handleDelete, fetchAll],
   );
 
   return (
-    <Table
+    <ModalTable
       columns={columns}
       data={rows}
       loading={loading}
@@ -241,7 +199,6 @@ export function LeavePolicyAssignmentSetup() {
       }}
       enableAdd
       addLabel="Add Assignment"
-      // Trigger modal for creation (null row)
       onAdd={() => openLeavePolicyAssignmentModal(null, false, { onSuccess: fetchAll })}
       currentPage={page}
       totalPages={totalPages}

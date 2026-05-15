@@ -1,4 +1,4 @@
-import React, {  useState } from "react";
+import React, { useState } from "react";
 import { ERP_BASE } from "../../../config/api";
 interface EmployeeNameCellProps {
   name: string;
@@ -32,7 +32,7 @@ function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-} 
+}
 
 const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
   name,
@@ -40,21 +40,21 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
   image,
   subLabel,
 }) => {
- const [imgFailed, setImgFailed] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
 
 
-const imageUrl = image
-  ? image.startsWith("http")
-    ? image
-    : `${ERP_BASE}${image}`
-  : null;
-const showImage = !!imageUrl && !imgFailed;
+  const imageUrl = image
+    ? image.startsWith("http")
+      ? image
+      : `${ERP_BASE}${image}`
+    : null;
+  const showImage = !!imageUrl && !imgFailed;
 
 
-const [bg, fg] = getAvatarColors(employeeId || name);
+  const [bg, fg] = getAvatarColors(employeeId || name);
 
-const initials = getInitials(name);
+  const initials = getInitials(name);
 
   return (
     <div className="flex items-center gap-2.5 min-w-0">
@@ -69,9 +69,9 @@ const initials = getInitials(name);
             src={imageUrl!}
             alt={name}
             onError={(e) => {
-  console.log("IMAGE FAILED", imageUrl, e);
-  setImgFailed(true);
-}}
+              console.log("IMAGE FAILED", imageUrl, e);
+              setImgFailed(true);
+            }}
             style={{
               width: 30,
               height: 30,
@@ -102,18 +102,22 @@ const initials = getInitials(name);
         )}
       </span>
 
+
       {/* ── Text ── */}
       <span className="min-w-0 flex flex-col leading-tight">
         <span
-          className="block truncate text-sm font-semibold text-main"
+          className="block text-sm font-semibold text-main whitespace-normal break-words"
           style={{ lineHeight: "1.25" }}
+          title={name}
         >
           {name}
         </span>
+
         {subLabel && (
           <span
-            className="block truncate text-xs text-muted"
+            className="block text-xs text-muted whitespace-normal break-words"
             style={{ lineHeight: "1.3", marginTop: 1 }}
+            title={subLabel}
           >
             {subLabel}
           </span>

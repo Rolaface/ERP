@@ -1,4 +1,3 @@
-// ─── LeavePolicyModal.tsx ──────────────────────────────────────────────────────
 import React, { useEffect, useState } from "react";
 import { FileText, Save, X, Plus, Trash2 } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
@@ -40,8 +39,26 @@ export const LeavePolicyModal: React.FC<Props> = ({
   const [form, setForm] = useState<LeavePolicy>(EMPTY);
   const [saving, setSaving] = useState(false);
   
-  // State to hold fetched Leave Types for the dropdown
-  const [availableLeaveTypes, setAvailableLeaveTypes] = useState<{name: string}[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  const totalPages = Math.max(1, Math.ceil(form.leave_policy_details.length / ITEMS_PER_PAGE));
+  const paginatedDetails = form.leave_policy_details.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+  
+  const [availableLeaveTypes, setAvailableLeaveTypes] = useState<any[]>([]);
+
+  const fetchLatestLeaveTypes = async () => {
+    try {
+      const res: any = await getAllLeaveTypes();
+      const data = res?.data ?? res;
+      setAvailableLeaveTypes(data);
+    } catch (err) {
+      console.error("Failed to fetch leave types", err);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -52,13 +69,10 @@ export const LeavePolicyModal: React.FC<Props> = ({
               docstatus: initialData.docstatus ?? 0,
               leave_policy_details: initialData.leave_policy_details?.map(d => ({ ...d })) || [],
             }
-          : { ...EMPTY, leave_policy_details: [{ leave_type: "", annual_allocation: 0 }] }
+          : { ...EMPTY, leave_policy_details: [{ leave_type: "", annual_allocation: 0, max_leaves_allowed: 0 }] }
       );
 
-      // Fetch the available Leave Types
-      getAllLeaveTypes()
-        .then((data) => setAvailableLeaveTypes(data))
-        .catch((err) => console.error("Failed to fetch leave types", err));
+      fetchLatestLeaveTypes();
     }
   }, [isOpen, initialData]);
 
@@ -67,7 +81,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
       ...prev,
       leave_policy_details: [
         ...prev.leave_policy_details,
-        { leave_type: "", annual_allocation:0},
+        { leave_type: "", annual_allocation: 0, max_leaves_allowed: 0 },
       ],
     }));
   };
@@ -105,7 +119,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
       const payload: LeavePolicy = {
         title: form.title,
         docstatus: isEdit ? form.docstatus : 1,
-        leave_policy_details: validDetails,
+        leave_policy_details: validDetails.map(d => ({ ...d })),
       };
 
       if (isEdit && initialData?.name) {
@@ -124,7 +138,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
     }
   };
 
-  const footer = (
+  const footer = !isEdit ? (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -146,7 +160,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
         {saving ? "Saving…" : form.docstatus === 1 ? "Submit Policy" : isEdit ? "Update Policy" : "Save as Draft"}
       </button>
     </div>
-  );
+  ): null;
 
   return (
     <MinimizableModal
@@ -172,66 +186,219 @@ export const LeavePolicyModal: React.FC<Props> = ({
             disabled={initialData?.docstatus === 1}
           />
         </div>
+        <div className="rounded border border-[var(--border)] bg-app overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-[#f4f5f7] border-b border-[var(--border)] text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-3 w-1/2 border-r border-[var(--border)]">Leave Type</th>
+                <th className="px-4 py-3 w-[20%] border-r border-[var(--border)] text-center">Max Allowed</th>
+                <th className="px-4 py-3 w-1/2 border-r border-[var(--border)]">Annual Allocation</th>
+                <th className="px-4 py-3 w-12 text-center"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {/* {paginatedDetails.map((detail, pageIndex) => {
+                const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + pageIndex;
+                
+                return (
+                  <tr key={actualIndex} className="bg-white">
+                    <td 
+                      className="p-2 border-r border-[var(--border)] align-top"
+                      onClick={fetchLatestLeaveTypes}
+                    >
+                      <LeaveTypeSelect
+                        label=""
+                        value={detail.leave_type}
+                        onChange={(type) => {
+                          const typeName = type.name || type;
+                          const matchedLeaveType = availableLeaveTypes.find(lt => lt.name === typeName);
+                          
+                          setForm((prev) => {
+                            const updated = [...prev.leave_policy_details];
+                            updated[actualIndex] = { 
+                              ...updated[actualIndex], 
+                              leave_type: typeName,
+                              max_leaves_allowed: matchedLeaveType ? matchedLeaveType.max_leaves_allowed : 0 
+                            };
+                            return { ...prev, leave_policy_details: updated };
+                          });
+                        }}
+                        disabled={initialData?.docstatus === 1}
+                        required
+                        className="w-full"
+                      />
+                    </td>
+                    <td className="p-2 border-r border-[var(--border)] align-middle text-center">
+                      <div className="flex w-full items-center justify-center rounded text-sm font-semibold text-gray-600 border border-transparent">
+                        {detail.max_leaves_allowed !== undefined ? detail.max_leaves_allowed : "-"}
+                      </div>
+                    </td>
+                    <td className="p-2 border-r border-[var(--border)] align-top">
+                      <ModalInput
+                        label=""
+                        type="number"
+                        className="no-spinner w-full"
+                        value={detail.annual_allocation || ""}
+                        placeholder="0"
+                        onChange={(e) => {
+                          let val = Number(e.target.value);
+                          if (val < 0) {
+                            showValidationError("Annual allocation cannot be negative.");
+                            val = 0;
+                          } 
+                          else if (!Number.isInteger(val)) {
+                            showValidationError("Annual allocation must be a whole number.");
+                            val = Math.floor(val);
+                          }
 
-        {/* Policy Details (Child Table) */}
-        <div className="space-y-3 rounded-xl border border-[var(--border)] bg-app p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-main">Leave Allocations</p>
-            {initialData?.docstatus !== 1 && (
+                          updateDetailRow(
+                            actualIndex,
+                            "annual_allocation",
+                            val || 0,
+                          );
+                        }}
+                        disabled={initialData?.docstatus === 1}
+                      /> 
+                    </td>
+                    <td className="p-2 text-center align-middle">
+                      {initialData?.docstatus !== 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeDetailRow(actualIndex)}
+                          className="p-1.5 text-gray-400 transition hover:text-red-600 rounded"
+                          title="Remove Row"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })} */}
+              {paginatedDetails.map((detail, pageIndex) => {
+                const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + pageIndex;
+                
+                // Dynamically fetch the max limit from our loaded leave types array for view mode
+                const matchedLeaveType = availableLeaveTypes.find(lt => lt.name === detail.leave_type);
+                const displayMax = matchedLeaveType?.max_leaves_allowed ?? detail.max_leaves_allowed;
+                
+                return (
+                  <tr key={actualIndex} className="bg-white">
+                    <td 
+                      className="p-2 border-r border-[var(--border)] align-top"
+                      onClick={fetchLatestLeaveTypes}
+                    >
+                      <LeaveTypeSelect
+                        label=""
+                        value={detail.leave_type}
+                        onChange={(type: any) => {
+                          // Correctly narrow the type to string to satisfy TypeScript
+                          const typeName = typeof type === "string" ? type : (type?.name || "");
+                          const selectedLeaveType = availableLeaveTypes.find(lt => lt.name === typeName);
+                          
+                          setForm((prev) => {
+                            const updated = [...prev.leave_policy_details];
+                            updated[actualIndex] = { 
+                              ...updated[actualIndex], 
+                              leave_type: typeName as string,
+                              max_leaves_allowed: selectedLeaveType ? selectedLeaveType.max_leaves_allowed : 0 
+                            };
+                            return { ...prev, leave_policy_details: updated };
+                          });
+                        }}
+                        disabled={initialData?.docstatus === 1}
+                        required
+                        className="w-full"
+                      />
+                    </td>
+                    <td className="p-2 border-r border-[var(--border)] align-middle text-center">
+                      <div className="flex w-full items-center justify-center rounded text-sm font-semibold text-gray-600 border border-transparent">
+                        {/* Use the dynamically resolved displayMax */}
+                        {displayMax !== undefined ? displayMax : "-"}
+                      </div>
+                    </td>
+                    <td className="p-2 border-r border-[var(--border)] align-top">
+                      <ModalInput
+                        label=""
+                        type="number"
+                        className="no-spinner w-full"
+                        value={detail.annual_allocation || ""}
+                        placeholder="0"
+                        onChange={(e) => {
+                          let val = Number(e.target.value);
+                          if (val < 0) {
+                            showValidationError("Annual allocation cannot be negative.");
+                            val = 0;
+                          } 
+                          else if (!Number.isInteger(val)) {
+                            showValidationError("Annual allocation must be a whole number.");
+                            val = Math.floor(val);
+                          }
+
+                          updateDetailRow(
+                            actualIndex,
+                            "annual_allocation",
+                            val || 0,
+                          );
+                        }}
+                        disabled={initialData?.docstatus === 1}
+                      /> 
+                    </td>
+                    <td className="p-2 text-center align-middle">
+                      {initialData?.docstatus !== 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeDetailRow(actualIndex)}
+                          className="p-1.5 text-gray-400 transition hover:text-red-600 rounded"
+                          title="Remove Row"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Table Footer: Add Row & Pagination */}
+          <div className="flex items-center justify-between bg-white p-3 border-t border-[var(--border)]">
+            {initialData?.docstatus !== 1 ? (
               <button
                 type="button"
                 onClick={addDetailRow}
-                className="flex items-center gap-1 text-xs font-medium text-primary transition hover:underline"
+                className="flex items-center gap-1.5 rounded border border-[var(--border)] bg-white px-3 py-1.5 text-sm font-medium text-main transition hover:bg-gray-50"
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Plus className="h-4 w-4" />
                 Add Row
               </button>
-            )}
-          </div>
+            ) : <div />}
 
-          <div className="space-y-3">
-            {form.leave_policy_details.map((detail, index) => (
-              <div key={index} className="flex items-start gap-3 rounded-lg bg-gray-50 p-3">
-                <div className="grid flex-1 grid-cols-2 gap-4">
-                  
-                <LeaveTypeSelect
-  label="Leave Type"
-  value={detail.leave_type}
-  onChange={(type) => updateDetailRow(index, "leave_type", type.name)}
-  disabled={initialData?.docstatus === 1}
-  required
-  className="flex-1"
-/>
-
-               <ModalInput
-  label="Annual Allocation"
-  type="number"
-  className="no-spinner"
-  value={detail.annual_allocation || ""}
-  placeholder="0"
-  onChange={(e) =>
-    updateDetailRow(
-      index,
-      "annual_allocation",
-      Number(e.target.value) || 0,
-    )
-  }
-  required
-  disabled={initialData?.docstatus === 1}
-/>
-                </div>
-                {initialData?.docstatus !== 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeDetailRow(index)}
-                    className="mt-6 p-2 text-red-500 transition hover:bg-red-50 hover:text-red-700 rounded"
-                    title="Remove Row"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-3 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 text-gray-500 hover:text-main disabled:opacity-30"
+                >
+                  Prev
+                </button>
+                <span className="text-gray-500 font-medium text-xs">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1 text-gray-500 hover:text-main disabled:opacity-30"
+                >
+                  Next
+                </button>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

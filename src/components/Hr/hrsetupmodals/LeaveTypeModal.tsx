@@ -3,19 +3,26 @@ import React, { useCallback, useEffect, useState } from "react";
 import { CalendarRange, Save, X } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
 
-import { createLeaveType, updateLeaveType,type LeaveType, } from "../../../api/leaveConfigApi";
-import { ModalInput, YesNoCheckbox } from "../../../components/ui/modal/modalComponent";
+import {
+  createLeaveType,
+  updateLeaveType,
+  type LeaveType,
+} from "../../../api/leaveConfigApi";
+import {
+  ModalInput,
+  YesNoCheckbox,
+} from "../../../components/ui/modal/modalComponent";
 import {
   showApiError,
   showSuccess,
   showValidationError,
 } from "../../../utils/alert";
+import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 
 interface Props {
   modalId: string;
   isOpen: boolean;
   onClose: () => void;
-  /** Pass null/undefined to create; pass existing record to edit */
   initialData?: LeaveType | null;
   onSuccess?: () => void;
 }
@@ -48,12 +55,13 @@ export const LeaveTypeModal: React.FC<Props> = ({
         initialData
           ? {
               leave_type_name: initialData.leave_type_name ?? "",
-              max_leaves_allowed: initialData.max_leaves_allowed ,
+              max_leaves_allowed: initialData.max_leaves_allowed,
               is_lwp: initialData.is_lwp ?? 0,
               is_carry_forward: initialData.is_carry_forward ?? 0,
               allow_negative: initialData.allow_negative ?? 0,
               include_holiday: initialData.include_holiday ?? 0,
-              fraction_of_daily_salary_per_leave: initialData.fraction_of_daily_salary_per_leave ?? 1,
+              fraction_of_daily_salary_per_leave:
+                initialData.fraction_of_daily_salary_per_leave ?? 1,
             }
           : { ...EMPTY },
       );
@@ -72,10 +80,31 @@ export const LeaveTypeModal: React.FC<Props> = ({
       showValidationError("Leave Type Name is required");
       return;
     }
-    
-    if (form.max_leaves_allowed < 0) {
+
+    if (form.max_leaves_allowed < 0 ) {
       showValidationError("Max leaves allowed cannot be negative");
       return;
+    }
+    if (!form.max_leaves_allowed ) {
+    showValidationError("Max leave allocation is required.");
+    return;
+    }
+    if (!Number.isInteger(form.max_leaves_allowed)) {
+    showValidationError("Max leave allocation must be a whole number.");
+    return;
+    }
+    if (
+      form.fraction_of_daily_salary_per_leave !== undefined &&
+      form.fraction_of_daily_salary_per_leave < 0
+    ) {
+      showValidationError(
+        "Fraction of Daily Salary per Leave allowed cannot be negative",
+      );
+      return;
+    }
+     if (!Number.isInteger(form.fraction_of_daily_salary_per_leave)) {
+    showValidationError("Fraction of Daily Salary per Leave must be a whole number.");
+    return;
     }
 
     try {
@@ -92,7 +121,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
       onSuccess?.();
       onClose();
     } catch (err: any) {
-      showApiError(err?.message ?? "Failed to save leave type");
+      showApiError(parseFrappeError(err) || "Failed to save leave type");
     } finally {
       setSaving(false);
     }
@@ -115,7 +144,11 @@ export const LeaveTypeModal: React.FC<Props> = ({
         className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving…" : isEdit ? "Update Leave Type" : "Create Leave Type"}
+        {saving
+          ? "Saving…"
+          : isEdit
+            ? "Update Leave Type"
+            : "Create Leave Type"}
       </button>
     </div>
   );
@@ -142,37 +175,34 @@ export const LeaveTypeModal: React.FC<Props> = ({
             placeholder="e.g. Casual Leave"
             required
           />
-       <ModalInput
-  label="Max Leaves Allowed"
-  type="number"
-  className="no-spinner"
-  value={form.max_leaves_allowed || ""}
-  placeholder="0"
-  onChange={(e) =>
-    set(
-      "max_leaves_allowed",
-      Number(e.target.value) || 0,
-    )
-  }
-/>
+          <ModalInput
+            label="Max Leaves Allowed"
+            type="number"
+            className="no-spinner"
+            value={form.max_leaves_allowed || ""}
+            placeholder="0"
+            onChange={(e) =>
+              set("max_leaves_allowed", Number(e.target.value) || 0)
+            }
+          />
         </div>
 
         {/* ── Row 2: Salary Configuration ────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4">
           <ModalInput
-  label="Fraction of Daily Salary Per Leave"
-  type="number"
-  step="0.1"
-  className="no-spinner"
-  value={form.fraction_of_daily_salary_per_leave || ""}
-  placeholder="0"
-  onChange={(e) =>
-    set(
-      "fraction_of_daily_salary_per_leave",
-      Number(e.target.value) || 0,
-    )
-  }
-/>
+            label="Fraction of Daily Salary Per Leave"
+            type="number"
+            step="0.1"
+            className="no-spinner"
+            value={form.fraction_of_daily_salary_per_leave || ""}
+            placeholder="0"
+            onChange={(e) =>
+              set(
+                "fraction_of_daily_salary_per_leave",
+                Number(e.target.value) || 0,
+              )
+            }
+          />
         </div>
 
         {/* ── Row 3: Boolean Toggles (Checkboxes) ──────────────────────── */}
@@ -192,19 +222,25 @@ export const LeaveTypeModal: React.FC<Props> = ({
               name="is_carry_forward"
               label="Is Carry Forward"
               value={form.is_carry_forward ? "Y" : "N"}
-              onChange={(name, value) => set("is_carry_forward", value === "Y" ? 1 : 0)}
+              onChange={(name, value) =>
+                set("is_carry_forward", value === "Y" ? 1 : 0)
+              }
             />
             <YesNoCheckbox
               name="allow_negative"
               label="Allow Negative Balance"
               value={form.allow_negative ? "Y" : "N"}
-              onChange={(name, value) => set("allow_negative", value === "Y" ? 1 : 0)}
+              onChange={(name, value) =>
+                set("allow_negative", value === "Y" ? 1 : 0)
+              }
             />
             <YesNoCheckbox
               name="include_holiday"
               label="Include Holiday"
               value={form.include_holiday ? "Y" : "N"}
-              onChange={(name, value) => set("include_holiday", value === "Y" ? 1 : 0)}
+              onChange={(name, value) =>
+                set("include_holiday", value === "Y" ? 1 : 0)
+              }
             />
           </div>
         </div>

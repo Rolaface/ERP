@@ -59,7 +59,9 @@ export const API = {
    * ========================= */
   salesDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.sale.api.summary`,
-  },
+    recentSales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.top_recent_sales`,
+    salesSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.monthly_sales_breakdown`,
+   },
 
   /* =========================
    * CUSTOMER DASHBOARD
@@ -73,6 +75,8 @@ export const API = {
    * ========================= */
   procurementDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.procurement.api.summary`,
+    procurementSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.procurement.api.get_procurement_summary`,
+    procurementDetails: `${ERP_BASE}/api/method/custom_api.api.dashboard.procurement.api.get_procurement_details`, 
   },
 
   /* =========================
@@ -80,6 +84,8 @@ export const API = {
    * ========================= */
   inventoryDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.inventory.api.summary`,
+    itemBreakdown: `${ERP_BASE}/api/method/custom_api.api.dashboard.inventory.api.get_item_breakdown`,
+    topItems: `${ERP_BASE}/api/method/custom_api.api.dashboard.inventory.api.get_top_3_items`,
   },
 
   /* =========================
@@ -357,6 +363,14 @@ export const API = {
   Bank: {
     Bank: `${ERP_BASE}/api/resource/Bank`,
   },
+    /* =========================
+   * expanse claims
+   * ========================= */
+
+  ExpenseClaim:{
+    Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
+    Claim_Type: `${ERP_BASE}/api/resource/Expense Claim Type`,
+  },
   /* =========================
    * STOCK
    * ========================= */
@@ -614,5 +628,6 @@ export const API = {
     getUsers: `${ERP_BASE}/api/method/custom_hrms.api.search.get_users`,
     getPayrollEmployees:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_employee`,
     getBranches:`${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
+    createbranch:`${ERP_BASE}/api/resource/Branch`
   },
 } as const;

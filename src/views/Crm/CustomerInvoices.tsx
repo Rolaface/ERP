@@ -5,10 +5,9 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
-import Table from "../../components/ui/Table/Table";
+import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { getAllSalesInvoices } from "../../api/salesApi";
 import { showApiError } from "../../utils/alert";
-
 
 interface SalesInvoice {
   id: string;
@@ -31,23 +30,20 @@ const CustomerInvoices = ({ customerName }: Props) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  /* FETCH DATA */
   useEffect(() => {
     if (!customerName) return;
 
     const loadInvoices = async () => {
       setLoading(true);
-
       try {
         const res = await getAllSalesInvoices(
           page,
           pageSize,
-          "id", // Updated sort key
+          "id",
           "desc",
           "",
-          customerName
+          customerName,
         );
-
         setInvoices(res?.data || []);
         setTotalPages(res?.pagination?.total_pages || 1);
         setTotalItems(res?.pagination?.total || 0);
@@ -65,36 +61,20 @@ const CustomerInvoices = ({ customerName }: Props) => {
     setPage(1);
   }, [customerName]);
 
- 
   const summary = useMemo(() => {
     const total = invoices.length;
-
-
-    const draft = invoices.filter(
-      (inv) => inv.status === "Draft"
-    ).length;
-
-    const paid = invoices.filter(
-      (inv) => inv.status === "Paid"
-    ).length;
-
-    const totalValue = invoices.reduce(
-      (sum, inv) => sum + (inv.total || 0),
-      0
-    );
-
+    const draft = invoices.filter((inv) => inv.status === "Draft").length;
+    const paid = invoices.filter((inv) => inv.status === "Paid").length;
+    const totalValue = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
     return { total, draft, paid, totalValue };
   }, [invoices]);
-
 
   const columns = [
     {
       key: "id",
       header: "Invoice No",
       render: (row: SalesInvoice) => (
-        <span className="text-xs font-black text-primary">
-          {row.id}
-        </span>
+        <span className="text-xs font-black text-primary">{row.id}</span>
       ),
     },
     {
@@ -145,39 +125,17 @@ const CustomerInvoices = ({ customerName }: Props) => {
     },
   ];
 
-  /* UI */
   return (
     <div className="max-w-[1400px] mx-auto">
-      {/* SUMMARY */}
       <div className="grid grid-cols-4 gap-2">
-        <SummaryCard
-          icon={<ClipboardList size={14} />}
-          label="Total Invoices"
-          value={summary.total}
-        />
-
-        <SummaryCard
-          icon={<Clock size={14} />}
-          label="Draft"
-          value={summary.draft}
-        />
-
-        <SummaryCard
-          icon={<CheckCircle2 size={14} />}
-          label="Paid"
-          value={summary.paid}
-        />
-
-        <SummaryCard
-          icon={<Receipt size={14} />}
-          label="Total Value"
-          value={`${summary.totalValue.toLocaleString()}`}
-        />
+        <SummaryCard icon={<ClipboardList size={14} />} label="Total Invoices" value={summary.total} />
+        <SummaryCard icon={<Clock size={14} />} label="Draft" value={summary.draft} />
+        <SummaryCard icon={<CheckCircle2 size={14} />} label="Paid" value={summary.paid} />
+        <SummaryCard icon={<Receipt size={14} />} label="Total Value" value={`${summary.totalValue.toLocaleString()}`} />
       </div>
 
-      {/* TABLE */}
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
-        <Table
+        <ModalTable
           columns={columns}
           data={invoices}
           loading={loading}
@@ -199,7 +157,6 @@ const CustomerInvoices = ({ customerName }: Props) => {
   );
 };
 
-/* SUMMARY CARD */
 const SummaryCard = ({
   icon,
   label,
@@ -210,18 +167,10 @@ const SummaryCard = ({
   value: string | number;
 }) => (
   <div className="bg-card border border-theme rounded-xl p-3 flex items-center gap-3">
-    <div className="p-2 rounded-lg bg-row-hover text-primary">
-      {icon}
-    </div>
-
+    <div className="p-2 rounded-lg bg-row-hover text-primary">{icon}</div>
     <div>
-      <p className="text-[9px] font-black uppercase tracking-widest text-muted">
-        {label}
-      </p>
-
-      <p className="text-lg font-black text-primary">
-        {value}
-      </p>
+      <p className="text-[9px] font-black uppercase tracking-widest text-muted">{label}</p>
+      <p className="text-lg font-black text-primary">{value}</p>
     </div>
   </div>
 );
