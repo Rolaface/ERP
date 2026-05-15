@@ -37,68 +37,44 @@ const ChatWindow = ({ isOpen, onToggle }: ChatWindowProps) => {
     });
   }, [messages]);
 
-  // STEP 5.2A — Create Send Function
-  // STEP 6.2 — Backend Request Function
-  const handleSendMessage = async () => {
 
-    const trimmedInput = input.trim();
+const handleSendMessage = () => {
 
-    // Prevent empty messages
-    if (!trimmedInput) return;
+  const trimmedInput = input.trim();
 
-    // Stable message snapshot
-    const userMessage = trimmedInput;
+  // Prevent empty messages
+  if (!trimmedInput) return;
 
-    // Create local user message
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: userMessage,
+  // USER MESSAGE
+  const newMessage: Message = {
+    id: Date.now().toString(),
+    role: 'user',
+    content: trimmedInput,
+  };
+
+  // Render user message instantly
+  setMessages((prev) => [...prev, newMessage]);
+
+  // Clear input
+  setInput('');
+
+  // STEP 5.4 — Simulated Assistant Reply
+  setTimeout(() => {
+
+    const assistantMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: `You said: "${trimmedInput}"`,
     };
 
-    // Render user message immediately
-    setMessages((prev) => [...prev, newMessage]);
+    // Append assistant reply
+    setMessages((prev) => [
+      ...prev,
+      assistantMessage,
+    ]);
 
-    // Clear input instantly
-    setInput('');
-
-    try {
-
-      // API Request
-      const response = await sendMessage({
-        message: userMessage,
-      });
-
-      // Assistant reply message
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response.reply,
-      };
-
-      // Render assistant reply
-      setMessages((prev) => [
-        ...prev,
-        assistantMessage,
-      ]);
-
-    } catch (error) {
-
-      console.error('Chat request failed:', error);
-
-      // Friendly fallback message
-      const errorMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        role: 'assistant',
-        content: 'Something went wrong. Please try again.',
-      };
-
-      setMessages((prev) => [
-        ...prev,
-        errorMessage,
-      ]);
-    }
-  };
+  }, 1000);
+};
 
   return (
     <>
