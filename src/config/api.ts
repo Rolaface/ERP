@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -59,7 +59,9 @@ export const API = {
    * ========================= */
   salesDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.sale.api.summary`,
-  },
+    recentSales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.top_recent_sales`,
+    salesSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.monthly_sales_breakdown`,
+   },
 
   /* =========================
    * CUSTOMER DASHBOARD
@@ -73,6 +75,8 @@ export const API = {
    * ========================= */
   procurementDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.procurement.api.summary`,
+    procurementSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.procurement.api.get_procurement_summary`,
+    procurementDetails: `${ERP_BASE}/api/method/custom_api.api.dashboard.procurement.api.get_procurement_details`, 
   },
 
   /* =========================
@@ -80,6 +84,8 @@ export const API = {
    * ========================= */
   inventoryDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.inventory.api.summary`,
+    itemBreakdown: `${ERP_BASE}/api/method/custom_api.api.dashboard.inventory.api.get_item_breakdown`,
+    topItems: `${ERP_BASE}/api/method/custom_api.api.dashboard.inventory.api.get_top_3_items`,
   },
 
   /* =========================

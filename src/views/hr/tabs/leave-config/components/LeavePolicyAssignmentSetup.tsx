@@ -86,7 +86,9 @@ export function LeavePolicyAssignmentSetup() {
         key: "employee",
         header: "Employee",
         render: (row) => (
-          <span className="font-medium text-main">{row.employee || "—"}</span>
+          <span className="font-medium text-main">
+            {row.employee_name || "—"}
+          </span>
         ),
       },
       {
@@ -149,6 +151,7 @@ export function LeavePolicyAssignmentSetup() {
         align: "center",
         render: (row) => {
           const menuActions = [];
+          
           if (row.docstatus === 1) {
             menuActions.push({
               label: "Cancel",
@@ -156,6 +159,7 @@ export function LeavePolicyAssignmentSetup() {
               disabled: actionLoadingId === row.name,
             });
           }
+          
           if (row.docstatus === 0 || row.docstatus === 2) {
             menuActions.push({
               label: "Delete",
@@ -165,7 +169,12 @@ export function LeavePolicyAssignmentSetup() {
           }
           return (
             <ActionGroup>
-              {menuActions.length > 0 && (
+              <ActionButton
+                type="view"
+                iconOnly
+                onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
+              />
+               {menuActions.length > 0 && (
                 <ActionMenu customActions={menuActions} />
               )}
             </ActionGroup>

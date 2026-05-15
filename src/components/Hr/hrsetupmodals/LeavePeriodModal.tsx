@@ -137,7 +137,7 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
           disabled={isEdit} 
         /> */}
 
-     <div className="grid grid-cols-2 gap-4">
+     <div className="grid grid-cols-3 gap-4">
   <DatePickerInput
     label="From Date"
     name="from_date"
@@ -157,18 +157,21 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     }
     required
   />
-</div>
 
-        <div className="space-y-4 rounded-xl border border-[var(--border)] bg-app p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-sub">
+
+        <div 
+        // className="space-y-4 rounded-xl border border-[var(--border)] bg-app p-4"
+        >
+          {/* <p className="text-xs font-semibold uppercase tracking-wider text-sub">
             Status
-          </p>
+          </p> */}
           <YesNoCheckbox
             name="is_active"
             label="Is Active"
             value={form.is_active ? "Y" : "N"}
             onChange={(name, value) => set("is_active", value === "Y" ? 1 : 0)}
           />
+        </div>
         </div>
       </div>
     </MinimizableModal>
