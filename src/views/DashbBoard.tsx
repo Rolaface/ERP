@@ -14,8 +14,6 @@ import {
   getInventoryChart
 } from '../api/dashboardApi';
 import BarChart from '../components/charts/BarChart';
-import ChatWindow from '../components/chat/ChatWindow';
-import { FEATURES } from '../config/features';
 import { useHRView } from '../hooks/permission/useHRView';
 
 const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
@@ -48,7 +46,6 @@ const Dashboard = () => {
     style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
   }), []);
 
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -362,13 +359,7 @@ const Dashboard = () => {
       </div>
             {/* FLOATING CHAT LAYER */}
 
-            
-      {FEATURES.CHAT_ENABLED && (
-        <ChatWindow
-          isOpen={isChatOpen}
-          onToggle={() => setIsChatOpen(prev => !prev)}
-        />
-      )}
+          
     </div>
   );
 };
