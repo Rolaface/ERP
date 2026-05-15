@@ -1,13 +1,73 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, Save, X, Plus, Trash2 } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
-
 import {
   createHolidayList,
   updateHolidayList,
 } from "../../../api/holidayListApi";
 import type { HolidayList } from "../../../views/hr/tabs/leave-config/hooks/useHolidayLists";
-import { showApiError, showSuccess, showValidationError } from "../../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showValidationError,
+} from "../../../utils/alert";
+import DatePickerInput from "../../calendar/DatePickerInput";
+
+const HL_STYLES = `
+.hl-table-wrap {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.hl-table-wrap::-webkit-scrollbar { width: 3px; }
+.hl-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.hl-table-wrap::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+.hl-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 100px 50px;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  min-height: 38px;
+  transition: background 0.1s;
+}
+.hl-row:hover { background: rgba(0,0,0,0.015); }
+
+.hl-cell {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-height: 38px;
+}
+.hl-cell-border { border-right: 1px solid rgba(0,0,0,0.06); }
+
+.hl-col-header {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.hl-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1f2937;
+}
+.hl-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+.hl-input::placeholder {
+  color: #9ca3af;
+}
+`;
 
 interface Props {
   modalId: string;
@@ -17,9 +77,8 @@ interface Props {
   onSuccess?: () => void;
 }
 
-// UI Types
 interface HolidayRow {
-  id: string; // Unique ID for React rendering
+  id: string;
   holiday_date: string;
   description: string;
   is_half_day: boolean;
@@ -51,14 +110,22 @@ export const HolidayListModal: React.FC<Props> = ({
 }) => {
   const isEdit = Boolean(initialData?.name);
   const [saving, setSaving] = useState(false);
-
-  // Form State
   const [name, setName] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [country, setCountry] = useState("India");
-  const [weeklyOffs, setWeeklyOffs] = useState<WeeklyOffDay[]>(DEFAULT_WEEKDAYS);
+  const [weeklyOffs, setWeeklyOffs] =
+    useState<WeeklyOffDay[]>(DEFAULT_WEEKDAYS);
   const [holidays, setHolidays] = useState<HolidayRow[]>([]);
+
+  useEffect(() => {
+    const id = "hl-styles";
+    if (!document.getElementById(id)) {
+      const s = document.createElement("style");
+      s.id = id;
+      s.textContent = HL_STYLES;
+      document.head.appendChild(s);
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -66,22 +133,23 @@ export const HolidayListModal: React.FC<Props> = ({
         setName(initialData.holiday_list_name || "");
         setFromDate(initialData.from_date || "");
         setToDate(initialData.to_date || "");
-        setCountry(initialData.country || "India");
 
-        // Map initial Weekly Offs
         const initialWeeklyOffs = initialData.weekly_offs || [];
         const mappedWeekdays = DEFAULT_WEEKDAYS.map((day) => {
           const matchedOff = initialWeeklyOffs.find(
-            (off) => off.weekday === day.weekday
+            (off) => off.weekday === day.weekday,
           );
           if (matchedOff) {
-            return { ...day, selected: true, is_half_day: !!matchedOff.is_half_day };
+            return {
+              ...day,
+              selected: true,
+              is_half_day: !!matchedOff.is_half_day,
+            };
           }
           return { ...day, selected: false, is_half_day: false };
         });
         setWeeklyOffs(mappedWeekdays);
 
-        // Map initial Holidays
         const initialHolidays = initialData.holidays || [];
         setHolidays(
           initialHolidays.map((h) => ({
@@ -89,31 +157,40 @@ export const HolidayListModal: React.FC<Props> = ({
             holiday_date: h.holiday_date,
             description: h.description,
             is_half_day: !!h.is_half_day,
-          }))
+          })),
         );
       } else {
-        // Reset to default
         setName("");
         setFromDate("");
         setToDate("");
-        setCountry("India");
         setWeeklyOffs(
           DEFAULT_WEEKDAYS.map((day) => ({
             ...day,
             selected: day.weekday === "Sunday" || day.weekday === "Saturday",
-            is_half_day: day.weekday === "Saturday" ? true : false,
-          }))
+            is_half_day: day.weekday === "Saturday",
+          })),
         );
-        setHolidays([{ id: crypto.randomUUID(), holiday_date: "", description: "", is_half_day: false }]);
+        setHolidays([
+          {
+            id: crypto.randomUUID(),
+            holiday_date: "",
+            description: "",
+            is_half_day: false,
+          },
+        ]);
       }
     }
   }, [isOpen, initialData]);
 
-  // --- Handlers ---
   const handleAddHolidayRow = () => {
     setHolidays([
       ...holidays,
-      { id: crypto.randomUUID(), holiday_date: "", description: "", is_half_day: false },
+      {
+        id: crypto.randomUUID(),
+        holiday_date: "",
+        description: "",
+        is_half_day: false,
+      },
     ]);
   };
 
@@ -121,8 +198,14 @@ export const HolidayListModal: React.FC<Props> = ({
     setHolidays(holidays.filter((h) => h.id !== id));
   };
 
-  const updateHoliday = (id: string, field: keyof HolidayRow, value: string | boolean) => {
-    setHolidays(holidays.map((h) => (h.id === id ? { ...h, [field]: value } : h)));
+  const updateHoliday = (
+    id: string,
+    field: keyof HolidayRow,
+    value: string | boolean,
+  ) => {
+    setHolidays(
+      holidays.map((h) => (h.id === id ? { ...h, [field]: value } : h)),
+    );
   };
 
   const toggleWeeklyOff = (index: number) => {
@@ -139,18 +222,18 @@ export const HolidayListModal: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
-    if (!name.trim()) return showValidationError("Holiday List Name is required");
+    if (!name.trim())
+      return showValidationError("Holiday List Name is required");
     if (!fromDate) return showValidationError("From Date is required");
     if (!toDate) return showValidationError("To Date is required");
 
     try {
       setSaving(true);
-      
+
       const payload = {
         holiday_list_name: name,
         from_date: fromDate,
         to_date: toDate,
-        country: country,
         weekly_offs: weeklyOffs
           .filter((w) => w.selected)
           .map((w) => ({
@@ -173,7 +256,7 @@ export const HolidayListModal: React.FC<Props> = ({
         await createHolidayList(payload);
         showSuccess("Holiday List created successfully");
       }
-      
+
       onSuccess?.();
       onClose();
     } catch (err: any) {
@@ -184,23 +267,26 @@ export const HolidayListModal: React.FC<Props> = ({
   };
 
   const footer = (
-    <div className="flex w-full items-center justify-end gap-3">
+    <div className="flex w-full items-center justify-end gap-3 pt-1">
       <button
         type="button"
         onClick={onClose}
-        className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]"
+        className="px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition"
       >
-        <X className="h-3.5 w-3.5" />
         Cancel
       </button>
       <button
         type="button"
         onClick={handleSave}
         disabled={saving}
-        className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+        className="rounded-lg bg-[#3F25C8] px-5 py-1.5 text-sm font-medium text-white transition hover:bg-[#321ca1] disabled:opacity-60 flex items-center gap-2"
       >
-        <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving…" : isEdit ? "Update List" : "Create Holiday List"}
+        {saving && <span className="animate-spin text-white">⟳</span>}
+        {saving
+          ? "Saving…"
+          : isEdit
+            ? "Update Holiday List"
+            : "Create Holiday List"}
       </button>
     </div>
   );
@@ -211,21 +297,28 @@ export const HolidayListModal: React.FC<Props> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEdit ? "Edit Holiday List" : "Add Holiday List"}
-      subtitle="Manage company holidays and weekly off days"
       icon={Calendar}
-      maxWidth="3xl"
-      height="auto"
+      maxWidth="4xl"
+      height="80vh"
       footer={footer}
     >
-      <div className="space-y-8 pb-2">
-        {/* BASIC DETAILS */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          maxHeight: "calc(80vh - 130px)",
+          overflowY: "auto",
+          paddingRight: "4px",
+        }}
+        className="space-y-6"
+      >
         <section>
-          <h3 className="mb-4 text-xs font-semibold tracking-wider text-gray-500 uppercase">
+          <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
             Basic Details
           </h3>
-          <div className="space-y-4">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-main">
+          <div className="grid grid-cols-12 gap-4 items-start">
+            <div className="col-span-12 md:col-span-6">
+              <label className="mb-1 block text-[10px] font-medium text-gray-700">
                 Holiday List Name
               </label>
               <input
@@ -233,67 +326,48 @@ export const HolidayListModal: React.FC<Props> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. India Holidays 2026"
-                className="w-full rounded-md border border-[var(--border)] bg-app px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full h-[28px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-main">From Date</label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full rounded-md border border-[var(--border)] bg-app px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-main">To Date</label>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="w-full rounded-md border border-[var(--border)] bg-app px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
+            <div className="col-span-6 md:col-span-3">
+              <DatePickerInput
+                label="From Date"
+                name="fromDate"
+                value={fromDate}
+                onChange={(_, v) => setFromDate(v)}
+              />
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-main">Country</label>
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="w-full rounded-md border border-[var(--border)] bg-app px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="India">India</option>
-                <option value="United States">United States</option>
-                <option value="United Kingdom">United Kingdom</option>
-              </select>
+            <div className="col-span-6 md:col-span-3">
+              <DatePickerInput
+                label="To Date"
+                name="toDate"
+                value={toDate}
+                onChange={(_, v) => setToDate(v)}
+              />
             </div>
           </div>
         </section>
 
-        <hr className="border-[var(--border)]" />
-
-        {/* WEEKLY OFFS */}
         <section>
-          <h3 className="mb-4 text-xs font-semibold tracking-wider text-gray-500 uppercase">
+          <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
             Weekly Offs
           </h3>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2.5">
             {weeklyOffs.map((day, idx) => (
               <div
                 key={day.weekday}
-                className={`flex w-24 flex-col justify-between rounded-lg border p-3 transition-colors ${
+                className={`flex h-[72px] w-[100px] flex-col justify-between rounded-lg border p-2.5 transition-colors ${
                   day.selected
-                    ? "border-blue-600 bg-blue-50/50"
-                    : "border-[var(--border)] bg-app"
+                    ? "border-[#D6D0F9] bg-[#F7F5FF]"
+                    : "border-gray-200 bg-white"
                 }`}
               >
-                <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <span
-                    className={`text-sm font-medium ${
-                      day.selected ? "text-blue-700" : "text-main"
+                    className={`text-xs font-semibold ${
+                      day.selected ? "text-[#3F25C8]" : "text-gray-800"
                     }`}
                   >
                     {day.label}
@@ -302,12 +376,16 @@ export const HolidayListModal: React.FC<Props> = ({
                     type="checkbox"
                     checked={day.selected}
                     onChange={() => toggleWeeklyOff(idx)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-[#3F25C8] focus:ring-[#3F25C8] cursor-pointer"
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold text-sub">
-                    HALF<br />DAY
+                <div className="flex items-end justify-between">
+                  <span
+                    className={`text-[9px] font-bold leading-tight ${day.selected ? "text-[#3F25C8]" : "text-gray-400"}`}
+                  >
+                    HALF
+                    <br />
+                    DAY
                   </span>
                   <label className="relative inline-flex cursor-pointer items-center">
                     <input
@@ -317,7 +395,7 @@ export const HolidayListModal: React.FC<Props> = ({
                       onChange={() => toggleWeeklyOffHalfDay(idx)}
                       disabled={!day.selected}
                     />
-                    <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-focus:outline-none peer-disabled:opacity-50"></div>
+                    <div className="peer h-3.5 w-6 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-2.5 after:w-2.5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none peer-disabled:opacity-50"></div>
                   </label>
                 </div>
               </div>
@@ -325,83 +403,185 @@ export const HolidayListModal: React.FC<Props> = ({
           </div>
         </section>
 
-        <hr className="border-[var(--border)]" />
-
-        {/* HOLIDAYS LIST */}
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+        <section
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+          }}
+        >
+          <div className="mb-2.5 flex items-center justify-between">
+            <h3 className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
               Holidays List
             </h3>
-            <button
-              onClick={handleAddHolidayRow}
-              className="flex items-center space-x-1 rounded-md px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50"
-            >
-              <Plus size={16} />
-              <span>Add Row</span>
-            </button>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-app">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-xs font-medium text-sub uppercase">
-                <tr>
-                  <th className="px-4 py-3 w-40 border-b border-[var(--border)]">Date</th>
-                  <th className="px-4 py-3 border-b border-[var(--border)]">Description</th>
-                  <th className="px-4 py-3 w-32 text-center border-b border-[var(--border)]">Is Half Day</th>
-                  <th className="px-4 py-3 w-20 text-center border-b border-[var(--border)]">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {holidays.map((row) => (
-                  <tr key={row.id}>
-                    <td className="px-4 py-2">
+          <div
+            style={{
+              border: "1px solid #e5e7eb",
+              borderRadius: 8,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+            }}
+          >
+            <div
+              className="hl-row"
+              style={{
+                background: "#f9fafb",
+                borderBottom: "1px solid #e5e7eb",
+                minHeight: 32,
+              }}
+            >
+              <div className="hl-cell hl-cell-border hl-col-header">Date</div>
+              <div className="hl-cell hl-cell-border hl-col-header">
+                Description
+              </div>
+              <div
+                className="hl-cell hl-cell-border hl-col-header"
+                style={{ justifyContent: "center" }}
+              >
+                Is Half Day
+              </div>
+              <div
+                className="hl-cell hl-col-header"
+                style={{ justifyContent: "center" }}
+              >
+                Action
+              </div>
+            </div>
+
+            <div
+              className="hl-table-wrap"
+              style={{ flex: 1, minHeight: "150px" }}
+            >
+              {holidays.map((row) => (
+                <div key={row.id} className="hl-row">
+                  <div
+                    className="hl-cell hl-cell-border"
+                    style={{ padding: "0 8px" }}
+                  >
+                    <DatePickerInput
+                      name={`date-${row.id}`}
+                      value={row.holiday_date}
+                      onChange={(_, v) =>
+                        updateHoliday(row.id, "holiday_date", v)
+                      }
+                    />
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="E.g. Diwali Eve"
+                    value={row.description}
+                    onChange={(e) =>
+                      updateHoliday(row.id, "description", e.target.value)
+                    }
+                    className="w-full h-[26px] rounded-md border border-gray-200 bg-white mx-2.5 px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
+                  />
+
+                  <div
+                    className="hl-cell hl-cell-border"
+                    style={{ justifyContent: "center" }}
+                  >
+                    <label className="relative inline-flex cursor-pointer items-center">
                       <input
-                        type="date"
-                        value={row.holiday_date}
-                        onChange={(e) => updateHoliday(row.id, "holiday_date", e.target.value)}
-                        className="w-full border-0 bg-transparent p-0 text-sm focus:ring-0 text-main"
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={row.is_half_day}
+                        onChange={(e) =>
+                          updateHoliday(row.id, "is_half_day", e.target.checked)
+                        }
                       />
-                    </td>
-                    <td className="px-4 py-2">
-                      <input
-                        type="text"
-                        placeholder="E.g. Diwali Eve"
-                        value={row.description}
-                        onChange={(e) => updateHoliday(row.id, "description", e.target.value)}
-                        className="w-full border-0 bg-transparent p-0 text-sm focus:ring-0 text-main"
-                      />
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      <label className="relative inline-flex cursor-pointer items-center">
-                        <input
-                          type="checkbox"
-                          className="peer sr-only"
-                          checked={row.is_half_day}
-                          onChange={(e) => updateHoliday(row.id, "is_half_day", e.target.checked)}
-                        />
-                        <div className="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-focus:outline-none"></div>
-                      </label>
-                    </td>
-                    <td className="px-4 py-2 text-center">
-                      <button
-                        onClick={() => handleRemoveHolidayRow(row.id)}
-                        className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {holidays.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-sub">
-                      No holidays added yet. Click "Add Row" to start.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                      <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
+                    </label>
+                  </div>
+
+                  <div className="hl-cell" style={{ justifyContent: "center" }}>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveHolidayRow(row.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 22,
+                        height: 22,
+                        borderRadius: 4,
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        color: "#9ca3af",
+                        transition: "all 0.15s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = "#ef4444";
+                        e.currentTarget.style.background = "#fef2f2";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = "#9ca3af";
+                        e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      <Trash2 style={{ width: 13, height: 13 }} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {holidays.length === 0 && (
+                <div
+                  style={{
+                    padding: "24px 0",
+                    textAlign: "center",
+                    fontSize: 12,
+                    color: "#6b7280",
+                  }}
+                >
+                  No holidays added yet. Click Add Row to start.
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "6px 10px",
+                borderTop: "1px solid #e5e7eb",
+                background: "#fff",
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleAddHolidayRow}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 6,
+                  background: "#F7F5FF",
+                  padding: "4px 10px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#3F25C8",
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#ebe6ff")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "#F7F5FF")
+                }
+              >
+                <Plus style={{ width: 12, height: 12 }} />
+                Add Row
+              </button>
+            </div>
           </div>
         </section>
       </div>
