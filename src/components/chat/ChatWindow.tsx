@@ -41,28 +41,25 @@ const ChatWindow = ({ isOpen, onToggle }: ChatWindowProps) => {
 
   const handleSendMessage = () => {
 
+    if (isTyping) return;
+
     const trimmedInput = input.trim();
 
-    // Prevent empty messages
     if (!trimmedInput) return;
 
-    // USER MESSAGE
     const newMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: trimmedInput,
     };
 
-    // Render user message instantly
     setMessages((prev) => [...prev, newMessage]);
 
-    // Clear input
     setInput('');
 
-    // STEP 5.5B — Start Typing State
     setIsTyping(true);
 
-    // Simulated assistant delay
+
     setTimeout(() => {
 
       const assistantMessage: Message = {
@@ -77,7 +74,7 @@ const ChatWindow = ({ isOpen, onToggle }: ChatWindowProps) => {
         assistantMessage,
       ]);
 
-      // STEP 5.5C — Stop Typing State
+      // STEP 5.6F — Unlock UI
       setIsTyping(false);
 
     }, 1000);
@@ -213,42 +210,55 @@ const ChatWindow = ({ isOpen, onToggle }: ChatWindowProps) => {
             <input
               type="text"
               value={input}
+              disabled={isTyping}
               onChange={(e) => setInput(e.target.value)}
 
-              // STEP 5.2C — Enter-to-Send
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleSendMessage();
                 }
               }}
 
-              placeholder="Ask something..."
+              placeholder={
+                isTyping
+                  ? 'Assistant is typing...'
+                  : 'Ask something...'
+              }
+
               className="
-                flex-1
-                border
-                rounded-xl
-                px-3
-                py-2
-                text-sm
-                outline-none
-                focus:ring-2
-                focus:ring-blue-500
-              "
+    flex-1
+    border
+    rounded-xl
+    px-3
+    py-2
+    text-sm
+    outline-none
+    focus:ring-2
+    focus:ring-blue-500
+    disabled:bg-gray-100
+    disabled:text-gray-400
+    disabled:cursor-not-allowed
+  "
             />
 
-            {/* STEP 5.2B — Connect Send Button */}
             <button
               onClick={handleSendMessage}
-              className="
-                px-4
-                rounded-xl
-                bg-blue-600
-                text-white
-                text-sm
-                hover:bg-blue-700
-              "
+              disabled={isTyping}
+              className={`
+    px-4
+    rounded-xl
+    text-white
+    text-sm
+    transition-all
+    duration-200
+
+    ${isTyping
+                  ? 'bg-blue-300 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+                }
+  `}
             >
-              Send
+              {isTyping ? '...' : 'Send'}
             </button>
 
           </div>
