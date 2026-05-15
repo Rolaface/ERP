@@ -10,9 +10,39 @@ import {
   deleteTaxConfig,
   type TaxConfig,
 } from "../../../../../api/payrollConfigApi";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../../../../store/dataRefreshStore";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../../../../store/dataRefreshStore";
 import { useTaxConfigs } from "../hooks/useTaxConfigs";
 import { openTaxConfigModal } from "../../../../../store/modalStore";
+
+const formatDate = (date: string | Date) => {
+  if (!date) return "";
+
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
 
 export function TaxConfigurationSetup() {
   const {
@@ -32,12 +62,17 @@ export function TaxConfigurationSetup() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
 
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.TAX_CONFIGURATION_LIST, () => {
-      fetchAll();
-    });
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.TAX_CONFIGURATION_LIST,
+      () => {
+        fetchAll();
+      },
+    );
     return unsubscribe;
   }, [subscribeToRefresh, fetchAll]);
 
@@ -83,8 +118,19 @@ export function TaxConfigurationSetup() {
   const columns: Column<TaxConfig>[] = useMemo(
     () => [
       {
+        key: "effective_from",
+       align:"center",
+        header: "Effictive From",
+        render: (row) => (
+          <span className="text-sm text-main">
+            {row.effective_from ? formatDate(row.effective_from) : "—"}
+          </span>
+        ),
+      },
+      {
         key: "name",
         header: "Name",
+        align:"center",
         render: (row) => (
           <span className="font-medium text-main">{row.name || "—"}</span>
         ),
@@ -99,9 +145,11 @@ export function TaxConfigurationSetup() {
       //     </span>
       //   ),
       // },
+
       {
         key: "standard_tax_exemption_amount",
-        header: "Value",
+         align:"center",
+        header: "Tax Exemption Amount",
         render: (row) => (
           <span className="text-sm text-main">
             {row.standard_tax_exemption_amount != null
@@ -112,6 +160,7 @@ export function TaxConfigurationSetup() {
       },
       {
         key: "disabled",
+         align:"center",
         header: "Status",
         render: (row) => {
           const isActive = !row.disabled;

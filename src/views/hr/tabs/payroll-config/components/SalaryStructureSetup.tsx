@@ -9,7 +9,10 @@ import {
   deleteSalaryStructure,
   type SalaryStructure,
 } from "../../../../../api/payrollConfigApi";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../../../../store/dataRefreshStore";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../../../../store/dataRefreshStore";
 import { useSalaryStructures } from "../hooks/useSalaryStructures";
 import { openSalaryStructureModal } from "../../../../../store/modalStore";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
@@ -32,12 +35,17 @@ export function SalaryStructureSetup() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
 
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.SALARY_STRUCTURE_LIST, () => {
-      fetchAll();
-    });
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.SALARY_STRUCTURE_LIST,
+      () => {
+        fetchAll();
+      },
+    );
     return unsubscribe;
   }, [subscribeToRefresh, fetchAll]);
 
@@ -85,22 +93,26 @@ export function SalaryStructureSetup() {
       {
         key: "name",
         header: "Structure Name",
+        align: "center",
         render: (row) => (
           <span className="font-medium text-main">{row.name || "—"}</span>
         ),
         tooltip: (row) => row.name ?? "",
       },
       {
-        key: "description",
-        header: "Description",
+        key: "Currency",
+        header: "Currency",
+        align: "center",
         render: (row) => (
-          <span className="text-sm text-sub line-clamp-1">{row.description || "—"}</span>
+          <span className="font-medium text-main">{row.currency || "—"}</span>
         ),
-        tooltip: (row) => row.description ?? "",
+        tooltip: (row) => row.currency ?? "",
       },
+
       {
         key: "is_active",
         header: "Status",
+        
         render: (row) => (
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -113,14 +125,7 @@ export function SalaryStructureSetup() {
           </span>
         ),
       },
-      {
-        key: "Currency",
-        header: "Currency",
-        render: (row) => (
-          <span className="font-medium text-main">{row.currency || "—"}</span>
-        ),
-        tooltip: (row) => row.currency ?? "",
-      },
+
       // {
       //   key: "docstatus",
       //   header: "Status",
@@ -139,7 +144,7 @@ export function SalaryStructureSetup() {
       //     );
       //   },
       // },
-      
+
       {
         key: "actions",
         header: "Actions",

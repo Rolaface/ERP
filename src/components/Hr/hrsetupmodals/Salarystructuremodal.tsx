@@ -212,7 +212,7 @@ const TypeCell: React.FC<{
       options={[
         { label: "Earning", value: "Earning" },
         { label: "Deduction", value: "Deduction" },
-        { label: "Flexible", value: "Flexible" },
+       
       ]}
     />
   </div>
@@ -732,12 +732,28 @@ export const SalaryStructureModal: React.FC<Props> = ({
                       value={row.salary_component}
                       placeholder="Search component…"
                       fetchOptions={(q) =>
-                        searchSalaryComponents(row.type, q).then((data) =>
-                          data.map((c: { name: string }) => ({
-                            label: c.name,
-                            value: c.name,
-                          })),
-                        )
+                        searchSalaryComponents(row.type, q).then((data) => {
+                          const selectedComponents = new Set(
+                            rows
+                              .filter(
+                                (r, i) =>
+                                  i !== idx &&
+                                  r.type === row.type &&
+                                  r.salary_component?.trim(),
+                              )
+                              .map((r) => r.salary_component),
+                          );
+
+                          return data
+                            .filter(
+                              (c: { name: string }) =>
+                                !selectedComponents.has(c.name),
+                            )
+                            .map((c: { name: string }) => ({
+                              label: c.name,
+                              value: c.name,
+                            }));
+                        })
                       }
                       onChange={(value) => changeComponent(idx, value)}
                     />
