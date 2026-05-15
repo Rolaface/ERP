@@ -5,10 +5,9 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
-import Table from "../../components/ui/Table/Table";
+import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { getAllQuotations } from "../../api/quotationApi";
 import { showApiError } from "../../utils/alert";
-
 
 interface Quotation {
   id: string;
@@ -16,7 +15,7 @@ interface Quotation {
   transactionDate: string;
   validTill: string;
   grandTotal: number;
-    invoiceStatus: string;
+  invoiceStatus: string;
   currency: string;
 }
 
@@ -33,21 +32,16 @@ const CustomerQuotations = ({ customerId }: Props) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  /* FETCH DATA */
-
   useEffect(() => {
     if (!customerId) return;
 
     const loadQuotations = async () => {
       setLoading(true);
-
       try {
         const res = await getAllQuotations(page, pageSize, {
           customer: customerId,
         });
-
         const payload = res?.data || {};
-
         setQuotations(payload?.quotations || []);
         setTotalPages(payload?.pagination?.totalPages || 1);
         setTotalItems(payload?.pagination?.total || 0);
@@ -65,33 +59,20 @@ const CustomerQuotations = ({ customerId }: Props) => {
     setPage(1);
   }, [customerId]);
 
-  /* SUMMARY */
-
   const summary = useMemo(() => {
     const total = quotations.length;
-
     const draft = quotations.filter((q: any) => q.invoiceStatus === "Draft").length;
-
     const sent = quotations.filter((q: any) => q.invoiceStatus === "Sent").length;
-
-    const totalValue = quotations.reduce(
-      (sum, q) => sum + (q.grandTotal || 0),
-      0
-    );
-
+    const totalValue = quotations.reduce((sum, q) => sum + (q.grandTotal || 0), 0);
     return { total, draft, sent, totalValue };
   }, [quotations]);
-
-  /* TABLE COLUMNS */
 
   const columns = [
     {
       key: "id",
       header: "Quotation No",
       render: (row: Quotation) => (
-        <span className="text-xs font-black text-primary">
-          {row.id}
-        </span>
+        <span className="text-xs font-black text-primary">{row.id}</span>
       ),
     },
     {
@@ -103,7 +84,6 @@ const CustomerQuotations = ({ customerId }: Props) => {
         </span>
       ),
     },
- 
     {
       key: "validTill",
       header: "Valid Till",
@@ -116,23 +96,23 @@ const CustomerQuotations = ({ customerId }: Props) => {
           <span className="text-xs text-muted">—</span>
         ),
     },
- {
-  key: "invoiceStatus",
-  header: "Status",
-  render: (row: Quotation) => (
-    <span
-      className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${
-        row.invoiceStatus === "Sent"
-          ? "bg-success/10 text-success"
-          : row.invoiceStatus === "Draft"
-          ? "bg-warning/10 text-warning"
-          : "bg-muted/10 text-muted"
-      }`}
-    >
-      {row.invoiceStatus}
-    </span>
-  ),
-},
+    {
+      key: "invoiceStatus",
+      header: "Status",
+      render: (row: Quotation) => (
+        <span
+          className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${
+            row.invoiceStatus === "Sent"
+              ? "bg-success/10 text-success"
+              : row.invoiceStatus === "Draft"
+              ? "bg-warning/10 text-warning"
+              : "bg-muted/10 text-muted"
+          }`}
+        >
+          {row.invoiceStatus}
+        </span>
+      ),
+    },
     {
       key: "amount",
       header: "Amount",
@@ -145,42 +125,17 @@ const CustomerQuotations = ({ customerId }: Props) => {
     },
   ];
 
-  /* UI */
-
   return (
     <div className="max-w-[1400px] mx-auto">
-      {/* SUMMARY */}
-
       <div className="grid grid-cols-4 gap-2">
-        <SummaryCard
-          icon={<ClipboardList size={14} />}
-          label="Total Quotations"
-          value={summary.total}
-        />
-
-        <SummaryCard
-          icon={<Clock size={14} />}
-          label="Draft"
-          value={summary.draft}
-        />
-
-        <SummaryCard
-          icon={<CheckCircle2 size={14} />}
-          label="Sent"
-          value={summary.sent}
-        />
-
-        <SummaryCard
-          icon={<FileText size={14} />}
-          label="Total Value"
-          value={`${summary.totalValue.toLocaleString()}`}
-        />
+        <SummaryCard icon={<ClipboardList size={14} />} label="Total Quotations" value={summary.total} />
+        <SummaryCard icon={<Clock size={14} />} label="Draft" value={summary.draft} />
+        <SummaryCard icon={<CheckCircle2 size={14} />} label="Sent" value={summary.sent} />
+        <SummaryCard icon={<FileText size={14} />} label="Total Value" value={`${summary.totalValue.toLocaleString()}`} />
       </div>
 
-      {/* TABLE */}
-
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
-        <Table
+        <ModalTable
           columns={columns}
           data={quotations}
           loading={loading}
@@ -202,8 +157,6 @@ const CustomerQuotations = ({ customerId }: Props) => {
   );
 };
 
-/* SUMMARY CARD */
-
 const SummaryCard = ({
   icon,
   label,
@@ -214,18 +167,10 @@ const SummaryCard = ({
   value: string | number;
 }) => (
   <div className="bg-card border border-theme rounded-xl p-3 flex items-center gap-3">
-    <div className="p-2 rounded-lg bg-row-hover text-primary">
-      {icon}
-    </div>
-
+    <div className="p-2 rounded-lg bg-row-hover text-primary">{icon}</div>
     <div>
-      <p className="text-[9px] font-black uppercase tracking-widest text-muted">
-        {label}
-      </p>
-
-      <p className="text-lg font-black text-primary">
-        {value}
-      </p>
+      <p className="text-[9px] font-black uppercase tracking-widest text-muted">{label}</p>
+      <p className="text-lg font-black text-primary">{value}</p>
     </div>
   </div>
 );
