@@ -129,7 +129,6 @@ export function LeavePolicySetup() {
         header: "Actions",
         align: "center",
         render: (row) => {
-          // Dynamically build dropdown menu based on docstatus
           const dropdownActions = [];
 
           if (row.docstatus === 0) {
@@ -162,12 +161,11 @@ export function LeavePolicySetup() {
 
           return (
             <ActionGroup>
-              {/* <ActionButton
-                type="edit"
+              <ActionButton
+                type="view"
                 iconOnly
                 onClick={() => openLeavePolicyModal(row, true, { onSuccess: fetchAll })}
-                disabled={actionLoadingId === row.name || row.docstatus !== 0} // Disable edit if not Draft
-              /> */}
+               />
               {dropdownActions.length > 0 && (
                 <ActionMenu customActions={dropdownActions} />
               )}
@@ -176,7 +174,6 @@ export function LeavePolicySetup() {
         },
       },
     ],
-    // Don't forget to add fetchAll to dependencies so the modal gets the latest reference!
     [actionLoadingId, handleDelete, handleStatusChange, fetchAll],
   );
 

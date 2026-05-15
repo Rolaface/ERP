@@ -98,7 +98,7 @@ export function LeavePolicyAssignmentSetup() {
         header: "Employee",
         render: (row) => (
           <span className="font-medium text-main">
-            {row.employee || "—"}
+            {row.employee_name || "—"}
           </span>
         ),
       },
@@ -155,40 +155,13 @@ export function LeavePolicyAssignmentSetup() {
           );
         },
       },
-      // {
-      //   key: "actions",
-      //   header: "Actions",
-      //   align: "center",
-      //   render: (row) => (
-      //     <ActionGroup>
-      //       <ActionButton
-      //         type="edit"
-      //         iconOnly
-      //         // Pass row data and the fetchAll callback directly to the global store
-      //         onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
-      //         disabled={actionLoadingId === row.name || row.docstatus === 1}
-      //       />
-      //       <ActionMenu
-      //         customActions={[
-      //           {
-      //             label: "Delete",
-      //             onClick: () => handleDelete(row),
-      //             disabled: actionLoadingId === row.name || row.docstatus === 1,
-      //           },
-      //         ]}
-      //       />
-      //     </ActionGroup>
-      //   ),
-      // },
       {
         key: "actions",
         header: "Actions",
         align: "center",
         render: (row) => {
-          // Dynamically build the menu list based on docstatus
           const menuActions = [];
           
-          // Show "Cancel" only if submitted
           if (row.docstatus === 1) {
             menuActions.push({
               label: "Cancel",
@@ -197,7 +170,6 @@ export function LeavePolicyAssignmentSetup() {
             });
           }
           
-          // Show "Delete" only if Draft (0) or Cancelled (2)
           if (row.docstatus === 0 || row.docstatus === 2) {
             menuActions.push({
               label: "Delete",
@@ -208,14 +180,12 @@ export function LeavePolicyAssignmentSetup() {
 
           return (
             <ActionGroup>
-              {/* <ActionButton
-                type="edit"
+              <ActionButton
+                type="view"
                 iconOnly
                 onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
-                disabled={actionLoadingId === row.name}
-              /> */}
-              {/* Only show the menu (three dots) if there are actions available */}
-              {menuActions.length > 0 && (
+              />
+               {menuActions.length > 0 && (
                 <ActionMenu customActions={menuActions} />
               )}
             </ActionGroup>

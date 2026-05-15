@@ -9,11 +9,14 @@ import type { Column } from "../../../../../components/ui/Table/type";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import {
   deleteTaxConfig,
+  updateTaxConfig,
   type TaxConfig,
 } from "../../../../../api/payrollConfigApi";
 import { useDataRefreshStore, REFRESH_KEYS } from "../../../../../store/dataRefreshStore";
 import { useTaxConfigs } from "../hooks/useTaxConfigs";
 import { openTaxConfigModal } from "../../../../../store/modalStore";
+import { showApiError } from "../../../../../utils/alert";
+import { parseFrappeError } from "../../leave-config/hooks/parseFrappeError";
 
 export function TaxConfigurationSetup() {
   const {
@@ -100,6 +103,25 @@ export function TaxConfigurationSetup() {
     },
     [triggerRefresh],
   );
+
+   const handleStatus = useCallback(
+      async (row: TaxConfig) => {
+        if (!row.name) return;
+        try {
+          setActionLoadingId(row.name);
+          
+          const newStatus = row.disabled ? 0 : 1;
+          await updateTaxConfig(row.name, { disabled: newStatus });
+          fetchAll();
+        } catch (error) {
+          showApiError(parseFrappeError(error) || "Failed to update status.");
+         } finally {
+          setActionLoadingId(null);
+        }
+      },
+      [fetchAll]
+    );
+
   const columns: Column<TaxConfig>[] = useMemo(
     () => [
       {
@@ -142,7 +164,7 @@ export function TaxConfigurationSetup() {
                   : "bg-gray-100 text-gray-500"
                 }`}
             >
-              {isActive ? "Active" : "Inactive"}
+              {isActive ? "Enabled" : "Disabled"}
             </span>
           );
         },
@@ -154,13 +176,17 @@ export function TaxConfigurationSetup() {
         render: (row) => (
           <ActionGroup>
             <ActionButton
-              type="edit"
+              type="view"
               iconOnly
               onClick={() => handleEdit(row)}
-              disabled={actionLoadingId === row.name}
             />
             <ActionMenu
               customActions={[
+                {
+                  label: row.disabled? "Enabled" : "Disabled",
+                  onClick: () => handleStatus(row),
+                  disabled: actionLoadingId === row.name,
+                },
                 {
                   label: "Delete",
                   onClick: () => handleDelete(row),

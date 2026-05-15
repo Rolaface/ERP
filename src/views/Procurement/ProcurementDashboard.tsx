@@ -12,6 +12,8 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  ComposedChart,
+  Line,
 } from "recharts";
 import {
   FileText,
@@ -20,23 +22,16 @@ import {
   Users,
   UsersRound,
 } from "lucide-react";
-import { getProcurementDashboardSummary } from "../../api/procurementDashboardApi";
+import { getProcurementDetails, getProcurementSummary } from "../../api/procurementDashboardApi";
 import { ChartSkeleton } from "../../components/ChartSkeleton";
 import { AppMetricCard, AppSectionCard } from "../../components/ui/app-shell";
 
 const ProcurementDashboard: React.FC = () => {
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [summaryData, setSummaryData] = useState<{
-    totalSuppliers: number;
-    activeSuppliers: number;
-    inactiveSuppliers: number;
-    totalPurchaseInvoice: number;
-    totalPurchaseOrder: number;
-  } | null>(null);
-
-  // const chartsLoading = summaryLoading || !summaryData;
-  const chartsLoading = summaryLoading || (!summaryData && !summaryError);
+  const [chartsLoading, setChartsLoading] = useState(true);
+  
+  // Data States
+  const [summaryData, setSummaryData] = useState<any>(null);
+  const [detailsData, setDetailsData] = useState<any>(null);
 
   const palette = useMemo(
     () => ({
@@ -49,22 +44,47 @@ const ProcurementDashboard: React.FC = () => {
     [],
   );
 
+  const currencyINRCompact = useMemo(
+    () =>
+      new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        notation: "compact",
+        compactDisplay: "short",
+        maximumFractionDigits: 1,
+      }),
+    []
+  );
+
+const currencyINR = useMemo(
+  () =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2,
+    }),
+  [],
+);
+  // ----------------------------------------------------
+  // API FETCH
+  // ----------------------------------------------------
   useEffect(() => {
     let mounted = true;
     const run = async () => {
       try {
-        setSummaryLoading(true);
-        setSummaryError(null);
-        setSummaryData(null);
-        const resp = await getProcurementDashboardSummary();
+        setChartsLoading(true);
+        const [summaryRes, detailsRes] = await Promise.all([
+          getProcurementSummary(),
+          getProcurementDetails(),
+        ]);
+
         if (!mounted) return;
-        setSummaryData(resp.data);
+        setSummaryData(summaryRes?.data || null);
+        setDetailsData(detailsRes?.data || null);
       } catch (e: any) {
-        if (!mounted) return;
-        setSummaryError(e?.message ?? "Failed to load procurement dashboard summary");
+        console.error("Failed to load procurement dashboard data:", e);
       } finally {
-        if (!mounted) return;
-        setSummaryLoading(false);
+        if (mounted) setChartsLoading(false);
       }
     };
 
@@ -74,26 +94,10 @@ const ProcurementDashboard: React.FC = () => {
     };
   }, []);
 
-  const chartPlaneStyle = useMemo(
-    () => ({
-      backgroundImage:
-        "linear-gradient(rgba(229,231,235,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.7) 1px, transparent 1px)",
-      backgroundSize: "24px 24px",
-      backgroundPosition: "-1px -1px",
-    }),
-    [],
-  );
-
-  const renderDonutLabel = (props: any) => {
-    const { x, y, name, value } = props;
-    return (
-      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
-        {String(name)}: {String(value)}
-      </text>
-    );
-  };
-
-  const stats = [
+  // ----------------------------------------------------
+  // DATA MEMOS
+  // ----------------------------------------------------
+  const stats = useMemo(() => [
     {
       label: "Total Suppliers",
       value: String(summaryData?.totalSuppliers ?? 0),
@@ -114,43 +118,67 @@ const ProcurementDashboard: React.FC = () => {
     },
     {
       label: "Purchase Orders",
-      value: String(summaryData?.totalPurchaseOrder ?? 0),
+      value: String(summaryData?.totalPurchaseOrders ?? 0), // Updated key based on new API
       icon: ShoppingCart,
       gradient: "from-purple-500 to-purple-600",
     },
     {
       label: "Purchase Invoices",
-      value: String(summaryData?.totalPurchaseInvoice ?? 0),
+      value: String(summaryData?.totalPurchaseInvoices ?? 0), // Updated key based on new API
       icon: FileText,
       gradient: "from-amber-500 to-amber-600",
     },
-  ];
+  ], [summaryData]);
 
-  const supplierStatusDonutData = [
-    { name: "Active", value: Number(summaryData?.activeSuppliers ?? 0) },
-    { name: "Inactive", value: Number(summaryData?.inactiveSuppliers ?? 0) },
-  ];
-
-  const documentsPieData = [
-    { name: "Purchase Orders", value: Number(summaryData?.totalPurchaseOrder ?? 0) },
-    { name: "Purchase Invoices", value: Number(summaryData?.totalPurchaseInvoice ?? 0) },
-  ];
-
-  const procurementBarData = [
+  const procurementBarData = useMemo(() => [
     { name: "Total Suppliers", value: Number(summaryData?.totalSuppliers ?? 0) },
     { name: "Active", value: Number(summaryData?.activeSuppliers ?? 0) },
     { name: "Inactive", value: Number(summaryData?.inactiveSuppliers ?? 0) },
-    { name: "Purchase Orders", value: Number(summaryData?.totalPurchaseOrder ?? 0) },
-    { name: "Purchase Invoices", value: Number(summaryData?.totalPurchaseInvoice ?? 0) },
-  ];
+    { name: "Purchase Orders", value: Number(summaryData?.totalPurchaseOrders ?? 0) },
+    { name: "Purchase Invoices", value: Number(summaryData?.totalPurchaseInvoices ?? 0) },
+  ], [summaryData]);
 
-  const pieColors = [
-    palette.purple,
-    palette.emerald,
-    palette.amber,
-    palette.blue,
-    palette.slate,
-  ];
+  const supplierStatusDonutData = useMemo(() => [
+    { name: "Active", value: Number(summaryData?.activeSuppliers ?? 0) },
+    { name: "Inactive", value: Number(summaryData?.inactiveSuppliers ?? 0) },
+  ], [summaryData]);
+
+  // Merge Monthly Trends for the Composed Chart
+  const documentsComposedData = useMemo(() => {
+    if (!detailsData) return [];
+    
+    const poTrend = detailsData.purchaseOrders?.monthlyTrend || [];
+    const piTrend = detailsData.purchaseInvoices?.monthlyTrend || [];
+
+    // Map through the 12 months and combine PO and PI amounts
+    return poTrend.map((po: any, index: number) => ({
+      month: po.month,
+      poAmount: Number(po.amount || 0),
+      piAmount: Number(piTrend[index]?.amount || 0),
+    }));
+  }, [detailsData]);
+
+  // ----------------------------------------------------
+  // RENDER HELPERS
+  // ----------------------------------------------------
+  const chartPlaneStyle = useMemo(
+    () => ({
+      backgroundImage:
+        "linear-gradient(rgba(229,231,235,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.7) 1px, transparent 1px)",
+      backgroundSize: "24px 24px",
+      backgroundPosition: "-1px -1px",
+    }),
+    [],
+  );
+
+  const renderDonutLabel = (props: any) => {
+    const { x, y, name, value } = props;
+    return (
+      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
+        {String(name)}: {String(value)}
+      </text>
+    );
+  };
 
   const TableSkeleton = () => (
     <div className="space-y-3 animate-pulse">
@@ -163,6 +191,7 @@ const ProcurementDashboard: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* --- METRIC CARDS --- */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {chartsLoading
           ? Array.from({ length: 5 }).map((_, idx) => (
@@ -186,14 +215,9 @@ const ProcurementDashboard: React.FC = () => {
               />
             ))}
       </div>
-{/* 
-      {summaryError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
-          {summaryError}
-        </div>
-      )} */}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* --- PROCUREMENT OVERVIEW (BAR) --- */}
         <AppSectionCard title="Procurement Overview">
           <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
             {chartsLoading ? (
@@ -226,6 +250,7 @@ const ProcurementDashboard: React.FC = () => {
           </div>
         </AppSectionCard>
 
+        {/* --- SUPPLIER STATUS (PIE) --- */}
         <AppSectionCard title="Supplier Status">
           <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
             {chartsLoading ? (
@@ -273,15 +298,23 @@ const ProcurementDashboard: React.FC = () => {
           </div>
         </AppSectionCard>
 
-        <AppSectionCard title="Documents">
+        {/* --- DOCUMENTS (COMPOSED CHART: BAR + LINE) --- */}
+        <AppSectionCard title="Documents Trend">
           <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
             {chartsLoading ? (
-              <ChartSkeleton variant="pie" />
+              <ChartSkeleton variant="line" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <ComposedChart data={documentsComposedData} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis 
+                    tick={{ fontSize: 12 }} 
+                    width={52} 
+                    tickFormatter={(v) => currencyINRCompact.format(Number(v))}
+                  />
                   <Tooltip
-                    formatter={(v: any) => Number(v ?? 0)}
+                    formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
                     contentStyle={{
                       background: "var(--card)",
                       border: "1px solid var(--border)",
@@ -290,39 +323,20 @@ const ProcurementDashboard: React.FC = () => {
                       boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                     }}
                     itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                    cursor={{ fill: "var(--primary)", opacity: 0.1 }}
                   />
-                  <Legend
-                    wrapperStyle={{ fontSize: 12 }}
-                    layout="horizontal"
-                    verticalAlign="bottom"
-                    align="center"
-                    iconType="square"
-                    height={36}
-                  />
-                  <Pie
-                    data={documentsPieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={55}
-                    outerRadius={82}
-                    paddingAngle={2}
-                    label={renderDonutLabel}
-                    labelLine={false}
-                  >
-                    {documentsPieData.map((_, idx) => (
-                      <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="poAmount" name="Purchase Orders" fill={palette.purple} radius={[4, 4, 0, 0]} barSize={20} />
+                  <Line type="monotone" dataKey="piAmount" name="Purchase Invoices" stroke={palette.amber} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             )}
           </div>
         </AppSectionCard>
 
+        {/* --- DOCUMENTS SUMMARY (TABLE) --- */}
         <AppSectionCard title="Documents Summary">
-          <div className="rounded-xl border border-[var(--border)] bg-card px-4 py-4">
+          <div className="rounded-xl border border-[var(--border)] bg-card px-4 py-4 h-72 flex flex-col justify-center">
             {chartsLoading ? (
               <TableSkeleton />
             ) : (
@@ -337,13 +351,13 @@ const ProcurementDashboard: React.FC = () => {
                   <tr className="border-b border-[var(--border)]/70">
                     <td className="py-3 text-main">Purchase Orders</td>
                     <td className="py-3 text-right font-semibold text-main">
-                      {Number(summaryData?.totalPurchaseOrder ?? 0)}
+                      {Number(summaryData?.totalPurchaseOrders ?? 0)}
                     </td>
                   </tr>
                   <tr className="border-b border-[var(--border)]/70">
                     <td className="py-3 text-main">Purchase Invoices</td>
                     <td className="py-3 text-right font-semibold text-main">
-                      {Number(summaryData?.totalPurchaseInvoice ?? 0)}
+                      {Number(summaryData?.totalPurchaseInvoices ?? 0)}
                     </td>
                   </tr>
                   <tr>
