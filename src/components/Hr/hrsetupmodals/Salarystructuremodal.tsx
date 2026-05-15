@@ -37,7 +37,7 @@ const SS_STYLES = `
 
 .ss-row {
   display: grid;
-  grid-template-columns: 90px 1.5fr 260px 36px 36px 36px 30px;
+  grid-template-columns: 100px 1.5fr 260px 36px 36px 36px 36px 30px;
   align-items: center;
   gap: 0;
   border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));
@@ -118,7 +118,7 @@ interface UnifiedRow {
   depends_on_payment_days?: 0 | 1;
   is_tax_applicable?: 0 | 1;
   is_income_tax_component?: 0 | 1;
-
+  variable_based_on_taxable_salary?: 0 | 1;
   _details?: SalaryComponent | null;
   _loading?: boolean;
 }
@@ -152,6 +152,10 @@ function buildPayloadRow(r: UnifiedRow) {
     abbr: d?.salary_component_abbr ?? r.salary_component,
     is_income_tax_component: (r.is_income_tax_component ??
       d?.is_income_tax_component ??
+      0) as 0 | 1,
+
+    variable_based_on_taxable_salary: (r.variable_based_on_taxable_salary ??
+      d?.variable_based_on_taxable_salary ??
       0) as 0 | 1,
   };
 }
@@ -341,11 +345,11 @@ export const SalaryStructureModal: React.FC<Props> = ({
   const [rows, setRows] = useState<UnifiedRow[]>(INITIAL_ROWS);
   const [saving, setSaving] = useState(false);
   const [payroll_frequency, setPayrollFrequency] = useState("Monthly");
-// const handleFrequencyChange = (
-//   e: React.ChangeEvent<HTMLSelectElement>,
-// ) => {
-//   setPayrollFrequency(e.target.value);
-// };
+  // const handleFrequencyChange = (
+  //   e: React.ChangeEvent<HTMLSelectElement>,
+  // ) => {
+  //   setPayrollFrequency(e.target.value);
+  // };
   useEffect(() => {
     const id = "ss-styles-v2";
     if (!document.getElementById(id)) {
@@ -403,6 +407,8 @@ export const SalaryStructureModal: React.FC<Props> = ({
           formula: d.formula ?? "",
           amount: d.amount ? String(d.amount) : "",
           is_income_tax_component: d.is_income_tax_component ?? 0,
+          variable_based_on_taxable_salary:
+            d.variable_based_on_taxable_salary ?? 0,
 
           depends_on_payment_days: d.depends_on_payment_days ?? 0,
           is_tax_applicable: d.is_tax_applicable ?? 0,
@@ -437,6 +443,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
         amount_based_on_formula: undefined,
         depends_on_payment_days: undefined,
         is_income_tax_component: undefined,
+        variable_based_on_taxable_salary: undefined,
         is_tax_applicable: undefined,
       };
       return n;
@@ -580,7 +587,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
       title={isEdit ? "Edit Salary Structure" : "New Salary Structure"}
       subtitle="Build your payroll structure component by component"
       icon={LayoutList}
-      customWidth="50vw"
+      customWidth="70vw"
       height="78vh"
       footer={footer}
     >
@@ -597,7 +604,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
         <div
           style={{
             display: "grid",
-          gridTemplateColumns: "1fr 180px 120px",
+            gridTemplateColumns: "1fr 180px 120px",
             gap: 10,
             alignItems: "end",
           }}
@@ -610,8 +617,8 @@ export const SalaryStructureModal: React.FC<Props> = ({
             placeholder="e.g. Fixed CTC Structure"
             required
           />
-         
-           {/* <ModalSelect
+
+          {/* <ModalSelect
                       label="Payroll Frequency"
                       value={payroll_frequency}
                       onChange={handleFrequencyChange}
@@ -683,6 +690,13 @@ export const SalaryStructureModal: React.FC<Props> = ({
             >
               IT
             </div>
+            <div
+              className="ss-cell ss-cell-border ss-col-header"
+              style={{ justifyContent: "center" }}
+              title="Variable Based on Taxable Salary"
+            >
+              VTS
+            </div>
             <div className="ss-cell" />
           </div>
 
@@ -695,8 +709,13 @@ export const SalaryStructureModal: React.FC<Props> = ({
               const d = row._details;
               const depPayDays = row.depends_on_payment_days === 1;
               const taxApplicable = row.is_tax_applicable === 1;
-              const incomeTax = row.is_income_tax_component === 1;
+              const incomeTax =
+                (row.is_income_tax_component ?? d?.is_income_tax_component) ===
+                1;
 
+              const variableTaxable =
+                (row.variable_based_on_taxable_salary ??
+                  d?.variable_based_on_taxable_salary) === 1;
               return (
                 <div key={idx} className="ss-row">
                   <TypeCell
@@ -739,7 +758,12 @@ export const SalaryStructureModal: React.FC<Props> = ({
                     checked={incomeTax}
                     title={incomeTax ? "Income tax component" : ""}
                   />
-
+                  <FlagCell
+                    checked={variableTaxable}
+                    title={
+                      variableTaxable ? "Variable based on taxable salary" : ""
+                    }
+                  />
                   <div
                     className="ss-cell"
                     style={{ justifyContent: "center", padding: "0 4px" }}

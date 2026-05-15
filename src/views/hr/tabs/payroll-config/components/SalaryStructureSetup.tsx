@@ -91,6 +91,14 @@ export function SalaryStructureSetup() {
         tooltip: (row) => row.name ?? "",
       },
       {
+        key: "description",
+        header: "Description",
+        render: (row) => (
+          <span className="text-sm text-sub line-clamp-1">{row.description || "—"}</span>
+        ),
+        tooltip: (row) => row.description ?? "",
+      },
+      {
         key: "is_active",
         header: "Status",
         render: (row) => (
@@ -106,31 +114,32 @@ export function SalaryStructureSetup() {
         ),
       },
       {
-        key: "docstatus",
-        header: "Status",
-        render: (row) => {
-          const labels: Record<number, string> = { 0: "Draft", 1: "Approved", 2: "Cancelled" };
-          const colors: Record<number, string> = {
-            0: "text-amber-600",
-            1: "text-blue-600",
-            2: "text-red-500",
-          };
-          const status = row.docstatus ?? 0;
-          return (
-            <span className={`text-xs font-semibold ${colors[status]}`}>
-              {labels[status] ?? "—"}
-            </span>
-          );
-        },
-      },
-      {
-        key: "description",
-        header: "Description",
+        key: "Currency",
+        header: "Currency",
         render: (row) => (
-          <span className="text-sm text-sub line-clamp-1">{row.description || "—"}</span>
+          <span className="font-medium text-main">{row.currency || "—"}</span>
         ),
-        tooltip: (row) => row.description ?? "",
+        tooltip: (row) => row.currency ?? "",
       },
+      // {
+      //   key: "docstatus",
+      //   header: "Status",
+      //   render: (row) => {
+      //     const labels: Record<number, string> = { 0: "Draft", 1: "Approved", 2: "Cancelled" };
+      //     const colors: Record<number, string> = {
+      //       0: "text-amber-600",
+      //       1: "text-blue-600",
+      //       2: "text-red-500",
+      //     };
+      //     const status = row.docstatus ?? 0;
+      //     return (
+      //       <span className={`text-xs font-semibold ${colors[status]}`}>
+      //         {labels[status] ?? "—"}
+      //       </span>
+      //     );
+      //   },
+      // },
+      
       {
         key: "actions",
         header: "Actions",
