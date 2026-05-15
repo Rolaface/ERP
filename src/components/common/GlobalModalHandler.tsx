@@ -139,6 +139,12 @@ const LeavePolicyModal = lazy(
       default: m.LeavePolicyAssignmentModal,
     })),
 );
+const HolidayListModal = lazy(
+  () =>
+    import("../Hr/hrsetupmodals/HolidayListModal").then((m) => ({
+      default: m.HolidayListModal,
+    })),
+);
 const TaxConfigModal = lazy(
   () =>
     import("../Hr/hrsetupmodals/TaxConfigModal").then((m) => ({
@@ -922,6 +928,21 @@ onSuccess={async (empIds, formData) => {
       }}
     />,
   );
+  case "holidayList":
+        return wrappedModal(
+          <HolidayListModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+              // handleClose is handled internally by the modal's save flow, 
+              // but you can call it here if needed.
+            }}
+          />,
+        );
     }
   };
 
