@@ -291,12 +291,19 @@ export const API = {
     getHolidays: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
   },
 
-  holidays: {
-    getAll: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
-    create: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.create_holiday`,
-    update: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.update_holiday`,
-    delete: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.delete_holiday`,
+  holidayList: {
+    getAll: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.list_holiday_lists`,
+    getByName: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.get_holiday_list`,
+    create: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.create_holiday_list`,
+    update: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.update_holiday_list`,
+    delete: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.delete_holiday_list`,
   },
+  // holidays: {
+  //   getAll: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
+  //   create: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.create_holiday`,
+  //   update: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.update_holiday`,
+  //   delete: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.delete_holiday`,
+  // },
 
   /* =========================
    * MODULES (SYSTEM)
