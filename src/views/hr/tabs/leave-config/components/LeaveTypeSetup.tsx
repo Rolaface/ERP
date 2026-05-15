@@ -1,7 +1,5 @@
-// ─── LeaveTypeSetup.tsx ──────────────────────────────────────────────────────
 import { useCallback, useMemo, useState } from "react";
-
-import Table from "../../../../../components/ui/Table/Table";
+import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -11,7 +9,6 @@ import {
   deleteLeaveType,
   type LeaveType,
 } from "../../../../../api/leaveConfigApi";
-import { showApiError, showSuccess } from "../../../../../utils/alert";
 import { useLeaveTypes } from "../hooks/useLeaveTypes";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeaveTypeModal } from "../../../../../store/modalStore";
@@ -30,7 +27,7 @@ export function LeaveTypeSetup() {
     totalItems,
     fetchAll,
   } = useLeaveTypes();
-  
+
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const handleDelete = useCallback(
@@ -38,7 +35,6 @@ export function LeaveTypeSetup() {
       if (!row.name) return;
       try {
         setActionLoadingId(row.name);
-
         const deleted = await confirmDelete({
           text: `Delete "${row.leave_type_name}"?`,
           loadingText: "Deleting Leave Type...",
@@ -47,10 +43,7 @@ export function LeaveTypeSetup() {
             await deleteLeaveType(row.name!);
           },
         });
-
-        if (deleted) {
-          fetchAll();
-        }
+        if (deleted) fetchAll();
       } finally {
         setActionLoadingId(null);
       }
@@ -155,7 +148,7 @@ export function LeaveTypeSetup() {
   );
 
   return (
-    <Table
+    <ModalTable
       columns={columns}
       data={rows}
       loading={loading}
@@ -168,7 +161,6 @@ export function LeaveTypeSetup() {
       }}
       enableAdd
       addLabel="Add Leave Type"
-      // Open modal in "Add" mode (null/undefined row) and pass the fetch callback
       onAdd={() => openLeaveTypeModal(null, false, { onSuccess: fetchAll })}
       currentPage={page}
       totalPages={totalPages}
