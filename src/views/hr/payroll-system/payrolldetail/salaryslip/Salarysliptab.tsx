@@ -41,7 +41,10 @@ const EmptyList: React.FC<{ employeeName: string }> = ({ employeeName }) => (
   </div>
 );
 
-export const SalarySlipTab: React.FC<Props> = ({ employee }) => {
+export const SalarySlipTab: React.FC<Props> = ({
+  employee,
+  payrollEntryId,
+}) => {
   const [listLoading, setListLoading] = useState(false);
   const [slips, setSlips] = useState<SlipListItem[]>([]);
   const [detailCache, setDetailCache] = useState<Record<string, SalarySlip>>({});
@@ -62,7 +65,10 @@ export const SalarySlipTab: React.FC<Props> = ({ employee }) => {
       setMobileView("list");
 
       try {
-        const list = await getSalarySlipsByEmployee(employee.employee);
+        const list = await getSalarySlipsByEmployee(
+  payrollEntryId,
+  employee.employee
+);
         if (!list?.length) return;
 
         const sorted = [...list].sort(
@@ -70,8 +76,15 @@ export const SalarySlipTab: React.FC<Props> = ({ employee }) => {
             new Date(b.posting_date).getTime() - new Date(a.posting_date).getTime()
         );
 
-        setSlips(sorted);
-        setSelectedSlipName(sorted[0].name);
+      setSlips(sorted);
+
+setSelectedSlipName((prev) => {
+  if (prev && sorted.some((s) => s.name === prev)) {
+    return prev;
+  }
+
+  return sorted[0].name;
+});
 
         sorted.forEach(async (item: SlipListItem) => {
           try {
@@ -92,7 +105,7 @@ export const SalarySlipTab: React.FC<Props> = ({ employee }) => {
   const handleSelect = useCallback(
     async (name: string) => {
       setSelectedSlipName(name);
-      setMobileView("detail");
+     
 
       if (detailCache[name]) return;
 
@@ -201,7 +214,7 @@ export const SalarySlipTab: React.FC<Props> = ({ employee }) => {
         style={{
           width: 256,
           borderColor: "var(--border)",
-          display: mobileView === "detail" ? "none" : "flex",
+          display: "flex",
           flexDirection: "column",
         }}
       >
@@ -218,7 +231,7 @@ export const SalarySlipTab: React.FC<Props> = ({ employee }) => {
       <div
         className="flex-1 overflow-hidden"
         style={{
-          display: mobileView === "list" && !selectedSlip ? "none" : "flex",
+          display: "flex",
           flexDirection: "column",
         }}
       >

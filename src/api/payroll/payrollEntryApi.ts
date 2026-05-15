@@ -272,10 +272,25 @@ export interface SalarySlip {
 }
 
 export async function getSalarySlipsByEmployee(
+  payrollEntryId: string,
   employeeId: string,
-): Promise<Pick<SalarySlip, "name" | "employee" | "status" | "posting_date">[]> {
-  const filters = JSON.stringify([["employee", "=", employeeId]]);
-  const fields = JSON.stringify(["name", "employee", "status", "posting_date"]);
+): Promise<
+  Pick<
+    SalarySlip,
+    "name" | "employee" | "status" | "posting_date"|"payroll_entry"
+  >[]
+> {
+  const filters = JSON.stringify([
+    ["payroll_entry", "=", payrollEntryId],
+    ["employee", "=", employeeId],
+  ]);
+
+  const fields = JSON.stringify([
+    "name",
+    "employee",
+    "status",
+    "posting_date","payroll_entry"
+  ]);
 
   const resp: AxiosResponse = await api.get(
     `${API.payroll.payrollentry.salaryslip}?filters=${filters}&fields=${fields}&order_by=posting_date desc`,
