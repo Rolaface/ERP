@@ -98,27 +98,36 @@
     expense_approver: string;
   }
 
-
-  export async function getExpenseClaims(search?: string): Promise<{ data: ExpenseClaimRecord[]; total_pages: number; total: number }> {
-    const url = search
-      ? `${ExpenseClaimAPI.getExpenseClaims}?search=${encodeURIComponent(search)}`
-      : ExpenseClaimAPI.getExpenseClaims;
-    const resp: AxiosResponse = await api.get(url);
-    return resp.data || null;
-  }
+export async function getExpenseClaims(
+  search?: string,
+  page = 1,
+  pageSize = 10
+): Promise<{ data: ExpenseClaimRecord[]; pagination: { total_pages: number; total: number } }> {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  params.append("page", String(page));
+  params.append("page_size", String(pageSize));
+  const resp: AxiosResponse = await api.get(`${ExpenseClaimAPI.getExpenseClaims}?${params.toString()}`);
+  return resp.data || null;
+}
   export interface ExpenseClaimType {
     name: string;
     expense_type: string;
     account: string;
   }
 
-  export async function getExpenseClaimTypes(search?: string): Promise<{ data: ExpenseClaimType[]; total: number }> {
-    const url = search
-      ? `${ExpenseClaimAPI.getExpenseType}?search=${encodeURIComponent(search)}`
-      : ExpenseClaimAPI.getExpenseType;
-    const resp: AxiosResponse = await api.get(url);
-    return resp.data || null;
-  }
+export async function getExpenseClaimTypes(
+  search?: string,
+  page = 1,
+  pageSize = 10
+): Promise<{ data: ExpenseClaimType[]; pagination: { total_pages: number; total: number } }> {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  params.append("page", String(page));
+  params.append("page_size", String(pageSize));
+  const resp: AxiosResponse = await api.get(`${ExpenseClaimAPI.getExpenseType}?${params.toString()}`);
+  return resp.data || null;
+}
 
   export async function getExpenseClaimById(id: string): Promise<any> {
     const url = `${ExpenseClaimAPI.Expense_Claim}/${encodeURIComponent(id)}`;

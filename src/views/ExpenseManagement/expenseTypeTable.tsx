@@ -46,15 +46,15 @@ const fetchExpenseTypes = useCallback(async () => {
   if (!mountedRef.current) return;
   setIsFetching(true);
   try {
-    const res = await getExpenseClaimTypes(searchTerm);
+    const res = await getExpenseClaimTypes(searchTerm, page, pageSize);
     if (!mountedRef.current) return;
     setExpenseTypes(res.data.map((item) => ({
       id:           item.name,
       expense_type: item.expense_type,
       account:      item.account,
     })));
-    setTotalPages(1);
-    setTotalItems(res.total);
+setTotalPages(res.pagination.total_pages);
+setTotalItems(res.pagination.total);
   } catch (err) {
     showApiError(err);
     setExpenseTypes([]);

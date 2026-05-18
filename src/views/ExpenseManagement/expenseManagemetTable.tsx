@@ -76,7 +76,7 @@ const fetchExpenses = useCallback(async () => {
   if (!mountedRef.current) return;
   setIsFetching(true);
   try {
-    const res = await getExpenseClaims(searchTerm);
+    const res = await getExpenseClaims(searchTerm, page, pageSize);
     if (!mountedRef.current) return;
 setExpenses(res.data.map((claim: any) => ({
   id:       claim.name,
@@ -88,8 +88,8 @@ setExpenses(res.data.map((claim: any) => ({
   currency: claim.currency ?? "",
   status:   claim.approval_status,
 })));
-    setTotalPages(res.total_pages);
-    setTotalItems(res.total);
+    setTotalPages(res.pagination.total_pages);
+setTotalItems(res.pagination.total);
   } catch (err) {
     showApiError(err);
     setExpenses([]);
