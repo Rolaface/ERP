@@ -17,6 +17,7 @@ import OperationalPageHeader from "./EmployeeViewComponents/OperationalPageHeade
 import KPIPriorityStrip from "./EmployeeViewComponents/KPIPriorityStrip";
 import WorkspaceCluster from "./EmployeeViewComponents/WorkspaceCluster";
 import IntelligenceRail from "./EmployeeViewComponents/IntelligenceRail";
+import InsightsSection from "./EmployeeViewComponents/InsightsSection";
 
 // ── Dummy data ────────────────────────────────────────────────────────────────
 
@@ -793,75 +794,11 @@ const EmployeeDashboard: React.FC = () => {
 
           </section>
 
-          {/* ─────────────────────────────────────────────
-              4. INSIGHTS ZONE
-          ───────────────────────────────────────────── */}
+        
 
           <section id="dashboard-insights-zone">
 
-            <WorkspaceCluster
-              eyebrow="Future Operations Layer"
-              title="Workforce Insights & Predictive Analytics"
-              description="Reserved operational intelligence layer for predictive analytics, workforce behavior insights, attendance forecasting, AI-driven recommendations, and future enterprise reporting systems."
-              contentClassName="
-                min-h-[240px]
-                flex
-                items-center
-                justify-center
-              "
-            >
-
-              <div className="max-w-2xl text-center">
-
-                <div
-                  className="
-                    mx-auto
-                    w-16
-                    h-16
-                    rounded-[20px]
-                    bg-primary/10
-                    text-primary
-
-                    flex
-                    items-center
-                    justify-center
-                  "
-                >
-                  <TrendingUp size={28} />
-                </div>
-
-                <h3
-                  className="
-                    mt-6
-                    text-2xl
-                    lg:text-3xl
-                    font-bold
-                    tracking-tight
-                    text-main
-                  "
-                >
-                  Enterprise Workforce Intelligence
-                </h3>
-
-                <p
-                  className="
-                    mt-4
-                    text-sm
-                    lg:text-base
-                    leading-relaxed
-                    text-muted
-                  "
-                >
-                  This future analytics environment will consolidate
-                  operational forecasting, productivity intelligence,
-                  behavioral workforce analytics, AI-generated operational
-                  recommendations, and strategic HR insights into a unified
-                  enterprise intelligence platform.
-                </p>
-
-              </div>
-
-            </WorkspaceCluster>
+            <InsightsSection />
 
           </section>
 
