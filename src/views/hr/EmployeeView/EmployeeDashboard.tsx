@@ -15,6 +15,8 @@ import { useAuth } from "../../../context/AuthContext";
 
 import OperationalPageHeader from "./EmployeeViewComponents/OperationalPageHeader";
 import KPIPriorityStrip from "./EmployeeViewComponents/KPIPriorityStrip";
+import WorkspaceCluster from "./EmployeeViewComponents/WorkspaceCluster";
+import IntelligenceRail from "./EmployeeViewComponents/IntelligenceRail";
 
 // ── Dummy data ────────────────────────────────────────────────────────────────
 
@@ -338,6 +340,51 @@ const EmployeeDashboard: React.FC = () => {
     },
   ];
 
+  // ─────────────────────────────────────────────
+  // INTELLIGENCE RAIL DATA
+  // ─────────────────────────────────────────────
+
+  const intelligenceItems = [
+    {
+      id: "1",
+
+      label: "Approval Alert",
+
+      title: "5 leave requests pending approval",
+
+      description:
+        "Several leave approvals are awaiting manager review beyond expected SLA.",
+
+      priority: "high" as const,
+    },
+
+    {
+      id: "2",
+
+      label: "Attendance Insight",
+
+      title: "Attendance consistency improved",
+
+      description:
+        "Employee attendance increased compared to the previous operational cycle.",
+
+      priority: "medium" as const,
+    },
+
+    {
+      id: "3",
+
+      label: "Expense Monitoring",
+
+      title: "Expense claims require verification",
+
+      description:
+        "Some submitted reimbursements are missing supporting documentation.",
+
+      priority: "medium" as const,
+    },
+  ];
+
   return (
     <div className="bg-app min-h-screen text-main overflow-y-auto">
       <div className="container-wide mx-auto px-4 lg:px-6 py-6 lg:py-8">
@@ -352,8 +399,6 @@ const EmployeeDashboard: React.FC = () => {
 
           <section id="dashboard-header-zone">
 
-            {/* EXECUTIVE CONTEXT LAYER */}
-
             <OperationalPageHeader />
 
           </section>
@@ -363,8 +408,6 @@ const EmployeeDashboard: React.FC = () => {
           ───────────────────────────────────────────── */}
 
           <section id="dashboard-priority-zone">
-
-            {/* KPI PRIORITY STRIP */}
 
             <KPIPriorityStrip
               title="Operational Snapshot"
@@ -380,154 +423,187 @@ const EmployeeDashboard: React.FC = () => {
 
           <section id="dashboard-workspace-zone">
 
-            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-6">
+            <div
+              className="
+                grid
+                grid-cols-1
+                2xl:grid-cols-[minmax(0,1fr)_360px]
+                gap-6
+                items-start
+              "
+            >
 
-              {/* MAIN OPERATIONAL AREA */}
+              {/* ─────────────────────────────────────
+                  PRIMARY WORKSPACE COLUMN
+              ───────────────────────────────────── */}
 
               <main className="min-w-0 flex flex-col gap-6">
 
-                {/* LEAVE + HOLIDAYS */}
+                {/* ─────────────────────────────────────
+                    WORKFORCE OPERATIONS CLUSTER
+                ───────────────────────────────────── */}
 
-                <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <WorkspaceCluster
+                  eyebrow="Operations Cluster"
+                  title="Workforce Operations"
+                  description="Centralized employee operations covering leave balances, attendance visibility, holidays, and operational planning."
+                  contentClassName="flex flex-col gap-6"
+                >
 
-                  {/* Leave Balance */}
+                  {/* LEAVE + HOLIDAY GRID */}
 
-                  <SectionCard
-                    title="Leave Balance"
-                    className="xl:col-span-2"
-                  >
-                    <div className="space-y-5">
-                      {DUMMY_LEAVE_SUMMARY.map((leave) => {
-                        const pct = Math.round(
-                          (leave.used / leave.total) * 100
-                        );
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-                        return (
+                    {/* LEAVE BALANCE */}
+
+                    <SectionCard
+                      title="Leave Balance"
+                      className="xl:col-span-2"
+                    >
+                      <div className="space-y-5">
+                        {DUMMY_LEAVE_SUMMARY.map((leave) => {
+                          const pct = Math.round(
+                            (leave.used / leave.total) * 100
+                          );
+
+                          return (
+                            <div
+                              key={leave.type}
+                              className="space-y-2"
+                            >
+                              <div className="flex items-center justify-between gap-4">
+                                <span
+                                  className="
+                                    text-sm
+                                    font-semibold
+                                    text-main
+                                  "
+                                >
+                                  {leave.type}
+                                </span>
+
+                                <span
+                                  className="
+                                    text-xs
+                                    font-medium
+                                    text-muted
+                                  "
+                                >
+                                  {leave.remaining} / {leave.total} remaining
+                                </span>
+                              </div>
+
+                              <div
+                                className="
+                                  h-2.5
+                                  rounded-full
+                                  overflow-hidden
+                                  bg-[var(--row-hover)]
+                                "
+                              >
+                                <div
+                                  className="
+                                    h-full
+                                    rounded-full
+                                    transition-all
+                                    duration-500
+                                  "
+                                  style={{
+                                    width: `${pct}%`,
+                                    background: leave.color,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </SectionCard>
+
+                    {/* HOLIDAYS */}
+
+                    <SectionCard title="Upcoming Holidays">
+
+                      <div className="space-y-3">
+                        {DUMMY_UPCOMING_HOLIDAYS.map((holiday) => (
                           <div
-                            key={leave.type}
-                            className="space-y-2"
+                            key={holiday.name}
+                            className="
+                              group
+                              flex
+                              items-center
+                              gap-3
+                              rounded-2xl
+                              p-3
+                              transition-all
+                              duration-200
+                              hover:bg-[var(--row-hover)]
+                            "
                           >
-                            <div className="flex items-center justify-between gap-4">
-                              <span
+                            <div
+                              className="
+                                w-10
+                                h-10
+                                rounded-2xl
+                                shrink-0
+                                flex
+                                items-center
+                                justify-center
+                                bg-primary
+                                text-white
+                                shadow-sm
+                              "
+                            >
+                              <Sun size={16} />
+                            </div>
+
+                            <div className="min-w-0">
+                              <p
                                 className="
                                   text-sm
                                   font-semibold
                                   text-main
+                                  truncate
                                 "
                               >
-                                {leave.type}
-                              </span>
+                                {holiday.name}
+                              </p>
 
-                              <span
+                              <p
                                 className="
                                   text-xs
-                                  font-medium
                                   text-muted
+                                  mt-1
                                 "
                               >
-                                {leave.remaining} / {leave.total} remaining
-                              </span>
-                            </div>
-
-                            <div
-                              className="
-                                h-2.5
-                                rounded-full
-                                overflow-hidden
-                                bg-[var(--row-hover)]
-                              "
-                            >
-                              <div
-                                className="
-                                  h-full
-                                  rounded-full
-                                  transition-all
-                                  duration-500
-                                "
-                                style={{
-                                  width: `${pct}%`,
-                                  background: leave.color,
-                                }}
-                              />
+                                {holiday.date} · {holiday.day}
+                              </p>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </SectionCard>
+                        ))}
+                      </div>
 
-                  {/* Holidays */}
+                    </SectionCard>
 
-                  <SectionCard title="Upcoming Holidays">
-                    <div className="space-y-3">
-                      {DUMMY_UPCOMING_HOLIDAYS.map((holiday) => (
-                        <div
-                          key={holiday.name}
-                          className="
-                            group
-                            flex
-                            items-center
-                            gap-3
-                            rounded-2xl
-                            p-3
-                            transition-all
-                            duration-200
-                            hover:bg-[var(--row-hover)]
-                          "
-                        >
-                          <div
-                            className="
-                              w-10
-                              h-10
-                              rounded-2xl
-                              shrink-0
-                              flex
-                              items-center
-                              justify-center
-                              bg-primary
-                              text-white
-                              shadow-sm
-                            "
-                          >
-                            <Sun size={16} />
-                          </div>
+                  </div>
 
-                          <div className="min-w-0">
-                            <p
-                              className="
-                                text-sm
-                                font-semibold
-                                text-main
-                                truncate
-                              "
-                            >
-                              {holiday.name}
-                            </p>
+                </WorkspaceCluster>
 
-                            <p
-                              className="
-                                text-xs
-                                text-muted
-                                mt-1
-                              "
-                            >
-                              {holiday.date} · {holiday.day}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </SectionCard>
+                {/* ─────────────────────────────────────
+                    COMMUNICATION CLUSTER
+                ───────────────────────────────────── */}
 
-                </section>
+                <WorkspaceCluster
+                  eyebrow="Communication Cluster"
+                  title="Communication & Coordination"
+                  description="Operational communication layer for workforce announcements, organizational updates, and scheduled activities."
+                  contentClassName="grid grid-cols-1 xl:grid-cols-2 gap-6"
+                >
 
-                {/* ANNOUNCEMENTS + EVENTS */}
-
-                <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-                  {/* Announcements */}
+                  {/* ANNOUNCEMENTS */}
 
                   <SectionCard title="Announcements">
+
                     <div className="space-y-3">
                       {DUMMY_ANNOUNCEMENTS.map((a) => {
                         const cfg =
@@ -551,6 +627,7 @@ const EmployeeDashboard: React.FC = () => {
                             "
                           >
                             <div className="flex items-start gap-3">
+
                               <div
                                 className={`
                                   ${cfg.bg}
@@ -570,6 +647,7 @@ const EmployeeDashboard: React.FC = () => {
                               </div>
 
                               <div className="flex-1 min-w-0">
+
                                 <p
                                   className="
                                     text-sm
@@ -590,6 +668,7 @@ const EmployeeDashboard: React.FC = () => {
                                 >
                                   {a.date}
                                 </p>
+
                               </div>
 
                               {a.priority === "high" && (
@@ -605,16 +684,19 @@ const EmployeeDashboard: React.FC = () => {
                                   URGENT
                                 </span>
                               )}
+
                             </div>
                           </div>
                         );
                       })}
                     </div>
+
                   </SectionCard>
 
-                  {/* Events */}
+                  {/* EVENTS */}
 
                   <SectionCard title="Upcoming Events">
+
                     <div className="space-y-3">
                       {DUMMY_EVENTS.map((event, i) => {
                         const cfg =
@@ -655,6 +737,7 @@ const EmployeeDashboard: React.FC = () => {
                             </div>
 
                             <div className="min-w-0 flex-1">
+
                               <p
                                 className="
                                   text-sm
@@ -674,72 +757,38 @@ const EmployeeDashboard: React.FC = () => {
                               >
                                 {event.date}
                               </p>
+
                             </div>
                           </div>
                         );
                       })}
                     </div>
+
                   </SectionCard>
 
-                </section>
+                </WorkspaceCluster>
+
               </main>
 
-              {/* SIDE INTELLIGENCE RAIL */}
+              {/* ─────────────────────────────────────
+                  INTELLIGENCE SIDE RAIL
+              ───────────────────────────────────── */}
 
-              <aside className="flex flex-col gap-6">
+              <aside
+                className="
+                  min-w-0
+                  flex
+                  flex-col
+                  gap-6
+                "
+              >
 
-                {/* Future widgets:
-                    - Quick Actions
-                    - Pending Approvals
-                    - Activity Feed
-                    - AI Insights
-                    - Notifications
-                */}
-
-                <SectionCard title="Workspace Intelligence">
-
-                  <div className="space-y-4">
-
-                    <div
-                      className="
-                        rounded-2xl
-                        border
-                        border-theme
-                        p-4
-                        bg-[var(--row-hover)]
-                      "
-                    >
-                      <p
-                        className="
-                          text-xs
-                          uppercase
-                          tracking-[0.14em]
-                          font-bold
-                          text-muted
-                        "
-                      >
-                        Next Phase
-                      </p>
-
-                      <p
-                        className="
-                          mt-2
-                          text-sm
-                          leading-relaxed
-                          text-main
-                        "
-                      >
-                        This rail will contain intelligent operational widgets,
-                        approval queues, AI insights, notifications, and
-                        employee productivity intelligence.
-                      </p>
-                    </div>
-
-                  </div>
-
-                </SectionCard>
+                <IntelligenceRail
+                  items={intelligenceItems}
+                />
 
               </aside>
+
             </div>
 
           </section>
@@ -750,60 +799,72 @@ const EmployeeDashboard: React.FC = () => {
 
           <section id="dashboard-insights-zone">
 
-            <div
-              className="
-                app-surface
-                edge-highlight
-                rounded-[28px]
-                p-6
-                min-h-[220px]
-
+            <WorkspaceCluster
+              eyebrow="Future Operations Layer"
+              title="Workforce Insights & Predictive Analytics"
+              description="Reserved operational intelligence layer for predictive analytics, workforce behavior insights, attendance forecasting, AI-driven recommendations, and future enterprise reporting systems."
+              contentClassName="
+                min-h-[240px]
                 flex
                 items-center
                 justify-center
               "
             >
-              <div className="text-center max-w-xl">
-                <p
+
+              <div className="max-w-2xl text-center">
+
+                <div
                   className="
-                    text-[11px]
-                    uppercase
-                    tracking-[0.18em]
-                    font-bold
-                    text-muted
+                    mx-auto
+                    w-16
+                    h-16
+                    rounded-[20px]
+                    bg-primary/10
+                    text-primary
+
+                    flex
+                    items-center
+                    justify-center
                   "
                 >
-                  Future Analytics Layer
-                </p>
+                  <TrendingUp size={28} />
+                </div>
 
                 <h3
                   className="
-                    mt-3
+                    mt-6
                     text-2xl
+                    lg:text-3xl
                     font-bold
                     tracking-tight
                     text-main
                   "
                 >
-                  Workforce Insights & Predictive Analytics
+                  Enterprise Workforce Intelligence
                 </h3>
 
                 <p
                   className="
-                    mt-3
+                    mt-4
                     text-sm
+                    lg:text-base
                     leading-relaxed
                     text-muted
                   "
                 >
-                  This zone is reserved for attendance analytics,
-                  productivity intelligence, predictive leave forecasting,
-                  workforce trends, and AI operational reporting.
+                  This future analytics environment will consolidate
+                  operational forecasting, productivity intelligence,
+                  behavioral workforce analytics, AI-generated operational
+                  recommendations, and strategic HR insights into a unified
+                  enterprise intelligence platform.
                 </p>
+
               </div>
-            </div>
+
+            </WorkspaceCluster>
 
           </section>
+
         </div>
       </div>
     </div>
