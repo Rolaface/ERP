@@ -208,17 +208,11 @@
   --z-swal: 4000;
   --app-sidebar-width: 16rem;
   --app-sidebar-width-collapsed: 4rem;
-  --app-right-panel-width: 320px;
-  --app-right-panel-width-collapsed: 60px;
   --app-topbar-height: 4.5rem;
-  --app-content-max-width: 1400px;
   --app-radius-lg: 1rem;
   --app-radius-xl: 1rem;
   --app-shadow-soft: 0 18px 48px rgba(15, 23, 42, 0.12);
-  --app-shadow-float: 0 18px 45px rgba(15, 23, 42, 0.16);
   --app-surface-padding: 1.5rem;
-  --app-table-height: 23rem;
-  --app-table-offset: 18rem;
 }
 
 /* =========================================
@@ -1886,12 +1880,6 @@ body.app-swal-open .erp-modal-layer {
   border: 1px solid var(--border);
   border-radius: var(--app-radius-xl);
   /* box-shadow: var(--app-shadow-soft); */
-}
-
-.floating-dock {
-  box-shadow: var(--app-shadow-float);
-  backdrop-filter: blur(18px);
-  background: color-mix(in srgb, var(--card) 88%, transparent);
 }
 
 /* TEXT COLORS (Keep as is — already solid) */

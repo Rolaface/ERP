@@ -282,9 +282,9 @@ export const FilterSelect = React.forwardRef<
     {...props}
     value={props.value ?? ""}
     className={[
-      "h-9 min-w-[60px] px-3 py-1",
+      "h-8 min-w-[60px] px-2.5 py-1",
       "bg-card border border-[var(--border)]",
-      "rounded-xl text-xs font-medium text-main",
+      "rounded-lg text-xs font-medium text-main",
       "focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition-all",
       className,
     ].join(" ")}

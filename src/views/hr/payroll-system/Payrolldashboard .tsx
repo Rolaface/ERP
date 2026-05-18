@@ -167,26 +167,22 @@ export const PayrollDashboard: React.FC<Props> = ({
   ];
 
   return (
-    <div className="flex-1 min-h-0 px-5 pb-4 flex flex-col">
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <Table
-          tableId="payroll-dashboard"
-          showToolbar
-          // ── New Payroll button: only when user has Payroll Entry create ──
-          enableAdd={canCreate}
-          addLabel="New Payroll"
-          onAdd={onNewPayroll}
-          columns={payrollColumns}
-          enableColumnSelector
-          data={filtered}
-          loading={loading}
-          totalItems={filtered.length}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-          pageSize={10}
-        />
-      </div>
-    </div>
+    <Table
+      tableId="payroll-dashboard"
+      showToolbar
+      // ── New Payroll button: only when user has Payroll Entry create ──
+      enableAdd={canCreate}
+      addLabel="New Payroll"
+      onAdd={onNewPayroll}
+      columns={payrollColumns}
+      enableColumnSelector
+      data={filtered}
+      loading={loading}
+      totalItems={filtered.length}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onPageChange={onPageChange}
+      pageSize={10}
+    />
   );
 };

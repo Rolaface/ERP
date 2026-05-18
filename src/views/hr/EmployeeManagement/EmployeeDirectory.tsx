@@ -16,7 +16,6 @@ import {
   getAllEmployees, getEmployeeById,
   deleteEmployeeById, updateEmployeeStatus,
 } from "../../../api/employeeapi";
-import { AppPageBody }       from "../../../components/ui/app-shell";
 import { openEmployeeModal } from "../../../store/modalStore";
 import Table                 from "../../../components/ui/Table/Table";
 import StatusBadge           from "../../../components/ui/Table/StatusBadge";
@@ -31,6 +30,7 @@ import type { Column }       from "../../../components/ui/Table/type";
 import type { EmployeeSummary } from "../../../types/employee";
 import EmployeeDetailView    from "../EmployeeManagement/mployeeDetailView";
 import { useAuth }           from "../../../context/AuthContext";
+import { HrTableFrame }      from "../components/HrTabLayout";
 
 // ── Module constant (mirrors SALES_MODULE in Invoices.tsx) ───────────────────
 const EMP_MODULE = "Employee";
@@ -265,7 +265,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <AppPageBody>
+    <HrTableFrame>
       {viewMode === "table" ? (
         <Table
           loading={loading}
@@ -308,7 +308,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
           onDocumentUploaded={refreshSelectedEmployee}
         />
       ) : null}
-    </AppPageBody>
+    </HrTableFrame>
   );
 };
 

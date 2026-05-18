@@ -109,7 +109,7 @@ const TableInner = <T extends Record<string, any>>({
   loading = false,
   isFetching = false,
   emptyMessage = "No records found.",
-  tableId,  
+  tableId,
   expandedRowRender,
   onRowClick,
   showToolbar = false,
@@ -138,9 +138,8 @@ const TableInner = <T extends Record<string, any>>({
   const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
 
   const [visibleKeys, setVisibleKeys] = useState<string[]>(() =>
-    tableId ? getVisibleKeys(tableId, allKeys) : allKeys
+    tableId ? getVisibleKeys(tableId, allKeys) : allKeys,
   );
-
 
   const handleApplyColumns = (keys: string[]) => {
     setVisibleKeys(keys);
@@ -149,11 +148,10 @@ const TableInner = <T extends Record<string, any>>({
     }
   };
 
-  const visibleColumns = useMemo(() =>
-    columns.filter((col) => visibleKeys.includes(col.key)),
-    [columns, visibleKeys]
+  const visibleColumns = useMemo(
+    () => columns.filter((col) => visibleKeys.includes(col.key)),
+    [columns, visibleKeys],
   );
-
 
   const handleColumnSort = (colKey: string) => {
     if (!onSortChange) return;
@@ -163,55 +161,59 @@ const TableInner = <T extends Record<string, any>>({
     onSortChange({ sortBy: colKey, sortOrder: newOrder });
   };
 
-  const getAlignment = useMemo(() => (align?: "left" | "center" | "right"): string => {
-    switch (align) {
-      case "center":
-        return "text-center";
-      case "right":
-        return "text-right";
-      default:
-        return "text-left";
-    }
-  }, []);
+  const getAlignment = useMemo(
+    () =>
+      (align?: "left" | "center" | "right"): string => {
+        switch (align) {
+          case "center":
+            return "text-center";
+          case "right":
+            return "text-right";
+          default:
+            return "text-left";
+        }
+      },
+    [],
+  );
 
   return (
     <div
       className="app-surface relative z-10 flex w-full flex-col overflow-hidden"
       style={{
-        height: "calc(95.5vh - 130px)",
+        height: "clamp(500px, calc(100vh - 185px), 1000px)",
       }}
     >
       {showToolbar && (
-        <div className="flex shrink-0 flex-col gap-3 border-b border-[var(--border)] bg-card px-3 py-3 sm:px-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="group relative w-full max-w-xs">
+        <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--border)] bg-card px-3 py-2 sm:px-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="group relative w-full max-w-[18rem]">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted transition-colors group-focus-within:text-primary" />
             <input
               value={searchValue}
               onChange={(e) => onSearch?.(e.target.value)}
               placeholder={toolbarPlaceholder}
-              className="w-full rounded-xl border border-[var(--border)] bg-card py-2.5 pl-10 pr-4 text-sm font-medium text-main outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className="h-8 w-full rounded-lg border border-[var(--border)] bg-card pl-9 pr-3 text-xs font-medium text-main outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
             />
           </div>
 
           {extraFilters && (
-            <div className="flex shrink-0 items-center gap-4">
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               {extraFilters}
             </div>
           )}
 
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             {enableColumnSelector && (
               <ColumnSelector
                 columns={columns}
                 visibleKeys={visibleKeys}
                 allKeys={allKeys}
-                onApply={handleApplyColumns}  
+                onApply={handleApplyColumns}
               />
             )}
             {enableAdd && (
               <button
                 onClick={onAdd}
-                className="whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                className="h-8 whitespace-nowrap rounded-lg bg-primary px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90"
               >
                 {addLabel}
               </button>
@@ -219,7 +221,7 @@ const TableInner = <T extends Record<string, any>>({
             {enableExport && (
               <button
                 onClick={onExport}
-                className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-main transition-colors hover:bg-row-hover"
+                className="h-8 rounded-lg border border-[var(--border)] px-3 text-xs font-semibold text-main transition-colors hover:bg-row-hover"
               >
                 Export
               </button>
@@ -263,7 +265,7 @@ const TableInner = <T extends Record<string, any>>({
                           : undefined
                       }
                       className={[
-                        "bg-[var(--border)]/10 px-3 py-2.5 text-xs font-bold text-muted uppercase tracking-wide whitespace-nowrap sm:px-4",
+                        "bg-[var(--border)]/10 px-3 py-2 text-[11px] font-bold text-muted uppercase tracking-wide whitespace-nowrap sm:px-4",
                         getAlignment(column.align),
                         isSortable
                           ? "cursor-pointer select-none transition-colors hover:text-primary"
@@ -336,7 +338,8 @@ const TableInner = <T extends Record<string, any>>({
                   </td>
                 </tr>
               ) : (
-                <>{/* Subtle fetching indicator - show only when isFetching and data exists */}
+                <>
+                  {/* Subtle fetching indicator - show only when isFetching and data exists */}
                   {isFetching && data.length > 0 && (
                     <tr className="absolute top-0 left-0 right-0 z-20 h-full bg-white/30">
                       <td colSpan={visibleColumns.length}>
@@ -352,15 +355,15 @@ const TableInner = <T extends Record<string, any>>({
                     const itemKey = rowKey ? rowKey(item) : `row-${idx}`;
 
                     return (
-                      <React.Fragment
-                        key={itemKey}
-                      >
+                      <React.Fragment key={itemKey}>
                         <tr
                           onClick={() => onRowClick?.(item)}
                           className={[
                             "group transition-colors duration-150",
                             onRowClick ? "cursor-pointer" : "",
-                            idx % 2 === 0 ? "bg-transparent" : "bg-row-hover/10",
+                            idx % 2 === 0
+                              ? "bg-transparent"
+                              : "bg-row-hover/10",
                             "hover:bg-row-hover",
                             isExpanded ? "bg-row-hover/20" : "",
                           ].join(" ")}
@@ -418,7 +421,7 @@ const TableInner = <T extends Record<string, any>>({
                                 <td
                                   key={column.key}
                                   style={cellStyle}
-                                  className={`border-b border-[var(--border)]/20 px-3 py-1.5 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
+                                  className={`border-b border-[var(--border)]/20 px-3 py-1 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
                                 >
                                   <Tooltip content={tooltipText}>
                                     {cellContent}
@@ -431,7 +434,7 @@ const TableInner = <T extends Record<string, any>>({
                               <td
                                 key={column.key}
                                 style={cellStyle}
-                                className={`border-b border-[var(--border)]/20 px-3 py-1.5 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
+                                className={`border-b border-[var(--border)]/20 px-3 py-1 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
                               >
                                 {cellContent}
                               </td>
@@ -464,7 +467,7 @@ const TableInner = <T extends Record<string, any>>({
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-col items-center justify-between gap-2 border-t border-[var(--border)] bg-card px-3 py-1.5 text-xs sm:flex-row sm:px-4">
+      <div className="flex shrink-0 flex-col items-center justify-between gap-2 border-t border-[var(--border)] bg-card px-3 py-1 text-xs sm:flex-row sm:px-4">
         <div className="text-xs font-medium text-muted">
           Total: {totalItems}
         </div>
@@ -475,7 +478,7 @@ const TableInner = <T extends Record<string, any>>({
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="cursor-pointer rounded-lg border border-[var(--border)] bg-card px-3 py-1.5 text-xs text-main outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className="h-7 cursor-pointer rounded-md border border-[var(--border)] bg-card px-2 text-xs text-main outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
             >
               {pageSizeOptions.map((size) => (
                 <option key={size} value={size}>
@@ -491,7 +494,7 @@ const TableInner = <T extends Record<string, any>>({
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-          onPageChange={onPageChange ?? (() => { })}
+          onPageChange={onPageChange ?? (() => {})}
         />
       </div>
     </div>
