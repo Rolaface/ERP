@@ -186,7 +186,6 @@ const TableInner = <T extends Record<string, any>>({
   onPageChange,
   onPageSizeChange,
 }: TableProps<T>) => {
-
   // ── Column store for persistence ───────────────────────────────────────────
   const allKeys = useMemo(() => columnDefs.map((col) => col.key), [columnDefs]);
   const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
@@ -269,8 +268,7 @@ const TableInner = <T extends Record<string, any>>({
     manualSorting: true,
     onSortingChange: (updater) => {
       if (!onSortChange) return;
-      const next =
-        typeof updater === "function" ? updater(sorting) : updater;
+      const next = typeof updater === "function" ? updater(sorting) : updater;
       if (next.length === 0) return;
       const { id, desc } = next[0];
       onSortChange({ sortBy: id, sortOrder: desc ? "desc" : "asc" });
@@ -278,9 +276,7 @@ const TableInner = <T extends Record<string, any>>({
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getRowId: rowKey
-      ? (row, idx) => rowKey(row)
-      : (_, idx) => String(idx),
+    getRowId: rowKey ? (row, idx) => rowKey(row) : (_, idx) => String(idx),
   });
 
   const visibleColumns = table.getVisibleLeafColumns();
@@ -364,7 +360,7 @@ const TableInner = <T extends Record<string, any>>({
 
         {/* ── SINGLE TABLE ─────────────────────────────────────────────────── */}
         <div className="custom-scrollbar min-h-0 flex-1 overflow-auto">
-          <table className="w-full min-w-[600px] border-separate border-spacing-0 h-full">
+          <table className="w-full min-w-[600px] border-collapse h-full">
             {/* colgroup shared by both thead and tbody */}
             <colgroup>
               {visibleColumns.map((col) => {
@@ -373,8 +369,12 @@ const TableInner = <T extends Record<string, any>>({
                   <col
                     key={col.id}
                     style={{
-                      width: meta?.width ?? (meta?.maxWidth ? meta.maxWidth : "auto"),
-                      minWidth: meta?.minWidth ?? (meta?.maxWidth ? meta.maxWidth : "80px"),
+                      width:
+                        meta?.width ??
+                        (meta?.maxWidth ? meta.maxWidth : "auto"),
+                      minWidth:
+                        meta?.minWidth ??
+                        (meta?.maxWidth ? meta.maxWidth : "80px"),
                     }}
                   />
                 );
@@ -382,34 +382,50 @@ const TableInner = <T extends Record<string, any>>({
             </colgroup>
 
             {/* ── thead ────────────────────────────────────────────────────── */}
-            <thead className="sticky top-0 z-10">
+            <thead className="sticky top-0 z-30 bg-card">
               {headerGroups.map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => {
                     const meta = colMeta[header.id];
-                    const isSortable = header.column.getCanSort() && !!onSortChange;
+                    const isSortable =
+                      header.column.getCanSort() && !!onSortChange;
                     const sorted = header.column.getIsSorted();
 
                     return (
                       <th
                         key={header.id}
-                        onClick={isSortable ? header.column.getToggleSortingHandler() : undefined}
+                        onClick={
+                          isSortable
+                            ? header.column.getToggleSortingHandler()
+                            : undefined
+                        }
                         className={[
-                          "border-b-2 border-[var(--border)] bg-[var(--border)]/10 px-3 py-2",
+                          "bg-card border-b border-[var(--border)] px-3 py-2",
                           "text-[11px] font-bold text-muted uppercase tracking-wide whitespace-nowrap sm:px-4",
                           getAlignment(meta?.align),
-                          isSortable ? "cursor-pointer select-none transition-colors hover:text-primary" : "",
+                          isSortable
+                            ? "cursor-pointer select-none transition-colors hover:text-primary"
+                            : "",
                           sorted ? "text-primary" : "",
                         ].join(" ")}
                       >
                         <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
-                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                           {isSortable && (
                             <span className="inline-flex opacity-60">
                               {sorted === "asc" ? (
-                                <FaSortUp size={10} className="text-primary opacity-100" />
+                                <FaSortUp
+                                  size={10}
+                                  className="text-primary opacity-100"
+                                />
                               ) : sorted === "desc" ? (
-                                <FaSortDown size={10} className="text-primary opacity-100" />
+                                <FaSortDown
+                                  size={10}
+                                  className="text-primary opacity-100"
+                                />
                               ) : (
                                 <FaSort size={10} />
                               )}
@@ -424,7 +440,7 @@ const TableInner = <T extends Record<string, any>>({
             </thead>
 
             {/* ── tbody ────────────────────────────────────────────────────── */}
-            <tbody className="relative z-10 h-full">
+            <tbody className="h-full">
               {loading ? (
                 Array.from({ length: pageSize }).map((_, idx) => (
                   <SkeletonRow
@@ -470,21 +486,29 @@ const TableInner = <T extends Record<string, any>>({
                               : String(rawValue);
 
                           const needsTruncation =
-                            meta?.truncate === true || meta?.maxWidth !== undefined;
+                            meta?.truncate === true ||
+                            meta?.maxWidth !== undefined;
                           const cellStyle = meta?.maxWidth
                             ? { maxWidth: meta.maxWidth }
                             : {};
 
                           const cellContent = (
                             <div
-                              style={needsTruncation ? { maxWidth: meta?.maxWidth ?? "200px" } : undefined}
+                              style={
+                                needsTruncation
+                                  ? { maxWidth: meta?.maxWidth ?? "200px" }
+                                  : undefined
+                              }
                               className={
                                 needsTruncation
                                   ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap"
                                   : "min-w-0"
                               }
                             >
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
                             </div>
                           );
 
@@ -501,7 +525,9 @@ const TableInner = <T extends Record<string, any>>({
                               className={`border-b border-[var(--border)]/20 px-3 py-1 text-sm font-medium text-main sm:px-4 ${getAlignment(meta?.align)}`}
                             >
                               {tooltipText ? (
-                                <Tooltip content={tooltipText}>{cellContent}</Tooltip>
+                                <Tooltip content={tooltipText}>
+                                  {cellContent}
+                                </Tooltip>
                               ) : (
                                 cellContent
                               )}
@@ -532,15 +558,16 @@ const TableInner = <T extends Record<string, any>>({
               )}
 
               {/* ── Ghost rows — fill empty space below data (Excel-style) ── */}
-              {!loading && rows.length > 0 && rows.length < pageSize &&
+              {!loading &&
+                rows.length > 0 &&
+                rows.length < pageSize &&
                 Array.from({ length: pageSize - rows.length }).map((_, idx) => (
                   <GhostRow
                     key={`ghost-${idx}`}
                     columnsCount={visibleColumns.length}
                     idx={rows.length + idx}
                   />
-                ))
-              }
+                ))}
             </tbody>
           </table>
         </div>
