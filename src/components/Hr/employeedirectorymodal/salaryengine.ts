@@ -33,6 +33,8 @@ export interface SalaryResult {
   gross: number;
   deductionsTotal: number;
   net: number;
+  /** The resolved monthly base used in this calculation */
+  resolvedBase: number;
 }
 
 export interface CompensationPayload {
@@ -175,7 +177,71 @@ export function calculateSalary(
     gross,
     deductionsTotal,
     net: gross - deductionsTotal,
+    resolvedBase: monthlyBase,
   };
+}
+
+// ─── Gross → Base back-solver ─────────────────────────────────────────────────
+
+/**
+ * Given a target gross salary, binary-searches for the base salary value
+ * that produces exactly that gross via the salary engine.
+ *
+ * Works even when earnings contain a mix of fixed and formula-based components,
+ * because `base` is the only free variable the engine exposes to formulas.
+ *
+ * @param targetGross   The desired monthly gross
+ * @param components    The salary structure component definitions
+ * @param tolerance     How close the result needs to be (default: 0.01)
+ * @param maxIterations Max binary-search iterations (default: 60)
+ * @returns The base salary that yields the target gross (or the closest found)
+ */
+export function solveBaseFromGross(
+  targetGross: number,
+  components: SalaryComponentDef[],
+  tolerance = 0.01,
+  maxIterations = 60,
+): number {
+  if (targetGross <= 0) return 0;
+
+  // Quick check: if there are no formula earnings, gross = sum of fixed earnings
+  // and base doesn't affect it — just return targetGross as best guess
+  const earningDefs = components.filter((c) => c.type === "Earning");
+  const hasFormulaEarnings = earningDefs.some(
+    (c) => c.amount_based_on_formula === 1,
+  );
+
+  if (!hasFormulaEarnings) {
+    // Gross is purely fixed; base cannot change it — return 0 (no back-solve possible)
+    return 0;
+  }
+
+  // Binary search: find base in [0, targetGross * 3]
+  // Upper bound is generous — if ALL earnings were base*1.0 it would equal base,
+  // but with multipliers > 1 or fixed additions the upper bound needs headroom.
+  let lo = 0;
+  let hi = targetGross * 3;
+
+  // Ensure hi actually overshoots
+  for (let safety = 0; safety < 20; safety++) {
+    if (calculateSalary(hi, components).gross >= targetGross) break;
+    hi *= 2;
+  }
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const mid = (lo + hi) / 2;
+    const gross = calculateSalary(mid, components).gross;
+
+    if (Math.abs(gross - targetGross) <= tolerance) return parseFloat(mid.toFixed(2));
+
+    if (gross < targetGross) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+
+  return parseFloat(((lo + hi) / 2).toFixed(2));
 }
 
 // ─── API adapter ──────────────────────────────────────────────────────────────
