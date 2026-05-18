@@ -78,11 +78,6 @@ export function HolidayListSetup() {
         render: (row) => <span className="text-sm text-sub">{row.to_date}</span>,
       },
       {
-        key: "country",
-        header: "Country",
-        render: (row) => <span className="text-sm text-sub">{row.country || "—"}</span>,
-      },
-      {
         key: "actions",
         header: "Actions",
         align: "center",
