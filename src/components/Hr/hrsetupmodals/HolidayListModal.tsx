@@ -6,7 +6,11 @@ import {
   updateHolidayList,
 } from "../../../api/holidayListApi";
 import type { HolidayList } from "../../../views/hr/tabs/leave-config/hooks/useHolidayLists";
-import { showApiError, showSuccess, showValidationError } from "../../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showValidationError,
+} from "../../../utils/alert";
 import DatePickerInput from "../../calendar/DatePickerInput";
 
 const HL_STYLES = `
@@ -46,6 +50,23 @@ const HL_STYLES = `
   color: #6b7280;
   white-space: nowrap;
 }
+
+.hl-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1f2937;
+}
+.hl-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+.hl-input::placeholder {
+  color: #9ca3af;
+}
 `;
 
 interface Props {
@@ -71,13 +92,28 @@ interface WeeklyOffDay {
 }
 
 const DEFAULT_WEEKDAYS: WeeklyOffDay[] = [
-  { weekday: "Monday", label: "Mon", selected: false, is_half_day: false },
-  { weekday: "Tuesday", label: "Tue", selected: false, is_half_day: false },
-  { weekday: "Wednesday", label: "Wed", selected: false, is_half_day: false },
-  { weekday: "Thursday", label: "Thu", selected: false, is_half_day: false },
-  { weekday: "Friday", label: "Fri", selected: false, is_half_day: false },
-  { weekday: "Saturday", label: "Sat", selected: false, is_half_day: false },
-  { weekday: "Sunday", label: "Sun", selected: false, is_half_day: false },
+  { weekday: "Monday", label: "Monday", selected: false, is_half_day: false },
+  { weekday: "Tuesday", label: "Tuesday", selected: false, is_half_day: false },
+  {
+    weekday: "Wednesday",
+    label: "Wednesday",
+    selected: false,
+    is_half_day: false,
+  },
+  {
+    weekday: "Thursday",
+    label: "Thursday",
+    selected: false,
+    is_half_day: false,
+  },
+  { weekday: "Friday", label: "Friday", selected: false, is_half_day: false },
+  {
+    weekday: "Saturday",
+    label: "Saturday",
+    selected: false,
+    is_half_day: false,
+  },
+  { weekday: "Sunday", label: "Sunday", selected: false, is_half_day: false },
 ];
 
 export const HolidayListModal: React.FC<Props> = ({
@@ -92,7 +128,8 @@ export const HolidayListModal: React.FC<Props> = ({
   const [name, setName] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [weeklyOffs, setWeeklyOffs] = useState<WeeklyOffDay[]>(DEFAULT_WEEKDAYS);
+  const [weeklyOffs, setWeeklyOffs] =
+    useState<WeeklyOffDay[]>(DEFAULT_WEEKDAYS);
   const [holidays, setHolidays] = useState<HolidayRow[]>([]);
 
   useEffect(() => {
@@ -115,10 +152,14 @@ export const HolidayListModal: React.FC<Props> = ({
         const initialWeeklyOffs = initialData.weekly_offs || [];
         const mappedWeekdays = DEFAULT_WEEKDAYS.map((day) => {
           const matchedOff = initialWeeklyOffs.find(
-            (off) => off.weekday === day.weekday
+            (off) => off.weekday === day.weekday,
           );
           if (matchedOff) {
-            return { ...day, selected: true, is_half_day: !!matchedOff.is_half_day };
+            return {
+              ...day,
+              selected: true,
+              is_half_day: !!matchedOff.is_half_day,
+            };
           }
           return { ...day, selected: false, is_half_day: false };
         });
@@ -131,7 +172,7 @@ export const HolidayListModal: React.FC<Props> = ({
             holiday_date: h.holiday_date,
             description: h.description,
             is_half_day: !!h.is_half_day,
-          }))
+          })),
         );
       } else {
         setName("");
@@ -142,9 +183,16 @@ export const HolidayListModal: React.FC<Props> = ({
             ...day,
             selected: day.weekday === "Sunday" || day.weekday === "Saturday",
             is_half_day: day.weekday === "Saturday",
-          }))
+          })),
         );
-        setHolidays([{ id: crypto.randomUUID(), holiday_date: "", description: "", is_half_day: false }]);
+        setHolidays([
+          {
+            id: crypto.randomUUID(),
+            holiday_date: "",
+            description: "",
+            is_half_day: false,
+          },
+        ]);
       }
     }
   }, [isOpen, initialData]);
@@ -152,7 +200,12 @@ export const HolidayListModal: React.FC<Props> = ({
   const handleAddHolidayRow = () => {
     setHolidays([
       ...holidays,
-      { id: crypto.randomUUID(), holiday_date: "", description: "", is_half_day: false },
+      {
+        id: crypto.randomUUID(),
+        holiday_date: "",
+        description: "",
+        is_half_day: false,
+      },
     ]);
   };
 
@@ -160,8 +213,14 @@ export const HolidayListModal: React.FC<Props> = ({
     setHolidays(holidays.filter((h) => h.id !== id));
   };
 
-  const updateHoliday = (id: string, field: keyof HolidayRow, value: string | boolean) => {
-    setHolidays(holidays.map((h) => (h.id === id ? { ...h, [field]: value } : h)));
+  const updateHoliday = (
+    id: string,
+    field: keyof HolidayRow,
+    value: string | boolean,
+  ) => {
+    setHolidays(
+      holidays.map((h) => (h.id === id ? { ...h, [field]: value } : h)),
+    );
   };
 
   const toggleWeeklyOff = (index: number) => {
@@ -178,13 +237,14 @@ export const HolidayListModal: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
-    if (!name.trim()) return showValidationError("Holiday List Name is required");
+    if (!name.trim())
+      return showValidationError("Holiday List Name is required");
     if (!fromDate) return showValidationError("From Date is required");
     if (!toDate) return showValidationError("To Date is required");
 
     try {
       setSaving(true);
-      
+
       const payload = {
         holiday_list_name: name,
         from_date: fromDate,
@@ -211,7 +271,7 @@ export const HolidayListModal: React.FC<Props> = ({
         await createHolidayList(payload);
         showSuccess("Holiday List created successfully");
       }
-      
+
       onSuccess?.();
       onClose();
     } catch (err: any) {
@@ -237,7 +297,11 @@ export const HolidayListModal: React.FC<Props> = ({
         className="rounded-lg bg-[#3F25C8] px-5 py-1.5 text-sm font-medium text-white transition hover:bg-[#321ca1] disabled:opacity-60 flex items-center gap-2"
       >
         {saving && <span className="animate-spin text-white">⟳</span>}
-        {saving ? "Saving…" : isEdit ? "Update Holiday List" : "Create Holiday List"}
+        {saving
+          ? "Saving…"
+          : isEdit
+            ? "Update Holiday List"
+            : "Create Holiday List"}
       </button>
     </div>
   );
@@ -249,23 +313,22 @@ export const HolidayListModal: React.FC<Props> = ({
       onClose={onClose}
       title={isEdit ? "Edit Holiday List" : "Add Holiday List"}
       icon={Calendar}
-      maxWidth="4xl"
+      maxWidth="5xl"
       height="80vh"
       footer={footer}
     >
-      <div 
-        style={{ 
-          display: "flex", 
-          flexDirection: "column", 
-          maxHeight: "calc(80vh - 130px)", 
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          maxHeight: "calc(80vh - 130px)",
           overflowY: "auto",
-          paddingRight: "4px"
+          paddingRight: "4px",
         }}
         className="space-y-6"
       >
-        
         <section>
-          <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+          <h3 className="mb-2.5 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
             Basic Details
           </h3>
           <div className="grid grid-cols-12 gap-4 items-start">
@@ -290,7 +353,7 @@ export const HolidayListModal: React.FC<Props> = ({
                 onChange={(_, v) => setFromDate(v)}
               />
             </div>
-            
+
             <div className="col-span-6 md:col-span-3">
               <DatePickerInput
                 label="To Date"
@@ -303,14 +366,14 @@ export const HolidayListModal: React.FC<Props> = ({
         </section>
 
         <section>
-          <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+          <h3 className="mb-2.5 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
             Weekly Offs
           </h3>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="grid grid-cols-7 gap-3 w-full">
             {weeklyOffs.map((day, idx) => (
               <div
                 key={day.weekday}
-                className={`flex h-[72px] w-[100px] flex-col justify-between rounded-lg border p-2.5 transition-colors ${
+                className={`flex h-[60px] w-full flex-col justify-between rounded-lg border p-2 transition-colors ${
                   day.selected
                     ? "border-[#D6D0F9] bg-[#F7F5FF]"
                     : "border-gray-200 bg-white"
@@ -318,7 +381,7 @@ export const HolidayListModal: React.FC<Props> = ({
               >
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-xs font-semibold ${
+                    className={`text-[11px] font-semibold ${
                       day.selected ? "text-[#3F25C8]" : "text-gray-800"
                     }`}
                   >
@@ -331,9 +394,11 @@ export const HolidayListModal: React.FC<Props> = ({
                     className="h-3.5 w-3.5 rounded border-gray-300 text-[#3F25C8] focus:ring-[#3F25C8] cursor-pointer"
                   />
                 </div>
-                <div className="flex items-end justify-between">
-                  <span className={`text-[9px] font-bold leading-tight ${day.selected ? 'text-[#3F25C8]' : 'text-gray-400'}`}>
-                    HALF<br />DAY
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`text-[9px] font-bold leading-none ${day.selected ? "text-[#3F25C8]" : "text-gray-400"}`}
+                  >
+                    HALF DAY
                   </span>
                   <label className="relative inline-flex cursor-pointer items-center">
                     <input
@@ -351,7 +416,14 @@ export const HolidayListModal: React.FC<Props> = ({
           </div>
         </section>
 
-        <section style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <section
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+          }}
+        >
           <div className="mb-2.5 flex items-center justify-between">
             <h3 className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
               Holidays List
@@ -365,7 +437,7 @@ export const HolidayListModal: React.FC<Props> = ({
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
-              flex: 1
+              flex: 1,
             }}
           >
             <div
@@ -377,40 +449,66 @@ export const HolidayListModal: React.FC<Props> = ({
               }}
             >
               <div className="hl-cell hl-cell-border hl-col-header">Date</div>
-              <div className="hl-cell hl-cell-border hl-col-header">Description</div>
-              <div className="hl-cell hl-cell-border hl-col-header" style={{ justifyContent: "center" }}>Is Half Day</div>
-              <div className="hl-cell hl-col-header" style={{ justifyContent: "center" }}>Action</div>
+              <div className="hl-cell hl-cell-border hl-col-header">
+                Description
+              </div>
+              <div
+                className="hl-cell hl-cell-border hl-col-header"
+                style={{ justifyContent: "center" }}
+              >
+                Is Half Day
+              </div>
+              <div
+                className="hl-cell hl-col-header"
+                style={{ justifyContent: "center" }}
+              >
+                Action
+              </div>
             </div>
 
-            <div className="hl-table-wrap" style={{ flex: 1, minHeight: "150px" }}>
+            <div
+              className="hl-table-wrap"
+              style={{ flex: 1, minHeight: "150px" }}
+            >
               {holidays.map((row) => (
                 <div key={row.id} className="hl-row">
-                  <div className="hl-cell hl-cell-border" style={{ padding: "0 8px" }}>
+                  <div
+                    className="hl-cell hl-cell-border"
+                    style={{ padding: "0 8px" }}
+                  >
                     <DatePickerInput
                       name={`date-${row.id}`}
                       value={row.holiday_date}
-                      onChange={(_, v) => updateHoliday(row.id, "holiday_date", v)}
+                      onChange={(_, v) =>
+                        updateHoliday(row.id, "holiday_date", v)
+                      }
                     />
                   </div>
 
-                  {/* Wrapped the input in a hl-cell to respect the grid columns properly */}
                   <div className="hl-cell hl-cell-border">
                     <input
                       type="text"
                       placeholder="E.g. Diwali Eve"
                       value={row.description}
-                      onChange={(e) => updateHoliday(row.id, "description", e.target.value)}
+                      onChange={(e) =>
+                        updateHoliday(row.id, "description", e.target.value)
+                      }
                       className="w-full h-[26px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
                     />
                   </div>
 
-                  <div className="hl-cell hl-cell-border" style={{ justifyContent: "center" }}>
+                  <div
+                    className="hl-cell hl-cell-border"
+                    style={{ justifyContent: "center" }}
+                  >
                     <label className="relative inline-flex cursor-pointer items-center">
                       <input
                         type="checkbox"
                         className="peer sr-only"
                         checked={row.is_half_day}
-                        onChange={(e) => updateHoliday(row.id, "is_half_day", e.target.checked)}
+                        onChange={(e) =>
+                          updateHoliday(row.id, "is_half_day", e.target.checked)
+                        }
                       />
                       <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
                     </label>
@@ -449,7 +547,14 @@ export const HolidayListModal: React.FC<Props> = ({
               ))}
 
               {holidays.length === 0 && (
-                <div style={{ padding: "24px 0", textAlign: "center", fontSize: 12, color: "#6b7280" }}>
+                <div
+                  style={{
+                    padding: "24px 0",
+                    textAlign: "center",
+                    fontSize: 12,
+                    color: "#6b7280",
+                  }}
+                >
                   No holidays added yet. Click Add Row to start.
                 </div>
               )}
@@ -481,8 +586,12 @@ export const HolidayListModal: React.FC<Props> = ({
                   cursor: "pointer",
                   transition: "background 0.15s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#ebe6ff")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#F7F5FF")}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#ebe6ff")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "#F7F5FF")
+                }
               >
                 <Plus style={{ width: 12, height: 12 }} />
                 Add Row
