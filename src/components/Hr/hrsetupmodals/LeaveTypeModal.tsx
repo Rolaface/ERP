@@ -98,6 +98,10 @@ export const LeaveTypeModal: React.FC<Props> = ({
       );
       return;
     }
+     if (!Number.isInteger(form.fraction_of_daily_salary_per_leave)) {
+    showValidationError("Fraction of Daily Salary per Leave must be a whole number.");
+    return;
+    }
 
     try {
       setSaving(true);

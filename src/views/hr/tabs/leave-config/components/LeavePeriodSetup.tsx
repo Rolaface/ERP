@@ -1,7 +1,5 @@
-// ─── LeavePeriodSetup.tsx ──────────────────────────────────────────────────────
 import { useCallback, useMemo, useState } from "react";
-
-import Table from "../../../../../components/ui/Table/Table";
+import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -29,7 +27,7 @@ export function LeavePeriodSetup() {
     totalItems,
     fetchAll,
   } = useLeavePeriods();
-  
+
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const handleDelete = useCallback(
@@ -37,7 +35,6 @@ export function LeavePeriodSetup() {
       if (!row.name) return;
       try {
         setActionLoadingId(row.name);
-
         const deleted = await confirmDelete({
           text: `Delete "${row.name}"?`,
           loadingText: "Deleting Leave Period...",
@@ -46,10 +43,7 @@ export function LeavePeriodSetup() {
             await deleteLeavePeriod(row.name!);
           },
         });
-
-        if (deleted) {
-          fetchAll();
-        }
+        if (deleted) fetchAll();
       } finally {
         setActionLoadingId(null);
       }
@@ -63,27 +57,21 @@ export function LeavePeriodSetup() {
         key: "name",
         header: "Period Name",
         render: (row) => (
-          <span className="font-medium text-main">
-            {row.name || "—"}
-          </span>
+          <span className="font-medium text-main">{row.name || "—"}</span>
         ),
       },
       {
         key: "from_date",
         header: "From Date",
         render: (row) => (
-          <span className="text-sm text-sub">
-            {row.from_date || "—"}
-          </span>
+          <span className="text-sm text-sub">{row.from_date || "—"}</span>
         ),
       },
       {
         key: "to_date",
         header: "To Date",
         render: (row) => (
-          <span className="text-sm text-sub">
-            {row.to_date || "—"}
-          </span>
+          <span className="text-sm text-sub">{row.to_date || "—"}</span>
         ),
       },
       {
@@ -110,7 +98,6 @@ export function LeavePeriodSetup() {
             <ActionButton
               type="edit"
               iconOnly
-              // Use the global store action here
               onClick={() => openLeavePeriodModal(row, true, { onSuccess: fetchAll })}
               disabled={actionLoadingId === row.name}
             />
@@ -131,7 +118,7 @@ export function LeavePeriodSetup() {
   );
 
   return (
-    <Table
+    <ModalTable
       columns={columns}
       data={rows}
       loading={loading}
@@ -144,7 +131,6 @@ export function LeavePeriodSetup() {
       }}
       enableAdd
       addLabel="Add Leave Period"
-      // Open modal in "Add" mode (null row) and pass the fetch callback
       onAdd={() => openLeavePeriodModal(null, false, { onSuccess: fetchAll })}
       currentPage={page}
       totalPages={totalPages}
