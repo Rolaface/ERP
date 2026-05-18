@@ -370,6 +370,8 @@ export const API = {
   ExpenseClaim:{
     Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
     Claim_Type: `${ERP_BASE}/api/resource/Expense Claim Type`,
+    getExpenseClaims: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claims`,
+    getExpenseType: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claim_types`,
   },
   /* =========================
    * STOCK
