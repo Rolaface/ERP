@@ -92,13 +92,28 @@ interface WeeklyOffDay {
 }
 
 const DEFAULT_WEEKDAYS: WeeklyOffDay[] = [
-  { weekday: "Monday", label: "Mon", selected: false, is_half_day: false },
-  { weekday: "Tuesday", label: "Tue", selected: false, is_half_day: false },
-  { weekday: "Wednesday", label: "Wed", selected: false, is_half_day: false },
-  { weekday: "Thursday", label: "Thu", selected: false, is_half_day: false },
-  { weekday: "Friday", label: "Fri", selected: false, is_half_day: false },
-  { weekday: "Saturday", label: "Sat", selected: false, is_half_day: false },
-  { weekday: "Sunday", label: "Sun", selected: false, is_half_day: false },
+  { weekday: "Monday", label: "Monday", selected: false, is_half_day: false },
+  { weekday: "Tuesday", label: "Tuesday", selected: false, is_half_day: false },
+  {
+    weekday: "Wednesday",
+    label: "Wednesday",
+    selected: false,
+    is_half_day: false,
+  },
+  {
+    weekday: "Thursday",
+    label: "Thursday",
+    selected: false,
+    is_half_day: false,
+  },
+  { weekday: "Friday", label: "Friday", selected: false, is_half_day: false },
+  {
+    weekday: "Saturday",
+    label: "Saturday",
+    selected: false,
+    is_half_day: false,
+  },
+  { weekday: "Sunday", label: "Sunday", selected: false, is_half_day: false },
 ];
 
 export const HolidayListModal: React.FC<Props> = ({
@@ -298,7 +313,7 @@ export const HolidayListModal: React.FC<Props> = ({
       onClose={onClose}
       title={isEdit ? "Edit Holiday List" : "Add Holiday List"}
       icon={Calendar}
-      maxWidth="4xl"
+      maxWidth="5xl"
       height="80vh"
       footer={footer}
     >
@@ -313,7 +328,7 @@ export const HolidayListModal: React.FC<Props> = ({
         className="space-y-6"
       >
         <section>
-          <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+          <h3 className="mb-2.5 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
             Basic Details
           </h3>
           <div className="grid grid-cols-12 gap-4 items-start">
@@ -351,14 +366,14 @@ export const HolidayListModal: React.FC<Props> = ({
         </section>
 
         <section>
-          <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+          <h3 className="mb-2.5 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
             Weekly Offs
           </h3>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="grid grid-cols-7 gap-3 w-full">
             {weeklyOffs.map((day, idx) => (
               <div
                 key={day.weekday}
-                className={`flex h-[72px] w-[100px] flex-col justify-between rounded-lg border p-2.5 transition-colors ${
+                className={`flex h-[60px] w-full flex-col justify-between rounded-lg border p-2 transition-colors ${
                   day.selected
                     ? "border-[#D6D0F9] bg-[#F7F5FF]"
                     : "border-gray-200 bg-white"
@@ -366,7 +381,7 @@ export const HolidayListModal: React.FC<Props> = ({
               >
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-xs font-semibold ${
+                    className={`text-[11px] font-semibold ${
                       day.selected ? "text-[#3F25C8]" : "text-gray-800"
                     }`}
                   >
@@ -379,13 +394,11 @@ export const HolidayListModal: React.FC<Props> = ({
                     className="h-3.5 w-3.5 rounded border-gray-300 text-[#3F25C8] focus:ring-[#3F25C8] cursor-pointer"
                   />
                 </div>
-                <div className="flex items-end justify-between">
+                <div className="flex items-center justify-between">
                   <span
-                    className={`text-[9px] font-bold leading-tight ${day.selected ? "text-[#3F25C8]" : "text-gray-400"}`}
+                    className={`text-[9px] font-bold leading-none ${day.selected ? "text-[#3F25C8]" : "text-gray-400"}`}
                   >
-                    HALF
-                    <br />
-                    DAY
+                    HALF DAY
                   </span>
                   <label className="relative inline-flex cursor-pointer items-center">
                     <input
@@ -472,15 +485,17 @@ export const HolidayListModal: React.FC<Props> = ({
                     />
                   </div>
 
-                  <input
-                    type="text"
-                    placeholder="E.g. Diwali Eve"
-                    value={row.description}
-                    onChange={(e) =>
-                      updateHoliday(row.id, "description", e.target.value)
-                    }
-                    className="w-full h-[26px] rounded-md border border-gray-200 bg-white mx-2.5 px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
-                  />
+                  <div className="hl-cell hl-cell-border">
+                    <input
+                      type="text"
+                      placeholder="E.g. Diwali Eve"
+                      value={row.description}
+                      onChange={(e) =>
+                        updateHoliday(row.id, "description", e.target.value)
+                      }
+                      className="w-full h-[26px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
+                    />
+                  </div>
 
                   <div
                     className="hl-cell hl-cell-border"
