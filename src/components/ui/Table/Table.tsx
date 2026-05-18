@@ -1,10 +1,22 @@
 import React, { useState, useRef, useEffect, useMemo, memo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+  type ColumnDef,
+  type SortingState,
+  type VisibilityState,
+  type Row,
+} from "@tanstack/react-table";
 import type { Column } from "./type";
 import ColumnSelector from "./ColumnSelector";
 import Pagination from "../../Pagination";
 import Tooltip from "../../Tooltip";
 import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { useColumnStore } from "../../../store/useColumnStore";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SortState {
   sortBy: string;
@@ -44,6 +56,8 @@ interface TableProps<T> {
   onPageSizeChange?: (size: number) => void;
 }
 
+// ─── Skeleton Row ─────────────────────────────────────────────────────────────
+
 const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({
   columnsCount,
   rowIdx,
@@ -76,6 +90,8 @@ const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({
   );
 };
 
+// ─── Expanded Panel ───────────────────────────────────────────────────────────
+
 const ExpandedPanel: React.FC<{ children: React.ReactNode; open: boolean }> = ({
   children,
   open,
@@ -102,8 +118,44 @@ const ExpandedPanel: React.FC<{ children: React.ReactNode; open: boolean }> = ({
   );
 };
 
+// ─── Ghost Row (Excel-style filler) ──────────────────────────────────────────
+// Fills empty space below real rows so the table always looks full
+
+const ROW_HEIGHT = 37; // px — must match real row height
+
+const GhostRow: React.FC<{ columnsCount: number; idx: number }> = ({
+  columnsCount,
+  idx,
+}) => (
+  <tr
+    className={idx % 2 === 0 ? "bg-transparent" : "bg-row-hover/10"}
+    style={{ height: `${ROW_HEIGHT}px` }}
+  >
+    {Array.from({ length: columnsCount }).map((_, colIdx) => (
+      <td
+        key={colIdx}
+        className="border-b border-[var(--border)]/10 px-3 sm:px-4"
+      />
+    ))}
+  </tr>
+);
+
+// ─── Fetching Overlay ─────────────────────────────────────────────────────────
+// Fixed: was an absolute <tr> which is invalid HTML. Now a proper overlay div.
+
+const FetchingBar: React.FC<{ show: boolean }> = ({ show }) => {
+  if (!show) return null;
+  return (
+    <div className="pointer-events-none absolute top-0 left-0 right-0 z-20 flex justify-center py-1 bg-white/30">
+      <div className="h-1 w-20 rounded-full bg-primary/30 animate-pulse" />
+    </div>
+  );
+};
+
+// ─── Main Table ───────────────────────────────────────────────────────────────
+
 const TableInner = <T extends Record<string, any>>({
-  columns = [],
+  columns: columnDefs = [],
   data = [],
   rowKey,
   loading = false,
@@ -134,7 +186,9 @@ const TableInner = <T extends Record<string, any>>({
   onPageChange,
   onPageSizeChange,
 }: TableProps<T>) => {
-  const allKeys = useMemo(() => columns.map((col) => col.key), [columns]);
+
+  // ── Column store for persistence ───────────────────────────────────────────
+  const allKeys = useMemo(() => columnDefs.map((col) => col.key), [columnDefs]);
   const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
 
   const [visibleKeys, setVisibleKeys] = useState<string[]>(() =>
@@ -143,46 +197,119 @@ const TableInner = <T extends Record<string, any>>({
 
   const handleApplyColumns = (keys: string[]) => {
     setVisibleKeys(keys);
-    if (tableId) {
-      saveVisibleKeys(tableId, keys);
-    }
+    if (tableId) saveVisibleKeys(tableId, keys);
+    // Sync with TanStack visibility state
+    const newVisibility: VisibilityState = {};
+    allKeys.forEach((k) => {
+      newVisibility[k] = keys.includes(k);
+    });
+    setColumnVisibility(newVisibility);
   };
 
-  const visibleColumns = useMemo(
-    () => columns.filter((col) => visibleKeys.includes(col.key)),
-    [columns, visibleKeys],
-  );
+  // ── TanStack column visibility ─────────────────────────────────────────────
+  const initialVisibility = useMemo(() => {
+    const v: VisibilityState = {};
+    allKeys.forEach((k) => {
+      v[k] = visibleKeys.includes(k);
+    });
+    return v;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleColumnSort = (colKey: string) => {
-    if (!onSortChange) return;
-    const isSameColumn = sortBy === colKey;
-    const newOrder: "asc" | "desc" =
-      isSameColumn && sortOrderProp === "asc" ? "desc" : "asc";
-    onSortChange({ sortBy: colKey, sortOrder: newOrder });
-  };
+  const [columnVisibility, setColumnVisibility] =
+    useState<VisibilityState>(initialVisibility);
 
-  const getAlignment = useMemo(
+  // ── TanStack sorting (controlled externally) ───────────────────────────────
+  const sorting: SortingState = useMemo(
     () =>
-      (align?: "left" | "center" | "right"): string => {
-        switch (align) {
-          case "center":
-            return "text-center";
-          case "right":
-            return "text-right";
-          default:
-            return "text-left";
-        }
-      },
-    [],
+      sortBy && sortOrderProp
+        ? [{ id: sortBy, desc: sortOrderProp === "desc" }]
+        : [],
+    [sortBy, sortOrderProp],
   );
 
+  // ── Convert your Column<T> → TanStack ColumnDef<T> ────────────────────────
+  const tanstackColumns = useMemo<ColumnDef<T>[]>(
+    () =>
+      columnDefs.map((col) => ({
+        id: col.key,
+        accessorKey: col.key,
+        header: col.header as string,
+        enableSorting: !!col.sortable,
+        size: col.width ? parseInt(col.width) : undefined,
+        minSize: col.minWidth ? parseInt(col.minWidth) : 100,
+        maxSize: col.maxWidth ? parseInt(col.maxWidth) : undefined,
+        cell: ({ row }) => {
+          const item = row.original;
+          const rawValue = item[col.key];
+          const fallbackText =
+            rawValue === null || rawValue === undefined
+              ? "-"
+              : String(rawValue);
+
+          if (col.render) {
+            return col.render(item);
+          }
+          return (
+            <span className="block truncate opacity-90">{fallbackText}</span>
+          );
+        },
+      })),
+    [columnDefs],
+  );
+
+  // ── TanStack table instance ────────────────────────────────────────────────
+  const table = useReactTable({
+    data,
+    columns: tanstackColumns,
+    state: {
+      sorting,
+      columnVisibility,
+    },
+    // Sorting is server-side; disable client sorting
+    manualSorting: true,
+    onSortingChange: (updater) => {
+      if (!onSortChange) return;
+      const next =
+        typeof updater === "function" ? updater(sorting) : updater;
+      if (next.length === 0) return;
+      const { id, desc } = next[0];
+      onSortChange({ sortBy: id, sortOrder: desc ? "desc" : "asc" });
+    },
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getRowId: rowKey
+      ? (row, idx) => rowKey(row)
+      : (_, idx) => String(idx),
+  });
+
+  const visibleColumns = table.getVisibleLeafColumns();
+  const headerGroups = table.getHeaderGroups();
+  const rows = table.getRowModel().rows;
+
+  // ── Alignment helper ───────────────────────────────────────────────────────
+  const getAlignment = (align?: "left" | "center" | "right") => {
+    if (align === "center") return "text-center";
+    if (align === "right") return "text-right";
+    return "text-left";
+  };
+
+  // ── Column meta lookup (for tooltip, align, truncate, maxWidth) ────────────
+  const colMeta = useMemo(() => {
+    const map: Record<string, Column<T>> = {};
+    columnDefs.forEach((c) => (map[c.key] = c));
+    return map;
+  }, [columnDefs]);
+
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div
       className="app-surface relative z-10 flex w-full flex-col overflow-hidden"
       style={{
-        height: "clamp(500px, calc(100vh - 185px), 1000px)",
+        height: "clamp(420px, calc(100vh - 230px), 900px)",
       }}
     >
+      {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       {showToolbar && (
         <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--border)] bg-card px-3 py-2 sm:px-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="group relative w-full max-w-[18rem]">
@@ -204,7 +331,7 @@ const TableInner = <T extends Record<string, any>>({
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             {enableColumnSelector && (
               <ColumnSelector
-                columns={columns}
+                columns={columnDefs}
                 visibleKeys={visibleKeys}
                 allKeys={allKeys}
                 onApply={handleApplyColumns}
@@ -230,95 +357,74 @@ const TableInner = <T extends Record<string, any>>({
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="shrink-0 border-b-2 border-[var(--border)] bg-card w-full overflow-x-auto">
-          <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
-            <colgroup>
-              {visibleColumns.map((column) => (
-                <col
-                  key={column.key}
-                  style={{
-                    width:
-                      column.width ||
-                      (column.maxWidth ? column.maxWidth : "auto"),
-                    minWidth:
-                      column.minWidth ||
-                      (column.maxWidth ? column.maxWidth : "100px"),
-                  }}
-                />
-              ))}
-            </colgroup>
-            <thead>
-              <tr>
-                {visibleColumns.map((column) => {
-                  const isSortable = !!column.sortable && !!onSortChange;
-                  const isActive = sortBy === column.key;
-                  const isAsc = isActive && sortOrderProp === "asc";
-                  const isDesc = isActive && sortOrderProp === "desc";
+      {/* ── Table area ──────────────────────────────────────────────────────── */}
+      <div className="relative min-h-0 flex-1 flex flex-col overflow-hidden">
+        {/* Fetching bar — fixed: no longer an absolute <tr> */}
+        <FetchingBar show={isFetching && data.length > 0} />
 
-                  return (
-                    <th
-                      key={column.key}
-                      onClick={
-                        isSortable
-                          ? () => handleColumnSort(column.key)
-                          : undefined
-                      }
-                      className={[
-                        "bg-[var(--border)]/10 px-3 py-2 text-[11px] font-bold text-muted uppercase tracking-wide whitespace-nowrap sm:px-4",
-                        getAlignment(column.align),
-                        isSortable
-                          ? "cursor-pointer select-none transition-colors hover:text-primary"
-                          : "",
-                        isActive ? "text-primary" : "",
-                      ].join(" ")}
-                    >
-                      <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
-                        {column.header}
-                        {isSortable && (
-                          <span className="inline-flex opacity-60">
-                            {isAsc ? (
-                              <FaSortUp
-                                size={10}
-                                className="text-primary opacity-100"
-                              />
-                            ) : isDesc ? (
-                              <FaSortDown
-                                size={10}
-                                className="text-primary opacity-100"
-                              />
-                            ) : (
-                              <FaSort size={10} />
-                            )}
-                          </span>
-                        )}
-                      </span>
-                    </th>
-                  );
-                })}
-              </tr>
+        {/* ── SINGLE TABLE ─────────────────────────────────────────────────── */}
+        <div className="custom-scrollbar min-h-0 flex-1 overflow-auto">
+          <table className="w-full min-w-[600px] border-separate border-spacing-0 h-full">
+            {/* colgroup shared by both thead and tbody */}
+            <colgroup>
+              {visibleColumns.map((col) => {
+                const meta = colMeta[col.id];
+                return (
+                  <col
+                    key={col.id}
+                    style={{
+                      width: meta?.width ?? (meta?.maxWidth ? meta.maxWidth : "auto"),
+                      minWidth: meta?.minWidth ?? (meta?.maxWidth ? meta.maxWidth : "80px"),
+                    }}
+                  />
+                );
+              })}
+            </colgroup>
+
+            {/* ── thead ────────────────────────────────────────────────────── */}
+            <thead className="sticky top-0 z-10">
+              {headerGroups.map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((header) => {
+                    const meta = colMeta[header.id];
+                    const isSortable = header.column.getCanSort() && !!onSortChange;
+                    const sorted = header.column.getIsSorted();
+
+                    return (
+                      <th
+                        key={header.id}
+                        onClick={isSortable ? header.column.getToggleSortingHandler() : undefined}
+                        className={[
+                          "border-b-2 border-[var(--border)] bg-[var(--border)]/10 px-3 py-2",
+                          "text-[11px] font-bold text-muted uppercase tracking-wide whitespace-nowrap sm:px-4",
+                          getAlignment(meta?.align),
+                          isSortable ? "cursor-pointer select-none transition-colors hover:text-primary" : "",
+                          sorted ? "text-primary" : "",
+                        ].join(" ")}
+                      >
+                        <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {isSortable && (
+                            <span className="inline-flex opacity-60">
+                              {sorted === "asc" ? (
+                                <FaSortUp size={10} className="text-primary opacity-100" />
+                              ) : sorted === "desc" ? (
+                                <FaSortDown size={10} className="text-primary opacity-100" />
+                              ) : (
+                                <FaSort size={10} />
+                              )}
+                            </span>
+                          )}
+                        </span>
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
             </thead>
-          </table>
-        </div>
 
-        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-auto">
-          <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
-            <colgroup>
-              {visibleColumns.map((column) => (
-                <col
-                  key={column.key}
-                  style={{
-                    width:
-                      column.width ||
-                      (column.maxWidth ? column.maxWidth : "auto"),
-                    minWidth:
-                      column.minWidth ||
-                      (column.maxWidth ? column.maxWidth : "100px"),
-                  }}
-                />
-              ))}
-            </colgroup>
-            <tbody className="relative z-10">
+            {/* ── tbody ────────────────────────────────────────────────────── */}
+            <tbody className="relative z-10 h-full">
               {loading ? (
                 Array.from({ length: pageSize }).map((_, idx) => (
                   <SkeletonRow
@@ -327,7 +433,7 @@ const TableInner = <T extends Record<string, any>>({
                     rowIdx={idx}
                   />
                 ))
-              ) : data.length === 0 ? (
+              ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={visibleColumns.length} className="p-0">
                     <div className="flex items-center justify-center h-[300px] w-full">
@@ -338,136 +444,110 @@ const TableInner = <T extends Record<string, any>>({
                   </td>
                 </tr>
               ) : (
-                <>
-                  {/* Subtle fetching indicator - show only when isFetching and data exists */}
-                  {isFetching && data.length > 0 && (
-                    <tr className="absolute top-0 left-0 right-0 z-20 h-full bg-white/30">
-                      <td colSpan={visibleColumns.length}>
-                        <div className="flex items-center justify-center py-1">
-                          <div className="h-1 w-20 rounded-full bg-primary/30 animate-pulse" />
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {data.map((item, idx) => {
-                    const expandedContent = expandedRowRender?.(item);
-                    const isExpanded = !!expandedContent;
-                    const itemKey = rowKey ? rowKey(item) : `row-${idx}`;
+                rows.map((row, idx) => {
+                  const item = row.original;
+                  const expandedContent = expandedRowRender?.(item);
+                  const isExpanded = !!expandedContent;
 
-                    return (
-                      <React.Fragment key={itemKey}>
-                        <tr
-                          onClick={() => onRowClick?.(item)}
-                          className={[
-                            "group transition-colors duration-150",
-                            onRowClick ? "cursor-pointer" : "",
-                            idx % 2 === 0
-                              ? "bg-transparent"
-                              : "bg-row-hover/10",
-                            "hover:bg-row-hover",
-                            isExpanded ? "bg-row-hover/20" : "",
-                          ].join(" ")}
-                        >
-                          {visibleColumns.map((column) => {
-                            const rawValue = item[column.key];
-                            const fallbackText =
-                              rawValue === null || rawValue === undefined
-                                ? "-"
-                                : String(rawValue);
+                  return (
+                    <React.Fragment key={row.id}>
+                      <tr
+                        onClick={() => onRowClick?.(item)}
+                        className={[
+                          "group transition-colors duration-150",
+                          onRowClick ? "cursor-pointer" : "",
+                          idx % 2 === 0 ? "bg-transparent" : "bg-row-hover/10",
+                          "hover:bg-row-hover",
+                          isExpanded ? "bg-row-hover/20" : "",
+                        ].join(" ")}
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const meta = colMeta[cell.column.id];
+                          const rawValue = item[cell.column.id];
+                          const fallbackText =
+                            rawValue === null || rawValue === undefined
+                              ? "-"
+                              : String(rawValue);
 
-                            const needsTruncation =
-                              column.truncate === true ||
-                              column.maxWidth !== undefined;
-                            const cellStyle = column.maxWidth
-                              ? { maxWidth: column.maxWidth }
-                              : {};
+                          const needsTruncation =
+                            meta?.truncate === true || meta?.maxWidth !== undefined;
+                          const cellStyle = meta?.maxWidth
+                            ? { maxWidth: meta.maxWidth }
+                            : {};
 
-                            const getCellContent = () => {
-                              if (column.render) {
-                                return column.render(item);
+                          const cellContent = (
+                            <div
+                              style={needsTruncation ? { maxWidth: meta?.maxWidth ?? "200px" } : undefined}
+                              className={
+                                needsTruncation
+                                  ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap"
+                                  : "min-w-0"
                               }
-                              return (
-                                <span className="block truncate opacity-90">
-                                  {fallbackText}
-                                </span>
-                              );
-                            };
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </div>
+                          );
 
-                            const cellContent = (
-                              <div
-                                style={
-                                  needsTruncation
-                                    ? { maxWidth: column.maxWidth || "200px" }
-                                    : undefined
-                                }
-                                className={
-                                  needsTruncation
-                                    ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap"
-                                    : "min-w-0"
-                                }
-                              >
-                                {getCellContent()}
-                              </div>
-                            );
+                          const tooltipText = meta?.tooltip
+                            ? meta.tooltip(item)
+                            : needsTruncation
+                              ? fallbackText
+                              : undefined;
 
-                            const tooltipText = column.tooltip
-                              ? column.tooltip(item)
-                              : needsTruncation
-                                ? fallbackText
-                                : undefined;
+                          return (
+                            <td
+                              key={cell.id}
+                              style={cellStyle}
+                              className={`border-b border-[var(--border)]/20 px-3 py-1 text-sm font-medium text-main sm:px-4 ${getAlignment(meta?.align)}`}
+                            >
+                              {tooltipText ? (
+                                <Tooltip content={tooltipText}>{cellContent}</Tooltip>
+                              ) : (
+                                cellContent
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
 
-                            if (tooltipText) {
-                              return (
-                                <td
-                                  key={column.key}
-                                  style={cellStyle}
-                                  className={`border-b border-[var(--border)]/20 px-3 py-1 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
-                                >
-                                  <Tooltip content={tooltipText}>
-                                    {cellContent}
-                                  </Tooltip>
-                                </td>
-                              );
-                            }
-
-                            return (
-                              <td
-                                key={column.key}
-                                style={cellStyle}
-                                className={`border-b border-[var(--border)]/20 px-3 py-1 text-sm font-medium text-main sm:px-4 ${getAlignment(column.align)}`}
-                              >
-                                {cellContent}
-                              </td>
-                            );
-                          })}
-                        </tr>
-
-                        <tr>
-                          <td
-                            colSpan={visibleColumns.length}
-                            className="p-0"
-                            style={{
-                              borderBottom: isExpanded
-                                ? "2px solid rgba(201,125,46,0.25)"
-                                : "1px solid rgba(0,0,0,0.04)",
-                            }}
-                          >
-                            <ExpandedPanel open={isExpanded}>
-                              {expandedRowRender?.(item)}
-                            </ExpandedPanel>
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    );
-                  })}
-                </>
+                      {/* Expanded row */}
+                      <tr>
+                        <td
+                          colSpan={visibleColumns.length}
+                          className="p-0"
+                          style={{
+                            borderBottom: isExpanded
+                              ? "2px solid rgba(201,125,46,0.25)"
+                              : "1px solid rgba(0,0,0,0.04)",
+                          }}
+                        >
+                          <ExpandedPanel open={isExpanded}>
+                            {expandedRowRender?.(item)}
+                          </ExpandedPanel>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })
               )}
+
+              {/* ── Ghost rows — fill empty space below data (Excel-style) ── */}
+              {!loading && rows.length > 0 && rows.length < pageSize &&
+                Array.from({ length: pageSize - rows.length }).map((_, idx) => (
+                  <GhostRow
+                    key={`ghost-${idx}`}
+                    columnsCount={visibleColumns.length}
+                    idx={rows.length + idx}
+                  />
+                ))
+              }
             </tbody>
           </table>
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-col items-center justify-between gap-2 border-t border-[var(--border)] bg-card px-3 py-1 text-xs sm:flex-row sm:px-4">
+      {/* ── Footer ──────────────────────────────────────────────────────────── */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] bg-card px-3 py-1 text-xs sm:px-4">
         <div className="text-xs font-medium text-muted">
           Total: {totalItems}
         </div>
@@ -501,6 +581,5 @@ const TableInner = <T extends Record<string, any>>({
   );
 };
 
-// Memoized table - prevents re-render when props haven't changed
 const Table = memo(TableInner) as typeof TableInner;
 export default Table;
