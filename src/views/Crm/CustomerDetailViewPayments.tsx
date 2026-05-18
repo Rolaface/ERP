@@ -1,8 +1,5 @@
-import { useEffect,  useState } from "react";
-import {
-  CreditCard,
-} from "lucide-react";
-import Table from "../../components/ui/Table/Table";
+import { useEffect, useState } from "react";
+import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { getAllPayments } from "../../api/CustomerPayment";
 import { showApiError } from "../../utils/alert";
 
@@ -14,7 +11,7 @@ interface Payment {
   status: string;
 }
 
-interface Props { 
+interface Props {
   customerName: string;
 }
 
@@ -27,14 +24,19 @@ const CustomerdetailviewPayment = ({ customerName }: Props) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  /* FETCH */
   useEffect(() => {
     if (!customerName) return;
 
     const load = async () => {
       setLoading(true);
       try {
-        const res = await getAllPayments("Customer", page, pageSize, undefined, customerName);
+        const res = await getAllPayments(
+          "Customer",
+          page,
+          pageSize,
+          undefined,
+          customerName,
+        );
 
         const all = res?.data?.payments ?? [];
 
@@ -59,14 +61,10 @@ const CustomerdetailviewPayment = ({ customerName }: Props) => {
     load();
   }, [customerName, page, pageSize]);
 
-  /* Reset page on customer change */
   useEffect(() => {
     setPage(1);
   }, [customerName]);
 
-
-
-  /* COLUMNS */
   const columns = [
     {
       key: "id",
@@ -118,7 +116,7 @@ const CustomerdetailviewPayment = ({ customerName }: Props) => {
       align: "right" as const,
       render: (row: Payment) => (
         <span className="text-sm font-black text-primary">
-           {row.amount.toLocaleString()}
+          {row.amount.toLocaleString()}
         </span>
       ),
     },
@@ -126,11 +124,8 @@ const CustomerdetailviewPayment = ({ customerName }: Props) => {
 
   return (
     <div className="max-w-[1400px] mx-auto">
-     
-
-      {/* TABLE */}
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
-        <Table
+        <ModalTable
           columns={columns}
           data={payments}
           loading={loading}
@@ -151,6 +146,5 @@ const CustomerdetailviewPayment = ({ customerName }: Props) => {
     </div>
   );
 };
-
 
 export default CustomerdetailviewPayment;

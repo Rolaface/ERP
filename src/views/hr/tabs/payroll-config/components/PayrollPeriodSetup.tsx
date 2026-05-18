@@ -6,9 +6,39 @@ import ActionButton, {
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
-import { deletePayrollPeriod, type PayrollPeriod } from "../../../../../api/payrollConfigApi";
+import {
+  deletePayrollPeriod,
+  type PayrollPeriod,
+} from "../../../../../api/payrollConfigApi";
 import { usePayrollPeriods } from "../hooks/usePayrollPeriods";
 import { openPayrollPeriodModal } from "../../../../../store/modalStore";
+
+const formatDate = (date: string | Date) => {
+  if (!date) return "";
+
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
+
+  if (typeof date === "string") {
+    const [year, month, day] = date.split("T")[0].split("-").map(Number);
+    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+  }
+
+  // Date object — use local methods
+  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+};
 
 export function PayrollPeriodSetup() {
   const {
@@ -83,14 +113,18 @@ export function PayrollPeriodSetup() {
         key: "start_date",
         header: "Start Date",
         render: (row) => (
-          <span className="text-sm text-main">{row.start_date || "—"}</span>
+          <span className="text-sm text-main">
+            {row.start_date ? formatDate(row.start_date) : "—"}
+          </span>
         ),
       },
       {
         key: "end_date",
         header: "End Date",
         render: (row) => (
-          <span className="text-sm text-main">{row.end_date || "—"}</span>
+          <span className="text-sm text-main">
+            {row.end_date ? formatDate(row.end_date) : "—"}
+          </span>
         ),
       },
       {

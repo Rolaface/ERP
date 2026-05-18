@@ -48,15 +48,12 @@ export const LeavePolicyModal: React.FC<Props> = ({
     currentPage * ITEMS_PER_PAGE
   );
   
-  // FIX 1: Change to any[] (or a specific interface) to hold the full API response objects
   const [availableLeaveTypes, setAvailableLeaveTypes] = useState<any[]>([]);
 
-  // FIX 2: Create a function to fetch latest leave types on click
   const fetchLatestLeaveTypes = async () => {
     try {
-      const res = await getAllLeaveTypes();
-      // Handle responses whether wrapped in { data: [...] } or just an array
-      const data = res.data ? res.data : res;
+      const res: any = await getAllLeaveTypes();
+      const data = res?.data ?? res;
       setAvailableLeaveTypes(data);
     } catch (err) {
       console.error("Failed to fetch leave types", err);
@@ -75,7 +72,6 @@ export const LeavePolicyModal: React.FC<Props> = ({
           : { ...EMPTY, leave_policy_details: [{ leave_type: "", annual_allocation: 0, max_leaves_allowed: 0 }] }
       );
 
-      // We still fetch initially to populate any existing max_leaves_allowed data mappings
       fetchLatestLeaveTypes();
     }
   }, [isOpen, initialData]);
@@ -123,8 +119,6 @@ export const LeavePolicyModal: React.FC<Props> = ({
       const payload: LeavePolicy = {
         title: form.title,
         docstatus: isEdit ? form.docstatus : 1,
-        // FIX 3: Stop destructuring out `max_leaves_allowed`. Just map the objects as they are.
-        // This resolves the Typescript assignment error since the interface strictly requires it.
         leave_policy_details: validDetails.map(d => ({ ...d })),
       };
 
@@ -144,7 +138,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
     }
   };
 
-  const footer = (
+  const footer = !isEdit ? (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -166,7 +160,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
         {saving ? "Saving…" : form.docstatus === 1 ? "Submit Policy" : isEdit ? "Update Policy" : "Save as Draft"}
       </button>
     </div>
-  );
+  ): null;
 
   return (
     <MinimizableModal
@@ -203,20 +197,19 @@ export const LeavePolicyModal: React.FC<Props> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {paginatedDetails.map((detail, pageIndex) => {
+              {/* {paginatedDetails.map((detail, pageIndex) => {
                 const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + pageIndex;
                 
                 return (
                   <tr key={actualIndex} className="bg-white">
                     <td 
                       className="p-2 border-r border-[var(--border)] align-top"
-                      onClick={fetchLatestLeaveTypes} // <-- FIX 2: Fetch latest on click of the container
+                      onClick={fetchLatestLeaveTypes}
                     >
                       <LeaveTypeSelect
                         label=""
                         value={detail.leave_type}
                         onChange={(type) => {
-                          // FIX 1: Safely grab the type name and find its matching API object to set `max_leaves_allowed`
                           const typeName = type.name || type;
                           const matchedLeaveType = availableLeaveTypes.find(lt => lt.name === typeName);
                           
@@ -238,6 +231,90 @@ export const LeavePolicyModal: React.FC<Props> = ({
                     <td className="p-2 border-r border-[var(--border)] align-middle text-center">
                       <div className="flex w-full items-center justify-center rounded text-sm font-semibold text-gray-600 border border-transparent">
                         {detail.max_leaves_allowed !== undefined ? detail.max_leaves_allowed : "-"}
+                      </div>
+                    </td>
+                    <td className="p-2 border-r border-[var(--border)] align-top">
+                      <ModalInput
+                        label=""
+                        type="number"
+                        className="no-spinner w-full"
+                        value={detail.annual_allocation || ""}
+                        placeholder="0"
+                        onChange={(e) => {
+                          let val = Number(e.target.value);
+                          if (val < 0) {
+                            showValidationError("Annual allocation cannot be negative.");
+                            val = 0;
+                          } 
+                          else if (!Number.isInteger(val)) {
+                            showValidationError("Annual allocation must be a whole number.");
+                            val = Math.floor(val);
+                          }
+
+                          updateDetailRow(
+                            actualIndex,
+                            "annual_allocation",
+                            val || 0,
+                          );
+                        }}
+                        disabled={initialData?.docstatus === 1}
+                      /> 
+                    </td>
+                    <td className="p-2 text-center align-middle">
+                      {initialData?.docstatus !== 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeDetailRow(actualIndex)}
+                          className="p-1.5 text-gray-400 transition hover:text-red-600 rounded"
+                          title="Remove Row"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })} */}
+              {paginatedDetails.map((detail, pageIndex) => {
+                const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + pageIndex;
+                
+                // Dynamically fetch the max limit from our loaded leave types array for view mode
+                const matchedLeaveType = availableLeaveTypes.find(lt => lt.name === detail.leave_type);
+                const displayMax = matchedLeaveType?.max_leaves_allowed ?? detail.max_leaves_allowed;
+                
+                return (
+                  <tr key={actualIndex} className="bg-white">
+                    <td 
+                      className="p-2 border-r border-[var(--border)] align-top"
+                      onClick={fetchLatestLeaveTypes}
+                    >
+                      <LeaveTypeSelect
+                        label=""
+                        value={detail.leave_type}
+                        onChange={(type: any) => {
+                          // Correctly narrow the type to string to satisfy TypeScript
+                          const typeName = typeof type === "string" ? type : (type?.name || "");
+                          const selectedLeaveType = availableLeaveTypes.find(lt => lt.name === typeName);
+                          
+                          setForm((prev) => {
+                            const updated = [...prev.leave_policy_details];
+                            updated[actualIndex] = { 
+                              ...updated[actualIndex], 
+                              leave_type: typeName as string,
+                              max_leaves_allowed: selectedLeaveType ? selectedLeaveType.max_leaves_allowed : 0 
+                            };
+                            return { ...prev, leave_policy_details: updated };
+                          });
+                        }}
+                        disabled={initialData?.docstatus === 1}
+                        required
+                        className="w-full"
+                      />
+                    </td>
+                    <td className="p-2 border-r border-[var(--border)] align-middle text-center">
+                      <div className="flex w-full items-center justify-center rounded text-sm font-semibold text-gray-600 border border-transparent">
+                        {/* Use the dynamically resolved displayMax */}
+                        {displayMax !== undefined ? displayMax : "-"}
                       </div>
                     </td>
                     <td className="p-2 border-r border-[var(--border)] align-top">

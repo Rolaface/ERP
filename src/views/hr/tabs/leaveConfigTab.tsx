@@ -6,6 +6,7 @@ import { SETUP_SECTIONS } from "./leave-config/sections";
 import { LeavePeriodSetup } from "./leave-config/components/LeavePeriodSetup";
 import { LeavePolicySetup } from "./leave-config/components/LeavePolicySetup";
 import { LeavePolicyAssignmentSetup } from "./leave-config/components/LeavePolicyAssignmentSetup";
+import { HolidayListSetup } from "./leave-config/components/HolidayListSetup";
 
 export default function LeaveConfigTab() {
   const [activeSection, setActiveSection] = useUrlTab({
@@ -25,6 +26,7 @@ export default function LeaveConfigTab() {
       {activeSection === "period" && <LeavePeriodSetup />}
       {activeSection === "policy" && <LeavePolicySetup />}
       {activeSection === "assign" && <LeavePolicyAssignmentSetup />}
+      {activeSection === "holiday" && <HolidayListSetup />}
     </AppSetupLayout>
   );
 }

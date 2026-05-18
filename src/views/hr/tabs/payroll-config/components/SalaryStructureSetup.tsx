@@ -9,7 +9,10 @@ import {
   deleteSalaryStructure,
   type SalaryStructure,
 } from "../../../../../api/payrollConfigApi";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../../../../store/dataRefreshStore";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../../../../store/dataRefreshStore";
 import { useSalaryStructures } from "../hooks/useSalaryStructures";
 import { openSalaryStructureModal } from "../../../../../store/modalStore";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
@@ -32,12 +35,17 @@ export function SalaryStructureSetup() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
 
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.SALARY_STRUCTURE_LIST, () => {
-      fetchAll();
-    });
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.SALARY_STRUCTURE_LIST,
+      () => {
+        fetchAll();
+      },
+    );
     return unsubscribe;
   }, [subscribeToRefresh, fetchAll]);
 
@@ -85,14 +93,26 @@ export function SalaryStructureSetup() {
       {
         key: "name",
         header: "Structure Name",
+        align: "center",
         render: (row) => (
           <span className="font-medium text-main">{row.name || "—"}</span>
         ),
         tooltip: (row) => row.name ?? "",
       },
       {
+        key: "Currency",
+        header: "Currency",
+        align: "center",
+        render: (row) => (
+          <span className="font-medium text-main">{row.currency || "—"}</span>
+        ),
+        tooltip: (row) => row.currency ?? "",
+      },
+
+      {
         key: "is_active",
         header: "Status",
+        
         render: (row) => (
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -105,32 +125,26 @@ export function SalaryStructureSetup() {
           </span>
         ),
       },
-      {
-        key: "docstatus",
-        header: "Status",
-        render: (row) => {
-          const labels: Record<number, string> = { 0: "Draft", 1: "Approved", 2: "Cancelled" };
-          const colors: Record<number, string> = {
-            0: "text-amber-600",
-            1: "text-blue-600",
-            2: "text-red-500",
-          };
-          const status = row.docstatus ?? 0;
-          return (
-            <span className={`text-xs font-semibold ${colors[status]}`}>
-              {labels[status] ?? "—"}
-            </span>
-          );
-        },
-      },
-      {
-        key: "description",
-        header: "Description",
-        render: (row) => (
-          <span className="text-sm text-sub line-clamp-1">{row.description || "—"}</span>
-        ),
-        tooltip: (row) => row.description ?? "",
-      },
+
+      // {
+      //   key: "docstatus",
+      //   header: "Status",
+      //   render: (row) => {
+      //     const labels: Record<number, string> = { 0: "Draft", 1: "Approved", 2: "Cancelled" };
+      //     const colors: Record<number, string> = {
+      //       0: "text-amber-600",
+      //       1: "text-blue-600",
+      //       2: "text-red-500",
+      //     };
+      //     const status = row.docstatus ?? 0;
+      //     return (
+      //       <span className={`text-xs font-semibold ${colors[status]}`}>
+      //         {labels[status] ?? "—"}
+      //       </span>
+      //     );
+      //   },
+      // },
+
       {
         key: "actions",
         header: "Actions",

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Table from "../../components/ui/Table/Table";
+import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { getAllPayments } from "../../api/CustomerPayment";
 import { showApiError } from "../../utils/alert";
 
@@ -24,7 +24,6 @@ const SupplierDetailViewPayments = ({ supplierName }: Props) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  /* FETCH */
   useEffect(() => {
     if (!supplierName) return;
 
@@ -62,12 +61,10 @@ const SupplierDetailViewPayments = ({ supplierName }: Props) => {
     load();
   }, [supplierName, page, pageSize]);
 
-  /* Reset page on supplier change */
   useEffect(() => {
     setPage(1);
   }, [supplierName]);
 
-  /* COLUMNS */
   const columns = [
     {
       key: "id",
@@ -101,12 +98,13 @@ const SupplierDetailViewPayments = ({ supplierName }: Props) => {
       header: "Status",
       render: (row: Payment) => (
         <span
-          className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${row.status === "Submitted"
+          className={`px-2 py-1 rounded-full text-[9px] font-black uppercase ${
+            row.status === "Submitted"
               ? "bg-success/10 text-success"
               : row.status === "Draft"
-                ? "bg-warning/10 text-warning"
-                : "bg-muted/10 text-muted"
-            }`}
+              ? "bg-warning/10 text-warning"
+              : "bg-muted/10 text-muted"
+          }`}
         >
           {row.status}
         </span>
@@ -127,7 +125,7 @@ const SupplierDetailViewPayments = ({ supplierName }: Props) => {
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="bg-card border border-theme rounded-2xl overflow-hidden">
-        <Table
+        <ModalTable
           columns={columns}
           data={payments}
           loading={loading}

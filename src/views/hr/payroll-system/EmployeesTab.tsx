@@ -17,6 +17,7 @@ import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
 import { getPayrollEmployees } from "../../../api/utils/frappeUtilsApi";
 import { getEmployeeById } from "../../../api/employeeapi";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
+import { getallbranches } from "../../../api/utils/frappeUtilsApi";
 import {
   getAllDepartments,
   getAllDesignations,
@@ -472,10 +473,10 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
           </label>
           <SearchSelect2
             label=""
-            value={data.departmentLabel || ""}
-            placeholder="Search departments..."
+            value={data.branchLabel || ""}
+            placeholder="Search branch..."
             fetchOptions={async (q) => {
-              const res = await getAllDepartments(q);
+              const res = await getallbranches(q);
 
               return (res || []).map((dept: any) => ({
                 label: dept.label,
@@ -483,8 +484,8 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
               }));
             }}
             onChange={(value, option) => {
-              onChange("department", value);
-              onChange("departmentLabel", option.label);
+              onChange("branch", value);
+              onChange("branchLabel", option.label);
             }}
           />
         </div>
