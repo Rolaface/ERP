@@ -46,7 +46,9 @@ export type ModalType =
   | "leavePolicy"
   | "leavePolicyAssignment"
   | "expense"
-  | "expenseType";
+  | "expenseType"
+  | "emailTemplate";
+
 
 export interface ModalContext {
   source?: string;
@@ -792,3 +794,13 @@ export const openLeavePolicyAssignmentModal = (
   useModalStore
     .getState()
     .openModal("expenseType", initialData, isEdit, context, meta);
+
+
+    export const openEmailTemplateModal = (
+  templateId?: string,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("emailTemplate", { templateId }, !!templateId, context, meta);

@@ -12,8 +12,9 @@ import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openPaymentEntryModal } from "../../store/modalStore";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
-
+import { getPaymentEntryById } from "../../api/BankAccountApi";
+import { ActionMenu } from "../../components/ui/Table/ActionButton";
+import SendEmailModal from "../../components/common/SendEmailModal";
 
 interface PaymentAPI {
   paymentId: string;
@@ -53,6 +54,11 @@ const PaymentEntry: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  // email
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailPayment, setEmailPayment] = useState<PaymentRow | null>(null);
+  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(null);
+  const [emailAttachments, setEmailAttachments] = useState<{ name: string; file_name: string }[]>([]);
 
   const fetchPayments = useCallback(async () => {
     try {
@@ -148,6 +154,35 @@ const PaymentEntry: React.FC = () => {
       header: "Status",
       render: (row: PaymentRow) => <StatusBadge status={row.status} />,
     },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (row: PaymentRow) => (
+        <ActionMenu
+          customActions={[
+            {
+              label: "Send Email",
+              onClick: async () => {
+                setEmailPayment(row);
+                setEmailContactEmail(null);
+                setEmailAttachments([]);
+                setEmailModalOpen(true);
+                try {
+                  const res = await getPaymentEntryById(row.id);
+                  if (res?.message?.status_code === 200) {
+                    setEmailContactEmail(res.message.data?.contact_email ?? null);
+                    setEmailAttachments(res.message.data?.attachments ?? []);
+                  }
+                } catch {
+                  // non-critical: modal opens with empty To/attachments
+                }
+              },
+            },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -196,6 +231,19 @@ const PaymentEntry: React.FC = () => {
           }
         />
       </AppPageBody>
+      <SendEmailModal
+        open={emailModalOpen}
+        docType="Payment Entry"
+        invoiceNumber={emailPayment?.id}
+        contactEmail={emailContactEmail}
+        invoiceAttachments={emailAttachments}
+        onClose={() => {
+          setEmailModalOpen(false);
+          setEmailPayment(null);
+          setEmailContactEmail(null);
+          setEmailAttachments([]);
+        }}
+      />
     </AppPage>
   );
 };

@@ -35,6 +35,8 @@ import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 import PermissionGate from "../PermissionGate";
 import { usePermission } from "../../hooks/permission/usePermission";
+import SendEmailModal from "../../components/common/SendEmailModal";
+
 type OutletContextType = {
   openPOCreate: () => void;
   openPOEdit: (poId: string | number) => void;
@@ -100,6 +102,14 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [company, setCompany] = useState<any | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPOForPayment, setSelectedPOForPayment] = useState<PurchaseOrder | null>(null);
+
+  //email
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailPurchaseOrder, setEmailPurchaseOrder] = useState<PurchaseOrder | null>(null);
+  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(null);
+  const [emailPurchaseOrderAttachments, setEmailPurchaseOrderAttachments] = useState<
+    { name: string; file_name: string }[]
+  >([]);
 
   // ── PDF preview modal (kept — do not remove)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -606,6 +616,25 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
             customActions={[
               { label: "View PDF", onClick: () => handlePreviewPDF(o) },
 
+              {
+                label: "Send Email",
+                onClick: async () => {
+                  setEmailPurchaseOrder(o);
+                  setEmailContactEmail(null);
+                  setEmailPurchaseOrderAttachments([]);
+                  setEmailModalOpen(true);
+                  try {
+                    const res = await getPurchaseOrderById(o.id);
+                    if (res?.status === "success") {
+                      setEmailContactEmail(res.data?.contact_email ?? null);
+                      setEmailPurchaseOrderAttachments(res.data?.attachments ?? []);
+                    }
+                  } catch {
+                    // non-critical
+                  }
+                },
+              },
+
               // Advance Payment — needs Payment Entry create + Approved status
               ...(can(PAYMENT_MODULE, "create") && o.status === "Approved"
                 ? [{ label: "Make Advance Payment", onClick: () => handleMakePayment(o) }]
@@ -619,7 +648,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
               // Status transitions — needs write
               ...(can(PO_MODULE, "write")
                 ? (STATUS_TRANSITIONS[o.status as POStatus] ?? []).map((status) => ({
-                  label: status === "Approved" ? "Approve" : status,  
+                  label: status === "Approved" ? "Approve" : status,
                   danger: status === "Completed",
                   onClick: () => handleStatusChange(o.id, status),
                 }))
@@ -718,6 +747,21 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         }}
       />
 
+
+      <SendEmailModal
+        open={emailModalOpen}
+        docType="Purchase Order"
+        invoiceNumber={emailPurchaseOrder?.id}
+        contactEmail={emailContactEmail}
+        supplierName={emailPurchaseOrder?.supplier}
+        invoiceAttachments={emailPurchaseOrderAttachments}
+        onClose={() => {
+          setEmailModalOpen(false);
+          setEmailPurchaseOrder(null);
+          setEmailContactEmail(null);
+          setEmailPurchaseOrderAttachments([]);
+        }}
+      />
 
       {viewModalOpen && selectedOrder && (
         <PurchaseOrderView
