@@ -1,0 +1,382 @@
+/* =========================================
+   DASHBOARD SYSTEM — MOTION
+========================================= */
+
+:root {
+  /* =========================================
+     DURATION TOKENS
+  ========================================= */
+
+  --motion-instant: 80ms;
+  --motion-fast: 140ms;
+  --motion-base: 220ms;
+  --motion-slow: 320ms;
+
+  /* =========================================
+     EASING TOKENS
+  ========================================= */
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+
+  --ease-soft: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* =========================================
+     INTERACTION SCALE
+  ========================================= */
+
+  --scale-hover: 1.015;
+  --scale-press: 0.985;
+
+  /* =========================================
+     ELEVATION TRANSITIONS
+  ========================================= */
+
+  --shadow-transition:
+    box-shadow var(--motion-base) var(--ease-standard);
+
+  --transform-transition:
+    transform var(--motion-base) var(--ease-standard);
+
+  --opacity-transition:
+    opacity var(--motion-fast) var(--ease-standard);
+}
+
+/* =========================================
+   GLOBAL TRANSITION HELPERS
+========================================= */
+
+.motion-base {
+  transition:
+    background-color var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard);
+}
+
+.motion-fast {
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard);
+}
+
+/* =========================================
+   INTERACTIVE SURFACES
+========================================= */
+
+.interactive {
+  transition:
+    transform var(--motion-fast) var(--ease-soft),
+    box-shadow var(--motion-fast) var(--ease-soft),
+    border-color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.interactive:hover {
+  transform: translateY(-1px);
+}
+
+.interactive:active {
+  transform: scale(var(--scale-press));
+}
+
+/* =========================================
+   HOVER LIFT
+========================================= */
+
+.hover-lift {
+  transition:
+    transform var(--motion-fast) var(--ease-soft),
+    box-shadow var(--motion-fast) var(--ease-soft);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* =========================================
+   HOVER GLOW
+========================================= */
+
+.hover-glow {
+  transition:
+    box-shadow var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard);
+}
+
+.hover-glow:hover {
+  box-shadow: var(--dashboard-shadow-md);
+}
+
+/* =========================================
+   PRESS FEEDBACK
+========================================= */
+
+.pressable {
+  transition:
+    transform var(--motion-instant) var(--ease-standard);
+}
+
+.pressable:active {
+  transform: scale(var(--scale-press));
+}
+
+/* =========================================
+   FADE IN
+========================================= */
+
+@keyframes dashboardFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation:
+    dashboardFadeIn
+    var(--motion-base)
+    var(--ease-decelerate)
+    forwards;
+}
+
+/* =========================================
+   FADE UP
+========================================= */
+
+@keyframes dashboardFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation:
+    dashboardFadeUp
+    var(--motion-base)
+    var(--ease-decelerate)
+    forwards;
+}
+
+/* =========================================
+   SCALE IN
+========================================= */
+
+@keyframes dashboardScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation:
+    dashboardScaleIn
+    var(--motion-base)
+    var(--ease-soft)
+    forwards;
+}
+
+/* =========================================
+   STAGGER UTILITIES
+========================================= */
+
+.stagger-1 {
+  animation-delay: 40ms;
+}
+
+.stagger-2 {
+  animation-delay: 80ms;
+}
+
+.stagger-3 {
+  animation-delay: 120ms;
+}
+
+.stagger-4 {
+  animation-delay: 160ms;
+}
+
+.stagger-5 {
+  animation-delay: 200ms;
+}
+
+/* =========================================
+   MODAL ANIMATION
+========================================= */
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-enter {
+  animation:
+    modalEnter
+    var(--motion-base)
+    var(--ease-soft)
+    forwards;
+}
+
+/* =========================================
+   SIDEBAR TRANSITIONS
+========================================= */
+
+.sidebar-transition {
+  transition:
+    width var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
+}
+
+/* =========================================
+   PANEL TRANSITIONS
+========================================= */
+
+.panel-transition {
+  transition:
+    background-color var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
+}
+
+/* =========================================
+   LOADING SHIMMER
+========================================= */
+
+@keyframes dashboardShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.45),
+      transparent
+    );
+
+  animation:
+    dashboardShimmer
+    1.6s
+    infinite;
+}
+
+/* =========================================
+   NOTIFICATION PULSE
+========================================= */
+
+@keyframes dashboardPulse {
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.attention-pulse {
+  animation:
+    dashboardPulse
+    2s
+    ease-in-out
+    infinite;
+}
+
+/* =========================================
+   SCROLL REVEAL
+========================================= */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(8px);
+
+  transition:
+    opacity var(--motion-slow) var(--ease-decelerate),
+    transform var(--motion-slow) var(--ease-decelerate);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* =========================================
+   PERFORMANCE OPTIMIZATION
+========================================= */
+
+.gpu-layer {
+  will-change:
+    transform,
+    opacity;
+}
+
+/* =========================================
+   REDUCED MOTION
+========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+
+    animation-iteration-count: 1 !important;
+
+    transition-duration: 0.01ms !important;
+
+    scroll-behavior: auto !important;
+  }
+}
