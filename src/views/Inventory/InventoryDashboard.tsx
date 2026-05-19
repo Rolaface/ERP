@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Bar,
@@ -19,22 +18,20 @@ import {
 
 import { AlertTriangle, Boxes, Package, Warehouse } from "lucide-react";
 
-import { getInventoryDashboardSummary } from "../../api/inventoryDashboardApi";
+import { 
+  getInventoryDashboardSummary, 
+  getInventoryItemBreakdown, 
+  getInventoryTopItems 
+} from "../../api/inventoryDashboardApi";
 import { ChartSkeleton } from "../../components/ChartSkeleton";
 
 const InventoryDashboard: React.FC = () => {
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [summaryData, setSummaryData] = useState<{
-    totalItems: number;
-    serviceItems: number;
-    rawMaterialItems: number;
-    finishedProductsItems: number;
-    totalImportedItems: number;
-  } | null>(null);
-
-  // const chartsLoading = summaryLoading || !summaryData;
-  const chartsLoading = summaryLoading || (!summaryData && !summaryError);
+  const [chartsLoading, setChartsLoading] = useState(true);
+  
+  // Data States
+  const [summaryData, setSummaryData] = useState<any>(null);
+  const [itemBreakdown, setItemBreakdown] = useState<any[]>([]);
+  const [topItems, setTopItems] = useState<any[]>([]);
 
   const palette = useMemo(
     () => ({
@@ -53,22 +50,50 @@ const InventoryDashboard: React.FC = () => {
     [palette],
   );
 
+ const currencyINR = useMemo(
+  () =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 2,
+    }),
+  [],
+);
+ 
+ const currencyINRCompact = useMemo(
+   () =>
+     new Intl.NumberFormat("en-IN", {
+       style: "currency",
+       currency: "INR",
+       notation: "compact",
+       compactDisplay: "short",
+       maximumFractionDigits: 1,
+     }),
+   []
+ );
+
+  // ----------------------------------------------------
+  // API FETCH
+  // ----------------------------------------------------
   useEffect(() => {
     let mounted = true;
     const run = async () => {
       try {
-        setSummaryLoading(true);
-        setSummaryError(null);
-        setSummaryData(null);
-        const resp = await getInventoryDashboardSummary();
+        setChartsLoading(true);
+        const [ breakdownRes, topItemsRes] = await Promise.all([
+          // getInventoryDashboardSummary(),
+          getInventoryItemBreakdown(),
+          getInventoryTopItems()
+        ]);
+
         if (!mounted) return;
-        setSummaryData(resp.data);
+        // setSummaryData(summaryRes?.data || null);
+        setItemBreakdown(breakdownRes?.data || []);
+        setTopItems(topItemsRes?.data || []);
       } catch (e: any) {
-        if (!mounted) return;
-        setSummaryError(e?.message ?? "Failed to load inventory dashboard summary");
+        console.error("Failed to load inventory dashboard data:", e);
       } finally {
-        if (!mounted) return;
-        setSummaryLoading(false);
+        if (mounted) setChartsLoading(false);
       }
     };
 
@@ -78,16 +103,9 @@ const InventoryDashboard: React.FC = () => {
     };
   }, []);
 
-  const itemTypeBreakdownData = useMemo(
-    () => [
-      { name: "Service", value: Number(summaryData?.serviceItems ?? 0) },
-      { name: "Raw Material", value: Number(summaryData?.rawMaterialItems ?? 0) },
-      { name: "Finished Products", value: Number(summaryData?.finishedProductsItems ?? 0) },
-      { name: "Imported", value: Number(summaryData?.totalImportedItems ?? 0) },
-    ],
-    [summaryData],
-  );
-
+  // ----------------------------------------------------
+  // DATA MEMOS
+  // ----------------------------------------------------
   const importedVsLocalData = useMemo(() => {
     const imported = Number(summaryData?.totalImportedItems ?? 0);
     const total = Number(summaryData?.totalItems ?? 0);
@@ -105,25 +123,6 @@ const InventoryDashboard: React.FC = () => {
     ],
     [summaryData],
   );
-
-  const chartPlaneStyle = useMemo(
-    () => ({
-      backgroundImage:
-        "linear-gradient(rgba(229,231,235,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.7) 1px, transparent 1px)",
-      backgroundSize: "24px 24px",
-      backgroundPosition: "-1px -1px",
-    }),
-    [],
-  );
-
-  const renderDonutLabel = (props: any) => {
-    const { x, y, name, value } = props;
-    return (
-      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
-        {String(name)}: {String(value)}
-      </text>
-    );
-  };
 
   const kpiCards = useMemo(
     () =>
@@ -162,6 +161,37 @@ const InventoryDashboard: React.FC = () => {
     [summaryData],
   );
 
+  // ----------------------------------------------------
+  // RENDER HELPERS
+  // ----------------------------------------------------
+  const chartPlaneStyle = useMemo(
+    () => ({
+      backgroundImage:
+        "linear-gradient(rgba(229,231,235,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.7) 1px, transparent 1px)",
+      backgroundSize: "24px 24px",
+      backgroundPosition: "-1px -1px",
+    }),
+    [],
+  );
+
+  const renderCurrencyDonutLabel = (props: any) => {
+    const { x, y, name, value } = props;
+    return (
+      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
+        {String(name)}: {currencyINRCompact.format(Number(value ?? 0))}
+      </text>
+    );
+  };
+
+  const renderDonutLabel = (props: any) => {
+    const { x, y, name, value } = props;
+    return (
+      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
+        {String(name)}: {String(value)}
+      </text>
+    );
+  };
+
   const legendProps = useMemo(
     () => ({
       wrapperStyle: { fontSize: 12 },
@@ -174,9 +204,16 @@ const InventoryDashboard: React.FC = () => {
     [],
   );
 
+  const NoDataOverlay = () => (
+    <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-xl z-10 text-sm text-gray-500 font-medium">
+      No data available
+    </div>
+  );
+
   return (
     <div className="bg-app pb-6 pt-3">
       <div className="max-w-[1600px] mx-auto flex flex-col">
+        {/* --- KPI CARDS --- */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4">
           {chartsLoading
             ? Array.from({ length: 5 }).map((_, idx) => (
@@ -211,26 +248,24 @@ const InventoryDashboard: React.FC = () => {
               ))}
         </div>
 
-        {/* {summaryError && (
-          <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-semibold">
-            {summaryError}
-          </div>
-        )} */}
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          
+          {/* --- ITEMS BREAKDOWN (PIE CHART) --- */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Items Breakdown</h3>
+              <h3 className="text-sm font-bold text-gray-900">Items Breakdown by Group</h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div className="relative h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
               {chartsLoading ? (
                 <ChartSkeleton variant="pie" />
+              ) : itemBreakdown.length === 0 ? (
+                <NoDataOverlay />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                     <Tooltip
-                      formatter={(v: any) => Number(v ?? 0)}
+                      formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
                       contentStyle={{
                         background: "var(--card)",
                         border: "1px solid var(--border)",
@@ -242,18 +277,18 @@ const InventoryDashboard: React.FC = () => {
                     />
                     <Legend {...legendProps} />
                     <Pie
-                      data={itemTypeBreakdownData}
-                      dataKey="value"
+                      data={itemBreakdown}
+                      dataKey="total_value"
                       nameKey="name"
                       cx="50%"
                       cy="45%"
                       innerRadius={55}
                       outerRadius={82}
                       paddingAngle={2}
-                      label={renderDonutLabel}
+                      label={renderCurrencyDonutLabel}
                       labelLine={false}
                     >
-                      {itemTypeBreakdownData.map((_, idx) => (
+                      {itemBreakdown.map((_, idx) => (
                         <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
                       ))}
                     </Pie>
@@ -263,25 +298,39 @@ const InventoryDashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* --- TOP 3 ITEMS BY SALES (BAR CHART) --- */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Items Breakdown (Bar)</h3>
+              <h3 className="text-sm font-bold text-gray-900">Top 3 Items by Sales</h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div className="relative h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
               {chartsLoading ? (
                 <ChartSkeleton variant="bar" />
+              ) : topItems.length === 0 ? (
+                <NoDataOverlay />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={itemTypeBreakdownData}
+                    data={topItems}
                     margin={{ top: 16, right: 18, left: 6, bottom: 8 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} width={52} />
+                    <XAxis 
+                      dataKey="item_name" 
+                      tick={{ fontSize: 11 }} 
+                      interval={0} 
+                      angle={-10} 
+                      textAnchor="end" 
+                      height={48} 
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }} 
+                      width={52} 
+                      tickFormatter={(v) => currencyINRCompact.format(Number(v))} 
+                    />
                     <Tooltip
-                      formatter={(v: any) => Number(v ?? 0)}
+                      formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
                       contentStyle={{
                         background: "var(--card)",
                         border: "1px solid var(--border)",
@@ -293,8 +342,14 @@ const InventoryDashboard: React.FC = () => {
                       cursor={{ fill: "var(--primary)", opacity: 0.1 }}
                     />
                     <Legend {...legendProps} />
-                    <Bar dataKey="value" fill={palette.emerald} radius={[6, 6, 0, 0]} name="Count">
-                      <LabelList dataKey="value" position="top" fill="#6b7280" fontSize={10} />
+                    <Bar dataKey="total_value" fill={palette.emerald} radius={[6, 6, 0, 0]} name="Total Sales">
+                      <LabelList 
+                        dataKey="total_value" 
+                        position="top" 
+                        formatter={(v: any) => currencyINRCompact.format(Number(v ?? 0))}
+                        fill="#6b7280" 
+                        fontSize={10} 
+                      />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -302,13 +357,14 @@ const InventoryDashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* --- IMPORTED VS LOCAL (PIE CHART) --- */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-gray-900">Imported vs Local</h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
-              {summaryLoading ? (
+            <div className="relative h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+              {chartsLoading ? (
                 <ChartSkeleton variant="pie" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -347,12 +403,13 @@ const InventoryDashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* --- RAW MATERIALS VS FINISHED PRODUCTS (LINE CHART) --- */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-gray-900">Raw Materials vs Finished Products</h3>
             </div>
 
-            <div className="h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
+            <div className="relative h-72 rounded-lg border border-gray-200 bg-white" style={chartPlaneStyle}>
               {chartsLoading ? (
                 <ChartSkeleton variant="line" />
               ) : (
@@ -379,7 +436,8 @@ const InventoryDashboard: React.FC = () => {
                       dataKey="value"
                       stroke={palette.purple}
                       strokeWidth={3}
-                      dot={false}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
                       name="Count"
                       label={{ position: "top", fontSize: 10, fill: "#6b7280" }}
                     />

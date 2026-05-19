@@ -4,7 +4,8 @@ import {
   getAllPayrollEntries,
   runPayrollEntry,
   getPayrollEntryDetail,
-  updatePayrollEntry,
+  updatePayrollEntry,  deletePayrollEntry,
+
 } from "../../../api/payroll/payrollEntryApi";
 import type { CreatePayrollEntryPayload } from "../../../api/payroll/payrollEntryApi";
 import { openPayrollModal } from "../../../store/modalStore";
@@ -22,6 +23,7 @@ import { PayslipModal } from "./PayslipModal";
 import { QuickCreateModal } from "../../../components/Hr/payrollmodal/QuickCreatePayrollModal";
 import { PayrollValidationModal } from "../../../components/Hr/payrollmodal/payrollvalidationmodal";
 import { usePermission } from "../../../hooks/permission/usePermission";
+import { HrTableFrame } from "../components/HrTabLayout";
 
 // ─── Payload builder ──────────────────────────────────────────────────────────
 
@@ -138,7 +140,22 @@ export default function PayrollManagement() {
       showApiError(error);
     }
   };
+const handleDeletePayroll = async (id: string) => {
+  try {
+    showLoading("Deleting Payroll");
 
+    await deletePayrollEntry(id);
+
+    closeSwal();
+
+    showSuccess("Payroll deleted successfully");
+
+    await loadPayrollEntries();
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
   const handleConfirmPayroll = () => {
     setIsProcessing(true);
     const ids = pendingRecords.map((r) => r.id);
@@ -181,7 +198,7 @@ export default function PayrollManagement() {
     );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-app overflow-hidden">
+    <HrTableFrame>
       <PayrollDashboard
         records={payrollRecords}
         loading={loading}
@@ -202,6 +219,9 @@ export default function PayrollManagement() {
         }
         onRunPayroll={handleRunPayroll}
         onViewPayslip={(r) => setSelectedRecord(r)}
+         onDeleteRecord={(r) =>
+    handleDeletePayroll((r as any).name)
+  }
         onEditRecord={async (r) => {
           try {
             showLoading("Loading Payroll");
@@ -252,6 +272,8 @@ export default function PayrollManagement() {
             showApiError(error);
           }
         }}
+       
+        
         onViewDetails={(r) => setDetailRecord(r)}
       />
 
@@ -298,6 +320,6 @@ export default function PayrollManagement() {
           showSuccess(`Payslip emailed to ${selectedRecord?.email}`)
         }
       />
-    </div>
+    </HrTableFrame>
   );
 }

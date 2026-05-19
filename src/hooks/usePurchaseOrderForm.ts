@@ -73,14 +73,14 @@ export const usePurchaseOrderForm = ({
     companyShipping: "",
     supplierDispatch: "",
   });
-  const [addressList, setAddressList] = useState<
-    Record<BoxType, ApiAddress[]>
-  >({
-    companyBilling: [],
-    supplierBilling: [],
-    companyShipping: [],
-    supplierDispatch: [],
-  });
+  const [addressList, setAddressList] = useState<Record<BoxType, ApiAddress[]>>(
+    {
+      companyBilling: [],
+      supplierBilling: [],
+      companyShipping: [],
+      supplierDispatch: [],
+    },
+  );
   const [addressLoading, setAddressLoading] = useState<Record<string, boolean>>(
     {
       companyBilling: false,
@@ -182,7 +182,19 @@ export const usePurchaseOrderForm = ({
       handleFormChange({
         target: {
           name: `addresses.${formKeyMap[boxKey]}`,
-          value: { id: "", addressTitle: "", addressType: "", addressLine1: "", addressLine2: "", city: "", state: "", country: "", postalCode: "", phone: "", email: "" },
+          value: {
+            id: "",
+            addressTitle: "",
+            addressType: "",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            postalCode: "",
+            phone: "",
+            email: "",
+          },
         },
       });
     },
@@ -279,9 +291,13 @@ export const usePurchaseOrderForm = ({
           setAddressList((prev) => ({
             ...prev,
             companyBilling:
-              prev.companyBilling.length > 0 ? prev.companyBilling : [companyApiAddress],
+              prev.companyBilling.length > 0
+                ? prev.companyBilling
+                : [companyApiAddress],
             companyShipping:
-              prev.companyShipping.length > 0 ? prev.companyShipping : [companyApiAddress],
+              prev.companyShipping.length > 0
+                ? prev.companyShipping
+                : [companyApiAddress],
           }));
         }
 
@@ -324,7 +340,7 @@ export const usePurchaseOrderForm = ({
     if (hasLoadedRef.current) return;
 
     const loadPO = async () => {
-      hasLoadedRef.current = true
+      hasLoadedRef.current = true;
       const apiData = await getPurchaseOrderById(poId);
       const mapped = mapApiToUI(apiData);
       setForm(mapped);
@@ -333,50 +349,50 @@ export const usePurchaseOrderForm = ({
 
         supplierBilling: mapped.addresses.supplierAddress.id
           ? {
-            id: mapped.addresses.supplierAddress.id,
-            title: mapped.addresses.supplierAddress.id,
-            addressType: "Billing",
-            addressLine1: mapped.addresses.supplierAddress.addressLine1 || "",
-            addressLine2: mapped.addresses.supplierAddress.addressLine2 || "",
-            city: mapped.addresses.supplierAddress.city || "",
-            state: mapped.addresses.supplierAddress.state || "",
-            country: mapped.addresses.supplierAddress.country || "",
-            pincode: mapped.addresses.supplierAddress.postalCode || "",
-            phone: mapped.addresses.supplierAddress.phone || "",
-            email: mapped.addresses.supplierAddress.email || "",
-          }
+              id: mapped.addresses.supplierAddress.id,
+              title: mapped.addresses.supplierAddress.id,
+              addressType: "Billing",
+              addressLine1: mapped.addresses.supplierAddress.addressLine1 || "",
+              addressLine2: mapped.addresses.supplierAddress.addressLine2 || "",
+              city: mapped.addresses.supplierAddress.city || "",
+              state: mapped.addresses.supplierAddress.state || "",
+              country: mapped.addresses.supplierAddress.country || "",
+              pincode: mapped.addresses.supplierAddress.postalCode || "",
+              phone: mapped.addresses.supplierAddress.phone || "",
+              email: mapped.addresses.supplierAddress.email || "",
+            }
           : null,
 
         companyShipping: mapped.addresses.shippingAddress.id
           ? {
-            id: mapped.addresses.shippingAddress.id,
-            title: mapped.addresses.shippingAddress.id,
-            addressType: "Shipping",
-            addressLine1: mapped.addresses.shippingAddress.addressLine1 || "",
-            addressLine2: mapped.addresses.shippingAddress.addressLine2 || "",
-            city: mapped.addresses.shippingAddress.city || "",
-            state: mapped.addresses.shippingAddress.state || "",
-            country: mapped.addresses.shippingAddress.country || "",
-            pincode: mapped.addresses.shippingAddress.postalCode || "",
-            phone: mapped.addresses.shippingAddress.phone || "",
-            email: mapped.addresses.shippingAddress.email || "",
-          }
+              id: mapped.addresses.shippingAddress.id,
+              title: mapped.addresses.shippingAddress.id,
+              addressType: "Shipping",
+              addressLine1: mapped.addresses.shippingAddress.addressLine1 || "",
+              addressLine2: mapped.addresses.shippingAddress.addressLine2 || "",
+              city: mapped.addresses.shippingAddress.city || "",
+              state: mapped.addresses.shippingAddress.state || "",
+              country: mapped.addresses.shippingAddress.country || "",
+              pincode: mapped.addresses.shippingAddress.postalCode || "",
+              phone: mapped.addresses.shippingAddress.phone || "",
+              email: mapped.addresses.shippingAddress.email || "",
+            }
           : prev.companyShipping,
 
         supplierDispatch: mapped.addresses.dispatchAddress.id
           ? {
-            id: mapped.addresses.dispatchAddress.id,
-            title: mapped.addresses.dispatchAddress.id,
-            addressType: "Dispatch",
-            addressLine1: mapped.addresses.dispatchAddress.addressLine1 || "",
-            addressLine2: mapped.addresses.dispatchAddress.addressLine2 || "",
-            city: mapped.addresses.dispatchAddress.city || "",
-            state: mapped.addresses.dispatchAddress.state || "",
-            country: mapped.addresses.dispatchAddress.country || "",
-            pincode: mapped.addresses.dispatchAddress.postalCode || "",
-            phone: mapped.addresses.dispatchAddress.phone || "",
-            email: mapped.addresses.dispatchAddress.email || "",
-          }
+              id: mapped.addresses.dispatchAddress.id,
+              title: mapped.addresses.dispatchAddress.id,
+              addressType: "Dispatch",
+              addressLine1: mapped.addresses.dispatchAddress.addressLine1 || "",
+              addressLine2: mapped.addresses.dispatchAddress.addressLine2 || "",
+              city: mapped.addresses.dispatchAddress.city || "",
+              state: mapped.addresses.dispatchAddress.state || "",
+              country: mapped.addresses.dispatchAddress.country || "",
+              pincode: mapped.addresses.dispatchAddress.postalCode || "",
+              phone: mapped.addresses.dispatchAddress.phone || "",
+              email: mapped.addresses.dispatchAddress.email || "",
+            }
           : null,
       }));
       setAddressSelectedIds({
@@ -385,7 +401,6 @@ export const usePurchaseOrderForm = ({
         companyBilling: mapped.addresses.companyBillingAddress.id || "",
         companyShipping: mapped.addresses.shippingAddress.id || "",
       });
-
 
       if (mapped.supplierId) {
         loadAddressesForSupplier(
@@ -487,7 +502,6 @@ export const usePurchaseOrderForm = ({
     }));
   };
 
-
   const loadAddressesForSupplier = useCallback(
     async (
       freshSupplierId: string,
@@ -511,13 +525,15 @@ export const usePurchaseOrderForm = ({
         const data = await getAddressList(apiParams);
         setAddressList((prev) => ({ ...prev, [boxKey]: data }));
 
-
         if (autoSelect && data?.length > 0) {
           const first = data[0];
           setAddressSelected((prev) => ({ ...prev, [boxKey]: first }));
           setAddressSelectedIds((prev) => ({ ...prev, [boxKey]: first.id }));
 
-          const prefix = boxKey === "supplierBilling" ? "supplierAddress" : "dispatchAddress";
+          const prefix =
+            boxKey === "supplierBilling"
+              ? "supplierAddress"
+              : "dispatchAddress";
           handleFormChange({
             target: {
               name: `addresses.${prefix}`,
@@ -538,7 +554,10 @@ export const usePurchaseOrderForm = ({
           });
         }
       } catch (err) {
-        console.error(`[usePurchaseOrderForm] Failed to load "${boxKey}":`, err);
+        console.error(
+          `[usePurchaseOrderForm] Failed to load "${boxKey}":`,
+          err,
+        );
       } finally {
         setAddressLoading((prev) => ({ ...prev, [boxKey]: false }));
       }
@@ -546,90 +565,93 @@ export const usePurchaseOrderForm = ({
     [handleFormChange],
   );
 
-  const handleSupplierChange = useCallback(async (sup: any) => {
-    if (!sup?.id) return;
+  const handleSupplierChange = useCallback(
+    async (sup: any) => {
+      if (!sup?.id) return;
 
-    try {
-      const res = await getSupplierById(sup.id);
+      try {
+        const res = await getSupplierById(sup.id);
 
-      const supplier = res?.message?.data;
+        const supplier = res?.message?.data;
 
-      if (!supplier) return;
+        if (!supplier) return;
 
-      console.log("FULL SUPPLIER:", supplier);
+        console.log("FULL SUPPLIER:", supplier);
 
-      const primaryContact =
-        supplier.contacts?.find((c: any) => c.isPrimary) ||
-        supplier.contacts?.[0];
+        const primaryContact =
+          supplier.contacts?.find((c: any) => c.isPrimary) ||
+          supplier.contacts?.[0];
 
-      const cleanPhone = (phone: string) =>
-        phone?.replace(/\+\d+\+/, "+") || "";
-      const primaryAddress =
-        supplier.addresses?.find((a: any) => a.isPrimary) ||
-        supplier.addresses?.[0];
+        const cleanPhone = (phone: string) =>
+          phone?.replace(/\+\d+\+/, "+") || "";
+        const primaryAddress =
+          supplier.addresses?.find((a: any) => a.isPrimary) ||
+          supplier.addresses?.[0];
 
-      setForm((prev) => ({
-        ...prev,
+        setForm((prev) => ({
+          ...prev,
 
-        supplier: supplier.name,
-        supplierId: supplier.id,
-        supplierCode: supplier.id,
+          supplier: supplier.name,
+          supplierId: supplier.id,
+          supplierCode: supplier.id,
 
-        supplierEmail: primaryContact?.email || "",
-        supplierPhone: cleanPhone(
-          primaryContact?.mobile || primaryContact?.phone,
-        ),
-        supplierContact: primaryContact?.id || supplier.contactPerson || "",
-        supplierContactDisplay:
-          primaryContact?.fullName || supplier.contactPerson || "",
-        terms: {
-          buying: supplier?.terms?.buying || prev.terms?.buying,
-        },
-
-        currency: supplier.currency || prev.currency,
-        taxCategory: supplier.supplierTaxCategory || "",
-        addresses: {
-          ...prev.addresses,
-
-          supplierAddress: {
-            ...prev.addresses.supplierAddress,
-
-            id: prev.addresses.supplierAddress?.id || primaryAddress?.id || "",
-
-            addressLine1: primaryAddress?.line1 || "",
-            addressLine2: primaryAddress?.line2 || "",
-            city: primaryAddress?.city || "",
-            state: primaryAddress?.state || "",
-            country: primaryAddress?.country || "",
-            postalCode: primaryAddress?.postalCode || "",
+          supplierEmail: primaryContact?.email || "",
+          supplierPhone: cleanPhone(
+            primaryContact?.mobile || primaryContact?.phone,
+          ),
+          supplierContact: primaryContact?.id || supplier.contactPerson || "",
+          supplierContactDisplay:
+            primaryContact?.fullName || supplier.contactPerson || "",
+          terms: {
+            buying: supplier?.terms?.buying || prev.terms?.buying,
           },
 
-          shippingAddress: {
-            ...prev.addresses.shippingAddress,
+          currency: supplier.currency || prev.currency,
+          taxCategory: supplier.supplierTaxCategory || "",
+          addresses: {
+            ...prev.addresses,
 
-            id: prev.addresses.shippingAddress?.id || primaryAddress?.id || "",
+            supplierAddress: {
+              ...prev.addresses.supplierAddress,
 
-            addressLine1: primaryAddress?.line1 || "",
-            addressLine2: primaryAddress?.line2 || "",
-            city: primaryAddress?.city || "",
-            state: primaryAddress?.state || "",
-            country: primaryAddress?.country || "",
-            postalCode: primaryAddress?.postalCode || "",
+              id:
+                prev.addresses.supplierAddress?.id || primaryAddress?.id || "",
+
+              addressLine1: primaryAddress?.line1 || "",
+              addressLine2: primaryAddress?.line2 || "",
+              city: primaryAddress?.city || "",
+              state: primaryAddress?.state || "",
+              country: primaryAddress?.country || "",
+              postalCode: primaryAddress?.postalCode || "",
+            },
+
+            shippingAddress: {
+              ...prev.addresses.shippingAddress,
+
+              id:
+                prev.addresses.shippingAddress?.id || primaryAddress?.id || "",
+
+              addressLine1: primaryAddress?.line1 || "",
+              addressLine2: primaryAddress?.line2 || "",
+              city: primaryAddress?.city || "",
+              state: primaryAddress?.state || "",
+              country: primaryAddress?.country || "",
+              postalCode: primaryAddress?.postalCode || "",
+            },
           },
-        },
-      }));
+        }));
 
-      // ── Auto-load supplier address boxes on supplier select ──
-      await Promise.all([
-        loadAddressesForSupplier(supplier.id, "supplierBilling"),
-        loadAddressesForSupplier(supplier.id, "supplierDispatch"),
-      ]);
-    } catch (err) {
-      console.error("Supplier fetch failed:", err);
-    }
-  }, [loadAddressesForSupplier]);
-
-
+        // ── Auto-load supplier address boxes on supplier select ──
+        await Promise.all([
+          loadAddressesForSupplier(supplier.id, "supplierBilling"),
+          loadAddressesForSupplier(supplier.id, "supplierDispatch"),
+        ]);
+      } catch (err) {
+        console.error("Supplier fetch failed:", err);
+      }
+    },
+    [loadAddressesForSupplier],
+  );
 
   const handleItemChange = useCallback(
     (
@@ -644,9 +666,13 @@ export const usePurchaseOrderForm = ({
           i !== idx
             ? item
             : {
-              ...item,
-              [name]: isNum ? (value === "" ? "" : Number(value)) : value,
-            },
+                ...item,
+                [name]: isNum
+                  ? value === "" || value === null
+                    ? null
+                    : Number(value)
+                  : value,
+              },
         );
         return { ...p, items: newItems };
       });
@@ -800,7 +826,7 @@ export const usePurchaseOrderForm = ({
           return `Row ${i + 1}: Quantity is required`;
         }
 
-        // Rate 
+        // Rate
         if (!it.rate || Number(it.rate) <= 0) {
           return `Row ${i + 1}: Rate is required`;
         }
@@ -813,70 +839,73 @@ export const usePurchaseOrderForm = ({
         // VAT Code
         // if (!it.vatCd || it.vatCd.trim() === "") {
         //   return `Row ${i + 1}: Tax Name is required`;
-        // }   
+        // }
       }
     }
 
     return null;
   };
-  const handleItemSelect = useCallback(async (itemId: string, idx: number) => {
-    try {
-      const res = await getItemByItemCode(itemId, form.taxCategory);
-      if (!res || res.status_code !== 200) return;
+  const handleItemSelect = useCallback(
+    async (itemId: string, idx: number) => {
+      try {
+        const res = await getItemByItemCode(itemId, form.taxCategory);
+        if (!res || res.status_code !== 200) return;
 
-      const data = res.data;
+        const data = res.data;
 
-      const supplierTaxCategory = form.taxCategory?.trim();
+        const supplierTaxCategory = form.taxCategory?.trim();
 
-      let selectedTax = data.taxInfo?.find(
-        (t: any) =>
-          t.taxCategory?.toLowerCase() === supplierTaxCategory?.toLowerCase(),
-      );
+        let selectedTax = data.taxInfo?.find(
+          (t: any) =>
+            t.taxCategory?.toLowerCase() === supplierTaxCategory?.toLowerCase(),
+        );
 
-      if (!selectedTax && data.taxInfo?.length) {
-        selectedTax = data.taxInfo[0];
+        if (!selectedTax && data.taxInfo?.length) {
+          selectedTax = data.taxInfo[0];
+        }
+
+        const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
+        const taxTypes = (data.taxInfo || [])
+          .flatMap((tax: any) => tax.taxRates || [])
+          .map((r: any) => r.tax_type)
+          .filter((t: string) => t && t.trim() !== "");
+
+        setForm((prev) => {
+          const items = [...prev.items];
+
+          items[idx] = {
+            ...items[idx],
+
+            itemCode: data.id,
+            itemName: data.itemName,
+            description: data.description,
+
+            warehouse: items[idx].warehouse || prev.warehouse || "",
+
+            rate: Number(data.buyingPrice || 0),
+            uom: data.unitOfMeasureCd,
+
+            vatRate: totalTaxRate,
+            vatCd: selectedTax?.taxName || "",
+            taxTypes: taxTypes,
+
+            taxCategory: selectedTax?.taxCategory || "",
+
+            requiredBy: items[idx].requiredBy || prev.requiredBy || "",
+
+            packingUnit: Number(data.packingUnit || 0),
+            packingSize: Number(data.packingSize || 0),
+            packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
+          };
+
+          return { ...prev, items };
+        });
+      } catch (err) {
+        showApiError(err);
       }
-
-      const totalTaxRate = Number(selectedTax?.totalTaxRate || 0);
-      const taxTypes = (data.taxInfo || [])
-        .flatMap((tax: any) => tax.taxRates || [])
-        .map((r: any) => r.tax_type)
-        .filter((t: string) => t && t.trim() !== "");
-
-      setForm((prev) => {
-        const items = [...prev.items];
-
-        items[idx] = {
-          ...items[idx],
-
-          itemCode: data.id,
-          itemName: data.itemName,
-          description: data.description,
-
-          warehouse: items[idx].warehouse || prev.warehouse || "",
-
-          rate: Number(data.buyingPrice || 0),
-          uom: data.unitOfMeasureCd,
-
-          vatRate: totalTaxRate,
-          vatCd: selectedTax?.taxName || "",
-          taxTypes: taxTypes,
-
-          taxCategory: selectedTax?.taxCategory || "",
-
-          requiredBy: items[idx].requiredBy || prev.requiredBy || "",
-
-          packingUnit: Number(data.packingUnit || 0),
-          packingSize: Number(data.packingSize || 0),
-          packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
-        };
-
-        return { ...prev, items };
-      });
-    } catch (err) {
-      showApiError(err);
-    }
-  }, [form.taxCategory]);
+    },
+    [form.taxCategory],
+  );
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
@@ -917,9 +946,7 @@ export const usePurchaseOrderForm = ({
 
       showSuccess(
         res?.message ||
-        (isEditMode
-          ? "Purchase Order Updated"
-          : "Purchase Order Created"),
+          (isEditMode ? "Purchase Order Updated" : "Purchase Order Created"),
       );
 
       useDataRefreshStore
@@ -957,16 +984,22 @@ export const usePurchaseOrderForm = ({
 
     setActiveTab("details");
     setAddressSelected({
-      companyBilling: null, supplierBilling: null,
-      companyShipping: null, supplierDispatch: null,
+      companyBilling: null,
+      supplierBilling: null,
+      companyShipping: null,
+      supplierDispatch: null,
     });
     setAddressSelectedIds({
-      companyBilling: "", supplierBilling: "",
-      companyShipping: "", supplierDispatch: "",
+      companyBilling: "",
+      supplierBilling: "",
+      companyShipping: "",
+      supplierDispatch: "",
     });
     setAddressList({
-      companyBilling: [], supplierBilling: [],
-      companyShipping: [], supplierDispatch: [],
+      companyBilling: [],
+      supplierBilling: [],
+      companyShipping: [],
+      supplierDispatch: [],
     });
     companyAddressLoadedRef.current = false;
     hasLoadedRef.current = false;

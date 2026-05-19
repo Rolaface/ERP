@@ -6,12 +6,15 @@ import ActionButton, {
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
 import {
+  updateLeavePeriod,
   deleteLeavePeriod,
   type LeavePeriod,
 } from "../../../../../api/leaveConfigApi";
 import { useLeavePeriods } from "../hooks/useLeavePeriod";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeavePeriodModal } from "../../../../../store/modalStore";
+import { showApiError } from "../../../../../utils/alert";
+import { parseFrappeError } from "../hooks/parseFrappeError";
 
 export function LeavePeriodSetup() {
   const {
@@ -29,8 +32,7 @@ export function LeavePeriodSetup() {
   } = useLeavePeriods();
 
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-
-  const handleDelete = useCallback(
+   const handleDelete = useCallback(
     async (row: LeavePeriod) => {
       if (!row.name) return;
       try {
@@ -43,12 +45,36 @@ export function LeavePeriodSetup() {
             await deleteLeavePeriod(row.name!);
           },
         });
-        if (deleted) fetchAll();
-      } finally {
+
+        if (deleted) {
+          fetchAll();
+        }
+      } catch(err: any){
+        showApiError(parseFrappeError(err) || "Failed to delete Leave Period.");
+      }
+      finally {
         setActionLoadingId(null);
       }
     },
     [fetchAll],
+  );
+
+  const handleStatus = useCallback(
+    async (row: LeavePeriod) => {
+      if (!row.name) return;
+      try {
+        setActionLoadingId(row.name);
+        
+        const newStatus = row.is_active ? 0 : 1;
+        await updateLeavePeriod(row.name, { is_active: newStatus });
+        fetchAll();
+      } catch (error) {
+        showApiError(parseFrappeError(error) || "Failed to update status.");
+       } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [fetchAll]
   );
 
   const columns: Column<LeavePeriod>[] = useMemo(
@@ -103,6 +129,11 @@ export function LeavePeriodSetup() {
             />
             <ActionMenu
               customActions={[
+                 {
+                  label: row.is_active? "Inactive" : "Active",
+                  onClick: () => handleStatus(row),
+                  disabled: actionLoadingId === row.name,
+                },
                 {
                   label: "Delete",
                   onClick: () => handleDelete(row),
@@ -114,7 +145,7 @@ export function LeavePeriodSetup() {
         ),
       },
     ],
-    [actionLoadingId, handleDelete, fetchAll],
+    [actionLoadingId, handleDelete, fetchAll, handleStatus],
   );
 
   return (

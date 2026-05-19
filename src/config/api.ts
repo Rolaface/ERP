@@ -71,7 +71,9 @@ export const API = {
    * ========================= */
   salesDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.sale.api.summary`,
-  },
+    recentSales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.top_recent_sales`,
+    salesSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.monthly_sales_breakdown`,
+   },
 
   /* =========================
    * CUSTOMER DASHBOARD
@@ -85,6 +87,8 @@ export const API = {
    * ========================= */
   procurementDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.procurement.api.summary`,
+    procurementSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.procurement.api.get_procurement_summary`,
+    procurementDetails: `${ERP_BASE}/api/method/custom_api.api.dashboard.procurement.api.get_procurement_details`, 
   },
 
   /* =========================
@@ -92,6 +96,8 @@ export const API = {
    * ========================= */
   inventoryDashboard: {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.inventory.api.summary`,
+    itemBreakdown: `${ERP_BASE}/api/method/custom_api.api.dashboard.inventory.api.get_item_breakdown`,
+    topItems: `${ERP_BASE}/api/method/custom_api.api.dashboard.inventory.api.get_top_3_items`,
   },
 
   /* =========================
@@ -298,12 +304,19 @@ export const API = {
     getHolidays: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
   },
 
-  holidays: {
-    getAll: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
-    create: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.create_holiday`,
-    update: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.update_holiday`,
-    delete: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.delete_holiday`,
+  holidayList: {
+    getAll: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.list_holiday_lists`,
+    getByName: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.get_holiday_list`,
+    create: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.create_holiday_list`,
+    update: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.update_holiday_list`,
+    delete: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.delete_holiday_list`,
   },
+  // holidays: {
+  //   getAll: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
+  //   create: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.create_holiday`,
+  //   update: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.update_holiday`,
+  //   delete: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.delete_holiday`,
+  // },
 
   /* =========================
    * MODULES (SYSTEM)
@@ -370,6 +383,8 @@ export const API = {
   ExpenseClaim:{
     Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
     Claim_Type: `${ERP_BASE}/api/resource/Expense Claim Type`,
+    getExpenseClaims: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claims`,
+    getExpenseType: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claim_types`,
   },
   /* =========================
    * STOCK
@@ -628,5 +643,6 @@ export const API = {
     getUsers: `${ERP_BASE}/api/method/custom_hrms.api.search.get_users`,
     getPayrollEmployees:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_employee`,
     getBranches:`${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
+    createbranch:`${ERP_BASE}/api/resource/Branch`
   },
 } as const;

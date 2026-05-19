@@ -26,3 +26,54 @@ export async function getInventoryDashboardSummary(): Promise<InventoryDashboard
   );
   return resp.data;
 }
+
+/* =========================================
+ * Top Items Types
+ * ========================================= */
+
+export type TopInventoryItem = {
+  item_code: string;
+  item_name: string;
+  total_qty: number;
+  total_value: number;
+};
+
+export type InventoryTopItemsResponse = {
+  status_code: number;
+  status: string;
+  message: string;
+  data: TopInventoryItem[];
+};
+
+export async function getInventoryTopItems(): Promise<InventoryTopItemsResponse> {
+  const resp: AxiosResponse<InventoryTopItemsResponse> = await api.get(
+    InventoryDashboardAPI.topItems,
+  );
+
+  return resp.data;
+}
+
+/* =========================================
+ * Item Breakdown Types
+ * ========================================= */
+
+export type InventoryItemBreakdown = {
+  name: string;
+  total_qty: number;
+  total_value: number;
+};
+
+export type InventoryItemBreakdownResponse = {
+  status_code: number;
+  status: string;
+  message: string;
+  data: InventoryItemBreakdown[];
+};
+
+export async function getInventoryItemBreakdown(): Promise<InventoryItemBreakdownResponse> {
+  const resp: AxiosResponse<InventoryItemBreakdownResponse> = await api.get(
+    InventoryDashboardAPI.itemBreakdown,
+  );
+
+  return resp.data;
+}

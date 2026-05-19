@@ -607,7 +607,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "left",
         sortable: true,
         render: (inv) => (
-          <div className="py-1.5">
+          <div className="py-0.5">
             <span className="block">
               {inv.invoiceNumber}
             </span>
@@ -620,7 +620,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Tax Type",
         align: "center",
         render: (inv) => (
-          <div className="py-1.5">
+          <div className="py-0.5">
             <span className="block">{inv.invoiceType}</span>
           </div>
         ),
@@ -632,7 +632,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "left",
         sortable: true,
         render: (inv) => (
-          <div className="py-1.5">
+          <div className="py-0.5">
             <span className="block font-medium">{inv.customerName}</span>
           </div>
         ),
@@ -643,7 +643,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         header: "Date",
         align: "center",
         render: (inv) => (
-          <div className="py-1.5">
+          <div className="py-0.5">
             <span className="block">
               {formatDate(inv.dateOfInvoice)}
             </span>
@@ -656,7 +656,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <div className="py-1.5">
+          <div className="py-0.5">
             <span className="block">
               {inv.dueDate ? formatDate(inv.dueDate) : "—"}
             </span>
@@ -669,7 +669,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <div className="py-1.5">
+          <div className="py-0.5">
             <span className="block whitespace-nowrap">
               {inv.total.toLocaleString()} {inv.currency}
             </span>
@@ -684,7 +684,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         sortable: true,
         render: (inv) => (
-          <div className="py-1.5">
+          <div className="py-0.5">
             <span className="block whitespace-nowrap">
               {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
             </span>
@@ -697,14 +697,14 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         key: "invoiceStatus",
         header: "Status",
         align: "center",
-        render: (inv) => <div className="py-1.5"><StatusBadge status={inv.invoiceStatus} /></div>,
+        render: (inv) => <div className="py-0.5"><StatusBadge status={inv.invoiceStatus} /></div>,
       },
       {
         key: "actions",
         header: "Actions",
         align: "center",
         render: (inv) => (
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-1.5">
             <ActionButton
               type="view"
               onClick={(e) => handleView(inv.invoiceNumber, e)}
