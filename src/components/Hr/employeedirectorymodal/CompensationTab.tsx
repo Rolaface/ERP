@@ -1,14 +1,23 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from "react";
 import { ModalSelect } from "../../ui/modal/modalComponent";
 import { getAllSalaryStructures } from "../../../api/utils/frappeUtilsApi";
 import { getCurrencyList } from "../../../api/lookupApi";
 import { useCompanyStore } from "../../../store/companyStore";
 import {
   getSalaryStructure,
+  getTaxConfig,
   type SalaryStructure,
+  type TaxConfig,
   getAllTaxConfigs,
 } from "../../../api/payrollConfigApi";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
+import { NumericInput } from "../../ui/modal/modalComponent";
 import {
   calculateSalary,
   solveBaseFromGross,
@@ -20,110 +29,30 @@ import {
 
 export { buildCompensationPayload };
 
-type SalaryInputMode = "base" | "gross";
-
 type CompensationTabProps = {
   formData: any;
   handleInputChange: (field: string, value: any) => void;
 };
 
-// Display a number exactly as-is — no rounding, no forced decimals
 const fmt = (n: number) => n.toLocaleString();
-
-const toNum = (v: any) => {
-  const n = parseFloat(v);
+const toNum = (v: any): number => {
+  if (v === null || v === undefined) return 0;
+  const n = typeof v === "number" ? v : parseFloat(v);
   return isNaN(n) ? 0 : n;
 };
 
-// ─── Salary Mode Toggle ───────────────────────────────────────────────────────
-
-const SalaryModeToggle: React.FC<{
-  mode: SalaryInputMode;
-  onChange: (m: SalaryInputMode) => void;
-}> = ({ mode, onChange }) => (
-  <div className="inline-flex items-center rounded-full border border-theme bg-app p-0.5 text-[11px] font-medium select-none">
-    {(["base", "gross"] as SalaryInputMode[]).map((m) => (
-      <button
-        key={m}
-        type="button"
-        onClick={() => onChange(m)}
-        className={`
-          px-3 py-1 rounded-full transition-all duration-150 whitespace-nowrap
-          ${
-            mode === m
-              ? "bg-primary text-white shadow-sm"
-              : "text-muted hover:text-main"
-          }
-        `}
-      >
-        {m === "base" ? "Base salary" : "Gross salary"}
-      </button>
-    ))}
-  </div>
-);
-
-// ─── Plain number input ───────────────────────────────────────────────────────
-
-const PlainInput: React.FC<{
-  name: string;
-  value: string | number;
-  onChange: (val: string) => void;
-  placeholder?: string;
-  disabled?: boolean;
-}> = ({ name, value, onChange, placeholder = "0", disabled = false }) => (
-  <>
-    <style>{`
-      input[data-ns]::-webkit-outer-spin-button,
-      input[data-ns]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-      input[data-ns] { -moz-appearance: textfield; }
-    `}</style>
-    <input
-      data-ns
-      type="number"
-      name={name}
-      value={value}
-      placeholder={placeholder}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
-      className="
-        w-full h-8 bg-transparent border border-theme rounded-md px-2.5
-        text-xs text-main placeholder:text-muted/50
-        focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40
-        disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-app/60
-      "
-    />
-  </>
-);
-
 // ─── Field wrapper ────────────────────────────────────────────────────────────
 
-const Field: React.FC<{
-  label: string;
-  children: React.ReactNode;
-  hint?: string;
-}> = ({ label, children, hint }) => (
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => (
   <div className="flex flex-col gap-1 min-w-0">
     <label className="text-[11px] font-medium text-muted leading-none truncate">
       {label}
     </label>
     {children}
-    {hint && <p className="text-[10px] text-muted/60 leading-tight">{hint}</p>}
   </div>
-);
-
-// ─── Derived read-only display ────────────────────────────────────────────────
-
-const DerivedField: React.FC<{ label: string; value: string }> = ({
-  label,
-  value,
-}) => (
-  <Field label={label}>
-    <div className="h-8 flex items-center px-2.5 rounded-md border border-dashed border-theme bg-app/40">
-      <span className="text-xs font-mono text-muted truncate">
-        {value || "—"}
-      </span>
-    </div>
-  </Field>
 );
 
 // ─── Component row ────────────────────────────────────────────────────────────
@@ -139,11 +68,13 @@ const CompRow: React.FC<{ comp: ComponentResult }> = ({ comp }) => (
       )}
     </td>
     <td className="py-1.5 pr-2 pl-1 w-[45%]">
-      <PlainInput
+      <NumericInput
         name={comp.key}
         value={comp.amount}
         onChange={() => {}}
         disabled
+        decimalScale={2}
+        className="w-full h-8 !text-xs !px-2.5"
       />
     </td>
   </tr>
@@ -156,13 +87,11 @@ const SummaryRow: React.FC<{
   value: string;
   variant?: "default" | "accent" | "negative" | "dimmed";
   topBorder?: boolean;
-  highlight?: boolean;
-}> = ({ label, value, variant = "default", topBorder, highlight }) => (
+}> = ({ label, value, variant = "default", topBorder }) => (
   <div
     className={[
       "flex justify-between items-center py-1 px-1.5 rounded-md",
       topBorder ? "border-t border-theme mt-1 pt-2" : "",
-      highlight ? "bg-primary/5" : "",
     ].join(" ")}
   >
     <span
@@ -194,16 +123,29 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
 }) => {
   const [componentDefs, setComponentDefs] = useState<SalaryComponentDef[]>([]);
   const [isLoadingStructure, setIsLoadingStructure] = useState(false);
+  const [isLoadingTax, setIsLoadingTax] = useState(false);
   const [salaryResult, setSalaryResult] = useState<SalaryResult | null>(null);
+  const [taxConfig, setTaxConfig] = useState<TaxConfig | null>(null);
   const { baseCurrency, currencySymbol } = useCompanyStore();
 
-  const [inputMode, setInputMode] = useState<SalaryInputMode>("base");
-  const [activeInput, setActiveInput] = useState<string>("");
+  // Track which field user is typing in — prevents recalc stomping active input
+  const activeField = useRef<"base" | "gross" | null>(null);
+
+  const [baseInput, setBaseInput] = useState<number | null>(
+    toNum(formData.basicSalary) || null,
+  );
+  const [grossInput, setGrossInput] = useState<number | null>(
+    toNum(formData.grossSalary) || null,
+  );
+
+  // Derived values shown in the non-active field
+  const [computedGross, setComputedGross] = useState<number | null>(null);
+  const [computedBase, setComputedBase] = useState<number | null>(null);
 
   const currency = formData.currency || baseCurrency || "";
-
   const currencyPrefix = currencySymbol || currency || "";
   const hasComponents = componentDefs.length > 0;
+  const cur = (n: number) => `${currencyPrefix} ${fmt(n)}`.trim();
 
   useEffect(() => {
     if (!formData.currency && baseCurrency) {
@@ -211,44 +153,88 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     }
   }, [formData.currency, baseCurrency, handleInputChange]);
 
-  // Sync input field when mode switches
-  useEffect(() => {
-    setActiveInput(
-      inputMode === "base"
-        ? String(formData.basicSalary ?? "")
-        : String(formData.grossSalary ?? ""),
-    );
-  }, [inputMode]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Recalculate on input / mode / defs change
-  useEffect(() => {
-    if (!componentDefs.length) {
-      setSalaryResult(null);
-      return;
-    }
-    const inputVal = toNum(activeInput);
-    const base =
-      inputMode === "base"
-        ? inputVal
-        : solveBaseFromGross(inputVal, componentDefs);
-    const result = calculateSalary(base, componentDefs);
-    setSalaryResult(result);
-    handleInputChange("basicSalary", String(base));
-    handleInputChange("grossSalary", String(result.gross));
-    handleInputChange("_salaryResult", result);
-  }, [activeInput, inputMode, componentDefs]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Load structure on mount when editing an existing record
+  // Load structure on mount if editing existing record
   useEffect(() => {
     if (formData.salaryStructure && !componentDefs.length) {
       loadStructure(formData.salaryStructure);
     }
+    if (formData.Taxslab && !taxConfig) {
+      loadTaxConfig(formData.Taxslab);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Recalc when BASE changes ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!componentDefs.length) return;
+    if (activeField.current === "gross") return;
+
+    const base = toNum(baseInput);
+    const result = calculateSalary(base, componentDefs, {}, taxConfig);
+    setSalaryResult(result);
+    setComputedGross(result.gross);
+    handleInputChange("basicSalary", String(base));
+    handleInputChange("grossSalary", String(result.gross));
+    handleInputChange("_salaryResult", result);
+  }, [baseInput, componentDefs, taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Recalc when GROSS changes ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!componentDefs.length) return;
+    if (activeField.current === "base") return;
+
+    const gross = toNum(grossInput);
+    const base = solveBaseFromGross(gross, componentDefs, 0.01, 60, taxConfig);
+    const result = calculateSalary(base, componentDefs, {}, taxConfig);
+    setSalaryResult(result);
+    setComputedBase(base);
+    handleInputChange("basicSalary", String(base));
+    handleInputChange("grossSalary", String(gross));
+    handleInputChange("_salaryResult", result);
+  }, [grossInput, componentDefs, taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── When structure first loads, seed from existing base ──────────────────
+  useEffect(() => {
+    if (!componentDefs.length) return;
+    const base = toNum(baseInput);
+    if (!base) return;
+    const result = calculateSalary(base, componentDefs, {}, taxConfig);
+    setSalaryResult(result);
+    setComputedGross(result.gross);
+    setComputedBase(null);
+  }, [componentDefs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Re-run calc when tax config changes (tax slab selected/changed) ───────
+  useEffect(() => {
+    if (!componentDefs.length || taxConfig === undefined) return;
+    // Re-run from whichever input was last active
+    const base = toNum(baseInput);
+    if (!base) return;
+    const result = calculateSalary(base, componentDefs, {}, taxConfig);
+    setSalaryResult(result);
+    setComputedGross(result.gross);
+    handleInputChange("_salaryResult", result);
+    handleInputChange("grossSalary", String(result.gross));
+  }, [taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadTaxConfig = async (name: string) => {
+    setIsLoadingTax(true);
+    try {
+      const config = await getTaxConfig(name);
+      setTaxConfig(config);
+    } catch (err) {
+      console.error("Failed to load tax config:", err);
+      setTaxConfig(null);
+    } finally {
+      setIsLoadingTax(false);
+    }
+  };
 
   const loadStructure = async (value: string) => {
     setIsLoadingStructure(true);
     setComponentDefs([]);
     setSalaryResult(null);
+    setComputedGross(null);
+    setComputedBase(null);
     try {
       const structure: SalaryStructure = await getSalaryStructure(value);
       const defs: SalaryComponentDef[] = [
@@ -283,15 +269,18 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     [handleInputChange], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const handleModeChange = useCallback(
-    (newMode: SalaryInputMode) => {
-      setInputMode(newMode);
-      if (newMode === "gross" && salaryResult)
-        setActiveInput(String(salaryResult.gross));
-      else if (newMode === "base" && salaryResult)
-        setActiveInput(String(salaryResult.resolvedBase));
+  const handleTaxSlabChange = useCallback(
+    (val: any) => {
+      const value = typeof val === "string" ? val : val?.value || "";
+      handleInputChange("Taxslab", value);
+      if (value) {
+        loadTaxConfig(value);
+      } else {
+        // Tax slab cleared — remove tax from calculation
+        setTaxConfig(null);
+      }
     },
-    [salaryResult],
+    [handleInputChange],
   );
 
   const fetchCurrencyOptions = async (q: string) => {
@@ -312,14 +301,17 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     [salaryResult],
   );
 
-  // Currency-prefixed display — no rounding applied
-  const cur = (n: number) => `${currencyPrefix} ${fmt(n)}`.trim();
+  const shownBase = activeField.current === "gross" ? computedBase : baseInput;
+  const shownGross =
+    activeField.current === "base" ? computedGross : grossInput;
+
+  const isLoading = isLoadingStructure || isLoadingTax;
 
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="w-full flex flex-col gap-2">
-      {/* ── Row 1: 4-col settings bar ── */}
+      {/* ── Row 1: settings bar ── */}
       <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
         <div className="grid grid-cols-4 gap-3 items-end">
           <Field label="Salary structure">
@@ -333,24 +325,35 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           </Field>
 
           <Field label="Tax slab">
-            <SearchSelect2
-              label=""
-              value={formData.Taxslab}
-              placeholder="Select tax slab…"
-              fetchOptions={async (q: string) => {
-                const res = await getAllTaxConfigs(0, 20, q);
-                return (res.data || []).map((item: any) => ({
-                  label: item.name,
-                  value: item.name,
-                }));
-              }}
-              onChange={(val: any) =>
-                handleInputChange(
-                  "Taxslab",
-                  typeof val === "string" ? val : val?.value || "",
-                )
-              }
-            />
+            <div className="relative">
+              <SearchSelect2
+                label=""
+                value={formData.Taxslab}
+                placeholder="Select tax slab…"
+                fetchOptions={async (q: string) => {
+                  const res = await getAllTaxConfigs(0, 20, q);
+                  return (res.data || []).map((item: any) => ({
+                    label: item.name,
+                    value: item.name,
+                  }));
+                }}
+                onChange={handleTaxSlabChange}
+              />
+              {isLoadingTax && (
+                <div className="absolute right-7 top-1/2 -translate-y-1/2">
+                  <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            {/* Show tax info badge when loaded */}
+            {taxConfig && !isLoadingTax && (
+              <p className="text-[10px] text-primary/70 leading-tight mt-0.5">
+                {taxConfig.slabs?.length ?? 0} slabs
+                {taxConfig.standard_tax_exemption_amount
+                  ? ` · ₹${taxConfig.standard_tax_exemption_amount.toLocaleString()} exemption`
+                  : ""}
+              </p>
+            )}
           </Field>
 
           <Field label="Currency">
@@ -386,59 +389,67 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         </div>
       </div>
 
-      {/* ── Row 2: Salary input + toggle ── */}
+      {/* ── Row 2: Dual salary inputs ── */}
       <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
             Monthly salary
           </span>
-          <SalaryModeToggle mode={inputMode} onChange={handleModeChange} />
+          {currency && (
+            <span className="text-[10px] text-muted/60 font-mono bg-app/60 px-2 py-0.5 rounded-full border border-theme">
+              {currency}
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3 items-start">
-          <Field
-            label={
-              inputMode === "base"
-                ? "Base salary / month"
-                : "Gross salary / month"
-            }
-          >
-            <PlainInput
-              name={inputMode === "base" ? "basicSalary" : "grossSalary"}
-              value={activeInput}
-              onChange={setActiveInput}
-              placeholder={inputMode === "base" ? "e.g. 50,000" : "e.g. 77,500"}
-            />
+          <Field label="Base salary / month">
+            <div
+              onFocus={() => { activeField.current = "base"; }}
+              onBlur={() => { activeField.current = null; }}
+            >
+              <NumericInput
+                name="basicSalary"
+                value={shownBase}
+                onChange={(val) => setBaseInput(val)}
+                placeholder="e.g. 50,000"
+                decimalScale={2}
+                allowNegative={false}
+                className="w-full h-8 !text-xs !px-2.5"
+              />
+            </div>
           </Field>
 
-          <DerivedField
-            label={
-              inputMode === "base"
-                ? "Derived gross / month"
-                : "Derived base / month"
-            }
-            value={
-              salaryResult
-                ? cur(
-                    inputMode === "base"
-                      ? salaryResult.gross
-                      : salaryResult.resolvedBase,
-                  )
-                : "—"
-            }
-          />
+          <Field label="Gross salary / month">
+            <div
+              onFocus={() => { activeField.current = "gross"; }}
+              onBlur={() => { activeField.current = null; }}
+            >
+              <NumericInput
+                name="grossSalary"
+                value={shownGross}
+                onChange={(val) => setGrossInput(val)}
+                placeholder="e.g. 77,500"
+                decimalScale={2}
+                allowNegative={false}
+                className="w-full h-8 !text-xs !px-2.5"
+              />
+            </div>
+          </Field>
         </div>
 
-        {isLoadingStructure && (
+        {isLoading && (
           <div className="flex items-center gap-2 mt-2">
             <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs text-muted">Loading components…</span>
+            <span className="text-xs text-muted">
+              {isLoadingStructure ? "Loading components…" : "Loading tax config…"}
+            </span>
           </div>
         )}
       </div>
 
       {/* ── Row 3: Components + Summary ── */}
-      {!isLoadingStructure && hasComponents && salaryResult && (
+      {!isLoading && hasComponents && salaryResult && (
         <div className="grid grid-cols-2 gap-2">
           {/* Components panel */}
           <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
@@ -507,23 +518,34 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               <SummaryRow
                 label="Monthly base"
                 value={cur(salaryResult.resolvedBase)}
-                variant={inputMode === "base" ? "dimmed" : "default"}
-                highlight={inputMode === "gross"}
               />
               <SummaryRow
                 label="Gross (monthly)"
                 value={cur(salaryResult.gross)}
-                variant={inputMode === "gross" ? "dimmed" : "default"}
-                highlight={inputMode === "base"}
               />
               <SummaryRow
                 label="Gross (annual)"
                 value={cur(salaryResult.gross * 12)}
                 variant="dimmed"
               />
+              {/* Tax breakdown when slab is applied */}
+              {taxConfig && salaryResult.monthlyTax > 0 && (
+                <SummaryRow
+                  label="Income tax (monthly)"
+                  value={`− ${cur(salaryResult.monthlyTax)}`}
+                  variant="negative"
+                />
+              )}
+              {taxConfig && salaryResult.annualTax > 0 && (
+                <SummaryRow
+                  label="Income tax (annual)"
+                  value={cur(salaryResult.annualTax)}
+                  variant="dimmed"
+                />
+              )}
               {salaryResult.deductionsTotal > 0 && (
                 <SummaryRow
-                  label="Deductions (monthly)"
+                  label="Total deductions"
                   value={`− ${cur(salaryResult.deductionsTotal)}`}
                   variant="negative"
                 />
@@ -564,15 +586,14 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
       )}
 
       {/* ── Empty states ── */}
-      {!isLoadingStructure && !hasComponents && !formData.salaryStructure && (
+      {!isLoading && !hasComponents && !formData.salaryStructure && (
         <div className="bg-card rounded-lg border border-dashed border-theme p-6 text-center">
           <p className="text-xs text-muted">
             Select a salary structure above to view and configure components.
           </p>
         </div>
       )}
-
-      {!isLoadingStructure && !hasComponents && formData.salaryStructure && (
+      {!isLoading && !hasComponents && formData.salaryStructure && (
         <div className="bg-card rounded-lg border border-theme p-5 text-center">
           <p className="text-xs text-muted italic">
             No components found in this structure.

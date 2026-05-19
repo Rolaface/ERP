@@ -11,6 +11,8 @@ export interface SalaryComponentDef {
   name?: string;
   depends_on_payment_days?: 0 | 1;
   is_tax_applicable?: number;
+  variable_based_on_taxable_salary?: 0 | 1;
+  is_income_tax_component?: 0 | 1;
   create_separate_payment_entry_against_benefit_claim?: 0 | 1;
   [key: string]: any;
 }
@@ -33,8 +35,9 @@ export interface SalaryResult {
   gross: number;
   deductionsTotal: number;
   net: number;
-  /** The resolved monthly base used in this calculation */
   resolvedBase: number;
+  annualTax: number;
+  monthlyTax: number;
 }
 
 export interface CompensationPayload {
@@ -56,6 +59,30 @@ export interface CompensationPayload {
   bank_ac_no: string | null;
   account_type: string | null;
   branch_code: string | null;
+}
+
+// ─── Tax config types (mirrors payrollConfigApi) ──────────────────────────────
+
+export interface TaxSlabRow {
+  from_amount?: number;
+  to_amount?: number;
+  percent_deduction?: number;
+}
+
+export interface TaxChargeRow {
+  description: string;
+  percent?: number;
+  min_taxable_income?: number;
+  max_taxable_income?: number;
+}
+
+export interface TaxConfig {
+  name: string;
+  standard_tax_exemption_amount?: number;
+  allow_tax_exemption?: 0 | 1;
+  tax_relief_limit?: number;
+  slabs: TaxSlabRow[];
+  other_taxes_and_charges?: TaxChargeRow[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -94,10 +121,68 @@ export function evaluateFormula(formula: string, context: CalcContext): number {
     );
     const result = fn(...Object.values(context));
     const n = typeof result === "number" ? result : parseFloat(result);
-    return isFinite(n) ? parseFloat(n.toFixed(2)) : 0;
+    return isFinite(n) ? n : 0;
   } catch {
     return 0;
   }
+}
+
+// ─── Tax slab calculator ──────────────────────────────────────────────────────
+
+/**
+ * Calculates annual income tax from a tax config and annual taxable income.
+ *
+ * Steps:
+ * 1. Subtract standard exemption from annual gross → taxable income
+ * 2. Apply progressive slab rates to taxable income
+ * 3. Apply any other_taxes_and_charges (surcharges) if income is in their range
+ * 4. Subtract tax_relief_limit
+ */
+export function calculateAnnualTax(
+  annualGross: number,
+  taxConfig: TaxConfig,
+): number {
+  if (!taxConfig || !taxConfig.slabs?.length) return 0;
+
+  // Step 1: taxable income after standard exemption
+  const exemption = taxConfig.standard_tax_exemption_amount ?? 0;
+  const taxableIncome = Math.max(0, annualGross - exemption);
+
+  if (taxableIncome <= 0) return 0;
+
+  // Step 2: progressive slab tax
+  let tax = 0;
+  for (const slab of taxConfig.slabs) {
+    const from = slab.from_amount ?? 0;
+    const to = slab.to_amount ?? Infinity;
+    const rate = (slab.percent_deduction ?? 0) / 100;
+
+    if (taxableIncome <= from) break;
+
+    const slabMax = Math.min(taxableIncome, to);
+    const slabIncome = slabMax - from;
+    tax += slabIncome * rate;
+  }
+
+  // Step 3: other taxes & charges (surcharges, cess, etc.)
+  if (taxConfig.other_taxes_and_charges?.length) {
+    for (const charge of taxConfig.other_taxes_and_charges) {
+      const min = charge.min_taxable_income ?? 0;
+      const max = charge.max_taxable_income ?? Infinity;
+      const rate = (charge.percent ?? 0) / 100;
+
+      if (taxableIncome >= min && taxableIncome <= max) {
+        // Surcharge is on the base tax computed so far
+        tax += tax * rate;
+      }
+    }
+  }
+
+  // Step 4: subtract any relief limit
+  const relief = taxConfig.tax_relief_limit ?? 0;
+  tax = Math.max(0, tax - relief);
+
+  return tax;
 }
 
 // ─── Core calculator ──────────────────────────────────────────────────────────
@@ -106,19 +191,22 @@ export function calculateSalary(
   monthlyBase: number,
   components: SalaryComponentDef[],
   overrides: Record<string, number> = {},
+  taxConfig?: TaxConfig | null,
 ): SalaryResult {
   const pairs = components.map((c) => ({
     nameKey: toKey(c.salary_component),
     abbrKey: resolveAbbr(c),
   }));
 
-  // Seed context — base is always the monthly base passed in, never overwritten
+  // Seed context
   const ctx: CalcContext = { base: monthlyBase };
 
-  // Pass 1: fixed components
+  // Pass 1: fixed non-tax components
   for (let i = 0; i < components.length; i++) {
     const comp = components[i];
+    // Skip formula-based and tax-variable components in first pass
     if (comp.amount_based_on_formula === 1) continue;
+    if (comp.variable_based_on_taxable_salary === 1 || comp.is_income_tax_component === 1) continue;
 
     const { nameKey, abbrKey } = pairs[i];
     const value =
@@ -135,6 +223,7 @@ export function calculateSalary(
     for (let i = 0; i < components.length; i++) {
       const comp = components[i];
       if (comp.amount_based_on_formula !== 1) continue;
+      if (comp.variable_based_on_taxable_salary === 1 || comp.is_income_tax_component === 1) continue;
 
       const { nameKey, abbrKey } = pairs[i];
       const prev = ctx[nameKey] ?? 0;
@@ -145,6 +234,45 @@ export function calculateSalary(
       }
     }
     if (!changed) break;
+  }
+
+  // Pass 3: compute gross from earnings so far (needed for tax)
+  const preTaxEarnings = components
+    .map((comp, i) => ({
+      comp,
+      nameKey: pairs[i].nameKey,
+      abbrKey: pairs[i].abbrKey,
+    }))
+    .filter(({ comp }) => comp.type === "Earning")
+    .reduce((sum, { nameKey }) => sum + (ctx[nameKey] ?? 0), 0);
+
+  // Pass 4: calculate income tax via slab if taxConfig provided
+  let annualTax = 0;
+  let monthlyTax = 0;
+
+  if (taxConfig) {
+    annualTax = calculateAnnualTax(preTaxEarnings * 12, taxConfig);
+   monthlyTax = annualTax / 12;
+  }
+
+  // Pass 5: inject tax into tax-variable deduction components
+  for (let i = 0; i < components.length; i++) {
+    const comp = components[i];
+    if (comp.variable_based_on_taxable_salary !== 1 && comp.is_income_tax_component !== 1) continue;
+
+    const { nameKey, abbrKey } = pairs[i];
+    // Use formula if present (e.g. some custom tax formula), otherwise use computed monthly tax
+    let taxAmount: number;
+    if (comp.amount_based_on_formula === 1 && comp.formula?.trim()) {
+      // Inject annual_tax and monthly_tax into context for the formula
+      ctx["annual_tax"] = annualTax;
+      ctx["monthly_tax"] = monthlyTax;
+      taxAmount = evaluateFormula(comp.formula, ctx);
+    } else {
+      taxAmount = monthlyTax;
+    }
+
+    writeContext(ctx, nameKey, abbrKey, taxAmount);
   }
 
   // Build results
@@ -178,70 +306,48 @@ export function calculateSalary(
     deductionsTotal,
     net: gross - deductionsTotal,
     resolvedBase: monthlyBase,
+    annualTax,
+    monthlyTax,
   };
 }
 
 // ─── Gross → Base back-solver ─────────────────────────────────────────────────
 
-/**
- * Given a target gross salary, binary-searches for the base salary value
- * that produces exactly that gross via the salary engine.
- *
- * Works even when earnings contain a mix of fixed and formula-based components,
- * because `base` is the only free variable the engine exposes to formulas.
- *
- * @param targetGross   The desired monthly gross
- * @param components    The salary structure component definitions
- * @param tolerance     How close the result needs to be (default: 0.01)
- * @param maxIterations Max binary-search iterations (default: 60)
- * @returns The base salary that yields the target gross (or the closest found)
- */
 export function solveBaseFromGross(
   targetGross: number,
   components: SalaryComponentDef[],
   tolerance = 0.01,
   maxIterations = 60,
+  taxConfig?: TaxConfig | null,
 ): number {
   if (targetGross <= 0) return 0;
 
-  // Quick check: if there are no formula earnings, gross = sum of fixed earnings
-  // and base doesn't affect it — just return targetGross as best guess
   const earningDefs = components.filter((c) => c.type === "Earning");
   const hasFormulaEarnings = earningDefs.some(
     (c) => c.amount_based_on_formula === 1,
   );
 
-  if (!hasFormulaEarnings) {
-    // Gross is purely fixed; base cannot change it — return 0 (no back-solve possible)
-    return 0;
-  }
+  if (!hasFormulaEarnings) return 0;
 
-  // Binary search: find base in [0, targetGross * 3]
-  // Upper bound is generous — if ALL earnings were base*1.0 it would equal base,
-  // but with multipliers > 1 or fixed additions the upper bound needs headroom.
   let lo = 0;
   let hi = targetGross * 3;
 
-  // Ensure hi actually overshoots
   for (let safety = 0; safety < 20; safety++) {
-    if (calculateSalary(hi, components).gross >= targetGross) break;
+    if (calculateSalary(hi, components, {}, taxConfig).gross >= targetGross) break;
     hi *= 2;
   }
 
   for (let iter = 0; iter < maxIterations; iter++) {
     const mid = (lo + hi) / 2;
-    const gross = calculateSalary(mid, components).gross;
+    const gross = calculateSalary(mid, components, {}, taxConfig).gross;
 
-    if (Math.abs(gross - targetGross) <= tolerance) return parseFloat(mid.toFixed(2));
+    if (Math.abs(gross - targetGross) <= tolerance) return mid;
 
-    if (gross < targetGross) {
-      lo = mid;
-    } else {
-      hi = mid;
-    }
+    if (gross < targetGross) lo = mid;
+    else hi = mid;
   }
 
-  return parseFloat(((lo + hi) / 2).toFixed(2));
+return (lo + hi) / 2;
 }
 
 // ─── API adapter ──────────────────────────────────────────────────────────────
@@ -258,9 +364,7 @@ export function structureToComponents(
 
   return [
     ...(structureData.earnings ?? []).map((r: any) => normalize(r, "Earning")),
-    ...(structureData.deductions ?? []).map((r: any) =>
-      normalize(r, "Deduction"),
-    ),
+    ...(structureData.deductions ?? []).map((r: any) => normalize(r, "Deduction")),
   ];
 }
 
@@ -286,15 +390,13 @@ export function buildCompensationPayload(
   return {
     salary_structure: formData.salaryStructure ?? null,
     base_salary: basicComp?.amount ?? result.gross,
-    components: result.components.map(
-      ({ name, key, abbrKey, amount, type }) => ({
-        name,
-        key,
-        abbrKey,
-        amount,
-        type,
-      }),
-    ),
+    components: result.components.map(({ name, key, abbrKey, amount, type }) => ({
+      name,
+      key,
+      abbrKey,
+      amount,
+      type,
+    })),
     gross: result.gross,
     deductions_total: result.deductionsTotal,
     net: result.net,
