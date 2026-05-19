@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Calendar, Save, X, Plus, Trash2 } from "lucide-react";
+import { Calendar, Save, X, Plus, Trash2, Loader2 } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import {
   createHolidayList,
   updateHolidayList,
+  getHolidayListByName,
 } from "../../../api/holidayListApi";
 import type { HolidayList } from "../../../views/hr/tabs/leave-config/hooks/useHolidayLists";
 import {
@@ -125,6 +126,8 @@ export const HolidayListModal: React.FC<Props> = ({
 }) => {
   const isEdit = Boolean(initialData?.name);
   const [saving, setSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const [name, setName] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -143,59 +146,74 @@ export const HolidayListModal: React.FC<Props> = ({
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        setName(initialData.holiday_list_name || "");
-        setFromDate(initialData.from_date || "");
-        setToDate(initialData.to_date || "");
+    if (!isOpen) return;
 
-        const initialWeeklyOffs = initialData.weekly_offs || [];
-        const mappedWeekdays = DEFAULT_WEEKDAYS.map((day) => {
-          const matchedOff = initialWeeklyOffs.find(
-            (off) => off.weekday === day.weekday,
-          );
-          if (matchedOff) {
-            return {
-              ...day,
-              selected: true,
-              is_half_day: !!matchedOff.is_half_day,
-            };
-          }
-          return { ...day, selected: false, is_half_day: false };
-        });
-        setWeeklyOffs(mappedWeekdays);
-
-        const initialHolidays = initialData.holidays || [];
-        setHolidays(
-          initialHolidays.map((h) => ({
-            id: crypto.randomUUID(),
-            holiday_date: h.holiday_date,
-            description: h.description,
-            is_half_day: !!h.is_half_day,
-          })),
-        );
-      } else {
-        setName("");
-        setFromDate("");
-        setToDate("");
-        setWeeklyOffs(
-          DEFAULT_WEEKDAYS.map((day) => ({
-            ...day,
-            selected: day.weekday === "Sunday" || day.weekday === "Saturday",
-            is_half_day: day.weekday === "Saturday",
-          })),
-        );
-        setHolidays([
-          {
-            id: crypto.randomUUID(),
-            holiday_date: "",
-            description: "",
-            is_half_day: false,
-          },
-        ]);
-      }
+    if (initialData?.name) {
+      fetchHolidayListDetails(initialData.name);
+    } else {
+      setName("");
+      setFromDate("");
+      setToDate("");
+      setWeeklyOffs(
+        DEFAULT_WEEKDAYS.map((day) => ({
+          ...day,
+          selected: day.weekday === "Sunday" || day.weekday === "Saturday",
+          is_half_day: day.weekday === "Saturday",
+        })),
+      );
+      setHolidays([
+        {
+          id: crypto.randomUUID(),
+          holiday_date: "",
+          description: "",
+          is_half_day: false,
+        },
+      ]);
     }
   }, [isOpen, initialData]);
+
+  const fetchHolidayListDetails = async (idName: string) => {
+    try {
+      setIsLoading(true);
+      const res = await getHolidayListByName(idName);
+      
+      const data = res?.data || res?.message || res;
+
+      setName(data.holiday_list_name || "");
+      setFromDate(data.from_date || "");
+      setToDate(data.to_date || "");
+
+      const fetchedWeeklyOffs = data.weekly_offs || [];
+      const mappedWeekdays = DEFAULT_WEEKDAYS.map((day) => {
+        const matchedOff = fetchedWeeklyOffs.find(
+          (off: any) => off.weekday === day.weekday,
+        );
+        if (matchedOff) {
+          return {
+            ...day,
+            selected: true,
+            is_half_day: !!matchedOff.is_half_day,
+          };
+        }
+        return { ...day, selected: false, is_half_day: false };
+      });
+      setWeeklyOffs(mappedWeekdays);
+
+      const fetchedHolidays = data.holidays || [];
+      setHolidays(
+        fetchedHolidays.map((h: any) => ({
+          id: crypto.randomUUID(),
+          holiday_date: h.holiday_date,
+          description: h.description,
+          is_half_day: !!h.is_half_day,
+        })),
+      );
+    } catch (error: any) {
+      showApiError(error?.message || "Failed to fetch holiday list details.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAddHolidayRow = () => {
     setHolidays([
@@ -286,17 +304,18 @@ export const HolidayListModal: React.FC<Props> = ({
       <button
         type="button"
         onClick={onClose}
-        className="px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition"
+        disabled={isLoading || saving}
+        className="px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
       >
         Cancel
       </button>
       <button
         type="button"
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || isLoading}
         className="rounded-lg bg-[#3F25C8] px-5 py-1.5 text-sm font-medium text-white transition hover:bg-[#321ca1] disabled:opacity-60 flex items-center gap-2"
       >
-        {saving && <span className="animate-spin text-white">⟳</span>}
+        {saving && <Loader2 size={16} className="animate-spin text-white" />}
         {saving
           ? "Saving…"
           : isEdit
@@ -317,289 +336,295 @@ export const HolidayListModal: React.FC<Props> = ({
       height="80vh"
       footer={footer}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          maxHeight: "calc(80vh - 130px)",
-          overflowY: "auto",
-          paddingRight: "4px",
-        }}
-        className="space-y-6"
-      >
-        <section>
-          <h3 className="mb-2.5 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
-            Basic Details
-          </h3>
-          <div className="grid grid-cols-12 gap-4 items-start">
-            <div className="col-span-12 md:col-span-6">
-              <label className="mb-1 block text-[10px] font-medium text-gray-700">
-                Holiday List Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. India Holidays 2026"
-                className="w-full h-[28px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
-              />
-            </div>
-
-            <div className="col-span-6 md:col-span-3">
-              <DatePickerInput
-                label="From Date"
-                name="fromDate"
-                value={fromDate}
-                onChange={(_, v) => setFromDate(v)}
-              />
-            </div>
-
-            <div className="col-span-6 md:col-span-3">
-              <DatePickerInput
-                label="To Date"
-                name="toDate"
-                value={toDate}
-                onChange={(_, v) => setToDate(v)}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <h3 className="mb-2.5 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
-            Weekly Offs
-          </h3>
-          <div className="grid grid-cols-7 gap-3 w-full">
-            {weeklyOffs.map((day, idx) => (
-              <div
-                key={day.weekday}
-                className={`flex h-[60px] w-full flex-col justify-between rounded-lg border p-2 transition-colors ${
-                  day.selected
-                    ? "border-[#D6D0F9] bg-[#F7F5FF]"
-                    : "border-gray-200 bg-white"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-[11px] font-semibold ${
-                      day.selected ? "text-[#3F25C8]" : "text-gray-800"
-                    }`}
-                  >
-                    {day.label}
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={day.selected}
-                    onChange={() => toggleWeeklyOff(idx)}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-[#3F25C8] focus:ring-[#3F25C8] cursor-pointer"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-[9px] font-bold leading-none ${day.selected ? "text-[#3F25C8]" : "text-gray-400"}`}
-                  >
-                    HALF DAY
-                  </span>
-                  <label className="relative inline-flex cursor-pointer items-center">
-                    <input
-                      type="checkbox"
-                      className="peer sr-only"
-                      checked={day.is_half_day}
-                      onChange={() => toggleWeeklyOffHalfDay(idx)}
-                      disabled={!day.selected}
-                    />
-                    <div className="peer h-3.5 w-6 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-2.5 after:w-2.5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none peer-disabled:opacity-50"></div>
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section
+      {isLoading ? (
+        <div className="flex h-full w-full items-center justify-center min-h-[300px]">
+          <Loader2 size={32} className="animate-spin text-[#3F25C8]" />
+        </div>
+      ) : (
+        <div
           style={{
-            flex: 1,
             display: "flex",
             flexDirection: "column",
-            minHeight: 0,
+            maxHeight: "calc(80vh - 130px)",
+            overflowY: "auto",
+            paddingRight: "4px",
           }}
+          className="space-y-6"
         >
-          <div className="mb-2.5 flex items-center justify-between">
-            <h3 className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
-              Holidays List
+          <section>
+            <h3 className="mb-2.5 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+              Basic Details
             </h3>
-          </div>
+            <div className="grid grid-cols-12 gap-4 items-start">
+              <div className="col-span-12 md:col-span-6">
+                <label className="mb-1 block text-[10px] font-medium text-gray-700">
+                  Holiday List Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. India Holidays 2026"
+                  className="w-full h-[28px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
+                />
+              </div>
 
-          <div
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-              flex: 1,
-            }}
-          >
-            <div
-              className="hl-row"
-              style={{
-                background: "#f9fafb",
-                borderBottom: "1px solid #e5e7eb",
-                minHeight: 32,
-              }}
-            >
-              <div className="hl-cell hl-cell-border hl-col-header">Date</div>
-              <div className="hl-cell hl-cell-border hl-col-header">
-                Description
+              <div className="col-span-6 md:col-span-3">
+                <DatePickerInput
+                  label="From Date"
+                  name="fromDate"
+                  value={fromDate}
+                  onChange={(_, v) => setFromDate(v)}
+                />
               </div>
-              <div
-                className="hl-cell hl-cell-border hl-col-header"
-                style={{ justifyContent: "center" }}
-              >
-                Is Half Day
-              </div>
-              <div
-                className="hl-cell hl-col-header"
-                style={{ justifyContent: "center" }}
-              >
-                Action
+
+              <div className="col-span-6 md:col-span-3">
+                <DatePickerInput
+                  label="To Date"
+                  name="toDate"
+                  value={toDate}
+                  onChange={(_, v) => setToDate(v)}
+                />
               </div>
             </div>
+          </section>
 
-            <div
-              className="hl-table-wrap"
-              style={{ flex: 1, minHeight: "150px" }}
-            >
-              {holidays.map((row) => (
-                <div key={row.id} className="hl-row">
-                  <div
-                    className="hl-cell hl-cell-border"
-                    style={{ padding: "0 8px" }}
-                  >
-                    <DatePickerInput
-                      name={`date-${row.id}`}
-                      value={row.holiday_date}
-                      onChange={(_, v) =>
-                        updateHoliday(row.id, "holiday_date", v)
-                      }
-                    />
-                  </div>
-
-                  <div className="hl-cell hl-cell-border">
+          <section>
+            <h3 className="mb-2.5 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+              Weekly Offs
+            </h3>
+            <div className="grid grid-cols-7 gap-3 w-full">
+              {weeklyOffs.map((day, idx) => (
+                <div
+                  key={day.weekday}
+                  className={`flex h-[60px] w-full flex-col justify-between rounded-lg border p-2 transition-colors ${
+                    day.selected
+                      ? "border-[#D6D0F9] bg-[#F7F5FF]"
+                      : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-[11px] font-semibold ${
+                        day.selected ? "text-[#3F25C8]" : "text-gray-800"
+                      }`}
+                    >
+                      {day.label}
+                    </span>
                     <input
-                      type="text"
-                      placeholder="E.g. Diwali Eve"
-                      value={row.description}
-                      onChange={(e) =>
-                        updateHoliday(row.id, "description", e.target.value)
-                      }
-                      className="w-full h-[26px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
+                      type="checkbox"
+                      checked={day.selected}
+                      onChange={() => toggleWeeklyOff(idx)}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-[#3F25C8] focus:ring-[#3F25C8] cursor-pointer"
                     />
                   </div>
-
-                  <div
-                    className="hl-cell hl-cell-border"
-                    style={{ justifyContent: "center" }}
-                  >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-[9px] font-bold leading-none ${day.selected ? "text-[#3F25C8]" : "text-gray-400"}`}
+                    >
+                      HALF DAY
+                    </span>
                     <label className="relative inline-flex cursor-pointer items-center">
                       <input
                         type="checkbox"
                         className="peer sr-only"
-                        checked={row.is_half_day}
-                        onChange={(e) =>
-                          updateHoliday(row.id, "is_half_day", e.target.checked)
-                        }
+                        checked={day.is_half_day}
+                        onChange={() => toggleWeeklyOffHalfDay(idx)}
+                        disabled={!day.selected}
                       />
-                      <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
+                      <div className="peer h-3.5 w-6 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-2.5 after:w-2.5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none peer-disabled:opacity-50"></div>
                     </label>
-                  </div>
-
-                  <div className="hl-cell" style={{ justifyContent: "center" }}>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveHolidayRow(row.id)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: 22,
-                        height: 22,
-                        borderRadius: 4,
-                        border: "none",
-                        background: "transparent",
-                        cursor: "pointer",
-                        color: "#9ca3af",
-                        transition: "all 0.15s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = "#ef4444";
-                        e.currentTarget.style.background = "#fef2f2";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = "#9ca3af";
-                        e.currentTarget.style.background = "transparent";
-                      }}
-                    >
-                      <Trash2 style={{ width: 13, height: 13 }} />
-                    </button>
                   </div>
                 </div>
               ))}
+            </div>
+          </section>
 
-              {holidays.length === 0 && (
-                <div
-                  style={{
-                    padding: "24px 0",
-                    textAlign: "center",
-                    fontSize: 12,
-                    color: "#6b7280",
-                  }}
-                >
-                  No holidays added yet. Click Add Row to start.
-                </div>
-              )}
+          <section
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+            }}
+          >
+            <div className="mb-2.5 flex items-center justify-between">
+              <h3 className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+                Holidays List
+              </h3>
             </div>
 
             <div
               style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                overflow: "hidden",
                 display: "flex",
-                alignItems: "center",
-                padding: "6px 10px",
-                borderTop: "1px solid #e5e7eb",
-                background: "#fff",
+                flexDirection: "column",
+                flex: 1,
               }}
             >
-              <button
-                type="button"
-                onClick={handleAddHolidayRow}
+              <div
+                className="hl-row"
+                style={{
+                  background: "#f9fafb",
+                  borderBottom: "1px solid #e5e7eb",
+                  minHeight: 32,
+                }}
+              >
+                <div className="hl-cell hl-cell-border hl-col-header">Date</div>
+                <div className="hl-cell hl-cell-border hl-col-header">
+                  Description
+                </div>
+                <div
+                  className="hl-cell hl-cell-border hl-col-header"
+                  style={{ justifyContent: "center" }}
+                >
+                  Is Half Day
+                </div>
+                <div
+                  className="hl-cell hl-col-header"
+                  style={{ justifyContent: "center" }}
+                >
+                  Action
+                </div>
+              </div>
+
+              <div
+                className="hl-table-wrap"
+                style={{ flex: 1, minHeight: "150px" }}
+              >
+                {holidays.map((row) => (
+                  <div key={row.id} className="hl-row">
+                    <div
+                      className="hl-cell hl-cell-border"
+                      style={{ padding: "0 8px" }}
+                    >
+                      <DatePickerInput
+                        name={`date-${row.id}`}
+                        value={row.holiday_date}
+                        onChange={(_, v) =>
+                          updateHoliday(row.id, "holiday_date", v)
+                        }
+                      />
+                    </div>
+
+                    <div className="hl-cell hl-cell-border">
+                      <input
+                        type="text"
+                        placeholder="E.g. Diwali Eve"
+                        value={row.description}
+                        onChange={(e) =>
+                          updateHoliday(row.id, "description", e.target.value)
+                        }
+                        className="w-full h-[26px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
+                      />
+                    </div>
+
+                    <div
+                      className="hl-cell hl-cell-border"
+                      style={{ justifyContent: "center" }}
+                    >
+                      <label className="relative inline-flex cursor-pointer items-center">
+                        <input
+                          type="checkbox"
+                          className="peer sr-only"
+                          checked={row.is_half_day}
+                          onChange={(e) =>
+                            updateHoliday(row.id, "is_half_day", e.target.checked)
+                          }
+                        />
+                        <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
+                      </label>
+                    </div>
+
+                    <div className="hl-cell" style={{ justifyContent: "center" }}>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveHolidayRow(row.id)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 22,
+                          height: 22,
+                          borderRadius: 4,
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          color: "#9ca3af",
+                          transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = "#ef4444";
+                          e.currentTarget.style.background = "#fef2f2";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = "#9ca3af";
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                      >
+                        <Trash2 style={{ width: 13, height: 13 }} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {holidays.length === 0 && (
+                  <div
+                    style={{
+                      padding: "24px 0",
+                      textAlign: "center",
+                      fontSize: 12,
+                      color: "#6b7280",
+                    }}
+                  >
+                    No holidays added yet. Click Add Row to start.
+                  </div>
+                )}
+              </div>
+
+              <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 6,
-                  background: "#F7F5FF",
-                  padding: "4px 10px",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#3F25C8",
-                  cursor: "pointer",
-                  transition: "background 0.15s",
+                  padding: "6px 10px",
+                  borderTop: "1px solid #e5e7eb",
+                  background: "#fff",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#ebe6ff")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "#F7F5FF")
-                }
               >
-                <Plus style={{ width: 12, height: 12 }} />
-                Add Row
-              </button>
+                <button
+                  type="button"
+                  onClick={handleAddHolidayRow}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 6,
+                    background: "#F7F5FF",
+                    padding: "4px 10px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#3F25C8",
+                    cursor: "pointer",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#ebe6ff")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "#F7F5FF")
+                  }
+                >
+                  <Plus style={{ width: 12, height: 12 }} />
+                  Add Row
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
+      )}
     </MinimizableModal>
   );
 };
