@@ -95,7 +95,7 @@ export const DEFAULT_FORM: Record<string, any> = {
   workLocation: "",
   workAddress: "",
   probationPeriod: "",
-  shift: "Day",
+  shift: "",
 
   // Approvers
   leaveApprover: "",
@@ -109,14 +109,14 @@ export const DEFAULT_FORM: Record<string, any> = {
   grossSalary: "",
   currency: "",
   paymentFrequency: "",
-  paymentMethod: "Bank",
+  paymentMethod: "",
 
   // Bank
   accountName: "",
   accountNumber: "",
   bankName: "",
   branchCode: "",
-  accountType: "Savings",
+  accountType: "",
 
   // NAPSA Ceiling
   ceilingAmount: "",

@@ -245,3 +245,23 @@ export async function getallbranches(
     );
   }
 }
+export async function getshift(
+  search?: string
+): Promise<any[]> {
+  try {
+    const url = search
+      ? `${FrappeUtilsAPI.getshifts}?search=${encodeURIComponent(search)}`
+      : FrappeUtilsAPI.getshifts;
+
+    const resp: AxiosResponse = await api.get(url);
+
+    return resp.data?.data ?? []; 
+
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to fetch shift types"
+    );
+  }
+}
