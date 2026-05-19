@@ -18,5 +18,5 @@ export const ROUTES = {
   CustomerGroup: "/customer-group",
   taxMaintenance: "/Tax-Maintenance",
   expenseManagement: "/Expense-Management",
-
+  EmailTemplate: "/Email-Template"
 };

@@ -112,7 +112,7 @@ export function LeavePolicyAssignmentSetup() {
       },
       {
         key: "carry_forward",
-        header: "Carry Forward",
+        header: "Carry Fwd",
         render: (row) => (
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${

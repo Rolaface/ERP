@@ -183,24 +183,24 @@ const HrPayrollModule: React.FC = () => {
 
   // ── Switch button — only in employee view header, only for dual-role users ─
   // On click: switch to professional view AND navigate to main dashboard.
-  const switchButton = canSwitchView ? (
-    <button
-      type="button"
-      onClick={() => {
-        switchToProfessional();
-        navigate("/dashboard");
-      }}
-      className="
-        flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
-        border transition-all duration-200
-        border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_10%,transparent)]
-        text-[var(--primary)] hover:bg-[color-mix(in_srgb,var(--primary)_20%,transparent)]
-      "
-    >
-      <ArrowLeftRight size={13} />
-      Professional View
-    </button>
-  ) : null;
+  // const switchButton = canSwitchView ? (
+  //   <button
+  //     type="button"
+  //     onClick={() => {
+  //       switchToProfessional();
+  //       navigate("/dashboard");
+  //     }}
+  //     className="
+  //       flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
+  //       border transition-all duration-200
+  //       border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_10%,transparent)]
+  //       text-[var(--primary)] hover:bg-[color-mix(in_srgb,var(--primary)_20%,transparent)]
+  //     "
+  //   >
+  //     <ArrowLeftRight size={13} />
+  //     Professional View
+  //   </button>
+  // ) : null;
 
   // ─── EMPLOYEE VIEW ────────────────────────────────────────────────────────
   if (isEmployeeView) {
@@ -209,7 +209,7 @@ const HrPayrollModule: React.FC = () => {
         <AppPageHeader
           title="Employee Portal"
           icon={<FaUserTie />}
-          actions={switchButton}
+          // actions={switchButton}
         />
         <AppPageBody viewportLocked={isViewportLocked}>
           <Suspense fallback={<AppSkeleton />}>

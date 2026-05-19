@@ -27,6 +27,7 @@ import { createQuotation } from "../api/quotationApi";
 import { createItemGroupNode, renameItemGroup, updateItemGroupById } from "../api/itemGroupApi";
 import { createWarehouseNode, updateWarehouseById } from "../api/WarehouseApi";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
+import FloatingViewSwitch from "./FloatingViewSwitch";
 
 const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(true);
@@ -286,6 +287,7 @@ const AppLayout: React.FC = () => {
             </div>
           </AppContentContainer>
         </AppMain>
+        <FloatingViewSwitch />
         <GlobalModalHandler />
         {FEATURES.CHAT_ENABLED && (
           <ChatWindow

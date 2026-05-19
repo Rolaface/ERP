@@ -45,6 +45,7 @@ import { saveAs } from "file-saver";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
+import SendEmailModal from "../../components/common/SendEmailModal";
 
 
 type OutletContextType = {
@@ -99,6 +100,14 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
+
+  //email
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailInvoice, setEmailInvoice] = useState<InvoiceSummary | null>(null);
+  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(null);
+  const [emailInvoiceAttachments, setEmailInvoiceAttachments] = useState<
+    { name: string; file_name: string }[]
+  >([]);
 
   const { can } = usePermission();
   // ── Drawer (same pattern as ProformaInvoicesTable)
@@ -730,6 +739,24 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                   ? [{ label: "Receive Payment", onClick: () => handleReceivePayment(inv) }]
                   : []),
                 {
+                  label: "Send Email",
+                  onClick: async () => {
+                    setEmailInvoice(inv);
+                    setEmailContactEmail(null);
+                    setEmailInvoiceAttachments([]);   // clear stale attachments
+                    setEmailModalOpen(true);
+                    try {
+                      const res = await getSalesInvoiceById(inv.invoiceNumber);
+                      if (res?.message?.status_code === 200) {
+                        setEmailContactEmail(res.message.data?.contact_email ?? null);
+                        setEmailInvoiceAttachments(res.message.data?.attachments ?? []);
+                      }
+                    } catch {
+                      // non-critical: modal opens with empty To/attachments if fetch fails
+                    }
+                  },
+                },
+                {
                   label: "View PDF",
                   onClick: () => handlePreviewPDF(inv),
                 },
@@ -854,6 +881,20 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           company &&
           generateInvoicePDF(selectedInvoice, company, "save")
         }
+      />
+      <SendEmailModal
+        open={emailModalOpen}
+        docType="Sales Invoice"
+        invoiceNumber={emailInvoice?.invoiceNumber}
+        contactEmail={emailContactEmail}
+        customerName={emailInvoice?.customerName}  
+        invoiceAttachments={emailInvoiceAttachments}
+        onClose={() => {
+          setEmailModalOpen(false);
+          setEmailInvoice(null);
+          setEmailContactEmail(null);
+          setEmailInvoiceAttachments([]);
+        }}
       />
     </div>
   );

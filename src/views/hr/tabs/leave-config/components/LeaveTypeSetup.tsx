@@ -55,7 +55,7 @@ export function LeaveTypeSetup() {
     () => [
       {
         key: "leave_type_name",
-        header: "Leave Type",
+        header: "Type",
         render: (row) => (
           <span className="font-medium text-main">
             {row.leave_type_name || "—"}
@@ -88,7 +88,7 @@ export function LeaveTypeSetup() {
       },
       {
         key: "is_carry_forward",
-        header: "Carry Forward",
+        header: "Carry Fwd",
         render: (row) => (
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -103,7 +103,7 @@ export function LeaveTypeSetup() {
       },
       {
         key: "allow_negative",
-        header: "Negative Balance",
+        header: "Neg Bal",
         render: (row) => (
           <span className="text-sm text-sub">
             {row.allow_negative ? "Allowed" : "Not Allowed"}
@@ -112,7 +112,7 @@ export function LeaveTypeSetup() {
       },
       {
         key: "fraction_of_daily_salary_per_leave",
-        header: "Salary Fraction",
+        header: "Pay Fraction",
         render: (row) => (
           <code className="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700">
             {row.fraction_of_daily_salary_per_leave ?? 1}
