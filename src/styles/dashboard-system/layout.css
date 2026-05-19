@@ -1,0 +1,300 @@
+/* =========================================
+   ERP DASHBOARD LAYOUT SYSTEM
+   File: styles/dashboard-system/layout.css
+========================================= */
+
+/* =========================================
+   DASHBOARD SHELL
+========================================= */
+
+.dashboard-shell {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  min-height: 100vh;
+
+  background: var(--surface-page);
+
+  overflow: hidden;
+}
+
+/* =========================================
+   DASHBOARD MAIN AREA
+========================================= */
+
+.dashboard-main {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  min-height: 100vh;
+
+  overflow: hidden;
+}
+
+/* =========================================
+   DASHBOARD HEADER
+========================================= */
+
+.dashboard-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 64px;
+
+  padding: var(--space-4) var(--space-6);
+
+  background: var(--surface-card);
+
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* =========================================
+   WORKSPACE SCROLL REGION
+========================================= */
+
+.dashboard-workspace {
+  flex: 1;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: var(--space-6);
+
+  scroll-behavior: smooth;
+}
+
+/* =========================================
+   CONTENT CONTAINER
+========================================= */
+
+.dashboard-container {
+  width: 100%;
+
+  max-width: var(--content-wide);
+
+  margin: 0 auto;
+}
+
+/* =========================================
+   DASHBOARD GRID
+========================================= */
+
+.dashboard-grid {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    320px;
+
+  gap: var(--space-6);
+
+  align-items: start;
+}
+
+/* =========================================
+   PRIMARY REGION
+========================================= */
+
+.dashboard-primary {
+  display: flex;
+  flex-direction: column;
+
+  gap: var(--space-6);
+
+  min-width: 0;
+}
+
+/* =========================================
+   SECONDARY REGION
+========================================= */
+
+.dashboard-secondary {
+  display: flex;
+  flex-direction: column;
+
+  gap: var(--space-4);
+
+  min-width: 0;
+}
+
+/* =========================================
+   STICKY SIDEBAR PANEL
+========================================= */
+
+.dashboard-sticky {
+  position: sticky;
+  top: calc(64px + var(--space-4));
+}
+
+/* =========================================
+   WORKSPACE STACKS
+========================================= */
+
+.stack-xs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.stack-md {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.stack-lg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.stack-xl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* =========================================
+   INLINE GROUPS
+========================================= */
+
+.inline-xs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.inline-sm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.inline-md {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* =========================================
+   CARD GRID SYSTEM
+========================================= */
+
+.card-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: var(--space-4);
+}
+
+.card-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: var(--space-4);
+}
+
+.card-grid-auto {
+  display: grid;
+
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+
+  gap: var(--space-4);
+}
+
+/* =========================================
+   SECTION SPACING
+========================================= */
+
+.section-spacing {
+  margin-top: var(--space-6);
+}
+
+.section-spacing-lg {
+  margin-top: var(--space-8);
+}
+
+/* =========================================
+   SCROLL CONTAINERS
+========================================= */
+
+.scroll-y {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.scroll-hidden {
+  overflow: hidden;
+}
+
+/* =========================================
+   RESPONSIVE STRATEGY
+========================================= */
+
+@media (max-width: 1280px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-secondary {
+    order: -1;
+  }
+
+  .dashboard-sticky {
+    position: relative;
+    top: unset;
+  }
+}
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: var(--space-4) var(--space-4);
+  }
+
+  .dashboard-workspace {
+    padding: var(--space-4);
+  }
+
+  .card-grid-2,
+  .card-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 640px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header {
+    min-height: 56px;
+  }
+
+  .dashboard-container {
+    max-width: 100%;
+  }
+}
