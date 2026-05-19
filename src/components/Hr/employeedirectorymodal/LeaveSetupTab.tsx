@@ -54,8 +54,6 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
     await loadPolicyDetails(value);
   };
 
-  
-
   // Load on mount if already set (edit mode)
   useEffect(() => {
     if (formData.leavePolicy) {
@@ -103,16 +101,46 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
               </p>
             </div>
           )}
-          <SearchSelect2
-            label="Leave Approver"
-            value={formData.leaveApproverLabel || formData.leaveApprover || ""}
-            placeholder="Search ..."
-            fetchOptions={getalluser}
-            onChange={(value: string, option: any) => {
-              handleInputChange("leaveApprover", value);
-              handleInputChange("leaveApproverLabel", option?.label); // UI
-            }}
-          />
+          <div className="grid grid-cols-3 gap-2">
+            <SearchSelect2
+              label="Leave Approver"
+              value={
+                formData.leaveApproverLabel || formData.leaveApprover || ""
+              }
+              placeholder="Search ..."
+              fetchOptions={getalluser}
+              onChange={(value: string, option: any) => {
+                handleInputChange("leaveApprover", value);
+                handleInputChange("leaveApproverLabel", option?.label);
+              }}
+            />
+
+            <SearchSelect2
+              label="Expense Approver"
+              value={
+                formData.expenseApproverLabel || formData.expenseApprover || ""
+              }
+              placeholder="Search ..."
+              fetchOptions={getalluser}
+              onChange={(value: string, option: any) => {
+                handleInputChange("expenseApprover", value);
+                handleInputChange("expenseApproverLabel", option?.label);
+              }}
+            />
+            <SearchSelect2
+              label="Shift Request Approver
+"
+              value={
+                formData.leaveApproverLabel || formData.leaveApprover || ""
+              }
+              placeholder="Search ..."
+              fetchOptions={getalluser}
+              onChange={(value: string, option: any) => {
+                handleInputChange("leaveApprover", value);
+                handleInputChange("leaveApproverLabel", option?.label);
+              }}
+            />
+          </div>
         </div>
 
         {/* RIGHT — policy detail table */}

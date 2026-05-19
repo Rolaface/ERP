@@ -3,7 +3,7 @@ export const TAB_ORDER = [
   "Personal",
   "Address & Contact",
   "Employment",
-  "Leave Setup",
+ "Attendance & Leaves",
   "Compensation",
   "Bank",
   "Work Schedule",

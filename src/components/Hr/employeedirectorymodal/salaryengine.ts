@@ -151,34 +151,47 @@ export function calculateAnnualTax(
   if (taxableIncome <= 0) return 0;
 
   // Step 2: progressive slab tax
+  // Slabs use from_amount/to_amount where to_amount=0 means no upper limit (Infinity).
+  // Slab boundaries are stored as e.g. 0–250000, 250001–500000 (1-rupee gap).
+  // We treat each slab as covering [from_amount, to_amount] inclusive,
+  // and use the raw from/to as boundaries — the tiny gap is irrelevant at this scale.
   let tax = 0;
   for (const slab of taxConfig.slabs) {
     const from = slab.from_amount ?? 0;
-    const to = slab.to_amount ?? Infinity;
+    // to_amount = 0 means unlimited (last slab)
+    const to = slab.to_amount && slab.to_amount > 0 ? slab.to_amount : Infinity;
     const rate = (slab.percent_deduction ?? 0) / 100;
 
-    if (taxableIncome <= from) break;
+    // Income doesn't reach this slab at all
+    if (taxableIncome <= from) continue;
 
-    const slabMax = Math.min(taxableIncome, to);
-    const slabIncome = slabMax - from;
+    // How much of taxable income falls in this slab
+    const slabTop = Math.min(taxableIncome, to);
+    const slabIncome = slabTop - from;
     tax += slabIncome * rate;
   }
 
-  // Step 3: other taxes & charges (surcharges, cess, etc.)
+  // Step 3: other taxes & charges (cess, surcharge, etc.)
+  // These are a % on top of the BASE TAX already computed,
+  // applied only when taxable income falls within their min/max range.
   if (taxConfig.other_taxes_and_charges?.length) {
+    const baseTax = tax; // snapshot before surcharges
     for (const charge of taxConfig.other_taxes_and_charges) {
       const min = charge.min_taxable_income ?? 0;
-      const max = charge.max_taxable_income ?? Infinity;
+      // max = 0 means no upper limit
+      const max =
+        charge.max_taxable_income && charge.max_taxable_income > 0
+          ? charge.max_taxable_income
+          : Infinity;
       const rate = (charge.percent ?? 0) / 100;
 
       if (taxableIncome >= min && taxableIncome <= max) {
-        // Surcharge is on the base tax computed so far
-        tax += tax * rate;
+        tax += baseTax * rate; // surcharge on base tax, not compounding
       }
     }
   }
 
-  // Step 4: subtract any relief limit
+  // Step 4: subtract relief limit
   const relief = taxConfig.tax_relief_limit ?? 0;
   tax = Math.max(0, tax - relief);
 
@@ -252,7 +265,7 @@ export function calculateSalary(
 
   if (taxConfig) {
     annualTax = calculateAnnualTax(preTaxEarnings * 12, taxConfig);
-   monthlyTax = annualTax / 12;
+    monthlyTax = annualTax / 12;
   }
 
   // Pass 5: inject tax into tax-variable deduction components
@@ -347,7 +360,7 @@ export function solveBaseFromGross(
     else hi = mid;
   }
 
-return (lo + hi) / 2;
+  return (lo + hi) / 2;
 }
 
 // ─── API adapter ──────────────────────────────────────────────────────────────

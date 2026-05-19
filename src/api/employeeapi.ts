@@ -111,3 +111,17 @@ export async function getLeaveApproverDetailsById(employee: string): Promise<any
   return resp.data || null;
 }
  
+
+export async function getAllShiftTypes(): Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    "/api/resource/Shift Type",
+    {
+      params: {
+        fields: JSON.stringify(["name"]),
+        limit_page_length: 200,
+      },
+    }
+  );
+
+  return resp.data?.data || [];
+}
