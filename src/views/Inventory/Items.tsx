@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 import { showApiError, showSuccess } from "../../utils/alert";
@@ -21,6 +21,7 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
+
 import type { Column } from "../../components/ui/Table/type";
 import type { ItemSummary, Item } from "../../types/item";
 import {
@@ -30,7 +31,6 @@ import {
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type OutletContextType = {
   openItemCreate: (context?: { onSuccess?: () => void }) => void;
@@ -41,9 +41,9 @@ type OutletContextType = {
   ) => void;
 };
 
+
 const ITEM_MODULE = "Item";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const flattenItemDetail = (fullItem: any): Item => {
   if (!fullItem) return {} as Item;
@@ -52,69 +52,76 @@ const flattenItemDetail = (fullItem: any): Item => {
 
   return {
     ...fullItem,
+
     taxCategory: Array.isArray(taxInfo)
       ? (taxInfo[0]?.taxCategory ?? fullItem.taxCategory ?? "")
       : ((taxInfo as any)?.taxCategory ?? fullItem.taxCategory ?? ""),
+
     taxPreference:
       fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
     taxType: fullItem.taxInfo?.taxType ?? fullItem.taxType ?? "",
     taxCode: fullItem.taxInfo?.taxCode ?? fullItem.taxCode ?? "",
     taxPerct: fullItem.taxInfo?.taxPerct ?? fullItem.taxPerct ?? "",
+
     preferredVendor:
       fullItem.vendorInfo?.preferredVendor ?? fullItem.preferredVendor ?? "",
+
     salesAccount:
       fullItem.vendorInfo?.salesAccount ?? fullItem.salesAccount ?? "",
+
     purchaseAccount:
       fullItem.vendorInfo?.purchaseAccount ?? fullItem.purchaseAccount ?? "",
+
     minStockLevel:
       fullItem.inventoryInfo?.minStockLevel ?? fullItem.minStockLevel ?? "",
+
     maxStockLevel:
       fullItem.inventoryInfo?.maxStockLevel ?? fullItem.maxStockLevel ?? "",
+
     reorderLevel:
       fullItem.inventoryInfo?.reorderLevel ?? fullItem.reorderLevel ?? "",
+
     valuationMethod:
       fullItem.inventoryInfo?.valuationMethod ?? fullItem.valuationMethod ?? "",
+
     trackingMethod:
       fullItem.inventoryInfo?.trackingMethod ?? fullItem.trackingMethod ?? "",
   };
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
 const Items: React.FC = () => {
   const { openItemCreate, openItemEdit } =
     useOutletContext<OutletContextType>();
-  const { can } = usePermission();
-  const mountedRef = useRef(true);
 
-  const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
-  const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
 
-  // ── Data state — split loading so page changes don't flash skeleton
+  /* ── Table / list state ── */
   const [items, setItems] = useState<ItemSummary[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
-
-  // ── Pagination
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
-  // ── Filters
-  const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<ItemFilters>({});
+  const { can } = usePermission();
 
-  // ── View mode — "table" or "detail"
+  /* ── View mode — "table" or "detail" ── */
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [activeSummary, setActiveSummary] = useState<ItemSummary | null>(null);
 
-  // ── All items for sidebar (unpaginated)
+  /* ── All items for sidebar (unpaginated) ── */
   const [allItems, setAllItems] = useState<ItemSummary[]>([]);
 
-  // ── Invoice / stock data (kept — do not remove)
+  /* ── Invoice / stock data ── */
   const [salesInvoices] = useState<SalesInvoice[]>([]);
   const [purchaseInvoices] = useState<PurchaseInvoice[]>([]);
   const [stockRows] = useState<StockRow[]>([]);
@@ -122,7 +129,7 @@ const Items: React.FC = () => {
   const [loadingPurchase] = useState(false);
   const [loadingStock] = useState(false);
 
-  // ── Debounced search → filters
+  /* ── Search debounce ── */
   useEffect(() => {
     const t = setTimeout(() => {
       setFilters((prev) => ({ ...prev, search: searchTerm || undefined }));
@@ -131,15 +138,11 @@ const Items: React.FC = () => {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-  // ── Fetch item list — memoized with useCallback
+  /* ── Fetch item list ── */
   const fetchItems = useCallback(async () => {
-    if (!mountedRef.current) return;
-    setIsFetching(true);
-
     try {
+      setLoading(true);
       const res = await getAllItems(page, pageSize, filters);
-      if (!mountedRef.current) return;
-
       const rawList = Array.isArray(res?.data?.data) ? res.data.data : [];
       const pagination = res?.data?.pagination;
 
@@ -154,6 +157,7 @@ const Items: React.FC = () => {
         taxPerct: it.taxInfo?.taxPerct ?? "",
         preferredVendor: it.vendorInfo?.preferredVendor ?? "",
         preferredVendorName: it.vendorInfo?.preferredVendorName ?? "",
+
         salesAccount: it.vendorInfo?.salesAccount ?? "",
         purchaseAccount: it.vendorInfo?.purchaseAccount ?? "",
         minStockLevel: it.inventoryInfo?.minStockLevel ?? "",
@@ -172,37 +176,23 @@ const Items: React.FC = () => {
       setTotalPages(1);
       setTotalItems(0);
     } finally {
-      if (mountedRef.current) {
-        setIsFetching(false);
-        setIsInitialLoad(false);
-      }
+      setLoading(false);
+      setInitialLoad(false);
     }
   }, [filters, page, pageSize]);
 
-  // Initial fetch
   useEffect(() => {
-    mountedRef.current = true;
-    fetchItems();
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+    void fetchItems();
+  }, [fetchItems]);
 
-  // Refetch on dependency change (skip initial)
-  useEffect(() => {
-    if (isInitialLoad) return;
-    fetchItems();
-  }, [page, pageSize, filters]);
-
-  // Auto-refresh on external events
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.ITEM_LIST, () => {
       fetchItems();
     });
-    return unsubscribe;
+    return () => unsubscribe();
   }, [subscribeToRefresh, fetchItems]);
 
-  // ── All items (sidebar, unpaginated)
+  /* ── Fetch ALL items (no pagination) for the detail sidebar ── */
   const fetchAllItems = useCallback(async () => {
     try {
       const res = await getAllItems(1, 1000, {});
@@ -228,11 +218,11 @@ const Items: React.FC = () => {
       }));
       setAllItems(flat);
     } catch (err) {
-      showApiError(err);
+       showApiError(err);
     }
   }, []);
 
-  // ── Re-fetch everything and refresh the selected item detail
+  /* ── Re-fetch everything and refresh the selected item detail ── */
   const refetchItemData = useCallback(async () => {
     await Promise.all([fetchItems(), fetchAllItems()]);
 
@@ -240,6 +230,7 @@ const Items: React.FC = () => {
 
     try {
       const res = await getItemByItemCode(activeSummary.id);
+      // Defensively handle both { data: { data: item } } and { data: item }
       const raw = res?.data?.data ?? res?.data;
       if (!raw?.id) {
         console.error("refetchItemData: unexpected response shape", res);
@@ -247,28 +238,34 @@ const Items: React.FC = () => {
       }
       setSelectedItem(flattenItemDetail(raw));
     } catch (err) {
-      showApiError(err);
+      showApiError(err)
     }
   }, [activeSummary?.id, fetchAllItems, fetchItems]);
 
-  // ── Action handlers
   const handleAddItem = useCallback(() => {
     openItemCreate({ onSuccess: refetchItemData });
   }, [openItemCreate, refetchItemData]);
 
   const handleRowClick = async (summary: ItemSummary) => {
+    // ── 1. Synchronous state updates FIRST (before any await) ──────────────
     setActiveSummary(summary);
-    setViewMode("detail");
+    setViewMode("detail"); // ← panel appears immediately
     setDetailLoading(true);
-    setSelectedItem(null);
+    setSelectedItem(null); // ← clears stale data while loading
 
+    // ── 2. Sidebar population (fire-and-forget) ───────────────────────────
     if (allItems.length === 0) void fetchAllItems();
 
+    // ── 3. Fetch full item detail ─────────────────────────────────────────
     try {
       const res = await getItemByItemCode(summary.id);
+
+      // Defensive: API returns { data: { data: {...item} } } normally,
+      // but fall back to res.data if the inner .data wrapper is missing.
       const raw = res?.data?.data ?? res?.data;
 
       if (!raw?.id) {
+        // Print the full response so we can debug further if needed
         console.error(
           "handleRowClick: item not found in response. Full response:",
           JSON.stringify(res, null, 2),
@@ -287,12 +284,14 @@ const Items: React.FC = () => {
     }
   };
 
+  /* ── Back to table ── */
   const handleBack = () => {
     setViewMode("table");
     setSelectedItem(null);
     setActiveSummary(null);
   };
 
+  /* ── Edit ── */
   const handleEdit = async (itemCode: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -300,9 +299,11 @@ const Items: React.FC = () => {
       const raw = res?.data?.data ?? res?.data;
       openItemEdit(itemCode, raw, { onSuccess: refetchItemData });
     } catch {
+      console.error("Unable to fetch item for edit");
       showApiError("Unable to load item for editing.");
     }
   };
+
 
   const handleDeleteClick = async (item: ItemSummary, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -332,7 +333,9 @@ const Items: React.FC = () => {
       closeSwal();
       showSuccess("Item deleted successfully");
 
-      if (activeSummary?.id === item.id) handleBack();
+      if (activeSummary?.id === item.id) {
+        handleBack();
+      }
 
       triggerRefresh(REFRESH_KEYS.ITEM_LIST);
     } catch (err: any) {
@@ -341,6 +344,9 @@ const Items: React.FC = () => {
     }
   };
 
+
+
+  /* ── Detail view action handlers ── */
   const handleDetailEdit = async () => {
     if (!activeSummary) return;
     try {
@@ -356,42 +362,56 @@ const Items: React.FC = () => {
     if (!activeSummary) return;
     await handleDeleteClick(activeSummary, {} as React.MouseEvent);
   };
-
-  // ── Columns — styled to match CustomerManagement
   const columns: Column<ItemSummary>[] = [
     {
       key: "id",
       header: "Item Code",
       align: "left",
       render: (i) => (
-        <span className="font-medium whitespace-nowrap">{i.id ?? "—"}</span>
+        <div className="py-1.5">
+          <span className="block">
+            {i.id}
+          </span>
+        </div>
       ),
       tooltip: (i) => i.id,
     },
     {
       key: "brand",
       header: "Brand",
-      align: "left",
+      align: "center",
       render: (i) => (
-        <span className="text-muted whitespace-nowrap">{i.brand || "—"}</span>
+        <div className="py-1.5">
+          <span className="block">
+            {i.brand || "-"}
+          </span>
+        </div>
       ),
-      tooltip: (i) => i.brand,
+      tooltip: (i) => i.brand || "-",
     },
     {
       key: "itemName",
       header: "Name",
-      align: "left",
+      align: "center",
       render: (i) => (
-        <span className="font-medium block">{i.itemName ?? "—"}</span>
+        <div className="py-1.5">
+          <span className="block font-medium">
+            {i.itemName}
+          </span>
+        </div>
       ),
       tooltip: (i) => i.itemName,
     },
     {
       key: "itemGroup",
       header: "Category",
-      align: "left",
+      align: "center",
       render: (i) => (
-        <span className="whitespace-nowrap">{i.itemGroup ?? "—"}</span>
+        <div className="py-1.5">
+          <span className="block">
+            {i.itemGroup}
+          </span>
+        </div>
       ),
       tooltip: (i) => i.itemGroup,
     },
@@ -400,41 +420,52 @@ const Items: React.FC = () => {
       header: "Min",
       align: "center",
       render: (i) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {i.minStockLevel ?? "—"}
-        </code>
+        <div className="py-1.5">
+          <span className="block">
+            {i.minStockLevel ?? "-"}
+          </span>
+        </div>
       ),
+      tooltip: (i) => i.minStockLevel ?? "-",
     },
     {
       key: "maxStockLevel",
       header: "Max",
       align: "center",
       render: (i) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {i.maxStockLevel ?? "—"}
-        </code>
+        <div className="py-1.5">
+          <span className="block">
+            {i.maxStockLevel ?? "-"}
+          </span>
+        </div>
       ),
+      tooltip: (i) => i.maxStockLevel ?? "-",
     },
     {
       key: "preferredVendorName",
       header: "Supplier",
-      align: "left",
+      align: "center",
       render: (i) => (
-        <span className="text-muted whitespace-nowrap">
-          {i.preferredVendorName || "—"}
-        </span>
+        <div className="py-1.5">
+          <span className="block">
+            {i.preferredVendorName || "-"}
+          </span>
+        </div>
       ),
-      tooltip: (i) => i.preferredVendorName,
+      tooltip: (i) => i.preferredVendorName || "-",
     },
     {
       key: "sellingPrice",
       header: "Price",
       align: "center",
       render: (i) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {i.sellingPrice ?? "—"}
-        </code>
+        <div className="py-1.5">
+          <span className="block">
+            {i.sellingPrice}
+          </span>
+        </div>
       ),
+      tooltip: (i) => i.sellingPrice,
     },
     {
       key: "actions",
@@ -473,25 +504,19 @@ const Items: React.FC = () => {
     },
   ];
 
-  // ─────────────────────────────────────────────────────────────────────────────
+
   return (
     <>
       {viewMode === "table" ? (
         <div className="h-full min-h-0">
           <Table
+            loading={loading || initialLoad}
             columns={columns}
             data={items}
-            tableId="items"
-            rowKey={(r) => r.id}
-            loading={isInitialLoad}
-            isFetching={isFetching}
             enableColumnSelector
             showToolbar
             searchValue={searchTerm}
-            onSearch={(q) => {
-              setSearchTerm(q);
-              setPage(1);
-            }}
+            onSearch={setSearchTerm}
             enableAdd={can(ITEM_MODULE, "create")}
             addLabel="Add Item"
             onAdd={handleAddItem}
@@ -550,6 +575,7 @@ const Items: React.FC = () => {
           />
         </div>
       )}
+
     </>
   );
 };
