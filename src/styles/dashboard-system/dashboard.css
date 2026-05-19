@@ -1,0 +1,54 @@
+/* =========================================
+   DASHBOARD SYSTEM
+   Centralized Dashboard Design System
+   -----------------------------------------
+   PURPOSE:
+   Unified operational dashboard styling
+   for all ERP dashboard modules.
+
+   MODULES:
+   - Employee Dashboard
+   - Sales Dashboard
+   - Procurement Dashboard
+   - HR Dashboard
+   - CRM Dashboard
+   - Analytics Dashboard
+========================================= */
+
+/* =========================================
+   FOUNDATION
+========================================= */
+
+@import "./tokens.css";
+@import "./themes.css";
+
+/* =========================================
+   CORE LAYOUT SYSTEM
+========================================= */
+
+@import "./layout.css";
+@import "./surfaces.css";
+
+/* =========================================
+   TYPOGRAPHY + MOTION
+========================================= */
+
+@import "./typography.css";
+@import "./motion.css";
+
+/* =========================================
+   UI COMPONENT SYSTEM
+========================================= */
+
+@import "./components.css";
+@import "./forms.css";
+@import "./tables.css";
+@import "./navigation.css";
+@import "./charts.css";
+@import "./states.css";
+
+/* =========================================
+   UTILITIES
+========================================= */
+
+@import "./utilities.css";
