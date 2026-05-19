@@ -261,7 +261,7 @@ const AppRoutes: React.FC = () => {
               <Route
               path="/Expense-Management"
               element={
-                <PermissionRoute modules={["Expense History"]}>
+                <PermissionRoute modules={["Expense Claim","Expense Claim Type"]}>
                   <ExpenseManagement />
                 </PermissionRoute>
               }
