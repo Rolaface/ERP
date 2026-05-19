@@ -46,6 +46,7 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
 
+
 type OutletContextType = {
   openInvoiceCreate: () => void;
   openInvoiceEdit: (invoiceNumber: string, data: any) => void;
@@ -79,8 +80,10 @@ interface InvoiceTableProps {
   onExportInvoice?: () => void;
 }
 
+
 const SALES_MODULE = "Sales Invoice";
 const PAYMENT_MODULE = "Payment Entry";
+
 
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const { openInvoiceEdit } = useOutletContext<OutletContextType>();
@@ -480,6 +483,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   };
 
+
   const handleClosePdf = () => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
     setPdfUrl(null);
@@ -489,20 +493,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
-    const months = [
-      "JAN",
-      "FEB",
-      "MAR",
-      "APR",
-      "MAY",
-      "JUN",
-      "JUL",
-      "AUG",
-      "SEP",
-      "OCT",
-      "NOV",
-      "DEC",
-    ];
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
@@ -543,6 +534,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         showApiError(res?.message.message || "Failed to update invoice status");
         return;
       }
+
 
       const updatedStatus = res.message.data?.status;
 
@@ -607,7 +599,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortable: true,
         render: (inv) => (
           <div className="py-1.5">
-            <span className="block">{inv.invoiceNumber}</span>
+            <span className="block">
+              {inv.invoiceNumber}
+            </span>
           </div>
         ),
         tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
@@ -641,7 +635,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         render: (inv) => (
           <div className="py-1.5">
-            <span className="block">{formatDate(inv.dateOfInvoice)}</span>
+            <span className="block">
+              {formatDate(inv.dateOfInvoice)}
+            </span>
           </div>
         ),
       },
@@ -692,11 +688,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         key: "invoiceStatus",
         header: "Status",
         align: "center",
-        render: (inv) => (
-          <div className="py-1.5">
-            <StatusBadge status={inv.invoiceStatus} />
-          </div>
-        ),
+        render: (inv) => <div className="py-1.5"><StatusBadge status={inv.invoiceStatus} /></div>,
       },
       {
         key: "actions",
@@ -732,15 +724,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
               customActions={[
                 // Receive Payment — needs Payment Entry create
                 ...(inv.invoiceStatus !== "Draft" &&
-                inv.invoiceStatus !== "Cancelled" &&
-                inv.outstandingAmount > 0 &&
-                can(PAYMENT_MODULE, "create")
-                  ? [
-                      {
-                        label: "Receive Payment",
-                        onClick: () => handleReceivePayment(inv),
-                      },
-                    ]
+                  inv.invoiceStatus !== "Cancelled" &&
+                  inv.outstandingAmount > 0 &&
+                  can(PAYMENT_MODULE, "create")
+                  ? [{ label: "Receive Payment", onClick: () => handleReceivePayment(inv) }]
                   : []),
                 {
                   label: "View PDF",
@@ -748,17 +735,15 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                 },
                 // Status transitions — needs write
                 ...(can(SALES_MODULE, "write")
-                  ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
-                      (status) => ({
-                        label: status === "Approved" ? "Approve" : status,
-                        danger: status === "Paid",
-                        onClick: () =>
-                          handleRowStatusChange(inv.invoiceNumber, status),
-                      }),
-                    )
+                  ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
+                    label: status === "Approved" ? "Approve" : status,
+                    danger: status === "Paid",
+                    onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
+                  }))
                   : []),
               ]}
             />
+
           </div>
         ),
       },
@@ -845,9 +830,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
-        onViewPdf={() =>
-          drawerData && handleDrawerPdf(drawerData.invoiceNumber)
-        }
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.id)}
         onDownload={() =>
           drawerData &&
           company &&
