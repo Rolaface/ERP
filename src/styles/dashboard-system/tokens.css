@@ -1,0 +1,230 @@
+
+:root {
+  /* =========================================
+     COLOR TOKENS
+  ========================================= */
+
+  /* Brand */
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-active: #3730a3;
+
+  /* Text */
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-text-soft: #94a3b8;
+  --color-text-inverse: #ffffff;
+
+  /* Surfaces */
+  --surface-page: #f6f8fb;
+  --surface-card: #ffffff;
+  --surface-card-muted: #f8fafc;
+  --surface-hover: #f8fafc;
+  --surface-active: #eef2ff;
+  --surface-elevated: #ffffff;
+
+  /* Borders */
+  --surface-border: #e2e8f0;
+  --surface-border-strong: #cbd5e1;
+
+  /* Status */
+  --color-success: #16a34a;
+  --color-success-soft: #dcfce7;
+
+  --color-warning: #f59e0b;
+  --color-warning-soft: #fef3c7;
+
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+
+  --color-info: #2563eb;
+  --color-info-soft: #dbeafe;
+
+  /* Overlay */
+  --overlay-backdrop: rgba(15, 23, 42, 0.45);
+
+  /* =========================================
+     TYPOGRAPHY TOKENS
+  ========================================= */
+
+  /* Fonts */
+  --font-heading:
+    "Inter",
+    "Plus Jakarta Sans",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  --font-body:
+    "Inter",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  /* Font Sizes */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --text-base: 15px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+
+  /* Font Weights */
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line Heights */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* =========================================
+     SPACING TOKENS
+  ========================================= */
+
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+
+  /* =========================================
+     RADIUS TOKENS
+  ========================================= */
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-full: 9999px;
+
+  /* =========================================
+     SHADOW TOKENS
+  ========================================= */
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+
+  --shadow-lg: 0 10px 24px rgba(15, 23, 42, 0.08);
+
+  --shadow-focus:
+    0 0 0 3px rgba(79, 70, 229, 0.12);
+
+  /* =========================================
+     MOTION TOKENS
+  ========================================= */
+
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 260ms;
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --ease-smooth: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* =========================================
+     LAYOUT TOKENS
+  ========================================= */
+
+  --dashboard-max-width: 1600px;
+
+  --content-narrow: 720px;
+  --content-medium: 1080px;
+  --content-wide: 1320px;
+  --content-full: 1600px;
+
+  --dashboard-header-height: 72px;
+  --dashboard-sidebar-width: 260px;
+  --dashboard-sidebar-collapsed: 76px;
+
+  /* =========================================
+     DENSITY TOKENS
+  ========================================= */
+
+  --density-compact: 8px;
+  --density-default: 12px;
+  --density-comfortable: 16px;
+
+  /* Operational Defaults */
+  --card-padding: var(--space-5);
+  --card-gap: var(--space-4);
+
+  --section-gap: var(--space-6);
+  --workspace-gap: var(--space-5);
+
+  /* =========================================
+     Z-INDEX TOKENS
+  ========================================= */
+
+  --z-base: 1;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-overlay: 1200;
+  --z-modal: 1300;
+  --z-toast: 1400;
+
+  /* =========================================
+     INTERACTION TOKENS
+  ========================================= */
+
+  --interactive-hover-translate: translateY(-1px);
+
+  --interactive-active-scale: scale(0.985);
+
+  --interactive-transition:
+    all var(--motion-base) var(--ease-standard);
+
+  /* =========================================
+     OPERATIONAL UI TOKENS
+  ========================================= */
+
+  --status-dot-size: 8px;
+
+  --toolbar-height: 56px;
+
+  --quick-action-height: 44px;
+
+  --notification-item-height: 72px;
+
+  --announcement-max-height: 420px;
+
+  --panel-scroll-fade:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 1)
+    );
+}
+
+/* =========================================
+   DENSITY MODES
+========================================= */
+
+:root[data-density="compact"] {
+  --card-padding: var(--space-4);
+  --card-gap: var(--space-3);
+
+  --section-gap: var(--space-5);
+  --workspace-gap: var(--space-4);
+}
+
+:root[data-density="comfortable"] {
+  --card-padding: var(--space-6);
+  --card-gap: var(--space-5);
+
+  --section-gap: var(--space-7);
+  --workspace-gap: var(--space-6);
+}
