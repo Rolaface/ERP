@@ -88,11 +88,11 @@ const ChatWindow = ({ isOpen, onToggle }: ChatWindowProps) => {
         aria-label={isOpen ? 'Close chat assistant' : 'Open chat assistant'}
         className="
           fixed
-          bottom-6
+          bottom-0.5
           right-6
           z-[1000]
-          h-14
-          w-14
+          h-12
+          w-12
           rounded-full
           bg-blue-600
           text-white

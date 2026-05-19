@@ -1136,10 +1136,7 @@ export const usePurchaseInvoiceForm = ({
     e?.preventDefault();
     if (saving) return;
 
-    if (!form.taxCategory) {
-      showValidationError("Tax Category is required");
-      return;
-    }
+
 
     const errors = validatePI(form);
     if (errors.length) {
