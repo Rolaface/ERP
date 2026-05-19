@@ -142,6 +142,12 @@ const HolidayListModal = lazy(
       default: m.HolidayListModal,
     })),
 );
+const ShiftTypeModal = lazy(
+  () =>
+    import("../Hr/hrsetupmodals/ShiftTypeModal").then((m) => ({
+      default: m.ShiftTypeModal,
+    })),
+);
 const TaxConfigModal = lazy(
   () =>
     import("../Hr/hrsetupmodals/TaxConfigModal").then((m) => ({
@@ -920,8 +926,21 @@ case "payroll":
             initialData={getInitialData(modal.initialData)}
             onSuccess={() => {
               if (context?.onSuccess) context.onSuccess(undefined);
-              // handleClose is handled internally by the modal's save flow, 
-              // but you can call it here if needed.
+
+            }}
+          />,
+        );
+  case "shiftType":
+        return wrappedModal(
+          <ShiftTypeModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+
             }}
           />,
         );
