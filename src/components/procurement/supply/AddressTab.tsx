@@ -135,7 +135,7 @@ export const AddressTab: React.FC<AddressTabProps> = ({
             name="billingPostalCode"
             value={form.billingPostalCode}
             onChange={onChange}
-            required
+           
             error={errors.billingPostalCode}
           />
         </div>
