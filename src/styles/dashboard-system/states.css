@@ -1,0 +1,563 @@
+/* =========================================
+   DASHBOARD SYSTEM — STATES.CSS
+   Enterprise Operational State System
+   -----------------------------------------
+   PURPOSE:
+   - Operational clarity
+   - Instant system feedback
+   - Reduced uncertainty
+   - Calm enterprise UX
+   - Predictable user confidence
+
+   PRINCIPLES:
+   - State > decoration
+   - Feedback must be immediate
+   - Calm, not alarming
+   - Operational continuity first
+   - Errors should guide recovery
+   - Loading should preserve layout stability
+
+   COVERS:
+   - Loading States
+   - Empty States
+   - Success States
+   - Warning States
+   - Error States
+   - Offline States
+   - Sync States
+   - Permission States
+   - Processing States
+   - Status Indicators
+========================================= */
+
+@layer components {
+  /* =========================================
+     BASE STATE CONTAINER
+  ========================================= */
+
+  .ds-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+
+    padding: var(--ds-space-10);
+
+    text-align: center;
+  }
+
+  .ds-state--compact {
+    padding: var(--ds-space-6);
+  }
+
+  .ds-state--fullscreen {
+    min-height: 100vh;
+  }
+
+  /* =========================================
+     STATE ICON
+  ========================================= */
+
+  .ds-state-icon {
+    width: 56px;
+    height: 56px;
+
+    margin-bottom: var(--ds-space-5);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 999px;
+
+    background: var(--ds-surface-secondary);
+
+    color: var(--ds-text-muted);
+
+    flex-shrink: 0;
+  }
+
+  .ds-state-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* =========================================
+     STATE CONTENT
+  ========================================= */
+
+  .ds-state-title {
+    font-size: var(--ds-text-xl);
+    font-weight: 700;
+    line-height: 1.2;
+
+    color: var(--ds-text-primary);
+
+    margin-bottom: var(--ds-space-2);
+  }
+
+  .ds-state-description {
+    max-width: 480px;
+
+    font-size: var(--ds-text-sm);
+    line-height: 1.7;
+
+    color: var(--ds-text-muted);
+  }
+
+  .ds-state-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+
+    margin-top: var(--ds-space-6);
+
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* =========================================
+     LOADING STATES
+  ========================================= */
+
+  .ds-loading {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 120px;
+  }
+
+  .ds-loading-spinner {
+    width: 36px;
+    height: 36px;
+
+    border-radius: 999px;
+
+    border: 3px solid var(--ds-border);
+    border-top-color: var(--ds-primary);
+
+    animation: ds-spin 0.8s linear infinite;
+  }
+
+  @keyframes ds-spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .ds-loading-text {
+    margin-top: var(--ds-space-4);
+
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-muted);
+  }
+
+  /* =========================================
+     SKELETON SYSTEM
+  ========================================= */
+
+  .ds-skeleton {
+    position: relative;
+
+    overflow: hidden;
+
+    background: var(--ds-surface-secondary);
+
+    border-radius: var(--ds-radius-md);
+  }
+
+  .ds-skeleton::after {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    background:
+      linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.45) 50%,
+        transparent 100%
+      );
+
+    transform: translateX(-100%);
+
+    animation: ds-skeleton-shimmer 1.5s infinite;
+  }
+
+  @keyframes ds-skeleton-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .ds-skeleton-text {
+    height: 12px;
+    width: 100%;
+  }
+
+  .ds-skeleton-title {
+    height: 18px;
+    width: 60%;
+  }
+
+  .ds-skeleton-avatar {
+    width: 40px;
+    height: 40px;
+
+    border-radius: 999px;
+  }
+
+  .ds-skeleton-card {
+    height: 120px;
+    width: 100%;
+  }
+
+  /* =========================================
+     EMPTY STATES
+  ========================================= */
+
+  .ds-empty-state {
+    min-height: 320px;
+  }
+
+  .ds-empty-state .ds-state-icon {
+    background: var(--ds-surface-hover);
+    color: var(--ds-text-muted);
+  }
+
+  /* =========================================
+     SUCCESS STATES
+  ========================================= */
+
+  .ds-success-state .ds-state-icon {
+    background: var(--ds-success-soft);
+    color: var(--ds-success);
+  }
+
+  .ds-success-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ds-space-3);
+
+    padding: var(--ds-space-4);
+
+    border: 1px solid var(--ds-success-border);
+    border-radius: var(--ds-radius-lg);
+
+    background: var(--ds-success-soft);
+
+    color: var(--ds-success);
+  }
+
+  /* =========================================
+     WARNING STATES
+  ========================================= */
+
+  .ds-warning-state .ds-state-icon {
+    background: var(--ds-warning-soft);
+    color: var(--ds-warning);
+  }
+
+  .ds-warning-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ds-space-3);
+
+    padding: var(--ds-space-4);
+
+    border: 1px solid var(--ds-warning-border);
+    border-radius: var(--ds-radius-lg);
+
+    background: var(--ds-warning-soft);
+
+    color: var(--ds-warning);
+  }
+
+  /* =========================================
+     ERROR STATES
+  ========================================= */
+
+  .ds-error-state .ds-state-icon {
+    background: var(--ds-danger-soft);
+    color: var(--ds-danger);
+  }
+
+  .ds-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ds-space-3);
+
+    padding: var(--ds-space-4);
+
+    border: 1px solid var(--ds-danger-border);
+    border-radius: var(--ds-radius-lg);
+
+    background: var(--ds-danger-soft);
+
+    color: var(--ds-danger);
+  }
+
+  .ds-error-title {
+    font-size: var(--ds-text-sm);
+    font-weight: 700;
+
+    margin-bottom: 2px;
+  }
+
+  .ds-error-description {
+    font-size: var(--ds-text-sm);
+    line-height: 1.6;
+  }
+
+  /* =========================================
+     OFFLINE STATES
+  ========================================= */
+
+  .ds-offline-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+
+    min-height: 48px;
+
+    padding-inline: var(--ds-space-4);
+
+    background: var(--ds-warning-soft);
+
+    border-bottom: 1px solid var(--ds-warning-border);
+
+    color: var(--ds-warning);
+
+    font-size: var(--ds-text-sm);
+    font-weight: 500;
+  }
+
+  .ds-offline-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 999px;
+
+    background: currentColor;
+
+    animation: ds-offline-pulse 1.8s infinite;
+  }
+
+  @keyframes ds-offline-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  /* =========================================
+     SYNC STATES
+  ========================================= */
+
+  .ds-sync-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+
+    font-size: var(--ds-text-xs);
+    font-weight: 600;
+  }
+
+  .ds-sync-status--syncing {
+    color: var(--ds-info);
+  }
+
+  .ds-sync-status--success {
+    color: var(--ds-success);
+  }
+
+  .ds-sync-status--failed {
+    color: var(--ds-danger);
+  }
+
+  .ds-sync-spinner {
+    width: 12px;
+    height: 12px;
+
+    border-radius: 999px;
+
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+
+    animation: ds-spin 0.7s linear infinite;
+  }
+
+  /* =========================================
+     PROCESSING STATES
+  ========================================= */
+
+  .ds-processing-overlay {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255, 255, 255, 0.72);
+
+    backdrop-filter: blur(4px);
+
+    z-index: 10;
+  }
+
+  .ds-processing-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    padding: var(--ds-space-6);
+
+    border-radius: var(--ds-radius-xl);
+
+    background: var(--ds-surface-raised);
+
+    box-shadow: var(--ds-shadow-lg);
+  }
+
+  /* =========================================
+     PERMISSION STATES
+  ========================================= */
+
+  .ds-permission-state .ds-state-icon {
+    background: var(--ds-surface-hover);
+    color: var(--ds-text-muted);
+  }
+
+  .ds-permission-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+
+    min-height: 28px;
+
+    padding-inline: var(--ds-space-3);
+
+    border-radius: 999px;
+
+    background: var(--ds-surface-secondary);
+
+    color: var(--ds-text-secondary);
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* =========================================
+     INLINE STATUS DOTS
+  ========================================= */
+
+  .ds-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+
+    font-size: var(--ds-text-xs);
+    font-weight: 600;
+  }
+
+  .ds-status-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 999px;
+
+    background: currentColor;
+  }
+
+  .ds-status--success {
+    color: var(--ds-success);
+  }
+
+  .ds-status--warning {
+    color: var(--ds-warning);
+  }
+
+  .ds-status--danger {
+    color: var(--ds-danger);
+  }
+
+  .ds-status--info {
+    color: var(--ds-info);
+  }
+
+  .ds-status--muted {
+    color: var(--ds-text-muted);
+  }
+
+  /* =========================================
+     BAD NETWORK STATE
+  ========================================= */
+
+  .ds-network-state {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+
+    color: var(--ds-warning);
+
+    font-size: var(--ds-text-xs);
+    font-weight: 600;
+  }
+
+  /* =========================================
+     RETRY BLOCK
+  ========================================= */
+
+  .ds-retry-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ds-space-4);
+
+    margin-top: var(--ds-space-5);
+  }
+
+  /* =========================================
+     RESPONSIVE STATES
+  ========================================= */
+
+  @media (max-width: 768px) {
+    .ds-state {
+      padding: var(--ds-space-6);
+    }
+
+    .ds-state-title {
+      font-size: var(--ds-text-lg);
+    }
+
+    .ds-state-actions {
+      width: 100%;
+      flex-direction: column;
+    }
+
+    .ds-state-actions > * {
+      width: 100%;
+    }
+
+    .ds-processing-card {
+      width: calc(100% - 2rem);
+    }
+  }
+}

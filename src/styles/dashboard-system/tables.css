@@ -1,0 +1,531 @@
+@layer components {
+  /* =========================================
+     TABLE WRAPPER
+  ========================================= */
+
+  .ds-table-wrapper {
+    position: relative;
+
+    width: 100%;
+
+    overflow: auto;
+
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-radius-xl);
+
+    background: var(--ds-surface-raised);
+  }
+
+  .ds-table-wrapper::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .ds-table-wrapper::-webkit-scrollbar-thumb {
+    background: var(--ds-border);
+    border-radius: 999px;
+  }
+
+  .ds-table-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* =========================================
+     BASE TABLE
+  ========================================= */
+
+  .ds-table {
+    width: 100%;
+
+    border-collapse: separate;
+    border-spacing: 0;
+
+    min-width: 720px;
+
+    background: var(--ds-surface-raised);
+  }
+
+  /* =========================================
+     TABLE HEADER
+  ========================================= */
+
+  .ds-table thead {
+    position: sticky;
+    top: 0;
+
+    z-index: 2;
+  }
+
+  .ds-table th {
+    position: sticky;
+    top: 0;
+
+    height: 48px;
+
+    padding-inline: var(--ds-space-4);
+
+    background: var(--ds-surface-secondary);
+
+    border-bottom: 1px solid var(--ds-border);
+
+    text-align: left;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+
+    color: var(--ds-text-muted);
+
+    white-space: nowrap;
+  }
+
+  /* =========================================
+     TABLE BODY
+  ========================================= */
+
+  .ds-table tbody tr {
+    transition:
+      background var(--ds-motion-fast),
+      border-color var(--ds-motion-fast);
+  }
+
+  .ds-table td {
+    height: 56px;
+
+    padding-inline: var(--ds-space-4);
+
+    border-bottom: 1px solid var(--ds-border-subtle);
+
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-primary);
+
+    vertical-align: middle;
+
+    white-space: nowrap;
+  }
+
+  /* =========================================
+     ROW HOVER
+  ========================================= */
+
+  .ds-table tbody tr:hover {
+    background: var(--ds-surface-hover);
+  }
+
+  /* =========================================
+     ROW STATES
+  ========================================= */
+
+  .ds-table-row--selected {
+    background: var(--ds-primary-soft);
+  }
+
+  .ds-table-row--selected:hover {
+    background: var(--ds-primary-soft-hover);
+  }
+
+  .ds-table-row--danger {
+    border-left: 3px solid var(--ds-danger);
+  }
+
+  .ds-table-row--warning {
+    border-left: 3px solid var(--ds-warning);
+  }
+
+  .ds-table-row--success {
+    border-left: 3px solid var(--ds-success);
+  }
+
+  /* =========================================
+     COMPACT TABLE
+  ========================================= */
+
+  .ds-table--compact th {
+    height: 40px;
+  }
+
+  .ds-table--compact td {
+    height: 44px;
+    font-size: 13px;
+  }
+
+  /* =========================================
+     RELAXED TABLE
+  ========================================= */
+
+  .ds-table--relaxed td {
+    height: 64px;
+  }
+
+  /* =========================================
+     NUMERIC COLUMNS
+  ========================================= */
+
+  .ds-table-number {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* =========================================
+     MUTED CELLS
+  ========================================= */
+
+  .ds-table-muted {
+    color: var(--ds-text-muted);
+  }
+
+  /* =========================================
+     EMPHASIZED CELLS
+  ========================================= */
+
+  .ds-table-strong {
+    font-weight: 600;
+    color: var(--ds-text-primary);
+  }
+
+  /* =========================================
+     TABLE ACTIONS
+  ========================================= */
+
+  .ds-table-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+
+    opacity: 0;
+
+    transition: opacity var(--ds-motion-fast);
+  }
+
+  .ds-table tbody tr:hover .ds-table-actions {
+    opacity: 1;
+  }
+
+  .ds-table-action-btn {
+    width: 32px;
+    height: 32px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: var(--ds-radius-md);
+
+    background: transparent;
+
+    color: var(--ds-text-muted);
+
+    cursor: pointer;
+
+    transition:
+      background var(--ds-motion-fast),
+      color var(--ds-motion-fast),
+      transform var(--ds-motion-fast);
+  }
+
+  .ds-table-action-btn:hover {
+    background: var(--ds-surface-hover);
+    color: var(--ds-text-primary);
+  }
+
+  .ds-table-action-btn:active {
+    transform: scale(0.96);
+  }
+
+  /* =========================================
+     CHECKBOX COLUMN
+  ========================================= */
+
+  .ds-table-checkbox {
+    width: 44px;
+    text-align: center;
+  }
+
+  /* =========================================
+     STATUS CELL
+  ========================================= */
+
+  .ds-table-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ds-table-status-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 999px;
+
+    background: currentColor;
+  }
+
+  /* =========================================
+     TABLE TOOLBAR
+  ========================================= */
+
+  .ds-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-space-4);
+
+    min-height: 64px;
+
+    padding-inline: var(--ds-space-5);
+
+    border-bottom: 1px solid var(--ds-border);
+
+    background: var(--ds-surface-raised);
+  }
+
+  .ds-table-toolbar-left,
+  .ds-table-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+  }
+
+  /* =========================================
+     TABLE SEARCH
+  ========================================= */
+
+  .ds-table-search {
+    width: 280px;
+  }
+
+  /* =========================================
+     TABLE FOOTER
+  ========================================= */
+
+  .ds-table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-space-4);
+
+    min-height: 60px;
+
+    padding-inline: var(--ds-space-5);
+
+    border-top: 1px solid var(--ds-border);
+
+    background: var(--ds-surface-raised);
+  }
+
+  /* =========================================
+     PAGINATION
+  ========================================= */
+
+  .ds-pagination {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+  }
+
+  .ds-pagination-btn {
+    min-width: 36px;
+    height: 36px;
+
+    padding-inline: var(--ds-space-3);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-radius-md);
+
+    background: var(--ds-surface-raised);
+
+    color: var(--ds-text-secondary);
+
+    font-size: var(--ds-text-sm);
+    font-weight: 500;
+
+    cursor: pointer;
+
+    transition:
+      background var(--ds-motion-fast),
+      border-color var(--ds-motion-fast),
+      color var(--ds-motion-fast);
+  }
+
+  .ds-pagination-btn:hover {
+    background: var(--ds-surface-hover);
+    border-color: var(--ds-border-strong);
+    color: var(--ds-text-primary);
+  }
+
+  .ds-pagination-btn--active {
+    background: var(--ds-primary);
+    border-color: var(--ds-primary);
+
+    color: white;
+  }
+
+  /* =========================================
+     EMPTY STATE
+  ========================================= */
+
+  .ds-table-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 320px;
+
+    padding: var(--ds-space-10);
+
+    text-align: center;
+  }
+
+  .ds-table-empty-icon {
+    width: 56px;
+    height: 56px;
+
+    margin-bottom: var(--ds-space-4);
+
+    color: var(--ds-text-muted);
+    opacity: 0.6;
+  }
+
+  .ds-table-empty-title {
+    font-size: var(--ds-text-lg);
+    font-weight: 600;
+
+    color: var(--ds-text-primary);
+
+    margin-bottom: var(--ds-space-2);
+  }
+
+  .ds-table-empty-description {
+    max-width: 420px;
+
+    font-size: var(--ds-text-sm);
+    line-height: 1.6;
+
+    color: var(--ds-text-muted);
+  }
+
+  /* =========================================
+     LOADING STATE
+  ========================================= */
+
+  .ds-table-loading-row td {
+    height: 56px;
+  }
+
+  .ds-table-skeleton {
+    height: 12px;
+    width: 100%;
+
+    border-radius: 999px;
+
+    background:
+      linear-gradient(
+        90deg,
+        var(--ds-surface-secondary) 25%,
+        var(--ds-surface-hover) 50%,
+        var(--ds-surface-secondary) 75%
+      );
+
+    background-size: 200% 100%;
+
+    animation: ds-table-shimmer 1.4s linear infinite;
+  }
+
+  @keyframes ds-table-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* =========================================
+     RESPONSIVE TABLE
+  ========================================= */
+
+  @media (max-width: 768px) {
+    .ds-table {
+      min-width: 100%;
+    }
+
+    .ds-table thead {
+      display: none;
+    }
+
+    .ds-table tbody {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ds-space-4);
+
+      padding: var(--ds-space-4);
+    }
+
+    .ds-table tbody tr {
+      display: flex;
+      flex-direction: column;
+
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-xl);
+
+      background: var(--ds-surface-raised);
+
+      overflow: hidden;
+    }
+
+    .ds-table td {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      min-height: 52px;
+
+      padding-inline: var(--ds-space-4);
+
+      white-space: normal;
+    }
+
+    .ds-table td::before {
+      content: attr(data-label);
+
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+
+      color: var(--ds-text-muted);
+
+      margin-right: var(--ds-space-4);
+    }
+
+    .ds-table-actions {
+      opacity: 1;
+    }
+
+    .ds-table-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+
+      padding-block: var(--ds-space-4);
+    }
+
+    .ds-table-search {
+      width: 100%;
+    }
+
+    .ds-table-footer {
+      flex-direction: column;
+      align-items: stretch;
+
+      padding-block: var(--ds-space-4);
+    }
+  }
+}
