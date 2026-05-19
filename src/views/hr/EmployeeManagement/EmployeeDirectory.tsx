@@ -1,13 +1,6 @@
-// EmployeeDirectory.tsx
-// Permission pattern mirrors Invoices.tsx:
-//   enableAdd={can("Employee","create")}
-//   <PermissionGate module="Employee" action="write"> wraps Edit button
-//   Inline can() for Disable (write) and Delete (delete) in ActionMenu
-//
-// Props canCreate/canEdit/canDelete are still accepted from EmployeeManagement
-// so employee view can suppress all mutations — both layers work together.
 
-import React, { useEffect, useState, useCallback } from "react";
+
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   showApiError, showSuccess, showLoading, closeSwal,
 } from "../../../utils/alert";
@@ -16,14 +9,12 @@ import {
   getAllEmployees, getEmployeeById,
   deleteEmployeeById, updateEmployeeStatus,
 } from "../../../api/employeeapi";
-import { AppPageBody }       from "../../../components/ui/app-shell";
 import { openEmployeeModal } from "../../../store/modalStore";
 import Table                 from "../../../components/ui/Table/Table";
-import StatusBadge           from "../../../components/ui/Table/StatusBadge";
 import ActionButton, {
   ActionGroup, ActionMenu,
 }                            from "../../../components/ui/Table/ActionButton";
-import PermissionGate        from "../../../views/PermissionGate"; 
+import PermissionGate        from "../../../views/PermissionGate";
 import { usePermission }     from "../../../hooks/permission/usePermission";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../../store/dataRefreshStore";
 import EmployeeNameCell      from "../../../components/ui/Table/Employeenamecell";
@@ -31,13 +22,14 @@ import type { Column }       from "../../../components/ui/Table/type";
 import type { EmployeeSummary } from "../../../types/employee";
 import EmployeeDetailView    from "../EmployeeManagement/mployeeDetailView";
 import { useAuth }           from "../../../context/AuthContext";
+import { HrTableFrame }      from "../components/HrTabLayout";
 
-// ── Module constant (mirrors SALES_MODULE in Invoices.tsx) ───────────────────
+// ── Module constant ───────────────────────────────────────────────────────────
 const EMP_MODULE = "Employee";
 
 interface EmployeeDirectoryProps {
   isEmployeeView?: boolean;
-  canCreate?:      boolean;  // from EmployeeManagement (employee-view guard)
+  canCreate?:      boolean;
   canEdit?:        boolean;
   canDelete?:      boolean;
 }
@@ -45,29 +37,98 @@ interface EmployeeDirectoryProps {
 const unwrapEmployee = (res: any): any =>
   res?.message?.data ?? res?.data ?? res;
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   isEmployeeView = false,
-  canCreate      = false,
-  canEdit        = false,
-  canDelete      = false,
+
 }) => {
-  const { user }    = useAuth();
-  const { can }     = usePermission();   // ← inline permission checks (Invoices pattern)
+  const { user }  = useAuth();
+  const { can }   = usePermission();
+  const mountedRef = useRef(true);
 
-  const [employees,       setEmployees]       = useState<EmployeeSummary[]>([]);
-  const [searchTerm,      setSearchTerm]      = useState("");
-  const [loading,         setLoading]         = useState(true);
-  const [page,            setPage]            = useState(1);
-  const [pageSize,        setPageSize]        = useState(10);
-  const [totalPages,      setTotalPages]      = useState(1);
-  const [totalItems,      setTotalItems]      = useState(0);
-  const [viewMode,        setViewMode]        = useState<"table" | "detail">("table");
-  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
-
-  const triggerRefresh    = useDataRefreshStore((s) => s.triggerRefresh);
+  const triggerRefresh     = useDataRefreshStore((s) => s.triggerRefresh);
   const subscribeToRefresh = useDataRefreshStore((s) => s.subscribeToRefresh);
 
-  // ── View detail ───────────────────────────────────────────────────────────
+  // ── Data state — split loading so page changes don't flash skeleton
+  const [employees,        setEmployees]        = useState<EmployeeSummary[]>([]);
+  const [isInitialLoad,    setIsInitialLoad]    = useState(true);
+  const [isFetching,       setIsFetching]       = useState(false);
+
+  // ── Pagination
+  const [page,      setPage]      = useState(1);
+  const [pageSize,  setPageSize]  = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
+  // ── Filters
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // ── Detail view
+  const [viewMode,          setViewMode]          = useState<"table" | "detail">("table");
+  const [selectedEmployee,  setSelectedEmployee]  = useState<any>(null);
+
+  // ── Reset page on search change
+  useEffect(() => { setPage(1); }, [searchTerm]);
+
+  // ── Fetch — memoized with useCallback
+  const fetchEmployees = useCallback(async () => {
+    if (!mountedRef.current) return;
+    setIsFetching(true);
+
+    try {
+      const searchParam = isEmployeeView
+        ? user?.employeeId
+        : searchTerm || undefined;
+
+      const res = await getAllEmployees(page, pageSize, "Active", searchParam);
+
+      if (!mountedRef.current) return;
+
+      const mapped = (res.data || []).map((e: any) => ({
+        id:         e.name,
+        employeeId: e.name,
+        name:       e.employee_name,
+        image:      e.image ?? null,
+        jobTitle:   e.designation,
+        department: e.department || "-",
+        branch:     e.branch     || "-",
+        status:     e.status,
+      }));
+
+      setEmployees(mapped);
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total       || 0);
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      if (mountedRef.current) {
+        setIsFetching(false);
+        setIsInitialLoad(false);
+      }
+    }
+  }, [page, pageSize, searchTerm, isEmployeeView, user?.employeeId]);
+
+  // Initial fetch
+  useEffect(() => {
+    mountedRef.current = true;
+    fetchEmployees();
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Refetch on dependency change (skip initial)
+  useEffect(() => {
+    if (isInitialLoad) return;
+    fetchEmployees();
+  }, [page, pageSize, searchTerm]);
+
+  // Auto-refresh on external events
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.EMPLOYEE_LIST, fetchEmployees);
+    return unsubscribe;
+  }, [subscribeToRefresh, fetchEmployees]);
+
+  // ── Detail view
   const handleViewEmployee = async (id: string) => {
     try {
       showLoading("Loading Employee...");
@@ -88,46 +149,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     setSelectedEmployee(unwrapEmployee(res));
   };
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
-  const fetchEmployees = useCallback(async () => {
-    try {
-      setLoading(true);
-      const searchParam = isEmployeeView
-        ? user?.employeeId
-        : searchTerm || undefined;
-
-      const res = await getAllEmployees(page, pageSize, "Active", searchParam);
-
-      const mapped = (res.data || []).map((e: any) => ({
-        id:           e.name,
-        employeeId:   e.name,
-        name:         e.employee_name,
-        image:        e.image ?? null,
-        jobTitle:     e.designation,
-        department:   e.department || "-",
-        branch: e.branch     || "-",
-        status:       e.status,
-      }));
-
-      setEmployees(mapped);
-      setTotalPages(res.pagination?.total_pages || 1);
-      setTotalItems(res.pagination?.total       || 0);
-    } catch (error) {
-      showApiError(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, pageSize, searchTerm, isEmployeeView, user?.employeeId]);
-
-  useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
-  useEffect(() => { setPage(1); },      [searchTerm]);
-
-  useEffect(() => {
-    const unsub = subscribeToRefresh(REFRESH_KEYS.EMPLOYEE_LIST, fetchEmployees);
-    return () => unsub();
-  }, [subscribeToRefresh, fetchEmployees]);
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Action handlers
   const handleAdd = () => {
     openEmployeeModal(null, false, {
       onSuccess: () => triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST),
@@ -173,13 +195,13 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const result = await fireManagedSwal({
-      title:               "Are you sure?",
-      text:                "This employee will be permanently deleted.",
-      icon:                "warning",
-      showCancelButton:    true,
-      confirmButtonColor:  "#ef4444",
-      cancelButtonColor:   "#6b7280",
-      confirmButtonText:   "Yes, delete",
+      title:              "Are you sure?",
+      text:               "This employee will be permanently deleted.",
+      icon:               "warning",
+      showCancelButton:   true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor:  "#6b7280",
+      confirmButtonText:  "Yes, delete",
     });
     if (!result.isConfirmed) return;
     try {
@@ -194,9 +216,16 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     }
   };
 
-  // ── Columns ───────────────────────────────────────────────────────────────
+  // ── Columns — styled to match CustomerManagement
   const columns: Column<EmployeeSummary>[] = [
-    { key: "employeeId", header: "Employee ID", align: "left" },
+    {
+      key:    "employeeId",
+      header: "Employee ID",
+      align:  "left",
+      render: (e) => (
+        <span className="font-medium whitespace-nowrap">{e.id ?? "—"}</span>
+      ),
+    },
     {
       key:    "name",
       header: "Name",
@@ -205,23 +234,47 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
         <EmployeeNameCell name={e.name} employeeId={e.id} image={e.image} />
       ),
     },
-    { key: "jobTitle", header: "Job Title", align: "left" },
+    {
+      key:    "jobTitle",
+      header: "Job Title",
+      align:  "left",
+      render: (e) => (
+        <span className="text-muted whitespace-nowrap">{e.jobTitle ?? "—"}</span>
+      ),
+    },
     {
       key:    "department",
       header: "Department",
       align:  "left",
       render: (e) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
           {e.department}
         </code>
       ),
     },
-    { key: "branch", header: "Branch", align: "left" },
+    {
+      key:    "branch",
+      header: "Branch",
+      align:  "left",
+      render: (e) => (
+        <span className="whitespace-nowrap">{e.branch ?? "—"}</span>
+      ),
+    },
     {
       key:    "status",
       header: "Status",
-      align:  "left",
-      render: (e) => <StatusBadge status={e.status} />,
+      align:  "center",
+      render: (e) => (
+        <span
+          className={`inline-flex items-center justify-center text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${
+            e.status === "Active"
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-gray-600"
+          }`}
+        >
+          {e.status}
+        </span>
+      ),
     },
     {
       key:    "actions",
@@ -229,14 +282,12 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       align:  "center",
       render: (e) => (
         <ActionGroup>
-          {/* View — always visible */}
           <ActionButton
             type="view"
             onClick={() => handleViewEmployee(e.id)}
             iconOnly
           />
 
-          {/* Edit — PermissionGate (Invoices pattern) + employee-view guard */}
           {!isEmployeeView && (
             <PermissionGate module={EMP_MODULE} action="write">
               <ActionButton
@@ -247,7 +298,6 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
             </PermissionGate>
           )}
 
-          {/* Disable / Delete — inline can() (Invoices pattern) */}
           {!isEmployeeView && (
             <ActionMenu
               {...(can(EMP_MODULE, "write") && e.status !== "Inactive"
@@ -263,32 +313,26 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     },
   ];
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <AppPageBody>
+    <HrTableFrame>
       {viewMode === "table" ? (
         <Table
-          loading={loading}
           columns={columns}
           data={employees}
           rowKey={(row) => row.id}
+          loading={isInitialLoad}
+          isFetching={isFetching}
           showToolbar
           searchValue={searchTerm}
           onSearch={(q) => { setSearchTerm(q); setPage(1); }}
-
-          // ── Add button: enableAdd mirrors Invoices pattern ──────────────
-          // In professional view: can("Employee","create")
-          // In employee view:     always false (isEmployeeView guard)
           enableAdd={!isEmployeeView && can(EMP_MODULE, "create")}
           addLabel="Add Employee"
           onAdd={handleAdd}
-
           enableColumnSelector
-
-          // Pagination: hidden in employee view
-          currentPage={isEmployeeView ? 1          : page}
-          totalPages={ isEmployeeView ? 1          : totalPages}
-          pageSize={   isEmployeeView ? totalItems || 1 : pageSize}
+          currentPage={isEmployeeView ? 1                : page}
+          totalPages={ isEmployeeView ? 1                : totalPages}
+          pageSize={   isEmployeeView ? totalItems || 1  : pageSize}
           totalItems={totalItems}
           pageSizeOptions={isEmployeeView ? undefined : [10, 25, 50, 100]}
           onPageSizeChange={
@@ -301,14 +345,11 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       ) : selectedEmployee ? (
         <EmployeeDetailView
           employee={selectedEmployee}
-          onBack={() => {
-            setViewMode("table");
-            setSelectedEmployee(null);
-          }}
+          onBack={() => { setViewMode("table"); setSelectedEmployee(null); }}
           onDocumentUploaded={refreshSelectedEmployee}
         />
       ) : null}
-    </AppPageBody>
+    </HrTableFrame>
   );
 };
 

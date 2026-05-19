@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -370,6 +370,8 @@ export const API = {
   ExpenseClaim:{
     Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
     Claim_Type: `${ERP_BASE}/api/resource/Expense Claim Type`,
+    getExpenseClaims: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claims`,
+    getExpenseType: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claim_types`,
   },
   /* =========================
    * STOCK

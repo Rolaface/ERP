@@ -5,7 +5,7 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
-import { getExpenseGLAccounts,createExpenseClaimType } from "../../api/expenseClaimApi";
+import { getExpenseGLAccounts,createExpenseClaimType,updateExpenseClaimType } from "../../api/expenseClaimApi";
 import { showApiError } from "../../utils/alert";
 const getCompanyFromStorage = (): string => {
   try {
@@ -20,10 +20,12 @@ const getCompanyFromStorage = (): string => {
 
 
 export interface ExpenseTypeFormData {
+  id?: string;
   expense_type: string;
   account: string;
 }
 const defaultForm: ExpenseTypeFormData = {
+  id: "",
   expense_type: "",
   account: "",
 };
@@ -53,13 +55,15 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
   const [form, setForm] = useState<ExpenseTypeFormData>(defaultForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const isEditMode = modal?.isEdit ?? false;
 
-  React.useEffect(() => {
-    if (isOpen) {
-      setForm(defaultForm);
-      setErrors({});
-    }
-  }, [isOpen]);
+React.useEffect(() => {
+  if (isOpen) {
+    const data = modal?.initialData as ExpenseTypeFormData | undefined;
+    setForm(data ?? defaultForm);
+    setErrors({});
+  }
+}, [isOpen]);
 
   const reset = () => {
     setForm(defaultForm);
@@ -97,20 +101,20 @@ const fetchGLAccounts = useCallback(async (search: string) => {
   };
 
 
- const handleSubmit = async () => {
+const handleSubmit = async () => {
   if (!validate()) return;
   setLoading(true);
   try {
     const payload = {
       expense_type: form.expense_type,
-      accounts: [
-        {
-          default_account: form.account,
-        },
-      ],
+      accounts: [{ default_account: form.account }],
     };
 
-    await createExpenseClaimType(payload);
+    if (isEditMode) {
+      await updateExpenseClaimType(form.id!, payload);
+    } else {
+      await createExpenseClaimType(payload);
+    }
 
     if (modal?.context?.callback) {
       await modal.context.callback(payload);
@@ -125,15 +129,14 @@ const fetchGLAccounts = useCallback(async (search: string) => {
   }
 };
 
-
   const footer = (
     <>
       <Button variant="secondary" onClick={onClose}>
         Cancel
       </Button>
       <Button variant="primary" onClick={handleSubmit} loading={loading}>
-        Submit
-      </Button>
+  {isEditMode ? "Update" : "Submit"}
+</Button>
     </>
   );
 
@@ -143,8 +146,8 @@ const fetchGLAccounts = useCallback(async (search: string) => {
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title="Add Expense Type"
-      subtitle="Create a new expense type with GL account"
+      title={isEditMode ? "Edit Expense Type" : "Add Expense Type"}
+      subtitle={isEditMode ? "Update expense type" : "Create a new expense type"}
       icon={Tag}
       footer={footer}
       customWidth="38vw"
@@ -162,6 +165,7 @@ const fetchGLAccounts = useCallback(async (search: string) => {
             onChange={handleChange}
             error={errors.expense_type}
             required
+            disabled={isEditMode}
             placeholder="For example: Travel"
           />
          <SearchSelect2

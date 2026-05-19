@@ -165,10 +165,6 @@ export const useSupplierForm = ({
       newErrors.province = "Province is required";
     }
 
-    if (!form.billingPostalCode || form.billingPostalCode.trim() === "") {
-      newErrors.billingPostalCode = "Postal Code is required";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -338,7 +334,6 @@ export const useSupplierForm = ({
       if (!form.billingCountry) emptyFields.push("Country");
       if (!form.district) emptyFields.push("District");
       if (!form.province) emptyFields.push("Province");
-      if (!form.billingPostalCode) emptyFields.push("Postal Code");
 
       const message =
         emptyFields.length > 0
@@ -384,9 +379,7 @@ export const useSupplierForm = ({
 
       await showSuccess(successMessage);
 
-      useDataRefreshStore.getState().triggerRefresh(
-        REFRESH_KEYS.SUPPLIER_LIST
-      );
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
 
       onSuccess?.(form);
 
@@ -426,10 +419,8 @@ export const useSupplierForm = ({
 
       /* Success */
 
-      res?.message?.message
-      res?.message ||
-        (isEditMode ? "Supplier Updated" : "Supplier Created");
-
+      res?.message?.message;
+      res?.message || (isEditMode ? "Supplier Updated" : "Supplier Created");
     } catch (err) {
       showApiError(err);
     } finally {
@@ -562,7 +553,6 @@ export const useSupplierForm = ({
         if (!form.billingCountry) emptyFields.push("Country");
         if (!form.district) emptyFields.push("District");
         if (!form.province) emptyFields.push("Province");
-        if (!form.billingPostalCode) emptyFields.push("Postal Code");
 
         const message =
           emptyFields.length > 0

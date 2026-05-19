@@ -147,11 +147,23 @@ export function useCreditNoteForm(
 
   // ── Item mutations ───────────────────────────────────────────────────────
 
-  const handleItemChange = useCallback(
-    (index: number, field: keyof CreditNoteItem, value: string | number) => {
+const handleItemChange = useCallback(
+  (
+    index: number,
+    field: keyof CreditNoteItem,
+    value: string | number | null,
+  ) => {
       setForm((prev) => {
         const items = [...prev.items];
-        items[index] = { ...items[index], [field]: value };
+ items[index] = {
+  ...items[index],
+  [field]:
+    value === null
+      ? null
+      : field === "qty" || field === "rate"
+        ? Number(value)
+        : value,
+};
         return { ...prev, items };
       });
       markDirty();
