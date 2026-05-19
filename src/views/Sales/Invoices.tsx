@@ -47,7 +47,6 @@ import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
 import SendEmailModal from "../../components/common/SendEmailModal";
 
-
 type OutletContextType = {
   openInvoiceCreate: () => void;
   openInvoiceEdit: (invoiceNumber: string, data: any) => void;
@@ -59,20 +58,13 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   Cancelled: ["Amend"],
   Approved: ["Paid", "Cancelled"],
 };
-// const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
-//   Draft: ["Rejected", "Approved"],
-//   Rejected: ["Draft", "Approved"],
-//   Paid: [],
-//   Cancelled: ["Draft"],
-//   Approved: ["Paid", "Cancelled"],
-// };
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
 
 const statusOptions = [
-  { label: "Draft", value: "Draft" },
-  { label: "Approved", value: "Approved" },
-  { label: "Paid", value: "Paid" },
+  { label: "Draft",     value: "Draft" },
+  { label: "Approved",  value: "Approved" },
+  { label: "Paid",      value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
 ];
 
@@ -81,122 +73,91 @@ interface InvoiceTableProps {
   onExportInvoice?: () => void;
 }
 
-
-const SALES_MODULE = "Sales Invoice";
+const SALES_MODULE   = "Sales Invoice";
 const PAYMENT_MODULE = "Payment Entry";
-
 
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const { openInvoiceEdit } = useOutletContext<OutletContextType>();
   const mountedRef = useRef(true);
 
-  // ── Data with stale-while-revalidate pattern
-  const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
+  const [invoices,      setInvoices]      = useState<InvoiceSummary[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
-  const [company, setCompany] = useState<Company | null>(null);
+  const [isFetching,    setIsFetching]    = useState(false);
+  const [company,       setCompany]       = useState<Company | null>(null);
 
-  // ── PDF preview (kept — do not remove)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfUrl,          setPdfUrl]          = useState<string | null>(null);
+  const [pdfOpen,         setPdfOpen]         = useState(false);
 
-  //email
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailInvoice, setEmailInvoice] = useState<InvoiceSummary | null>(null);
-  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(null);
-  const [emailInvoiceAttachments, setEmailInvoiceAttachments] = useState<
-    { name: string; file_name: string }[]
-  >([]);
+  const [emailModalOpen,          setEmailModalOpen]          = useState(false);
+  const [emailInvoice,            setEmailInvoice]            = useState<InvoiceSummary | null>(null);
+  const [emailContactEmail,       setEmailContactEmail]       = useState<string | null>(null);
+  const [emailInvoiceAttachments, setEmailInvoiceAttachments] = useState<{ name: string; file_name: string }[]>([]);
 
   const { can } = usePermission();
-  // ── Drawer (same pattern as ProformaInvoicesTable)
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerData, setDrawerData] = useState<InvoiceDetail | null>(null);
-  const [drawerLoading, setDrawerLoading] = useState(false);
-  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+
+  const [drawerOpen,       setDrawerOpen]       = useState(false);
+  const [drawerData,       setDrawerData]       = useState<InvoiceDetail | null>(null);
+  const [drawerLoading,    setDrawerLoading]    = useState(false);
+  const [drawerPdfUrl,     setDrawerPdfUrl]     = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+
   const [filters, setFilters] = useState<{
     status?: string;
     from_date?: string;
     to_date?: string;
   }>({});
 
-  // ── Pagination (server)
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [page,       setPage]       = useState(1);
+  const [pageSize,   setPageSize]   = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Search (server)
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy,     setSortBy]     = useState("invoiceNumber");
+  const [sortOrder,  setSortOrder]  = useState<"asc" | "desc">("desc");
 
-  const [sortBy, setSortBy] = useState("invoiceNumber");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => { setPage(1); }, [filters]);
 
-  // ── Reset page when search changes
-  useEffect(() => {
-    setPage(1);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [filters]);
-
-  // ── Fetch company once
   useEffect(() => {
     getCompanyById(COMPANY_ID)
-      .then((res) => {
-        if (res?.status_code === 200) setCompany(res.data);
-      })
+      .then((res) => { if (res?.status_code === 200) setCompany(res.data); })
       .catch(() => console.error("Failed to load company data"));
   }, []);
 
-  // ── Fetch invoices with stale-while-revalidate pattern
   const fetchInvoices = useCallback(async () => {
     if (!mountedRef.current) return;
-
     setIsFetching(true);
     try {
       const res = await getAllSalesInvoices(
-        page,
-        pageSize,
-        sortBy,
-        sortOrder,
-        searchTerm,
-        undefined,
-        undefined,
-        filters.status,
-        filters.from_date,
-        filters.to_date,
+        page, pageSize, sortBy, sortOrder, searchTerm,
+        undefined, undefined,
+        filters.status, filters.from_date, filters.to_date,
       );
 
       if (!res || res.status_code !== 200) {
         showApiError(res || "Failed to fetch invoices");
-
-        setInvoices([]);
-        setTotalPages(1);
-        setTotalItems(0);
-
+        setInvoices([]); setTotalPages(1); setTotalItems(0);
         return;
       }
 
       if (!mountedRef.current) return;
 
       const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-        invoiceNumber: inv.id,
-        customerId: inv.customerId,
-        customerName: inv.customerName,
-        currency: inv.currency,
-        exchangeRate: inv.exchangeRate,
-        dueDate: inv.dueDate,
-        dateOfInvoice: new Date(inv.invoiceDate),
-        total: Number(inv.total),
+        invoiceNumber:     inv.id,
+        customerId:        inv.customerId,
+        customerName:      inv.customerName,
+        currency:          inv.currency,
+        exchangeRate:      inv.exchangeRate,
+        dueDate:           inv.dueDate,
+        dateOfInvoice:     new Date(inv.invoiceDate),
+        total:             Number(inv.total),
         outstandingAmount: inv.outstandingAmount ?? 0,
-        totalTax: inv.totalTax,
-        invoiceStatus: inv.status,
+        totalTax:          inv.totalTax,
+        invoiceStatus:     inv.status,
         invoiceTypeParent: inv.invoiceTypeParent,
-        invoiceType: inv.taxCategory,
+        invoiceType:       inv.taxCategory,
       }));
 
       setInvoices(mapped);
@@ -204,10 +165,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       setTotalItems(res.pagination?.total || mapped.length);
     } catch (err) {
       showApiError(err);
-
-      setInvoices([]);
-      setTotalPages(1);
-      setTotalItems(0);
+      setInvoices([]); setTotalPages(1); setTotalItems(0);
     } finally {
       if (mountedRef.current) {
         setIsFetching(false);
@@ -219,34 +177,22 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   useEffect(() => {
     mountedRef.current = true;
     fetchInvoices();
-    return () => {
-      mountedRef.current = false;
-    };
+    return () => { mountedRef.current = false; };
   }, []);
 
-  // Refetch on dependencies (not initial)
   useEffect(() => {
     if (isInitialLoad) return;
     fetchInvoices();
   }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
 
-  // Auto-refresh when invoice is created or edited from modal
   useEffect(() => {
     const unsubscribe = useDataRefreshStore
       .getState()
-      .subscribeToRefresh(REFRESH_KEYS.INVOICE_LIST, () => {
-        fetchInvoices();
-      });
+      .subscribeToRefresh(REFRESH_KEYS.INVOICE_LIST, fetchInvoices);
     return unsubscribe;
   }, [fetchInvoices]);
 
-  const handleSortChange = ({
-    sortBy: colKey,
-    sortOrder: order,
-  }: {
-    sortBy: string;
-    sortOrder: "asc" | "desc";
-  }) => {
+  const handleSortChange = ({ sortBy: colKey, sortOrder: order }: { sortBy: string; sortOrder: "asc" | "desc" }) => {
     setSortBy(colKey);
     setSortOrder(order);
     setPage(1);
@@ -255,11 +201,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const handleReceivePayment = (inv: InvoiceSummary) => {
     openPaymentEntryModal(
       {
-        paymentType: "Receive",
-        partyType: "Customer",
-        partyName: inv.customerName,
-        partyId: inv.customerId,
-        amount: inv.outstandingAmount,
+        paymentType:   "Receive",
+        partyType:     "Customer",
+        partyName:     inv.customerName,
+        partyId:       inv.customerId,
+        amount:        inv.outstandingAmount,
         referenceName: inv.invoiceNumber,
         referenceType: "Sales Invoice",
       },
@@ -278,39 +224,28 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       let allData: InvoiceSummary[] = [];
       let current = 1;
       let total = 1;
-
       do {
-        const res = await getAllSalesInvoices(
-          current,
-          100,
-          sortBy,
-          sortOrder,
-          searchTerm,
-        );
-
+        const res = await getAllSalesInvoices(current, 100, sortBy, sortOrder, searchTerm);
         if (res?.status_code === 200) {
           const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-            invoiceNumber: inv.invoiceNumber,
-            customerName: inv.customerName,
-            receiptNumber: inv.receiptNumber,
-            currency: inv.currency,
-            exchangeRate: inv.exchangeRate,
-            dueDate: inv.dueDate,
-            dateOfInvoice: new Date(inv.dateOfInvoice),
-            total: Number(inv.totalAmount),
-            totalTax: inv.totalTax,
-            invoiceStatus: inv.invoiceStatus,
+            invoiceNumber:     inv.invoiceNumber,
+            customerName:      inv.customerName,
+            receiptNumber:     inv.receiptNumber,
+            currency:          inv.currency,
+            exchangeRate:      inv.exchangeRate,
+            dueDate:           inv.dueDate,
+            dateOfInvoice:     new Date(inv.dateOfInvoice),
+            total:             Number(inv.totalAmount),
+            totalTax:          inv.totalTax,
+            invoiceStatus:     inv.invoiceStatus,
             invoiceTypeParent: inv.invoiceTypeParent,
-            invoiceType: inv.invoiceType,
+            invoiceType:       inv.invoiceType,
           }));
-
           allData = [...allData, ...mapped];
           total = res.pagination?.total_pages || 1;
         }
-
         current++;
       } while (current <= total);
-
       return allData;
     } catch (error) {
       showApiError(error);
@@ -320,74 +255,54 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
   const handleEdit = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-
     try {
       showLoading("Loading invoice...");
-
       const res = await getSalesInvoiceById(invoiceNumber);
-
       if (!res.message || res.message.status_code !== 200) {
-        closeSwal();
-        showApiError("Failed to load invoice");
-        return;
+        closeSwal(); showApiError("Failed to load invoice"); return;
       }
-
       closeSwal();
-
       openInvoiceEdit(invoiceNumber, res.message.data);
     } catch (err) {
-      closeSwal();
-      showApiError(err);
+      closeSwal(); showApiError(err);
     }
   };
 
   const handleExportExcel = async () => {
     try {
       showLoading("Exporting Sales Invoices...");
-
       const dataToExport = await fetchAllInvoicesForExport();
-
       if (!dataToExport.length) {
-        closeSwal();
-        showApiError("No invoices to export");
-        return;
+        closeSwal(); showApiError("No invoices to export"); return;
       }
-
       const worksheet = XLSX.utils.json_to_sheet(
         dataToExport.map((inv) => ({
-          "Invoice No": inv.invoiceNumber,
-          Type: inv.invoiceType,
-          Customer: inv.customerName,
-          Date: inv.dateOfInvoice.toLocaleDateString(),
-          "Due Date": inv.dueDate
-            ? new Date(inv.dueDate).toLocaleDateString()
-            : "",
-          Amount: inv.total,
-          OutStanding: inv.outstandingAmount,
-          Currency: inv.currency,
-          Status: inv.invoiceStatus,
+          "Invoice No":  inv.invoiceNumber,
+          Type:          inv.invoiceType,
+          Customer:      inv.customerName,
+          Date:          inv.dateOfInvoice.toLocaleDateString(),
+          "Due Date":    inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "",
+          Amount:        inv.total,
+          OutStanding:   inv.outstandingAmount,
+          Currency:      inv.currency,
+          Status:        inv.invoiceStatus,
         })),
       );
-
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Sales Invoices");
-
       saveAs(
         new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
         "Sales_Invoices.xlsx",
       );
-
       closeSwal();
       showSuccess("Invoices exported successfully");
     } catch (error) {
-      closeSwal();
-      showApiError(error);
+      closeSwal(); showApiError(error);
     }
   };
 
-  // ── Drawer: open + fetch (same as proforma handleView)
   const handleView = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setDrawerOpen(true);
@@ -402,7 +317,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   };
 
-  // ── Drawer: generate PDF inside drawer (same as proforma handleDrawerPdf)
   const handleDrawerPdf = async (invoiceNumber: string) => {
     setDrawerPdfLoading(true);
     setDrawerPdfUrl(null);
@@ -410,11 +324,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       if (!company) return;
       const res = await getSalesInvoiceById(invoiceNumber);
       if (!res || res.message.status_code !== 200) return;
-      const blobUrl = await generateInvoicePDF(
-        res.message.data as Invoice,
-        company,
-        "bloburl",
-      );
+      const blobUrl = await generateInvoicePDF(res.message.data as Invoice, company, "bloburl");
       setDrawerPdfUrl(blobUrl);
     } catch (err) {
       showApiError(err);
@@ -423,41 +333,22 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   };
 
-  // ── PDF preview modal (table row action — kept, do not remove)
-  const handlePreviewPDF = async (
-    inv: InvoiceSummary,
-    e?: React.MouseEvent,
-  ) => {
+  const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
       showLoading("Preparing invoice preview...");
-
-      if (!company) {
-        closeSwal();
-        showApiError("Company data not loaded");
-        return;
-      }
-
+      if (!company) { closeSwal(); showApiError("Company data not loaded"); return; }
       const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      console.log("🚀 ~ handlePreviewPDF ~ invoiceRes:", invoiceRes);
       if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
-        closeSwal();
-        showApiError("Failed to load invoice");
-        return;
+        closeSwal(); showApiError("Failed to load invoice"); return;
       }
-
-      const blobUrl = await generateInvoicePDF(
-        invoiceRes.message.data,
-        company,
-        "bloburl",
-      );
+      const blobUrl = await generateInvoicePDF(invoiceRes.message.data, company, "bloburl");
       closeSwal();
       setPdfUrl(blobUrl);
       setSelectedInvoice(invoiceRes.data);
       setPdfOpen(true);
     } catch (err: any) {
-      closeSwal();
-      showApiError(err);
+      closeSwal(); showApiError(err);
     }
   };
 
@@ -465,33 +356,18 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     e?.stopPropagation();
     try {
       showLoading("Preparing invoice download...");
-
-      if (!company) {
-        closeSwal();
-        showApiError("Company data not loaded");
-        return;
-      }
-
+      if (!company) { closeSwal(); showApiError("Company data not loaded"); return; }
       const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
       if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
-        closeSwal();
-        showApiError("Failed to load invoice");
-        return;
+        closeSwal(); showApiError("Failed to load invoice"); return;
       }
-
-      await generateInvoicePDF(
-        invoiceRes.message.data as Invoice,
-        company,
-        "save",
-      );
+      await generateInvoicePDF(invoiceRes.message.data as Invoice, company, "save");
       closeSwal();
       showSuccess("Invoice downloaded successfully!");
     } catch (err: any) {
-      closeSwal();
-      showApiError(err);
+      closeSwal(); showApiError(err);
     }
   };
-
 
   const handleClosePdf = () => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
@@ -499,23 +375,18 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setSelectedInvoice(null);
     setPdfOpen(false);
   };
+
   const formatDate = (date: string | Date) => {
     if (!date) return "";
-
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-
+    const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
       return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
     }
-
-    // Date object — use local methods
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
-  const handleRowStatusChange = async (
-    invoiceNumber: string,
-    status: InvoiceStatus,
-  ) => {
+
+  const handleRowStatusChange = async (invoiceNumber: string, status: InvoiceStatus) => {
     if (CRITICAL_STATUSES.includes(status)) {
       const result = await fireManagedSwal({
         icon: "warning",
@@ -527,43 +398,29 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         confirmButtonText: "Yes",
         cancelButtonText: "Cancel",
       });
-
       if (!result.isConfirmed) return;
     }
-
     try {
       showLoading("Updating invoice status...");
-
       const res = await updateInvoiceStatus(invoiceNumber, status);
-      console.log("🚀 ~ handleRowStatusChange ~ res:", res);
-
       closeSwal();
-
       if (!res.message || res.message.status_code !== 200) {
-        showApiError(res?.message.message || "Failed to update invoice status");
-        return;
+        showApiError(res?.message.message || "Failed to update invoice status"); return;
       }
-
-
       const updatedStatus = res.message.data?.status;
-
       setInvoices((prev) =>
         prev.map((inv) =>
-          inv.invoiceNumber === invoiceNumber
-            ? { ...inv, invoiceStatus: updatedStatus }
-            : inv,
+          inv.invoiceNumber === invoiceNumber ? { ...inv, invoiceStatus: updatedStatus } : inv,
         ),
       );
-
       showSuccess(`Invoice marked as ${status}`);
     } catch (err) {
-      closeSwal();
-      showApiError(err);
+      closeSwal(); showApiError(err);
     }
   };
+
   const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-
     const result = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
@@ -574,137 +431,111 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       confirmButtonText: "Yes, delete",
       reverseButtons: true,
     });
-
     if (!result.isConfirmed) return;
-
     try {
       showLoading("Deleting invoice...");
-
       const res = await deleteSalesInvoiceById(invoiceNumber);
       if (!res.message || res.message.status_code !== 200) {
-        closeSwal();
-        showApiError(res?.message.message || "Failed to delete invoice");
-        return;
+        closeSwal(); showApiError(res?.message.message || "Failed to delete invoice"); return;
       }
-
       closeSwal();
-      setInvoices((prev) =>
-        prev.filter((inv) => inv.invoiceNumber !== invoiceNumber),
-      );
+      setInvoices((prev) => prev.filter((inv) => inv.invoiceNumber !== invoiceNumber));
       showSuccess("Invoice deleted successfully");
     } catch (err) {
-      closeSwal();
-      showApiError(err);
+      closeSwal(); showApiError(err);
     }
   };
 
-  // Memoize columns to prevent re-renders
+  // ── Columns ────────────────────────────────────────────────────────────────
+  // KEY FIX: removed all <div className="py-0.5"> wrappers — they were adding
+  // vertical padding inside every cell and inflating row height.
   const columns: Column<InvoiceSummary>[] = useMemo(
     () => [
       {
-        key: "invoiceNumber",
-        header: "Invoice No",
-        align: "left",
+        key:      "invoiceNumber",
+        header:   "Invoice No",
+        align:    "left",
         sortable: true,
-        render: (inv) => (
-          <div className="py-0.5">
-            <span className="block">
-              {inv.invoiceNumber}
-            </span>
-          </div>
+        render:   (inv) => (
+          <span className="text-xs whitespace-nowrap">{inv.invoiceNumber}</span>
         ),
         tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
       },
       {
-        key: "invoiceType",
+        key:    "invoiceType",
         header: "Tax Type",
-        align: "center",
+        align:  "center",
         render: (inv) => (
-          <div className="py-0.5">
-            <span className="block">{inv.invoiceType}</span>
-          </div>
+          <span className="text-xs whitespace-nowrap">{inv.invoiceType}</span>
         ),
         tooltip: (inv) => `Invoice Type: ${inv.invoiceType}`,
       },
       {
-        key: "customerName",
-        header: "Customer",
-        align: "left",
+        key:      "customerName",
+        header:   "Customer",
+        align:    "left",
         sortable: true,
-        render: (inv) => (
-          <div className="py-0.5">
-            <span className="block font-medium">{inv.customerName}</span>
-          </div>
+        render:   (inv) => (
+          <span className="text-xs font-medium whitespace-nowrap">{inv.customerName}</span>
         ),
         tooltip: (inv) => `Customer: ${inv.customerName}`,
       },
       {
-        key: "dateOfInvoice",
+        key:    "dateOfInvoice",
         header: "Date",
-        align: "center",
+        align:  "center",
         render: (inv) => (
-          <div className="py-0.5">
-            <span className="block">
-              {formatDate(inv.dateOfInvoice)}
-            </span>
-          </div>
+          <span className="text-xs whitespace-nowrap">{formatDate(inv.dateOfInvoice)}</span>
         ),
       },
       {
-        key: "dueDate",
-        header: "Due Date",
-        align: "center",
+        key:      "dueDate",
+        header:   "Due Date",
+        align:    "center",
         sortable: true,
-        render: (inv) => (
-          <div className="py-0.5">
-            <span className="block">
-              {inv.dueDate ? formatDate(inv.dueDate) : "—"}
-            </span>
-          </div>
+        render:   (inv) => (
+          <span className="text-xs whitespace-nowrap">
+            {inv.dueDate ? formatDate(inv.dueDate) : "—"}
+          </span>
         ),
       },
       {
-        key: "total",
-        header: "Amount",
-        align: "center",
+        key:      "total",
+        header:   "Amount",
+        align:    "center",
         sortable: true,
-        render: (inv) => (
-          <div className="py-0.5">
-            <span className="block whitespace-nowrap">
-              {inv.total.toLocaleString()} {inv.currency}
-            </span>
-          </div>
+        render:   (inv) => (
+          <span className="text-xs whitespace-nowrap">
+            {inv.total.toLocaleString()} {inv.currency}
+          </span>
+        ),
+        tooltip: (inv) => `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
+      },
+      {
+        key:      "outstandingAmount",
+        header:   "Outstanding",
+        align:    "center",
+        sortable: true,
+        render:   (inv) => (
+          <span className="text-xs whitespace-nowrap">
+            {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
+          </span>
         ),
         tooltip: (inv) =>
-          `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
+          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency}`,
       },
       {
-        key: "outstandingAmount",
-        header: "Outstanding",
-        align: "center",
-        sortable: true,
-        render: (inv) => (
-          <div className="py-0.5">
-            <span className="block whitespace-nowrap">
-              {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
-            </span>
-          </div>
-        ),
-        tooltip: (inv) =>
-          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency} `,
-      },
-      {
-        key: "invoiceStatus",
+        key:    "invoiceStatus",
         header: "Status",
-        align: "center",
-        render: (inv) => <div className="py-0.5"><StatusBadge status={inv.invoiceStatus} /></div>,
+        align:  "center",
+        render: (inv) => <StatusBadge status={inv.invoiceStatus} />,
       },
       {
-        key: "actions",
+        key:    "actions",
         header: "Actions",
-        align: "center",
+        align:  "center",
         render: (inv) => (
-          <div className="flex items-center justify-center gap-1.5">
+          <div className="flex items-center justify-center gap-1">
             <ActionButton
               type="view"
               onClick={(e) => handleView(inv.invoiceNumber, e)}
@@ -726,12 +557,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             <ActionMenu
               showDownload
               onDownload={(e) => handleDownload(inv, e)}
-              // Delete — needs delete permission
               {...(can(SALES_MODULE, "delete")
                 ? { onDelete: (e) => handleDelete(inv.invoiceNumber, e) }
                 : {})}
               customActions={[
-                // Receive Payment — needs Payment Entry create
                 ...(inv.invoiceStatus !== "Draft" &&
                   inv.invoiceStatus !== "Cancelled" &&
                   inv.outstandingAmount > 0 &&
@@ -743,7 +572,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                   onClick: async () => {
                     setEmailInvoice(inv);
                     setEmailContactEmail(null);
-                    setEmailInvoiceAttachments([]);   // clear stale attachments
+                    setEmailInvoiceAttachments([]);
                     setEmailModalOpen(true);
                     try {
                       const res = await getSalesInvoiceById(inv.invoiceNumber);
@@ -752,25 +581,20 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                         setEmailInvoiceAttachments(res.message.data?.attachments ?? []);
                       }
                     } catch {
-                      // non-critical: modal opens with empty To/attachments if fetch fails
+                      // non-critical
                     }
                   },
                 },
-                {
-                  label: "View PDF",
-                  onClick: () => handlePreviewPDF(inv),
-                },
-                // Status transitions — needs write
+                { label: "View PDF", onClick: () => handlePreviewPDF(inv) },
                 ...(can(SALES_MODULE, "write")
                   ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
-                    label: status === "Approved" ? "Approve" : status,
-                    danger: status === "Paid",
-                    onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
-                  }))
+                      label:   status === "Approved" ? "Approve" : status,
+                      danger:  status === "Paid",
+                      onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
+                    }))
                   : []),
               ]}
             />
-
           </div>
         ),
       },
@@ -797,10 +621,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         isFetching={isFetching}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => {
-          setSearchTerm(q);
-          setPage(1);
-        }}
+        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
         enableAdd={can(SALES_MODULE, "create")}
         addLabel="Add Invoice"
         onAdd={onAddInvoice}
@@ -812,10 +633,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
@@ -826,10 +644,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
               value={filters.status ?? ""}
               options={statusOptions}
               onChange={(e) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  status: e.target.value || undefined,
-                }));
+                setFilters((prev) => ({ ...prev, status: e.target.value || undefined }));
                 setPage(1);
               }}
             />
@@ -845,49 +660,41 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         }
       />
 
-      {/* ── Drawer modal ── */}
       <InvoiceDetailModal
         open={drawerOpen}
         data={drawerData}
         loading={drawerLoading}
-        onClose={() => {
-          setDrawerOpen(false);
-          setDrawerData(null);
-          setDrawerPdfUrl(null);
-        }}
+        onClose={() => { setDrawerOpen(false); setDrawerData(null); setDrawerPdfUrl(null); }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
-        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.id)}
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.invoiceNumber)}
         onDownload={() =>
-          drawerData &&
-          company &&
+          drawerData && company &&
           generateInvoicePDF(drawerData as unknown as Invoice, company, "save")
         }
         onClosePdf={() => {
-          if (drawerPdfUrl?.startsWith("blob:"))
-            URL.revokeObjectURL(drawerPdfUrl);
+          if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl);
           setDrawerPdfUrl(null);
         }}
       />
 
-      {/* ── PDF Preview modal — kept, used by handleClosePdf ── */}
       <PdfPreviewModal
         open={pdfOpen}
         title="Invoice Preview"
         pdfUrl={pdfUrl}
         onClose={handleClosePdf}
         onDownload={() =>
-          selectedInvoice &&
-          company &&
+          selectedInvoice && company &&
           generateInvoicePDF(selectedInvoice, company, "save")
         }
       />
+
       <SendEmailModal
         open={emailModalOpen}
         docType="Sales Invoice"
         invoiceNumber={emailInvoice?.invoiceNumber}
         contactEmail={emailContactEmail}
-        customerName={emailInvoice?.customerName}  
+        customerName={emailInvoice?.customerName}
         invoiceAttachments={emailInvoiceAttachments}
         onClose={() => {
           setEmailModalOpen(false);
