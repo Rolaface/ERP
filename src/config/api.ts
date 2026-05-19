@@ -30,13 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-<<<<<<< HEAD
-// export const ERP_BASE = getApiBaseUrl();
-export const ERP_BASE = "";
-=======
- export const ERP_BASE = getApiBaseUrl();
-//  export const ERP_BASE = "";
->>>>>>> e365e9f41bdac0f7c2ce8544d27178547f4d36d4
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
