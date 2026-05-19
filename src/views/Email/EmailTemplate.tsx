@@ -111,7 +111,7 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
         const confirm = await fireManagedSwal({
             icon: "warning",
             title: "Are you sure?",
-            text: `Delete template "${template.template_name}"?`,
+            text: `Delete template "${template.id}"?`,
             showCancelButton: true,
             confirmButtonColor: "#ef4444",
             cancelButtonColor: "#6b7280",
@@ -141,7 +141,7 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
             align: "left",
             render: (t) => (
                 <div className="py-1.5">
-                    <span className="block">{t.template_name || t.id || "—"}</span>
+                    <span className="block"> {t.id || "—"}</span>
                 </div>
             ),
         },
@@ -158,18 +158,18 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
             ),
             tooltip: (t) => t.subject || "—",
         },
-        {
-            key: "id",
-            header: "Template ID",
-            align: "center",
-            render: (t) => (
-                <div className="py-1.5">
-                    <code className="inline-flex max-w-full rounded bg-row-hover px-2 py-0.5 text-xs text-main">
-                        {t.id || "—"}
-                    </code>
-                </div>
-            ),
-        },
+        // {
+        //     key: "id",
+        //     header: "Template ID",
+        //     align: "center",
+        //     render: (t) => (
+        //         <div className="py-1.5">
+        //             <code className="inline-flex max-w-full rounded bg-row-hover px-2 py-0.5 text-xs text-main">
+        //                 {t.id || "—"}
+        //             </code>
+        //         </div>
+        //     ),
+        // },
 
         {
             key: "actions",

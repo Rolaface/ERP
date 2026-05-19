@@ -14,7 +14,7 @@ import type {
 } from "../../api/Email/EmailTemplateApi";
 import { ModalSelect, ModalInput } from "../ui/modal/modalComponent";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
-import { useDataRefreshStore,REFRESH_KEYS } from "../../store/dataRefreshStore";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 
 const DOC_TYPE_OPTIONS = [
     { label: "Sales Invoice", value: "Sales Invoice" },
@@ -110,7 +110,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
             getEmailTemplateById({ id: templateId })
                 .then((data) => {
                     setForm({
-                        name: (data.template_name ?? data.id ?? "-") as DocType,
+                        name: data.id ?? "",
                         subject: data.subject ?? "",
                         message: data.message ?? "",
                     });
@@ -292,20 +292,29 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                         {/* Name + Subject */}
                         <div className="flex gap-4">
                             <div className="w-48 shrink-0">
-                                <ModalSelect
-                                    label="Name"
-                                    required
-                                    value={form.name}
-                                    disabled={!!templateId}
-                                    placeholder="Select template type..."
-                                    onChange={(e) => handleFieldChange("name", e.target.value as DocType)}
-                                >
-                                    {DOC_TYPE_OPTIONS.map((opt) => (
-                                        <option key={opt.value} value={opt.value}>
-                                            {opt.label}
-                                        </option>
-                                    ))}
-                                </ModalSelect>
+                                {templateId ? (
+                                    <ModalInput
+                                        label="Name"
+                                        value={form.name}
+                                        disabled
+                                    />
+                                ) : (
+                                    <ModalSelect
+                                        label="Name"
+                                        required
+                                        value={form.name}
+                                        placeholder="Select template type..."
+                                        onChange={(e) =>
+                                            handleFieldChange("name", e.target.value as DocType)
+                                        }
+                                    >
+                                        {DOC_TYPE_OPTIONS.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </ModalSelect>
+                                )}
                             </div>
 
                             <div className="flex-1 min-w-0">

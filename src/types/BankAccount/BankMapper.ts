@@ -8,8 +8,7 @@ export const mapGetBankAccounts = (data: any): BankAccount[] => {
   if (!Array.isArray(raw)) return [];
 
   return raw.map((item: any, index: number) => ({
-    id: item.name || `row-${index}`,
-
+    id: item.id || item.name || `row-${index}`,
     bankName: item.bankName || "",
     accountNo: item.accountNo || "",
     accountHolderName: item.accountHolderName || "",

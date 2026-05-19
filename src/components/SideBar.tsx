@@ -175,7 +175,7 @@ const settingsItems: SettingsItem[] = [
     to: "/Expense-Management",
     label: "Expense Management",
     icon: <Users {...iconProps} />,
-    modules: ["Expense History"],
+    modules: ["Expense Claim","Expense Claim Type"]
   },
   {
     to: "/Email-Template",

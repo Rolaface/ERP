@@ -10,7 +10,6 @@ const api = createAxiosInstance(ERP_BASE);
 
 export interface EmailTemplate {
   id: string;
-  template_name?: string;
   subject: string;
   message: string;
 }
