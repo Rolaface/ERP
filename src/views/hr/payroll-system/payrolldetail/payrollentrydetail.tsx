@@ -19,7 +19,7 @@ import { StatusBadge, type ActiveTab } from "../payrolldetail/Payrollsharedcompo
 
 // ── Tabs ────────────────────────────────────────────────────────────────────
 import { EmployeeOverviewTab } from "../payrolldetail/Employeeoverviewtab";
-import { SalarySlipTab } from "./salaryslip/Salarysliptab";
+import { SalarySlipTab } from "../payrolldetail/Salarysliptab";
 import { PayrollDetailsTab } from "../payrolldetail/Payrolldetailstab";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

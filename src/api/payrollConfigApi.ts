@@ -71,7 +71,6 @@ export interface SalaryStructure {
   earnings?: StructureComponentRow[];
   deductions?: StructureComponentRow[];
   description?: string;
-  currency?:string;
   payroll_frequency?:string;
 }
 
@@ -223,7 +222,7 @@ export async function getAllSalaryStructures(
 ): Promise<PaginatedResponse<SalaryStructure>> {
   try {
     const query = buildListParams({
-      fields: ["name", "is_active", "docstatus","currency"],
+      fields: ["name", "is_active", "docstatus"],
       start,
       pageSize,
       search,

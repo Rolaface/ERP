@@ -7,12 +7,7 @@ import type {
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
-
-import {
-  ModalInput,
-  ModalSelect,
-  NumericInput,
-} from "../../ui/modal/modalComponent";
+import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import WarehouseSelect from "../../selects/WarehouseSelect";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import CostCenterSelect from "../../selects/CostCenterSelect";
@@ -73,16 +68,10 @@ const PIColumnHeaders: React.FC<{ items: ItemRow[] }> = ({ items }) => (
       Qty
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
-      Mfg Date{" "}
-      {items.some((i) => i.requiresBatch) && (
-        <span className="text-danger">*</span>
-      )}
+      Mfg Date {items.some(i => i.requiresBatch) && <span className="text-danger">*</span>}
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
-      Expiry Date{" "}
-      {items.some((i) => i.requiresBatch) && (
-        <span className="text-danger">*</span>
-      )}
+      Expiry Date {items.some(i => i.requiresBatch) && <span className="text-danger">*</span>}
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
       Unit Price <span className="text-danger">*</span>
@@ -149,26 +138,24 @@ export const DetailsTab = ({
     } as any);
   };
   useEffect(() => {
-    if (isEditMode) return; // ← edit mode: don't set default, value comes from saved PI
-    const setDefaultMode = async () => {
-      try {
-        const res = await getAllModeOfPayment(1, 10, "", 1);
-        const list = res?.data?.modeOfPayments || res?.data || [];
-        if (list.length && !form.paymentType) {
-          const first = list[0];
-          onFormChange({
-            target: {
-              name: "paymentType",
-              value: first.name || first.modeOfPayment,
-            },
-          } as any);
-        }
-      } catch (err) {
-        console.error("Default mode fetch failed", err);
+  if (isEditMode) return; // ← edit mode: don't set default, value comes from saved PI
+  const setDefaultMode = async () => {
+    try {
+      const res = await getAllModeOfPayment(1, 10, "", 1);
+      const list = res?.data?.modeOfPayments || res?.data || [];
+      if (list.length && !form.paymentType) {
+        const first = list[0];
+        onFormChange({
+          target: { name: "paymentType", value: first.name || first.modeOfPayment },
+        } as any);
       }
-    };
-    setDefaultMode();
-  }, [isEditMode]);
+    } catch (err) {
+      console.error("Default mode fetch failed", err);
+    }
+  };
+  setDefaultMode();
+}, [isEditMode]); 
+
 
   const handleTopWarehouseChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -216,10 +203,11 @@ export const DetailsTab = ({
       handleRemoveRow: (i: number) => void;
     },
   ) => {
-    const qty = Number(it.quantity ?? 0);
-    const rate = Number(it.rate ?? 0);
-    const discount = Number(it.discount ?? 0);
-    const vatRate = Number(it.vatRate ?? 0);
+    const qty = Number(it.quantity || 0);
+    const rate = Number(it.rate || 0);
+    const discount = Number(it.discount || 0);
+    const vatRate = Number(it.vatRate || 0);
+
     const lineAmount = qty * rate;
     const discountAmount = lineAmount * (discount / 100);
     const netAmount = lineAmount - discountAmount;
@@ -276,42 +264,28 @@ export const DetailsTab = ({
 
         {/* BATCH */}
         <td className="px-1 py-1">
-          <Tooltip
-            content={it.batchNo ? `Batch: ${it.batchNo}` : "Enter batch number"}
-          >
+          <Tooltip content={it.batchNo ? `Batch: ${it.batchNo}` : "Enter batch number"}>
             <input
               name="batchNo"
               value={it.batchNo || ""}
               onChange={(e) => onItemChange(e, i)}
               required={it.requiresBatch}
               className="w-[85px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+
             />
           </Tooltip>
         </td>
 
         {/* QTY */}
         <td className="px-1 py-1">
-          <Tooltip
-            content={
-              it.quantity ? `Quantity: ${it.quantity}` : "Enter quantity"
-            }
-          >
-            <NumericInput
+          <Tooltip content={it.quantity ? `Quantity: ${it.quantity}` : "Enter quantity"}>
+            <input
+              type="number"
               name="quantity"
               placeholder="1"
-            value={it.quantity ?? ""}
-              onChange={(value) =>
-                onItemChange(
-                  {
-                    target: {
-                      name: "quantity",
-                      value,
-                    },
-                  } as any,
-                  i,
-                )
-              }
-              className="w-[75px]"
+              value={it.quantity === 1 ? "" : it.quantity}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[75px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
           </Tooltip>
         </td>
@@ -354,25 +328,14 @@ export const DetailsTab = ({
 
         {/* RATE */}
         <td className="px-1 py-1">
-          <Tooltip
-            content={it.rate ? `Rate: ${symbol} ${it.rate}` : "Enter rate"}
-          >
-            <NumericInput
+          <Tooltip content={it.rate ? `Rate: ${symbol} ${it.rate}` : "Enter rate"}>
+            <input
+              type="number"
               name="rate"
               placeholder="0"
-           value={it.rate ?? ""}
-              onChange={(value) =>
-                onItemChange(
-                  {
-                    target: {
-                      name: "rate",
-                      value,
-                    },
-                  } as any,
-                  i,
-                )
-              }
-              className="w-[56px]"
+             value={it.rate === 0 ? "" : it.rate}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[56px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
           </Tooltip>
         </td>
@@ -399,27 +362,14 @@ export const DetailsTab = ({
 
         {/* DISCOUNT */}
         <td className="px-2 py-1">
-          <Tooltip
-            content={
-              it.discount ? `Discount: ${it.discount}%` : "Enter discount"
-            }
-          >
-            <NumericInput
+          <Tooltip content={it.discount ? `Discount: ${it.discount}%` : "Enter discount"}>
+            <input
+              type="number"
               name="discount"
               placeholder="0"
-              value={it.discount ?? 0}
-              onChange={(value) =>
-                onItemChange(
-                  {
-                    target: {
-                      name: "discount",
-                      value,
-                    },
-                  } as any,
-                  i,
-                )
-              }
-              className="w-[40px]"
+              value={it.discount === 0 ? "" : it.discount}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
             />
           </Tooltip>
         </td>
@@ -427,22 +377,13 @@ export const DetailsTab = ({
         {/* TAX */}
         <td className="px-2 py-1">
           <Tooltip content={`Tax Rate: ${it.vatRate}%`}>
-            <NumericInput
+            <input
+              type="number"
               name="vatRate"
               placeholder="0"
-              value={it.vatRate ?? ""}
-              onChange={(value) =>
-                onItemChange(
-                  {
-                    target: {
-                      name: "vatRate",
-                      value,
-                    },
-                  } as any,
-                  i,
-                )
-              }
-              className="w-[40px]"
+               value={it.vatRate === 0 ? "" : it.vatRate}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
               disabled
             />
           </Tooltip>
@@ -451,12 +392,12 @@ export const DetailsTab = ({
         {/* TAX CODE */}
         <td className="px-2 py-1">
           <Tooltip
-            content={
-              it.taxTypes?.length
-                ? `Tax Types: ${it.taxTypes.join(", ")}`
-                : "No Tax Types"
-            }
-          >
+    content={
+      it.taxTypes?.length
+        ? `Tax Types: ${it.taxTypes.join(", ")}`
+        : "No Tax Types"
+    }
+  >
             <input
               name="vatCd"
               value={it.vatCd || ""}

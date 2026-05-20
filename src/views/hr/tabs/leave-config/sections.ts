@@ -26,10 +26,4 @@ export const SETUP_SECTIONS: AppSetupSection[] = [
     icon: LayoutList,
     description: "Leave policy assignment",
   },
-  {
-    key: "holiday",
-    label: "Holiday List",
-    icon: LayoutList,
-    description: "Holiday list management",
-  },
 ];

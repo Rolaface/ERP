@@ -6,7 +6,7 @@ import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import { getAllEmployees, getEmployeeById } from "../../api/employeeapi";
-import { createExpenseClaim, CreateExpenseClaimPayload, getExpenseCategories,updateExpenseClaim } from "../../api/expenseClaimApi";
+import { createExpenseClaim, CreateExpenseClaimPayload, getExpenseCategories } from "../../api/expenseClaimApi";
 import { showApiError } from "../../utils/alert";
 import DatePickerInput from "../calendar/DatePickerInput";
 const getCurrencyFromStorage = (): string => {
@@ -20,16 +20,12 @@ const getCurrencyFromStorage = (): string => {
   }
 };
 
-
 export interface ExpenseFormData {
   claim_title: string;
-  id?: string; 
   category: string;
   date_incurred: string;
   amount: number | "";
   employee: string;
-  employee_name?: string; 
-  expense_approver?: string; 
   receipt: File | null;
   remarks: string;
 }
@@ -40,8 +36,6 @@ const defaultForm: ExpenseFormData = {
   date_incurred: new Date().toISOString().split("T")[0],
   amount: "",
   employee: "",
-  employee_name: "", 
-  expense_approver: "",
   receipt: null,
   remarks: "",
 };
@@ -61,9 +55,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 }) => {
   const modals = useModalStore((state) => state.modals);
   const modal = useMemo(() => modals.find((m) => m.id === modalId), [modals, modalId]);
-  const isEditMode = modal?.isEdit ?? false;
-const initialData = modal?.initialData as ExpenseFormData | undefined;
-
 
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,17 +63,15 @@ const initialData = modal?.initialData as ExpenseFormData | undefined;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [employeeDisplayName, setEmployeeDisplayName] = useState("");
-  
 
-useEffect(() => {
-  if (isOpen) {
-    const data = modal?.initialData as ExpenseFormData | undefined;
-    setForm(data ?? defaultForm);
-    setErrors({});
-    setSelectedEmployee(null);
-    setEmployeeDisplayName(data?.employee_name ?? data?.employee ?? "");
-  }
-}, [isOpen]);
+  useEffect(() => {
+    if (isOpen) {
+      setForm(defaultForm);
+      setErrors({});
+      setSelectedEmployee(null);
+          setEmployeeDisplayName("");            
+    }
+  }, [isOpen]);
 
   const reset = () => {
     setForm(defaultForm);
@@ -156,55 +145,52 @@ useEffect(() => {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = async () => {
-  if (!validate()) return;
-  setLoading(true);
-  try {
-    const payload: CreateExpenseClaimPayload = {
-      employee: form.employee,
-      expense_approver: form.expense_approver?? "", 
-      posting_date: new Date().toISOString().split("T")[0],
-      currency: getCurrencyFromStorage(),
-      exchange_rate: 1,
-      expenses: [
-        {
-          expense_date: form.date_incurred,
-          expense_type: form.category,
-          description: form.claim_title,
-          amount: Number(form.amount),
-          sanctioned_amount: Number(form.amount),
-          
-        },
-      ],
-      remark: form.remarks,
-    };
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      const payload: CreateExpenseClaimPayload = {
+        employee: form.employee,
+        expense_approver: selectedEmployee?.message?.data?.expense_approver ?? "",
+        posting_date: new Date().toISOString().split("T")[0],
+        currency: getCurrencyFromStorage(),
+        exchange_rate: 1,
+        expenses: [
+          {
+            expense_date: form.date_incurred,
+            expense_type: form.category,
+            description: form.claim_title,
+            amount: Number(form.amount),
+            sanctioned_amount: Number(form.amount),
+          },
+        ],
+        remark: form.remarks,
+      };
 
-    if (isEditMode) {
-  await updateExpenseClaim(form.id!, payload);
-} else {
-  await createExpenseClaim(payload);
-}
-    if (modal?.context?.callback) {
-      await modal.context.callback(payload);
+      await createExpenseClaim(payload);
+
+      if (modal?.context?.callback) {
+        await modal.context.callback(payload);
+      }
+      onSubmit?.({ ...form });
+
+      reset();
+      onClose();
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setLoading(false);
     }
-    onSubmit?.({ ...form });
-    reset();
-    onClose();
-  } catch (err) {
-    showApiError(err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const footer = (
     <>
       <Button variant="secondary" onClick={onClose}>
         Cancel
       </Button>
-     <Button variant="primary" onClick={handleSubmit} loading={loading}>
-  {isEditMode ? "Update" : "Submit"}
-</Button>
+      <Button variant="primary" onClick={handleSubmit} loading={loading}>
+        Submit
+      </Button>
     </>
   );
 
@@ -215,8 +201,8 @@ const handleSubmit = async () => {
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode ? "Edit Expense Claim" : "Expense Claim Form"}
-      subtitle={isEditMode ? "Update expense claim" : "Submit a new expense claim"}
+      title="Expense claim form"
+      subtitle="Submit a new expense claim"
       icon={Receipt}
       footer={footer}
       customWidth="46vw"
@@ -274,18 +260,14 @@ const handleSubmit = async () => {
                 label="Employee"
                 required
                 value={employeeDisplayName}
-onChange={async (val, option) => {
-  setForm((prev) => ({ ...prev, employee: val || "", expense_approver: "" }));
-  setEmployeeDisplayName(option?.label || "");
+                onChange={async (val, option) => {
+  setForm((prev) => ({ ...prev, employee: val || "" }));
+  setEmployeeDisplayName(option?.label || "");       
   if (errors.employee) setErrors((prev) => ({ ...prev, employee: "" }));
   if (val) {
     try {
       const employee = await getEmployeeById(val);
       setSelectedEmployee(employee);
-      setForm((prev) => ({
-        ...prev,
-        expense_approver: employee?.message?.data?.expense_approver ?? "",
-      }));
     } catch (err) {
       showApiError(err);
       setSelectedEmployee(null);

@@ -1,12 +1,13 @@
 import React from "react";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
-import { getRolaCountries, getRolaUOMs } from "../../api/itemZraApi";
-
 import {
-  ModalInput,
-  NumericInput,
-  YesNoCheckbox,
-} from "../ui/modal/modalComponent";
+ 
+  getRolaCountries,
+  getRolaUOMs,
+  
+} from "../../api/itemZraApi";
+
+import { ModalInput, YesNoCheckbox } from "../ui/modal/modalComponent";
 import type {
   ItemFieldSetter,
   ItemFormChangeHandler,
@@ -21,10 +22,12 @@ interface AdditionalDetailsSectionProps {
   errors?: Partial<Record<keyof ItemFormData, string>>;
 }
 
+
+
 const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
   React.memo(({ form, onFormChange, onToggleChange, setField, errors }) => {
-    const fetchCountries = getRolaCountries;
-    const fetchUoms = getRolaUOMs;
+ const fetchCountries = getRolaCountries;
+const fetchUoms = getRolaUOMs;
     return (
       <div className="flex flex-wrap items-end gap-x-4 gap-y-4">
         {/* Packing Unit: N x N */}
@@ -33,20 +36,22 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
             Packing Unit
           </span>
           <div className="flex items-center gap-1 h-[28px]">
-            <NumericInput
+            <input
+              type="number"
               name="packingUnit"
-              value={form.packingUnit}
-              placeholder="0"
-              onChange={(value) => setField("packingUnit", value)}
-              className="h-[28px] w-14"
+              value={form.packingUnit ?? ""}
+              onChange={onFormChange}
+              min={1}
+              className="h-[28px] w-14 rounded border border-[var(--border)] bg-card px-2 text-[11px] text-main focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary no-spinner hover:border-primary/40 transition-all"
             />
             <span className="shrink-0 text-sm font-bold text-muted">x</span>
-            <NumericInput
+            <input
+              type="number"
               name="packingSize"
-              value={form.packingSize}
-              placeholder="0"
-              onChange={(value) => setField("packingSize", value)}
-              className="h-[28px] w-14"
+              value={form.packingSize ?? ""}
+              onChange={onFormChange}
+              min={1}
+              className="h-[28px] w-14 rounded border border-[var(--border)] bg-card px-2 text-[11px] text-main focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary no-spinner hover:border-primary/40 transition-all"
             />
           </div>
         </div>
@@ -88,6 +93,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
             onChange={onFormChange}
           />
         </div>
+
 
         <div className="w-[160px] min-w-0">
           <SearchSelect2
@@ -142,19 +148,25 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
           name="trackInventory"
           label="Track Inventory"
           value={form.trackInventory ? "Y" : "N"}
-          onChange={(name, value) => setField("trackInventory", value === "Y")}
+          onChange={(name, value) =>
+            setField("trackInventory", value === "Y")
+          }
         />
         <YesNoCheckbox
           name="allowSales"
           label="Allow Sales"
           value={form.allowSales ? "Y" : "N"}
-          onChange={(name, value) => setField("allowSales", value === "Y")}
+          onChange={(name, value) =>
+            setField("allowSales", value === "Y")
+          }
         />
         <YesNoCheckbox
           name="allowPurchase"
           label="Allow Purchase"
           value={form.allowPurchase ? "Y" : "N"}
-          onChange={(name, value) => setField("allowPurchase", value === "Y")}
+          onChange={(name, value) =>
+            setField("allowPurchase", value === "Y")
+          }
         />
       </div>
     );

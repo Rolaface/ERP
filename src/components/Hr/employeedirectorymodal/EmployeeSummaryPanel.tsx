@@ -122,66 +122,38 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
       {/* Avatar + Name */}
       <div className="flex flex-col items-center px-3 pt-2 pb-3 border-b border-theme">
         <div
-  className="relative group cursor-pointer mb-2"
-  onClick={() => fileInputRef.current?.click()}
->
-  <div
-    className="
-      relative
-      w-20 h-20 rounded-2xl overflow-hidden
-      border border-dashed border-primary/30
-      bg-primary/5
-      flex items-center justify-center
-      transition-all duration-200
-      group-hover:border-primary
-      group-hover:bg-primary/10
-    "
-  >
-    {displayUrl ? (
-      <>
-        <img
-          src={displayUrl}
-          alt="Employee"
-          className="w-full h-full object-cover"
-        />
-
-        <div
-          className="
-            absolute inset-0
-            bg-black/45
-            opacity-0 group-hover:opacity-100
-            transition-opacity
-            flex flex-col items-center justify-center
-          "
+          className="relative group cursor-pointer mb-2"
+          onClick={() => fileInputRef.current?.click()}
+          title="Click to upload photo"
         >
-          <FaCamera className="w-4 h-4 text-white mb-1" />
-          <span className="text-[10px] text-white font-medium">
-            Change Photo
-          </span>
-        </div>
-      </>
-    ) : (
-      <div className="flex flex-col items-center justify-center">
-        <div
-          className="
-            w-10 h-10 rounded-full
-            bg-primary/10
-            flex items-center justify-center
-            mb-1.5
-          "
-        >
-          <FaCamera className="w-4 h-4 text-primary" />
+          <div className="w-14 h-14 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center ring-2 ring-offset-1 ring-transparent group-hover:ring-primary/30 transition-all overflow-hidden">
+            {displayUrl ? (
+              <img
+                src={displayUrl}
+                alt="Employee"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // If the existing URL fails to load (e.g. CORS / wrong base),
+                  // hide the broken image and fall back to placeholder
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+            ) : (
+              <FaUser className="w-6 h-6 text-primary/60" />
+            )}
+          </div>
+          {/* Hover overlay */}
+          <div className="absolute inset-0 hidden group-hover:flex items-center justify-center bg-black/40 rounded-full">
+            <FaCamera className="w-3.5 h-3.5 text-white" />
+          </div>
+          {/* "Change" badge when photo already exists */}
+          {displayUrl && (
+            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center border-2 border-card">
+              <FaCamera className="w-2 h-2 text-white" />
+            </div>
+          )}
         </div>
 
-        <span className="text-[10px] font-medium text-primary">
-          Upload Photo
-        </span>
-
-        
-      </div>
-    )}
-  </div>
-</div>
         <input
           id="employee-photo-input"
           type="file"

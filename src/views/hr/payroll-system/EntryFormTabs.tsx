@@ -50,20 +50,81 @@ const toDateStr = (d: Date): string => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+/** Returns today as "YYYY-MM-DD" in local time — used as the fallback reference
+ *  when no posting date has been set yet (e.g. frequency selected first). */
+const todayStr = (): string => toDateStr(new Date());
 
 
-const getMonthDateRange = (
-  month: number,
-  year: number,
-) => {
-  const start = new Date(year, month, 1);
+const getPayrollDateRange = (
+  referenceDate: string,
+  frequency: string
+): { startDate: string; endDate: string } | null => {
+  if (!referenceDate || !frequency) return null;
 
-  const end = new Date(year, month + 1, 0);
+  const ref = new Date(referenceDate + "T00:00:00");
+  if (isNaN(ref.getTime())) return null;
 
-  return {
-    startDate: toDateStr(start),
-    endDate: toDateStr(end),
-  };
+  switch (frequency) {
+    case "Daily": {
+   
+      const s = toDateStr(ref);
+      return { startDate: s, endDate: s };
+    }
+
+    case "Weekly": {
+      
+      const day = ref.getDay(); 
+      const diffToMon = day === 0 ? -6 : 1 - day;
+      const monday = new Date(ref);
+      monday.setDate(ref.getDate() + diffToMon);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return { startDate: toDateStr(monday), endDate: toDateStr(sunday) };
+    }
+
+    case "Fortnightly": {
+      // 14-day period starting from the reference date
+      const end = new Date(ref);
+      end.setDate(ref.getDate() + 13);
+      return { startDate: toDateStr(ref), endDate: toDateStr(end) };
+    }
+
+    case "Bimonthly": {
+   
+      const year = ref.getFullYear();
+      const month = ref.getMonth();
+      const dayOfMonth = ref.getDate();
+
+      if (dayOfMonth <= 15) {
+        const start = new Date(year, month, 1);
+        const end = new Date(year, month, 15);
+        return { startDate: toDateStr(start), endDate: toDateStr(end) };
+      } else {
+        const start = new Date(year, month, 16);
+        const end = new Date(year, month + 1, 0); // last day of month
+        return { startDate: toDateStr(start), endDate: toDateStr(end) };
+      }
+    }
+
+    case "Monthly": {
+     
+      const year = ref.getFullYear();
+      const month = ref.getMonth();
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month + 1, 0); // last day of month
+      return { startDate: toDateStr(start), endDate: toDateStr(end) };
+    }
+
+    
+    case "Biweekly": {
+      const end = new Date(ref);
+      end.setDate(ref.getDate() + 13);
+      return { startDate: toDateStr(ref), endDate: toDateStr(end) };
+    }
+
+    default:
+      return null;
+  }
 };
 
 // ── Modal wrapper (unchanged) ─────────────────────────────────────────────────
@@ -135,65 +196,61 @@ useEffect(() => {
     }
   }
 }, []);
-useEffect(() => {
-  if (!data.payrollMonth) {
-    const currentDate = new Date();
 
-    const currentMonth =
-      currentDate.toLocaleString(
-        "default",
-        { month: "long" }
-      );
-
-    const year =
-      currentDate.getFullYear();
-
-    onChange(
-      "payrollMonth",
-      currentMonth,
-    );
-
-    const range =
-      getMonthDateRange(
-        currentDate.getMonth(),
-        year,
-      );
-
-    onChange(
-      "startDate",
-      range.startDate,
-    );
-
-    onChange(
-      "endDate",
-      range.endDate,
-    );
-  }
-}, []);
-
+  useEffect(() => {
+    if (data.payrollFrequency && !data.startDate && !data.endDate) {
+      const reference = data.postingDate || todayStr();
+      const range = getPayrollDateRange(reference, data.payrollFrequency);
+      if (range) applyDateRange(range);
+    }
+ 
+  }, []);
 
 
   const handlePostingDateChange = useCallback(
     async (_name: string, value: string) => {
       onChange("postingDate", value);
 
-      
+      if (data.payrollFrequency && value) {
+        const range = getPayrollDateRange(value, data.payrollFrequency);
+        if (range) applyDateRange(range);
+      }
 
       await refreshExchangeRate(data.currency, value);
     },
-    [data.currency, onChange, refreshExchangeRate]
+    [data.payrollFrequency, data.currency, onChange, applyDateRange, refreshExchangeRate]
   );
 
 
+  const handleFrequencyChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const frequency = e.target.value;
+      onChange("payrollFrequency", frequency);
+
+      if (frequency) {
+     
+        const reference = data.postingDate || data.startDate || todayStr();
+        const range = getPayrollDateRange(reference, frequency);
+        if (range) applyDateRange(range);
+      }
+    },
+    [data.postingDate, data.startDate, onChange, applyDateRange]
+  );
 
 
   const handleStartDateChange = useCallback(
     (_name: string, value: string) => {
       onChange("startDate", value);
 
-     
+      if (data.payrollFrequency && value) {
+        const range = getPayrollDateRange(value, data.payrollFrequency);
+        if (range) {
+          // Only push the end date; keep the user-chosen start date intact
+          onChange("endDate", range.endDate);
+        }
+      }
     },
-    [onChange]
+    [data.payrollFrequency, onChange]
   );
 
 
@@ -242,41 +299,18 @@ useEffect(() => {
         </div>
 
         <div>
-         <ModalSelect
-  label="Payroll Month"
-  value={data.payrollMonth || ""}
-onChange={(e) => {
-  const month = e.target.selectedIndex - 1;
-
-  const year = new Date().getFullYear();
-
-  onChange("payrollMonth", e.target.value);
-
-  const range = getMonthDateRange(
-    month,
-    year,
-  );
-
-  onChange("startDate", range.startDate);
-  onChange("endDate", range.endDate);
-}}
-  options={[
-    { label: "January", value: "January" },
-    { label: "February", value: "February" },
-    { label: "March", value: "March" },
-    { label: "April", value: "April" },
-    { label: "May", value: "May" },
-    { label: "June", value: "June" },
-    { label: "July", value: "July" },
-    { label: "August", value: "August" },
-    { label: "September", value: "September" },
-    { label: "October", value: "October" },
-    { label: "November", value: "November" },
-    { label: "December", value: "December" },
-  ]}
-/>
-
-
+          <ModalSelect
+            label="Payroll Frequency"
+            value={data.payrollFrequency}
+            onChange={handleFrequencyChange}
+          >
+            <option value="">Select frequency</option>
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Fortnightly">Fortnightly</option>
+            <option value="Bimonthly">Bimonthly</option>
+            <option value="Monthly">Monthly</option>
+          </ModalSelect>
         </div>
       </div>
 

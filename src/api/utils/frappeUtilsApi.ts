@@ -194,37 +194,6 @@ export async function getPayrollEmployees(filters: {
     );
   }
 }
-export async function createBranch(
-  branchName: string,
-): Promise<any> {
-  try {
-    const resp: AxiosResponse = await api.post(
-      FrappeUtilsAPI.createbranch,
-      {
-        branch: branchName,
-      },
-    );
-
-    return resp.data?.data;
-  } catch (error: any) {
-    throw new Error(
-      error?.response?.data?.message ||
-      error?.message ||
-      "Failed to create branch",
-    );
-  }
-}
-export async function checkBranchExists(
-  branchName: string,
-): Promise<boolean> {
-  const branches = await getallbranches(branchName);
-
-  return branches.some(
-    (b: any) =>
-      b.label?.toLowerCase() ===
-      branchName.toLowerCase(),
-  );
-}
 export async function getallbranches(
   search?: string
 ): Promise<any[]> {

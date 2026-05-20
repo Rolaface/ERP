@@ -18,8 +18,8 @@ export type SalaryStructure = {
   status: "Active" | "Draft";
   components: SalaryComponent[];
   usedBy: number;
-
-  defaultGrossSalary?: number;
+  level: string;
+  defaultGrossSalary?: number; // ✅ DEFAULT GROSS SALARY
 };
 
 // In-memory storage
@@ -30,7 +30,7 @@ let salaryStructures: SalaryStructure[] = [
     description: "For senior management and executives",
     effectiveFrom: "2025-01-01",
     status: "Active",
-  
+    level: "Senior",
     usedBy: 12,
     defaultGrossSalary: 240000, 
     components: [

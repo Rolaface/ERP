@@ -1,11 +1,8 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 
-// 1. Updated interface to match your new backend response
 interface Item {
-  month: string;
-  itemCode: string | null;
-  itemName: string; 
+  itemName: string; // This should now represent the Month (e.g., "Jan", "Feb")
   buyQty: number;
   buyValue: number;
   sellQty: number;
@@ -27,10 +24,10 @@ const BarChart: React.FC<BarChartProps> = ({ title, loading, data = [], mode, fi
 
   const option = useMemo(() => {
     const safeData = Array.isArray(data) ? data : [];    
+    // Removed .reverse() so months flow naturally left to right
     const chartData = [...safeData];
 
-    // 2. FIXED: Map the X-axis to the 'month' property, NOT 'itemName'
-    const monthNames = chartData.map(d => d.month);
+    const monthNames = chartData.map(d => d.itemName);
     const buyData = chartData.map(d => mode === 'value' ? d.buyValue : d.buyQty);
     const sellData = chartData.map(d => mode === 'value' ? d.sellValue : d.sellQty);
 
@@ -44,15 +41,9 @@ const BarChart: React.FC<BarChartProps> = ({ title, loading, data = [], mode, fi
           const dataIndex = params[0].dataIndex;
           const row = chartData[dataIndex];
           
-          // 3. FIXED: Show the Month AND the Top Item in the tooltip
-          const itemDisplay = row.itemName && row.itemName !== "No Sales" 
-            ? `<span style="color:#10b981; font-size:11px;">Top Item: ${row.itemName}</span>` 
-            : `<span style="color:#9ca3af; font-size:11px;">No Sales</span>`;
-
           return `
-            <div style="font-weight:bold; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:4px; display:flex; justify-content:space-between; gap:12px;">
-              <span>${row.month}</span>
-              ${itemDisplay}
+            <div style="font-weight:bold; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:4px;">
+              ${row.itemName}
             </div>
             <div style="font-size: 12px; line-height: 1.5;">
               <span style="color:${params[0].color}">●</span> <b>Buy:</b> 
@@ -70,14 +61,15 @@ const BarChart: React.FC<BarChartProps> = ({ title, loading, data = [], mode, fi
       grid: { 
         left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true 
       },
+      // X-Axis is now Category (Months)
       xAxis: { 
         type: 'category', 
-        data: monthNames, // Now uses ["Jan", "Feb", "Mar"...]
+        data: monthNames,
         axisLabel: { 
           show: true,
-          interval: 0, 
-          rotate: 0, 
-          color: '#6b7280' 
+          interval: 0, // Forces ECharts to show ALL labels
+          rotate: 0, // Change to 45 if month names are long and overlapping
+          color: '#6b7280' // Gray-500 text color for better visibility
         },
         axisLine: {
           show: true,
@@ -85,6 +77,7 @@ const BarChart: React.FC<BarChartProps> = ({ title, loading, data = [], mode, fi
         },
         axisTick: { show: true, alignWithLabel: true }
       },
+      // Y-Axis is now Value
       yAxis: { 
         type: 'value',
         axisLabel: { formatter: valFormatter },

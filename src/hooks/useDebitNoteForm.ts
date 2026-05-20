@@ -17,8 +17,8 @@ export interface PurchaseInvoiceOption {
 export interface DebitNoteItem {
   item_code: string;
   item_name: string;
-qty: number | null;
-rate: number | null;
+  qty: number;
+  rate: number;
   batch_no: string;
   warehouse: string;
 }
@@ -147,22 +147,10 @@ export function useDebitNoteForm(
   // ── Item mutations ───────────────────────────────────────────────────────
 
   const handleItemChange = useCallback(
-    (
-  index: number,
-  field: keyof DebitNoteItem,
-  value: string | number | null,
-) => {
+    (index: number, field: keyof DebitNoteItem, value: string | number) => {
       setForm((prev) => {
         const items = [...prev.items];
-        items[index] = {
-  ...items[index],
-  [field]:
-    value === null
-      ? null
-      : field === "qty" || field === "rate"
-       ? Number(value)
-        : value,
-};
+        items[index] = { ...items[index], [field]: value };
         return { ...prev, items };
       });
       markDirty();

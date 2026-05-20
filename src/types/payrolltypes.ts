@@ -136,7 +136,6 @@ export interface PayrollRecord {
 
 export interface PayrollEntry {
   postingDate: string;
-  payrollMonth:string;
   payrollName: string;
   currency: string;
   company: string;
@@ -156,7 +155,6 @@ export interface PayrollEntry {
   letterHead: string;
   selectedEmployees: string[];
   branch?: string;
-  branchLabel?:string;
   department?: string;
   departmentLabel?: string;
   designation?: string;

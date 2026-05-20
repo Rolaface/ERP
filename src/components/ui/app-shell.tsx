@@ -36,7 +36,7 @@ export const AppPageBody: React.FC<{
   viewportLocked?: boolean;
 }> = ({ children, className = "", viewportLocked = false }) => (
   <div
-    className={`flex flex-1 flex-col px-3 py-2.5 sm:px-4 ${
+    className={`flex flex-1 flex-col p-4 ${
       viewportLocked ? "min-h-0 overflow-auto" : "overflow-visible"
     } ${className}`.trim()}
   >
@@ -57,12 +57,12 @@ export const AppPageHeader: React.FC<AppPageHeaderProps> = ({
   icon,
   actions,
 }) => (
-  <div className="flex flex-col gap-1.5 border-b border-[var(--border)] px-3 py-2 sm:px-4 lg:flex-row lg:items-center lg:justify-between">
+  <div className="flex flex-col gap-2 border-b border-[var(--border)] pb-2 lg:flex-row lg:items-center lg:justify-between">
     <div className="min-w-0">
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-3">
         {icon ? (
           <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-primary"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-primary"
             style={{
               background: "color-mix(in srgb, var(--primary) 12%, transparent)",
             }}
@@ -71,11 +71,9 @@ export const AppPageHeader: React.FC<AppPageHeaderProps> = ({
           </div>
         ) : null}
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold leading-6 text-main">
-            {title}
-          </h1>
+          <h1 className="truncate text-2xl font-semibold text-main">{title}</h1>
           {description ? (
-            <p className="text-xs leading-4 text-muted">{description}</p>
+            <p className="mt-1 text-sm text-muted">{description}</p>
           ) : null}
         </div>
       </div>
@@ -119,12 +117,12 @@ export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
     );
 
     return (
-      <div className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--border)] bg-card px-3 sm:px-4">
+      <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] bg-card px-4 min-h-[52px]">
         {/* ── left: icon + name + divider + tab pills ─────────────────── */}
-        <div className="flex min-w-0 items-center gap-2.5 overflow-x-auto py-1.5 scrollbar-hide">
+        <div className="flex items-center gap-3 min-w-0 overflow-x-auto scrollbar-hide py-2">
           {/* icon square */}
           <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-primary"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-primary"
             style={{
               background: "color-mix(in srgb, var(--primary) 12%, transparent)",
             }}
@@ -133,7 +131,7 @@ export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
           </div>
 
           {/* module name */}
-          <span className="shrink-0 whitespace-nowrap text-sm font-semibold text-main">
+          <span className="text-base font-semibold text-main whitespace-nowrap shrink-0">
             {moduleName}
           </span>
 
@@ -152,15 +150,15 @@ export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
                   type="button"
                   onClick={() => handleClick(tab.id)}
                   className={[
-                    "flex items-center gap-1.5 rounded-md px-2.5 py-1",
-                    "text-xs font-medium whitespace-nowrap transition-all",
+                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5",
+                    "text-sm font-medium whitespace-nowrap transition-all",
                     isActive
                       ? "bg-primary/10 text-primary"
                       : "text-muted hover:bg-row-hover hover:text-main",
                   ].join(" ")}
                 >
                   {tab.icon && (
-                    <span className="shrink-0 text-xs">{tab.icon}</span>
+                    <span className="shrink-0 text-[13px]">{tab.icon}</span>
                   )}
                   {tab.label}
                 </button>
@@ -196,8 +194,8 @@ export const AppTabs: React.FC<AppTabsProps> = memo(
     );
 
     return (
-      <div className="w-full overflow-x-auto scrollbar-hide border-b border-[var(--border)] bg-card px-3 py-1.5 sm:px-4">
-        <div className="flex min-w-max items-center justify-start gap-1.5">
+      <div className="w-full overflow-x-auto scrollbar-hide">
+        <div className="flex items-center justify-start gap-2 rounded-2xl border border-[var(--border)] bg-card p-2 min-w-max">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTab;
             return (
@@ -205,14 +203,14 @@ export const AppTabs: React.FC<AppTabsProps> = memo(
                 key={tab.id}
                 type="button"
                 onClick={() => handleClick(tab.id)}
-                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-all flex-shrink-0 ${
                   isActive
                     ? "bg-primary text-white"
                     : "text-muted hover:bg-row-hover hover:text-main"
                 }`}
               >
                 {tab.icon && (
-                  <span className="shrink-0 text-xs">{tab.icon}</span>
+                  <span className="text-sm shrink-0">{tab.icon}</span>
                 )}
                 <span className="truncate">{tab.label}</span>
               </button>
@@ -254,7 +252,7 @@ export const AppSubTabs: React.FC<AppSubTabsProps> = memo(
                   type="button"
                   onClick={() => handleClick(tab.id)}
                   className={[
-                    "group relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium",
+                    "group relative flex items-center gap-2 px-4 py-3 text-sm font-medium",
                     "whitespace-nowrap transition-colors focus-visible:outline-none",
                     isActive ? "text-primary" : "text-muted hover:text-main",
                   ].join(" ")}

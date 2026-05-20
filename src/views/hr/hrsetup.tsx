@@ -25,17 +25,17 @@ import SalarySlipSetup      from "./tabs/Salaryslipsetup";
 // ── Tab definitions with module + action guard (mirrors ALL_SALES_TAB shape) ─
 
 const ALL_SETUP_TABS = [
-  // {
-  //   id:     "general",
-  //   label:  "General",
-  //   icon:   <Settings2 size={15} />,
-  //   // Visible if user can write OR create HR Settings
-  //   // Handled specially below (canAny), so module is null to skip standard filter
-  //   module: null as null,
-  //   action: "write" as const,
-  //   // Custom guard evaluated separately
-  //   customGuard: true,
-  // },
+  {
+    id:     "general",
+    label:  "General",
+    icon:   <Settings2 size={15} />,
+    // Visible if user can write OR create HR Settings
+    // Handled specially below (canAny), so module is null to skip standard filter
+    module: null as null,
+    action: "write" as const,
+    // Custom guard evaluated separately
+    customGuard: true,
+  },
   {
     id:     "employee",
     label:  "Employee",
@@ -61,14 +61,14 @@ const ALL_SETUP_TABS = [
     customGuard: false,
   },
   // Salary Slip tab — NOT gated per requirement, keep existing behaviour
-  // {
-  //   id:     "slip",
-  //   label:  "Salary Slip",
-  //   icon:   <CalendarDays size={15} />,
-  //   module: null as null,
-  //   action: "write" as const,
-  //   customGuard: true,   // uses canAny below
-  // },
+  {
+    id:     "slip",
+    label:  "Salary Slip",
+    icon:   <CalendarDays size={15} />,
+    module: null as null,
+    action: "write" as const,
+    customGuard: true,   // uses canAny below
+  },
 ] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -80,19 +80,19 @@ export default function HRSetup() {
   const visibleTabs = useMemo(() => {
     return ALL_SETUP_TABS.filter((tab) => {
       // General: write OR create on HR Settings
-      // if (tab.id === "general") {
-      //   return (
-      //     can("HR Settings", "write") ||
-      //     can("HR Settings", "create")
-      //   );
-      // }
+      if (tab.id === "general") {
+        return (
+          can("HR Settings", "write") ||
+          can("HR Settings", "create")
+        );
+      }
       // Salary Slip: write OR create (existing behaviour, not changing)
-      // if (tab.id === "slip") {
-      //   return (
-      //     can("Salary Slip", "write") ||
-      //     can("Salary Slip", "create")
-      //   );
-      // }
+      if (tab.id === "slip") {
+        return (
+          can("Salary Slip", "write") ||
+          can("Salary Slip", "create")
+        );
+      }
       // Employee / Payroll / Leave: strictly "create" gates the setup tab
       if (tab.module) {
         return can(tab.module, tab.action);
@@ -113,11 +113,11 @@ export default function HRSetup() {
 
   const renderTab = () => {
     switch (activeTab) {
-      // case "general":  return <GeneralSettingsTab />;
+      case "general":  return <GeneralSettingsTab />;
       case "employee": return <EmployeeConfigTab />;
       case "payroll":  return <PayrollConfigTab />;
       case "leave":    return <LeaveConfigTab />;
-      // case "slip":     return <SalarySlipSetup />;
+      case "slip":     return <SalarySlipSetup />;
       default:         return null;
     }
   };

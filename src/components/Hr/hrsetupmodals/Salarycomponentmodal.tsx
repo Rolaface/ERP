@@ -28,237 +28,150 @@ const STYLES = `
 }
 .sc-fadein { animation: sc-fadein 0.15s ease forwards; }
 
-/* ── Scrollable body ── */
-.sc-body { overflow-y: auto; overflow-x: hidden; }
-.sc-body::-webkit-scrollbar { width: 4px; }
-.sc-body::-webkit-scrollbar-track { background: transparent; }
-.sc-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-
-/* ── Middle two-column grid: [7fr 3fr] ── */
-.sc-mid {
-  display: grid;
-  grid-template-columns: 7fr 3fr;
-  gap: 20px;
-  align-items: stretch;   /* right col stretches to left col's full height */
-}
-
-/* LEFT column stacks Amount + Ledger vertically */
-.sc-left { display: flex; flex-direction: column; gap: 20px; }
-
-/* ── Amount Configuration section — gray bg, matching HTML ── */
-.sc-amount-section {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  display: flex;
-  flex-direction: column;
-}
-.sc-amount-section h3 {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #111827;
-  margin: 0 0 14px 0;
-}
-
-/* ── Toggle row inside amount section ── */
-.sc-toggle-row {
+/* ── Compact checkbox ── */
+.sc-cb {
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.sc-toggle-pill {
-  display: flex;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 4px;
-  gap: 0;
-  flex-shrink: 0;
-}
-.sc-toggle-pill button {
-  padding: 7px 16px;
-  border-radius: 6px;
-  border: none;
-  font-size: 13px;
-  font-weight: 500;
+  gap: 5px;
   cursor: pointer;
-  background: transparent;
-  color: #6b7280;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-  line-height: 1.4;
-  white-space: nowrap;
+  user-select: none;
+  width: fit-content;
 }
-.sc-toggle-pill button.active {
-  background: #1e3a8a;
-  color: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-}
-.sc-toggle-input {
-  flex: 1; min-width: 120px;
-  font-size: 13px;
-  background: #fff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 8px 10px;
-  outline: none;
-  color: #111827;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  box-sizing: border-box;
-  height: 38px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
-}
-.sc-toggle-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
-}
-.sc-toggle-input::placeholder { color: #9ca3af; }
-
-/* ── Ledger section — white bg ── */
-.sc-ledger-section {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.sc-ledger-section .sc-sec-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f3f4f6;
-}
-.sc-ledger-section h3 {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #111827;
+.sc-cb input[type="checkbox"] {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  border: 1.5px solid var(--border, #d1d5db);
+  background: var(--bg-card, #fff);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.1s, background 0.1s;
   margin: 0;
 }
-.sc-ledger-row { display: flex; align-items: flex-end; gap: 8px; }
-.sc-ledger-row + .sc-ledger-row {
-  margin-top: 10px; padding-top: 10px;
-  border-top: 1px solid #f3f4f6;
+.sc-cb input[type="checkbox"]:checked {
+  background: var(--primary, #1e40af);
+  border-color: var(--primary, #1e40af);
+}
+.sc-cb input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 1.5px; top: -0.5px;
+  width: 4px; height: 7px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+.sc-cb-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-main, #111827);
+  line-height: 1;
 }
 
-/* ── RIGHT column — Attributes section (blue-tinted, h-full) ── */
-.sc-right { display: flex; flex-direction: column; }
-.sc-attrs-section {
-  background: #eff6ff;           /* blue-50 */
-  border: 1px solid #dbeafe;     /* blue-100 */
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  flex: 1;                       /* stretches to full left column height */
+/* ── Settings group ── */
+.sc-settings-group {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
-.sc-attrs-section h3 {
-  font-size: 11px;
+
+/* ── Divider label ── */
+.sc-divider-label {
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #1e3a8a;                /* blue-900 */
-  margin: 0 0 14px 0;
+  color: var(--text-sub, #9ca3af);
+  margin-bottom: 2px;
 }
 
-/* ── Attribute checkbox rows ── */
-.sc-attr-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-height: 28px;              /* slot always occupies space */
-  padding: 4px 0;
+/* ── Subtle section (no heavy border, just bg + tiny radius) ── */
+.sc-pane {
+  background: var(--bg-app, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 8px 10px;
 }
-/* spacer: invisible placeholder to lock height when slot is empty */
-.sc-attr-spacer { min-height: 28px; padding: 4px 0; }
-
-.sc-attr-row input[type="checkbox"] {
-  width: 16px; height: 16px;
-  flex-shrink: 0; margin-top: 1px;
-  border-radius: 3px;
-  border: 1.5px solid #d1d5db;
-  background: #fff;
-  appearance: none; -webkit-appearance: none;
-  cursor: pointer; position: relative;
-  transition: border-color 0.1s, background 0.1s;
+/* ── Formula block ── */
+.sc-formula-area {
+  background: var(--bg-muted, #f8fafc);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  padding: 7px 9px;
 }
-.sc-attr-row input[type="checkbox"]:checked {
-  background: #2563eb;
-  border-color: #2563eb;
-}
-.sc-attr-row input[type="checkbox"]:focus {
+.sc-mono {
+  width: 100%;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 11.5px;
+  background: transparent;
+  border: none;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
+  color: var(--text-main);
+  resize: none;
+  line-height: 1.5;
 }
-.sc-attr-row input[type="checkbox"]:checked::after {
-  content: '';
-  position: absolute; left: 3px; top: 0px;
-  width: 5px; height: 9px;
-  border: 2px solid #fff; border-top: none; border-left: none;
-  transform: rotate(45deg);
-}
-.sc-attr-row label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1f2937;
+.sc-mono::placeholder { color: var(--text-sub); opacity: 0.4; }
+.sc-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  height: 16px;
+  border-radius: 3px;
+  font-size: 9.5px;
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  background: var(--primary-subtle, #eff6ff);
+  color: var(--primary, #1e40af);
+  border: 1px solid var(--primary-border, #bfdbfe);
   cursor: pointer;
-  line-height: 1.4;
+  user-select: none;
+  transition: opacity 0.1s;
+}
+.sc-chip:hover { opacity: 0.65; }
+
+/* ── Pill (flexible benefit master only) ── */
+.sc-pill {
+  width: 26px; height: 15px;
+  border-radius: 999px;
+  background: var(--border, #d1d5db);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.sc-pill.on { background: var(--primary, #1e40af); }
+.sc-pill-dot {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  transition: transform 0.15s;
+}
+.sc-pill.on .sc-pill-dot { transform: translateX(11px); }
+
+/* ── Ledger row ── */
+.sc-ledger-row { display: flex; align-items: flex-end; gap: 6px; }
+.sc-ledger-row + .sc-ledger-row {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border-subtle, rgba(0,0,0,0.05));
 }
 
-/* ── Benefit config section ── */
-.sc-benefit-section {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+/* ── Scroll body ── */
+.sc-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
 }
-.sc-benefit-section h3 {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #111827;
-  margin: 0 0 14px 0;
-}
-.sc-benefit-check-row {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 5px 0;
-  border-bottom: 1px solid #f3f4f6;
-}
-.sc-benefit-check-row:last-child { border-bottom: none; }
-.sc-benefit-check-row input[type="checkbox"] {
-  width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px;
-  border-radius: 3px; border: 1.5px solid #d1d5db; background: #fff;
-  appearance: none; -webkit-appearance: none;
-  cursor: pointer; position: relative;
-  transition: border-color 0.1s, background 0.1s;
-}
-.sc-benefit-check-row input[type="checkbox"]:checked {
-  background: #2563eb; border-color: #2563eb;
-}
-.sc-benefit-check-row input[type="checkbox"]:checked::after {
-  content: ''; position: absolute; left: 3px; top: 0px;
-  width: 5px; height: 9px;
-  border: 2px solid #fff; border-top: none; border-left: none;
-  transform: rotate(45deg);
-}
-.sc-benefit-check-row label {
-  font-size: 13px; font-weight: 500; color: #1f2937;
-  cursor: pointer; line-height: 1.4;
-}
+.sc-body::-webkit-scrollbar { width: 3px; }
+.sc-body::-webkit-scrollbar-track { background: transparent; }
+.sc-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 `;
 
 const PAYOUT_METHODS = [
@@ -275,6 +188,7 @@ const PAYOUT_METHODS = [
     value: "Allow claim for full benefit amount",
   },
 ];
+const FORMULA_VARS = ["base", "BS", "HRA", "DA", "LTA", "PF"];
 
 interface Props {
   modalId: string;
@@ -305,42 +219,42 @@ const EMPTY: Omit<SalaryComponent, "name"> = {
   is_income_tax_component: 0,
 };
 
-/* ── Attribute checkbox (right blue panel) ── */
-const Attr: React.FC<{
-  id: string;
+// ─── Checkbox ─────────────────────────────────────────────────────────────────
+const Cb: React.FC<{
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
-}> = ({ id, label, checked, onChange }) => (
-  <div className="sc-attr-row">
+}> = ({ label, checked, onChange }) => (
+  <label className="sc-cb">
     <input
       type="checkbox"
-      id={id}
       checked={checked}
       onChange={(e) => onChange(e.target.checked)}
     />
-    <label htmlFor={id}>{label}</label>
+    <span className="sc-cb-label">{label}</span>
+  </label>
+);
+
+// ─── Pill Toggle ──────────────────────────────────────────────────────────────
+const Pill: React.FC<{ checked: boolean; onChange: (v: boolean) => void }> = ({
+  checked,
+  onChange,
+}) => (
+  <div
+    className={`sc-pill${checked ? " on" : ""}`}
+    onClick={() => onChange(!checked)}
+    role="switch"
+    aria-checked={checked}
+    tabIndex={0}
+    onKeyDown={(e) =>
+      (e.key === " " || e.key === "Enter") && onChange(!checked)
+    }
+  >
+    <div className="sc-pill-dot" />
   </div>
 );
 
-/* ── Benefit checkbox (white benefit panel) ── */
-const BenefitCb: React.FC<{
-  id: string;
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}> = ({ id, label, checked, onChange }) => (
-  <div className="sc-benefit-check-row">
-    <input
-      type="checkbox"
-      id={id}
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-    />
-    <label htmlFor={id}>{label}</label>
-  </div>
-);
-
+// ─── Main Modal ───────────────────────────────────────────────────────────────
 export const SalaryComponentModal: React.FC<Props> = ({
   modalId,
   isOpen,
@@ -354,9 +268,8 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const [loadingData, setLoadingData] = useState(false);
   const { fetchAccounts } = useAccountSearch();
 
-  /* inject styles once */
   useEffect(() => {
-    const id = "sc-styles-v9";
+    const id = "sc-styles-v3";
     if (!document.getElementById(id)) {
       const s = document.createElement("style");
       s.id = id;
@@ -365,7 +278,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
     }
   }, []);
 
-  /* reset / load on open */
   useEffect(() => {
     if (!isOpen) return;
     if (isEdit && initialData?.name) loadSalaryComponent(initialData.name);
@@ -387,8 +299,8 @@ export const SalaryComponentModal: React.FC<Props> = ({
         amount: data.amount ?? 0,
         description: data.description ?? "",
         accounts:
-          (data.accounts ?? []).length > 0
-            ? [...(data.accounts ?? [])]
+          data.accounts && data.accounts.length > 0
+            ? [...data.accounts]
             : [{ account: "" }],
         is_flexible_benefit: data.is_flexible_benefit ?? 0,
         pay_against_benefit_claim: data.pay_against_benefit_claim ?? 0,
@@ -420,9 +332,10 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const handleTypeChange = (newType: SalaryComponentType) =>
     setForm((prev) => ({
       ...prev,
-      type: newType,
       depends_on_payment_days: 1,
       is_tax_applicable: newType === "Earning" ? 1 : 0,
+      type: newType,
+
       is_flexible_benefit: 0,
       pay_against_benefit_claim: 0,
       max_benefit_amount: 0,
@@ -450,24 +363,34 @@ export const SalaryComponentModal: React.FC<Props> = ({
       accounts: (prev.accounts ?? []).filter((_, i) => i !== idx),
     }));
 
+  const insertVar = (v: string) => {
+    const cur = form.formula ?? "";
+    set("formula", cur ? `${cur} ${v}` : v);
+  };
+
   const handleSave = async () => {
-    if (!form.salary_component.trim())
-      return showValidationError("Component name is required");
-    if (!form.salary_component_abbr.trim())
-      return showValidationError("Abbreviation is required");
-    if (form.amount_based_on_formula && !form.formula?.trim())
-      return showValidationError(
-        "Formula is required when amount is formula-based",
-      );
-    if (form.is_flexible_benefit && !form.payout_method)
-      return showValidationError(
-        "Payout method is required for flexible benefits",
-      );
-    if (!(form.accounts ?? []).some((a) => a.account?.trim()))
-      return showValidationError(
+    if (!form.salary_component.trim()) {
+      showValidationError("Component name is required");
+      return;
+    }
+    if (!form.salary_component_abbr.trim()) {
+      showValidationError("Abbreviation is required");
+      return;
+    }
+    if (form.amount_based_on_formula && !form.formula?.trim()) {
+      showValidationError("Formula is required when amount is formula-based");
+      return;
+    }
+    if (form.is_flexible_benefit && !form.payout_method) {
+      showValidationError("Payout method is required for flexible benefits");
+      return;
+    }
+    if (!(form.accounts ?? []).some((a) => a.account?.trim())) {
+      showValidationError(
         "Ledger Account is required for Journal Entry creation.",
       );
-
+      return;
+    }
     try {
       setSaving(true);
       const payload: Omit<SalaryComponent, "name"> = {
@@ -493,7 +416,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
           }),
         }),
         ...(isDeduction && {
-          is_tax_applicable: 0,
+            is_tax_applicable: 0,            
           variable_based_on_taxable_salary:
             form.variable_based_on_taxable_salary,
           is_income_tax_component: form.is_income_tax_component,
@@ -552,23 +475,16 @@ export const SalaryComponentModal: React.FC<Props> = ({
       title={isEdit ? "Edit Salary Component" : "New Salary Component"}
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
-      customWidth="55vw"
-      height="70vh"
+      customWidth="50vw"
+      height="75vh"
       footer={footer}
     >
       <div
-        className="sc-body space-y-5 pb-2 px-1"
-        style={{ maxHeight: "calc(80vh - 160px)" }}
+        className="sc-body space-y-3 pb-2"
+        style={{ maxHeight: "calc(75vh - 160px)" }}
       >
-        {/* ══ ROW 1: Type | Component Name | Abbreviation ══ */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.2fr 5.8fr 3fr",
-            gap: 16,
-            alignItems: "end",
-          }}
-        >
+        {/* ── Row 1: Type + Name + Abbreviation ── */}
+        <div className="grid grid-cols-[1fr_2fr_1fr] gap-3 items-end">
           <ModalSelect
             label="Type"
             value={form.type}
@@ -583,153 +499,196 @@ export const SalaryComponentModal: React.FC<Props> = ({
           <ModalInput
             label="Component Name"
             value={form.salary_component}
-            required
-            placeholder="e.g. Basic Salary"
             onChange={(e) => set("salary_component", e.target.value)}
-          />
-          <ModalInput
-            label="Abbreviation"
-            placeholder="eg..BS"
-            maxLength={5}
-            value={form.salary_component_abbr}
             required
-            onChange={(e) =>
-              set("salary_component_abbr", e.target.value.toUpperCase())
-            }
           />
+          <div>
+            <ModalInput
+              label="Abbreviation"
+              className="uppercase"
+              placeholder="e.g. BS"
+              maxLength={5}
+              value={form.salary_component_abbr}
+              onChange={(e) =>
+                set("salary_component_abbr", e.target.value.toUpperCase())
+              }
+              required
+            />
+          </div>
         </div>
 
-        {/* ══ MIDDLE: Left col [7fr] + Right col [3fr] ══ */}
-        <div className="sc-mid">
-          {/* ── LEFT column: Amount Config + Ledger stacked ── */}
-          <div className="sc-left">
-            {/* Amount Configuration — gray section */}
-            <div className="sc-amount-section">
-              <h3>Amount Configuration</h3>
-              <div className="sc-toggle-row">
-                {/* Fixed Amount / Formula pill toggle */}
-                <div className="sc-toggle-pill">
-                  <button
-                    type="button"
-                    className={!isFormulaBased ? "active" : ""}
-                    onClick={() => set("amount_based_on_formula", 0)}
-                  >
-                    Fixed Amount
-                  </button>
-                  <button
-                    type="button"
-                    className={isFormulaBased ? "active" : ""}
-                    onClick={() => set("amount_based_on_formula", 1)}
-                  >
-                    Formula
-                  </button>
-                </div>
-                {/* Input expands to fill row */}
-                {!isFormulaBased ? (
-                  <input
-                    type="number"
-                    className="sc-toggle-input no-spinner"
-                    placeholder="0"
-                    value={form.amount ?? 0}
-                    onChange={(e) =>
-                      set("amount", parseFloat(e.target.value) || 0)
-                    }
-                  />
-                ) : (
-                  <input
-                    type="text"
-                    className="sc-toggle-input"
-                    placeholder="e.g. base * 0.4 + DA"
-                    value={form.formula ?? ""}
+        {/* ── Row 2: Amount Config + Settings ── */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0,1fr) auto",
+            gap: "12px",
+            alignItems: "start",
+            overflow: "hidden",
+          }}
+        >
+          {/* LEFT — Amount Configuration */}
+          <div
+            className="sc-pane space-y-2.5"
+            style={{
+              alignSelf: "start",
+            }}
+          >
+            <p className="sc-divider-label">Amount Configuration</p>
+
+            <Cb
+              label="Amount based on formula"
+              checked={isFormulaBased}
+              onChange={tog("amount_based_on_formula")}
+            />
+
+            {isFormulaBased ? (
+              <div className="sc-fadein">
+                <div className="sc-formula-area">
+                  <textarea
+                    className="sc-mono"
+                    rows={2}
+                    value={form.formula}
                     onChange={(e) => set("formula", e.target.value)}
+                    placeholder="e.g. base * 0.4 + DA"
                     spellCheck={false}
                   />
-                )}
-              </div>
-            </div>
-
-            {/* Ledger Accounts — white section */}
-            <div className="sc-ledger-section">
-              <div className="sc-sec-header">
-                <h3>Ledger Account</h3>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                {(form.accounts ?? []).map((acc, idx) => (
-                  <div key={idx} className="sc-ledger-row">
-                    <div style={{ flex: 1 }}>
-                      <SearchSelect2
-                        label="Ledger Account"
-                        value={acc.account}
-                        required
-                        placeholder="Search ledger account..."
-                        fetchOptions={fetchAccounts}
-                        onChange={(value) => updateAccount(idx, value)}
-                      />
-                    </div>
+                  <div
+                    className="flex flex-wrap items-center gap-1 mt-1.5 pt-1.5"
+                    style={{
+                      borderTop:
+                        "1px solid var(--border-subtle, rgba(0,0,0,0.06))",
+                    }}
+                  >
+                    {/* <span className="text-[9.5px] text-sub">Insert:</span>
+                    {FORMULA_VARS.map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        className="sc-chip"
+                        onClick={() => insertVar(v)}
+                      >
+                        {v}
+                      </button>
+                    ))} */}
+                    {form.salary_component_abbr?.trim() &&
+                      !FORMULA_VARS.includes(form.salary_component_abbr) && (
+                        <button
+                          type="button"
+                          className="sc-chip"
+                          onClick={() => insertVar(form.salary_component_abbr)}
+                        >
+                          {form.salary_component_abbr}
+                        </button>
+                      )}
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="sc-fadein">
+                <ModalInput
+                  label="Fixed Amount"
+                  type="number"
+                  className="no-spinner"
+                  placeholder="0"
+                  value={form.amount ?? 0}
+                  onChange={(e) => set("amount", parseFloat(e.target.value))}
+                />
+              </div>
+            )}
           </div>
-          {/* /sc-left */}
 
-          {/* ── RIGHT column: Attributes (blue-tinted, full height) ── */}
-          <div className="sc-right">
-            <div className="sc-attrs-section">
-              <h3>Attributes</h3>
-
-              {/* Slot 1 — always: Depends on Payment Days */}
-              <Attr
-                id="attr-pay-days"
+          {/* RIGHT — Component Settings (compact, no heavy card) */}
+          {/* RIGHT — Component Settings (no card) */}
+          <div
+            style={{
+              height: "fit-content",
+              alignSelf: "start",
+              paddingTop: "2px",
+            }}
+          >
+            <div
+              className="sc-settings-group"
+              style={{
+                gap: "2px",
+              }}
+            >
+              <Cb
                 label="Depends on Payment Days"
                 checked={Boolean(form.depends_on_payment_days)}
                 onChange={tog("depends_on_payment_days")}
               />
 
-              {/* Slot 2 — swaps label by type, same slot */}
-              {isEarning ? (
-                <Attr
-                  id="attr-tax"
-                  label="Tax Applicable"
-                  checked={Boolean(form.is_tax_applicable)}
-                  onChange={tog("is_tax_applicable")}
-                />
-              ) : (
-                <Attr
-                  id="attr-variable"
-                  label="Variable Based on Taxable Salary"
-                  checked={Boolean(form.variable_based_on_taxable_salary)}
-                  onChange={tog("variable_based_on_taxable_salary")}
-                />
+              {isEarning && (
+                <div
+                  className="sc-fadein sc-settings-group"
+                  style={{
+                    gap: "2px",
+                    marginTop: "2px",
+                  }}
+                >
+                  <Cb
+                    label="Tax Applicable"
+                    checked={Boolean(form.is_tax_applicable)}
+                    onChange={tog("is_tax_applicable")}
+                  />
+                  {/* Flexible benefit as inline checkbox + sub-options on enable */}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Cb
+                        label="Flexible Benefit"
+                        checked={isFlexible}
+                        onChange={(val) => {
+                          if (!val) {
+                            setForm((prev) => ({
+                              ...prev,
+                              is_flexible_benefit: 0,
+                              pay_against_benefit_claim: 0,
+                              max_benefit_amount: 0,
+                              only_tax_impact: 0,
+                              create_separate_payment_entry_against_benefit_claim: 0,
+                              payout_method: "",
+                            }));
+                          } else {
+                            set("is_flexible_benefit", 1);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* Slot 3 — Earning: Flexible Benefit | Deduction: Income Tax Component
-                  Always occupies same vertical space → zero layout shift            */}
-            {isDeduction ? (
-  <Attr
-    id="attr-income-tax"
-    label="Income Tax Component"
-    checked={Boolean(form.is_income_tax_component)}
-    onChange={tog("is_income_tax_component")}
-  />
-) : null}
+              {isDeduction && (
+                <div
+                  className="sc-fadein sc-settings-group"
+                  style={{
+                    gap: "2px",
+                    marginTop: "2px",
+                  }}
+                >
+                  <Cb
+                    label="Variable Based on Taxable Salary"
+                    checked={Boolean(form.variable_based_on_taxable_salary)}
+                    onChange={tog("variable_based_on_taxable_salary")}
+                  />
+                  <Cb
+                    label="Income Tax Component"
+                    checked={Boolean(form.is_income_tax_component)}
+                    onChange={tog("is_income_tax_component")}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
-        {/* /sc-mid */}
 
-        {/* ══ Flexible Benefit Configuration (Earning + flexible enabled) ══ */}
+        {/* ── Flexible Benefit Configuration (Earning + enabled only) ── */}
         {isEarning && isFlexible && (
-          <div className="sc-fadein sc-benefit-section">
-            <h3>Benefit Configuration</h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 16,
-                marginBottom: 14,
-              }}
-            >
+          <div className="sc-fadein sc-pane space-y-2.5">
+            <p className="sc-divider-label">Benefit Configuration</p>
+
+            <div className="grid grid-cols-2 gap-3">
               <ModalSelect
                 label="Payout Method *"
                 value={payoutMethod}
@@ -747,45 +706,97 @@ export const SalaryComponentModal: React.FC<Props> = ({
               <ModalInput
                 label="Max Benefit Amount (Yearly)"
                 type="number"
-                className="no-spinner"
                 value={form.max_benefit_amount}
-                placeholder="0"
+                className="no-spinner"
                 onChange={(e) =>
                   set("max_benefit_amount", parseFloat(e.target.value))
                 }
+                placeholder="0"
               />
             </div>
-            {showPayoutUnclaimed && (
-              <BenefitCb
-                id="ben-payout-unclaimed"
-                label="Payout Unclaimed Amount in Final Payroll Cycle"
-                checked={Boolean(form.pay_against_benefit_claim)}
-                onChange={tog("pay_against_benefit_claim")}
+
+            <div
+              className="sc-settings-group"
+              style={{
+                gap: "2px",
+              }}
+            >
+              {showPayoutUnclaimed && (
+                <div className="sc-fadein">
+                  <Cb
+                    label="Payout Unclaimed Amount in Final Payroll Cycle"
+                    checked={Boolean(form.pay_against_benefit_claim)}
+                    onChange={tog("pay_against_benefit_claim")}
+                  />
+                </div>
+              )}
+              <Cb
+                label="Only Tax Impact"
+                checked={Boolean(form.only_tax_impact)}
+                onChange={tog("only_tax_impact")}
               />
-            )}
-            <BenefitCb
-              id="ben-tax-impact"
-              label="Only Tax Impact"
-              checked={Boolean(form.only_tax_impact)}
-              onChange={tog("only_tax_impact")}
-            />
-            <BenefitCb
-              id="ben-separate-entry"
-              label="Separate Payment Entry Against Benefit Claim"
-              checked={Boolean(
-                form.create_separate_payment_entry_against_benefit_claim,
-              )}
-              onChange={tog(
-                "create_separate_payment_entry_against_benefit_claim",
-              )}
-            />
+              <Cb
+                label="Separate Payment Entry Against Benefit Claim"
+                checked={Boolean(
+                  form.create_separate_payment_entry_against_benefit_claim,
+                )}
+                onChange={tog(
+                  "create_separate_payment_entry_against_benefit_claim",
+                )}
+              />
+            </div>
           </div>
         )}
 
-        {/* ══ Description — full width ══ */}
+        {/* ── Ledger Accounts ── */}
+        <div
+          className="sc-pane"
+          style={{
+            padding: "8px 10px",
+            height: "fit-content",
+            alignSelf: "start",
+          }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <p className="sc-divider-label" style={{ marginBottom: 0 }}>
+              Ledger Accounts
+            </p>
+            <button
+              type="button"
+              onClick={addAccount}
+              className="flex items-center gap-1 text-[10.5px] font-semibold text-primary hover:underline"
+            >
+              <Plus className="h-3 w-3" /> Add Account
+            </button>
+          </div>
+
+          {(form.accounts ?? []).map((acc, idx) => (
+            <div key={idx} className="sc-ledger-row">
+              <div className="flex-1">
+                <SearchSelect2
+                  label="Ledger Account"
+                  value={acc.account}
+                  placeholder="Search ledger account..."
+                  fetchOptions={fetchAccounts}
+                  onChange={(value) => updateAccount(idx, value)}
+                  required
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeAccount(idx)}
+                className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition mb-0.5"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Description ── */}
         <ModalTextarea
           label="Description"
-          rows={3}
+          rows={2}
           placeholder="Optional description…"
           value={form.description ?? ""}
           onChange={(e) => set("description", e.target.value)}

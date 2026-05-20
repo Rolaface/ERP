@@ -7,7 +7,6 @@ import type {
 } from "../../hooks/useDebitNoteForm";
 import WarehouseSelect from "../../components/selects/WarehouseSelect";
 import ItemTable from "../../components/common/ItemTable";
-import { NumericInput } from "../../components/ui/modal/modalComponent";
 
 // ─── Invoice Search Select ────────────────────────────────────────────────────
 
@@ -114,11 +113,10 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
               <div
                 key={opt.value}
                 onClick={() => handleSelect(opt)}
-                className={`px-3 py-2 text-[11px] cursor-pointer hover:bg-primary/10 transition-colors ${
-                  opt.value === value
-                    ? "bg-primary/10 font-medium text-primary"
-                    : "text-main"
-                }`}
+                className={`px-3 py-2 text-[11px] cursor-pointer hover:bg-primary/10 transition-colors ${opt.value === value
+                  ? "bg-primary/10 font-medium text-primary"
+                  : "text-main"
+                  }`}
               >
                 <span className="font-medium">{opt.label}</span>
                 <span className="ml-2 text-muted">{opt.supplierName}</span>
@@ -149,12 +147,14 @@ export interface DebitNoteDetailsTabProps {
   onItemChange: (
     index: number,
     field: keyof DebitNoteItem,
-    value: string | number | null,
+    value: string | number,
   ) => void;
   onWarehouseDefault: (index: number, warehouse: string) => void;
   onRemoveItem: (index: number) => void;
   onToggleUpdateStock: () => void;
 }
+
+
 
 const DebitNoteHeaders: React.FC = () => (
   <tr className="border-b border-theme">
@@ -182,6 +182,7 @@ const DebitNoteHeaders: React.FC = () => (
     <th className="w-8" />
   </tr>
 );
+
 
 const EMPTY_ITEM: DebitNoteItem = {
   item_code: "",
@@ -216,6 +217,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
     setPage(0);
   }, [form.return_against]);
 
+
   const noInvoice = !form.return_against;
   const showPlaceholders = noInvoice || invoiceLoading;
 
@@ -234,8 +236,8 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
   const ui = { page, setPage, itemCount };
 
   const actions = {
-    addItem: () => {},
-    duplicateItem: () => {},
+    addItem: () => { },
+    duplicateItem: () => { },
     removeItem: onRemoveItem,
     handleItemChange: (
       index: number,
@@ -263,7 +265,8 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
   ) => {
     const isPlaceholder = showPlaceholders;
     const isPulsing = invoiceLoading;
-    const amount = Math.abs(it.qty ?? 0) * (it.rate ?? 0);
+    const amount = Math.abs(it.qty) * it.rate;
+
     const inputCls = `w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main
   focus:outline-none focus:ring-1 focus:ring-primary no-spinner
   ${isPulsing ? "animate-pulse opacity-60" : ""}`;
@@ -271,8 +274,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
     return (
       <tr
         key={`row-${absoluteIndex}`}
-        className="border-b border-theme hover:bg-primary/5 transition-colors"
-      >
+        className="border-b border-theme hover:bg-primary/5 transition-colors">
         {/* # */}
         <td className="px-2 py-1 text-center text-[10px] text-muted">
           {absoluteIndex + 1}
@@ -302,34 +304,31 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
           )}
         </td>
 
+        {/* Qty */}
         <td className="px-1 py-1">
-          <NumericInput
+          <input
+            type="number"
             name="qty"
-            placeholder="0"
-            value={it.qty == null ? null : Math.abs(it.qty)}
+            className={inputCls}
+            // value={Math.abs(it.qty) || ""}
+           value={it.qty === 0 ? "" : Math.abs(it.qty)}
             disabled={isPlaceholder}
-            className={isPulsing ? "animate-pulse opacity-60 w-full" : "w-full"}
-            onChange={(value) => {
-              onItemChange(
-                absoluteIndex,
-                "qty",
-                value == null ? null : -Math.abs(value),
-              );
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              onItemChange(absoluteIndex, "qty", val > 0 ? -val : val);
             }}
           />
         </td>
 
         {/* Rate */}
         <td className="px-1 py-1">
-          <NumericInput
+          <input
+            type="number"
             name="rate"
-            placeholder="0"
-            value={it.rate ?? 0}
             disabled={isPlaceholder}
-            className={isPulsing ? "animate-pulse opacity-60 w-full" : "w-full"}
-            onChange={(value) => {
-              onItemChange(absoluteIndex, "rate", value);
-            }}
+            className={inputCls}
+            value={it.rate === 0 ? "" : it.rate}
+            onChange={(e) => onItemChange(absoluteIndex, "rate", Number(e.target.value))}
           />
         </td>
 
@@ -342,9 +341,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
             disabled={isPlaceholder}
             className={inputCls}
             value={it.batch_no || ""}
-            onChange={(e) =>
-              onItemChange(absoluteIndex, "batch_no", e.target.value)
-            }
+            onChange={(e) => onItemChange(absoluteIndex, "batch_no", e.target.value)}
           />
         </td>
 
@@ -354,12 +351,8 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
             compact
             disabled={isPlaceholder}
             value={it.warehouse || ""}
-            onChange={(e) =>
-              onItemChange(absoluteIndex, "warehouse", e.target.value)
-            }
-            onDefaultLoad={(firstWarehouse) =>
-              onWarehouseDefault(absoluteIndex, firstWarehouse)
-            }
+            onChange={(e) => onItemChange(absoluteIndex, "warehouse", e.target.value)}
+            onDefaultLoad={(firstWarehouse) => onWarehouseDefault(absoluteIndex, firstWarehouse)}
           />
         </td>
 
@@ -393,6 +386,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
 
   return (
     <div className="flex flex-col gap-5 px-8 py-5">
+
       {/* ── Top controls row ── */}
       <div className="grid grid-cols-3 gap-4 items-end">
         <InvoiceSearchSelect
@@ -418,6 +412,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
 
       {/* ── Main grid: ItemTable + sidebar ── */}
       <div className="grid grid-cols-[1fr_220px] gap-4 items-start">
+
         <ItemTable
           title="Return Items"
           paginatedItems={paginatedItems}
@@ -432,6 +427,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
 
         {/* ── Sidebar ── */}
         <div className="flex flex-col gap-4 sticky top-0">
+
           {/* Customer card */}
           <div className="bg-card rounded-lg p-3 shadow-sm">
             <h3 className="text-[12px] font-semibold text-main mb-2">
@@ -471,7 +467,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
               <div className="flex justify-between text-[11px]">
                 <span className="text-muted">Total Qty</span>
                 <span className="text-main font-medium">
-                  {form.items.reduce((s, it) => s + Math.abs(it.qty ?? 0), 0)}
+                  {form.items.reduce((s, it) => s + Math.abs(it.qty), 0)}
                 </span>
               </div>
               <div className="mt-1.5 p-2 bg-primary rounded-lg flex justify-between items-center">
@@ -484,6 +480,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>

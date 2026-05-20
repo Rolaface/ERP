@@ -272,25 +272,10 @@ export interface SalarySlip {
 }
 
 export async function getSalarySlipsByEmployee(
-  payrollEntryId: string,
   employeeId: string,
-): Promise<
-  Pick<
-    SalarySlip,
-    "name" | "employee" | "status" | "posting_date"|"payroll_entry"
-  >[]
-> {
-  const filters = JSON.stringify([
-    ["payroll_entry", "=", payrollEntryId],
-    ["employee", "=", employeeId],
-  ]);
-
-  const fields = JSON.stringify([
-    "name",
-    "employee",
-    "status",
-    "posting_date","payroll_entry"
-  ]);
+): Promise<Pick<SalarySlip, "name" | "employee" | "status" | "posting_date">[]> {
+  const filters = JSON.stringify([["employee", "=", employeeId]]);
+  const fields = JSON.stringify(["name", "employee", "status", "posting_date"]);
 
   const resp: AxiosResponse = await api.get(
     `${API.payroll.payrollentry.salaryslip}?filters=${filters}&fields=${fields}&order_by=posting_date desc`,
@@ -315,22 +300,6 @@ export async function updatePayrollEntry(
 }
 
 return resp.data?.data || resp.data;
-}
-
-export async function deletePayrollEntry(
-  id: string,
-): Promise<any> {
-  const resp: AxiosResponse = await api.delete(
-    `${API.payroll.payrollentry.createpayrollentry}/${id}`,
-  );
-
-  if (resp.data?.success === false) {
-    throw new Error(
-      resp.data?.message || "Failed to delete payroll",
-    );
-  }
-
-  return resp.data?.data || resp.data;
 }
 export async function getSalarySlipDetail(name: string): Promise<SalarySlip> {
   const resp: AxiosResponse = await api.get(

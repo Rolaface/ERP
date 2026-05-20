@@ -6,12 +6,7 @@ import type {
 } from "../../../types/Supply/purchaseOrder";
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
-
-import {
-  
-  ModalSelect,
-  NumericInput,
-} from "../../ui/modal/modalComponent";
+import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import WarehouseSelect from "../../selects/WarehouseSelect";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import CostCenterSelect from "../../selects/CostCenterSelect";
@@ -120,6 +115,7 @@ export const DetailsTab = ({
     (page + 1) * ITEMS_PER_PAGE,
   );
 
+
   const handleTopRequiredByChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -147,6 +143,7 @@ export const DetailsTab = ({
     itemCount: items.length,
   };
 
+
   const renderPORow = (
     it: ItemRow,
     i: number,
@@ -155,7 +152,7 @@ export const DetailsTab = ({
       handleRemoveRow: (i: number) => void;
     },
   ) => {
-    const amount = (it.quantity ?? 0) * (it.rate ?? 0);
+    const amount = it.quantity * it.rate;
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
         <td className="px-2 py-1 text-[10px]">{i + 1}</td>
@@ -175,6 +172,7 @@ export const DetailsTab = ({
           </div>
         </td>
 
+
         {/* Description */}
         {/* <td className="px-2 py-1">
           <Tooltip
@@ -192,6 +190,7 @@ export const DetailsTab = ({
             />
           </Tooltip>
         </td> */}
+
 
         {/* Packing */}
         <td className="px-2 py-[2px]">
@@ -217,7 +216,7 @@ export const DetailsTab = ({
                         value: unit || "",
                       },
                     } as any,
-                    i,
+                    i
                   );
 
                   onItemChange(
@@ -227,7 +226,7 @@ export const DetailsTab = ({
                         value: size || "",
                       },
                     } as any,
-                    i,
+                    i
                   );
                 }}
                 className="w-[60px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm "
@@ -279,23 +278,14 @@ export const DetailsTab = ({
               it.quantity ? `Quantity: ${it.quantity}` : "Enter quantity"
             }
           >
-           <NumericInput
-  name="quantity"
-  placeholder="1"
-  value={it.quantity ?? ""}
-  onChange={(value) =>
-    onItemChange(
-      {
-        target: {
-          name: "quantity",
-          value,
-        },
-      } as any,
-      i,
-    )
-  }
-  className="w-[80px]"
-/>
+            <input
+              type="number"
+              name="quantity"
+              placeholder="1"
+              value={it.quantity === 1 ? "" : it.quantity}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            />
           </Tooltip>
         </td>
 
@@ -317,48 +307,29 @@ export const DetailsTab = ({
           <Tooltip
             content={it.rate ? `Rate: ${symbol} ${it.rate}` : "Enter rate"}
           >
-           <NumericInput
-  name="rate"
-  placeholder="0"
-  value={it.rate ?? ""}
-  decimalScale={4}
-  onChange={(value) =>
-    onItemChange(
-      {
-        target: {
-          name: "rate",
-          value,
-        },
-      } as any,
-      i,
-    )
-  }
-  className="w-[55px]"
-/>
+            <input
+              type="number"
+              name="rate"
+              placeholder="0"
+              value={it.rate === 0 ? "" : it.rate}
+              onChange={(e) => onItemChange(e, i)}
+              className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            />
           </Tooltip>
         </td>
 
         {/* VAT Rate */}
         <td className="px-2 py-1">
           <Tooltip content={`VAT Rate: ${it.vatRate || "N/A"}`}>
-           <NumericInput
-  name="vatRate"
-  placeholder="0"
-  value={it.vatRate ?? ""}
-  onChange={(value) =>
-    onItemChange(
-      {
-        target: {
-          name: "vatRate",
-          value,
-        },
-      } as any,
-      i,
-    )
-  }
-  className="w-[40px]"
-  disabled
-/>
+            <input
+              type="number"
+              name="vatRate"
+              value={it.vatRate === 0 ? "" : it.vatRate}
+              placeholder="0"
+              onChange={(e) => onItemChange(e, i)}
+              disabled
+              className="w-[40px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            />
           </Tooltip>
         </td>
 
@@ -530,6 +501,7 @@ export const DetailsTab = ({
             </Tooltip>
           </div>
         </div>
+
       </div>
 
       {/* ── Main body ─────────────────────────────────────────────────────── */}

@@ -390,7 +390,6 @@ export interface LeavePolicyAssignment {
   leave_policy: string;
   assignment_based_on: "Leave Period" | "Joining Date";
   leave_period?: string;
-  employee_name: string;
   carry_forward?: 0 | 1;
   docstatus?: 0 | 1 | 2; // 0 = Draft, 1 = Submitted, 2 = Cancelled
 }

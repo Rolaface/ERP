@@ -4,8 +4,7 @@ import {
   getAllPayrollEntries,
   runPayrollEntry,
   getPayrollEntryDetail,
-  updatePayrollEntry,  deletePayrollEntry,
-
+  updatePayrollEntry,
 } from "../../../api/payroll/payrollEntryApi";
 import type { CreatePayrollEntryPayload } from "../../../api/payroll/payrollEntryApi";
 import { openPayrollModal } from "../../../store/modalStore";
@@ -23,7 +22,6 @@ import { PayslipModal } from "./PayslipModal";
 import { QuickCreateModal } from "../../../components/Hr/payrollmodal/QuickCreatePayrollModal";
 import { PayrollValidationModal } from "../../../components/Hr/payrollmodal/payrollvalidationmodal";
 import { usePermission } from "../../../hooks/permission/usePermission";
-import { HrTableFrame } from "../components/HrTabLayout";
 
 // ─── Payload builder ──────────────────────────────────────────────────────────
 
@@ -140,22 +138,7 @@ export default function PayrollManagement() {
       showApiError(error);
     }
   };
-const handleDeletePayroll = async (id: string) => {
-  try {
-    showLoading("Deleting Payroll");
 
-    await deletePayrollEntry(id);
-
-    closeSwal();
-
-    showSuccess("Payroll deleted successfully");
-
-    await loadPayrollEntries();
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
   const handleConfirmPayroll = () => {
     setIsProcessing(true);
     const ids = pendingRecords.map((r) => r.id);
@@ -198,7 +181,7 @@ const handleDeletePayroll = async (id: string) => {
     );
 
   return (
-    <HrTableFrame>
+    <div className="flex min-h-0 flex-1 flex-col bg-app overflow-hidden">
       <PayrollDashboard
         records={payrollRecords}
         loading={loading}
@@ -219,9 +202,6 @@ const handleDeletePayroll = async (id: string) => {
         }
         onRunPayroll={handleRunPayroll}
         onViewPayslip={(r) => setSelectedRecord(r)}
-         onDeleteRecord={(r) =>
-    handleDeletePayroll((r as any).name)
-  }
         onEditRecord={async (r) => {
           try {
             showLoading("Loading Payroll");
@@ -272,8 +252,6 @@ const handleDeletePayroll = async (id: string) => {
             showApiError(error);
           }
         }}
-       
-        
         onViewDetails={(r) => setDetailRecord(r)}
       />
 
@@ -320,6 +298,6 @@ const handleDeletePayroll = async (id: string) => {
           showSuccess(`Payslip emailed to ${selectedRecord?.email}`)
         }
       />
-    </HrTableFrame>
+    </div>
   );
 }

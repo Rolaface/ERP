@@ -152,11 +152,6 @@ export function LeavePolicySetup() {
           }
           return (
             <ActionGroup>
-              <ActionButton
-                type="view"
-                iconOnly
-                onClick={() => openLeavePolicyModal(row, true, { onSuccess: fetchAll })}
-               />
               {dropdownActions.length > 0 && (
                 <ActionMenu customActions={dropdownActions} />
               )}

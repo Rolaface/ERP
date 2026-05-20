@@ -6,14 +6,13 @@ import WarehouseSelect from "../selects/WarehouseSelect";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { SelectedStockItem } from "../../types/Stock/stock";
 import Tooltip from "../Tooltip";
-import { NumericInput } from "../ui/modal/modalComponent";
+
+
 
 export interface ItemTableActions {
   handleItemChange: (
     index: number,
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => void;
   updateItemDirectly?: (index: number, updates: any) => void;
   removeItem: (index: number) => void;
@@ -138,6 +137,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
     actions.removeItem(absoluteIndex);
   };
 
+
+
   // ── built-in invoice row ──────────────────────────────────────────────────
   const renderInvoiceRow = (it: any, i: number) => {
     const discountAmount =
@@ -157,26 +158,35 @@ const ItemTable: React.FC<ItemTableProps> = ({
             taxCategory={taxCategory}
             onChange={(item: SelectedStockItem) => {
               actions.updateItemDirectly?.(i, {
+
                 itemCode: item.itemCode,
                 itemName: item.itemName,
                 description: item.description,
 
+
                 packingSize: item.packingSize,
                 packingUnit: item.packingUnit,
+
 
                 batchNo: item.batchNo,
                 mfgDate: item.mfgDate,
                 expDate: item.expiryDate,
 
+
                 availableQty: item.qty,
                 quantity: 1, // default
 
+
                 price:
-                  item.price ?? item.sellingPrice ?? item.purchasePrice ?? 0,
+                  item.price ??
+                  item.sellingPrice ??
+                  item.purchasePrice ??
+                  0,
 
                 // warehouse
                 warehouse: item.warehouse,
                 isServiceItem: item.isServiceItem,
+
 
                 vatRate: item.vatRate,
                 vatCode: item.vatCode,
@@ -282,33 +292,25 @@ const ItemTable: React.FC<ItemTableProps> = ({
         {/* Qty */}
         <td className="px-0.5 py-1">
           <Tooltip content={`Quantity: ${it.quantity ?? 0}`}>
-            <NumericInput
+            <input
+              type="number"
               name="quantity"
-              value={it.quantity ?? ""}
+              value={it.quantity === 0 ? "" : it.quantity}
               placeholder="0"
-              className="w-[75px]"
-              onChange={(value) => {
-                const qty = Number(value || 0);
-
+              className="w-[75px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+              onChange={(e) => {
+                const qty = Number(e.target.value);
                 const available = it.availableQty ?? it.qty ?? 0;
-
                 const usedQty = formData.items
                   .filter((x, xIdx) => x.batchNo === it.batchNo && xIdx !== i)
                   .reduce((sum, x) => sum + Number(x.quantity || 0), 0);
-
                 if (!it.isServiceItem && qty > available - usedQty) {
                   showValidationError(
                     `Only ${available - usedQty} items remaining in batch ${it.batchNo}`,
                   );
                   return;
                 }
-
-                actions.handleItemChange(i, {
-                  target: {
-                    name: "quantity",
-                    value,
-                  },
-                } as any);
+                actions.handleItemChange(i, e);
               }}
             />
           </Tooltip>
@@ -364,57 +366,38 @@ const ItemTable: React.FC<ItemTableProps> = ({
           <Tooltip
             content={`Price: ${symbol} ${Number(it.price || 0).toFixed(2)}`}
           >
-            <NumericInput
+            <input
+              type="number"
               name="price"
-              value={it.price ?? ""}
+              value={it.price === 0 ? "" : it.price}
               placeholder="0"
-              decimalScale={4}
-              className="w-[50px]"
-              onChange={(value) =>
-                actions.handleItemChange(i, {
-                  target: {
-                    name: "price",
-                    value,
-                  },
-                } as any)
-              }
+              className="w-[50px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+              onChange={(e) => actions.handleItemChange(i, e)}
             />
           </Tooltip>
         </td>
 
         {/* Discount */}
         <td className="px-1 py-1">
-          <NumericInput
+          <input
+            type="number"
             name="discount"
-            value={it.discount ?? ""}
+            value={it.discount === 0 ? "" : it.discount}
             placeholder="0"
-            className="w-[38px]"
-            onChange={(value) =>
-              actions.handleItemChange(i, {
-                target: {
-                  name: "discount",
-                  value,
-                },
-              } as any)
-            }
+            className="w-[38px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            onChange={(e) => actions.handleItemChange(i, e)}
           />
         </td>
 
         {/* VAT Rate */}
         <td className="px-1 py-1">
-          <NumericInput
+          <input
+            type="number"
             name="vatRate"
-            value={it.vatRate ?? ""}
+            value={it.vatRate === 0 ? "" : it.vatRate}
             placeholder="0"
-            className="w-[38px]"
-            onChange={(value) =>
-              actions.handleItemChange(i, {
-                target: {
-                  name: "vatRate",
-                  value,
-                },
-              } as any)
-            }
+            className="w-[38px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+            onChange={(e) => actions.handleItemChange(i, e)}
           />
         </td>
 

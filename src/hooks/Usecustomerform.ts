@@ -171,11 +171,12 @@ function splitMobile(mobile?: string): { code: string; number: string } {
   }
 
   // Same logic as mapSupplierToForm: slice(0, 3) = "+" + 2 digit code
-  const code = clean.slice(0, 3); // e.g. "+91"
-  const number = clean.slice(3); // e.g. "3534656"
+  const code = clean.slice(0, 3);   // e.g. "+91"
+  const number = clean.slice(3);    // e.g. "3534656"
 
   return { code, number };
 }
+
 
 export function mapApiResponseToFormState(
   data: CustomerDetail,
@@ -200,22 +201,21 @@ export function mapApiResponseToFormState(
         phone: c.phone ?? "",
         isPrimary: c.isPrimary ?? false,
         isBilling: c.isBilling ?? false,
+
       };
     });
   } else {
     const mob = splitMobile(data.mobile);
-    contacts = [
-      {
-        ...defaultContact,
-        firstName: data.contactPerson ?? "",
-        email: data.email ?? "",
-        mobileCode: mob.code,
-        mobileNumber: mob.number,
-        mobile: mob.code + mob.number,
-        isPrimary: true,
-        isBilling: true,
-      },
-    ];
+    contacts = [{
+      ...defaultContact,
+      firstName: data.contactPerson ?? "",
+      email: data.email ?? "",
+      mobileCode: mob.code,
+      mobileNumber: mob.number,
+      mobile: mob.code + mob.number,
+      isPrimary: true,
+      isBilling: true,
+    }];
   }
 
   // ── Addresses ─────────────────────────────────────────────────────────────
@@ -261,9 +261,13 @@ export function mapApiResponseToFormState(
     ];
   }
 
-  const billingAddress = addresses.find((a) => a.type === "Billing");
+  const billingAddress = addresses.find(
+    (a) => a.type === "Billing"
+  );
 
-  const shippingAddress = addresses.find((a) => a.type === "Shipping");
+  const shippingAddress = addresses.find(
+    (a) => a.type === "Shipping"
+  );
 
   const sameAsBilling =
     !!billingAddress &&
@@ -326,16 +330,16 @@ export function buildPayload(form: CustomerFormState): Record<string, any> {
     addresses = addresses.map((a) =>
       a.type === "Shipping" && billing
         ? {
-            ...a,
-            line1: billing.line1,
-            line2: billing.line2,
-            city: billing.city,
-            state: billing.state,
-            postalCode: billing.postalCode,
-            country: billing.country,
-            isPrimary: false,
-          }
-        : a,
+          ...a,
+          line1: billing.line1,
+          line2: billing.line2,
+          city: billing.city,
+          state: billing.state,
+          postalCode: billing.postalCode,
+          country: billing.country,
+          isPrimary: false,
+        }
+        : a
     );
   }
 
@@ -437,16 +441,16 @@ export function useCustomerForm({
       addresses: prev.addresses.map((a) =>
         a.type === "Shipping"
           ? {
-              ...a,
-              line1: billing.line1,
-              line2: billing.line2,
-              city: billing.city,
-              state: billing.state,
-              postalCode: billing.postalCode,
-              country: billing.country,
-              isPrimary: false,
-            }
-          : a,
+            ...a,
+            line1: billing.line1,
+            line2: billing.line2,
+            city: billing.city,
+            state: billing.state,
+            postalCode: billing.postalCode,
+            country: billing.country,
+            isPrimary: false,
+          }
+          : a
       ),
     }));
   }, [
@@ -475,7 +479,7 @@ export function useCustomerForm({
   };
 
   const handlePrimaryContactChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
 
@@ -495,7 +499,7 @@ export function useCustomerForm({
       setForm((prev) => ({
         ...prev,
         contacts: prev.contacts.map((c) =>
-          c.isPrimary ? { ...c, mobileCode: val } : c,
+          c.isPrimary ? { ...c, mobileCode: val } : c
         ),
       }));
       return;
@@ -504,7 +508,7 @@ export function useCustomerForm({
     setForm((prev) => ({
       ...prev,
       contacts: prev.contacts.map((c) =>
-        c.isPrimary ? { ...c, [name]: value } : c,
+        c.isPrimary ? { ...c, [name]: value } : c
       ),
     }));
   };
@@ -564,7 +568,8 @@ export function useCustomerForm({
     const billing = form.addresses.find((a) => a.type === "Billing");
     if (!billing?.line1?.trim())
       newErrors.billingLine1 = "Billing address line 1 is required";
-
+    if (!billing?.postalCode?.trim())
+      newErrors.billingPostalCode = "Postal code is required";
     if (!billing?.city?.trim()) newErrors.billingCity = "City is required";
     if (!billing?.state?.trim()) newErrors.billingState = "State is required";
     if (!billing?.country?.trim())
@@ -595,7 +600,7 @@ export function useCustomerForm({
       if (!billing?.city) missing.push("City");
       if (!billing?.state) missing.push("State");
       if (!billing?.country) missing.push("Country");
-
+      if (!billing?.postalCode) missing.push("Postal Code");
       return missing.length > 0
         ? `Please fill in required fields: ${missing.join(", ")}`
         : "Please fix validation errors in Address tab";
@@ -797,10 +802,10 @@ export function useCustomerForm({
     const base = initialData
       ? mapApiResponseToFormState(initialData, companySellingTerms)
       : {
-          ...emptyForm,
-          terms: { selling: companySellingTerms ?? defaultSellingTerms },
-          sameAsBilling: true,
-        };
+        ...emptyForm,
+        terms: { selling: companySellingTerms ?? defaultSellingTerms },
+        sameAsBilling: true,
+      };
 
     setErrors({});
 

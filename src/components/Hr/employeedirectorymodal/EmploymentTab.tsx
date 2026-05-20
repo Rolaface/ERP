@@ -6,7 +6,7 @@ import {
   getAllGrades,
   getAllDesignations,
   getAllEmploymentTypes,
-  getallbranches,createBranch,checkBranchExists,getshift
+  getallbranches,
 } from "../../../api/utils/frappeUtilsApi";
 import { getAllEmployees } from "../../../api/employeeapi";
 import DatePickerInput from "../../calendar/DatePickerInput";
@@ -216,7 +216,8 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
         </div>
         {!isContractBased && (
           <p className="text-[10px] text-muted mt-1.5">
-        
+            Contract end date only applies to Contract, Temporary, or Intern
+            employees.
           </p>
         )}
       </div>
@@ -228,27 +229,16 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
         </h4>
         <div className="grid grid-cols-2 gap-2.5">
           <SearchSelect2
-  label="Branch"
-  value={formData.branch}
-  placeholder="Search branch..."
-  fetchOptions={fetchbranchoption}
-  allowCustomInput
-  onChange={async (value, option) => {
-    let finalBranch = value;
+            label=" branch"
+            value={formData.branch}
+            placeholder="Search branch..."
+            fetchOptions={fetchbranchoption}
+            onChange={(value, option) => {
+              handleInputChange("branch", value);
 
-    const exists = await checkBranchExists(value);
-
-    if (!exists && value?.trim()) {
-      await createBranch(value);
-    }
-
-    handleInputChange("branch", finalBranch);
-    handleInputChange(
-      "branchLabel",
-      option?.label || finalBranch,
-    );
-  }}
-/>
+              handleInputChange("branchLabel", option?.label || "");
+            }}
+          />
         </div>
       </div>
     </div>

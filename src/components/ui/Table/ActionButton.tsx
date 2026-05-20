@@ -80,7 +80,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   };
 
   const base = iconOnly
-    ? `inline-flex items-center justify-center w-7 h-7 rounded-md ${variantStyles[variant]}`
+    ? `inline-flex items-center justify-center w-8 h-8 rounded-md ${variantStyles[variant]}`
     : `inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${variantStyles[variant]}`;
 
   return (

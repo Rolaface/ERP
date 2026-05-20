@@ -32,8 +32,8 @@ export interface Item {
   dimensionLength: number;
   dimensionWidth: number;
   dimensionHeight: number;
-packingUnit: number | null;
-packingSize: number | null;
+  packingUnit: number;
+  packingSize: number;
 
   // Nested objects from API
   vendorInfo: {

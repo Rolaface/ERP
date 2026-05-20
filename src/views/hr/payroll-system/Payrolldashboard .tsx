@@ -3,6 +3,7 @@ import type { PayrollRecord } from "../../../types/payrolltypes";
 
 import Table from "../../../components/ui/Table/Table";
 import type { Column } from "../../../components/ui/Table/type";
+import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import { Play } from "lucide-react";
 import {
   ActionButton,
@@ -11,8 +12,6 @@ import {
 } from "../../../components/ui/Table/ActionButton";
 import PayrollEntryDetail from "./payrolldetail/payrollentrydetail";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface Props {
   records: PayrollRecord[];
   loading?: boolean;
@@ -20,7 +19,6 @@ interface Props {
   onNewPayroll: () => void;
   onRunPayroll: (id: string) => void;
   onViewPayslip: (r: PayrollRecord) => void;
-  onDeleteRecord?: (r: PayrollRecord) => void;
   onEditRecord: (r: PayrollRecord) => void;
   currentPage: number;
   totalPages: number;
@@ -32,31 +30,19 @@ interface Props {
   canWrite?: boolean;
 }
 
-// ── Status color map (matches Customer badge pattern)
-const STATUS_COLORS: Record<string, string> = {
-  Draft: "bg-yellow-100 text-yellow-700",
-  Submitted: "bg-blue-100 text-blue-700",
-  Failed: "bg-red-100 text-red-600",
-  Completed: "bg-green-100 text-green-700",
-  Cancelled: "bg-gray-100 text-gray-500",
-};
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export const PayrollDashboard: React.FC<Props> = ({
   records,
   loading = false,
-
+  onQuickCreate,
   onNewPayroll,
   onRunPayroll,
-
+  onViewPayslip,
   onEditRecord,
   currentPage,
   totalPages,
-  onDeleteRecord,
   onPageChange,
   canCreate = false,
-  canWrite = false,
+  canWrite  = false,
 }) => {
   const [searchQuery] = useState("");
   const [selectedDept] = useState("All");
@@ -68,9 +54,9 @@ export const PayrollDashboard: React.FC<Props> = ({
   const filtered = useMemo(
     () =>
       records.filter((r) => {
-        const deptOk = selectedDept === "All" || r.department === selectedDept;
-        const statusOk = filterStatus === "All" || r.status === filterStatus;
-        const q = searchQuery.toLowerCase();
+        const deptOk   = selectedDept  === "All" || r.department === selectedDept;
+        const statusOk = filterStatus  === "All" || r.status     === filterStatus;
+        const q        = searchQuery.toLowerCase();
         const searchOk =
           !q ||
           r.employeeName.toLowerCase().includes(q) ||
@@ -80,7 +66,7 @@ export const PayrollDashboard: React.FC<Props> = ({
     [records, selectedDept, filterStatus, searchQuery],
   );
 
-  // ── Full-page detail view
+  // ── Full-page detail view ──────────────────────────────────────────────────
   if (detailEntryId) {
     return (
       <div className="flex-1 min-h-0 flex flex-col h-full">
@@ -92,92 +78,83 @@ export const PayrollDashboard: React.FC<Props> = ({
     );
   }
 
-  // ── Columns — styled to match CustomerManagement
   const payrollColumns: Column<any>[] = [
     {
       key: "name",
       header: "Payroll Entry",
       sortable: true,
       render: (row) => (
-        <span className="font-medium whitespace-nowrap">{row.name ?? "—"}</span>
+        <span className="font-semibold text-primary">{row.name}</span>
       ),
     },
     {
       key: "currency",
       header: "Currency",
       sortable: true,
-      align: "center",
       render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.currency ?? "—"}
-        </code>
+        <span className="text-xs font-semibold">{row.currency}</span>
       ),
     },
     {
       key: "branch",
       header: "Branch",
       sortable: true,
-      align: "left",
       render: (row) => (
-        <span className="text-muted whitespace-nowrap">
-          {row.branch || "—"}
-        </span>
+        <span className="text-xs text-muted">{row.branch || "-"}</span>
       ),
     },
     {
       key: "payroll_frequency",
       header: "Frequency",
-      align: "left",
       render: (row) => (
-        <span className="whitespace-nowrap">
-          {row.payroll_frequency ?? "—"}
+        <span className="px-2 py-1 rounded-md bg-app text-xs">
+          {row.payroll_frequency}
         </span>
       ),
     },
     {
       key: "status",
       header: "Status",
-      align: "center",
-      render: (row) => (
-        <span
-          className={`inline-flex items-center justify-center text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${
-            STATUS_COLORS[row.status] ?? "bg-gray-100 text-gray-600"
-          }`}
-        >
-          {row.status}
-        </span>
-      ),
+      render: (row) => <StatusBadge status={row.status} />,
     },
     {
       key: "actions",
       header: "Actions",
-      align: "center",
       render: (row) => (
         <ActionGroup>
           {/* View — always visible */}
           <ActionButton
             type="view"
             iconOnly
+            variant="secondary"
             onClick={() => setDetailEntryId(row.name)}
             title="View details"
           />
-
+          {/* Payslip — always visible */}
+          <ActionButton
+            type="download"
+            iconOnly
+            variant="secondary"
+            onClick={() => onViewPayslip(row)}
+            title="View payslip"
+          />
           <ActionMenu
-            // Edit: only when user has Payroll Entry write
-            {...(canWrite && row.status !== "Submitted"
+            // ── Edit: only when user has Payroll Entry write ──────────────
+            {...(canWrite
               ? { onEdit: () => onEditRecord(row), editLabel: "Edit Record" }
-              : {})}
-            onDelete={() => onDeleteRecord?.(row)}
-            deleteLabel="Delete"
-            // Run Payroll: only when user has Payroll Entry create
+              : {}
+            )}
+            onDelete={() => {
+              /* wire delete handler if needed */
+            }}
+            deleteLabel="Remove"
+            // ── Run Payroll: only when user has Payroll Entry create ──────
             customActions={
               canCreate
                 ? [
                     {
                       label:
-                        row.status === "Failed"
-                          ? "Re-Run Payroll"
-                          : "Run Payroll",
+                        row.status === "Failed" ? "Re-Run Payroll" : "Run Payroll",
                       icon: <Play className="w-4 h-4" />,
                       onClick: () => onRunPayroll(row.name),
                       disabled: !["Draft", "Failed"].includes(row.status),
@@ -191,24 +168,27 @@ export const PayrollDashboard: React.FC<Props> = ({
     },
   ];
 
-  // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <Table
-      tableId="payroll-dashboard"
-      showToolbar
-    
-      enableAdd={canCreate}
-      addLabel="New Payroll"
-      onAdd={onNewPayroll}
-      columns={payrollColumns}
-      enableColumnSelector
-      data={filtered}
-      loading={loading}
-      totalItems={filtered.length}
-      currentPage={currentPage}
-      totalPages={totalPages}
-      onPageChange={onPageChange}
-      pageSize={10}
-    />
+    <div className="flex-1 min-h-0 px-5 pb-4 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <Table
+          tableId="payroll-dashboard"
+          showToolbar
+          // ── New Payroll button: only when user has Payroll Entry create ──
+          enableAdd={canCreate}
+          addLabel="New Payroll"
+          onAdd={onNewPayroll}
+          columns={payrollColumns}
+          enableColumnSelector
+          data={filtered}
+          loading={loading}
+          totalItems={filtered.length}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+          pageSize={10}
+        />
+      </div>
+    </div>
   );
 };

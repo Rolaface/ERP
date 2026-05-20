@@ -85,10 +85,6 @@ export const LeaveTypeModal: React.FC<Props> = ({
       showValidationError("Max leaves allowed cannot be negative");
       return;
     }
-    if (!form.max_leaves_allowed ) {
-    showValidationError("Max leave allocation is required.");
-    return;
-    }
     if (!Number.isInteger(form.max_leaves_allowed)) {
     showValidationError("Max leave allocation must be a whole number.");
     return;
