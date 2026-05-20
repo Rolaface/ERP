@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Users, FileText, Banknote, Package, ArrowLeftRight } from 'lucide-react';
+import { Users, FileText, TrendingUp, Banknote, Package, ArrowLeftRight } from 'lucide-react';
 import LineChart from '../components/charts/LineChart';
 import UserMenu from '../layout/UserMenu';
 import {
@@ -158,15 +158,15 @@ const Dashboard = () => {
     <div className="flex h-screen w-full flex-col bg-gray-50 p-4">
 
       {/* Header */}
-      <div className="flex justify-between items-center mb-4 shrink-0">
+      <div className="flex justify-between items-center mb-3 shrink-0">
         <h1 className="text-xl font-bold text-gray-800">Dashboard Summary</h1>
         <div className="flex items-center gap-3">
           {/* View switch button — only visible to users who have both employee + professional roles */}
-          {/* {canSwitchView && (
+          {canSwitchView && (
             <button
               onClick={toggleViewMode}
               className={`
-                flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
+                flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold
                 border transition-all duration-200
                 ${isEmployeeView
                   ? "border-blue-500 bg-blue-50 text-blue-600 hover:bg-blue-100"
@@ -177,7 +177,7 @@ const Dashboard = () => {
               <ArrowLeftRight size={13} />
               {isEmployeeView ? "Switch to Professional View" : "Switch to Employee View"}
             </button>
-          )} */}
+          )}
           {/* <UserMenu /> */}
         </div>
       </div>
@@ -239,7 +239,7 @@ const Dashboard = () => {
                   <select
                     value={salesInterval}
                     onChange={e => setSalesInterval(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
@@ -249,7 +249,7 @@ const Dashboard = () => {
                   <select
                     value={salesYear}
                     onChange={e => setSalesYear(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -270,7 +270,7 @@ const Dashboard = () => {
                   <select
                     value={purchaseInterval}
                     onChange={e => setPurchaseInterval(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-black text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
@@ -280,7 +280,7 @@ const Dashboard = () => {
                   <select
                     value={purchaseYear}
                     onChange={e => setPurchaseYear(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -299,7 +299,7 @@ const Dashboard = () => {
                   <select
                     value={inventoryMode}
                     onChange={e => setInventoryMode(e.target.value as 'value' | 'quantity')}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-black text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     <option value="value">By Value</option>
                     <option value="quantity">By Qty</option>
@@ -307,7 +307,7 @@ const Dashboard = () => {
                   <select
                     value={inventoryYear}
                     onChange={e => setInventoryYear(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -318,7 +318,7 @@ const Dashboard = () => {
         </div>
 
         {/* RIGHT AREA (Vertical Notes) */}
-        <div className="w-[300px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col p-5 overflow-y-auto">
+        <div className="w-[300px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-300 flex flex-col p-5 overflow-y-auto">
           <h2 className="text-sm font-bold tracking-wider text-gray-800 border-b pb-2 mb-4 uppercase">Notes</h2>
           {loadingSummary ? (
             <div className="animate-pulse space-y-4">
@@ -366,7 +366,7 @@ const Dashboard = () => {
 
 // --- Sub-Components ---
 const InfoBox = ({ title, icon, loading, children }: { title: string, icon?: React.ReactNode, loading: boolean, children: React.ReactNode }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center">
+  <div className="bg-white rounded-xl shadow-sm border border-gray-300 p-4 flex flex-col justify-center">
     <div className="flex items-center gap-2 mb-1">
       {icon && <span className="text-gray-400">{icon}</span>}
       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{title}</h3>
@@ -376,7 +376,7 @@ const InfoBox = ({ title, icon, loading, children }: { title: string, icon?: Rea
 );
 
 const NoteItem = ({ label, title, subTitle, value, icon }: any) => (
-  <div className="flex flex-col gap-1 p-3 rounded-lg bg-gray-50 border border-gray-100">
+  <div className="flex flex-col gap-1 p-3 rounded-lg bg-gray-50 border border-gray-300">
     <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
       {icon} {label}
     </div>

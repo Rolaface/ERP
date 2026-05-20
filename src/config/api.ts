@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -42,18 +42,6 @@ export const API = {
     logout: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`,
   },
 
- Email: {   
-      get_contact_list:`${ERP_BASE}/api/method/frappe.email.get_contact_list`,
-      send_email:`${ERP_BASE}/api/method/frappe.core.doctype.communication.email.make`,
-      upload_file:`${ERP_BASE}/api/method/upload_file`,
-      remove_attachments:`${ERP_BASE}/api/method/frappe.desk.form.utils.remove_attach`,
-      make_email_template:`${ERP_BASE}/api/method/custom_api.api.email_template.api.make_email_template`,
-      create_email_template:`${ERP_BASE}/api/method/custom_api.api.email_template.api.create`,
-      get_email_templates: `${ERP_BASE}/api/method/custom_api.api.email_template.api.get_all?`,
-      get_email_template_by_id: `${ERP_BASE}/api/method/custom_api.api.email_template.api.get_by_id`,
-      update_email_template: `${ERP_BASE}/api/method/custom_api.api.email_template.api.update`,
-      delete_email_template: `${ERP_BASE}/api/method/frappe.client.delete`
-  },
   /* =========================
    * DASHBOARD
    * ========================= */
@@ -73,6 +61,8 @@ export const API = {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.sale.api.summary`,
     recentSales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.top_recent_sales`,
     salesSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.monthly_sales_breakdown`,
+    salesCount: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.get_document_counts`,
+    monthlySales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.get_monthly_sales`,
    },
 
   /* =========================
@@ -105,6 +95,7 @@ export const API = {
    * ========================= */
   hrDashboard: {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
+    hrSummary: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_employee_status_counts`,
   },
 
   Get: {
@@ -159,7 +150,6 @@ export const API = {
     getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
     getAccountsResource: `${ERP_BASE}/api/resource/Account`,
-    getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`
   },
 
   accounting: {

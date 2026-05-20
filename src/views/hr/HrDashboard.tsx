@@ -17,7 +17,8 @@ import { Users, UserCheck, UserX, ClipboardList, Layers } from "lucide-react";
 
 import { ChartSkeleton } from "../../components/ChartSkeleton";
 import { AppMetricCard, AppSectionCard } from "../../components/ui/app-shell";
-import { getHrDashboardSummary } from "../../api/hrDashboardApi";
+import { getEmployeeStatusCount } from "../../api/hrDashboardApi";
+import { parseFrappeError } from "./tabs/leave-config/hooks/parseFrappeError";
 
 const HrDashboard: React.FC = () => {
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -85,12 +86,20 @@ const HrDashboard: React.FC = () => {
         setSummaryLoading(true);
         setSummaryError(null);
         setSummaryData(null);
-        const resp = await getHrDashboardSummary();
+        const resp = await getEmployeeStatusCount();
         if (!mounted) return;
-        setSummaryData(resp.data);
+        
+        const data = resp.data;
+        setSummaryData({
+          total: (data?.total_active || 0) + (data?.inactive || 0),  
+          active: data?.total_active || 0,
+          inactive: data?.inactive || 0,
+          onLeave: data?.on_leave || 0,
+          totalLeaveTypes: data?.total_leave_types || 0,
+        });
       } catch (e: any) {
         if (!mounted) return;
-        setSummaryError(e?.message ?? "Failed to load HR dashboard summary");
+        setSummaryError(parseFrappeError(e) || "Failed to load HR dashboard summary");
       } finally {
         if (!mounted) return;
         setSummaryLoading(false);
@@ -204,12 +213,6 @@ const HrDashboard: React.FC = () => {
               />
             ))}
       </div>
-{/* 
-      {summaryError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700">
-          {summaryError}
-        </div>
-      )} */}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <AppSectionCard title="Employee Status (Bar)">

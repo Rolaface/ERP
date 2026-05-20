@@ -73,3 +73,40 @@ export async function getMonthlySalesBreakdown(): Promise<MonthlySalesBreakdwonR
    const resp: AxiosResponse<MonthlySalesBreakdwonResponse> = await api.get(SalesDashboardAPI.recentSales);
   return resp.data;
 }
+
+export type SalesCountResponse = {
+  status_code: number;
+  status: string;
+  message: string;
+  data: {  
+    proforma_invoices: number;
+    quotations: number;  
+    sales_invoices: number;
+    credit_notes: number; 
+    debit_notes: number;
+  };
+};
+
+export async function getSalesCounts(): Promise<SalesCountResponse> {
+  const resp: AxiosResponse<SalesCountResponse> = await api.get(SalesDashboardAPI.salesCount);
+  return resp.data;
+}
+
+export type GetMonthlySalesResponse = {
+  status_code: number;
+  status: string;
+  message: string;
+  data: Array<{
+    month: string;
+    year: number;
+    totalSales: number;
+    receivable: number;
+    received: number; 
+  }>;
+};
+
+export async function getMonthlySales(): Promise<GetMonthlySalesResponse> {
+   const resp: AxiosResponse<GetMonthlySalesResponse> = await api.get(SalesDashboardAPI.monthlySales);
+  return resp.data;
+}
+ 
