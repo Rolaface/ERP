@@ -43,7 +43,6 @@ type OutletContextType = {
   openPOCreate: () => void;
   openPOEdit: (poId: string | number) => void;
 };
-import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
 
 
 
