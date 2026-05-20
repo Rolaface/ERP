@@ -19,7 +19,7 @@ const ALL_EXPENSE_TABS = [
   },
   {
     id: "expenseHistory",
-    label: "Expense History",
+    label: "Expense Claim",
     icon: <CreditCard size={16} strokeWidth={1.75} />,
     module: "Expense History",
     action: "read" as const,
