@@ -10,6 +10,7 @@ import {
 import {
   getAllLeaveApplications,
   updateLeaveApplication,
+  deleteLeaveApplication
 } from "../../../api/leaveApplicationApi";
 import { openLeaveApplyModal } from "../../../store/modalStore";
 import { showApiError, showSuccess, showConfirm } from "../../../utils/alert";
@@ -17,6 +18,7 @@ import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable
 import Table        from "../../../components/ui/Table/Table";
 import StatusBadge  from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
+import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
 interface MenuAction {
   label:        string;
   icon:         React.ReactNode;
@@ -86,15 +88,27 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page,       setPage]       = useState(1);
   const [pageSize,   setPageSize]   = useState(10);
+  const [showHistory, setShowHistory] = useState(false);
+  const [filters, setFilters] = useState({ from_date: "", to_date: "" });
 
   useEffect(() => {
     fetchLeaves();
-  }, []);
+  }, [showHistory, filters.from_date, filters.to_date]);
 
   const fetchLeaves = async () => {
     try {
       setIsLoading(true);
-      const response = await getAllLeaveApplications();
+       const apiFilters: any[] = showHistory
+        ? [["status", "in", ["Approved", "Rejected", "Open", "Cancelled"]]]
+        : [["status", "=", "Open"]];
+
+      if (filters.from_date) {
+        apiFilters.push(["from_date", ">=", filters.from_date]);
+      }
+      if (filters.to_date) {
+        apiFilters.push(["from_date", "<=", filters.to_date]);
+      }
+      const response = await getAllLeaveApplications(apiFilters);
       setData(response || []);
     } catch (err) {
       console.error("Failed to fetch leave applications", err);
@@ -108,12 +122,12 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
     status:   string,
     doc_type?: string,
   ) => {
-    if (status === "Cancelled" || status === "Rejected") {
+    if (status === "Delete") {
       const isConfirmed = await showConfirm(
-        `Are you sure you want to ${status.toLowerCase()} this leave application?`,
+        "Are you sure you want to delete this leave application?",
         {
-          title:             `${status === "Cancelled" ? "Cancel" : "Reject"} Leave`,
-          confirmButtonText: `Yes, ${status === "Cancelled" ? "Cancel" : "Reject"}`,
+          title: "Delete Leave",
+          confirmButtonText: "Yes, Delete",
           confirmButtonColor: "#ef4444",
         },
       );
@@ -121,7 +135,19 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
     }
 
     try {
-      setIsLoading(true);
+      if (status === "Delete") {
+        // 1. Delete the record
+        await deleteLeaveApplication(id);
+        showSuccess("Leave application has been deleted successfully.");
+        
+        // 2. Refresh the table
+        await fetchLeaves();
+        onAfterApply?.();
+        
+        // 3. STOP here! Do not run the PUT request below.
+        return; 
+      }
+
       const payload: any = { status };
       if (doc_type) payload.doc_type = doc_type;
 
@@ -129,7 +155,7 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
       showSuccess(`Leave application has been ${status.toLowerCase()} successfully.`);
 
       await fetchLeaves();
-      onAfterApply?.();   // ← notify parent to refresh balance + recent
+      onAfterApply?.();
     } catch (err: any) {
       showApiError(
         err?.response?.data?.message ?? err?.message ?? "Failed to update status.",
@@ -173,11 +199,25 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
         </div>
       ),
     },
+    // {
+    //   key:    "status",
+    //   header: "Status",
+    //   align:  "left",
+    //   render: (e) => <StatusBadge status={e.status || "Open"} />,
+    // },
     {
       key:    "status",
       header: "Status",
       align:  "left",
-      render: (e) => <StatusBadge status={e.status || "Open"} />,
+      render: (e) => {
+        let displayStatus = e.status || "Open";
+        
+        if (displayStatus === "Open") {
+          displayStatus = "Pending Approval";
+        } 
+
+        return <StatusBadge status={displayStatus} />;
+      },
     },
     {
       key:    "actions",
@@ -194,25 +234,13 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
             icon:    <Edit2 size={14} />,
             onClick: () => openLeaveApplyModal(e, true),
           });
-          // actions.push({
-          //   label:         "Approve",
-          //   icon:          <CheckCircle size={14} className="text-green-600" />,
-          //   onClick:       () => handleStatusUpdate(leaveId, "Approved", "1"),
-          //   dividerBefore: true,
-          // });
-          // actions.push({
-          //   label:  "Reject",
-          //   icon:   <XCircle size={14} />,
-          //   onClick: () => handleStatusUpdate(leaveId, "Rejected", "1"),
-          //   danger: true,
-          // });
         }
 
         if (!isActionDone) {
           actions.push({
-            label:         "Cancel Leave",
+            label:         "Delete Leave",
             icon:          <Ban size={14} />,
-            onClick:       () => handleStatusUpdate(leaveId, "Cancelled"),
+            onClick:       () => handleStatusUpdate(leaveId, "Delete"),
             danger:        true,
             dividerBefore: actions.length > 0,
           });
@@ -223,10 +251,30 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
     },
   ];
 
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <Table
+     extraFilters={
+              <>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showHistory}
+                    onChange={(e) => setShowHistory(e.target.checked)}
+                    className="cursor-pointer"
+                  />
+                  Show Leave History
+                </label>
+                <DateRangeFilter
+                  from={filters.from_date}
+                  to={filters.to_date}
+                  onChange={(range) => {
+                    setFilters((prev) => ({ ...prev, ...range }));
+                    setPage(1);
+                  }}
+                />
+              </>
+            }
       loading={isLoading}
       columns={columns}
       data={data}
