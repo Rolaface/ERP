@@ -5,6 +5,7 @@ import {
   Menu, ChevronDown, ChevronUp, Repeat, Receipt, Users2, LogOut, Landmark, Calculator, Calendar, Clock, FileText,
   BarChart2, ShieldCheck, Star, Mail,
   User,
+  CreditCard,
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -174,7 +175,7 @@ const settingsItems: SettingsItem[] = [
   {
     to: "/Expense-Management",
     label: "Expense Management",
-    icon: <Users {...iconProps} />,
+    icon: <CreditCard {...iconProps} />,
     modules: ["Expense Claim","Expense Claim Type"]
   },
   {
