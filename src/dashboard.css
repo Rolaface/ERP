@@ -1,0 +1,60 @@
+/* =========================================
+   DASHBOARD SYSTEM
+   Centralized Dashboard Design System
+   -----------------------------------------
+   PURPOSE:
+   Unified operational dashboard styling
+   for all ERP dashboard modules.
+
+   MODULES:
+   - Employee Dashboard
+   - Sales Dashboard
+   - Procurement Dashboard
+   - HR Dashboard
+   - CRM Dashboard
+   - Analytics Dashboard
+========================================= */
+
+/* =========================================
+   FOUNDATION
+========================================= */
+
+@import "./styles/dashboard-system/tokens.css";
+@import "./styles/dashboard-system/themes.css";
+
+/* =========================================
+   CORE LAYOUT SYSTEM
+========================================= */
+
+@import "./styles/dashboard-system/layout.css";
+@import "./styles/dashboard-system/surfaces.css";
+
+/* =========================================
+   TYPOGRAPHY + MOTION
+========================================= */
+
+@import "./styles/dashboard-system/typography.css";
+@import "./styles/dashboard-system/motion.css";
+
+/* =========================================
+   UI COMPONENT SYSTEM
+========================================= */
+
+@import "./styles/dashboard-system/components.css";
+@import "./styles/dashboard-system/forms.css";
+@import "./styles/dashboard-system/tables.css";
+@import "./styles/dashboard-system/navigation.css";
+@import "./styles/dashboard-system/charts.css";
+@import "./styles/dashboard-system/states.css";
+
+/* =========================================
+   UTILITIES
+========================================= */
+
+@import "./styles/dashboard-system/utilities.css";
+
+.dashboard-root {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}

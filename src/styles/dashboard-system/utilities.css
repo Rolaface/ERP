@@ -1,0 +1,578 @@
+/* =========================================
+   DASHBOARD SYSTEM — UTILITIES
+========================================= */
+
+/* =========================================
+   DISPLAY
+========================================= */
+
+.block {
+  display: block;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.inline-flex {
+  display: inline-flex;
+}
+
+.flex {
+  display: flex;
+}
+
+.grid {
+  display: grid;
+}
+
+.hidden {
+  display: none;
+}
+
+/* =========================================
+   FLEX ALIGNMENT
+========================================= */
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.items-end {
+  align-items: flex-end;
+}
+
+.justify-start {
+  justify-content: flex-start;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-around {
+  justify-content: space-around;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap;
+}
+
+/* =========================================
+   GAP SYSTEM
+========================================= */
+
+.gap-xs {
+  gap: var(--dashboard-space-1);
+}
+
+.gap-sm {
+  gap: var(--dashboard-space-2);
+}
+
+.gap-md {
+  gap: var(--dashboard-space-3);
+}
+
+.gap-lg {
+  gap: var(--dashboard-space-4);
+}
+
+.gap-xl {
+  gap: var(--dashboard-space-6);
+}
+
+/* =========================================
+   STACK UTILITIES
+========================================= */
+
+.stack-xs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dashboard-space-1);
+}
+
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dashboard-space-2);
+}
+
+.stack-md {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dashboard-space-3);
+}
+
+.stack-lg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dashboard-space-4);
+}
+
+.stack-xl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dashboard-space-6);
+}
+
+/* =========================================
+   GRID UTILITIES
+========================================= */
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* =========================================
+   WIDTH UTILITIES
+========================================= */
+
+.w-full {
+  width: 100%;
+}
+
+.w-auto {
+  width: auto;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.max-w-full {
+  max-width: 100%;
+}
+
+/* =========================================
+   HEIGHT UTILITIES
+========================================= */
+
+.h-full {
+  height: 100%;
+}
+
+.min-h-0 {
+  min-height: 0;
+}
+
+/* =========================================
+   PADDING UTILITIES
+========================================= */
+
+.p-xs {
+  padding: var(--dashboard-space-1);
+}
+
+.p-sm {
+  padding: var(--dashboard-space-2);
+}
+
+.p-md {
+  padding: var(--dashboard-space-3);
+}
+
+.p-lg {
+  padding: var(--dashboard-space-4);
+}
+
+.p-xl {
+  padding: var(--dashboard-space-6);
+}
+
+.px-sm {
+  padding-left: var(--dashboard-space-2);
+  padding-right: var(--dashboard-space-2);
+}
+
+.px-md {
+  padding-left: var(--dashboard-space-3);
+  padding-right: var(--dashboard-space-3);
+}
+
+.px-lg {
+  padding-left: var(--dashboard-space-4);
+  padding-right: var(--dashboard-space-4);
+}
+
+.py-sm {
+  padding-top: var(--dashboard-space-2);
+  padding-bottom: var(--dashboard-space-2);
+}
+
+.py-md {
+  padding-top: var(--dashboard-space-3);
+  padding-bottom: var(--dashboard-space-3);
+}
+
+.py-lg {
+  padding-top: var(--dashboard-space-4);
+  padding-bottom: var(--dashboard-space-4);
+}
+
+/* =========================================
+   MARGIN UTILITIES
+========================================= */
+
+.m-auto {
+  margin: auto;
+}
+
+.mt-xs {
+  margin-top: var(--dashboard-space-1);
+}
+
+.mt-sm {
+  margin-top: var(--dashboard-space-2);
+}
+
+.mt-md {
+  margin-top: var(--dashboard-space-3);
+}
+
+.mt-lg {
+  margin-top: var(--dashboard-space-4);
+}
+
+.mb-xs {
+  margin-bottom: var(--dashboard-space-1);
+}
+
+.mb-sm {
+  margin-bottom: var(--dashboard-space-2);
+}
+
+.mb-md {
+  margin-bottom: var(--dashboard-space-3);
+}
+
+.mb-lg {
+  margin-bottom: var(--dashboard-space-4);
+}
+
+/* =========================================
+   OVERFLOW
+========================================= */
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-auto {
+  overflow: auto;
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+/* =========================================
+   SCROLL HELPERS
+========================================= */
+
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* =========================================
+   POSITION
+========================================= */
+
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.sticky {
+  position: sticky;
+}
+
+.fixed {
+  position: fixed;
+}
+
+/* =========================================
+   BORDER UTILITIES
+========================================= */
+
+.border {
+  border: 1px solid var(--dashboard-border);
+}
+
+.border-top {
+  border-top: 1px solid var(--dashboard-border);
+}
+
+.border-bottom {
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+/* =========================================
+   RADIUS UTILITIES
+========================================= */
+
+.radius-sm {
+  border-radius: var(--dashboard-radius-sm);
+}
+
+.radius-md {
+  border-radius: var(--dashboard-radius-md);
+}
+
+.radius-lg {
+  border-radius: var(--dashboard-radius-lg);
+}
+
+.radius-xl {
+  border-radius: var(--dashboard-radius-xl);
+}
+
+.radius-full {
+  border-radius: 999px;
+}
+
+/* =========================================
+   ELEVATION UTILITIES
+========================================= */
+
+.shadow-sm {
+  box-shadow: var(--dashboard-shadow-sm);
+}
+
+.shadow-md {
+  box-shadow: var(--dashboard-shadow-md);
+}
+
+.shadow-lg {
+  box-shadow: var(--dashboard-shadow-lg);
+}
+
+/* =========================================
+   BACKGROUND UTILITIES
+========================================= */
+
+.bg-page {
+  background: var(--dashboard-bg);
+}
+
+.bg-surface {
+  background: var(--dashboard-surface);
+}
+
+.bg-surface-alt {
+  background: var(--dashboard-surface-alt);
+}
+
+.bg-elevated {
+  background: var(--dashboard-surface-elevated);
+}
+
+/* =========================================
+   TEXT UTILITIES
+========================================= */
+
+.text-primary {
+  color: var(--dashboard-text-primary);
+}
+
+.text-secondary {
+  color: var(--dashboard-text-secondary);
+}
+
+.text-muted {
+  color: var(--dashboard-text-muted);
+}
+
+.text-success {
+  color: var(--dashboard-success);
+}
+
+.text-danger {
+  color: var(--dashboard-danger);
+}
+
+.text-warning {
+  color: var(--dashboard-warning);
+}
+
+.text-info {
+  color: var(--dashboard-info);
+}
+
+/* =========================================
+   TEXT TRUNCATION
+========================================= */
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================================
+   VISIBILITY
+========================================= */
+
+.visible {
+  visibility: visible;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+/* =========================================
+   OPACITY
+========================================= */
+
+.opacity-0 {
+  opacity: 0;
+}
+
+.opacity-50 {
+  opacity: 0.5;
+}
+
+.opacity-100 {
+  opacity: 1;
+}
+
+/* =========================================
+   CURSOR
+========================================= */
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-default {
+  cursor: default;
+}
+
+.cursor-not-allowed {
+  cursor: not-allowed;
+}
+
+/* =========================================
+   USER SELECT
+========================================= */
+
+.select-none {
+  user-select: none;
+}
+
+/* =========================================
+   INTERACTION HELPERS
+========================================= */
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+.pointer-events-auto {
+  pointer-events: auto;
+}
+
+/* =========================================
+   RESPONSIVE HELPERS
+========================================= */
+
+@media (max-width: 1024px) {
+  .lg-hidden {
+    display: none;
+  }
+
+  .lg-stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lg-grid-1 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .md-hidden {
+    display: none;
+  }
+
+  .md-stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .md-grid-1 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .sm-hidden {
+    display: none;
+  }
+
+  .sm-full {
+    width: 100%;
+  }
+
+  .sm-stack {
+    display: flex;
+    flex-direction: column;
+  }
+}
