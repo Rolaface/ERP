@@ -47,7 +47,8 @@ export type ModalType =
   | "leavePolicyAssignment"
   | "holidayList"
   | "expense"
-  | "expenseType";
+  | "expenseType"
+  |"emailTemplate";
 
 export interface ModalContext {
   source?: string;
@@ -55,6 +56,8 @@ export interface ModalContext {
   callback?: ModalCallback;
   onSuccess?: ModalCallback;
   onSubmit?: (data: unknown) => Promise<void> | void;
+  isViewMode?: boolean;
+
 }
 
 export interface ModalMeta {
@@ -216,14 +219,14 @@ export const useModalStore = create<ModalState>((set, get) => ({
       modals: state.modals.map((m) =>
         m.id === id
           ? {
-              ...m,
-              meta: {
-                title: meta.title,
-                subtitle: meta.subtitle,
-                icon: meta.icon,
-                onRequestClose: meta.onRequestClose,
-              },
-            }
+            ...m,
+            meta: {
+              title: meta.title,
+              subtitle: meta.subtitle,
+              icon: meta.icon,
+              onRequestClose: meta.onRequestClose,
+            },
+          }
           : m,
       ),
     }));
@@ -509,6 +512,7 @@ export const openSalesTaxTemplateModal = (
 
 export const openBankAccountModal = (
   initialData?: unknown,
+
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta,
@@ -810,3 +814,13 @@ export const openExpenseTypeModal = (
   useModalStore
     .getState()
     .openModal("expenseType", initialData, isEdit, context, meta);
+
+
+export const openEmailTemplateModal = (
+  templateId?: string,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("emailTemplate", { templateId }, !!templateId, context, meta);

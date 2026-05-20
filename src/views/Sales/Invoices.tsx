@@ -45,7 +45,8 @@ import { saveAs } from "file-saver";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
-
+import SendEmailModal from "../../components/common/SendEmailModal";
+import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -99,6 +100,14 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
+
+  //email
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailInvoice, setEmailInvoice] = useState<InvoiceSummary | null>(null);
+  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(null);
+  const [emailInvoiceAttachments, setEmailInvoiceAttachments] = useState<
+    { name: string; file_name: string }[]
+  >([]);
 
   const { can } = usePermission();
   // ── Drawer (same pattern as ProformaInvoicesTable)
@@ -394,64 +403,39 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   };
 
   // ── Drawer: generate PDF inside drawer (same as proforma handleDrawerPdf)
-  const handleDrawerPdf = async (invoiceNumber: string) => {
-    setDrawerPdfLoading(true);
-    setDrawerPdfUrl(null);
-    try {
-      if (!company) return;
-      const res = await getSalesInvoiceById(invoiceNumber);
-      if (!res || res.message.status_code !== 200) return;
-      const blobUrl = await generateInvoicePDF(
-        res.message.data as Invoice,
-        company,
-        "bloburl",
-      );
-      setDrawerPdfUrl(blobUrl);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setDrawerPdfLoading(false);
-    }
-  };
+ const handleDrawerPdf = async (invoiceNumber: string) => {
+  setDrawerPdfLoading(true);
+  setDrawerPdfUrl(null);
+  try {
+    const blob = await getSalesInvoicePdf(invoiceNumber);
+    const blobUrl = URL.createObjectURL(blob);
+    setDrawerPdfUrl(blobUrl);
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setDrawerPdfLoading(false);
+  }
+};
 
   // ── PDF preview modal (table row action — kept, do not remove)
   const handlePreviewPDF = async (
-    inv: InvoiceSummary,
-    e?: React.MouseEvent,
-  ) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Preparing invoice preview...");
-
-      if (!company) {
-        closeSwal();
-        showApiError("Company data not loaded");
-        return;
-      }
-
-      const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      console.log("🚀 ~ handlePreviewPDF ~ invoiceRes:", invoiceRes);
-      if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
-        closeSwal();
-        showApiError("Failed to load invoice");
-        return;
-      }
-
-      const blobUrl = await generateInvoicePDF(
-        invoiceRes.message.data,
-        company,
-        "bloburl",
-      );
-      closeSwal();
-      setPdfUrl(blobUrl);
-      setSelectedInvoice(invoiceRes.data);
-      setPdfOpen(true);
-    } catch (err: any) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-
+  inv: InvoiceSummary,
+  e?: React.MouseEvent,
+) => {
+  e?.stopPropagation();
+  try {
+    showLoading("Preparing invoice preview...");
+    const blob = await getSalesInvoicePdf(inv.invoiceNumber);
+    const blobUrl = URL.createObjectURL(blob);
+    closeSwal();
+    setPdfUrl(blobUrl);
+    setSelectedInvoice(null); // no longer needed for PDF generation
+    setPdfOpen(true);
+  } catch (err: any) {
+    closeSwal();
+    showApiError(err);
+  }
+};
   const handleDownload = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
@@ -716,7 +700,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             </PermissionGate>
             <ActionMenu
               showDownload
-              onDownload={(e) => handleDownload(inv, e)}
+              // onDownload={(e) => handleDownload(inv, e)}
               // Delete — needs delete permission
               {...(can(SALES_MODULE, "delete")
                 ? { onDelete: (e) => handleDelete(inv.invoiceNumber, e) }
@@ -729,6 +713,24 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                   can(PAYMENT_MODULE, "create")
                   ? [{ label: "Receive Payment", onClick: () => handleReceivePayment(inv) }]
                   : []),
+                {
+                  label: "Send Email",
+                  onClick: async () => {
+                    setEmailInvoice(inv);
+                    setEmailContactEmail(null);
+                    setEmailInvoiceAttachments([]);   // clear stale attachments
+                    setEmailModalOpen(true);
+                    try {
+                      const res = await getSalesInvoiceById(inv.invoiceNumber);
+                      if (res?.message?.status_code === 200) {
+                        setEmailContactEmail(res.message.data?.contact_email ?? null);
+                        setEmailInvoiceAttachments(res.message.data?.attachments ?? []);
+                      }
+                    } catch {
+                      // non-critical: modal opens with empty To/attachments if fetch fails
+                    }
+                  },
+                },
                 {
                   label: "View PDF",
                   onClick: () => handlePreviewPDF(inv),
@@ -854,6 +856,20 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           company &&
           generateInvoicePDF(selectedInvoice, company, "save")
         }
+      />
+      <SendEmailModal
+        open={emailModalOpen}
+        docType="Sales Invoice"
+        invoiceNumber={emailInvoice?.invoiceNumber}
+        contactEmail={emailContactEmail}
+        customerName={emailInvoice?.customerName}  
+        invoiceAttachments={emailInvoiceAttachments}
+        onClose={() => {
+          setEmailModalOpen(false);
+          setEmailInvoice(null);
+          setEmailContactEmail(null);
+          setEmailInvoiceAttachments([]);
+        }}
       />
     </div>
   );
