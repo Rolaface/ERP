@@ -183,12 +183,6 @@ const PayrollPeriodModal = lazy(
       default: m.PayrollPeriodModal,
     })),
 );
-const EmailTemplateModal = lazy(
-  () => import("../../components/Email/EmailTemplatemodal"), 
-);
-
-
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
@@ -914,17 +908,6 @@ case "payroll":
         if (context?.onSuccess) context.onSuccess(undefined);
         handleClose();
       }}
-    />,
-  );
-  case "emailTemplate":
-  return wrappedModal(
-    <EmailTemplateModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-      templateId={getModalSeedValue(modal.initialData, "templateId") as string | undefined}
     />,
   );
   case "holidayList":
