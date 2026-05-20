@@ -486,7 +486,6 @@ const GlobalModalHandler: React.FC = () => {
                 ? getInitialData<BankAccount>(modal.initialData)
                 : null
             }
-            isEditMode={modal.isEdit}
             defaultAccountFor={bankData?.accountFor as any}
             partyName={bankData?.partyName as string | undefined}
             partyId={bankData?.partyId as string | undefined}

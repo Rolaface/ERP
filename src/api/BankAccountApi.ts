@@ -212,6 +212,13 @@ type UpdateBankStatusPayload = {
   isDisabled?: 0 | 1;
 };
 
+export async function getBankAccountById(id: string) {
+  const resp: AxiosResponse = await api.get(Account.getBankAccountById, {
+    params: { id },
+  });
+  return resp?.data?.message?.data ?? null;
+}
+
 export async function updateBankAccountStatus(
   payload: UpdateBankStatusPayload
 ) {

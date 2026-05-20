@@ -8,6 +8,8 @@ import DatePickerInput from "../calendar/DatePickerInput";
 import SearchSelect2 from "../ui/modal/SearchSelect";
 import { BankAccount } from "../../types/BankAccount/bank";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
+import { getBankAccountById } from "../../api/BankAccountApi";
+import { showApiError } from "../../utils/alert";
 
 interface Props {
   isOpen: boolean;
@@ -53,7 +55,7 @@ const AddBankAccountModal: React.FC<Props> = ({
     reportingAccounts,
     isCompany,
     isSubmitting,
-  } = useBankAccLogic({ onSubmit, onClose });
+} = useBankAccLogic({ onSubmit, onClose, isEdit: !!initialData });
 
   useEffect(() => {
     if (!initialData && defaultAccountFor) {
@@ -98,6 +100,40 @@ const AddBankAccountModal: React.FC<Props> = ({
       accountHolderEdited: false,
     }));
   }, [partyName, defaultAccountFor, entities, initialData, currency]);
+
+  useEffect(() => {
+  if (!initialData?.id) return;
+
+  const load = async () => {
+    try {
+      const data = await getBankAccountById(String(initialData.id));
+      if (!data) return;
+
+      setForm((prev) => ({
+        ...prev,
+        dateAdded: data.dateAdded || prev.dateAdded,
+        accountFor: data.accountFor || prev.accountFor,
+        name: data.partyName || "",
+        partyId: data.partyName || "",
+        displayName: data.partyName || "",
+        bank: data.bank || "",
+        swiftCode: data.swiftNumber || "",
+        currency: data.currency || "",
+        accountNumber: data.bank_account_no || "",
+        accountHolder: data.accountHolderName || "",
+        sortCode: data.branch_code || "",
+        iban: data.iban || "",
+        isDefault: Number(data.is_default) === 1,
+        isDisabled: Number(data.disabled) === 1,
+        reportingAccount: data.ledgerAccount || "",
+      }));
+    } catch (err) {
+      showApiError(err);
+    }
+  };
+
+  load();
+}, [initialData?.id]);
   
   const clearError = (field: string) =>
     setErrors((prev) => {
@@ -114,7 +150,7 @@ const AddBankAccountModal: React.FC<Props> = ({
     if (!form.bank) e.bank = "Bank is required";
     if (!form.accountNumber) e.accountNumber = "Account Number is required";
     if (!form.sortCode) e.sortCode = "IFSC / Sort Code is required";
-    if (!form.currency) e.currency = "Currency is required";
+    // if (!form.currency) e.currency = "Currency is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
