@@ -46,6 +46,7 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
 import SendEmailModal from "../../components/common/SendEmailModal";
+import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -317,41 +318,40 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     }
   };
 
-  const handleDrawerPdf = async (invoiceNumber: string) => {
-    setDrawerPdfLoading(true);
-    setDrawerPdfUrl(null);
-    try {
-      if (!company) return;
-      const res = await getSalesInvoiceById(invoiceNumber);
-      if (!res || res.message.status_code !== 200) return;
-      const blobUrl = await generateInvoicePDF(res.message.data as Invoice, company, "bloburl");
-      setDrawerPdfUrl(blobUrl);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setDrawerPdfLoading(false);
-    }
-  };
+  // ── Drawer: generate PDF inside drawer (same as proforma handleDrawerPdf)
+ const handleDrawerPdf = async (invoiceNumber: string) => {
+  setDrawerPdfLoading(true);
+  setDrawerPdfUrl(null);
+  try {
+    const blob = await getSalesInvoicePdf(invoiceNumber);
+    const blobUrl = URL.createObjectURL(blob);
+    setDrawerPdfUrl(blobUrl);
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setDrawerPdfLoading(false);
+  }
+};
 
-  const handlePreviewPDF = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Preparing invoice preview...");
-      if (!company) { closeSwal(); showApiError("Company data not loaded"); return; }
-      const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
-        closeSwal(); showApiError("Failed to load invoice"); return;
-      }
-      const blobUrl = await generateInvoicePDF(invoiceRes.message.data, company, "bloburl");
-      closeSwal();
-      setPdfUrl(blobUrl);
-      setSelectedInvoice(invoiceRes.data);
-      setPdfOpen(true);
-    } catch (err: any) {
-      closeSwal(); showApiError(err);
-    }
-  };
-
+  // ── PDF preview modal (table row action — kept, do not remove)
+  const handlePreviewPDF = async (
+  inv: InvoiceSummary,
+  e?: React.MouseEvent,
+) => {
+  e?.stopPropagation();
+  try {
+    showLoading("Preparing invoice preview...");
+    const blob = await getSalesInvoicePdf(inv.invoiceNumber);
+    const blobUrl = URL.createObjectURL(blob);
+    closeSwal();
+    setPdfUrl(blobUrl);
+    setSelectedInvoice(null); // no longer needed for PDF generation
+    setPdfOpen(true);
+  } catch (err: any) {
+    closeSwal();
+    showApiError(err);
+  }
+};
   const handleDownload = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
@@ -556,7 +556,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             </PermissionGate>
             <ActionMenu
               showDownload
-              onDownload={(e) => handleDownload(inv, e)}
+              // onDownload={(e) => handleDownload(inv, e)}
+              // Delete — needs delete permission
               {...(can(SALES_MODULE, "delete")
                 ? { onDelete: (e) => handleDelete(inv.invoiceNumber, e) }
                 : {})}
