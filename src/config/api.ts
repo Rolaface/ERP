@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -41,6 +41,10 @@ export const API = {
     forgotPassword: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.forgot_password`,
     logout: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`,
   },
+
+   pdf:{
+    getDocumentPdf: `${ERP_BASE}/api/method/custom_hrms.api.pdf.api.get_document_pdf`,
+   },
 
   /* =========================
    * DASHBOARD

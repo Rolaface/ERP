@@ -10,6 +10,12 @@ const WHITE: [number, number, number] = [255, 255, 255];
 const INK: [number, number, number] = [25, 45, 75];
 const INK_SOFT: [number, number, number] = [70, 95, 130];
 const INK_PALE: [number, number, number] = [130, 150, 180];
+const fmtMonthYear = (dateStr: any) => {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  return `${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`;
+};
 
 const px = (path: string): string => {
   if (!path) return "";
@@ -19,43 +25,12 @@ const px = (path: string): string => {
 
 const fmt2 = (n: any) => Number(n ?? 0).toFixed(2);
 
-const addrBlock = (a: any): string[] => {
-  if (!a || typeof a.addressLine1 !== "string") return [];
-
-  const raw = a.addressLine1
-    .replace(/<br>/g, "\n")
-    .split("\n")
-    .map((l: string) => l.trim())
+const parseAddressDisplay = (html: string): string[] => {
+  if (!html) return [];
+  return html
+    .split(/<br\s*\/?>/i)
+    .map((l) => l.replace(/\n/g, "").trim())
     .filter(Boolean);
-
-  const result: string[] = [];
-
-  for (let i = 0; i < raw.length; i++) {
-    const line = raw[i];
-    const next = raw[i + 1];
-
-    // ✅ Merge AREA + CITY (e.g. "Clement Town Cantt" + "DEHRADUN")
-    if (
-      line &&
-      next &&
-      next === next.toUpperCase() &&
-      /^[A-Za-z ]+$/.test(line)
-    ) {
-      result.push(`${line}, ${next}`);
-      i++;
-      continue;
-    }
-
-    if (line && next && /^\d{5,6}$/.test(line) && /^[A-Za-z ]+$/.test(next)) {
-      result.push(`${line}, ${next}`);
-      i++;
-      continue;
-    }
-
-    result.push(line);
-  }
-
-  return result;
 };
 
 const fmtDate = (dateStr: any) => {
@@ -191,25 +166,34 @@ export const generatePurchaseInvoicePDF = async (
   const LH = 4.5;
   const PAD = 3;
   const gap = 3;
-  const colW = (W - M * 2 - gap * 2) / 3;
+  const supplierL = parseAddressDisplay(pi.supplierAddressDisplay);
+const dispatchL = parseAddressDisplay(pi.dispatchAddressDisplay);
+const shippingL = parseAddressDisplay(pi.shippingAddressDisplay);
 
-  const supplierL = addrBlock({ addressLine1: pi?.supplierAddressDisplay });
-  const dispatchL = addrBlock({ addressLine1: pi?.dispatchAddressDisplay });
-  const shippingL = addrBlock({ addressLine1: pi?.shippingAddressDisplay });
+const addressBoxes = [
+  { title: "Supplier", lines: supplierL, boldTop: pi?.supplierName ?? "-" },
+  ...(pi.dispatchAddressDisplay
+    ? [{ title: "Dispatch Address", lines: dispatchL, boldTop: pi?.supplierName ?? "-" }]
+    : []),
+  { title: "Ship To", lines: shippingL, boldTop: company?.companyName ?? "-" },
+].filter((box) => box.lines && box.lines.length > 0);
 
-  const calcBoxH = (lines: string[], hasBoldTop = false) => {
-    let h = BOX_HDR + PAD * 2;
-    if (hasBoldTop) h += LH + 1;
-    lines.forEach((l) => {
-      h += doc.splitTextToSize(l, colW - 6).length * LH;
-    });
-    return h + 2;
-  };
-  const boxH = Math.max(
-    calcBoxH(supplierL, true),
-    calcBoxH(dispatchL),
-    calcBoxH(shippingL),
-  );
+const colCount = addressBoxes.length || 1;
+const colW = (W - M * 2 - gap * (colCount - 1)) / colCount;
+
+const calcBoxH = (lines: string[], hasBoldTop = false) => {
+  let h = BOX_HDR + PAD * 2;
+  if (hasBoldTop) h += LH + 1;
+  lines.forEach((l) => {
+    h += doc.splitTextToSize(l, colW - 6).length * LH;
+  });
+  return h + 2;
+};
+
+const boxH = Math.max(
+  ...addressBoxes.map((b) => calcBoxH(b.lines, !!b.boldTop))
+);
+  
   const drawBox = (
     bx: number,
     title: string,
@@ -246,20 +230,10 @@ export const generatePurchaseInvoicePDF = async (
     });
   };
 
-  drawBox(M, "Supplier", supplierL, pi?.supplierName ?? "-");
-  drawBox(
-  M + colW + gap,
-  "Dispatch Address",
-  dispatchL,
-  pi?.supplierName ?? "-"
-);
-drawBox(
-  M + (colW + gap) * 2,
-  "Ship To",
-  shippingL,
-  company?.companyName ?? "-"
-);
-
+addressBoxes.forEach((box, index) => {
+  const x = M + index * (colW + gap);
+  drawBox(x, box.title, box.lines, box.boldTop);
+});
   const afterBoxY = AY + boxH + 4;
   autoTable(doc, {
     startY: afterBoxY,
@@ -355,13 +329,13 @@ drawBox(
   item.itemName ?? "-",
   item.batchNo ?? "-",
   item.warehouse ?? "-",
-  fmtDate(item.mfgDate),   
-  fmtDate(item.expDate), 
+  fmtMonthYear(item.mfgDate),   
+  fmtMonthYear(item.expDate), 
   packing,  
   Number(item.quantity ?? 0),
   item.uom ?? "-",
   fmt2(item.rate),
-  `${tax?.taxName ?? "-"} (${tax?.totalTaxRate ?? 0}%)`,
+  `${tax?.taxName ?? ""} (${tax?.totalTaxRate ?? 0}%)`,
   fmt2((item.quantity ?? 0) * (item.rate ?? 0)),
 ];
     }),
