@@ -104,6 +104,7 @@ const mapBankResponse = (
         value: item.name,
         meta: {
           mobile: item.mobile_no,
+          currency: item.default_currency,
         },
       }));
 
@@ -154,6 +155,7 @@ const mapBankResponse = (
       return raw.map((item: any) => ({
         label: item.employee_name || item.name,
         value: item.name,
+        currency: item.default_currency,
       }));
 
 

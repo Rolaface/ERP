@@ -15,7 +15,7 @@ import { showSuccess } from "../../utils/alert";
 import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
 import { MinimizableModal } from "./MinimizableModal";
 import { createUser } from "../../api/RoleManagement/CreateUserApi";
-import type { SalaryComponent,PayrollPeriod,SalaryStructure } from "../../api/payrollConfigApi";
+import type { SalaryComponent, PayrollPeriod, SalaryStructure } from "../../api/payrollConfigApi";
 
 
 import {
@@ -114,25 +114,25 @@ const LeaveApplyModal = lazy(
     import("../../components/Hr/hrsetupmodals/LeaveApplyModal"),
 );
 const LeaveTypeModal = lazy(
-  ()=>
-  import("../Hr/hrsetupmodals/LeaveTypeModal").then((m) => ({
+  () =>
+    import("../Hr/hrsetupmodals/LeaveTypeModal").then((m) => ({
       default: m.LeaveTypeModal,
     })),
 );
 const LeavePeriodModal = lazy(
-  ()=>
-  import("../Hr/hrsetupmodals/LeavePeriodModal").then((m) => ({
+  () =>
+    import("../Hr/hrsetupmodals/LeavePeriodModal").then((m) => ({
       default: m.LeavePeriodModal,
     })),
 );
 const LeavePolicyModal = lazy(
-  ()=>
-  import("../Hr/hrsetupmodals/LeavePolicyModal").then((m) => ({
+  () =>
+    import("../Hr/hrsetupmodals/LeavePolicyModal").then((m) => ({
       default: m.LeavePolicyModal,
     })),
-);const LeavePolicyAssignmentModal = lazy(
-  ()=>
-  import("../Hr/hrsetupmodals/LeavePolicyAssignmentModal").then((m) => ({
+); const LeavePolicyAssignmentModal = lazy(
+  () =>
+    import("../Hr/hrsetupmodals/LeavePolicyAssignmentModal").then((m) => ({
       default: m.LeavePolicyAssignmentModal,
     })),
 );
@@ -184,7 +184,7 @@ const PayrollPeriodModal = lazy(
     })),
 );
 const EmailTemplateModal = lazy(
-  () => import("../../components/Email/EmailTemplatemodal"), 
+  () => import("../../components/Email/EmailTemplatemodal"),
 );
 
 
@@ -370,26 +370,26 @@ const GlobalModalHandler: React.FC = () => {
             pId={getModalSeedValue(modal.initialData, "pId")}
           />,
         );
-        case "expense":
-  return wrappedModal(
-    <ExpenseModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-    />,
-  );
-  case "expenseType":
-  return wrappedModal(
-    <ExpenseTypeModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-    />,
-  );
+      case "expense":
+        return wrappedModal(
+          <ExpenseModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+          />,
+        );
+      case "expenseType":
+        return wrappedModal(
+          <ExpenseTypeModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+          />,
+        );
       case "JournalEntries":
         return wrappedModal(
           <JournalEntriesModal
@@ -483,9 +483,11 @@ const GlobalModalHandler: React.FC = () => {
         return wrappedModal(
           <AddBankAccountModal
             key={modal.id}
+            isViewMode={context?.isViewMode ?? false}
             modalId={modal.id}
             isOpen={true}
             onClose={handleClose}
+
             onSubmit={handleSubmit}
             initialData={
               modal.isEdit
@@ -507,8 +509,8 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={getRecordInitialData(modal.initialData)}  
-      isEdit={modal.isEdit}  
+            initialData={getRecordInitialData(modal.initialData)}
+            isEdit={modal.isEdit}
           />,
         );
 
@@ -643,7 +645,7 @@ const GlobalModalHandler: React.FC = () => {
               bank_name: string;
               swift_number: string;
               name?: string;
-            }>(modal.initialData)} 
+            }>(modal.initialData)}
             isEditMode={modal.isEdit}
           />,
         );
@@ -660,28 +662,28 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={
               modal.isEdit && context?.onSubmit
                 ? async (data: CreateUserFormData) => {
-                    await context.onSubmit!(data);
-                    showSuccess("User updated successfully");
+                  await context.onSubmit!(data);
+                  showSuccess("User updated successfully");
+                  useDataRefreshStore
+                    .getState()
+                    .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
+                  if (context?.onSuccess) await context.onSuccess(undefined);
+                  handleClose();
+                }
+                : async (data: CreateUserFormData) => {
+                  const response = await createUser(data);
+                  if (response.message.status === "success") {
+                    showSuccess("User created successfully");
                     useDataRefreshStore
                       .getState()
                       .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
-                    if (context?.onSuccess) await context.onSuccess(undefined);
+                    if (context?.onSuccess)
+                      await context.onSuccess(response.message.data);
                     handleClose();
+                  } else {
+                    throw new Error("User creation failed");
                   }
-                : async (data: CreateUserFormData) => {
-                    const response = await createUser(data);
-                    if (response.message.status === "success") {
-                      showSuccess("User created successfully");
-                      useDataRefreshStore
-                        .getState()
-                        .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
-                      if (context?.onSuccess)
-                        await context.onSuccess(response.message.data);
-                      handleClose();
-                    } else {
-                      throw new Error("User creation failed");
-                    }
-                  }
+                }
             }
           />,
         );
@@ -701,232 +703,232 @@ const GlobalModalHandler: React.FC = () => {
 
 
 
-case "payroll":
-  return wrappedModal(
-    <NewPayrollEntry
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onBack={handleClose}
-      initialData={modal.initialData as any}
-      isEdit={modal.isEdit}
-      onSuccess={async (empIds, formData) => {
-        try {
-          if (context?.onSubmit) {
-            await context.onSubmit({ empIds, formData });
-          }
-          handleClose();
-        } catch (error) {
-          console.error(error);
-          throw error;
-        }
-      }}
-    />,
-  );
-  case "salaryComponent":
-  return wrappedModal(
-    <SalaryComponentModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData<SalaryComponent>(modal.initialData)}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
-      }}
-    />,
-  );
-  case "salaryStructure":
-  return wrappedModal(
-    <SalaryStructureModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData<SalaryStructure>(modal.initialData)}
-      earningComponents={[]}
-      deductionComponents={[]}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-      }}
-    />,
-  );
+      case "payroll":
+        return wrappedModal(
+          <NewPayrollEntry
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onBack={handleClose}
+            initialData={modal.initialData as any}
+            isEdit={modal.isEdit}
+            onSuccess={async (empIds, formData) => {
+              try {
+                if (context?.onSubmit) {
+                  await context.onSubmit({ empIds, formData });
+                }
+                handleClose();
+              } catch (error) {
+                console.error(error);
+                throw error;
+              }
+            }}
+          />,
+        );
+      case "salaryComponent":
+        return wrappedModal(
+          <SalaryComponentModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData<SalaryComponent>(modal.initialData)}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+              handleClose();
+            }}
+          />,
+        );
+      case "salaryStructure":
+        return wrappedModal(
+          <SalaryStructureModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData<SalaryStructure>(modal.initialData)}
+            earningComponents={[]}
+            deductionComponents={[]}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+            }}
+          />,
+        );
 
-  case "taxConfig":
-  return wrappedModal(
-    <TaxConfigModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-      }}
-    />,
-  );
-  case "department":
-  return wrappedModal(
-    <DepartmentModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-      }}
-    />,
-  );
+      case "taxConfig":
+        return wrappedModal(
+          <TaxConfigModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+            }}
+          />,
+        );
+      case "department":
+        return wrappedModal(
+          <DepartmentModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+            }}
+          />,
+        );
 
-  case "designation":
-  return wrappedModal(
-    <DesignationModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-      }}
-    />,
-  );
-  case "grade":
-  return wrappedModal(
-    <GradeModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-      }}
-    />,
-  );
-  case "employeeType":
-  return wrappedModal(
-    <EmployeeTypeModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-      }}
-    />,
-  );
-  case "leaveApply":
-  return wrappedModal(
-    <LeaveApplyModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData<LeaveApplication>(modal.initialData)}
-      // earningComponents={[]}
-      // deductionComponents={[]}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
-      }}
-    />,
-  );
-  case "Payrollperiod":
-  return wrappedModal(
-    <PayrollPeriodModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData<PayrollPeriod>(modal.initialData)}
-      // earningComponents={[]}
-      // deductionComponents={[]}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
-      }}
-    />,
-  );
-  case "leaveType":
-  return wrappedModal(
-    <LeaveTypeModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData<LeaveType>(modal.initialData)}
-      // earningComponents={[]}
-      // deductionComponents={[]}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
-      }}
-    />,
-  );
-  case "leavePeriod":
-  return wrappedModal(
-    <LeavePeriodModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      // earningComponents={[]}
-      // deductionComponents={[]}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
-      }}
-    />,
-  );
-  case "leavePolicy":
-  return wrappedModal(
-    <LeavePolicyModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      // earningComponents={[]}
-      // deductionComponents={[]}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
-      }}
-    />,
-  );
-  case "leavePolicyAssignment":
-  return wrappedModal(
-    <LeavePolicyAssignmentModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      // earningComponents={[]}
-      // deductionComponents={[]}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
-      }}
-    />,
-  );
-  case "emailTemplate":
-  return wrappedModal(
-    <EmailTemplateModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-      templateId={getModalSeedValue(modal.initialData, "templateId") as string | undefined}
-    />,
-  );
-  case "holidayList":
+      case "designation":
+        return wrappedModal(
+          <DesignationModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+            }}
+          />,
+        );
+      case "grade":
+        return wrappedModal(
+          <GradeModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+            }}
+          />,
+        );
+      case "employeeType":
+        return wrappedModal(
+          <EmployeeTypeModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+            }}
+          />,
+        );
+      case "leaveApply":
+        return wrappedModal(
+          <LeaveApplyModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData<LeaveApplication>(modal.initialData)}
+            // earningComponents={[]}
+            // deductionComponents={[]}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+              handleClose();
+            }}
+          />,
+        );
+      case "Payrollperiod":
+        return wrappedModal(
+          <PayrollPeriodModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData<PayrollPeriod>(modal.initialData)}
+            // earningComponents={[]}
+            // deductionComponents={[]}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+              handleClose();
+            }}
+          />,
+        );
+      case "leaveType":
+        return wrappedModal(
+          <LeaveTypeModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData<LeaveType>(modal.initialData)}
+            // earningComponents={[]}
+            // deductionComponents={[]}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+              handleClose();
+            }}
+          />,
+        );
+      case "leavePeriod":
+        return wrappedModal(
+          <LeavePeriodModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            // earningComponents={[]}
+            // deductionComponents={[]}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+              handleClose();
+            }}
+          />,
+        );
+      case "leavePolicy":
+        return wrappedModal(
+          <LeavePolicyModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            // earningComponents={[]}
+            // deductionComponents={[]}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+              handleClose();
+            }}
+          />,
+        );
+      case "leavePolicyAssignment":
+        return wrappedModal(
+          <LeavePolicyAssignmentModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            // earningComponents={[]}
+            // deductionComponents={[]}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+              handleClose();
+            }}
+          />,
+        );
+      case "emailTemplate":
+        return wrappedModal(
+          <EmailTemplateModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            templateId={getModalSeedValue(modal.initialData, "templateId") as string | undefined}
+          />,
+        );
+      case "holidayList":
         return wrappedModal(
           <HolidayListModal
             key={modal.id}
