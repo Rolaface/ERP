@@ -26,6 +26,7 @@ interface Props {
 
 const EMPTY: LeavePolicyAssignment = {
   employee: "",
+  employee_name: "",
   leave_policy: "",
   assignment_based_on: "Leave Period",
   leave_period: "",
@@ -52,6 +53,7 @@ const [selectedEmployeeOption, setSelectedEmployeeOption] = useState<any>(undefi
         initialData
           ? {
               employee: initialData.employee ?? "",
+              employee_name: initialData.employee_name,
               leave_policy: initialData.leave_policy ?? "",
               assignment_based_on: initialData.assignment_based_on ?? "Leave Period",
               leave_period: initialData.leave_period ?? "",
@@ -159,7 +161,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
     }
   };
 
-  const footer = (
+  const footer = !isEdit ? (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -179,7 +181,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
         {saving ? "Saving…" : isEdit ? "Update Assignment" : "Create Assignment"}
       </button>
     </div>
-  );
+  ): null;
 
   return (
     <MinimizableModal
@@ -206,6 +208,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
               set("employee", val); 
             }}
             required={true}
+            disabled={isEdit}
           />
             
                  <PolicySelect
@@ -244,7 +247,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
              <SearchSelect2
         label="Leave Period"
         placeholder="Search leave period (e.g., HR-LPR-...)"
-        value={selectedPeriod}
+        value={form.leave_period}
         fetchOptions={fetchLeavePeriodsOptions}
         onChange={(val) => {
           setSelectedPeriod(val);
@@ -252,6 +255,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
           console.log("Selected Leave Period Name:", val); 
         }}
         required={true}
+        disabled={isEdit}
       />
             )}
           </div>
@@ -264,6 +268,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
               label="Carry Forward Unused Leaves"
               value={form.carry_forward ? "Y" : "N"}
               onChange={(name, value) => set("carry_forward", value === "Y" ? 1 : 0)}
+              disabled={isEdit}
             />
             
             {/* {!isEdit && (

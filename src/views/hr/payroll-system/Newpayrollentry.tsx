@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  FileText,
-  Users,
-  Settings,
-} from "lucide-react";
+import { FileText, Users, Settings } from "lucide-react";
 import type { PayrollEntry } from "../../../types/payrolltypes";
 import {
   DEFAULT_COMPANY,
@@ -18,18 +14,21 @@ import { EmployeesTab } from "./EmployeesTab";
 import { AccountingTab } from "./Accountingtab";
 import { getAllEmployees } from "../../../api/employeeapi";
 import ModalFooter from "../../../components/common/ModalFooter";
+import { MinimizableModal } from "../../../components/common/MinimizableModal";
 
 interface Props {
+  modalId: string;
+  isOpen: boolean;
   onBack: () => void;
   onSuccess: (
     empIds: string[],
     formData: PayrollEntry,
     docName?: string,
   ) => Promise<void>;
-
   initialData?: PayrollEntry | null;
   isEdit?: boolean;
 }
+
 const TABS: { label: string; icon: React.ReactNode }[] = [
   { label: "Overview", icon: <FileText className="w-3.5 h-3.5" /> },
   { label: "Employees", icon: <Users className="w-3.5 h-3.5" /> },
@@ -40,6 +39,7 @@ const EMPTY_FORM: PayrollEntry = {
   payrollName: "",
   postingDate: new Date().toISOString().slice(0, 10),
   currency: DEFAULT_CURRENCY,
+  payrollMonth: "",
   exchangeRate: DEFAULT_EXCHANGE_RATE,
   company: DEFAULT_COMPANY,
   payrollPayableAccount: DEFAULT_PAYROLL_PAYABLE_ACCOUNT,
@@ -58,39 +58,24 @@ const EMPTY_FORM: PayrollEntry = {
 };
 
 const NewPayrollEntry: React.FC<Props> = ({
+  modalId,
+  isOpen,
   onBack,
   onSuccess,
   initialData,
   isEdit,
 }) => {
-  const [step,        setStep]        = useState(0);
-  const [submitting,  setSubmitting]  = useState(false);
+  const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-const [formData, setFormData] = useState<PayrollEntry>({
-  ...EMPTY_FORM,
-  ...initialData,
-  selectedEmployees:
-    initialData?.selectedEmployees || [],
-});
-  const [employees,   setEmployees]   = useState<any[]>([]);
+  const [formData, setFormData] = useState<PayrollEntry>({
+    ...EMPTY_FORM,
+    ...initialData,
+    selectedEmployees: initialData?.selectedEmployees || [],
+  });
+  const [employees, setEmployees] = useState<any[]>([]);
 
   const isLastStep = step === TABS.length - 1;
-
-  const handleNext = () => {
-    setStep((p) => Math.min(TABS.length - 1, p + 1));
-  };
-
-  const handlePrevious = () => {
-    setStep((p) => Math.max(0, p - 1));
-  };
-
-  const handleReset = () => {
-    if (submitting) return;
-
-    setFormData(EMPTY_FORM);
-    setSubmitError(null);
-    setStep(0);
-  };
 
   const handleClose = () => {
     if (submitting) return;
@@ -102,35 +87,25 @@ const [formData, setFormData] = useState<PayrollEntry>({
     setSubmitError(null);
   };
 
-const handleSubmit = async () => {
-  if (submitting) return false;
+  const handleSubmit = async () => {
+    if (submitting) return false;
+    if (!formData.selectedEmployees.length) return false;
 
-  if (!formData.selectedEmployees.length) {
-    return false;
-  }
+    setSubmitting(true);
+    setSubmitError(null);
 
-  setSubmitting(true);
-  setSubmitError(null);
-
-  try {
-    await onSuccess(
-      formData.selectedEmployees,
-      formData,
-    );
-
-    return true;
-  } catch (err: unknown) {
-    setSubmitError(
-      err instanceof Error
-        ? err.message
-        : "Failed to create payroll entry.",
-    );
-
-    return false;
-  } finally {
-    setSubmitting(false);
-  }
-};
+    try {
+      await onSuccess(formData.selectedEmployees, formData);
+      return true;
+    } catch (err: unknown) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to create payroll entry.",
+      );
+      return false;
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -155,105 +130,79 @@ const handleSubmit = async () => {
     })();
   }, []);
 
-
-  const footer = (
-    <ModalFooter
-      onCancel={handleClose}
-      onReset={handleReset}
-      onPrevious={step > 0 ? handlePrevious : undefined}
-      onNext={!isLastStep ? handleNext : undefined}
-      onSubmit={isLastStep ? handleSubmit : undefined}
-      currentTab={step}
-      totalTabs={TABS.length}
-      isSubmitting={submitting}
-      submitLabel={`Create Payroll (${formData.selectedEmployees.length})`}
-      submitDisabled={!formData.selectedEmployees.length}
-    />
-  );
-
   return (
-    <div className="flex flex-col h-full -mx-4 -my-3 overflow-hidden">
+    <MinimizableModal
+      modalId={modalId}
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={isEdit ? "Edit Payroll Entry" : "New Payroll Entry"}
+      subtitle="Create payroll entries"
+      maxWidth="6xl"
+      height="90vh"
+    >
+      <div className="flex flex-col h-full -mx-4 -my-3 overflow-hidden">
+        {/* Tabs */}
+        <div className="bg-app border-b border-theme px-8 shrink-0">
+          <div className="flex gap-8 overflow-x-auto">
+            {TABS.map((t, i) => {
+              const isActive = i === step;
+              return (
+                <button
+                  key={t.label}
+                  type="button"
+                  onClick={() => setStep(i)}
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium whitespace-nowrap cursor-pointer transition-all flex items-center gap-2
+                    ${
+                      isActive
+                        ? "text-primary border-b-[3px] border-primary"
+                        : "text-muted border-b-[3px] border-transparent hover:text-main"
+                    }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
+        {/* Tab content */}
+        <div className="flex-1 min-h-0 overflow-y-auto bg-app p-5">
+          {step === 0 && <OverviewTab data={formData} onChange={update} />}
+          {step === 1 && <EmployeesTab data={formData} onChange={update} />}
+          {step === 2 && (
+            <AccountingTab
+              data={formData}
+              onChange={update}
+              employees={employees}
+            />
+          )}
+        </div>
 
-      {/* Tabs */}
-      <div className="bg-app border-b border-theme px-8 shrink-0">
-        <div className="flex gap-8 overflow-x-auto">
-          {TABS.map((t, i) => {
-            const isActive = i === step;
-
-            return (
-              <button
-                key={t.label}
-                type="button"
-                onClick={() => setStep(i)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium whitespace-nowrap cursor-pointer transition-all flex items-center gap-2
-            ${isActive
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
-              >
-                {t.label}
-              </button>
-            );
-          })}
+        {/* Footer */}
+        <div className="shrink-0 border-t border-theme bg-app px-5 py-3">
+          <ModalFooter
+            onCancel={handleClose}
+            onNext={
+              !isLastStep
+                ? () => setStep((p) => Math.min(TABS.length - 1, p + 1))
+                : undefined
+            }
+            onSubmit={isLastStep ? handleSubmit : undefined}
+            currentTab={step}
+            totalTabs={TABS.length}
+            isSubmitting={submitting}
+            nextLabel="Next"
+            submitLabel={
+              isEdit
+                ? "Update Payroll"
+                : `Create Payroll (${formData.selectedEmployees.length})`
+            }
+            submitDisabled={!formData.selectedEmployees.length}
+          />
         </div>
       </div>
-
-      {/* ── Scrollable tab content ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto bg-app p-5">
-        {step === 0 && <OverviewTab data={formData} onChange={update} />}
-        {step === 1 && (
-          <EmployeesTab
-            data={formData}
-            onChange={update}
-            
-          />
-        )}
-        {step === 2 && (
-          <AccountingTab
-            data={formData}
-            onChange={update}
-            employees={employees}
-          />
-        )}
-      </div>
-
-      
-
-    <div className="shrink-0 border-t border-theme bg-app px-5 py-3">
-  <ModalFooter
-    onCancel={onBack}
-    onNext={
-      !isLastStep
-        ? () =>
-            setStep((p) =>
-              Math.min(
-                TABS.length - 1,
-                p + 1,
-              ),
-            )
-        : undefined
-    }
-    onSubmit={
-      isLastStep
-        ? handleSubmit
-        : undefined
-    }
-    currentTab={step}
-    totalTabs={TABS.length}
-    isSubmitting={submitting}
-    nextLabel="Next"
-    submitLabel={
-  isEdit
-    ? "Update Payroll"
-    : `Create Payroll (${formData.selectedEmployees.length})`
-}
-    submitDisabled={
-      !formData.selectedEmployees.length
-    }
-  />
-</div>
-    </div>
+    </MinimizableModal>
   );
 };
+
 export default NewPayrollEntry;
