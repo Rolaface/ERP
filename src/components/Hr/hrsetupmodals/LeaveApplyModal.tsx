@@ -22,6 +22,7 @@ import { MinimizableModal } from "../../common/MinimizableModal";
 import { ModalInput }     from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import { useAuth }        from "../../../context/AuthContext";
+import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,7 +80,6 @@ export default function LeaveApplyModal({
     const fetchEmployeeData = async () => {
       try {
         const res = await getEmployeeById(user.employeeId!);
-        console.log("Res", res);
         const data = res?.message?.data ?? res?.data ?? res;
         const approver = data?.leave_approver ?? "";
         setLeaveApprover(approver);
@@ -114,7 +114,7 @@ export default function LeaveApplyModal({
           reason:    l.description || "",
         });
       } catch (err) {
-        console.error("Failed to fetch leave", err);
+        showApiError(parseFrappeError(err) || `Failed to fetch leave: ${err}`);
       }
     };
     fetchLeaveDetail();
@@ -216,10 +216,9 @@ export default function LeaveApplyModal({
     e.preventDefault();
     if (!formData.type)      { showApiError("Leave Type is required"); return; }
     if (!formData.startDate) { showApiError("Start date is required"); return; }
-    if (!formData.isHalfDay && !formData.endDate) {
+    if (!formData.endDate) {
       showApiError("End date is required"); return;
     }
-
     setLoading(true);
     try {
       showLoading(isEditMode ? "Updating Leave..." : "Applying Leave...");
@@ -240,7 +239,7 @@ export default function LeaveApplyModal({
       handleClose();
     } catch (err) {
       closeSwal();
-      showApiError(err);
+      showApiError(parseFrappeError(err) || err);
     } finally {
       setLoading(false);
     }
@@ -269,7 +268,8 @@ export default function LeaveApplyModal({
       </button>
       <button
         type="submit"
-        form="leave-form"
+        // form="leave-form"
+        form={`leave-form-${modalId}`}
         disabled={loading}
         className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
@@ -313,7 +313,7 @@ export default function LeaveApplyModal({
 
           {/* ── RIGHT: Form ── */}
           <div className="lg:col-span-7">
-            <form id="leave-form" onSubmit={handleSubmit} className="space-y-5">
+            <form id={`leave-form-${modalId}`} onSubmit={handleSubmit} noValidate className="space-y-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-sub">
                 Application Details
               </p>
