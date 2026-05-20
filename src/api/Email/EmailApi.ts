@@ -43,7 +43,7 @@ export interface SendEmailParams {
 }
 
 export interface SendEmailResponse {
-  message: unknown; // Frappe returns various shapes; callers only check success
+  message: unknown; 
 }
 
 export async function sendEmail(

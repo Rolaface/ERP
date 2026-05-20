@@ -6,6 +6,7 @@ import { useSendEmail } from "../../hooks/useSendEmail";
 import type { AttachmentItem, UploadingAttachment, ReadyAttachment, InvoiceAttachment } from "../../hooks/useSendEmail";
 import { ChevronDown, ChevronUp, Loader2, Paperclip, AlertTriangle } from "lucide-react";
 
+
 interface Props {
   open: boolean;
    docType: "Sales Invoice" | "Purchase Order" | "Payment Entry";
@@ -141,7 +142,6 @@ const SendEmailModal: React.FC<Props> = ({
     handleAddFiles,
     handleRemoveAttachment,
     sending,
-    error,
     templateLoading, 
     handleSend,
   } = useSendEmail({ open, docType, invoiceNumber, contactEmail, customerName, supplierName,invoiceAttachments, onClose });
@@ -411,19 +411,7 @@ const SendEmailModal: React.FC<Props> = ({
                 />
               </div>
             </div>
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div style={{
-              fontSize: "12px", color: "var(--danger)",
-              background: "color-mix(in srgb, var(--danger) 10%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--danger) 20%, transparent)",
-              borderRadius: "8px", padding: "8px 12px",
-            }}>
-              {error}
-            </div>
-          )}
+          </div>     
         </div>
 
         {/* ── Footer ── */}
