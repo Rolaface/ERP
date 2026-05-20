@@ -98,13 +98,13 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
+
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrderDetail | null>(null);
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
   const [company, setCompany] = useState<any | null>(null);
 
   // ── Detail modal (drawer)
-  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrderDetail | null>(null);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
