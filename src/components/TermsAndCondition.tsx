@@ -9,6 +9,7 @@ import {
   FaFileAlt,
 } from "react-icons/fa";
 import { MdOutlineTextFields, MdOutlineCalendarToday } from "react-icons/md";
+import { NumericInput } from "../components/ui/modal/modalComponent";
 import type {
   TermSection,
   PaymentTerms,
@@ -137,13 +138,14 @@ export const ConditionCell: React.FC<ConditionCellProps> = ({
           <span className="text-muted text-sm whitespace-nowrap">
             Payable within
           </span>
-          <input
-            type="number"
-            min="0"
-            className="w-10 text-center bg-transparent border-b-2 border-primary outline-none text-sm font-semibold text-main"
-            value={numVal}
-            placeholder="–"
-            onChange={(e) => handleNumChange(e.target.value)}
+          <NumericInput
+            name="conditionDays"
+            value={numVal ? Number(numVal) : null}
+            placeholder="0"
+            onChange={(value) =>
+              handleNumChange(value == null ? "" : String(value))
+            }
+            className="w-10 text-center"
           />
           <span className="text-muted text-sm whitespace-nowrap">days</span>
         </div>
@@ -225,13 +227,14 @@ export const TemplateField: React.FC<TemplateFieldProps> = ({
       ) : (
         <div className="flex items-center gap-1.5 flex-1 flex-wrap">
           <span className="text-muted text-sm whitespace-nowrap">{prefix}</span>
-          <input
-            type="number"
-            min="0"
-            className={`${inputWidth} text-center bg-transparent border-b-2 border-primary outline-none text-sm font-semibold text-main`}
-            value={numVal}
-            placeholder="–"
-            onChange={(e) => handleNumChange(e.target.value)}
+          <NumericInput
+            name="templateNumber"
+            value={numVal ? Number(numVal) : null}
+            placeholder="0"
+            onChange={(value) =>
+              handleNumChange(value == null ? "" : String(value))
+            }
+            className={inputWidth}
           />
           <span className="text-muted text-sm whitespace-nowrap">{suffix}</span>
         </div>
@@ -386,15 +389,11 @@ const TermsAndCondition: React.FC<Props> = ({
             </colgroup>
             <thead>
               <tr className="table-head">
-                <th className="px-3 py-2 text-left text-xs font-medium">
-                  #
-                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium">#</th>
                 <th className="px-3 py-2 text-left text-xs font-medium">
                   Phase
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium">
-                  %
-                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium">%</th>
                 <th className="px-3 py-2 text-left text-xs font-medium">
                   Description
                 </th>
@@ -434,16 +433,18 @@ const TermsAndCondition: React.FC<Props> = ({
                     {/* % cell — text turns danger color when over limit */}
                     <td className="px-3 py-2.5 overflow-hidden">
                       {isEditing ? (
-                        <input
-                          type="number"
-                          min="0"
-                          className={`w-full bg-transparent outline-none text-sm transition-colors duration-150 ${
+                        <NumericInput
+                          name="percentage"
+                          value={p.percentage ? Number(p.percentage) : null}
+                          placeholder="0"
+                          onChange={(value) =>
+                            updatePhase(idx, {
+                              percentage: value == null ? "" : String(value),
+                            })
+                          }
+                          className={`w-full ${
                             isOverLimit ? "text-danger" : "text-muted"
                           }`}
-                          value={p.percentage}
-                          onChange={(e) =>
-                            updatePhase(idx, { percentage: e.target.value })
-                          }
                         />
                       ) : (
                         <span className="text-sm">{p.percentage || "—"}</span>
@@ -472,15 +473,16 @@ const TermsAndCondition: React.FC<Props> = ({
 
                     <td className="px-3 py-2.5 overflow-hidden">
                       {isEditing ? (
-                        <input
-                          type="number"
-                          min="0"
-                          className="w-full text-center bg-transparent border-b-2 border-primary outline-none text-sm font-semibold text-main"
-                          value={p.credit_days}
-                          placeholder="—"
-                          onChange={(e) =>
-                            updatePhase(idx, { credit_days: e.target.value })
+                        <NumericInput
+                          name="credit_days"
+                          value={p.credit_days ? Number(p.credit_days) : null}
+                          placeholder="0"
+                          onChange={(value) =>
+                            updatePhase(idx, {
+                              credit_days: value == null ? "" : String(value),
+                            })
                           }
+                          className="w-full text-center"
                         />
                       ) : (
                         <span className="text-sm font-medium block text-center">

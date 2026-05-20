@@ -8,12 +8,23 @@ import React, {
 import { ModalSelect } from "../../ui/modal/modalComponent";
 import { getAllSalaryStructures } from "../../../api/utils/frappeUtilsApi";
 import { getCurrencyList } from "../../../api/lookupApi";
-import { getSalaryStructure, type SalaryStructure, getAllTaxConfigs } from "../../../api/payrollConfigApi";
+import { useCompanyStore } from "../../../store/companyStore";
+import {
+  getSalaryStructure,
+  getTaxConfig,
+  type SalaryStructure,
+  type TaxConfig,
+  getAllTaxConfigs,
+} from "../../../api/payrollConfigApi";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { NumericInput } from "../../ui/modal/modalComponent";
 import {
-  calculateSalary, toKey, buildCompensationPayload,
-  type SalaryComponentDef, type SalaryResult, type ComponentResult,
+  calculateSalary,
+  solveBaseFromGross,
+  buildCompensationPayload,
+  type SalaryComponentDef,
+  type SalaryResult,
+  type ComponentResult,
 } from "./salaryengine";
 
 export { buildCompensationPayload };
@@ -23,72 +34,82 @@ type CompensationTabProps = {
   handleInputChange: (field: string, value: any) => void;
 };
 
-const fmt = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-const toNum = (v: any) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
-
-// ─── Plain number input ───────────────────────────────────────────────────────
-
-const PlainInput: React.FC<{
-  name: string; value: string | number;
-  onChange: (val: string) => void;
-  placeholder?: string; disabled?: boolean; className?: string;
-}> = ({ name, value, onChange, placeholder = "0", disabled = false, className = "" }) => (
-  <>
-    <style>{`
-      input[data-ns]::-webkit-outer-spin-button,
-      input[data-ns]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-      input[data-ns] { -moz-appearance: textfield; }
-    `}</style>
-    <input
-      data-ns type="number" name={name} value={value} placeholder={placeholder}
-      disabled={disabled} onChange={(e) => onChange(e.target.value)}
-      className={`w-full bg-transparent border border-theme rounded px-2 py-1 text-xs text-main
-        focus:outline-none focus:ring-1 focus:ring-primary/40
-        disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-app ${className}`}
-    />
-  </>
-);
-
-// ─── Component Table ──────────────────────────────────────────────────────────
-
-const ComponentTable: React.FC<{
-  sectionLabel: string; accentClass: string;
-  components: ComponentResult[];
-}> = ({ sectionLabel, accentClass, components }) => {
-  if (!components.length) return null;
-  return (
-    <>
-      <tr>
-        <td colSpan={2} className={`pt-3 pb-1 px-2 text-[10px] font-bold uppercase tracking-widest border-b border-theme ${accentClass}`}>
-          {sectionLabel}
-        </td>
-      </tr>
-      {components.map((comp) => (
-        <tr key={comp.key} className="border-b border-theme/30 hover:bg-app/50 transition-colors">
-          <td className="py-2 px-2 w-1/2">
-            <p className="text-xs text-main font-medium leading-tight">{comp.name}</p>
-            {comp.isFormula && comp.formula && (
-              <p className="text-[10px] text-muted font-mono mt-0.5 leading-none">= {comp.formula}</p>
-            )}
-          </td>
-          <td className="py-1.5 px-2 w-1/2">
-            <PlainInput name={comp.key} value={comp.amount} onChange={() => {}} disabled />
-          </td>
-        </tr>
-      ))}
-    </>
-  );
+const fmt = (n: number) => n.toLocaleString();
+const toNum = (v: any): number => {
+  if (v === null || v === undefined) return 0;
+  const n = typeof v === "number" ? v : parseFloat(v);
+  return isNaN(n) ? 0 : n;
 };
 
-// ─── Summary Row ──────────────────────────────────────────────────────────────
+// ─── Field wrapper ────────────────────────────────────────────────────────────
+
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => (
+  <div className="flex flex-col gap-1 min-w-0">
+    <label className="text-[11px] font-medium text-muted leading-none truncate">
+      {label}
+    </label>
+    {children}
+  </div>
+);
+
+// ─── Component row ────────────────────────────────────────────────────────────
+
+const CompRow: React.FC<{ comp: ComponentResult }> = ({ comp }) => (
+  <tr className="border-b border-theme/30 last:border-0 hover:bg-app/40 transition-colors">
+    <td className="py-1.5 pl-2 pr-1 w-[55%]">
+      <p className="text-xs text-main leading-tight truncate">{comp.name}</p>
+      {comp.isFormula && comp.formula && (
+        <p className="text-[10px] text-muted/70 font-mono leading-none mt-0.5 truncate">
+          = {comp.formula}
+        </p>
+      )}
+    </td>
+    <td className="py-1.5 pr-2 pl-1 w-[45%]">
+      <NumericInput
+        name={comp.key}
+        value={comp.amount}
+        onChange={() => {}}
+        disabled
+        decimalScale={2}
+        className="w-full h-8 !text-xs !px-2.5"
+      />
+    </td>
+  </tr>
+);
+
+// ─── Summary row ─────────────────────────────────────────────────────────────
 
 const SummaryRow: React.FC<{
-  label: string; value: string;
-  bold?: boolean; accent?: boolean; negative?: boolean; dimmed?: boolean; topBorder?: boolean;
-}> = ({ label, value, bold, accent, negative, dimmed, topBorder }) => (
-  <div className={`flex justify-between items-center py-1 ${topBorder ? "border-t border-theme mt-1 pt-2" : ""}`}>
-    <span className={`text-xs ${dimmed ? "text-muted" : "text-main"} ${bold ? "font-semibold" : ""}`}>{label}</span>
-    <span className={`text-xs ${bold ? "font-bold" : "font-medium"} ${accent ? "text-primary" : negative ? "text-red-500 dark:text-red-400" : dimmed ? "text-muted" : "text-main"}`}>
+  label: string;
+  value: string;
+  variant?: "default" | "accent" | "negative" | "dimmed";
+  topBorder?: boolean;
+}> = ({ label, value, variant = "default", topBorder }) => (
+  <div
+    className={[
+      "flex justify-between items-center py-1 px-1.5 rounded-md",
+      topBorder ? "border-t border-theme mt-1 pt-2" : "",
+    ].join(" ")}
+  >
+    <span
+      className={`text-xs leading-tight ${variant === "dimmed" ? "text-muted" : "text-main"}`}
+    >
+      {label}
+    </span>
+    <span
+      className={`text-xs font-medium tabular-nums ${
+        variant === "accent"
+          ? "text-primary font-semibold"
+          : variant === "negative"
+            ? "text-red-500 dark:text-red-400"
+            : variant === "dimmed"
+              ? "text-muted"
+              : "text-main"
+      }`}
+    >
       {value}
     </span>
   </div>
@@ -96,27 +117,43 @@ const SummaryRow: React.FC<{
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export const CompensationTab: React.FC<CompensationTabProps> = ({ formData, handleInputChange }) => {
+export const CompensationTab: React.FC<CompensationTabProps> = ({
+  formData,
+  handleInputChange,
+}) => {
   const [componentDefs, setComponentDefs] = useState<SalaryComponentDef[]>([]);
   const [isLoadingStructure, setIsLoadingStructure] = useState(false);
   const [isLoadingTax, setIsLoadingTax] = useState(false);
   const [salaryResult, setSalaryResult] = useState<SalaryResult | null>(null);
+  const [taxConfig, setTaxConfig] = useState<TaxConfig | null>(null);
+  const { baseCurrency, currencySymbol } = useCompanyStore();
 
-  const monthlyBase = toNum(formData.basicSalary ?? 0);
-  const currency = formData.currency || "";
+  // Track which field user is typing in — prevents recalc stomping active input
+  const activeField = useRef<"base" | "gross" | null>(null);
+
+  const [baseInput, setBaseInput] = useState<number | null>(
+    toNum(formData.basicSalary) || null,
+  );
+  const [grossInput, setGrossInput] = useState<number | null>(
+    toNum(formData.grossSalary) || null,
+  );
+
+  // Derived values shown in the non-active field
+  const [computedGross, setComputedGross] = useState<number | null>(null);
+  const [computedBase, setComputedBase] = useState<number | null>(null);
+
+  const currency = formData.currency || baseCurrency || "";
+  const currencyPrefix = currencySymbol || currency || "";
   const hasComponents = componentDefs.length > 0;
   const cur = (n: number) => `${currencyPrefix} ${fmt(n)}`.trim();
 
-  // Recalculate on base or defs change
   useEffect(() => {
-    if (!componentDefs.length) { setSalaryResult(null); return; }
-    const result = calculateSalary(monthlyBase, componentDefs);
-    setSalaryResult(result);
-    handleInputChange("_salaryResult", result);
-    handleInputChange("grossSalary", String(result.gross));
-  }, [monthlyBase, componentDefs]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!formData.currency && baseCurrency) {
+      handleInputChange("currency", baseCurrency);
+    }
+  }, [formData.currency, baseCurrency, handleInputChange]);
 
-  // Load structure on mount if already selected (edit mode)
+  // Load structure on mount if editing existing record
   useEffect(() => {
     if (formData.salaryStructure && !componentDefs.length) {
       loadStructure(formData.salaryStructure);
@@ -202,11 +239,15 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({ formData, hand
       const structure: SalaryStructure = await getSalaryStructure(value);
       const defs: SalaryComponentDef[] = [
         ...(structure.earnings ?? []).map((row) => ({
-          ...row, amount: row.amount ?? 0, type: "Earning" as const,
+          ...row,
+          amount: row.amount ?? 0,
+          type: "Earning" as const,
           salary_component_abbr: row.salary_component_abbr ?? row.abbr ?? "",
         })),
         ...(structure.deductions ?? []).map((row) => ({
-          ...row, amount: row.amount ?? 0, type: "Deduction" as const,
+          ...row,
+          amount: row.amount ?? 0,
+          type: "Deduction" as const,
           salary_component_abbr: row.salary_component_abbr ?? row.abbr ?? "",
         })),
       ];
@@ -218,16 +259,29 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({ formData, hand
     }
   };
 
-  const handleSalaryStructureChange = useCallback((val: any) => {
-    const value = typeof val === "string" ? val : val?.value;
-    if (!value) return;
-    handleInputChange("salaryStructure", value);
-    loadStructure(value);
-  }, [handleInputChange]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleSalaryStructureChange = useCallback(
+    (val: any) => {
+      const value = typeof val === "string" ? val : val?.value;
+      if (!value) return;
+      handleInputChange("salaryStructure", value);
+      loadStructure(value);
+    },
+    [handleInputChange], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
-  const handleTaxSlabChange = useCallback((val: any) => {
-    handleInputChange("Taxslab", typeof val === "string" ? val : val?.value || "");
-  }, [handleInputChange]);
+  const handleTaxSlabChange = useCallback(
+    (val: any) => {
+      const value = typeof val === "string" ? val : val?.value || "";
+      handleInputChange("Taxslab", value);
+      if (value) {
+        loadTaxConfig(value);
+      } else {
+        // Tax slab cleared — remove tax from calculation
+        setTaxConfig(null);
+      }
+    },
+    [handleInputChange],
+  );
 
   const fetchCurrencyOptions = async (q: string) => {
     const list = await getCurrencyList({ search: q, page: 1, page_size: 20 });
@@ -237,121 +291,313 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({ formData, hand
     }));
   };
 
-  const { earningRows, deductionRows } = useMemo(() => ({
-    earningRows: salaryResult?.components.filter((c) => c.type === "Earning") ?? [],
-    deductionRows: salaryResult?.components.filter((c) => c.type === "Deduction") ?? [],
-  }), [salaryResult]);
+  const { earningRows, deductionRows } = useMemo(
+    () => ({
+      earningRows:
+        salaryResult?.components.filter((c) => c.type === "Earning") ?? [],
+      deductionRows:
+        salaryResult?.components.filter((c) => c.type === "Deduction") ?? [],
+    }),
+    [salaryResult],
+  );
+
+  const shownBase = activeField.current === "gross" ? computedBase : baseInput;
+  const shownGross =
+    activeField.current === "base" ? computedGross : grossInput;
+
+  const isLoading = isLoadingStructure || isLoadingTax;
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full space-y-3">
-      {/* Settings */}
-      <div className="bg-card rounded-lg border border-theme p-3 space-y-3">
-        <h4 className="text-xs font-semibold text-main uppercase tracking-wide">Salary Structure & Settings</h4>
-
-        <SearchSelect2
-          label="Salary Structure" value={formData.salaryStructure}
-          placeholder="Select Salary Structure..." fetchOptions={getAllSalaryStructures}
-          onChange={handleSalaryStructureChange}
-        />
-        <SearchSelect2
-          label="Tax Slab" value={formData.Taxslab} placeholder="Select tax slab..."
-          fetchOptions={async (q: string) => {
-            const res = await getAllTaxConfigs(0, 20, q);
-            return (res.data || []).map((item: any) => ({ label: item.name, value: item.name }));
-          }}
-          onChange={handleTaxSlabChange}
-        />
-
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="block text-[11px] font-semibold text-muted mb-1">Monthly Base Salary</label>
-            <PlainInput
-              name="basicSalary" value={formData.basicSalary ?? ""}
-              onChange={(val) => handleInputChange("basicSalary", val)}
-              placeholder="e.g. 50000"
+    <div className="w-full flex flex-col gap-2">
+      {/* ── Row 1: settings bar ── */}
+      <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
+        <div className="grid grid-cols-4 gap-3 items-end">
+          <Field label="Salary structure">
+            <SearchSelect2
+              label=""
+              value={formData.salaryStructure}
+              placeholder="Select structure…"
+              fetchOptions={getAllSalaryStructures}
+              onChange={handleSalaryStructureChange}
             />
-          </div>
-          <SearchSelect2
-            label="Currency" value={formData.currency} placeholder="Search currency…"
-            fetchOptions={fetchCurrencyOptions}
-            onChange={(val: any) => handleInputChange("currency", typeof val === "string" ? val : val?.value)}
-          />
-          <ModalSelect
-            label="Payment Mode" name="paymentMethod" value={formData.paymentMethod || ""}
-            onChange={(e) => handleInputChange("paymentMethod", e.target.value)}
-            options={[
-              { label: "Bank", value: "Bank" },
-              { label: "Cash", value: "Cash" },
-              { label: "Check", value: "Check" },
-            ]}
-          />
+          </Field>
+
+          <Field label="Tax slab">
+            <div className="relative">
+              <SearchSelect2
+                label=""
+                value={formData.Taxslab}
+                placeholder="Select tax slab…"
+                fetchOptions={async (q: string) => {
+                  const res = await getAllTaxConfigs(0, 20, q);
+                  return (res.data || []).map((item: any) => ({
+                    label: item.name,
+                    value: item.name,
+                  }));
+                }}
+                onChange={handleTaxSlabChange}
+              />
+              {isLoadingTax && (
+                <div className="absolute right-7 top-1/2 -translate-y-1/2">
+                  <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            {/* Show tax info badge when loaded */}
+            {taxConfig && !isLoadingTax && (
+              <p className="text-[10px] text-primary/70 leading-tight mt-0.5">
+                {taxConfig.slabs?.length ?? 0} slabs
+                {taxConfig.standard_tax_exemption_amount
+                  ? ` · ₹${taxConfig.standard_tax_exemption_amount.toLocaleString()} exemption`
+                  : ""}
+              </p>
+            )}
+          </Field>
+
+          <Field label="Currency">
+            <SearchSelect2
+              label=""
+              value={formData.currency}
+              placeholder="Search currency…"
+              fetchOptions={fetchCurrencyOptions}
+              onChange={(val: any) =>
+                handleInputChange(
+                  "currency",
+                  typeof val === "string" ? val : val?.value,
+                )
+              }
+            />
+          </Field>
+
+          <Field label="Payment mode">
+            <ModalSelect
+              label=""
+              name="paymentMethod"
+              value={formData.paymentMethod || ""}
+              onChange={(e) =>
+                handleInputChange("paymentMethod", e.target.value)
+              }
+              options={[
+                { label: "Bank", value: "Bank" },
+                { label: "Cash", value: "Cash" },
+                { label: "Check", value: "Check" },
+              ]}
+            />
+          </Field>
+        </div>
+      </div>
+
+      {/* ── Row 2: Dual salary inputs ── */}
+      <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
+        <div className="flex items-center justify-between mb-2.5">
+          <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
+            Monthly salary
+          </span>
+          {currency && (
+            <span className="text-[10px] text-muted/60 font-mono bg-app/60 px-2 py-0.5 rounded-full border border-theme">
+              {currency}
+            </span>
+          )}
         </div>
 
-        {isLoadingStructure && (
-          <div className="flex items-center gap-2 py-1">
+        <div className="grid grid-cols-2 gap-3 items-start">
+          <Field label="Base salary / month">
+            <div
+              onFocus={() => { activeField.current = "base"; }}
+              onBlur={() => { activeField.current = null; }}
+            >
+              <NumericInput
+                name="basicSalary"
+                value={shownBase}
+                onChange={(val) => setBaseInput(val)}
+                placeholder="e.g. 50,000"
+                decimalScale={2}
+                allowNegative={false}
+                className="w-full h-8 !text-xs !px-2.5"
+              />
+            </div>
+          </Field>
+
+          <Field label="Gross salary / month">
+            <div
+              onFocus={() => { activeField.current = "gross"; }}
+              onBlur={() => { activeField.current = null; }}
+            >
+              <NumericInput
+                name="grossSalary"
+                value={shownGross}
+                onChange={(val) => setGrossInput(val)}
+                placeholder="e.g. 77,500"
+                decimalScale={2}
+                allowNegative={false}
+                className="w-full h-8 !text-xs !px-2.5"
+              />
+            </div>
+          </Field>
+        </div>
+
+        {isLoading && (
+          <div className="flex items-center gap-2 mt-2">
             <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-muted">Loading components…</p>
+            <span className="text-xs text-muted">
+              {isLoadingStructure ? "Loading components…" : "Loading tax config…"}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Components + Summary */}
-      {!isLoadingStructure && hasComponents && salaryResult && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-card rounded-lg border border-theme p-3">
-            <h4 className="text-xs font-semibold text-main uppercase tracking-wide mb-2">
-              Components {currency && <span className="ml-1 normal-case font-normal text-muted">({currency})</span>}
-            </h4>
+      {/* ── Row 3: Components + Summary ── */}
+      {!isLoading && hasComponents && salaryResult && (
+        <div className="grid grid-cols-2 gap-2">
+          {/* Components panel */}
+          <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
+                Components
+              </span>
+              {currency && (
+                <span className="text-[10px] text-muted/60 font-mono">
+                  {currency}
+                </span>
+              )}
+            </div>
+
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-theme">
-                  <th className="text-left text-[10px] font-semibold text-muted uppercase tracking-wider py-1.5 px-2 w-1/2">Component</th>
-                  <th className="text-left text-[10px] font-semibold text-muted uppercase tracking-wider py-1.5 px-2 w-1/2">Amount</th>
+                  <th className="text-left text-[10px] font-medium text-muted uppercase tracking-wider pb-1.5 pl-2 w-[55%]">
+                    Component
+                  </th>
+                  <th className="text-left text-[10px] font-medium text-muted uppercase tracking-wider pb-1.5 pr-2 w-[45%]">
+                    Amount
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <ComponentTable sectionLabel="Earnings" accentClass="text-emerald-600 dark:text-emerald-400" components={earningRows} />
-                <ComponentTable sectionLabel="Deductions" accentClass="text-red-500 dark:text-red-400" components={deductionRows} />
+                {earningRows.length > 0 && (
+                  <>
+                    <tr>
+                      <td colSpan={2} className="pt-2 pb-0.5 pl-2">
+                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
+                          Earnings
+                        </span>
+                      </td>
+                    </tr>
+                    {earningRows.map((c) => (
+                      <CompRow key={c.key} comp={c} />
+                    ))}
+                  </>
+                )}
+                {deductionRows.length > 0 && (
+                  <>
+                    <tr>
+                      <td colSpan={2} className="pt-2 pb-0.5 pl-2">
+                        <span className="text-[10px] font-semibold text-red-500 dark:text-red-400 uppercase tracking-widest">
+                          Deductions
+                        </span>
+                      </td>
+                    </tr>
+                    {deductionRows.map((c) => (
+                      <CompRow key={c.key} comp={c} />
+                    ))}
+                  </>
+                )}
               </tbody>
             </table>
           </div>
 
-          <div className="bg-card rounded-lg border border-theme p-3">
-            <h4 className="text-xs font-semibold text-main uppercase tracking-wide mb-2">Summary</h4>
-            <div className="space-y-0.5">
-              <SummaryRow label="Monthly Base" value={`${currency} ${fmt(monthlyBase)}`} dimmed />
-              <SummaryRow label="Gross (Monthly)" value={`${currency} ${fmt(salaryResult.gross)}`} bold />
-              <SummaryRow label="Gross (Annual)" value={`${currency} ${fmt(salaryResult.gross * 12)}`} dimmed />
-              {salaryResult.deductionsTotal > 0 && (
-                <SummaryRow label="Deductions (Monthly)" value={`− ${currency} ${fmt(salaryResult.deductionsTotal)}`} negative />
+          {/* Summary panel */}
+          <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
+            <span className="text-[11px] font-medium text-muted uppercase tracking-wide block mb-2">
+              Summary
+            </span>
+
+            <div>
+              <SummaryRow
+                label="Monthly base"
+                value={cur(salaryResult.resolvedBase)}
+              />
+              <SummaryRow
+                label="Gross (monthly)"
+                value={cur(salaryResult.gross)}
+              />
+              <SummaryRow
+                label="Gross (annual)"
+                value={cur(salaryResult.gross * 12)}
+                variant="dimmed"
+              />
+              {/* Tax breakdown when slab is applied */}
+              {taxConfig && salaryResult.monthlyTax > 0 && (
+                <SummaryRow
+                  label="Income tax (monthly)"
+                  value={`− ${cur(salaryResult.monthlyTax)}`}
+                  variant="negative"
+                />
               )}
-              <SummaryRow label="Net Pay (Monthly)" value={`${currency} ${fmt(salaryResult.net)}`} bold accent topBorder />
-              <SummaryRow label="Net Pay (Annual)" value={`${currency} ${fmt(salaryResult.net * 12)}`} dimmed />
+              {taxConfig && salaryResult.annualTax > 0 && (
+                <SummaryRow
+                  label="Income tax (annual)"
+                  value={cur(salaryResult.annualTax)}
+                  variant="dimmed"
+                />
+              )}
+              {salaryResult.deductionsTotal > 0 && (
+                <SummaryRow
+                  label="Total deductions"
+                  value={`− ${cur(salaryResult.deductionsTotal)}`}
+                  variant="negative"
+                />
+              )}
+              <SummaryRow
+                label="Net pay (monthly)"
+                value={cur(salaryResult.net)}
+                variant="accent"
+                topBorder
+              />
+              <SummaryRow
+                label="Net pay (annual)"
+                value={cur(salaryResult.net * 12)}
+                variant="dimmed"
+              />
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2.5 text-center">
-                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Gross / month</p>
-                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{fmt(salaryResult.gross)}</p>
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-md p-2 text-center">
+                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">
+                  Gross / month
+                </p>
+                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  {fmt(salaryResult.gross)}
+                </p>
               </div>
-              <div className="bg-primary/5 rounded-lg p-2.5 text-center">
-                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Net / month</p>
-                <p className="text-sm font-bold text-primary">{fmt(salaryResult.net)}</p>
+              <div className="bg-primary/5 rounded-md p-2 text-center">
+                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">
+                  Net / month
+                </p>
+                <p className="text-sm font-bold text-primary tabular-nums">
+                  {fmt(salaryResult.net)}
+                </p>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {!isLoadingStructure && !hasComponents && !formData.salaryStructure && (
-        <div className="bg-card rounded-lg border border-dashed border-theme p-8 text-center">
-          <p className="text-xs text-muted">Select a salary structure above to view and configure components.</p>
+      {/* ── Empty states ── */}
+      {!isLoading && !hasComponents && !formData.salaryStructure && (
+        <div className="bg-card rounded-lg border border-dashed border-theme p-6 text-center">
+          <p className="text-xs text-muted">
+            Select a salary structure above to view and configure components.
+          </p>
         </div>
       )}
-
-      {!isLoadingStructure && !hasComponents && formData.salaryStructure && (
-        <div className="bg-card rounded-lg border border-theme p-6 text-center">
-          <p className="text-xs text-muted italic">No components found in this structure.</p>
+      {!isLoading && !hasComponents && formData.salaryStructure && (
+        <div className="bg-card rounded-lg border border-theme p-5 text-center">
+          <p className="text-xs text-muted italic">
+            No components found in this structure.
+          </p>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "../../ui/modal/formComponent";
-import { ModalSelect } from "../../ui/modal/modalComponent";
+import { ModalSelect, NumericInput } from "../../ui/modal/modalComponent";
 import type { SupplierRow, ItemRow } from "../../../types/Supply/rfq";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
@@ -82,7 +82,6 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
       {/* ── HEADER ── */}
       <div className="bg-app">
         <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
-
           {/* Request Date */}
           <div className="w-[140px]">
             <DatePickerInput
@@ -113,16 +112,13 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
               disabled
             />
           </div>
-
         </div>
       </div>
 
       {/* ── BODY ── */}
       <div className="grid grid-cols-[4fr_1fr] gap-4">
-
         {/* ===== LEFT ===== */}
         <div className="flex flex-col gap-4">
-
           {/* SUPPLIERS TABLE */}
           <div className="bg-card rounded-lg p-2 shadow-sm">
             <h3 className="text-sm font-semibold mb-2">Suppliers</h3>
@@ -131,7 +127,9 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
               <thead>
                 <tr className="border-b border-theme text-muted">
                   <th className="px-2 py-1 text-left w-[25px]">#</th>
-                  <th className="px-2 py-1 text-left w-[180px]">Supplier <span className="text-danger">*</span></th>
+                  <th className="px-2 py-1 text-left w-[180px]">
+                    Supplier <span className="text-danger">*</span>
+                  </th>
                   <th className="px-2 py-1 text-left">Contact</th>
                   <th className="px-2 py-1 text-left">Email</th>
                   <th className="px-2 py-1 text-center w-[50px]">Send</th>
@@ -146,7 +144,6 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                     <tr key={i} className="border-b border-theme row-hover">
                       <td className="px-2 py-1 text-[10px]">{i + 1}</td>
 
-
                       <td className="px-2 py-1">
                         <div className="w-[180px]">
                           <SupplierSelect
@@ -155,21 +152,37 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                             selectedId={sup.supplier}
                             required
                             onChange={async (selected: any) => {
-                              onSupplierChange(i, "supplier", selected.id ?? "");
-                              onSupplierChange(i, "supplierName", selected.name ?? "");
+                              onSupplierChange(
+                                i,
+                                "supplier",
+                                selected.id ?? "",
+                              );
+                              onSupplierChange(
+                                i,
+                                "supplierName",
+                                selected.name ?? "",
+                              );
 
                               try {
                                 const res = await getSupplierById(selected.id);
-                                const detail = res?.message?.data ?? res?.data ?? res;
+                                const detail =
+                                  res?.message?.data ?? res?.data ?? res;
                                 const primaryContact =
-                                  detail?.contacts?.find((c: any) => c.isPrimary) ||
-                                  detail?.contacts?.[0];
-                                onSupplierChange(i, "contact", primaryContact?.id ?? "");
-                                onSupplierChange(i, "email", primaryContact?.email ?? "");
-                              } catch {
-                              }
+                                  detail?.contacts?.find(
+                                    (c: any) => c.isPrimary,
+                                  ) || detail?.contacts?.[0];
+                                onSupplierChange(
+                                  i,
+                                  "contact",
+                                  primaryContact?.id ?? "",
+                                );
+                                onSupplierChange(
+                                  i,
+                                  "email",
+                                  primaryContact?.email ?? "",
+                                );
+                              } catch {}
                             }}
-
                           />
                         </div>
                       </td>
@@ -234,10 +247,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                 <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
                   <span className="text-[11px] text-muted whitespace-nowrap">
                     {supPage * ITEMS_PER_PAGE + 1}–
-                    {Math.min(
-                      (supPage + 1) * ITEMS_PER_PAGE,
-                      suppliers.length,
-                    )}{" "}
+                    {Math.min((supPage + 1) * ITEMS_PER_PAGE, suppliers.length)}{" "}
                     of {suppliers.length}
                   </span>
                   <div className="flex gap-1.5">
@@ -273,11 +283,17 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
               <thead>
                 <tr className="border-b border-theme text-muted">
                   <th className="px-2 py-1 text-left w-[25px]">#</th>
-                  <th className="px-2 py-1 text-left w-[180px]">Item <span className="text-danger">*</span></th>
-                  <th className="px-2 py-1 text-left w-[130px]">Required By <span className="text-danger">*</span></th>
+                  <th className="px-2 py-1 text-left w-[180px]">
+                    Item <span className="text-danger">*</span>
+                  </th>
+                  <th className="px-2 py-1 text-left w-[130px]">
+                    Required By <span className="text-danger">*</span>
+                  </th>
                   <th className="px-2 py-1 text-left w-[80px]">Qty</th>
                   <th className="px-2 py-1 text-left w-[80px]">UOM</th>
-                  <th className="px-2 py-1 text-left w-[130px]">Warehouse <span className="text-danger">*</span></th>
+                  <th className="px-2 py-1 text-left w-[130px]">
+                    Warehouse <span className="text-danger">*</span>
+                  </th>
                   <th className="px-2 py-1 text-center w-[40px]">-</th>
                 </tr>
               </thead>
@@ -288,7 +304,6 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                   return (
                     <tr key={i} className="border-b border-theme row-hover">
                       <td className="px-2 py-1 text-[10px]">{i + 1}</td>
-
 
                       <td className="px-2 py-1">
                         <div className="w-[180px]">
@@ -334,14 +349,14 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
 
                       {/* Qty */}
                       <td className="px-2 py-1">
-                        <input
-                          type="number"
-                            value={it.quantity === 1 ? "" : it.quantity}
-                          min={1}
-                          onChange={(e) =>
-                            onItemChange(i, "quantity", Number(e.target.value))
+                        <NumericInput
+                          name="quantity"
+                          placeholder="1"
+                          value={it.quantity ?? ""}
+                          onChange={(value) =>
+                            onItemChange(i, "quantity", value)
                           }
-                          className="w-[70px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
+                          className="w-[70px]"
                         />
                       </td>
 
@@ -372,10 +387,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
 
                       {/* Remove */}
                       <td className="px-2 py-1 text-center">
-                        <Button
-                          variant="ghost"
-                          onClick={() => onRemoveItem(i)}
-                        >
+                        <Button variant="ghost" onClick={() => onRemoveItem(i)}>
                           <Trash2 size={16} />
                         </Button>
                       </td>
@@ -399,8 +411,8 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                 <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
                   <span className="text-[11px] text-muted whitespace-nowrap">
                     {itemPage * ITEMS_PER_PAGE + 1}–
-                    {Math.min((itemPage + 1) * ITEMS_PER_PAGE, items.length)}{" "}
-                    of {items.length}
+                    {Math.min((itemPage + 1) * ITEMS_PER_PAGE, items.length)} of{" "}
+                    {items.length}
                   </span>
                   <div className="flex gap-1.5">
                     <button
@@ -414,9 +426,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                     <button
                       type="button"
                       onClick={() => setItemPage(itemPage + 1)}
-                      disabled={
-                        (itemPage + 1) * ITEMS_PER_PAGE >= items.length
-                      }
+                      disabled={(itemPage + 1) * ITEMS_PER_PAGE >= items.length}
                       className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px] disabled:opacity-40"
                     >
                       Next

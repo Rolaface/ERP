@@ -44,7 +44,7 @@ export default function Pagination({
   };
 
   return (
-    <div className="flex flex-col items-center justify-between gap-2 text-xs sm:flex-row">
+    <div className="flex flex-col items-center justify-between gap-1.5 text-xs sm:flex-row">
       {/* Left Summary */}
       <div className="text-xs text-muted">
         Showing{" "}
@@ -59,12 +59,12 @@ export default function Pagination({
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1">
         {/* Prev */}
         <button
           onClick={() => goto(currentPage - 1)}
           disabled={currentPage <= 1}
-          className={`rounded-md border border-theme bg-app px-2.5 py-1.5 text-xs text-main transition-all hover:bg-row-hover ${
+          className={`h-7 rounded-md border border-theme bg-app px-2 text-xs text-main transition-all hover:bg-row-hover ${
             currentPage <= 1 ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
@@ -72,17 +72,17 @@ export default function Pagination({
         </button>
 
         {/* Page Numbers */}
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1">
           {range.map((r, i) =>
             typeof r === "string" ? (
-              <span key={`dots-${i}`} className="px-2 py-1 text-xs text-muted">
+              <span key={`dots-${i}`} className="px-1.5 py-1 text-xs text-muted">
                 {r}
               </span>
             ) : (
               <button
                 key={`page-${r}-${i}`}
                 onClick={() => goto(r)}
-                className={`flex h-8 min-w-[32px] items-center justify-center rounded-md border border-theme px-2 text-xs transition-all ${r === currentPage
+                className={`flex h-7 min-w-7 items-center justify-center rounded-md border border-theme px-2 text-xs transition-all ${r === currentPage
                     ? "bg-primary text-white shadow"
                     : "bg-app text-main hover:bg-row-hover"
                   }`}
@@ -98,7 +98,7 @@ export default function Pagination({
         <button
           onClick={() => goto(currentPage + 1)}
           disabled={currentPage >= totalPages}
-          className={`rounded-md border border-theme bg-app px-2.5 py-1.5 text-xs text-main transition-all hover:bg-row-hover ${
+          className={`h-7 rounded-md border border-theme bg-app px-2 text-xs text-main transition-all hover:bg-row-hover ${
             currentPage >= totalPages ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
@@ -110,7 +110,7 @@ export default function Pagination({
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="ml-2 rounded border border-theme bg-app px-2 py-1.5 text-xs text-main focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="ml-1 h-7 rounded border border-theme bg-app px-2 text-xs text-main focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             {pageSizeOptions.map((opt) => (
               <option key={opt} value={opt}>

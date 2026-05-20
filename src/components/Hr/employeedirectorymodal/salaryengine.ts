@@ -35,6 +35,9 @@ export interface SalaryResult {
   gross: number;
   deductionsTotal: number;
   net: number;
+  resolvedBase: number;
+  annualTax: number;
+  monthlyTax: number;
 }
 
 export interface CompensationPayload {
@@ -315,7 +318,49 @@ export function calculateSalary(
     gross,
     deductionsTotal,
     net: gross - deductionsTotal,
+    resolvedBase: monthlyBase,
+    annualTax,
+    monthlyTax,
   };
+}
+
+// ─── Gross → Base back-solver ─────────────────────────────────────────────────
+
+export function solveBaseFromGross(
+  targetGross: number,
+  components: SalaryComponentDef[],
+  tolerance = 0.01,
+  maxIterations = 60,
+  taxConfig?: TaxConfig | null,
+): number {
+  if (targetGross <= 0) return 0;
+
+  const earningDefs = components.filter((c) => c.type === "Earning");
+  const hasFormulaEarnings = earningDefs.some(
+    (c) => c.amount_based_on_formula === 1,
+  );
+
+  if (!hasFormulaEarnings) return 0;
+
+  let lo = 0;
+  let hi = targetGross * 3;
+
+  for (let safety = 0; safety < 20; safety++) {
+    if (calculateSalary(hi, components, {}, taxConfig).gross >= targetGross) break;
+    hi *= 2;
+  }
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const mid = (lo + hi) / 2;
+    const gross = calculateSalary(mid, components, {}, taxConfig).gross;
+
+    if (Math.abs(gross - targetGross) <= tolerance) return mid;
+
+    if (gross < targetGross) lo = mid;
+    else hi = mid;
+  }
+
+  return (lo + hi) / 2;
 }
 
 // ─── API adapter ──────────────────────────────────────────────────────────────

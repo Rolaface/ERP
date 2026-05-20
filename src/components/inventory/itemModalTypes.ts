@@ -36,8 +36,8 @@ export interface ItemFormData {
   countryOfOrigin: string;
   originNationCode:string;
   packagingUnitCode: string;
-  packingUnit: string | number;
-  packingSize: string | number;
+packingUnit: number | null;
+packingSize: number | null;
   svcCharge: string;
   ins: string;
   sellingPrice: string | number;
