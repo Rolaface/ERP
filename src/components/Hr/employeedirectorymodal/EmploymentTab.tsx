@@ -6,7 +6,7 @@ import {
   getAllGrades,
   getAllDesignations,
   getAllEmploymentTypes,
-  getallbranches,createBranch,checkBranchExists
+  getallbranches,createBranch,checkBranchExists,getshift
 } from "../../../api/utils/frappeUtilsApi";
 import { getAllEmployees } from "../../../api/employeeapi";
 import DatePickerInput from "../../calendar/DatePickerInput";
@@ -97,6 +97,11 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
 
     return data;
   };
+   const fetchshiftoption = async (q: string) => {
+    const data = await getshift(q);
+
+    return data;
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-3">
@@ -156,12 +161,12 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             options={EMPLOYMENT_STATUS_OPTIONS}
           />
 
-          <ModalSelect
+         <SearchSelect2
             label="Shift"
-            name="shift"
             value={formData.shift}
-            onChange={(e) => handleInputChange("shift", e.target.value)}
-            options={SHIFT_OPTIONS}
+            placeholder="Search shift Type..."
+            fetchOptions={fetchshiftoption}
+            onChange={(value) => handleInputChange("shift", value)}
           />
         </div>
       </div>

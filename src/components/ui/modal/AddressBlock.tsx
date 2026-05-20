@@ -154,7 +154,7 @@ const AddressBlock: React.FC<AddressBlockProps> = ({
             value={data.postalCode}
             onChange={onChange}
             disabled={isDisabled}
-            required
+           
             error={errors?.postalCode}
           />
         </div>

@@ -510,31 +510,38 @@ export const usePurchaseInvoiceForm = ({
     setForm((prev) => ({ ...prev, [name]: finalValue }));
   };
   const handleAddressRemove = useCallback(
-  (boxKey: BoxType) => {
-    setSelected((prev) => ({ ...prev, [boxKey]: null }));
-    setSelectedIds((prev) => ({ ...prev, [boxKey]: "" }));
+    (boxKey: BoxType) => {
+      setSelected((prev) => ({ ...prev, [boxKey]: null }));
+      setSelectedIds((prev) => ({ ...prev, [boxKey]: "" }));
 
-    const formKeyMap: Record<BoxType, string> = {
-      companyBilling: "companyBillingAddress",
-      supplierBilling: "supplierAddress",
-      companyShipping: "shippingAddress",
-      supplierDispatch: "dispatchAddress",
-    };
+      const formKeyMap: Record<BoxType, string> = {
+        companyBilling: "companyBillingAddress",
+        supplierBilling: "supplierAddress",
+        companyShipping: "shippingAddress",
+        supplierDispatch: "dispatchAddress",
+      };
 
-    handleFormChange({
-      target: {
-        name: `addresses.${formKeyMap[boxKey]}`,
-        value: {
-          id: "", addressTitle: "", addressType: "",
-          addressLine1: "", addressLine2: "",
-          city: "", state: "", country: "",
-          postalCode: "", phone: "", email: "",
+      handleFormChange({
+        target: {
+          name: `addresses.${formKeyMap[boxKey]}`,
+          value: {
+            id: "",
+            addressTitle: "",
+            addressType: "",
+            addressLine1: "",
+            addressLine2: "",
+            city: "",
+            state: "",
+            country: "",
+            postalCode: "",
+            phone: "",
+            email: "",
+          },
         },
-      },
-    } as any);
-  },
-  [handleFormChange],
-);
+      } as any);
+    },
+    [handleFormChange],
+  );
 
   const handleBulkItemChange = (field: keyof ItemRow, value: string) => {
     setForm((prev) => ({
@@ -937,7 +944,11 @@ export const usePurchaseInvoiceForm = ({
           ? item
           : {
               ...item,
-              [name]: isNum ? (value === "" ? "" : Number(value)) : value,
+              [name]: isNum
+                ? value === "" || value === null
+                  ? null
+                  : Number(value)
+                : value,
             },
       );
       return { ...p, items };
@@ -1125,10 +1136,7 @@ export const usePurchaseInvoiceForm = ({
     e?.preventDefault();
     if (saving) return;
 
-    if (!form.taxCategory) {
-      showValidationError("Tax Category is required");
-      return;
-    }
+
 
     const errors = validatePI(form);
     if (errors.length) {
@@ -1268,7 +1276,7 @@ export const usePurchaseInvoiceForm = ({
     setAddresses,
     loading,
     setLoading,
-     handleAddressRemove,
+    handleAddressRemove,
     handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => {
       setSelected((prev) => ({ ...prev, [boxKey]: addr }));
       setSelectedIds((prev) => ({ ...prev, [boxKey]: addr.id }));
@@ -1297,7 +1305,6 @@ export const usePurchaseInvoiceForm = ({
           },
         },
       } as any);
-      
     },
   };
 };

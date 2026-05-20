@@ -485,7 +485,7 @@ const AddEmployeeModal: React.FC<Props> = ({
                 hrManagers={hrManagers}
               />
             )}
-            {activeTab === "Leave Setup" && (
+            {activeTab === "Attendance & Leaves" && (
               <LeaveSetupTab
                 formData={formData}
                 handleInputChange={handleInputChange}

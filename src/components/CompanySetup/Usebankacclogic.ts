@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { showApiError , showSuccess } from "../../utils/alert";
+import { showApiError, showSuccess } from "../../utils/alert";
 import { getBankAccounts } from "../../api/BankAccountApi";
 import { createNewBankAccount } from "../../api/BankAccountApi";
 
@@ -15,14 +15,14 @@ type Option = {
 };
 
 
-export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
+export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
   const [form, setForm] = useState({
     dateAdded: today(),
     accountFor: "" as AccountType | "",
     name: "",
     bank: "",
-     partyId: "",  
-     displayName: "", 
+    partyId: "",
+    displayName: "",
     swiftCode: "",
     currency: "",
     accountNumber: "",
@@ -48,25 +48,26 @@ export const useBankAccLogic = ({ onSubmit,onClose  }: any) => {
     if (form.accountFor === "Company" && entities.length > 0) {
       const company = entities[0];
 
-setForm((prev) => ({
-  ...prev,
-  name: company.value || company.label,
-  displayName: company.label || company.value,
-  accountHolder: company.label || company.value,
-  accountHolderEdited: false,
-  currency: company.meta?.currency || prev.currency,
-}));
-     
+      setForm((prev) => ({
+        ...prev,
+        name: company.value || company.label,
+        displayName: company.label || company.value,
+        accountHolder: company.label || company.value,
+        accountHolderEdited: false,
+        currency: company.meta?.currency || prev.currency,
+      }));
+
     }
   }, [form.accountFor, entities, form.name]);
 
-  // Reset name/holder/reportingAccount when accountFor changes
+
   useEffect(() => {
+    if (isEdit) return;
     setForm((prev) => ({
       ...prev,
       name: form.accountFor === "Company" ? prev.name : "",
-accountHolder: form.accountFor === "Company" ? prev.accountHolder : "",
-displayName: form.accountFor === "Company" ? prev.displayName : "",
+      accountHolder: form.accountFor === "Company" ? prev.accountHolder : "",
+      displayName: form.accountFor === "Company" ? prev.displayName : "",
       accountHolderEdited: false,
       reportingAccount: "",
       currency: form.accountFor === "Company" ? "" : prev.currency,
@@ -79,7 +80,7 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
       try {
         const data = await getBankAccounts("Bank");
         setBanks(Array.isArray(data) ? data : []);
-      } catch(err) {
+      } catch (err) {
         showApiError(err);
       }
     })();
@@ -92,7 +93,7 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
       try {
         const data = await getBankAccounts(form.accountFor as AccountType);
         setEntities(Array.isArray(data) ? data : []);
-      } catch (err){
+      } catch (err) {
         showApiError(err);
       }
     })();
@@ -136,9 +137,9 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
       accountFor: "" as AccountType | "",
       name: "",
       bank: "",
-       partyId: "",  
+      partyId: "",
       swiftCode: "",
-       displayName: "", 
+      displayName: "",
       currency: "",
       accountNumber: "",
       accountHolder: "",
@@ -152,69 +153,69 @@ displayName: form.accountFor === "Company" ? prev.displayName : "",
     });
   };
 
-  
+
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
-     if (isSubmitting) return;
+    if (isSubmitting) return;
 
     if (!form.accountFor || !form.bank || !form.accountNumber || !form.name) {
       showApiError("Please fill required fields");
       return;
     }
 
-      setIsSubmitting(true); 
+    setIsSubmitting(true);
 
-      try{
-    const payload = {
-      accountHolderName: form.accountHolder,
-      accountNo: form.accountNumber,
-      bankName: form.bank,
-      branchAddress: form.address,
-      currency: form.currency,
-      dateAdded: form.dateAdded,
-      sortCode: form.sortCode,
-      iban: form.iban,
-      accountFor: form.accountFor,
-       partyName: form.partyId || form.name,
-      isDefault: form.isDefault ? "1" : "0",
-      reportingAccount: form.reportingAccount,
-    };
+    try {
+      const payload = {
+        accountHolderName: form.accountHolder,
+        accountNo: form.accountNumber,
+        bankName: form.bank,
+        branchAddress: form.address,
+        currency: form.currency,
+        dateAdded: form.dateAdded,
+        sortCode: form.sortCode,
+        iban: form.iban,
+        accountFor: form.accountFor,
+        partyName: form.partyId || form.name,
+        isDefault: form.isDefault ? "1" : "0",
+        reportingAccount: form.reportingAccount,
+      };
 
 
-  const res = await createNewBankAccount(payload);
+      const res = await createNewBankAccount(payload);
 
-  const isSuccess =
-    res?.status === "success" ||
-    res?.message?.status === "success" ||
-    res?.message?.status_code === 200 ||
-    res?.message?.status_code === 201;
+      const isSuccess =
+        res?.status === "success" ||
+        res?.message?.status === "success" ||
+        res?.message?.status_code === 200 ||
+        res?.message?.status_code === 201;
 
-  if (!isSuccess) {
-    showApiError(res);
-    return;
-  }
+      if (!isSuccess) {
+        showApiError(res);
+        return;
+      }
 
-  
-  onSubmit?.({
-    ...payload,
-    bank_account_id:
-      res?.data?.bank_account_id ||
-      res?.message?.data?.bank_account_id,
-  });
-  showSuccess(
-  res?.message?.message || 
-  res?.data?.message || 
-  "Bank account added successfully"
-);
-  onClose?.();
 
- } catch (err) {
-    showApiError(err);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      onSubmit?.({
+        ...payload,
+        bank_account_id:
+          res?.data?.bank_account_id ||
+          res?.message?.data?.bank_account_id,
+      });
+      showSuccess(
+        res?.message?.message ||
+        res?.data?.message ||
+        "Bank account added successfully"
+      );
+      onClose?.();
+
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return {
     form,

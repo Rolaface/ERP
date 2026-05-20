@@ -10,7 +10,7 @@ import {
 } from "../../components/ui/app-shell";
 import AppSkeleton        from "../../components/ui/AppSkeleton";
 import { useUrlTab }      from "../../hooks/useUrlTab";
-import { HrPrimaryTabs }  from "./components/HrTabLayout";
+import { HrContentFrame, HrPrimaryTabs } from "./components/HrTabLayout";
 import { usePermission }  from "../../hooks/permission/usePermission";
 import { useHRView }      from "../../hooks/permission/useHRView";
 
@@ -211,12 +211,9 @@ const HrPayrollModule: React.FC = () => {
           icon={<FaUserTie />}
           actions={switchButton}
         />
-        <AppPageBody
-          className="px-4 py-3"
-          viewportLocked={isViewportLocked}
-        >
+        <AppPageBody viewportLocked={isViewportLocked}>
           <Suspense fallback={<AppSkeleton />}>
-            {renderContent()}
+            <HrContentFrame>{renderContent()}</HrContentFrame>
           </Suspense>
         </AppPageBody>
       </AppPage>
@@ -232,12 +229,9 @@ const HrPayrollModule: React.FC = () => {
         description="Manage employees, payroll, attendance, and compliance"
       />
       <HrPrimaryTabs tabs={professionalTabs} activeTab={tab} onChange={setTab} />
-      <AppPageBody
-        className="px-4 py-3"
-        viewportLocked={isViewportLocked}
-      >
+      <AppPageBody viewportLocked={isViewportLocked}>
         <Suspense fallback={<AppSkeleton />}>
-          {renderContent()}
+          <HrContentFrame>{renderContent()}</HrContentFrame>
         </Suspense>
       </AppPageBody>
     </AppPage>

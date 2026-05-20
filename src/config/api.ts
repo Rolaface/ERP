@@ -373,6 +373,8 @@ export const API = {
   ExpenseClaim:{
     Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
     Claim_Type: `${ERP_BASE}/api/resource/Expense Claim Type`,
+    getExpenseClaims: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claims`,
+    getExpenseType: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claim_types`,
   },
   /* =========================
    * STOCK
@@ -631,6 +633,8 @@ export const API = {
     getUsers: `${ERP_BASE}/api/method/custom_hrms.api.search.get_users`,
     getPayrollEmployees:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_employee`,
     getBranches:`${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
-    createbranch:`${ERP_BASE}/api/resource/Branch`
+    createbranch:`${ERP_BASE}/api/resource/Branch`,
+    getshifts:`${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
+   
   },
 } as const;

@@ -97,6 +97,8 @@ setCompanyInfo({
     matchedCurrency?.symbol ||
     company?.baseCurrency ||
     "",
+companyAddress:
+  company?.address || {},
 });
 
 

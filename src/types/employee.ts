@@ -3,7 +3,7 @@ export interface EmployeeSummary {
   name: string;
   jobTitle: string;
   department: string;
-  workLocation: string;
+  branch: string;
   status: string;
   image?: string | null;
 }
