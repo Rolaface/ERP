@@ -3,15 +3,21 @@ import Tooltip from "../../components/Tooltip";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface InvoiceDetail {
-  invoiceNumber: string;
+  id?: string;
+  invoiceNumber?: string;
   tax_category?: string;
   originInvoice?: string | null;
   customerName: string;
   customerTpin?: string;
   currency: string;
   OutStandingAmount?: number;
+  outstanding_amount?: number;
   taxTotal?: number;
-  exchangeRate?: string;
+  total_tax?: number;
+  total?: number;
+  grand_total?: number;
+  net_total?: number;
+  exchangeRate?: string | number;
   postingDate: string;
   dueDate: string;
   status: string;
@@ -28,22 +34,29 @@ export interface InvoiceDetail {
     accountNumber?: string;
     routingNumber?: string;
     swiftCode?: string;
+    accountHolderName?: string;
+    branchCode?: string;
+    type?: string;
   };
   items?: Array<{
     itemCode?: string;
+    itemName?: string;
     description?: string;
+    uom?: string;
     quantity?: number;
     rate?: number;
     discount?: number;
+    discount_amount?: number;
     vatCode?: string | null;
     vatTaxableAmount?: string;
     batchNo?: string;
-    boxStart?: string;
-    boxEnd?: string;
+    boxStart?: string | number;
+    boxEnd?: string | number;
     expDate?: string;
     mfgDate?: string;
-    packingSize?: string;
-    packingUnit?: string;
+    packingSize?: string | number;
+    packingUnit?: string | number;
+    hsnCode?: string;
   }>;
   terms?: {
     selling?: {
@@ -80,12 +93,18 @@ interface Props {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (n?: number, currency = "-") =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(n ?? 0);
+const fmt = (n?: number, currency = "USD") => {
+  if (n == null) return "—";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${currency} ${n.toFixed(2)}`;
+  }
+};
 
 const fmtDate = (d?: string) =>
   d
@@ -238,18 +257,18 @@ const InvoiceDetailModal: React.FC<Props> = ({
   onDownload,
   onClosePdf,
 }) => {
-  // console.log("🚀 ~ InvoiceDetailModal ~ data:", data)
   if (!open) return null;
 
-  // Address visibility
   const hasAddresses = data?.billingAddress || data?.shippingAddress;
 
   const items = data?.items ?? [];
-  const subtotal = data?.total;
-  const taxTotal = data?.total_tax ?? 0;
+  // Support both API shapes: total / net_total
+  const subtotal = data?.total ?? data?.net_total;
+  const taxTotal = data?.total_tax ?? data?.taxTotal ?? 0;
   const grandTotal = data?.grand_total ?? 0;
-  const currency = data?.currency ?? "-";
-  const invoiceCharges = (data as any)?.invoiceCharges || [];
+  const currency = data?.currency ?? "USD";
+  const invoiceCharges =
+    (data as any)?.invoiceCharges || (data as any)?.charges || [];
 
   const totalCharges = invoiceCharges.reduce(
     (sum: number, ch: any) => sum + (Number(ch.amount) || 0),
@@ -257,11 +276,16 @@ const InvoiceDetailModal: React.FC<Props> = ({
   );
 
   const fobTotal = grandTotal - totalCharges;
+  // Prefer data.id (API field), fall back to invoiceNumber
+  const invoiceDisplayId = (data as any)?.id ?? data?.invoiceNumber ?? "—";
   const statusCls = STATUS_MAP[data?.status ?? "Draft"] ?? "bg-draft";
   const phases =
     data?.terms?.selling?.payment?.phases
       ?.filter((p) => p?.percentage)
       ?.slice(0, 3) ?? [];
+
+  const exchangeRateDisplay =
+    data?.exchangeRate != null ? String(data.exchangeRate) : null;
 
   return (
     <>
@@ -338,7 +362,6 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 flexShrink: 0,
               }}
             >
-              {/* Invoice icon */}
               <svg
                 width="14"
                 height="14"
@@ -369,7 +392,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
               <p
                 style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}
               >
-                {data?.id ?? "—"}
+                {invoiceDisplayId}
               </p>
             </div>
             <span
@@ -615,7 +638,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 }}
               >
                 <F label="Customer" value={data.customerName} />
-                <F label="TPIN" value={data.customerTpin} mono />
+                <F label="TPIN" value={data.customerTpin || null} mono />
               </div>
               <div
                 style={{
@@ -626,7 +649,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
               >
                 <F label="Invoice Type" value={data.tax_category} />
                 <F label="Currency" value={data.currency} />
-                <F label="Exchange Rate" value={data.exchangeRate} />
+                <F label="Exchange Rate" value={exchangeRateDisplay} />
                 <F
                   label="Destination"
                   value={data.destnCountryCd?.toUpperCase()}
@@ -666,12 +689,10 @@ const InvoiceDetailModal: React.FC<Props> = ({
                   >
                     <AddressCard
                       label="Billing Address"
-                      // name={data.billingAddress}
                       html={data.billingAddress}
                     />
                     <AddressCard
                       label="Shipping Address"
-                      // name={data.shippingAddress}
                       html={data.shippingAddress}
                     />
                   </div>
@@ -687,10 +708,11 @@ const InvoiceDetailModal: React.FC<Props> = ({
                   border: "1px solid var(--border)",
                 }}
               >
+                {/* Header — wider disc column to prevent overlap of "10.145%" + amount */}
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "minmax(0,2fr) 60px 88px 72px 96px",
+                    gridTemplateColumns: "minmax(0,2fr) 60px 90px 90px 96px",
                     padding: "6px 10px",
                     background: "var(--table-head)",
                     color: "var(--table-head-text)",
@@ -707,18 +729,25 @@ const InvoiceDetailModal: React.FC<Props> = ({
                   <span style={{ textAlign: "right" }}>Disc.</span>
                   <span style={{ textAlign: "right" }}>Total</span>
                 </div>
+
                 {items.map((it, i) => {
                   const qty = Math.abs(it.quantity ?? 0);
-
-                  const baseTotal = qty * (it.rate ?? 0);
-
+                  const rate = it.rate ?? 0;
+                  const baseTotal = qty * rate;
                   const discountPercent = Number(it.discount) || 0;
-
-                  const discountAmount = Number(
-                    (baseTotal * discountPercent) / 100,
-                  );
-
+                  const discountAmount = (baseTotal * discountPercent) / 100;
                   const rowTotal = baseTotal - discountAmount;
+
+                  // Display name: prefer itemName, then description, then itemCode
+                  const displayName =
+                    (it as any).itemName ||
+                    it.description ||
+                    it.itemCode ||
+                    "—";
+                  // Show itemCode as subtitle only when it differs from displayName
+                  const showCodeSubtitle =
+                    it.itemCode && it.itemCode !== displayName;
+
                   return (
                     <div
                       key={i}
@@ -726,15 +755,16 @@ const InvoiceDetailModal: React.FC<Props> = ({
                       style={{
                         display: "grid",
                         gridTemplateColumns:
-                          "minmax(0,2fr) 60px 88px 72px 96px",
+                          "minmax(0,2fr) 60px 90px 90px 96px",
                         padding: "7px 10px",
                         gap: 4,
                         borderTop: "1px solid var(--border)",
-                        alignItems: "center",
+                        alignItems: "start",
                       }}
                     >
+                      {/* ── Item cell ── */}
                       <div style={{ minWidth: 0 }}>
-                        <Tooltip content={it.description || it.itemCode || ""}>
+                        <Tooltip content={displayName}>
                           <p
                             style={{
                               fontSize: 12,
@@ -745,10 +775,10 @@ const InvoiceDetailModal: React.FC<Props> = ({
                               textOverflow: "ellipsis",
                             }}
                           >
-                            {it.description || it.itemCode}
+                            {displayName}
                           </p>
                         </Tooltip>
-                        {it.description && it.itemCode && (
+                        {showCodeSubtitle && (
                           <p
                             style={{
                               fontSize: 9,
@@ -759,13 +789,12 @@ const InvoiceDetailModal: React.FC<Props> = ({
                             {it.itemCode}
                           </p>
                         )}
-                        {/* Batch / Pack / Exp info */}
                         <div
                           style={{
                             display: "flex",
-                            gap: 8,
+                            gap: 4,
                             flexWrap: "wrap",
-                            marginTop: 2,
+                            marginTop: 3,
                           }}
                         >
                           {it.vatCode && (
@@ -780,7 +809,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                                 fontFamily: "monospace",
                               }}
                             >
-                              Tax code: {it.vatCode}
+                              Tax: {it.vatCode}
                             </span>
                           )}
                           {it.batchNo && (
@@ -798,7 +827,8 @@ const InvoiceDetailModal: React.FC<Props> = ({
                               Batch: {it.batchNo}
                             </span>
                           )}
-                          {(it.packingSize || it.packingUnit) && (
+                          {(it.packingSize != null ||
+                            it.packingUnit != null) && (
                             <span
                               style={{
                                 fontSize: 9,
@@ -828,6 +858,8 @@ const InvoiceDetailModal: React.FC<Props> = ({
                           )}
                         </div>
                       </div>
+
+                      {/* ── Qty ── */}
                       <Tooltip
                         content={`Quantity: ${(it.quantity ?? 0).toLocaleString()}`}
                       >
@@ -837,36 +869,37 @@ const InvoiceDetailModal: React.FC<Props> = ({
                             textAlign: "right",
                             color: "var(--text)",
                             fontVariantNumeric: "tabular-nums",
+                            paddingTop: 1,
                           }}
                         >
                           {(it.quantity ?? 0).toLocaleString()}
                         </p>
                       </Tooltip>
-                      <Tooltip content={`Price: ${fmt(it.rate, currency)}`}>
+
+                      {/* ── Price ── */}
+                      <Tooltip content={`Unit price: ${fmt(rate, currency)}`}>
                         <p
                           style={{
                             fontSize: 12,
                             textAlign: "right",
                             color: "var(--text)",
                             fontVariantNumeric: "tabular-nums",
+                            paddingTop: 1,
                           }}
                         >
-                          {fmt(it.rate, currency)}
+                          {fmt(rate, currency)}
                         </p>
                       </Tooltip>
+
+                      {/* ── Disc — wider col prevents overlap ── */}
                       <Tooltip
                         content={
                           discountPercent > 0
-                            ? `Discount ${discountPercent}% (${fmt(discountAmount, currency)})`
+                            ? `Discount ${discountPercent}% = ${fmt(discountAmount, currency)}`
                             : "No discount"
                         }
                       >
-                        <div
-                          style={{
-                            textAlign: "right",
-                            lineHeight: 1.15,
-                          }}
-                        >
+                        <div style={{ textAlign: "right" }}>
                           {discountPercent > 0 ? (
                             <>
                               <p
@@ -875,35 +908,38 @@ const InvoiceDetailModal: React.FC<Props> = ({
                                   fontWeight: 700,
                                   color: "var(--danger)",
                                   fontVariantNumeric: "tabular-nums",
+                                  lineHeight: 1.3,
                                 }}
                               >
                                 {discountPercent}%
                               </p>
-
                               <p
                                 style={{
                                   fontSize: 10,
                                   color: "var(--muted)",
                                   fontVariantNumeric: "tabular-nums",
+                                  lineHeight: 1.3,
                                 }}
                               >
-                                -{fmt(discountAmount, currency)}
+                                -
+                                {discountAmount.toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
                               </p>
                             </>
                           ) : (
-                            <p
-                              style={{
-                                fontSize: 12,
-                                color: "var(--muted)",
-                              }}
-                            >
+                            <p style={{ fontSize: 12, color: "var(--muted)" }}>
                               —
                             </p>
                           )}
                         </div>
                       </Tooltip>
 
-                      <Tooltip content={`Total: ${fmt(rowTotal, currency)}`}>
+                      {/* ── Row total ── */}
+                      <Tooltip
+                        content={`Row total: ${fmt(rowTotal, currency)}`}
+                      >
                         <p
                           style={{
                             fontSize: 12,
@@ -911,6 +947,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                             fontWeight: 700,
                             color: "var(--text)",
                             fontVariantNumeric: "tabular-nums",
+                            paddingTop: 1,
                           }}
                         >
                           {fmt(rowTotal, currency)}
@@ -919,7 +956,8 @@ const InvoiceDetailModal: React.FC<Props> = ({
                     </div>
                   );
                 })}
-                {/* Totals */}
+
+                {/* ── Totals footer ── */}
                 <div
                   style={{
                     background: "var(--bg)",
@@ -943,25 +981,18 @@ const InvoiceDetailModal: React.FC<Props> = ({
                       big: false,
                       red: false,
                     },
-
-                    // ...(totalDisc > 0
-                    //   ? [{ label: "Discount", val: `${fmt(totalDisc, currency)}`, big: false, red: true }]
-                    //   : []),
-
                     {
-                      label: "Grand Total(CIF)",
+                      label: "Grand Total (CIF)",
                       val: fmt(grandTotal, currency),
                       big: true,
                       red: false,
                     },
-
-                    ...(invoiceCharges || []).map((ch: any) => ({
-                      label: ch.charge_type,
-                      val: `${fmt(ch.amount, currency)}`,
+                    ...invoiceCharges.map((ch: any) => ({
+                      label: ch.charge_type ?? ch.name ?? "Charge",
+                      val: fmt(Number(ch.amount), currency),
                       big: false,
                       red: false,
                     })),
-
                     {
                       label: "FOB",
                       val: fmt(fobTotal, currency),
@@ -1016,7 +1047,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                   >
                     <F
                       label="Payment Terms"
-                      value={data.terms?.selling.payment.notes}
+                      value={data.terms?.selling?.payment?.notes ?? null}
                     />
                     <F
                       label="Method"
@@ -1125,7 +1156,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 </>
               )}
 
-              {/* ── TERMS ── */}
+              {/* ── TERMS & CONDITIONS ── */}
               {(() => {
                 const s = data.terms?.selling;
                 if (!s) return null;
@@ -1263,6 +1294,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                   >
                     PDF Preview
                   </p>
+                  {/* Fix: use invoiceDisplayId, not the missing invoiceNumber field */}
                   <p
                     style={{
                       fontSize: 13,
@@ -1270,7 +1302,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                       color: "var(--text)",
                     }}
                   >
-                    {data?.invoiceNumber}
+                    {invoiceDisplayId}
                   </p>
                 </div>
               </div>

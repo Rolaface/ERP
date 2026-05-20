@@ -1,16 +1,13 @@
 import { X, Download, Printer } from "lucide-react";
+import { createPortal } from "react-dom";
 
 interface PdfPreviewModalProps {
   open: boolean;
   title?: string;
-
   pdfUrl: string | null;
-
   onClose: () => void;
-
   onDownload?: () => void;
   onPrint?: () => void;
-
   primaryActionLabel?: string;
 }
 
@@ -25,8 +22,8 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
 }) => {
   if (!open || !pdfUrl) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-6xl h-[95vh] rounded-lg shadow-xl flex flex-col overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center bg-gray-50">
           <h2 className="text-sm font-semibold text-gray-700">{title}</h2>
@@ -68,7 +65,8 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
