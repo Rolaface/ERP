@@ -3,9 +3,6 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   FileText,
-  TrendingUp,
-  TrendingDown,
-  Minus,
 } from "lucide-react";
 
 import ModalTable from "../../components/ui/Table/ModalTableInside";
@@ -50,7 +47,11 @@ const fmt = (n: number) =>
 
 const formatDate = (date: string) => {
   const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return "—";
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+
   return parsed.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -58,7 +59,9 @@ const formatDate = (date: string) => {
   });
 };
 
-const SupplierStatement = ({ statement }: Props) => {
+const SupplierStatement = ({
+  statement,
+}: Props) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(4);
 
@@ -98,6 +101,7 @@ const SupplierStatement = ({ statement }: Props) => {
         </span>
       ),
     },
+
     {
       key: "type",
       header: "Transaction",
@@ -120,41 +124,58 @@ const SupplierStatement = ({ statement }: Props) => {
               <FileText size={14} />
             )}
           </div>
+
           <div>
-            <p className="text-xs font-bold text-main">{row.type}</p>
-            <p className="text-[9px] font-mono text-muted uppercase">{row.ref}</p>
+            <p className="text-xs font-bold text-main">
+              {row.type}
+            </p>
+
+            <p className="text-[9px] font-mono text-muted uppercase">
+              {row.ref}
+            </p>
           </div>
         </div>
       ),
     },
+
     {
       key: "debit",
       header: "Debit",
       align: "right" as const,
+
       render: (row: LedgerEntry) =>
         row.debit > 0 ? (
-          <span className="text-xs font-bold text-warning">{fmt(row.debit)}</span>
+          <span className="text-xs font-bold text-warning">
+            {fmt(row.debit)}
+          </span>
         ) : (
           <span className="text-muted text-xs">—</span>
         ),
     },
+
     {
       key: "credit",
       header: "Credit",
       align: "right" as const,
+
       render: (row: LedgerEntry) =>
         row.credit > 0 ? (
-          <span className="text-xs font-bold text-success">{fmt(row.credit)}</span>
+          <span className="text-xs font-bold text-success">
+            {fmt(row.credit)}
+          </span>
         ) : (
           <span className="text-muted text-xs">—</span>
         ),
     },
+
     {
       key: "balance",
       header: "Balance",
       align: "right" as const,
+
       render: (row: LedgerEntry) => {
         const isNegative = row.balance < 0;
+
         return (
           <span
             className={`text-sm font-black ${
@@ -165,18 +186,22 @@ const SupplierStatement = ({ statement }: Props) => {
                 : "text-primary"
             }`}
           >
-            {isNegative ? "−" : ""}
+            {isNegative ? "-" : ""}
             {fmt(row.balance)}
           </span>
         );
       },
     },
+
     {
       key: "note",
       header: "Notes",
+
       render: (row: LedgerEntry) =>
         row.note && row.note !== "No Remarks" ? (
-          <span className="text-xs text-muted italic">{row.note}</span>
+          <span className="text-xs text-muted italic">
+            {row.note}
+          </span>
         ) : (
           <span className="text-muted text-xs">—</span>
         ),
@@ -185,91 +210,70 @@ const SupplierStatement = ({ statement }: Props) => {
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-5 p-6">
+      {/* SUMMARY + AGING */}
+      <div className="flex gap-4 items-stretch">
+        <div className="grid grid-cols-3 gap-4 flex-[3]">
+          <SummaryCard
+            label="Total Purchases"
+            value={summary.totalPurchases}
+            className="text-warning"
+          />
 
-      {/* ── SUMMARY + AGING: single connected strip ── */}
-      <div className="bg-card border border-theme rounded-2xl flex items-stretch overflow-hidden divide-x divide-theme">
+          <SummaryCard
+            label="Total Paid"
+            value={summary.totalPaid}
+            className="text-success"
+          />
 
-        {/* KPI 1 */}
-        <StatCell
-          label="Total Purchases"
-          icon={<TrendingUp size={12} className="text-warning" />}
-          value={summary.totalPurchases}
-          valueClass="text-warning"
-        />
+          <SummaryCard
+            label="Outstanding"
+            value={summary.outstanding}
+            className={
+              summary.outstanding > 0
+                ? "text-danger"
+                : "text-primary"
+            }
+          />
+        </div>
 
-        {/* KPI 2 */}
-        <StatCell
-          label="Total Paid"
-          icon={<TrendingDown size={12} className="text-success" />}
-          value={summary.totalPaid}
-          valueClass="text-success"
-        />
-
-        {/* KPI 3 */}
-        <StatCell
-          label="Outstanding"
-          icon={
-            <Minus
-              size={12}
-              className={summary.outstanding > 0 ? "text-danger" : "text-muted"}
+        <div className="flex-[2] bg-card border border-theme rounded-2xl px-3 py-2">
+          <div className="grid grid-cols-5 gap-2">
+            <AgingCard
+              compact
+              label="Current"
+              value={aging.current}
+              active
             />
-          }
-          value={summary.outstanding}
-          valueClass={summary.outstanding > 0 ? "text-danger" : "text-muted"}
-          highlight={summary.outstanding > 0}
-        />
 
-        {/* ── Aging section ── */}
-        <div className="flex flex-1 items-stretch min-w-0">
-          {/* Rotated "AGING" label */}
-          <div className="flex items-center justify-center px-3 bg-row-hover/50 border-r border-theme flex-shrink-0">
-            <span
-              className="text-[8px] font-black uppercase tracking-[0.2em] text-muted select-none"
-              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-            >
-              Aging
-            </span>
-          </div>
+            <AgingCard
+              compact
+              label="1–30"
+              value={aging["1_30"]}
+            />
 
-          {/* 5 aging buckets */}
-          <div className="flex flex-1 divide-x divide-theme">
-            <AgingCell label="Current"  value={aging.current}       active />
-            <AgingCell label="1 – 30"   value={aging["1_30"]}               />
-            <AgingCell label="31 – 60"  value={aging["31_60"]}              />
-            <AgingCell label="61 – 90"  value={aging["61_90"]}              />
-            <AgingCell label="90 +"     value={aging["90_plus"]}     warn   />
+            <AgingCard
+              compact
+              label="31–60"
+              value={aging["31_60"]}
+            />
+
+            <AgingCard
+              compact
+              label="61–90"
+              value={aging["61_90"]}
+            />
+
+            <AgingCard
+              compact
+              label="90+"
+              value={aging["90_plus"]}
+            />
           </div>
         </div>
       </div>
 
-      {/* ── LEDGER TABLE ── */}
+      {/* TABLE */}
       <div className="bg-card border border-theme rounded-2xl overflow-hidden min-h-[320px]">
-
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-theme">
-          <div className="flex items-center gap-2">
-            <FileText size={13} className="text-primary" />
-            <span className="text-[11px] font-black uppercase tracking-widest text-main">
-              Ledger Entries
-            </span>
-            <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold">
-              {ledger.length}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3 text-[11px]">
-            <span className="font-bold text-muted uppercase tracking-widest text-[9px]">
-              Total Debits
-            </span>
-            <span className="font-black text-warning tabular-nums">{fmt(totalDebit)}</span>
-            <div className="w-px h-3 bg-border" />
-            <span className="font-bold text-muted uppercase tracking-widest text-[9px]">
-              Total Credits
-            </span>
-            <span className="font-black text-success tabular-nums">{fmt(totalCredit)}</span>
-          </div>
-        </div>
-
         <ModalTable
           columns={columns}
           data={ledger}
@@ -291,72 +295,66 @@ const SupplierStatement = ({ statement }: Props) => {
   );
 };
 
-/* ── SUB-COMPONENTS ── */
-
-const StatCell = ({
+const SummaryCard = ({
   label,
-  icon,
   value,
-  valueClass,
-  highlight = false,
+  className,
 }: {
   label: string;
-  icon: React.ReactNode;
   value: number;
-  valueClass: string;
-  highlight?: boolean;
+  className: string;
 }) => (
-  <div
-    className={`flex flex-col justify-center gap-1.5 px-6 py-4 min-w-[148px] flex-shrink-0 ${
-      highlight ? "bg-danger/5" : ""
-    }`}
-  >
-    <div className="flex items-center gap-1.5">
-      {icon}
-      <span className="text-[9px] font-black uppercase tracking-[0.14em] text-muted whitespace-nowrap">
-        {label}
-      </span>
-    </div>
-    <span className={`text-[22px] font-black leading-none tabular-nums ${valueClass}`}>
+  <div className="bg-card border border-theme rounded-xl p-4">
+    <p className="text-[9px] font-black uppercase tracking-widest text-muted">
+      {label}
+    </p>
+
+    <p className={`text-2xl font-black mt-2 ${className}`}>
       {fmt(value)}
-    </span>
+    </p>
   </div>
 );
 
-const AgingCell = ({
+const AgingCard = ({
   label,
   value,
   active = false,
-  warn = false,
+  compact = false,
 }: {
   label: string;
   value: number;
   active?: boolean;
-  warn?: boolean;
-}) => {
-  const isHot = warn && value > 0;
-  return (
-    <div
-      className={`flex-1 flex flex-col items-center justify-center py-3 px-2 ${
-        active ? "bg-primary/8" : isHot ? "bg-danger/5" : ""
+  compact?: boolean;
+}) => (
+  <div
+    className={`rounded-xl text-center transition-all ${
+      compact ? "px-2 py-2" : "px-4 py-4"
+    } ${
+      active
+        ? "bg-primary/10"
+        : "bg-transparent"
+    }`}
+  >
+    <p
+      className={`uppercase tracking-widest font-black ${
+        compact ? "text-[9px]" : "text-[10px]"
+      } ${
+        active ? "text-primary" : "text-muted"
       }`}
     >
-      <span
-        className={`text-[9px] font-black uppercase tracking-widest mb-1.5 whitespace-nowrap ${
-          active ? "text-primary" : isHot ? "text-danger" : "text-muted"
-        }`}
-      >
-        {label}
-      </span>
-      <span
-        className={`text-[13px] font-black tabular-nums ${
-          active ? "text-primary" : isHot ? "text-danger" : "text-main"
-        }`}
-      >
-        {fmt(value)}
-      </span>
-    </div>
-  );
-};
+      {label}
+    </p>
+
+    <p
+      className={`font-black ${
+        compact ? "text-sm" : "text-base"
+      } ${
+        active ? "text-primary" : "text-main"
+      }`}
+    >
+      {fmt(value)}
+    </p>
+  </div>
+);
 
 export default SupplierStatement;

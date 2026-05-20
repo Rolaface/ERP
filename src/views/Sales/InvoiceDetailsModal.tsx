@@ -15,7 +15,7 @@ export interface InvoiceDetail {
   exchangeRate?: string;
   postingDate: string;
   dueDate: string;
-  status: string;
+  invoiceStatus: string;
   Receipt?: string | null;
   ReceiptNo?: string | null;
   lpoNumber?: string | null;
@@ -248,7 +248,7 @@ const fobTotal = grandTotal - totalCharges;
               <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{data?.id ?? "—"}</p>
             </div>
             <span className={`idm-btn ${statusCls}`} style={{ cursor: "default", padding: "2px 9px", fontSize: 10, borderRadius: 20 }}>
-              {data?.status ?? "Draft"}
+              {data?.invoiceStatus ?? "Draft"}
             </span>
           </div>
 

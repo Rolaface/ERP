@@ -15,7 +15,7 @@ import { fireManagedSwal } from "../../utils/swalManager";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { openExpenseTypeModal } from "../../store/modalStore";
-import { getExpenseClaimTypes,getExpenseClaimTypeById,deleteExpenseClaimType } from "../../api/expenseClaimApi";
+
 const EXPENSE_TYPE_MODULE = "Expense Type";
 
 interface ExpenseType {
@@ -43,30 +43,22 @@ const ExpenseTypeTable: React.FC = () => {
   useEffect(() => { setPage(1); }, [searchTerm]);
 
 const fetchExpenseTypes = useCallback(async () => {
-  if (!mountedRef.current) return;
-  setIsFetching(true);
-  try {
-    const res = await getExpenseClaimTypes(searchTerm, page, pageSize);
     if (!mountedRef.current) return;
-    setExpenseTypes(res.data.map((item) => ({
-      id:           item.name,
-      expense_type: item.expense_type,
-      account:      item.account,
-    })));
-setTotalPages(res.pagination.total_pages);
-setTotalItems(res.pagination.total);
-  } catch (err) {
-    showApiError(err);
-    setExpenseTypes([]);
-    setTotalPages(1);
-    setTotalItems(0);
-  } finally {
-    if (mountedRef.current) {
-      setIsFetching(false);
-      setIsInitialLoad(false);
+    setIsFetching(true);
+    try {
+      
+    } catch (err) {
+      showApiError(err);
+      setExpenseTypes([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      if (mountedRef.current) {
+        setIsFetching(false);
+        setIsInitialLoad(false);
+      }
     }
-  }
-}, [page, pageSize, sortBy, sortOrder, searchTerm]);
+  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -79,84 +71,60 @@ setTotalItems(res.pagination.total);
     fetchExpenseTypes();
   }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
-const handleDelete = async (id: string) => {
-  const result = await fireManagedSwal({
-    icon:               "warning",
-    title:              "Are you sure?",
-    text:               "Delete this expense type?",
-    showCancelButton:   true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor:  "#6b7280",
-    confirmButtonText:  "Yes, delete",
-    reverseButtons:     true,
-  });
-  if (!result.isConfirmed) return;
-  try {
-    showLoading("Deleting expense type...");
-    await deleteExpenseClaimType(id);
-    setExpenseTypes((prev) => prev.filter((et) => et.id !== id));
-    closeSwal();
-    showSuccess("Expense type deleted successfully");
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
-const handleOpenEdit = async (et: ExpenseType) => {
-  try {
-    const res = await getExpenseClaimTypeById(et.id);
-    const claim = res.data;
-    const formData = {
-      id:           claim.name,
-      expense_type: claim.expense_type,
-      account:      claim.accounts?.[0]?.default_account ?? "",
-    };
-    openExpenseTypeModal(formData, true, {
-      onSuccess: async () => {
-        showSuccess("Expense type updated successfully");
-        fetchExpenseTypes();
-      },
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const result = await fireManagedSwal({
+      icon:               "warning",
+      title:              "Are you sure?",
+      text:               "Delete this expense type?",
+      showCancelButton:   true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor:  "#6b7280",
+      confirmButtonText:  "Yes, delete",
+      reverseButtons:     true,
     });
-    closeSwal();   
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
-
-const handleExportExcel = async () => {
-  try {
-    if (!expenseTypes.length) {
+    if (!result.isConfirmed) return;
+    try {
+      showLoading("Deleting expense type...");
+      setExpenseTypes((prev) => prev.filter((et) => et.id !== id));
       closeSwal();
-      showApiError("No expense types to export");
-      return;
+      showSuccess("Expense type deleted successfully");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
     }
-    const worksheet = XLSX.utils.json_to_sheet(
-      expenseTypes.map((et) => ({
-        "Expense Type": et.expense_type,
-        "Account":      et.account,
-      }))
-    );
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Expense Types");
-    saveAs(
-      new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }),
-      "Expense_Types.xlsx"
-    );
-   
-    await fireManagedSwal({
-      icon:               "success",
-      title:              "Success",
-      text:               "Expense types exported successfully",
-      confirmButtonColor: "#22c55e",
-    });
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      showLoading("Exporting expense types...");
+      if (!expenseTypes.length) {
+        closeSwal();
+        showApiError("No expense types to export");
+        return;
+      }
+      const worksheet = XLSX.utils.json_to_sheet(
+        expenseTypes.map((et) => ({
+          "Expense Type": et.expense_type,
+          "Account":      et.account,
+        }))
+      );
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Expense Types");
+      saveAs(
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "Expense_Types.xlsx"
+      );
+      closeSwal();
+      showSuccess("Expense types exported successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
+
   const columns: Column<ExpenseType>[] = useMemo(
     () => [
       {
@@ -197,13 +165,13 @@ const handleExportExcel = async () => {
             <PermissionGate module={EXPENSE_TYPE_MODULE} action="write">
               <ActionButton
                 type="edit"
-                onClick={() => { handleOpenEdit(et); }}
+                onClick={(e) => { e.stopPropagation(); }}
                 iconOnly
               />
             </PermissionGate>
             <ActionMenu
               {...(can(EXPENSE_TYPE_MODULE, "delete")
-                ? { onDelete: () => handleDelete(et.id) }
+                ? { onDelete: (e) => handleDelete(et.id, e) }
                 : {})}
             />
           </div>

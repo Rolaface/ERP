@@ -77,14 +77,15 @@ export function buildInvoicePayload(
       vatRate: String(item.vatRate ?? 0),
       vatCode: item.vatCode ?? "",
     }));
-  const mappedTaxes = (formData.taxes || []).map((t: any) => ({
-    chargeType: t.chargeType,
-    accountHead: t.accountHead,
-    description: t.description || "",
-    ...(t.chargeType === "Actual"
-      ? { amount: Number(t.amount) || 0 }
-      : { rate: t.rate ?? 0 }),
-  }));
+ const mappedTaxes = (formData.taxes || []).map((t: any) => ({
+  chargeType: t.chargeType,
+  accountHead: t.accountHead,
+  description: t.description || "",
+  ...(t.chargeType === "Actual"
+    ? { amount: Number(t.amount) || 0 }
+    : { rate: t.rate ?? 0 }
+  ),
+}));
   return {
     customerId: formData.customerId,
     currency: formData.currencyCode,
@@ -227,7 +228,7 @@ export const useInvoiceForm = (
       setExchangeRateError(null);
       if (mode !== "edit") {
         setFormData((prev) => {
-          if (prev.exchangeRt === "1") return prev;
+          if (prev.exchangeRt === "1") return prev; 
           return { ...prev, exchangeRt: "1" };
         });
       }
@@ -237,7 +238,7 @@ export const useInvoiceForm = (
     let cancelled = false;
     setExchangeRateLoading(true);
     setFormData((prev) => {
-      if (prev.exchangeRt === "1") return prev;
+      if (prev.exchangeRt === "1") return prev; 
       return { ...prev, exchangeRt: "1" };
     });
     setExchangeRateError(null);
@@ -501,11 +502,11 @@ export const useInvoiceForm = (
       let nextValue: any = value;
       if (isNum) {
         nextValue =
-          value === "" || value === null
-            ? null
+          value === ""
+            ? ""
             : Number.isFinite(Number(value))
               ? Number(value)
-              : null;
+              : "";
       }
       const updatedItem = { ...items[idx], [name]: nextValue };
       const start = Number(updatedItem.boxStart || 0);
@@ -541,6 +542,7 @@ export const useInvoiceForm = (
         return sum + net;
       }, 0);
 
+     
       const mappedTaxes = taxes.map((t: any) => {
         const rate = Number(t.rate) || 0;
 
@@ -548,15 +550,16 @@ export const useInvoiceForm = (
           t.charge_type === "Actual"
             ? Number(t.tax_amount) || 0
             : (subTotal * rate) / 100;
-        const isActual = t.charge_type === "Actual";
+            const isActual = t.charge_type === "Actual"; 
 
         return {
-          chargeType: t.charge_type,
-          accountHead: t.account_head,
-          description: t.description || "",
-          ...(isActual
-            ? { amount: Number(t.tax_amount) || 0 }
-            : { rate: Number(t.rate) || 0 }),
+         chargeType: t.charge_type,
+  accountHead: t.account_head,
+  description: t.description || "",
+  ...(isActual
+    ? { amount: Number(t.tax_amount) || 0 }
+    : { rate: Number(t.rate) || 0 }
+  ),
         };
       });
 
@@ -763,10 +766,10 @@ export const useInvoiceForm = (
           exclusiveBase > 0
             ? Number(((amount / exclusiveBase) * 100).toFixed(2))
             : 0;
-        const taxTypes = (it.taxInfo || [])
-          .flatMap((tax: any) => tax.taxRates || [])
-          .map((r: any) => r.tax_type)
-          .filter((t: string) => t && t.trim() !== "");
+            const taxTypes = (it.taxInfo || [])
+  .flatMap((tax: any) => tax.taxRates || [])
+  .map((r: any) => r.tax_type)
+  .filter((t: string) => t && t.trim() !== "");
         return {
           itemCode: it.itemCode,
           itemName: it.itemName ?? "",

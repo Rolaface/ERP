@@ -250,7 +250,6 @@ export const useModalStore = create<ModalState>((set, get) => ({
       const newFocusOrder = state.focusCounter + 1;
       return {
         focusCounter: newFocusOrder,
-        activeModalId: id,
         modals: state.modals.map((m) =>
           m.id === id
             ? { ...m, minimized: false, focusOrder: newFocusOrder }

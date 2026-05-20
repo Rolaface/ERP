@@ -216,9 +216,9 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({ from, to, onCh
         type="button"
         onClick={() => { setDraft({ from, to }); setOpen(o => !o); }}
         style={{
-          height: 32,
-          padding: "0 10px",
-          borderRadius: 8,
+          height: 36,
+          padding: "0 14px",
+          borderRadius: 10,
           border: `1.5px solid ${hasValue ? "var(--color-primary,#2563eb)" : "var(--border,#e2e8f0)"}`,
           background: hasValue ? "rgba(37,99,235,0.06)" : "var(--bg-card,#fff)",
           color: hasValue ? "var(--color-primary,#2563eb)" : "var(--text-muted,#64748b)",
@@ -227,7 +227,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({ from, to, onCh
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
           whiteSpace: "nowrap",
           transition: "all .15s",
         }}

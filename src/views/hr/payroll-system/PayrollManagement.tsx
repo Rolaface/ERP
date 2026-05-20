@@ -23,7 +23,6 @@ import { PayslipModal } from "./PayslipModal";
 import { QuickCreateModal } from "../../../components/Hr/payrollmodal/QuickCreatePayrollModal";
 import { PayrollValidationModal } from "../../../components/Hr/payrollmodal/payrollvalidationmodal";
 import { usePermission } from "../../../hooks/permission/usePermission";
-import { HrTableFrame } from "../components/HrTabLayout";
 
 // ─── Payload builder ──────────────────────────────────────────────────────────
 
@@ -198,7 +197,7 @@ const handleDeletePayroll = async (id: string) => {
     );
 
   return (
-    <HrTableFrame>
+    <div className="flex min-h-0 flex-1 flex-col bg-app overflow-hidden">
       <PayrollDashboard
         records={payrollRecords}
         loading={loading}
@@ -320,6 +319,6 @@ const handleDeletePayroll = async (id: string) => {
           showSuccess(`Payslip emailed to ${selectedRecord?.email}`)
         }
       />
-    </HrTableFrame>
+    </div>
   );
 }

@@ -180,8 +180,8 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
   if (!open) return null;
 
   const items = data?.items ?? [];
-  const currency = data?.currency ?? "-";
-  const status = data?.status ?? "-";
+  const currency = data?.currency ?? "INR";
+  const status = data?.status ?? "Draft";
   const statusCls = STATUS_MAP[status] ?? "bg-draft";
 
   const buying = data?.terms?.buying;

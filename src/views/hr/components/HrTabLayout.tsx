@@ -18,7 +18,9 @@ export const HrPrimaryTabs: React.FC<HrPrimaryTabsProps> = ({
   activeTab,
   onChange,
 }) => (
-  <AppTabs tabs={tabs} activeTab={activeTab} onChange={onChange} />
+  <div className="pt-3">
+    <AppTabs tabs={tabs} activeTab={activeTab} onChange={onChange} />
+  </div>
 );
 
 type HrSecondaryTabsProps = {
@@ -40,50 +42,19 @@ type HrSectionFrameProps = {
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   children: React.ReactNode;
-  className?: string;
 };
-
-const joinClasses = (...classes: Array<string | undefined>) =>
-  classes.filter(Boolean).join(" ");
-
-export const HR_CONTENT_FRAME_CLASS = "flex min-h-0 flex-1 flex-col gap-3";
-export const HR_TABLE_FRAME_CLASS = "min-w-0 min-h-0 flex-1";
-
-type HrFrameProps = {
-  children: React.ReactNode;
-  className?: string;
-};
-
-export const HrContentFrame: React.FC<HrFrameProps> = ({
-  children,
-  className,
-}) => (
-  <div className={joinClasses(HR_CONTENT_FRAME_CLASS, className)}>
-    {children}
-  </div>
-);
-
-export const HrTableFrame: React.FC<HrFrameProps> = ({
-  children,
-  className,
-}) => (
-  <div className={joinClasses(HR_TABLE_FRAME_CLASS, className)}>
-    {children}
-  </div>
-);
 
 export const HrSectionFrame: React.FC<HrSectionFrameProps> = ({
   tabs,
   activeTab,
   onTabChange,
   children,
-  className,
 }) => (
-  <section className={joinClasses(HR_CONTENT_FRAME_CLASS, className)}>
+  <section className="flex min-h-0 flex-1 flex-col gap-4">
     {tabs && activeTab && onTabChange ? (
       <HrSecondaryTabs tabs={tabs} activeTab={activeTab} onChange={onTabChange} />
     ) : null}
 
-    <HrTableFrame>{children}</HrTableFrame>
+    <div className="min-w-0 flex-1">{children}</div>
   </section>
 );

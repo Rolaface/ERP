@@ -11,7 +11,6 @@ import LeaveApplyTable         from "./LeaveApply";
 import LeaveApproval           from "./LeaveApproval";
 import { showApiError } from "../../../utils/alert";
 import { getEmployeeDetailsById } from "../../../api/employeeapi";
-import { HrContentFrame, HrTableFrame } from "../components/HrTabLayout";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -170,10 +169,10 @@ const EmployeeLeaveSection: React.FC = () => {
   const handleAfterApply = () => setRefreshKey((k) => k + 1);
 
   return (
-    <HrContentFrame>
+    <div className="space-y-6">
       {/* Leave Balance */}
      {/* Leave Balance */}
-      <section>
+      <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold uppercase tracking-widest text-[var(--muted)]">Leave Balance</h2>
         </div>
@@ -209,11 +208,11 @@ const EmployeeLeaveSection: React.FC = () => {
             <TrendingUp size={15} /> No leave balance data available.
           </div>
         )}
-      </section>
+      </div>
 
       {/* Recent Requests */}
       {(loadingRecent || recentLeaves.length > 0) && (
-        <section>
+        <div>
           <h2 className="text-sm font-bold uppercase tracking-widest text-[var(--muted)] mb-3">Recent Requests</h2>
           {loadingRecent ? (
             <div className="space-y-2">
@@ -239,15 +238,15 @@ const EmployeeLeaveSection: React.FC = () => {
               ))}
             </div>
           )}
-        </section>
+        </div>
       )}
 
       {/* All Applications */}
-      <section>
+      <div>
         <h2 className="text-sm font-bold uppercase tracking-widest text-[var(--muted)] mb-3">All Applications</h2>
         <LeaveApplyTable key={refreshKey} onAfterApply={handleAfterApply} />
-      </section>
-    </HrContentFrame>
+      </div>
+    </div>
   );
 };
 
@@ -260,11 +259,7 @@ const Leave: React.FC<LeaveProps> = ({ isEmployeeView = false }) => {
   }
 
   // Professional view: show Leave Approval table directly (no sub-tabs)
-  return (
-    <HrTableFrame>
-      <LeaveApproval />
-    </HrTableFrame>
-  );
+  return <LeaveApproval />;
 };
 
 export default Leave;

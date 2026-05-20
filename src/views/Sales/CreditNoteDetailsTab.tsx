@@ -7,7 +7,6 @@ import type {
 } from "../../hooks/useCreditNoteForm";
 import WarehouseSelect from "../../components/selects/WarehouseSelect";
 import ItemTable from "../../components/common/ItemTable";
-import { NumericInput } from "../../components/ui/modal/modalComponent";
 
 // ─── Invoice Search Select ────────────────────────────────────────────────────
 
@@ -148,7 +147,7 @@ export interface CreditNoteDetailsTabProps {
   onItemChange: (
     index: number,
     field: keyof CreditNoteItem,
-  value: string | number | null,
+    value: string | number,
   ) => void;
   onWarehouseDefault: (index: number, warehouse: string) => void;
   onRemoveItem: (index: number) => void;
@@ -307,37 +306,29 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
 
         {/* Qty */}
         <td className="px-1 py-1">
-          <NumericInput
-  name="qty"
- value={it.qty == null ? null : Math.abs(it.qty)}
-  disabled={isPlaceholder}
-  className={isPulsing ? "animate-pulse opacity-60 w-full" : "w-full"}
-  onChange={(value) => {
-    onItemChange(
-      absoluteIndex,
-      "qty",
-      value === null
-        ? null
-        : value > 0
-          ? -value
-          : value,
-    );
-  }}
-/>
+          <input
+            type="number"
+            name="qty"
+            value={it.qty === 0 ? "" : Math.abs(it.qty)}
+            disabled={isPlaceholder}
+            className={inputCls}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              onItemChange(absoluteIndex, "qty", val > 0 ? -val : val);
+            }}
+          />
         </td>
 
         {/* Rate */}
         <td className="px-1 py-1">
-        <NumericInput
-  name="rate"
- value={it.rate}
-  disabled={isPlaceholder}
-  decimalScale={4}
-  className={isPulsing ? "animate-pulse opacity-60 w-full" : "w-full"}
-  onChange={(value) =>
-    onItemChange(absoluteIndex, "rate", value)
-  }
-/>
+          <input
+            type="number"
+            name="rate"
+            value={it.rate === 0 ? "" : it.rate}
+            disabled={isPlaceholder}
+            className={inputCls}
+            onChange={(e) => onItemChange(absoluteIndex, "rate", Number(e.target.value))}
+          />
         </td>
 
         {/* Batch No */}

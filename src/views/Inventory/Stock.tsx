@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   showApiError,
   showSuccess,
@@ -12,51 +12,39 @@ import {
   deleteStockEntry,
 } from "../../api/stockApi";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { ChevronRight, ChevronDown, Upload } from "lucide-react";
+import { ChevronRight, ChevronDown, Upload, Copy } from "lucide-react";
 import StockCorrectionModal from "../../components/inventory/stock/Stockcorrectionmodal";
 import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 const Items: React.FC = () => {
-  const mountedRef = useRef(true);
-
-  // ── Data state — split loading so page changes don't flash skeleton
   const [items, setItems] = useState<any[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // ── Pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Filters
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // ── Expanded rows
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
-  // ── Modals
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewStockData, setViewStockData] = useState<any>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
+
   const [showStockCorrection, setShowStockCorrection] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
 
-  // ── Fetch — memoized with useCallback
-  const fetchItems = useCallback(async () => {
-    if (!mountedRef.current) return;
-    setIsFetching(true);
 
+  const fetchItems = async () => {
     try {
+      setLoading(true);
       const res = await getStockReport(page, pageSize, searchTerm);
-      if (!mountedRef.current) return;
-
       const list = res?.message?.data || [];
 
       const mapped = list.map((item: any) => ({
@@ -81,35 +69,23 @@ const Items: React.FC = () => {
       console.error(err);
       showApiError("Failed to load stock entries");
     } finally {
-      if (mountedRef.current) {
-        setIsFetching(false);
-        setIsInitialLoad(false);
-      }
+      setLoading(false);
+      setInitialLoad(false);
     }
-  }, [page, pageSize, searchTerm]);
+  };
 
-  // Initial fetch
-  useEffect(() => {
-    mountedRef.current = true;
-    fetchItems();
-    return () => { mountedRef.current = false; };
-  }, []);
+  useEffect(() => { fetchItems(); }, [page, pageSize, searchTerm]);
 
-  // Refetch on dependency change (skip initial)
-  useEffect(() => {
-    if (isInitialLoad) return;
-    fetchItems();
-  }, [page, pageSize, searchTerm]);
+  // ─── HANDLERS ─────────────────────────────────────────────────────────────
 
-  // ── Handlers
   const toggleRow = (id: string) =>
-    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
 
   const handleStockCorrection = (batch: any) => {
+    console.log("Opening modal", batch);
     setSelectedBatch(batch);
     setShowStockCorrection(true);
   };
-
   const handleBatchDelete = (batch: any) => {
     handleDelete({ id: batch.batch_no, ...batch });
   };
@@ -118,7 +94,8 @@ const Items: React.FC = () => {
     console.log("Open ledger for batch:", batch.batch_no);
   };
 
-  const handleDelete = async (item: { id: string; [key: string]: any }) => {
+
+  const handleDelete = async (item: { id: string;[key: string]: any }) => {
     const confirm = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
@@ -143,13 +120,12 @@ const Items: React.FC = () => {
 
       closeSwal();
       showSuccess("Stock entry deleted successfully");
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      setItems(prev => prev.filter(i => i.id !== item.id));
     } catch (error: any) {
       closeSwal();
       showApiError(error);
     }
   };
-
   const handleBulkSaved = async () => {
     setShowBulkModal(false);
     try {
@@ -162,92 +138,58 @@ const Items: React.FC = () => {
     }
   };
 
-  // ── Columns — styled to match CustomerManagement
+  // ─── COLUMNS ──────────────────────────────────────────────────────────────
+
   const columns: Column<any>[] = [
     {
       key: "expand",
       header: "",
       align: "center",
       render: (row) => (
-        <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
-          {expandedRows[row.id]
-            ? <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
-            : <ChevronRight size={16} strokeWidth={2.5} />}
-        </span>
+        <div className="py-1.5">
+          <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
+            {expandedRows[row.id]
+              ? <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
+              : <ChevronRight size={16} strokeWidth={2.5} />}
+          </span>
+        </div>
       ),
     },
     {
       key: "itemCode",
       header: "Item Code",
-      render: (row) => (
-        <span className="font-medium whitespace-nowrap">{row.itemCode ?? "—"}</span>
-      ),
+       render: (row) => 
+       <div className="py-1.5">
+         <span className=" font-medium text-main">{row.itemCode}</span>
+       </div>,
     },
-    {
-      key: "itemName",
-      header: "Item Name",
-      render: (row) => (
-        <span className="font-medium block">{row.itemName ?? "—"}</span>
-      ),
-    },
-    {
-      key: "description",
-      header: "Description",
-      render: (row) => (
-        <span className="text-muted whitespace-nowrap">{row.description ?? "—"}</span>
-      ),
-    },
+    { key: "itemName", 
+      header: "Item Name", 
+      render: (row) =>
+       row.itemName 
+      },
+    { key: "description",
+       header: "Description",
+        render: (row) => row.description },
     {
       key: "packingUnit",
       header: "Packing Unit",
-      render: (row) => (
-        <span className="whitespace-nowrap">
-          {`${row.packingUnit ?? "—"} × ${row.packingSize ?? "—"}`}
-        </span>
-      ),
+      render: (row) => `${row.packingUnit ?? "-"} × ${row.packingSize ?? "-"}`,
     },
-    {
-      key: "totalQty",
-      header: "Qty",
-      align: "right",
-      render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.totalQty}
-        </code>
-      ),
-    },
-    {
-      key: "totalBuyValue",
-      header: "Total Buy Value",
-      align: "right",
-      render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.buyCurrency} {row.totalBuyValue.toLocaleString("en-IN")}
-        </code>
-      ),
-    },
-    {
-      key: "totalSellValue",
-      header: "Total Sell Value",
-      align: "right",
-      render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.sellCurrency} {row.totalSellValue.toLocaleString("en-IN")}
-        </code>
-      ),
-    },
+    { key: "totalQty", header: "Qty", align: "right", render: (row) => row.totalQty },
+    { key: "totalBuyValue", header: "Total Buy Value", align: "right", render: (row) => `${row.buyCurrency} ${row.totalBuyValue.toLocaleString("en-IN")}` },
+    { key: "totalSellValue", header: "Total Sell Value", align: "right", render: (row) => `${row.sellCurrency} ${row.totalSellValue.toLocaleString("en-IN")}` },
   ];
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  
+
   return (
     <div className="h-full min-h-0">
       <Table
+        loading={loading || initialLoad}
         columns={columns}
         data={items}
         tableId="inventory-stocks"
-        rowKey={(r) => r.id}
-        loading={isInitialLoad}
-        isFetching={isFetching}
         onRowClick={(row) => toggleRow(row.id)}
         expandedRowRender={(row) =>
           expandedRows[row.id] ? (
@@ -264,18 +206,15 @@ const Items: React.FC = () => {
         enableColumnSelector
         showToolbar
         searchValue={searchTerm}
-        onSearch={(value) => {
-          setSearchTerm(value);
-          setPage(1);
-        }}
+        onSearch={(value) => { setSearchTerm(value); setPage(1); }}
         extraFilters={
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowBulkModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
               style={{ border: "1.5px solid var(--primary,#c97d2e)", color: "var(--primary,#c97d2e)", background: "transparent" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,125,46,0.06)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,125,46,0.06)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
             >
               <Upload size={12} /> Bulk Upload
             </button>
@@ -284,8 +223,8 @@ const Items: React.FC = () => {
               onClick={() => { setSelectedBatch(null); setShowStockCorrection(true); }}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all whitespace-nowrap"
               style={{ background: "var(--primary,#c97d2e)", color: "#fff", boxShadow: "0 4px 12px rgba(201,125,46,0.25)" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.9"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.9"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
             >
               Stock Correction
             </button>
@@ -296,10 +235,7 @@ const Items: React.FC = () => {
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
       />
 
@@ -309,6 +245,7 @@ const Items: React.FC = () => {
         stockData={viewStockData}
       />
 
+      {/* ── Stock Correction Modal — wired to both toolbar button + batch row ── */}
       <StockCorrectionModal
         isOpen={showStockCorrection}
         onClose={() => { setShowStockCorrection(false); setSelectedBatch(null); }}
@@ -321,6 +258,7 @@ const Items: React.FC = () => {
         onClose={() => setShowBulkModal(false)}
         onSubmit={handleBulkSaved}
       />
+
     </div>
   );
 };

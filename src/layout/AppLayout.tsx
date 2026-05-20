@@ -18,9 +18,8 @@ import {
   openWarehouseModal,
   type ModalContext,
 } from "../store/modalStore";
-import { AppMain, AppShell, AppContentContainer } from "./layoutSystem";
+import { AppMain, AppShell, AppContentContainer, RightPanel } from "./layoutSystem";
 import GlobalModalHandler from "../components/common/GlobalModalHandler";
-import { FloatingMinimizedDock } from "../components/common/FloatingMinimizedDock";
 import { showApiError, showSuccess } from "../utils/alert";
 import { createSalesInvoice } from "../api/salesApi";
 import { createQuotation } from "../api/quotationApi";
@@ -276,7 +275,10 @@ const AppLayout: React.FC = () => {
   return (
 
     <QuickAddProvider>
-      <AppShell sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}>
+      <AppShell
+        sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
+        rightPanel={<RightPanel />}
+      >
         <AppMain sidebarOpen={sidebarOpen}>
           <AppContentContainer viewportLocked={isRootDashboard}>
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -294,8 +296,6 @@ const AppLayout: React.FC = () => {
           />
         )}
       </AppShell>
-      <GlobalModalHandler />
-      <FloatingMinimizedDock />
     </QuickAddProvider>
   );
 };

@@ -35,10 +35,6 @@ import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 import PermissionGate from "../PermissionGate";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type OutletContextType = {
   openPOCreate: () => void;
   openPOEdit: (poId: string | number) => void;
@@ -102,23 +98,20 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrderDetail | null>(null);
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
   const [company, setCompany] = useState<any | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPOForPayment, setSelectedPOForPayment] = useState<PurchaseOrder | null>(null);
 
-  // ── Detail modal (drawer)
-  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrderDetail | null>(null);
+  // ── PDF preview modal (kept — do not remove)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
+
+  // ── Drawer (same pattern as ProformaInvoicesTable)
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
-  // ── PDF preview modal (kept — do not remove)
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [pdfOpen, setPdfOpen] = useState(false);
-
-  // ── Unused modal state (kept — do not remove)
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-
-  // ── Debounced search → filters
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters((prev) => ({
@@ -612,6 +605,8 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
               : {})}
             customActions={[
               { label: "View PDF", onClick: () => handlePreviewPDF(o) },
+
+              // Advance Payment — needs Payment Entry create + Approved status
               ...(can(PAYMENT_MODULE, "create") && o.status === "Approved"
                 ? [{ label: "Make Advance Payment", onClick: () => handleMakePayment(o) }]
                 : []),
@@ -722,6 +717,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
           }
         }}
       />
+
 
       {viewModalOpen && selectedOrder && (
         <PurchaseOrderView
