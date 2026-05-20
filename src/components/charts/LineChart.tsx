@@ -21,24 +21,41 @@ const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, m
   }), []);
 
   const option = useMemo(() => {
-
     const rawData: any[][] = [['Month', 'MetricName', 'Value']];
-    const months = Object.keys(trendData).sort();
     
-    months.forEach(month => {
+    const chronologicalOrder = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      "Q1", "Q2", "Q3", "Q4",
+      "H1", "H2"
+    ];
+
+    // 2. Sort the keys based on the predefined chronological index
+    const periods = Object.keys(trendData).sort((a, b) => {
+      const indexA = chronologicalOrder.indexOf(a);
+      const indexB = chronologicalOrder.indexOf(b);
+      
+      // If both exist in our array, sort by their index
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      
+      // Fallback for Yearly data (e.g., "2024", "2025") - regular string sort
+      return a.localeCompare(b);
+    });
+    
+    periods.forEach(period => {
       metrics.forEach(metric => {
-        rawData.push([month, metric.name, trendData[month][metric.key] || 0]);
+        rawData.push([period, metric.name, trendData[period][metric.key] || 0]);
       });
     });
 
-    // 2. Setup the dataset filters and series automatically (like the Apache example)
+    // Setup the dataset filters and series automatically
     const datasetWithFilters: any[] = [];
     const seriesList: any[] = [];
 
     metrics.forEach(metric => {
       const datasetId = 'dataset_' + metric.key;
       
-      // Filter dataset by Metric Name
       datasetWithFilters.push({
         id: datasetId,
         fromDatasetId: 'dataset_raw',
@@ -48,7 +65,6 @@ const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, m
         }
       });
 
-      // Push line series for each filtered dataset
       seriesList.push({
         type: 'line',
         datasetId: datasetId,
@@ -80,7 +96,6 @@ const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, m
       });
     });
 
-    // 3. Construct the final option
     return {
       animationDuration: 3000,
       dataset: [
@@ -93,7 +108,6 @@ const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, m
       tooltip: { 
         trigger: 'axis',
         order: 'valueDesc',
-        // Format the tooltip values using your currency formatter
         valueFormatter: (value: number) => currencyFormatter.format(value)
       },
       grid: { 

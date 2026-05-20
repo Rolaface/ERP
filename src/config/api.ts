@@ -77,6 +77,8 @@ export const API = {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.sale.api.summary`,
     recentSales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.top_recent_sales`,
     salesSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.monthly_sales_breakdown`,
+    salesCount: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.get_document_counts`,
+    monthlySales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.get_monthly_sales`,
    },
 
   /* =========================
@@ -109,6 +111,7 @@ export const API = {
    * ========================= */
   hrDashboard: {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
+    hrSummary: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_employee_status_counts`,
   },
 
   Get: {
@@ -164,7 +167,6 @@ export const API = {
     getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
     getAccountsResource: `${ERP_BASE}/api/resource/Account`,
-    getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`
   },
 
   accounting: {

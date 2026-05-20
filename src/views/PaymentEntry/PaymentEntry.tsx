@@ -12,9 +12,6 @@ import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openPaymentEntryModal } from "../../store/modalStore";
 import { usePermission } from "../../hooks/permission/usePermission";
-import { getPaymentEntryById } from "../../api/BankAccountApi";
-import { ActionMenu } from "../../components/ui/Table/ActionButton";
-import SendEmailModal from "../../components/common/SendEmailModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,8 +43,8 @@ const PAYMENT_ENTRY_MODULE = "Payment Entry";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const MONTHS = [
-  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+  "JAN","FEB","MAR","APR","MAY","JUN",
+  "JUL","AUG","SEP","OCT","NOV","DEC",
 ];
 
 const formatDate = (date: string | Date): string => {
@@ -80,13 +77,6 @@ const PaymentEntry: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  // email
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailPayment, setEmailPayment] = useState<PaymentRow | null>(null);
-  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(null);
-  const [emailAttachments, setEmailAttachments] = useState<{ name: string; file_name: string }[]>([]);
 
   // ── Search
   const [searchTerm, setSearchTerm] = useState("");
@@ -166,79 +156,77 @@ const PaymentEntry: React.FC = () => {
     setPage(1);
   };
 
-  const columns: Column<PaymentRow>[] = [
-    {
-      key: "id",
-      header: "P Id",
-      render: (row) => row.id || "-",
-    },
-    {
-      key: "paymentDate",
-      header: "Payment Date",
-      render: (row) => row.paymentDate ? formatDate(row.paymentDate) : "-",
-    },
-    {
-      key: "partyType",
-      header: "party Type",
-      render: (row) => row.partyType || "—",
-    },
-    {
-      key: "partyName",
-      header: "Party",
-      render: (row) => row.partyName || "—",
-    },
-    {
-      key: "mode",
-      header: "Mode Of Payment",
-      render: (row) => row.mode || "—",
-    },
-    {
-      key: "amount",
-      header: "Amount",
-      sortable: true,
-      align: "right",
-      render: (row) => (
-        <span className="block font-semibold whitespace-nowrap">
-          {formatAmount(row.amount)} 
-        </span>
-      ),
-      tooltip: (row) => formatAmount(row.amount),
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (row: PaymentRow) => <StatusBadge status={row.status} />,
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (row: PaymentRow) => (
-        <ActionMenu
-          customActions={[
-            {
-              label: "Send Email",
-              onClick: async () => {
-                setEmailPayment(row);
-                setEmailContactEmail(null);
-                setEmailAttachments([]);
-                setEmailModalOpen(true);
-                try {
-                  const res = await getPaymentEntryById(row.id);
-                  if (res?.message?.status_code === 200) {
-                    setEmailContactEmail(res.message.data?.contact_email ?? null);
-                    setEmailAttachments(res.message.data?.attachments ?? []);
-                  }
-                } catch {
-                  // non-critical: modal opens with empty To/attachments
-                }
-              },
-            },
-          ]}
-        />
-      ),
-    },
-  ];
+  // ── Columns — memoized to prevent unnecessary re-renders
+  const columns: Column<PaymentRow>[] = useMemo(
+    () => [
+      {
+        key: "id",
+        header: "ID",
+        sortable: true,
+        align: "left",
+        render: (row) => (
+          <span className="block font-medium">{row.id || "—"}</span>
+        ),
+        tooltip: (row) => row.id,
+      },
+      {
+        key: "paymentDate",
+        header: "Payment Date",
+        sortable: true,
+        align: "center",
+        render: (row) => (
+          <span className="block">
+            {row.paymentDate ? formatDate(row.paymentDate) : "—"}
+          </span>
+        ),
+      },
+      {
+        key: "partyType",
+        header: "Party Type",   // Fix: was "party Type"
+        align: "center",
+        render: (row) => (
+          <span className="block">{row.partyType || "—"}</span>
+        ),
+      },
+      {
+        key: "partyName",
+        header: "Supplier Name",  // Fix: was just "Party"
+        sortable: true,
+        align: "left",
+        render: (row) => (
+          <span className="block font-medium">{row.partyName || "—"}</span>
+        ),
+        tooltip: (row) => row.partyName ?? "",
+      },
+      {
+        key: "mode",
+        header: "Mode Of Payment",
+        align: "left",
+        render: (row) => (
+          <span className="block">{row.mode || "—"}</span>
+        ),
+      },
+      {
+        key: "amount",
+        header: "Amount",
+        sortable: true,
+        align: "right",
+        render: (row) => (
+          <span className="block font-semibold whitespace-nowrap">
+            {formatAmount(row.amount)}   {/* Fix: was ` ${amount}` with leading space, no ₹ */}
+          </span>
+        ),
+        tooltip: (row) => formatAmount(row.amount),
+      },
+      {
+        key: "status",
+        header: "Status",
+        align: "center",
+        render: (row) => <StatusBadge status={row.status} />,
+      },
+    ],
+    [],
+  );
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
@@ -270,9 +258,9 @@ const PaymentEntry: React.FC = () => {
           onAdd={
             can(PAYMENT_ENTRY_MODULE, "create")
               ? () =>
-                openPaymentEntryModal(null, false, {
-                  onSuccess: () => fetchPayments(),
-                })
+                  openPaymentEntryModal(null, false, {
+                    onSuccess: () => fetchPayments(),
+                  })
               : undefined
           }
           // Fix: sorting now wired up
@@ -291,19 +279,6 @@ const PaymentEntry: React.FC = () => {
           }}
         />
       </AppPageBody>
-      <SendEmailModal
-        open={emailModalOpen}
-        docType="Payment Entry"
-        invoiceNumber={emailPayment?.id}
-        contactEmail={emailContactEmail}
-        invoiceAttachments={emailAttachments}
-        onClose={() => {
-          setEmailModalOpen(false);
-          setEmailPayment(null);
-          setEmailContactEmail(null);
-          setEmailAttachments([]);
-        }}
-      />
     </AppPage>
   );
 };

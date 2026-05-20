@@ -48,8 +48,7 @@ export type ModalType =
   | "holidayList"
   | "expense"
   | "expenseType"
-  | "emailTemplate";
-
+  |"emailTemplate";
 
 export interface ModalContext {
   source?: string;

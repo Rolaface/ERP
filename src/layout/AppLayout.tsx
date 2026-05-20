@@ -27,7 +27,6 @@ import { createQuotation } from "../api/quotationApi";
 import { createItemGroupNode, renameItemGroup, updateItemGroupById } from "../api/itemGroupApi";
 import { createWarehouseNode, updateWarehouseById } from "../api/WarehouseApi";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
-import FloatingViewSwitch from "./FloatingViewSwitch";
 
 const AppLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(true);
@@ -274,32 +273,39 @@ const AppLayout: React.FC = () => {
     );
   }
 
-  return (
+return (
+  <QuickAddProvider>
+    <AppShell
+      sidebar={
+        <Sidebar
+          open={sidebarOpen}
+          setOpen={setSidebarOpen}
+        />
+      }
+    >
+      <AppMain sidebarOpen={sidebarOpen}>
+        <AppContentContainer viewportLocked={isRootDashboard}>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <Suspense fallback={<PageLoader />}>
+              <Outlet context={sharedProps} />
+            </Suspense>
+          </div>
+        </AppContentContainer>
+      </AppMain>
 
-    <QuickAddProvider>
-      <AppShell sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}>
-        <AppMain sidebarOpen={sidebarOpen}>
-          <AppContentContainer viewportLocked={isRootDashboard}>
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <Suspense fallback={<PageLoader />}>
-                <Outlet context={sharedProps} />
-              </Suspense>
-            </div>
-          </AppContentContainer>
-        </AppMain>
-        <FloatingViewSwitch />
-        <GlobalModalHandler />
-        {FEATURES.CHAT_ENABLED && (
-          <ChatWindow
-            isOpen={isChatOpen}
-            onToggle={() => setIsChatOpen(prev => !prev)}
-          />
-        )}
-      </AppShell>
       <GlobalModalHandler />
-      <FloatingMinimizedDock />
-    </QuickAddProvider>
-  );
+
+      {FEATURES.CHAT_ENABLED && (
+        <ChatWindow
+          isOpen={isChatOpen}
+          onToggle={() => setIsChatOpen((prev) => !prev)}
+        />
+      )}
+    </AppShell>
+
+    <FloatingMinimizedDock />
+  </QuickAddProvider>
+);
 };
 
 export default AppLayout;

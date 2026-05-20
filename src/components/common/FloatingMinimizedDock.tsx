@@ -42,7 +42,7 @@ export const FloatingMinimizedDock: React.FC = () => {
           "
           style={{
             zIndex: MODAL_LAYER.minimizedTaskbar,
-            bottom: "max(30px, env(safe-area-inset-bottom))",
+            bottom: "max(5px, env(safe-area-inset-bottom))",
             right: "max(90px, env(safe-area-inset-right))",
           }}
           aria-label="Minimized modals"

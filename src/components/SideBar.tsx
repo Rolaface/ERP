@@ -1,9 +1,30 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, ShoppingCart, Users, ShoppingBag, Boxes, Wallet, Building2, UserCog, Settings,
-  Menu, ChevronDown, ChevronUp, Repeat, Receipt, Users2, LogOut, Landmark, Calculator, Calendar, Clock, FileText,
-  BarChart2, ShieldCheck, Star, Mail,
+  LayoutDashboard,
+  ShoppingCart,
+  Users,
+  ShoppingBag,
+  Boxes,
+  Wallet,
+  Building2,
+  UserCog,
+  Settings,
+  Menu,
+  ChevronDown,
+  ChevronUp,
+  Repeat,
+  Receipt,
+  Users2,
+  LogOut,
+  Landmark,
+  Calculator,
+  Calendar,
+  Clock,
+  FileText,
+  BarChart2,
+  ShieldCheck,
+  Star,
   User,
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
@@ -171,17 +192,11 @@ const settingsItems: SettingsItem[] = [
     modules: ["Item Tax Template", "Tax Category", "Sales Taxes and Charges Template"],
     hideInEmployeeView: true,
   },
-  {
+   {
     to: "/Expense-Management",
     label: "Expense Management",
     icon: <Users {...iconProps} />,
     modules: ["Expense Claim","Expense Claim Type"]
-  },
-  {
-    to: "/Email-Template",
-    label: "Email Template",
-    icon: <Mail {...iconProps} />,
-    modules: ["Email Template"],
   },
   {
     to: "/settings",

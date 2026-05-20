@@ -3,6 +3,7 @@ import Tooltip from "../../components/Tooltip";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface InvoiceDetail {
+  
   invoiceNumber: string;
   tax_category?: string;
   originInvoice?: string | null;
