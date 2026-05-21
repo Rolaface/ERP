@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { ShieldCheck, Copy, Landmark, UserRound } from "lucide-react";
 import {
   Banknote,
   CreditCard,
@@ -17,6 +18,9 @@ import {
   structureToComponents,
   type ComponentResult,
 } from "../../../../components/Hr/employeedirectorymodal/salaryengine";
+import { getAllBankAccounts } from "../../../../api/BankAccountApi";
+
+import { showApiError } from "../../../../utils/alert";
 
 interface Props {
   emp: any;
@@ -566,10 +570,16 @@ const CompensationStatement: React.FC<{
 };
 
 // ─── Bank Card ────────────────────────────────────────────────────────────────
-
-const BankCard: React.FC<{ emp: any }> = ({ emp }) => (
+const BankCard: React.FC<{
+  emp: any;
+  defaultAccount?: any;
+}> = ({ emp, defaultAccount }) => (
   <div
-    className={`rounded-xl border ${emp.bank_name || emp.bank_ac_no ? "border-[var(--border)]" : "border-dashed border-[var(--border)]"} overflow-hidden`}
+    className={`rounded-xl border ${
+      defaultAccount
+        ? "border-[var(--border)]"
+        : "border-dashed border-[var(--border)]"
+    } overflow-hidden`}
   >
     <div className="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-900 dark:to-black px-5 py-4">
       <div className="flex items-start justify-between mb-6">
@@ -577,47 +587,76 @@ const BankCard: React.FC<{ emp: any }> = ({ emp }) => (
           <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
             Payout Bank
           </p>
-          <p className="text-[15px] font-bold text-white">
-            {fmt(emp.bank_name) || "Not configured"}
-          </p>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="text-[18px] font-bold text-white">
+              {defaultAccount?.bankName || "Not configured"}
+            </p>
+
+            {Number(defaultAccount?.isDefault) === 1 && (
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                  Default Account
+                </span>
+              </div>
+            )}
+          </div>
+
+          {defaultAccount?.accountHolderName && (
+            <div className="mt-2 inline-flex items-center rounded-md bg-white/10 px-2 py-1">
+              <p className="text-[10px] font-medium text-slate-200">
+                {defaultAccount.accountHolderName}
+              </p>
+            </div>
+          )}
         </div>
+
         <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
           <Building2 className="w-4 h-4 text-white/70" />
         </div>
       </div>
+
       <div className="flex items-end justify-between">
         <div>
           <p className="text-[9px] text-slate-400 mb-0.5 uppercase tracking-wider">
             Account No.
           </p>
+
           <p className="text-[14px] font-mono font-semibold text-white tracking-widest">
-            {emp.bank_ac_no
-              ? emp.bank_ac_no.replace(/(.{4})/g, "$1 ").trim()
+            {defaultAccount?.accountNo
+              ? defaultAccount.accountNo.replace(/(.{4})/g, "$1 ").trim()
               : "•••• •••• ••••"}
           </p>
         </div>
+
         <div className="text-right">
           <p className="text-[9px] text-slate-400 mb-0.5 uppercase tracking-wider">
             Type
           </p>
+
           <p className="text-[12px] font-semibold text-white">
-            {fmt(emp.account_type) || "—"}
+            {emp.salary_mode || "—"}
           </p>
         </div>
       </div>
     </div>
+
     <div className="bg-slate-100 dark:bg-slate-800 px-5 py-2.5 flex items-center justify-between">
       <div>
         <p className="text-[9px] text-muted uppercase tracking-wider">
-          Branch Code
+          Sort Code
         </p>
+
         <p className="text-[11px] font-mono font-semibold text-main">
-          {fmt(emp.branch_code) || "—"}
+          {defaultAccount?.sortCode || "—"}
         </p>
       </div>
+
       <div className="flex items-center gap-1 text-[10px] text-muted">
         <CreditCard className="w-3 h-3" />
-        {fmt(emp.salary_mode) || "Bank Transfer"}
+        {emp.salary_mode || "Bank Transfer"}
       </div>
     </div>
   </div>
@@ -626,17 +665,49 @@ const BankCard: React.FC<{ emp: any }> = ({ emp }) => (
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export const CompensationTab: React.FC<Props> = ({ emp, currency }) => {
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [bankLoading, setBankLoading] = useState(false);
   const [salaryStructure, setSalaryStructure] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!emp.salary_structure) return;
+
     setLoading(true);
     getSalaryStructure(emp.salary_structure)
       .then(setSalaryStructure)
       .catch((e) => console.error("Salary structure fetch failed", e))
       .finally(() => setLoading(false));
   }, [emp.salary_structure]);
+  useEffect(() => {
+    console.log("EMP FULL OBJECT", emp);
+    if (!emp?.employee) return;
+
+    const fetchEmployeeBankAccounts = async () => {
+      try {
+        setBankLoading(true);
+
+        const res = await getAllBankAccounts({
+          party_type: "Employee",
+          party: emp.employee,
+          page: 1,
+          page_size: 10,
+        });
+
+        setBankAccounts(res?.data || []);
+      } catch (err: any) {
+        showApiError(err);
+      } finally {
+        setBankLoading(false);
+      }
+    };
+
+    fetchEmployeeBankAccounts();
+  }, [emp?.employee]);
+  //default key function for default acc
+  const defaultBankAccount = bankAccounts.find(
+    (acc) => Number(acc.isDefault) === 1,
+  );
 
   const monthlyBase = emp.base_salary ?? emp.ctc ?? 0;
 
@@ -701,7 +772,9 @@ export const CompensationTab: React.FC<Props> = ({ emp, currency }) => {
         title="Bank & Payment Details"
         icon={<CreditCard className="w-3.5 h-3.5" />}
       >
-        <BankCard emp={emp} />
+        <div className="flex flex-col gap-4">
+          <BankCard emp={emp} defaultAccount={defaultBankAccount} />
+        </div>
       </Sec>
     </div>
   );

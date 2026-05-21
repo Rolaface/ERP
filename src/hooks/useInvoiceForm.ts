@@ -512,17 +512,24 @@ export const useInvoiceForm = (
       const item = items[idx];
       if (!item._skipCap) {
         if (!item.isServiceItem) {
-          const usedByOthers = items
-            .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
-            .reduce((sum, x) => sum + Number(x.quantity || 0), 0);
-          const totalOriginalQty = items
-            .filter((x) => x.batchNo === item.batchNo)
-            .reduce((sum, x) => sum + Number(x.originalQty || 0), 0);
-          const available = Math.max(
-            (item.availableQty ?? item.qty ?? 0) + totalOriginalQty,
-            totalOriginalQty,
-          );
-          const maxAllowed = Math.max(0, available - usedByOthers);
+        const stockAvailable = item.availableQty ?? item.qty ?? 0;
+const thisRowOriginal = Number(item.originalQty ?? 0);
+
+// Total pool = actual stock remaining + what this invoice already reserved
+const available = stockAvailable + thisRowOriginal;
+
+// How much other rows of same batch are using
+const usedByOthers = items
+  .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
+  .reduce((sum, x) => {
+    const qty = Number(x.quantity || 0);
+    const orig = Number(x.originalQty || 0);
+    // Net consumption = current qty - what was already allocated
+    // (original was already counted in stockAvailable pool)
+    return sum + Math.max(0, qty - orig);
+  }, 0);
+
+const maxAllowed = Math.max(0, available - usedByOthers);
           if (nextValue > maxAllowed) {
             nextValue = maxAllowed;
             showValidationError(
