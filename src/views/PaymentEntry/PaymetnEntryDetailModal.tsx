@@ -79,7 +79,7 @@ const formatDate = (d?: string | null): string => {
 };
 
 const fmtINR = (n?: number) =>
-    n == null ? "—" : `₹\u00A0${n.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    n == null ? "—" : `\u00A0${n.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
 const ALLOC_THRESHOLD = 7;
 
@@ -233,14 +233,14 @@ const PaymentEntryDetailModal: React.FC<Props> = ({ open, data, loading, onClose
 
     // Flat meta items — rendered as a single horizontal strip
     const metaItems = data ? [
-        { label: "Party", value: data.party_info.party_name },
+        { label: "Name", value: data.party_info.party_name },
         { label: "Type", value: data.party_info.party_type },
         { label: "Email", value: data.contact_email },
         { label: "Mode", value: data.transaction_info.mode_of_payment },
         { label: "From", value: data.transaction_info.paid_from },
         { label: "To", value: data.transaction_info.paid_to },
-        { label: "Ref No.", value: data.transaction_info.reference_no },
-        { label: "Ref Date", value: data.transaction_info.reference_date ? formatDate(data.transaction_info.reference_date) : null },
+        { label: "Reference Number", value: data.transaction_info.reference_no },
+        { label: "Reference Date", value: data.transaction_info.reference_date ? formatDate(data.transaction_info.reference_date) : null },
         { label: "Bank", value: data.transaction_info.bank },
     ].filter((m) => !!m.value) : [];
 
