@@ -1,15 +1,7 @@
-/* =========================================
-   ERP DASHBOARD LAYOUT SYSTEM
-   File: styles/dashboard-system/layout.css
-========================================= */
-
-/* =========================================
-   DASHBOARD SHELL
-========================================= */
-
 .dashboard-shell {
   display: grid;
   grid-template-columns: auto 1fr;
+
   min-height: 100vh;
 
   background: var(--surface-page);
@@ -18,7 +10,7 @@
 }
 
 /* =========================================
-   DASHBOARD MAIN AREA
+   DASHBOARD MAIN
 ========================================= */
 
 .dashboard-main {
@@ -32,7 +24,7 @@
 }
 
 /* =========================================
-   DASHBOARD HEADER
+   HEADER
 ========================================= */
 
 .dashboard-header {
@@ -54,7 +46,7 @@
 }
 
 /* =========================================
-   WORKSPACE SCROLL REGION
+   WORKSPACE
 ========================================= */
 
 .dashboard-workspace {
@@ -68,10 +60,6 @@
   scroll-behavior: smooth;
 }
 
-/* =========================================
-   CONTENT CONTAINER
-========================================= */
-
 .dashboard-container {
   width: 100%;
 
@@ -81,87 +69,106 @@
 }
 
 /* =========================================
-   DASHBOARD GRID
+   DASHBOARD REGIONS
 ========================================= */
 
 .dashboard-grid {
   display: grid;
 
-  grid-template-columns:
-    minmax(0, 1fr)
-    320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
 
   gap: var(--space-6);
 
   align-items: start;
 }
 
-/* =========================================
-   PRIMARY REGION
-========================================= */
-
-.dashboard-primary {
-  display: flex;
-  flex-direction: column;
-
-  gap: var(--space-6);
-
-  min-width: 0;
-}
-
-/* =========================================
-   SECONDARY REGION
-========================================= */
-
+.dashboard-primary,
 .dashboard-secondary {
   display: flex;
   flex-direction: column;
 
+  min-width: 0;
+}
+
+.dashboard-primary {
+  gap: var(--space-6);
+}
+
+.dashboard-secondary {
   gap: var(--space-4);
+}
+
+.dashboard-sticky {
+  position: sticky;
+
+  top: calc(64px + var(--space-4));
+}
+
+/* =========================================
+   INFORMATION ZONES
+========================================= */
+
+.monitoring-zone,
+.workflow-zone,
+.context-zone,
+.decision-zone {
+  display: flex;
+  flex-direction: column;
+
+  gap: var(--space-5);
 
   min-width: 0;
 }
 
 /* =========================================
-   STICKY SIDEBAR PANEL
+   DASHBOARD SECTIONS
 ========================================= */
 
-.dashboard-sticky {
-  position: sticky;
-  top: calc(64px + var(--space-4));
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+
+  gap: var(--space-5);
+}
+
+.dashboard-section-tight {
+  gap: var(--space-3);
+}
+
+.dashboard-section-loose {
+  gap: var(--space-8);
 }
 
 /* =========================================
-   WORKSPACE STACKS
+   STACK UTILITIES
 ========================================= */
 
-.stack-xs {
+.stack-xs,
+.stack-sm,
+.stack-md,
+.stack-lg,
+.stack-xl {
   display: flex;
   flex-direction: column;
+}
+
+.stack-xs {
   gap: var(--space-2);
 }
 
 .stack-sm {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-3);
 }
 
 .stack-md {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-4);
 }
 
 .stack-lg {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-6);
 }
 
 .stack-xl {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-8);
 }
 
@@ -169,26 +176,34 @@
    INLINE GROUPS
 ========================================= */
 
-.inline-xs {
+.inline-xs,
+.inline-sm,
+.inline-md,
+.inline-lg {
   display: flex;
   align-items: center;
+
+  flex-wrap: wrap;
+}
+
+.inline-xs {
   gap: var(--space-2);
 }
 
 .inline-sm {
-  display: flex;
-  align-items: center;
   gap: var(--space-3);
 }
 
 .inline-md {
-  display: flex;
-  align-items: center;
   gap: var(--space-4);
 }
 
+.inline-lg {
+  gap: var(--space-6);
+}
+
 /* =========================================
-   CARD GRID SYSTEM
+   CARD GRIDS
 ========================================= */
 
 .card-grid-2 {
@@ -205,6 +220,13 @@
   gap: var(--space-4);
 }
 
+.card-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: var(--space-4);
+}
+
 .card-grid-auto {
   display: grid;
 
@@ -214,15 +236,31 @@
 }
 
 /* =========================================
-   SECTION SPACING
+   ANALYTICS GRID
 ========================================= */
 
-.section-spacing {
-  margin-top: var(--space-6);
+.analytics-grid {
+  display: grid;
+
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+
+  gap: var(--space-4);
 }
 
-.section-spacing-lg {
-  margin-top: var(--space-8);
+.analytics-span-4 {
+  grid-column: span 4;
+}
+
+.analytics-span-6 {
+  grid-column: span 6;
+}
+
+.analytics-span-8 {
+  grid-column: span 8;
+}
+
+.analytics-span-12 {
+  grid-column: span 12;
 }
 
 /* =========================================
@@ -244,7 +282,17 @@
 }
 
 /* =========================================
-   RESPONSIVE STRATEGY
+   SURFACE DIVIDERS
+========================================= */
+
+.section-divider {
+  height: 1px;
+
+  background: var(--border-subtle);
+}
+
+/* =========================================
+   RESPONSIVE
 ========================================= */
 
 @media (max-width: 1280px) {
@@ -260,15 +308,17 @@
     position: relative;
     top: unset;
   }
-}
 
-/* =========================================
-   TABLET
-========================================= */
+  .analytics-span-4,
+  .analytics-span-6,
+  .analytics-span-8 {
+    grid-column: span 12;
+  }
+}
 
 @media (max-width: 768px) {
   .dashboard-header {
-    padding: var(--space-4) var(--space-4);
+    padding: var(--space-4);
   }
 
   .dashboard-workspace {
@@ -276,14 +326,11 @@
   }
 
   .card-grid-2,
-  .card-grid-3 {
+  .card-grid-3,
+  .card-grid-4 {
     grid-template-columns: 1fr;
   }
 }
-
-/* =========================================
-   MOBILE
-========================================= */
 
 @media (max-width: 640px) {
   .dashboard-shell {

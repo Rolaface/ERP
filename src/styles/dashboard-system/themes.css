@@ -1,4 +1,3 @@
-
 /* =========================================
    LIGHT THEME
 ========================================= */
@@ -8,64 +7,73 @@
      SURFACES
   ======================================== */
 
-  --surface-page: #f6f8fb;
-  --surface-card: #ffffff;
-  --surface-elevated: #ffffff;
+  --ds-bg: #f4f7fb;
 
-  --surface-hover: #f8fafc;
-  --surface-active: #eef2ff;
-  --surface-muted: #f1f5f9;
+  --ds-surface: #ffffff;
+  --ds-surface-raised: #ffffff;
+  --ds-surface-secondary: #f8fafc;
+  --ds-surface-tertiary: #f1f5f9;
+
+  --ds-surface-hover: #f3f6fb;
+  --ds-surface-active: #e8edff;
 
   /* ========================================
      BORDERS
   ======================================== */
 
-  --border-subtle: #e2e8f0;
-  --border-strong: #cbd5e1;
+  --ds-border: #e2e8f0;
+  --ds-border-strong: #cbd5e1;
+  --ds-border-subtle: #edf2f7;
 
   /* ========================================
      TEXT
   ======================================== */
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --text-disabled: #94a3b8;
+  --ds-text-primary: #0f172a;
+  --ds-text-secondary: #475569;
+  --ds-text-muted: #64748b;
+  --ds-text-disabled: #94a3b8;
 
   /* ========================================
      BRAND
   ======================================== */
 
-  --color-primary: #4f46e5;
-  --color-primary-hover: #4338ca;
+  --ds-primary: #4f46e5;
+  --ds-primary-hover: #4338ca;
+  --ds-primary-active: #3730a3;
 
-  --color-primary-soft: #eef2ff;
-
-  /* ========================================
-     STATUS SYSTEM
-  ======================================== */
-
-  /* SUCCESS */
-  --status-success: #16a34a;
-  --status-success-soft: #dcfce7;
-
-  /* WARNING */
-  --status-warning: #d97706;
-  --status-warning-soft: #fef3c7;
-
-  /* DANGER */
-  --status-danger: #dc2626;
-  --status-danger-soft: #fee2e2;
-
-  /* INFO */
-  --status-info: #2563eb;
-  --status-info-soft: #dbeafe;
+  --ds-primary-soft: #eef2ff;
+  --ds-primary-soft-hover: #e0e7ff;
 
   /* ========================================
-     FOCUS SYSTEM
+     STATUS
   ======================================== */
 
-  --focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.14);
+  --ds-success: #16a34a;
+  --ds-success-soft: #dcfce7;
+
+  --ds-warning: #d97706;
+  --ds-warning-soft: #fef3c7;
+
+  --ds-danger: #dc2626;
+  --ds-danger-soft: #fee2e2;
+
+  --ds-info: #2563eb;
+  --ds-info-soft: #dbeafe;
+
+  /* ========================================
+     OVERLAY
+  ======================================== */
+
+  --ds-overlay:
+    rgba(15, 23, 42, 0.42);
+
+  /* ========================================
+     FOCUS
+  ======================================== */
+
+  --ds-focus-ring:
+    0 0 0 3px rgba(79, 70, 229, 0.14);
 }
 
 /* =========================================
@@ -77,62 +85,83 @@
      SURFACES
   ======================================== */
 
-  --surface-page: #0f172a;
-  --surface-card: #111827;
-  --surface-elevated: #1e293b;
+  --ds-bg: #0b1220;
 
-  --surface-hover: #1f2937;
-  --surface-active: #312e81;
-  --surface-muted: #172033;
+  --ds-surface: #111827;
+  --ds-surface-raised: #172033;
+  --ds-surface-secondary: #1e293b;
+  --ds-surface-tertiary: #243041;
+
+  --ds-surface-hover: #263244;
+  --ds-surface-active: #312e81;
 
   /* ========================================
      BORDERS
   ======================================== */
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
+  --ds-border:
+    rgba(255, 255, 255, 0.08);
+
+  --ds-border-strong:
+    rgba(255, 255, 255, 0.16);
+
+  --ds-border-subtle:
+    rgba(255, 255, 255, 0.05);
 
   /* ========================================
      TEXT
   ======================================== */
 
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --text-disabled: #64748b;
+  --ds-text-primary: #f8fafc;
+  --ds-text-secondary: #cbd5e1;
+  --ds-text-muted: #94a3b8;
+  --ds-text-disabled: #64748b;
 
   /* ========================================
      BRAND
   ======================================== */
 
-  --color-primary: #818cf8;
-  --color-primary-hover: #6366f1;
+  --ds-primary: #818cf8;
+  --ds-primary-hover: #6366f1;
+  --ds-primary-active: #4f46e5;
 
-  --color-primary-soft: rgba(99, 102, 241, 0.12);
+  --ds-primary-soft:
+    rgba(99, 102, 241, 0.16);
 
-  /* ========================================
-     STATUS SYSTEM
-  ======================================== */
-
-  /* SUCCESS */
-  --status-success: #22c55e;
-  --status-success-soft: rgba(34, 197, 94, 0.16);
-
-  /* WARNING */
-  --status-warning: #f59e0b;
-  --status-warning-soft: rgba(245, 158, 11, 0.16);
-
-  /* DANGER */
-  --status-danger: #ef4444;
-  --status-danger-soft: rgba(239, 68, 68, 0.16);
-
-  /* INFO */
-  --status-info: #60a5fa;
-  --status-info-soft: rgba(96, 165, 250, 0.16);
+  --ds-primary-soft-hover:
+    rgba(99, 102, 241, 0.24);
 
   /* ========================================
-     FOCUS SYSTEM
+     STATUS
   ======================================== */
 
-  --focus-ring: 0 0 0 3px rgba(129, 140, 248, 0.22);
+  --ds-success: #22c55e;
+  --ds-success-soft:
+    rgba(34, 197, 94, 0.16);
+
+  --ds-warning: #f59e0b;
+  --ds-warning-soft:
+    rgba(245, 158, 11, 0.16);
+
+  --ds-danger: #ef4444;
+  --ds-danger-soft:
+    rgba(239, 68, 68, 0.16);
+
+  --ds-info: #60a5fa;
+  --ds-info-soft:
+    rgba(96, 165, 250, 0.16);
+
+  /* ========================================
+     OVERLAY
+  ======================================== */
+
+  --ds-overlay:
+    rgba(2, 6, 23, 0.7);
+
+  /* ========================================
+     FOCUS
+  ======================================== */
+
+  --ds-focus-ring:
+    0 0 0 3px rgba(129, 140, 248, 0.24);
 }

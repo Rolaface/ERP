@@ -1,67 +1,207 @@
-/* =========================================
-   DASHBOARD SYSTEM — CHARTS
-   PURPOSE:
-   Minimal operational chart system
-   for ERP dashboards.
-
-   PRINCIPLES:
-   - Charts are secondary
-   - Calm analytics
-   - High readability
-   - Operational clarity
-   - No decorative dashboards
-========================================= */
-
-.ds-chart-card {
+.ds-analytics-surface {
   position: relative;
 
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-4);
+  gap: var(--ds-space-5);
 
+  min-width: 0;
   min-height: 320px;
 
   padding: var(--ds-space-5);
 
   background: var(--ds-surface);
+
   border: 1px solid var(--ds-border);
   border-radius: var(--ds-radius-xl);
 
   overflow: hidden;
+
+  transition:
+    border-color var(--ds-motion-fast) var(--ds-ease-standard),
+    box-shadow var(--ds-motion-fast) var(--ds-ease-standard),
+    transform var(--ds-motion-fast) var(--ds-ease-standard);
 }
 
-.ds-chart-header {
+.ds-analytics-surface:hover {
+  border-color: var(--ds-border-strong);
+  box-shadow: var(--ds-shadow-md);
+}
+
+/* =========================================
+   ANALYTICS HEADER
+========================================= */
+
+.ds-analytics-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+
   gap: var(--ds-space-4);
 }
 
-.ds-chart-header-left {
+.ds-analytics-header-left {
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-1);
+
+  min-width: 0;
 }
 
-.ds-chart-title {
+.ds-analytics-title {
   font-size: var(--ds-text-sm);
   font-weight: var(--ds-font-semibold);
-  color: var(--ds-text-primary);
+
   line-height: 1.4;
+
+  color: var(--ds-text-primary);
 }
 
-.ds-chart-subtitle {
+.ds-analytics-subtitle {
   font-size: var(--ds-text-xs);
-  color: var(--ds-text-muted);
   line-height: 1.5;
+
+  color: var(--ds-text-muted);
 }
 
-.ds-chart-actions {
+.ds-analytics-actions {
   display: flex;
   align-items: center;
   gap: var(--ds-space-2);
+
   flex-shrink: 0;
 }
+
+/* =========================================
+   KPI STRIP
+========================================= */
+
+.ds-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+
+  gap: var(--ds-space-4);
+}
+
+.ds-kpi-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+
+  min-width: 0;
+
+  padding: var(--ds-space-4);
+
+  background: var(--ds-surface-subtle);
+
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+
+  transition:
+    border-color var(--ds-motion-fast) var(--ds-ease-standard),
+    background-color var(--ds-motion-fast) var(--ds-ease-standard),
+    transform var(--ds-motion-fast) var(--ds-ease-standard);
+}
+
+.ds-kpi-item:hover {
+  border-color: var(--ds-border-strong);
+  background: var(--ds-surface-hover);
+}
+
+.ds-kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: var(--ds-space-3);
+}
+
+.ds-kpi-label {
+  font-size: var(--ds-text-xs);
+  line-height: 1.4;
+
+  color: var(--ds-text-muted);
+}
+
+.ds-kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  min-height: 22px;
+
+  padding-inline: var(--ds-space-2);
+
+  border-radius: var(--ds-radius-full);
+
+  font-size: 11px;
+  font-weight: var(--ds-font-semibold);
+}
+
+.ds-kpi-trend-positive {
+  background: var(--ds-success-soft);
+  color: var(--ds-success);
+}
+
+.ds-kpi-trend-negative {
+  background: var(--ds-danger-soft);
+  color: var(--ds-danger);
+}
+
+.ds-kpi-trend-warning {
+  background: var(--ds-warning-soft);
+  color: var(--ds-warning);
+}
+
+.ds-kpi-trend-neutral {
+  background: var(--ds-info-soft);
+  color: var(--ds-info);
+}
+
+.ds-kpi-value {
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-weight: var(--ds-font-bold);
+
+  line-height: 1;
+  letter-spacing: -0.03em;
+
+  color: var(--ds-text-primary);
+}
+
+.ds-kpi-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: var(--ds-space-2);
+}
+
+.ds-kpi-context {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-muted);
+}
+
+/* =========================================
+   METRIC COMPARISON
+========================================= */
+
+.ds-metric-comparison {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+
+  flex-wrap: wrap;
+}
+
+.ds-metric-baseline,
+.ds-metric-target {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-muted);
+}
+
+/* =========================================
+   CHART BODY
+========================================= */
 
 .ds-chart-body {
   position: relative;
@@ -69,6 +209,7 @@
   flex: 1;
 
   min-height: 240px;
+  min-width: 0;
 
   display: flex;
   align-items: center;
@@ -81,13 +222,14 @@
 }
 
 /* =========================================
-   CHART LEGEND
+   LEGEND
 ========================================= */
 
 .ds-chart-legend {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+
   gap: var(--ds-space-4);
 
   padding-top: var(--ds-space-2);
@@ -96,24 +238,47 @@
 .ds-chart-legend-item {
   display: inline-flex;
   align-items: center;
+
   gap: var(--ds-space-2);
 }
 
 .ds-chart-legend-dot {
   width: 10px;
   height: 10px;
+
   border-radius: 999px;
+
   flex-shrink: 0;
 }
 
 .ds-chart-legend-label {
   font-size: var(--ds-text-xs);
   color: var(--ds-text-muted);
-  line-height: 1;
 }
 
 /* =========================================
-   CHART EMPTY STATE
+   INSIGHT FOOTER
+========================================= */
+
+.ds-insight-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: var(--ds-space-4);
+
+  padding-top: var(--ds-space-3);
+
+  border-top: 1px solid var(--ds-border-subtle);
+}
+
+.ds-insight-footer-meta {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-muted);
+}
+
+/* =========================================
+   EMPTY STATE
 ========================================= */
 
 .ds-chart-empty {
@@ -121,6 +286,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+
   gap: var(--ds-space-2);
 
   width: 100%;
@@ -132,19 +298,21 @@
 .ds-chart-empty-title {
   font-size: var(--ds-text-sm);
   font-weight: var(--ds-font-medium);
+
   color: var(--ds-text-secondary);
 }
 
 .ds-chart-empty-description {
-  max-width: 240px;
+  max-width: 260px;
 
   font-size: var(--ds-text-xs);
-  color: var(--ds-text-muted);
   line-height: 1.6;
+
+  color: var(--ds-text-muted);
 }
 
 /* =========================================
-   AXIS READABILITY
+   AXIS + TOOLTIP
 ========================================= */
 
 .ds-chart-axis {
@@ -161,6 +329,7 @@
   padding: var(--ds-space-3);
 
   background: var(--ds-surface-elevated);
+
   border: 1px solid var(--ds-border);
   border-radius: var(--ds-radius-lg);
 
@@ -174,6 +343,7 @@
 
   font-size: var(--ds-text-xs);
   font-weight: var(--ds-font-semibold);
+
   color: var(--ds-text-primary);
 }
 
@@ -183,7 +353,7 @@
 }
 
 /* =========================================
-   CHART HEIGHT UTILITIES
+   HEIGHT VARIANTS
 ========================================= */
 
 .ds-chart-h-sm {
@@ -199,62 +369,17 @@
 }
 
 /* =========================================
-   OPERATIONAL KPI STRIP
-   (Preferred over giant analytics)
+   DENSITY MODES
 ========================================= */
 
-.ds-kpi-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+.ds-analytics-compact {
+  padding: var(--ds-space-4);
   gap: var(--ds-space-4);
 }
 
-.ds-kpi-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-1);
-
-  padding: var(--ds-space-4);
-
-  background: var(--ds-surface-subtle);
-  border: 1px solid var(--ds-border);
-  border-radius: var(--ds-radius-lg);
-}
-
-.ds-kpi-label {
-  font-size: var(--ds-text-xs);
-  color: var(--ds-text-muted);
-}
-
-.ds-kpi-value {
-  font-size: var(--ds-text-2xl);
-  font-weight: var(--ds-font-bold);
-  color: var(--ds-text-primary);
-
-  line-height: 1;
-}
-
-.ds-kpi-change {
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-font-medium);
-}
-
-/* =========================================
-   DARK MODE
-========================================= */
-
-[data-theme="dark"] .ds-chart-card {
-  background: var(--ds-surface);
-  border-color: var(--ds-border);
-}
-
-[data-theme="dark"] .ds-chart-grid-line {
-  stroke-opacity: 0.25;
-}
-
-[data-theme="dark"] .ds-chart-tooltip {
-  background: rgba(15, 23, 42, 0.92);
-  border-color: rgba(255, 255, 255, 0.08);
+.ds-analytics-dense {
+  padding: var(--ds-space-3);
+  gap: var(--ds-space-3);
 }
 
 /* =========================================
@@ -262,8 +387,9 @@
 ========================================= */
 
 @media (max-width: 768px) {
-  .ds-chart-card {
+  .ds-analytics-surface {
     min-height: 260px;
+
     padding: var(--ds-space-4);
   }
 
@@ -275,3 +401,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+@media (max-width: 520px) {
+  .ds-kpi-strip {
+    grid-template-columns: 1fr;
+  }
+}
+

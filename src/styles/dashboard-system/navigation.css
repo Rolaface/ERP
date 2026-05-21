@@ -1,319 +1,317 @@
-
 @layer components {
   /* =========================================
-     TABLE WRAPPER
+     NAVIGATION FOUNDATION
   ========================================= */
 
-  .ds-table-wrapper {
-    position: relative;
+  .ds-nav {
+    display: flex;
+    flex-direction: column;
 
-    width: 100%;
-
-    overflow: auto;
-
-    border: 1px solid var(--ds-border);
-    border-radius: var(--ds-radius-xl);
-
-    background: var(--ds-surface-raised);
+    gap: var(--ds-space-1);
   }
 
-  .ds-table-wrapper::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+  .ds-nav-section {
+    display: flex;
+    flex-direction: column;
+
+    gap: var(--ds-space-1);
   }
 
-  .ds-table-wrapper::-webkit-scrollbar-thumb {
-    background: var(--ds-border);
-    border-radius: 999px;
-  }
-
-  .ds-table-wrapper::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  /* =========================================
-     BASE TABLE
-  ========================================= */
-
-  .ds-table {
-    width: 100%;
-
-    border-collapse: separate;
-    border-spacing: 0;
-
-    min-width: 720px;
-
-    background: var(--ds-surface-raised);
-  }
-
-  /* =========================================
-     TABLE HEADER
-  ========================================= */
-
-  .ds-table thead {
-    position: sticky;
-    top: 0;
-
-    z-index: 2;
-  }
-
-  .ds-table th {
-    position: sticky;
-    top: 0;
-
-    height: 48px;
-
-    padding-inline: var(--ds-space-4);
-
-    background: var(--ds-surface-secondary);
-
-    border-bottom: 1px solid var(--ds-border);
-
-    text-align: left;
+  .ds-nav-section-title {
+    padding:
+      var(--ds-space-3)
+      var(--ds-space-4)
+      var(--ds-space-2);
 
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
 
     color: var(--ds-text-muted);
-
-    white-space: nowrap;
   }
 
   /* =========================================
-     TABLE BODY
+     NAV ITEMS
   ========================================= */
 
-  .ds-table tbody tr {
-    transition:
-      background var(--ds-motion-fast),
-      border-color var(--ds-motion-fast);
-  }
+  .ds-nav-item {
+    position: relative;
 
-  .ds-table td {
-    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+
+    min-height: 44px;
 
     padding-inline: var(--ds-space-4);
 
-    border-bottom: 1px solid var(--ds-border-subtle);
+    border-radius: var(--ds-radius-lg);
+
+    color: var(--ds-text-secondary);
 
     font-size: var(--ds-text-sm);
-    color: var(--ds-text-primary);
+    font-weight: 500;
 
-    vertical-align: middle;
-
-    white-space: nowrap;
-  }
-
-  /* =========================================
-     ROW HOVER
-  ========================================= */
-
-  .ds-table tbody tr:hover {
-    background: var(--ds-surface-hover);
-  }
-
-  /* =========================================
-     ROW STATES
-  ========================================= */
-
-  .ds-table-row--selected {
-    background: var(--ds-primary-soft);
-  }
-
-  .ds-table-row--selected:hover {
-    background: var(--ds-primary-soft-hover);
-  }
-
-  .ds-table-row--danger {
-    border-left: 3px solid var(--ds-danger);
-  }
-
-  .ds-table-row--warning {
-    border-left: 3px solid var(--ds-warning);
-  }
-
-  .ds-table-row--success {
-    border-left: 3px solid var(--ds-success);
-  }
-
-  /* =========================================
-     COMPACT TABLE
-  ========================================= */
-
-  .ds-table--compact th {
-    height: 40px;
-  }
-
-  .ds-table--compact td {
-    height: 44px;
-    font-size: 13px;
-  }
-
-  /* =========================================
-     RELAXED TABLE
-  ========================================= */
-
-  .ds-table--relaxed td {
-    height: 64px;
-  }
-
-  /* =========================================
-     NUMERIC COLUMNS
-  ========================================= */
-
-  .ds-table-number {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* =========================================
-     MUTED CELLS
-  ========================================= */
-
-  .ds-table-muted {
-    color: var(--ds-text-muted);
-  }
-
-  /* =========================================
-     EMPHASIZED CELLS
-  ========================================= */
-
-  .ds-table-strong {
-    font-weight: 600;
-    color: var(--ds-text-primary);
-  }
-
-  /* =========================================
-     TABLE ACTIONS
-  ========================================= */
-
-  .ds-table-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-
-    opacity: 0;
-
-    transition: opacity var(--ds-motion-fast);
-  }
-
-  .ds-table tbody tr:hover .ds-table-actions {
-    opacity: 1;
-  }
-
-  .ds-table-action-btn {
-    width: 32px;
-    height: 32px;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    border: none;
-    border-radius: var(--ds-radius-md);
-
-    background: transparent;
-
-    color: var(--ds-text-muted);
+    text-decoration: none;
 
     cursor: pointer;
 
     transition:
       background var(--ds-motion-fast),
       color var(--ds-motion-fast),
+      border-color var(--ds-motion-fast),
       transform var(--ds-motion-fast);
   }
 
-  .ds-table-action-btn:hover {
+  .ds-nav-item:hover {
     background: var(--ds-surface-hover);
+
     color: var(--ds-text-primary);
   }
 
-  .ds-table-action-btn:active {
-    transform: scale(0.96);
+  .ds-nav-item:active {
+    transform: scale(0.985);
   }
 
-  /* =========================================
-     CHECKBOX COLUMN
-  ========================================= */
+  .ds-nav-item--active {
+    background: var(--ds-primary-soft);
 
-  .ds-table-checkbox {
-    width: 44px;
-    text-align: center;
+    color: var(--ds-primary);
   }
 
-  /* =========================================
-     STATUS CELL
-  ========================================= */
+  .ds-nav-item--active::before {
+    content: "";
 
-  .ds-table-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
 
-  .ds-table-status-dot {
-    width: 8px;
-    height: 8px;
+    width: 3px;
 
     border-radius: 999px;
 
-    background: currentColor;
+    background: var(--ds-primary);
+  }
+
+  .ds-nav-item-icon {
+    width: 18px;
+    height: 18px;
+
+    flex-shrink: 0;
+  }
+
+  .ds-nav-item-label {
+    flex: 1;
+
+    min-width: 0;
+  }
+
+  .ds-nav-item-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 20px;
+    height: 20px;
+
+    padding-inline: 6px;
+
+    border-radius: 999px;
+
+    background: var(--ds-surface-secondary);
+
+    color: var(--ds-text-muted);
+
+    font-size: 11px;
+    font-weight: 700;
   }
 
   /* =========================================
-     TABLE TOOLBAR
+     COLLAPSIBLE NAV
   ========================================= */
 
-  .ds-table-toolbar {
+  .ds-nav-group {
+    display: flex;
+    flex-direction: column;
+
+    gap: var(--ds-space-1);
+  }
+
+  .ds-nav-group-trigger {
+    width: 100%;
+  }
+
+  .ds-nav-group-content {
+    display: flex;
+    flex-direction: column;
+
+    gap: var(--ds-space-1);
+
+    padding-left: var(--ds-space-5);
+  }
+
+  .ds-nav-subitem {
+    min-height: 40px;
+
+    font-size: 13px;
+  }
+
+  /* =========================================
+     TOPBAR
+  ========================================= */
+
+  .ds-topbar {
+    position: sticky;
+    top: 0;
+
+    z-index: 40;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--ds-space-4);
 
     min-height: 64px;
 
     padding-inline: var(--ds-space-5);
 
-    border-bottom: 1px solid var(--ds-border);
+    background: rgba(255, 255, 255, 0.92);
 
-    background: var(--ds-surface-raised);
+    backdrop-filter: blur(18px);
+
+    border-bottom: 1px solid var(--ds-border);
   }
 
-  .ds-table-toolbar-left,
-  .ds-table-toolbar-right {
+  .ds-topbar-left,
+  .ds-topbar-right {
     display: flex;
     align-items: center;
     gap: var(--ds-space-3);
   }
 
   /* =========================================
-     TABLE SEARCH
+     BREADCRUMB
   ========================================= */
 
-  .ds-table-search {
-    width: 280px;
+  .ds-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-2);
+
+    min-width: 0;
+  }
+
+  .ds-breadcrumb-item {
+    color: var(--ds-text-muted);
+
+    font-size: var(--ds-text-sm);
+
+    white-space: nowrap;
+  }
+
+  .ds-breadcrumb-item--active {
+    color: var(--ds-text-primary);
+
+    font-weight: 600;
   }
 
   /* =========================================
-     TABLE FOOTER
+     SIDEBAR
   ========================================= */
 
-  .ds-table-footer {
+  .ds-sidebar {
+    display: flex;
+    flex-direction: column;
+
+    width: var(--ds-sidebar-width, 280px);
+
+    background: var(--ds-surface-raised);
+
+    border-right: 1px solid var(--ds-border);
+
+    overflow-y: auto;
+  }
+
+  .ds-sidebar-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--ds-space-4);
 
-    min-height: 60px;
+    min-height: 72px;
 
     padding-inline: var(--ds-space-5);
 
-    border-top: 1px solid var(--ds-border);
+    border-bottom: 1px solid var(--ds-border);
+  }
 
-    background: var(--ds-surface-raised);
+  .ds-sidebar-content {
+    flex: 1;
+
+    padding: var(--ds-space-4);
+  }
+
+  .ds-sidebar-footer {
+    padding: var(--ds-space-4);
+
+    border-top: 1px solid var(--ds-border);
+  }
+
+  /* =========================================
+     TABS
+  ========================================= */
+
+  .ds-tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-1);
+
+    border-bottom: 1px solid var(--ds-border);
+  }
+
+  .ds-tab {
+    position: relative;
+
+    height: 44px;
+
+    padding-inline: var(--ds-space-4);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    color: var(--ds-text-muted);
+
+    font-size: var(--ds-text-sm);
+    font-weight: 500;
+
+    cursor: pointer;
+
+    transition:
+      color var(--ds-motion-fast),
+      background var(--ds-motion-fast);
+  }
+
+  .ds-tab:hover {
+    color: var(--ds-text-primary);
+  }
+
+  .ds-tab--active {
+    color: var(--ds-text-primary);
+  }
+
+  .ds-tab--active::after {
+    content: "";
+
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+
+    height: 2px;
+
+    border-radius: 999px;
+
+    background: var(--ds-primary);
   }
 
   /* =========================================
@@ -330,14 +328,13 @@
     min-width: 36px;
     height: 36px;
 
-    padding-inline: var(--ds-space-3);
-
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
-    border: 1px solid var(--ds-border);
     border-radius: var(--ds-radius-md);
+
+    border: 1px solid var(--ds-border);
 
     background: var(--ds-surface-raised);
 
@@ -345,8 +342,6 @@
 
     font-size: var(--ds-text-sm);
     font-weight: 500;
-
-    cursor: pointer;
 
     transition:
       background var(--ds-motion-fast),
@@ -356,177 +351,57 @@
 
   .ds-pagination-btn:hover {
     background: var(--ds-surface-hover);
+
     border-color: var(--ds-border-strong);
+
     color: var(--ds-text-primary);
   }
 
   .ds-pagination-btn--active {
     background: var(--ds-primary);
+
     border-color: var(--ds-primary);
 
     color: white;
   }
 
   /* =========================================
-     EMPTY STATE
-  ========================================= */
-
-  .ds-table-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-
-    min-height: 320px;
-
-    padding: var(--ds-space-10);
-
-    text-align: center;
-  }
-
-  .ds-table-empty-icon {
-    width: 56px;
-    height: 56px;
-
-    margin-bottom: var(--ds-space-4);
-
-    color: var(--ds-text-muted);
-    opacity: 0.6;
-  }
-
-  .ds-table-empty-title {
-    font-size: var(--ds-text-lg);
-    font-weight: 600;
-
-    color: var(--ds-text-primary);
-
-    margin-bottom: var(--ds-space-2);
-  }
-
-  .ds-table-empty-description {
-    max-width: 420px;
-
-    font-size: var(--ds-text-sm);
-    line-height: 1.6;
-
-    color: var(--ds-text-muted);
-  }
-
-  /* =========================================
-     LOADING STATE
-  ========================================= */
-
-  .ds-table-loading-row td {
-    height: 56px;
-  }
-
-  .ds-table-skeleton {
-    height: 12px;
-    width: 100%;
-
-    border-radius: 999px;
-
-    background:
-      linear-gradient(
-        90deg,
-        var(--ds-surface-secondary) 25%,
-        var(--ds-surface-hover) 50%,
-        var(--ds-surface-secondary) 75%
-      );
-
-    background-size: 200% 100%;
-
-    animation: ds-table-shimmer 1.4s linear infinite;
-  }
-
-  @keyframes ds-table-shimmer {
-    0% {
-      background-position: 200% 0;
-    }
-
-    100% {
-      background-position: -200% 0;
-    }
-  }
-
-  /* =========================================
-     RESPONSIVE TABLE
+     MOBILE
   ========================================= */
 
   @media (max-width: 768px) {
-    .ds-table {
-      min-width: 100%;
+    .ds-sidebar {
+      position: fixed;
+      inset:
+        0 auto 0 0;
+
+      z-index: 60;
+
+      transform: translateX(-100%);
+
+      transition: transform var(--ds-motion-base);
     }
 
-    .ds-table thead {
-      display: none;
+    .ds-sidebar--open {
+      transform: translateX(0);
     }
 
-    .ds-table tbody {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ds-space-4);
-
-      padding: var(--ds-space-4);
-    }
-
-    .ds-table tbody tr {
-      display: flex;
-      flex-direction: column;
-
-      border: 1px solid var(--ds-border);
-      border-radius: var(--ds-radius-xl);
-
-      background: var(--ds-surface-raised);
-
-      overflow: hidden;
-    }
-
-    .ds-table td {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      min-height: 52px;
-
+    .ds-topbar {
       padding-inline: var(--ds-space-4);
-
-      white-space: normal;
     }
 
-    .ds-table td::before {
-      content: attr(data-label);
-
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-
-      color: var(--ds-text-muted);
-
-      margin-right: var(--ds-space-4);
+    .ds-nav-item {
+      min-height: 48px;
     }
 
-    .ds-table-actions {
-      opacity: 1;
+    .ds-tabs {
+      overflow-x: auto;
+
+      scrollbar-width: none;
     }
 
-    .ds-table-toolbar {
-      flex-direction: column;
-      align-items: stretch;
-
-      padding-block: var(--ds-space-4);
-    }
-
-    .ds-table-search {
-      width: 100%;
-    }
-
-    .ds-table-footer {
-      flex-direction: column;
-      align-items: stretch;
-
-      padding-block: var(--ds-space-4);
+    .ds-tabs::-webkit-scrollbar {
+      display: none;
     }
   }
 }

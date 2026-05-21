@@ -1,38 +1,6 @@
-/* =========================================
-   DASHBOARD SYSTEM — STATES.CSS
-   Enterprise Operational State System
-   -----------------------------------------
-   PURPOSE:
-   - Operational clarity
-   - Instant system feedback
-   - Reduced uncertainty
-   - Calm enterprise UX
-   - Predictable user confidence
-
-   PRINCIPLES:
-   - State > decoration
-   - Feedback must be immediate
-   - Calm, not alarming
-   - Operational continuity first
-   - Errors should guide recovery
-   - Loading should preserve layout stability
-
-   COVERS:
-   - Loading States
-   - Empty States
-   - Success States
-   - Warning States
-   - Error States
-   - Offline States
-   - Sync States
-   - Permission States
-   - Processing States
-   - Status Indicators
-========================================= */
-
 @layer components {
   /* =========================================
-     BASE STATE CONTAINER
+     STATE FOUNDATION
   ========================================= */
 
   .ds-state {
@@ -57,12 +25,12 @@
   }
 
   /* =========================================
-     STATE ICON
+     ICON
   ========================================= */
 
   .ds-state-icon {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
 
     margin-bottom: var(--ds-space-5);
 
@@ -70,22 +38,20 @@
     align-items: center;
     justify-content: center;
 
-    border-radius: 999px;
+    border-radius: 20px;
 
     background: var(--ds-surface-secondary);
 
     color: var(--ds-text-muted);
-
-    flex-shrink: 0;
   }
 
   .ds-state-icon svg {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
   }
 
   /* =========================================
-     STATE CONTENT
+     TYPOGRAPHY
   ========================================= */
 
   .ds-state-title {
@@ -99,37 +65,36 @@
   }
 
   .ds-state-description {
-    max-width: 480px;
+    max-width: 520px;
+
+    color: var(--ds-text-muted);
 
     font-size: var(--ds-text-sm);
     line-height: 1.7;
-
-    color: var(--ds-text-muted);
   }
 
   .ds-state-actions {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+
     gap: var(--ds-space-3);
 
     margin-top: var(--ds-space-6);
-
-    flex-wrap: wrap;
-    justify-content: center;
   }
 
   /* =========================================
-     LOADING STATES
+     LOADING
   ========================================= */
 
   .ds-loading {
-    position: relative;
-
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
 
-    min-height: 120px;
+    min-height: 140px;
   }
 
   .ds-loading-spinner {
@@ -139,30 +104,28 @@
     border-radius: 999px;
 
     border: 3px solid var(--ds-border);
+
     border-top-color: var(--ds-primary);
 
     animation: ds-spin 0.8s linear infinite;
   }
 
-  @keyframes ds-spin {
-    from {
-      transform: rotate(0deg);
-    }
+  .ds-loading-text {
+    margin-top: var(--ds-space-4);
 
+    color: var(--ds-text-muted);
+
+    font-size: var(--ds-text-sm);
+  }
+
+  @keyframes ds-spin {
     to {
       transform: rotate(360deg);
     }
   }
 
-  .ds-loading-text {
-    margin-top: var(--ds-space-4);
-
-    font-size: var(--ds-text-sm);
-    color: var(--ds-text-muted);
-  }
-
   /* =========================================
-     SKELETON SYSTEM
+     SKELETON
   ========================================= */
 
   .ds-skeleton {
@@ -170,9 +133,9 @@
 
     overflow: hidden;
 
-    background: var(--ds-surface-secondary);
-
     border-radius: var(--ds-radius-md);
+
+    background: var(--ds-surface-secondary);
   }
 
   .ds-skeleton::after {
@@ -181,17 +144,21 @@
     position: absolute;
     inset: 0;
 
+    transform: translateX(-100%);
+
     background:
       linear-gradient(
         90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.45) 50%,
-        transparent 100%
+        transparent,
+        rgba(255, 255, 255, 0.5),
+        transparent
       );
 
-    transform: translateX(-100%);
-
-    animation: ds-skeleton-shimmer 1.5s infinite;
+    animation:
+      ds-skeleton-shimmer
+      1.5s
+      linear
+      infinite;
   }
 
   @keyframes ds-skeleton-shimmer {
@@ -217,255 +184,56 @@
     border-radius: 999px;
   }
 
-  .ds-skeleton-card {
-    height: 120px;
-    width: 100%;
-  }
-
   /* =========================================
-     EMPTY STATES
+     STATUS BANNERS
   ========================================= */
 
-  .ds-empty-state {
-    min-height: 320px;
-  }
-
-  .ds-empty-state .ds-state-icon {
-    background: var(--ds-surface-hover);
-    color: var(--ds-text-muted);
-  }
-
-  /* =========================================
-     SUCCESS STATES
-  ========================================= */
-
-  .ds-success-state .ds-state-icon {
-    background: var(--ds-success-soft);
-    color: var(--ds-success);
-  }
-
-  .ds-success-banner {
+  .ds-banner {
     display: flex;
     align-items: flex-start;
     gap: var(--ds-space-3);
 
     padding: var(--ds-space-4);
-
-    border: 1px solid var(--ds-success-border);
-    border-radius: var(--ds-radius-lg);
-
-    background: var(--ds-success-soft);
-
-    color: var(--ds-success);
-  }
-
-  /* =========================================
-     WARNING STATES
-  ========================================= */
-
-  .ds-warning-state .ds-state-icon {
-    background: var(--ds-warning-soft);
-    color: var(--ds-warning);
-  }
-
-  .ds-warning-banner {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--ds-space-3);
-
-    padding: var(--ds-space-4);
-
-    border: 1px solid var(--ds-warning-border);
-    border-radius: var(--ds-radius-lg);
-
-    background: var(--ds-warning-soft);
-
-    color: var(--ds-warning);
-  }
-
-  /* =========================================
-     ERROR STATES
-  ========================================= */
-
-  .ds-error-state .ds-state-icon {
-    background: var(--ds-danger-soft);
-    color: var(--ds-danger);
-  }
-
-  .ds-error-banner {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--ds-space-3);
-
-    padding: var(--ds-space-4);
-
-    border: 1px solid var(--ds-danger-border);
-    border-radius: var(--ds-radius-lg);
-
-    background: var(--ds-danger-soft);
-
-    color: var(--ds-danger);
-  }
-
-  .ds-error-title {
-    font-size: var(--ds-text-sm);
-    font-weight: 700;
-
-    margin-bottom: 2px;
-  }
-
-  .ds-error-description {
-    font-size: var(--ds-text-sm);
-    line-height: 1.6;
-  }
-
-  /* =========================================
-     OFFLINE STATES
-  ========================================= */
-
-  .ds-offline-banner {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-3);
-
-    min-height: 48px;
-
-    padding-inline: var(--ds-space-4);
-
-    background: var(--ds-warning-soft);
-
-    border-bottom: 1px solid var(--ds-warning-border);
-
-    color: var(--ds-warning);
-
-    font-size: var(--ds-text-sm);
-    font-weight: 500;
-  }
-
-  .ds-offline-dot {
-    width: 8px;
-    height: 8px;
-
-    border-radius: 999px;
-
-    background: currentColor;
-
-    animation: ds-offline-pulse 1.8s infinite;
-  }
-
-  @keyframes ds-offline-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.4;
-    }
-  }
-
-  /* =========================================
-     SYNC STATES
-  ========================================= */
-
-  .ds-sync-status {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-
-    font-size: var(--ds-text-xs);
-    font-weight: 600;
-  }
-
-  .ds-sync-status--syncing {
-    color: var(--ds-info);
-  }
-
-  .ds-sync-status--success {
-    color: var(--ds-success);
-  }
-
-  .ds-sync-status--failed {
-    color: var(--ds-danger);
-  }
-
-  .ds-sync-spinner {
-    width: 12px;
-    height: 12px;
-
-    border-radius: 999px;
-
-    border: 2px solid currentColor;
-    border-right-color: transparent;
-
-    animation: ds-spin 0.7s linear infinite;
-  }
-
-  /* =========================================
-     PROCESSING STATES
-  ========================================= */
-
-  .ds-processing-overlay {
-    position: absolute;
-    inset: 0;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background: rgba(255, 255, 255, 0.72);
-
-    backdrop-filter: blur(4px);
-
-    z-index: 10;
-  }
-
-  .ds-processing-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
-    padding: var(--ds-space-6);
 
     border-radius: var(--ds-radius-xl);
 
-    background: var(--ds-surface-raised);
+    border: 1px solid transparent;
+  }
 
-    box-shadow: var(--ds-shadow-lg);
+  .ds-banner--success {
+    background: var(--ds-success-soft);
+
+    border-color: var(--ds-success-border);
+
+    color: var(--ds-success);
+  }
+
+  .ds-banner--warning {
+    background: var(--ds-warning-soft);
+
+    border-color: var(--ds-warning-border);
+
+    color: var(--ds-warning);
+  }
+
+  .ds-banner--danger {
+    background: var(--ds-danger-soft);
+
+    border-color: var(--ds-danger-border);
+
+    color: var(--ds-danger);
+  }
+
+  .ds-banner--info {
+    background: var(--ds-info-soft);
+
+    border-color: var(--ds-info-border);
+
+    color: var(--ds-info);
   }
 
   /* =========================================
-     PERMISSION STATES
-  ========================================= */
-
-  .ds-permission-state .ds-state-icon {
-    background: var(--ds-surface-hover);
-    color: var(--ds-text-muted);
-  }
-
-  .ds-permission-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--ds-space-2);
-
-    min-height: 28px;
-
-    padding-inline: var(--ds-space-3);
-
-    border-radius: 999px;
-
-    background: var(--ds-surface-secondary);
-
-    color: var(--ds-text-secondary);
-
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  /* =========================================
-     INLINE STATUS DOTS
+     STATUS DOTS
   ========================================= */
 
   .ds-status {
@@ -507,35 +275,94 @@
   }
 
   /* =========================================
-     BAD NETWORK STATE
+     PROCESSING OVERLAY
   ========================================= */
 
-  .ds-network-state {
-    display: inline-flex;
+  .ds-processing-overlay {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
     align-items: center;
-    gap: var(--ds-space-2);
+    justify-content: center;
 
-    color: var(--ds-warning);
+    background: rgba(255, 255, 255, 0.72);
 
-    font-size: var(--ds-text-xs);
-    font-weight: 600;
+    backdrop-filter: blur(6px);
+
+    z-index: 20;
   }
 
-  /* =========================================
-     RETRY BLOCK
-  ========================================= */
-
-  .ds-retry-block {
+  .ds-processing-card {
     display: flex;
     flex-direction: column;
     align-items: center;
+
     gap: var(--ds-space-4);
 
-    margin-top: var(--ds-space-5);
+    padding: var(--ds-space-6);
+
+    border-radius: var(--ds-radius-2xl);
+
+    background: var(--ds-surface-raised);
+
+    box-shadow: var(--ds-shadow-lg);
   }
 
   /* =========================================
-     RESPONSIVE STATES
+     EMPTY STATES
+  ========================================= */
+
+  .ds-empty-state {
+    min-height: 320px;
+  }
+
+  /* =========================================
+     OFFLINE
+  ========================================= */
+
+  .ds-offline-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+
+    min-height: 48px;
+
+    padding-inline: var(--ds-space-4);
+
+    background: var(--ds-warning-soft);
+
+    border-bottom: 1px solid var(--ds-warning-border);
+
+    color: var(--ds-warning);
+
+    font-size: var(--ds-text-sm);
+    font-weight: 500;
+  }
+
+  .ds-offline-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 999px;
+
+    background: currentColor;
+
+    animation:
+      ds-offline-pulse
+      1.8s
+      ease-in-out
+      infinite;
+  }
+
+  @keyframes ds-offline-pulse {
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  /* =========================================
+     RESPONSIVE
   ========================================= */
 
   @media (max-width: 768px) {
@@ -549,6 +376,7 @@
 
     .ds-state-actions {
       width: 100%;
+
       flex-direction: column;
     }
 

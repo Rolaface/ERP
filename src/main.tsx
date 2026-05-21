@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "sonner";
 import "./index.css";
+import "./dashboard.css"
 import App from "./App.tsx";
 import { initTheme } from "../src/themes.ts";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";

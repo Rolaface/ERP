@@ -14,6 +14,8 @@
     border-radius: var(--ds-radius-xl);
 
     background: var(--ds-surface-raised);
+
+    box-shadow: var(--ds-shadow-xs);
   }
 
   .ds-table-wrapper::-webkit-scrollbar {
@@ -23,11 +25,8 @@
 
   .ds-table-wrapper::-webkit-scrollbar-thumb {
     background: var(--ds-border);
-    border-radius: 999px;
-  }
 
-  .ds-table-wrapper::-webkit-scrollbar-track {
-    background: transparent;
+    border-radius: 999px;
   }
 
   /* =========================================
@@ -37,30 +36,30 @@
   .ds-table {
     width: 100%;
 
+    min-width: 720px;
+
     border-collapse: separate;
     border-spacing: 0;
-
-    min-width: 720px;
 
     background: var(--ds-surface-raised);
   }
 
   /* =========================================
-     TABLE HEADER
+     HEADER
   ========================================= */
 
   .ds-table thead {
     position: sticky;
     top: 0;
 
-    z-index: 2;
+    z-index: var(--ds-z-sticky);
   }
 
   .ds-table th {
     position: sticky;
     top: 0;
 
-    height: 48px;
+    height: var(--ds-row-height-lg);
 
     padding-inline: var(--ds-space-4);
 
@@ -70,34 +69,38 @@
 
     text-align: left;
 
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-size: var(--ds-text-xs);
+
+    font-weight:
+      var(--ds-font-weight-bold);
+
+    letter-spacing:
+      var(--ds-tracking-wide);
+
     text-transform: uppercase;
 
     color: var(--ds-text-muted);
 
     white-space: nowrap;
+
+    box-shadow:
+      inset 0 -1px 0 var(--ds-border);
   }
 
   /* =========================================
-     TABLE BODY
+     BODY
   ========================================= */
 
-  .ds-table tbody tr {
-    transition:
-      background var(--ds-motion-fast),
-      border-color var(--ds-motion-fast);
-  }
-
   .ds-table td {
-    height: 56px;
+    height: var(--ds-row-height-lg);
 
     padding-inline: var(--ds-space-4);
 
-    border-bottom: 1px solid var(--ds-border-subtle);
+    border-bottom:
+      1px solid var(--ds-border-subtle);
 
     font-size: var(--ds-text-sm);
+
     color: var(--ds-text-primary);
 
     vertical-align: middle;
@@ -105,12 +108,67 @@
     white-space: nowrap;
   }
 
-  /* =========================================
-     ROW HOVER
-  ========================================= */
+  .ds-table tbody tr {
+    transition:
+      background var(--ds-motion-fast),
+      border-color var(--ds-motion-fast);
+  }
 
   .ds-table tbody tr:hover {
     background: var(--ds-surface-hover);
+  }
+
+  .ds-table tbody tr:focus-visible {
+    outline: none;
+
+    box-shadow:
+      inset 0 0 0 2px var(--ds-primary);
+  }
+
+  /* =========================================
+     ZEBRA MODE
+  ========================================= */
+
+  .ds-table--zebra tbody tr:nth-child(even) {
+    background: var(--ds-surface-secondary);
+  }
+
+  /* =========================================
+     DENSITY
+  ========================================= */
+
+  .ds-table--compact th,
+  .ds-table--compact td {
+    height: var(--ds-row-height-md);
+  }
+
+  .ds-table--relaxed th,
+  .ds-table--relaxed td {
+    height: var(--ds-row-height-xl);
+  }
+
+  /* =========================================
+     NUMERIC
+  ========================================= */
+
+  .ds-table-cell--numeric {
+    text-align: right;
+
+    font-variant-numeric:
+      tabular-nums lining-nums;
+  }
+
+  /* =========================================
+     MUTED / EMPHASIS
+  ========================================= */
+
+  .ds-table-muted {
+    color: var(--ds-text-muted);
+  }
+
+  .ds-table-strong {
+    font-weight:
+      var(--ds-font-weight-semibold);
   }
 
   /* =========================================
@@ -122,80 +180,74 @@
   }
 
   .ds-table-row--selected:hover {
-    background: var(--ds-primary-soft-hover);
-  }
-
-  .ds-table-row--danger {
-    border-left: 3px solid var(--ds-danger);
-  }
-
-  .ds-table-row--warning {
-    border-left: 3px solid var(--ds-warning);
+    background:
+      var(--ds-primary-soft-hover);
   }
 
   .ds-table-row--success {
     border-left: 3px solid var(--ds-success);
   }
 
+  .ds-table-row--warning {
+    border-left: 3px solid var(--ds-warning);
+  }
+
+  .ds-table-row--danger {
+    border-left: 3px solid var(--ds-danger);
+  }
+
   /* =========================================
-     COMPACT TABLE
+     COLUMN WIDTHS
   ========================================= */
 
-  .ds-table--compact th {
-    height: 40px;
+  .ds-col-checkbox {
+    width: 48px;
   }
 
-  .ds-table--compact td {
-    height: 44px;
-    font-size: 13px;
+  .ds-col-actions {
+    width: 72px;
+  }
+
+  .ds-col-status {
+    width: 120px;
   }
 
   /* =========================================
-     RELAXED TABLE
+     STATUS
   ========================================= */
 
-  .ds-table--relaxed td {
-    height: 64px;
+  .ds-table-status {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+  }
+
+  .ds-table-status-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 999px;
+
+    background: currentColor;
   }
 
   /* =========================================
-     NUMERIC COLUMNS
-  ========================================= */
-
-  .ds-table-number {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* =========================================
-     MUTED CELLS
-  ========================================= */
-
-  .ds-table-muted {
-    color: var(--ds-text-muted);
-  }
-
-  /* =========================================
-     EMPHASIZED CELLS
-  ========================================= */
-
-  .ds-table-strong {
-    font-weight: 600;
-    color: var(--ds-text-primary);
-  }
-
-  /* =========================================
-     TABLE ACTIONS
+     ACTIONS
   ========================================= */
 
   .ds-table-actions {
     display: inline-flex;
+
     align-items: center;
+
     gap: var(--ds-space-2);
 
     opacity: 0;
 
-    transition: opacity var(--ds-motion-fast);
+    transition:
+      opacity var(--ds-motion-fast);
   }
 
   .ds-table tbody tr:hover .ds-table-actions {
@@ -207,10 +259,12 @@
     height: 32px;
 
     display: inline-flex;
+
     align-items: center;
     justify-content: center;
 
     border: none;
+
     border-radius: var(--ds-radius-md);
 
     background: transparent;
@@ -227,6 +281,7 @@
 
   .ds-table-action-btn:hover {
     background: var(--ds-surface-hover);
+
     color: var(--ds-text-primary);
   }
 
@@ -234,85 +289,50 @@
     transform: scale(0.96);
   }
 
-  /* =========================================
-     CHECKBOX COLUMN
-  ========================================= */
+  .ds-table-action-btn:focus-visible {
+    outline: none;
 
-  .ds-table-checkbox {
-    width: 44px;
-    text-align: center;
+    box-shadow: var(--ds-focus-ring);
   }
 
   /* =========================================
-     STATUS CELL
-  ========================================= */
-
-  .ds-table-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .ds-table-status-dot {
-    width: 8px;
-    height: 8px;
-
-    border-radius: 999px;
-
-    background: currentColor;
-  }
-
-  /* =========================================
-     TABLE TOOLBAR
+     TOOLBAR
   ========================================= */
 
   .ds-table-toolbar {
     display: flex;
+
     align-items: center;
     justify-content: space-between;
+
     gap: var(--ds-space-4);
 
-    min-height: 64px;
+    min-height: var(--ds-toolbar-height);
 
     padding-inline: var(--ds-space-5);
 
-    border-bottom: 1px solid var(--ds-border);
-
-    background: var(--ds-surface-raised);
-  }
-
-  .ds-table-toolbar-left,
-  .ds-table-toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: var(--ds-space-3);
+    border-bottom:
+      1px solid var(--ds-border);
   }
 
   /* =========================================
-     TABLE SEARCH
-  ========================================= */
-
-  .ds-table-search {
-    width: 280px;
-  }
-
-  /* =========================================
-     TABLE FOOTER
+     FOOTER
   ========================================= */
 
   .ds-table-footer {
     display: flex;
+
     align-items: center;
     justify-content: space-between;
+
     gap: var(--ds-space-4);
 
     min-height: 60px;
 
     padding-inline: var(--ds-space-5);
 
-    border-top: 1px solid var(--ds-border);
-
-    background: var(--ds-surface-raised);
+    border-top:
+      1px solid var(--ds-border);
   }
 
   /* =========================================
@@ -321,7 +341,9 @@
 
   .ds-pagination {
     display: flex;
+
     align-items: center;
+
     gap: var(--ds-space-2);
   }
 
@@ -332,35 +354,34 @@
     padding-inline: var(--ds-space-3);
 
     display: inline-flex;
+
     align-items: center;
     justify-content: center;
 
     border: 1px solid var(--ds-border);
+
     border-radius: var(--ds-radius-md);
 
-    background: var(--ds-surface-raised);
+    background: var(--ds-surface);
 
     color: var(--ds-text-secondary);
-
-    font-size: var(--ds-text-sm);
-    font-weight: 500;
 
     cursor: pointer;
 
     transition:
       background var(--ds-motion-fast),
-      border-color var(--ds-motion-fast),
-      color var(--ds-motion-fast);
+      border-color var(--ds-motion-fast);
   }
 
   .ds-pagination-btn:hover {
     background: var(--ds-surface-hover);
+
     border-color: var(--ds-border-strong);
-    color: var(--ds-text-primary);
   }
 
   .ds-pagination-btn--active {
     background: var(--ds-primary);
+
     border-color: var(--ds-primary);
 
     color: white;
@@ -372,7 +393,9 @@
 
   .ds-table-empty {
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
     justify-content: center;
 
@@ -383,146 +406,43 @@
     text-align: center;
   }
 
-  .ds-table-empty-icon {
-    width: 56px;
-    height: 56px;
-
-    margin-bottom: var(--ds-space-4);
-
-    color: var(--ds-text-muted);
-    opacity: 0.6;
-  }
-
   .ds-table-empty-title {
     font-size: var(--ds-text-lg);
-    font-weight: 600;
+
+    font-weight:
+      var(--ds-font-weight-semibold);
 
     color: var(--ds-text-primary);
-
-    margin-bottom: var(--ds-space-2);
   }
 
   .ds-table-empty-description {
     max-width: 420px;
 
-    font-size: var(--ds-text-sm);
-    line-height: 1.6;
+    margin-top: var(--ds-space-2);
 
     color: var(--ds-text-muted);
+
+    line-height:
+      var(--ds-leading-relaxed);
   }
 
   /* =========================================
-     LOADING STATE
-  ========================================= */
-
-  .ds-table-loading-row td {
-    height: 56px;
-  }
-
-  .ds-table-skeleton {
-    height: 12px;
-    width: 100%;
-
-    border-radius: 999px;
-
-    background:
-      linear-gradient(
-        90deg,
-        var(--ds-surface-secondary) 25%,
-        var(--ds-surface-hover) 50%,
-        var(--ds-surface-secondary) 75%
-      );
-
-    background-size: 200% 100%;
-
-    animation: ds-table-shimmer 1.4s linear infinite;
-  }
-
-  @keyframes ds-table-shimmer {
-    0% {
-      background-position: 200% 0;
-    }
-
-    100% {
-      background-position: -200% 0;
-    }
-  }
-
-  /* =========================================
-     RESPONSIVE TABLE
+     MOBILE
   ========================================= */
 
   @media (max-width: 768px) {
     .ds-table {
-      min-width: 100%;
-    }
-
-    .ds-table thead {
-      display: none;
-    }
-
-    .ds-table tbody {
-      display: flex;
-      flex-direction: column;
-      gap: var(--ds-space-4);
-
-      padding: var(--ds-space-4);
-    }
-
-    .ds-table tbody tr {
-      display: flex;
-      flex-direction: column;
-
-      border: 1px solid var(--ds-border);
-      border-radius: var(--ds-radius-xl);
-
-      background: var(--ds-surface-raised);
-
-      overflow: hidden;
-    }
-
-    .ds-table td {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      min-height: 52px;
-
-      padding-inline: var(--ds-space-4);
-
-      white-space: normal;
-    }
-
-    .ds-table td::before {
-      content: attr(data-label);
-
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-
-      color: var(--ds-text-muted);
-
-      margin-right: var(--ds-space-4);
+      min-width: 720px;
     }
 
     .ds-table-actions {
       opacity: 1;
     }
 
-    .ds-table-toolbar {
-      flex-direction: column;
-      align-items: stretch;
-
-      padding-block: var(--ds-space-4);
-    }
-
-    .ds-table-search {
-      width: 100%;
-    }
-
+    .ds-table-toolbar,
     .ds-table-footer {
       flex-direction: column;
+
       align-items: stretch;
 
       padding-block: var(--ds-space-4);
