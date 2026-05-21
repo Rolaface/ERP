@@ -163,7 +163,6 @@ const handleExportExcel = async () => {
         key:      "expense_type",
         header:   "Expense Type",
         align:    "left",
-        sortable: true,
         render:   (et) => (
           <div className="py-1.5">
             <span className="block font-medium">{et.expense_type}</span>
@@ -175,7 +174,6 @@ const handleExportExcel = async () => {
         key:      "account",
         header:   "Account",
         align:    "left",
-        sortable: true,
         render:   (et) => (
           <div className="py-1.5">
             <span className="block">{et.account}</span>

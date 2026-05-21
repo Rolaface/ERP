@@ -372,7 +372,7 @@ const CustomerDetailView: React.FC<Props> = ({
                       : "border-transparent text-muted hover:text-main"
                   }`}
                 >
-                  {React.cloneElement(tab.icon as React.ReactElement, { size: 13 })}
+                  {React.cloneElement(tab.icon as React.ReactElement, {size:13})}
                   {tab.label}
                 </button>
               ))}
@@ -387,12 +387,13 @@ const CustomerDetailView: React.FC<Props> = ({
               <div className="p-4 space-y-4">
 
                 {/* KPI strip row 1 — 4 cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
                   <KpiCard icon={<Building2 size={15} />} label="Customer Type"     value={(customer as any).type} />
-                   <KpiCard icon={<Banknote size={15} />}  label="Currency"     value={(customer as any).currency} />              
+                  <KpiCard icon={<Globe size={15} />}     label="Registration No"   value={(customer as any).registration_no} />             
                   <KpiCard icon={<Tag size={15} />}       label="Tax Category"      value={taxCategory} />
                   <KpiCard icon={<BadgeCheck size={15} />} label="TPIN"             value={(customer as any).tpin} mono />
                   <KpiCard icon={<Layers size={15} />}    label="Customer Group"   value={customerGroup} />
+                  <KpiCard icon={<Banknote size={15} />}  label="Currency"     value={(customer as any).currency} /> 
                 </div>
 
                 
