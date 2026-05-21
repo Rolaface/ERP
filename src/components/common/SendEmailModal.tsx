@@ -9,7 +9,7 @@ import { ChevronDown, ChevronUp, Loader2, Paperclip, AlertTriangle } from "lucid
 
 interface Props {
   open: boolean;
-   docType: "Sales Invoice" | "Purchase Order" | "Payment Entry";
+  docType: "Sales Invoice" | "Purchase Order" | "Payment Entry";
   invoiceNumber?: string;
   contactEmail?: string | null;
   customerName?: string | null;
@@ -142,9 +142,9 @@ const SendEmailModal: React.FC<Props> = ({
     handleAddFiles,
     handleRemoveAttachment,
     sending,
-    templateLoading, 
+    templateLoading,
     handleSend,
-  } = useSendEmail({ open, docType, invoiceNumber, contactEmail, customerName, supplierName,invoiceAttachments, onClose });
+  } = useSendEmail({ open, docType, invoiceNumber, contactEmail, customerName, supplierName, invoiceAttachments, onClose });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -304,43 +304,47 @@ const SendEmailModal: React.FC<Props> = ({
 
           {/* Subject */}
           {/* Subject */}
-<div>
-  <div style={s.fieldLabel}>
-    Subject <span style={{ color: "var(--danger)" }}>*</span>
-  </div>
-  {templateLoading ? (
-    <div style={{ ...s.inputBase, display: "flex", alignItems: "center", gap: "8px", color: "var(--muted)", fontSize: "12px" }}>
-      <Loader2 size={14} className="animate-spin" />
-      Loading template...
-    </div>
-  ) : (
-    <input
-      style={s.inputBase}
-      value={subject}
-      onChange={(e) => setSubject(e.target.value)}
-      placeholder="Email subject"
-    />
-  )}
-</div>
+          <div>
+            <div style={s.fieldLabel}>
+              Subject <span style={{ color: "var(--danger)" }}>*</span>
+            </div>
+            {templateLoading ? (
+              <div style={{ ...s.inputBase, display: "flex", alignItems: "center", gap: "8px", color: "var(--muted)", fontSize: "12px" }}>
+                <Loader2 size={14} className="animate-spin" />
+                Loading template...
+              </div>
+            ) : (
+              <input
+                style={s.inputBase}
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Email subject"
+              />
+            )}
+          </div>
 
-{/* Message */}
-<div>
-  <div style={s.fieldLabel}>Message</div>
-  {templateLoading ? (
-    <div style={{
-      minHeight: "120px", display: "flex", alignItems: "center",
-      justifyContent: "center", gap: "8px",
-      border: "1px solid var(--input-border, #e2e8f0)",
-      borderRadius: "var(--input-radius, 12px)",
-      color: "var(--muted)", fontSize: "12px",
-    }}>
-      <Loader2 size={14} className="animate-spin" />
-      Loading template...
-    </div>
-  ) : (
-    <RichTextEditor value={message} onChange={setMessage} />
-  )}
-</div>
+          {/* Message */}
+          <div>
+            <div style={s.fieldLabel}>Message</div>
+            {templateLoading ? (
+              <div style={{
+                minHeight: "120px", display: "flex", alignItems: "center",
+                justifyContent: "center", gap: "8px",
+                border: "1px solid var(--input-border, #e2e8f0)",
+                borderRadius: "var(--input-radius, 12px)",
+                color: "var(--muted)", fontSize: "12px",
+              }}>
+                <Loader2 size={14} className="animate-spin" />
+                Loading template...
+              </div>
+            ) : (
+              <RichTextEditor
+                value={message}
+                onChange={setMessage}
+                placeholder="Please configure an email template in Settings → Email Templates before sending."
+              />
+            )}
+          </div>
 
           {/* Bottom section */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "start" }}>
@@ -348,6 +352,24 @@ const SendEmailModal: React.FC<Props> = ({
             {/* Attachments */}
             <div>
               <div style={s.fieldLabel}>Attachments</div>
+              {/* ── Auto-attached info note ── */}
+              {invoiceNumber && (
+                <p
+                  style={{
+                    margin: "0 0 4px 0",
+                    fontSize: "11px",
+                    color: "var(--muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  {docType}: {invoiceNumber} is automatically attached to this email.
+                </p>
+              )}
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
 
                 {attachments.map((item, idx) => {
@@ -411,7 +433,7 @@ const SendEmailModal: React.FC<Props> = ({
                 />
               </div>
             </div>
-          </div>     
+          </div>
         </div>
 
         {/* ── Footer ── */}

@@ -58,8 +58,6 @@ interface UseSendEmailReturn {
     handleSend: () => Promise<void>;
 }
 
-const PLACEHOLDER_MESSAGE =
-    "<p>Please configure an email template in <strong>Settings → Email Templates</strong> before sending.</p>";
 
 export function useSendEmail({
     open,
@@ -105,7 +103,7 @@ export function useSendEmail({
         // Fetch email template — requires invoiceNumber (doc_type_name)
         if (!invoiceNumber) {
             setSubject("");
-            setMessage(PLACEHOLDER_MESSAGE);
+            setMessage("");
             return;
         }
 
@@ -117,12 +115,12 @@ export function useSendEmail({
         })
             .then((result) => {
                 setSubject(result.subject ?? "");
-                setMessage(result.message ?? PLACEHOLDER_MESSAGE);
+                setMessage(result.message ?? "");
             })
             .catch(() => {
                 // Non-critical: fall back to placeholder
                 setSubject("");
-                setMessage(PLACEHOLDER_MESSAGE);
+                setMessage("");
             })
             .finally(() => {
                 setTemplateLoading(false);
@@ -166,7 +164,7 @@ export function useSendEmail({
                     });
             });
         },
-         [invoiceNumber, docType]);
+        [invoiceNumber, docType]);
 
     /* ── Remove attachment ── */
     const handleRemoveAttachment = useCallback(
@@ -211,7 +209,7 @@ export function useSendEmail({
                 showApiError(err);
             }
         },
-        [invoiceNumber,docType],
+        [invoiceNumber, docType],
     );
 
     /* ── Send ── */
@@ -256,8 +254,8 @@ export function useSendEmail({
         } finally {
             setSending(false);
         }
-    }, [to, subject, invoiceNumber, message, sendMeCopy, cc, bcc, attachments, onClose ,docType]);
-    
+    }, [to, subject, invoiceNumber, message, sendMeCopy, cc, bcc, attachments, onClose, docType]);
+
 
     return {
         to, setTo,
