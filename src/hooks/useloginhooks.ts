@@ -73,10 +73,10 @@ export const useLogin = () => {
 const { setCompanyInfo } =
   useCompanyStore.getState();
 
-  setCompanyInfo({
-    companyName: company?.companyName,
-    baseCurrency: company?.baseCurrency, 
-    companyAddress: `${company?.address?.addressLine1}, ${company?.address?.city}, ${company?.address?.country}`,
+const currencies =
+  await getCurrencyList({
+    search:
+      company?.baseCurrency,
   });
 
 const matchedCurrency =
