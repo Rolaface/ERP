@@ -3,11 +3,15 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
+import Placeholder from "@tiptap/extension-placeholder";
+
 
 export interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
   minHeight?: number;
+  placeholder: string;
+
 }
 
 /* ─────────────────────────────────────────────
@@ -76,12 +80,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   minHeight = 160,
+  placeholder = "",
+
 }) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Placeholder.configure({ placeholder }),
+
     ],
     content: value,
     onUpdate({ editor }) {
