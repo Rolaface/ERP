@@ -722,7 +722,8 @@ export const usePurchaseInvoiceForm = ({
             !!item.mfgDate ||
             !!item.expiryDate ||
             !!item.batchRequired ||
-            !!item.hasBatch,
+            !!item.hasBatch ||
+            !!item.has_batch_no,
 
           vatRate: Number(selectedTax?.totalTaxRate || 0),
           vatCd: selectedTax?.taxName || "",
