@@ -287,29 +287,14 @@ const ItemTable: React.FC<ItemTableProps> = ({
               value={it.quantity ?? ""}
               placeholder="0"
               className="w-[75px]"
-              onChange={(value) => {
-                const qty = Number(value || 0);
-
-                const available = it.availableQty ?? it.qty ?? 0;
-
-                const usedQty = formData.items
-                  .filter((x, xIdx) => x.batchNo === it.batchNo && xIdx !== i)
-                  .reduce((sum, x) => sum + Number(x.quantity || 0), 0);
-
-                if (!it.isServiceItem && qty > available - usedQty) {
-                  showValidationError(
-                    `Only ${available - usedQty} items remaining in batch ${it.batchNo}`,
-                  );
-                  return;
-                }
-
-                actions.handleItemChange(i, {
-                  target: {
-                    name: "quantity",
-                    value,
-                  },
-                } as any);
-              }}
+           onChange={(value) => {
+  actions.handleItemChange(i, {
+    target: {
+      name: "quantity",
+      value,
+    },
+  } as any);
+}}
             />
           </Tooltip>
         </td>

@@ -174,6 +174,7 @@ export const useInvoiceForm = (
   );
 
   const shippingEditedRef = useRef(false);
+  const isLoadingRef = useRef(false);
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
@@ -507,7 +508,33 @@ export const useInvoiceForm = (
               ? Number(value)
               : null;
       }
-      const updatedItem = { ...items[idx], [name]: nextValue };
+  if (name === "quantity" && nextValue !== null) {
+      const item = items[idx];
+      if (!item._skipCap) {
+        if (!item.isServiceItem) {
+          const usedByOthers = items
+            .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
+            .reduce((sum, x) => sum + Number(x.quantity || 0), 0);
+          const totalOriginalQty = items
+            .filter((x) => x.batchNo === item.batchNo)
+            .reduce((sum, x) => sum + Number(x.originalQty || 0), 0);
+          const available = Math.max(
+            (item.availableQty ?? item.qty ?? 0) + totalOriginalQty,
+            totalOriginalQty,
+          );
+          const maxAllowed = Math.max(0, available - usedByOthers);
+          if (nextValue > maxAllowed) {
+            nextValue = maxAllowed;
+            showValidationError(
+              `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
+            );
+          }
+        }
+      }
+    }
+      // ─────────────────────────────────────────────────────
+
+      const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
       const start = Number(updatedItem.boxStart || 0);
       const end = Number(updatedItem.boxEnd || 0);
 
@@ -671,6 +698,7 @@ export const useInvoiceForm = (
   };
 
   const setFormDataFromInvoice = (invoice: any) => {
+    isLoadingRef.current = true;
     // charges[] from GET response map to taxes[] in formData
     // (taxes[] in GET is always empty; actual applied charges are in charges[])
     const mappedTaxesFromCharges =
@@ -785,12 +813,17 @@ export const useInvoiceForm = (
           mfgDate: it.mfgDate ?? "",
           expDate: it.expDate ?? "",
           warehouse: it.warehouse ?? "",
+          originalQty: Number(it.quantity),
+          _skipCap: true,
         };
       }),
     }));
 
     setCustomerDetails({ name: invoice.customerName, id: invoice.customerId });
     setCustomerNameDisplay(invoice.customerName ?? "");
+    setTimeout(() => {
+      isLoadingRef.current = false;
+    }, 0);
   };
 
   const setTerms = (selling: TermSection) => {
