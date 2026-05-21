@@ -266,24 +266,6 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     placeholder="Tax identification"
                   />
                 </Tooltip>
-                <Tooltip
-                  content={
-                    form.registration_no ? String(form.registration_no) : ""
-                  }
-                >
-                  <ModalInput
-                    label="Registration No"
-                    name="registration_no"
-                    type="number"
-                    value={form.registration_no ?? ""}
-                    onChange={handleChange}
-                    placeholder="Enter registration number"
-                    className="no-spinner"
-                  />
-                </Tooltip>
-
-                
-
                 <Tooltip content={form.currency || "Search currency..."}>
                   <SearchSelect2
                     label="Currency"
@@ -352,7 +334,24 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                       {errors.contactMobile}
                     </span>
                   )}
+                  
                 </div>
+
+                <Tooltip
+                  content={
+                    form.registration_no ? String(form.registration_no) : ""
+                  }
+                >
+                  <ModalInput
+                    label="Registration No"
+                    name="registration_no"
+                    type="number"
+                    value={form.registration_no ?? ""}
+                    onChange={handleChange}
+                    placeholder="Enter registration number"
+                    className="no-spinner"
+                  />
+                </Tooltip>
               </div>
             </Card>
           )}
