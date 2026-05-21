@@ -200,12 +200,12 @@ export const ShiftTypeModal: React.FC<Props> = ({
   };
 
   const footer = (
-    <div className="flex w-full items-center justify-end gap-3 pt-2">
+    <div className="flex w-full items-center justify-end gap-3 pt-1">
       <button
         type="button"
         onClick={onClose}
         disabled={isLoading || saving}
-        className="px-4 py-2 text-[13px] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition disabled:opacity-50"
+        className="px-4 py-1.5 text-[12px] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition disabled:opacity-50"
       >
         Cancel
       </button>
@@ -213,9 +213,9 @@ export const ShiftTypeModal: React.FC<Props> = ({
         type="button"
         onClick={handleSave}
         disabled={saving || isLoading}
-        className="rounded-lg bg-[#0f172a] px-5 py-2 text-[13px] font-medium text-white transition hover:bg-slate-800 disabled:opacity-60 flex items-center gap-2"
+        className="rounded-lg bg-[#0f172a] px-5 py-1.5 text-[12px] font-medium text-white transition hover:bg-slate-800 disabled:opacity-60 flex items-center gap-2"
       >
-        {saving && <Loader2 size={16} className="animate-spin text-white" />}
+        {saving && <Loader2 size={14} className="animate-spin text-white" />}
         {saving
           ? "Saving…"
           : isEdit
@@ -240,14 +240,14 @@ export const ShiftTypeModal: React.FC<Props> = ({
     >
       {isLoading ? (
         <div className="flex h-full w-full items-center justify-center min-h-[300px]">
-          <Loader2 size={32} className="animate-spin text-slate-800" />
+          <Loader2 size={28} className="animate-spin text-slate-800" />
         </div>
       ) : (
         <div className="flex h-full w-full flex-col md:flex-row bg-white">
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 md:col-span-6">
-                <label className="mb-1.5 block text-[11px] font-medium text-gray-600">
+                <label className="mb-1 block text-[11px] font-medium text-gray-700">
                   Shift Name
                 </label>
                 <input
@@ -256,46 +256,46 @@ export const ShiftTypeModal: React.FC<Props> = ({
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Morning Shift"
                   disabled={isEdit}
-                  className="w-full h-9 rounded-md border border-gray-200 px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50 disabled:text-gray-500"
                 />
               </div>
               <div className="col-span-6 md:col-span-3">
-                <label className="mb-1.5 block text-[11px] font-medium text-gray-600">
+                <label className="mb-1 block text-[11px] font-medium text-gray-700">
                   Start Time
                 </label>
                 <input
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full h-9 rounded-md border border-gray-200 px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                  className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
                 />
               </div>
               <div className="col-span-6 md:col-span-3">
-                <label className="mb-1.5 block text-[11px] font-medium text-gray-600">
+                <label className="mb-1 block text-[11px] font-medium text-gray-700">
                   End Time
                 </label>
                 <input
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full h-9 rounded-md border border-gray-200 px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                  className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
                 />
               </div>
             </div>
 
-            <div className="rounded-lg border border-gray-200 p-5">
-              <h3 className="mb-4 text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+            <div className="rounded-lg border border-gray-200 p-4">
+              <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
                 Auto Attendance Settings
               </h3>
-              <div className="grid grid-cols-12 gap-5">
+              <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 md:col-span-6">
-                  <label className="mb-1.5 block text-[11px] font-medium text-gray-700">
+                  <label className="mb-1 block text-[11px] font-medium text-gray-700">
                     Determine Check-in and Check-out
                   </label>
                   <select
                     value={determineCheckIn}
                     onChange={(e) => setDetermineCheckIn(e.target.value)}
-                    className="w-full h-9 rounded-md border border-gray-200 bg-white px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    className="w-full h-8 rounded-md border border-gray-200 bg-white px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
                   >
                     {CHECK_IN_OUT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -305,13 +305,13 @@ export const ShiftTypeModal: React.FC<Props> = ({
                   </select>
                 </div>
                 <div className="col-span-12 md:col-span-6">
-                  <label className="mb-1.5 block text-[11px] font-medium text-gray-700">
+                  <label className="mb-1 block text-[11px] font-medium text-gray-700">
                     Working Hours Calculation Based On
                   </label>
                   <select
                     value={calcBasedOn}
                     onChange={(e) => setCalcBasedOn(e.target.value)}
-                    className="w-full h-9 rounded-md border border-gray-200 bg-white px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    className="w-full h-8 rounded-md border border-gray-200 bg-white px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
                   >
                     {CALC_BASED_ON_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -321,7 +321,7 @@ export const ShiftTypeModal: React.FC<Props> = ({
                   </select>
                 </div>
                 <div className="col-span-12 md:col-span-6">
-                  <label className="mb-1.5 block text-[11px] font-medium text-gray-700">
+                  <label className="mb-1 block text-[11px] font-medium text-gray-700">
                     Begin check-in before shift start (mins)
                   </label>
                   <input
@@ -332,11 +332,11 @@ export const ShiftTypeModal: React.FC<Props> = ({
                         e.target.value ? Number(e.target.value) : "",
                       )
                     }
-                    className="w-full h-9 rounded-md border border-gray-200 px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
                 <div className="col-span-12 md:col-span-6">
-                  <label className="mb-1.5 block text-[11px] font-medium text-gray-700">
+                  <label className="mb-1 block text-[11px] font-medium text-gray-700">
                     Allow check-out after shift end (mins)
                   </label>
                   <input
@@ -347,19 +347,19 @@ export const ShiftTypeModal: React.FC<Props> = ({
                         e.target.value ? Number(e.target.value) : "",
                       )
                     }
-                    className="w-full h-9 rounded-md border border-gray-200 px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
               </div>
             </div>
 
             {/* Late Entry & Early Exit Card */}
-            <div className="rounded-lg border border-gray-200 p-5">
-              <h3 className="mb-4 text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+            <div className="rounded-lg border border-gray-200 p-4">
+              <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
                 Late Entry & Early Exit
               </h3>
-              <div className="grid grid-cols-12 gap-6">
-                <div className="col-span-12 md:col-span-6 space-y-3">
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-6 space-y-2.5">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -367,12 +367,12 @@ export const ShiftTypeModal: React.FC<Props> = ({
                       onChange={(e) => setEnableLateEntry(e.target.checked)}
                       className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
                     />
-                    <span className="text-[12px] font-medium text-gray-800">
+                    <span className="text-[11px] font-medium text-gray-800">
                       Enable Late Entry Marking
                     </span>
                   </label>
                   <div>
-                    <label className="mb-1.5 block text-[11px] font-medium text-gray-600">
+                    <label className="mb-1 block text-[11px] font-medium text-gray-700">
                       Late Entry Grace Period (mins)
                     </label>
                     <input
@@ -385,11 +385,11 @@ export const ShiftTypeModal: React.FC<Props> = ({
                           e.target.value ? Number(e.target.value) : "",
                         )
                       }
-                      className="w-full h-9 rounded-md border border-gray-200 px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50 disabled:text-gray-400"
+                      className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50 disabled:text-gray-400"
                     />
                   </div>
                 </div>
-                <div className="col-span-12 md:col-span-6 space-y-3">
+                <div className="col-span-12 md:col-span-6 space-y-2.5">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -397,12 +397,12 @@ export const ShiftTypeModal: React.FC<Props> = ({
                       onChange={(e) => setEnableEarlyExit(e.target.checked)}
                       className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
                     />
-                    <span className="text-[12px] font-medium text-gray-800">
+                    <span className="text-[11px] font-medium text-gray-800">
                       Enable Early Exit Marking
                     </span>
                   </label>
                   <div>
-                    <label className="mb-1.5 block text-[11px] font-medium text-gray-600">
+                    <label className="mb-1 block text-[11px] font-medium text-gray-700">
                       Early Exit Grace Period (mins)
                     </label>
                     <input
@@ -415,7 +415,7 @@ export const ShiftTypeModal: React.FC<Props> = ({
                           e.target.value ? Number(e.target.value) : "",
                         )
                       }
-                      className="w-full h-9 rounded-md border border-gray-200 px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50 disabled:text-gray-400"
+                      className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50 disabled:text-gray-400"
                     />
                   </div>
                 </div>
@@ -423,13 +423,13 @@ export const ShiftTypeModal: React.FC<Props> = ({
             </div>
 
             {/* Thresholds Card */}
-            <div className="rounded-lg border border-gray-200 p-5">
-              <h3 className="mb-4 text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+            <div className="rounded-lg border border-gray-200 p-4">
+              <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
                 Thresholds
               </h3>
-              <div className="grid grid-cols-12 gap-5">
+              <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 md:col-span-6">
-                  <label className="mb-1.5 block text-[11px] font-medium text-gray-700">
+                  <label className="mb-1 block text-[11px] font-medium text-gray-700">
                     Working Hours Threshold for Half Day
                   </label>
                   <input
@@ -442,11 +442,11 @@ export const ShiftTypeModal: React.FC<Props> = ({
                         e.target.value ? Number(e.target.value) : "",
                       )
                     }
-                    className="w-full h-9 rounded-md border border-gray-200 px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
                 <div className="col-span-12 md:col-span-6">
-                  <label className="mb-1.5 block text-[11px] font-medium text-gray-700">
+                  <label className="mb-1 block text-[11px] font-medium text-gray-700">
                     Working Hours Threshold for Absent
                   </label>
                   <input
@@ -459,7 +459,7 @@ export const ShiftTypeModal: React.FC<Props> = ({
                         e.target.value ? Number(e.target.value) : "",
                       )
                     }
-                    className="w-full h-9 rounded-md border border-gray-200 px-3 text-[13px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
                   />
                 </div>
               </div>
@@ -467,66 +467,68 @@ export const ShiftTypeModal: React.FC<Props> = ({
           </div>
 
           {/* RIGHT PANEL - ATTRIBUTES */}
-          <div className="w-full md:w-72 bg-[#f8faff] border-l border-gray-200 p-6 flex flex-col gap-5 overflow-y-auto">
-            <h3 className="text-[14px] font-semibold text-gray-800 border-b border-gray-200 pb-2">
+          <div className="w-full md:w-60 bg-[#f8faff] border-l border-gray-200 p-4 flex flex-col gap-4 overflow-y-auto">
+            <h3 className="text-[12px] font-bold text-gray-800 border-b border-gray-200 pb-2">
               Attributes
             </h3>
 
-            <label className="flex items-start gap-3 cursor-pointer">
-              <div className="pt-0.5">
-                <input
-                  type="checkbox"
-                  checked={enableAutoAttendance}
-                  onChange={(e) => setEnableAutoAttendance(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
-                />
-              </div>
-              <span className="text-[13px] font-medium text-gray-700">
-                Mark Auto Attendance
-              </span>
-            </label>
+            <div className="flex flex-col gap-3.5">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <div className="pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={enableAutoAttendance}
+                    onChange={(e) => setEnableAutoAttendance(e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                  />
+                </div>
+                <span className="text-[11px] font-medium text-gray-700 leading-snug">
+                  Mark Auto Attendance
+                </span>
+              </label>
 
-            <label className="flex items-start gap-3 cursor-pointer">
-              <div className="pt-0.5">
-                <input
-                  type="checkbox"
-                  checked={markAutoOnHolidays}
-                  onChange={(e) => setMarkAutoOnHolidays(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
-                />
-              </div>
-              <span className="text-[13px] font-medium text-gray-700 leading-snug">
-                Mark Attendance on Holidays
-              </span>
-            </label>
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <div className="pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={markAutoOnHolidays}
+                    onChange={(e) => setMarkAutoOnHolidays(e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                  />
+                </div>
+                <span className="text-[11px] font-medium text-gray-700 leading-snug">
+                  Mark Attendance on Holidays
+                </span>
+              </label>
 
-            <label className="flex items-start gap-3 cursor-pointer">
-              <div className="pt-0.5">
-                <input
-                  type="checkbox"
-                  checked={allowOvertime}
-                  onChange={(e) => setAllowOvertime(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
-                />
-              </div>
-              <span className="text-[13px] font-medium text-gray-700">
-                Allow Overtime
-              </span>
-            </label>
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <div className="pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={allowOvertime}
+                    onChange={(e) => setAllowOvertime(e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                  />
+                </div>
+                <span className="text-[11px] font-medium text-gray-700 leading-snug">
+                  Allow Overtime
+                </span>
+              </label>
 
-            <label className="flex items-start gap-3 cursor-pointer">
-              <div className="pt-0.5">
-                <input
-                  type="checkbox"
-                  checked={autoUpdateLastSync}
-                  onChange={(e) => setAutoUpdateLastSync(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
-                />
-              </div>
-              <span className="text-[13px] font-medium text-gray-700 leading-snug">
-                Auto Update Last Check-In Sync
-              </span>
-            </label>
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <div className="pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={autoUpdateLastSync}
+                    onChange={(e) => setAutoUpdateLastSync(e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                  />
+                </div>
+                <span className="text-[11px] font-medium text-gray-700 leading-snug">
+                  Auto Update Last Check-In Sync
+                </span>
+              </label>
+            </div>
           </div>
         </div>
       )}
