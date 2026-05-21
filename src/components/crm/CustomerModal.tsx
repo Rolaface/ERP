@@ -1,5 +1,12 @@
 import React from "react";
-import { Building2, Banknote, FileText, MapPin, Users,User } from "lucide-react";
+import {
+  Building2,
+  Banknote,
+  FileText,
+  MapPin,
+  Users,
+  User,
+} from "lucide-react";
 import Tooltip from "../Tooltip";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
 import TermsAndCondition from "../TermsAndCondition";
@@ -120,10 +127,11 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === tab
-                  ? "text-primary border-b-[3px] border-primary"
-                  : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
+                  activeTab === tab
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                }`}
               >
                 {tab === "details" && <User className="w-4 h-4" />}
                 {tab === "bank" && <Banknote className="w-4 h-4" />}
@@ -148,7 +156,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               subtitle="Essential customer details"
               icon={<User className="w-5 h-5 text-primary" />}
             >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5  mt-4">
                 <Tooltip content={form.type || "Select Customer Type"}>
                   <ModalSelect
                     label="Type"
@@ -175,7 +183,16 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     error={errors.name}
                   />
                 </Tooltip>
-
+                <CustomerGroupSearchSelect
+                  value={form.customerGroup}
+                  onChange={(value) =>
+                    handleChange({
+                      target: { name: "customerGroup", value },
+                    } as React.ChangeEvent<HTMLSelectElement>)
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5  mt-4">
                 <Tooltip
                   content={primaryContact?.firstName || "Primary contact"}
                 >
@@ -224,17 +241,9 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     ].filter((option) => option.value)}
                   />
                 </Tooltip>
+              </div>
 
-                <Tooltip content={form.tpin || "Tax identification"}>
-                  <ModalInput
-                    label="TPIN"
-                    name="tpin"
-                    value={form.tpin}
-                    onChange={handleChange}
-                    placeholder="Tax identification"
-                  />
-                </Tooltip>
-
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5  mt-4">
                 <Tooltip
                   content={form.customerTaxCategory || "Select Tax Category"}
                 >
@@ -248,6 +257,32 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     }
                   />
                 </Tooltip>
+                <Tooltip content={form.tpin || "Tax identification"}>
+                  <ModalInput
+                    label="TPIN"
+                    name="tpin"
+                    value={form.tpin}
+                    onChange={handleChange}
+                    placeholder="Tax identification"
+                  />
+                </Tooltip>
+                <Tooltip
+                  content={
+                    form.registration_no ? String(form.registration_no) : ""
+                  }
+                >
+                  <ModalInput
+                    label="Registration No"
+                    name="registration_no"
+                    type="number"
+                    value={form.registration_no ?? ""}
+                    onChange={handleChange}
+                    placeholder="Enter registration number"
+                    className="no-spinner"
+                  />
+                </Tooltip>
+
+                
 
                 <Tooltip content={form.currency || "Search currency..."}>
                   <SearchSelect2
@@ -264,76 +299,59 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     error={errors.currency}
                   />
                 </Tooltip>
+              </div>
 
-                <Tooltip content={form.onboardingBalance ? String(form.onboardingBalance) : ""}>
-                  <ModalInput
-                    label="Onboard Balance"
-                    name="onboardingBalance"
-                    type="number"
-                    value={form.onboardingBalance ?? ""}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                    className="no-spinner"
-                  />
-                </Tooltip>
+              <div className="col-span-4 grid grid-cols-4 gap-5 mt-4">
+                <ModalInput
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={primaryContact?.email ?? ""}
+                  onChange={handlePrimaryContactChange}
+                  required
+                  placeholder="email@example.com"
+                  error={errors.contactEmail}
+                />
 
-                <div className="col-span-4 grid grid-cols-4 gap-5">
-                  <ModalInput
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={primaryContact?.email ?? ""}
-                    onChange={handlePrimaryContactChange}
-                    required
-                    placeholder="email@example.com"
-                    error={errors.contactEmail}
-                  />
+                <div className="flex flex-col min-w-0">
+                  <span className="block text-[10px] font-medium text-main mb-1">
+                    Phone No <span className="text-danger">*</span>
+                  </span>
 
-                  <div className="flex flex-col min-w-0">
-                    <span className="block text-[10px] font-medium text-main mb-1">
-                      Phone No <span className="text-danger">*</span>
-                    </span>
+                  <div className="flex">
+                    {/* Country Code */}
+                    <input
+                      name="mobileCode"
+                      value={primaryContact?.mobileCode ?? "+"}
+                      placeholder="+"
+                      onChange={handlePrimaryContactChange}
+                      onBlur={(e) => {
+                        if (!e.target.value.startsWith("+")) {
+                          updatePrimaryContact(
+                            "mobileCode",
+                            "+" + e.target.value,
+                          );
+                        }
+                      }}
+                      maxLength={5}
+                      className="w-[60px] py-1 px-2 border rounded  text-main  text-[11px] bg-card border-[var(--border)] hover:border-primary/40"
+                    />
 
-                    <div className="flex">
-                      {/* Country Code */}
-                      <input
-                        name="mobileCode"
-                        value={primaryContact?.mobileCode ?? "+"}
-                         placeholder="+"
-                        onChange={handlePrimaryContactChange}
-                        onBlur={(e) => {
-                          if (!e.target.value.startsWith("+")) {
-                            updatePrimaryContact("mobileCode", "+" + e.target.value);
-                          }
-                        }}
-                        maxLength={5}
-                        className="w-[60px] py-1 px-2 border rounded  text-main  text-[11px] bg-card border-[var(--border)] hover:border-primary/40"
-                      />
-
-                      {/* Actual Mobile Number */}
-                      <input
-                        name="mobileNumber"
-                        value={primaryContact?.mobileNumber ?? ""}
-                        onChange={handlePrimaryContactChange}
-                        placeholder="Enter number"
-                        className="flex-1 py-1 px-2 border rounded text-[11px] text-main  bg-card border-[var(--border)] hover:border-primary/40"
-                      />
-                    </div>
-
-                    {errors.contactMobile && (
-                      <span className="text-[10px] text-danger mt-1">
-                        {errors.contactMobile}
-                      </span>
-                    )}
+                    {/* Actual Mobile Number */}
+                    <input
+                      name="mobileNumber"
+                      value={primaryContact?.mobileNumber ?? ""}
+                      onChange={handlePrimaryContactChange}
+                      placeholder="Enter number"
+                      className="flex-1 py-1 px-2 border rounded text-[11px] text-main  bg-card border-[var(--border)] hover:border-primary/40"
+                    />
                   </div>
-                  <CustomerGroupSearchSelect
-                    value={form.customerGroup}
-                    onChange={(value) =>
-                      handleChange({
-                        target: { name: "customerGroup", value },
-                      } as React.ChangeEvent<HTMLSelectElement>)
-                    }
-                  />
+
+                  {errors.contactMobile && (
+                    <span className="text-[10px] text-danger mt-1">
+                      {errors.contactMobile}
+                    </span>
+                  )}
                 </div>
               </div>
             </Card>
@@ -348,7 +366,6 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               partyType="Customer"
               partyName={form.name || initialData?.name || ""}
               partyId={initialData?.id ? String(initialData.id) : undefined}
-
               currency={form.currency}
             />
           )}

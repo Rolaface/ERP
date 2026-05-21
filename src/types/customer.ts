@@ -15,6 +15,7 @@ export interface CustomerContact {
   department?: string;
   isPrimary: boolean;
   isBilling: boolean;
+  registration_no: string;
 }
 
 export interface CustomerAddress {
@@ -69,6 +70,7 @@ export interface CustomerSummary {
   accountNumber?: string;
   currency?: string;
   onboardingBalance?: number;
+  registration_no?: string;
   status?: "Active" | "Inactive" | string;
   createdAt?: string;             
   contactPerson?: string;

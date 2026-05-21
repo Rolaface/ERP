@@ -509,8 +509,8 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={getRecordInitialData(modal.initialData)}  
-      isEdit={modal.isEdit}  
+            initialData={getRecordInitialData(modal.initialData)}
+            isEdit={modal.isEdit}
           />,
         );
 
