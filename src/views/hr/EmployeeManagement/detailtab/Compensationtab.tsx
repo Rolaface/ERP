@@ -239,7 +239,7 @@ const CompositionPanel: React.FC<{
             {name}
           </p>
         </div>
-        <p className="text-[15px] font-bold tabular-nums text-main leading-tight">
+        <p className="text-[26px] font-bold tabular-nums text-main leading-tight">
           {fmtNum(value, currency)}
         </p>
         <div className="flex items-center justify-between mt-1">
@@ -582,7 +582,7 @@ const BankCard: React.FC<{
     } overflow-hidden`}
   >
     <div className="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-900 dark:to-black px-5 py-4">
-      <div className="flex items-start justify-between mb-6">
+      <div className="grid grid-cols-[1fr_auto] gap-6 items-start">
         <div>
           <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
             Payout Bank
@@ -613,18 +613,18 @@ const BankCard: React.FC<{
           )}
         </div>
 
-        <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
+        <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
           <Building2 className="w-4 h-4 text-white/70" />
         </div>
       </div>
 
-      <div className="flex items-end justify-between">
+      <div className="grid grid-cols-2 gap-6 mt-6 pt-5 border-t border-white/10">
         <div>
           <p className="text-[9px] text-slate-400 mb-0.5 uppercase tracking-wider">
             Account No.
           </p>
 
-          <p className="text-[14px] font-mono font-semibold text-white tracking-widest">
+          <p className="text-[22px] font-mono font-bold text-white tracking-[0.18em]">
             {defaultAccount?.accountNo
               ? defaultAccount.accountNo.replace(/(.{4})/g, "$1 ").trim()
               : "•••• •••• ••••"}

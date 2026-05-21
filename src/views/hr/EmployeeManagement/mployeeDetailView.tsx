@@ -6,7 +6,7 @@ import {
   closeSwal,
 } from "../../../utils/alert";
 import { ShieldCheck } from "lucide-react";
-import { User, Briefcase, Banknote, FileText } from "lucide-react";
+import { User, Briefcase, Banknote, FileText,Landmark } from "lucide-react";
 import {
   uploadEmployeeDocument,
   getEmployeeDocuments,
@@ -17,6 +17,7 @@ import { EmployeeSidebar } from "./detailtab/Employeesidebar";
 import { PersonalTab } from "./detailtab/Personaltab";
 import { EmploymentTab } from "./detailtab/Employmenttab";
 import { CompensationTab } from "./detailtab/Compensationtab";
+import EmployeeBankDetails from "./detailtab/EmployeeBank";
 import { DocumentsTab, DocumentUploadModal } from "./detailtab/documenttab";
 import { SalarySlipTable } from "./detailtab/Salaryslip";
 import { getSalarySlipsByEmployee } from "../../../api/payroll/payrollEntryApi";
@@ -34,6 +35,7 @@ type TabId =
   | "statutory"
   | "employment"
   | "compensation"
+  | "BankAccount"
   | "salarySlip"
   | "documents";
 
@@ -46,6 +48,7 @@ const TABS = [
   },
   { id: "employment", label: "Employment", icon: <Briefcase size={14} /> },
   { id: "compensation", label: "Compensation", icon: <Banknote size={14} /> },
+  { id: "BankAccount", label: "Bank Account", icon: <Landmark size={14} /> },
   { id: "salarySlip", label: "Salary Slip", icon: <FileText size={14} /> },
   { id: "documents", label: "Documents", icon: <FileText size={14} /> },
 ];
@@ -56,7 +59,7 @@ type Props = {
   employee: any;
   onBack?: () => void;
   onDocumentUploaded: () => Promise<void>;
-   hideFinancialTabs?: boolean;
+  hideFinancialTabs?: boolean;
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -78,7 +81,7 @@ const EmployeeDetailView: React.FC<Props> = ({
     .join(" ");
   const currency = fmt(emp.salary_currency) || "";
 
-   const visibleTabs = hideFinancialTabs
+  const visibleTabs = hideFinancialTabs
     ? TABS.filter((t) => t.id !== "compensation" && t.id !== "salarySlip")
     : TABS;
 
@@ -161,7 +164,7 @@ const EmployeeDetailView: React.FC<Props> = ({
          * Payroll, etc. Zero extra styling needed; it matches out of the box.
          */}
         <AppSubTabs
-          tabs={visibleTabs}  
+          tabs={visibleTabs}
           activeTab={activeTab}
           onChange={(id) => setActiveTab(id as TabId)}
         />
@@ -176,6 +179,9 @@ const EmployeeDetailView: React.FC<Props> = ({
           {activeTab === "compensation" && (
             <CompensationTab emp={emp} currency={currency} />
           )}
+           {activeTab === "BankAccount" && (
+  <EmployeeBankDetails employeename={emp.employee} />
+)}
           {activeTab === "salarySlip" && (
             <SalarySlipTable slips={salarySlips} loading={salarySlipsLoading} />
           )}
@@ -188,7 +194,7 @@ const EmployeeDetailView: React.FC<Props> = ({
           )}
         </div>
       </div>
-      
+
       {showUploadModal && (
         <DocumentUploadModal
           onClose={() => setShowUploadModal(false)}
