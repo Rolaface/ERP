@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import {
-  FaSearch,
   FaFilter,
   FaDownload,
   FaEye,
@@ -96,6 +95,7 @@ const AccountsReceivable = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currency, setCurrency] = useState("");
   const [reportDate, setReportDate] = useState(getTodayDate());
 
   const [selectedGroupBy, setSelectedGroupBy] = useState<string[]>([]);
@@ -226,6 +226,7 @@ const AccountsReceivable = () => {
         const payload = response.message.data;
         const backendKpis = payload.kpis;
         const backendData = payload.rows || payload.data || [];
+        setCurrency(backendData?.[0]?.currency ?? "-");
 
         setKpis(backendKpis);
 
@@ -471,19 +472,19 @@ const AccountsReceivable = () => {
   const stats = [
     {
       label: "Total Outstanding",
-      value: `₹${(kpis?.total_outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currency} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
       label: "Overdue Amount",
-      value: `₹${(kpis?.overdue_amount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currency} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
       label: "Total Customers",
-      value: `${kpis?.total_customers || 0}`,
+      value: ` ${kpis?.total_customers || 0}`,
     },
     {
       label: "Total Invoiced",
-      value: `₹${(kpis?.total_invoiced || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currency} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
   ];
 
@@ -510,23 +511,22 @@ const AccountsReceivable = () => {
     { label: "121+ Days", key: "121_above" },
   ];
   const formatDate = (date?: string | Date) => {
-  if (!date) return "";
+    if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
 
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
   const columns: Column<Receivable>[] = [
     {
       key: "id",
       header: "Voucher No",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <span className="font-mono text-primary text-xs font-semibold">
@@ -537,7 +537,6 @@ const AccountsReceivable = () => {
     {
       key: "customer",
       header: "Customer",
-      sortable: true,
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
           {row.customer}
@@ -547,7 +546,6 @@ const AccountsReceivable = () => {
     {
       key: "voucherType",
       header: "Type",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <span className="text-xs">{row.voucherType}</span>
@@ -556,10 +554,9 @@ const AccountsReceivable = () => {
     {
       key: "invoicedAmount",
       header: "Invoiced",
-      sortable: true,
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          ₹
+
           {row.invoicedAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
@@ -569,11 +566,10 @@ const AccountsReceivable = () => {
     {
       key: "paidAmount",
       header: "Paid",
-      sortable: true,
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          ₹
-          {row.paidAmount.toLocaleString(undefined, {
+
+          {currency} {row.paidAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -582,13 +578,12 @@ const AccountsReceivable = () => {
     {
       key: "outstandingAmount",
       header: "Outstanding",
-      sortable: true,
       render: (row) => (
         <span
           className={`text-main ${row.isSummary ? "font-bold" : "font-semibold"}`}
         >
-          ₹
-          {row.outstandingAmount.toLocaleString(undefined, {
+
+          {currency} {row.outstandingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -597,13 +592,11 @@ const AccountsReceivable = () => {
     {
       key: "due",
       header: "Due/Posted Date",
-      sortable: true,
       render: (row) => (row.isSummary ? null : <span>{formatDate(row.due)}</span>),
     },
     {
       key: "days",
       header: "Aging",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <div className="flex items-center gap-1">
@@ -613,9 +606,8 @@ const AccountsReceivable = () => {
               <FaClock className="text-muted text-xs" />
             )}
             <span
-              className={`text-xs font-medium ${
-                row.overdue ? "text-danger" : "text-muted"
-              }`}
+              className={`text-xs font-medium ${row.overdue ? "text-danger" : "text-muted"
+                }`}
             >
               {Math.abs(row.days)} days {row.overdue ? "overdue" : "left"}
             </span>
@@ -625,21 +617,19 @@ const AccountsReceivable = () => {
     {
       key: "status",
       header: "Status",
-      sortable: true,
       render: (row) => {
         if (row.isSummary) return null;
         const s = row.status.toLowerCase();
         return (
           <span
-            className={`px-3 py-1 rounded-full text-[10px] font-bold ${
-              s === "paid"
-                ? "bg-success text-success"
-                : s === "overdue"
-                  ? "bg-danger text-white"
-                  : s === "pending"
-                    ? "bg-warning text-warning"
-                    : "bg-primary text-white"
-            }`}
+            className={`px-3 py-1 rounded-full text-[10px] font-bold ${s === "paid"
+              ? "bg-success text-success"
+              : s === "overdue"
+                ? "bg-danger text-white"
+                : s === "pending"
+                  ? "bg-warning text-warning"
+                  : "bg-primary text-white"
+              }`}
           >
             {row.status}
           </span>
@@ -687,15 +677,7 @@ const AccountsReceivable = () => {
           ref={dropdownRef}
           className="flex flex-wrap gap-3 items-center w-full lg:w-auto"
         >
-          <div className="relative w-full sm:w-auto">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs" />
-            <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search receivables..."
-              className="pl-9 pr-3 py-2 border border-theme bg-app rounded-lg text-sm text-main w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-            />
-          </div>
+
 
           <div className="relative">
             <input
@@ -712,11 +694,10 @@ const AccountsReceivable = () => {
               onClick={() =>
                 setActiveDropdown(activeDropdown === "status" ? null : "status")
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
-                filterStatus !== "all"
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${filterStatus !== "all"
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
+                }`}
             >
               <FaFilter className="text-xs" /> {filterStatus}
             </button>
@@ -729,11 +710,10 @@ const AccountsReceivable = () => {
                       setFilterStatus(s);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${
-                      filterStatus === s
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-main hover:bg-app"
-                    }`}
+                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${filterStatus === s
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                      }`}
                   >
                     {s}
                   </button>
@@ -748,11 +728,10 @@ const AccountsReceivable = () => {
                   activeDropdown === "voucherType" ? null : "voucherType",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
-                selectedVoucherType !== ""
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedVoucherType !== ""
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
+                }`}
             >
               Voucher Type
             </button>
@@ -764,11 +743,10 @@ const AccountsReceivable = () => {
                     setSelectedVoucherType("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    selectedVoucherType === ""
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                  }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${selectedVoucherType === ""
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-main hover:bg-app"
+                    }`}
                 >
                   All Types
                 </button>
@@ -780,11 +758,10 @@ const AccountsReceivable = () => {
                       setSelectedVoucherType(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm ${
-                      selectedVoucherType === opt
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-main hover:bg-app"
-                    }`}
+                    className={`block w-full text-left px-4 py-2 text-sm ${selectedVoucherType === opt
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                      }`}
                   >
                     {opt}
                   </button>
@@ -800,11 +777,10 @@ const AccountsReceivable = () => {
                   activeDropdown === "groupBy" ? null : "groupBy",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
-                selectedGroupBy.length > 0
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${selectedGroupBy.length > 0
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
+                }`}
             >
               Group By{" "}
               {selectedGroupBy.length > 0 && `(${selectedGroupBy.length})`}
@@ -842,11 +818,10 @@ const AccountsReceivable = () => {
                   activeDropdown === "customer" ? null : "customer",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
-                selectedCustomers.length > 0
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedCustomers.length > 0
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
+                }`}
             >
               Customer{" "}
               {selectedCustomers.length > 0 && `(${selectedCustomers.length})`}
@@ -889,11 +864,10 @@ const AccountsReceivable = () => {
                   activeDropdown === "costCenter" ? null : "costCenter",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
-                selectedCostCenter !== ""
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedCostCenter !== ""
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
+                }`}
             >
               Cost Center
             </button>
@@ -904,11 +878,10 @@ const AccountsReceivable = () => {
                     setSelectedCostCenter("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
-                    selectedCostCenter === ""
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                  }`}
+                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === ""
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-main hover:bg-app"
+                    }`}
                 >
                   All Cost Centers
                   {selectedCostCenter === "" && (
@@ -922,11 +895,10 @@ const AccountsReceivable = () => {
                       setSelectedCostCenter(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
-                      selectedCostCenter === opt
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-main hover:bg-app"
-                    }`}
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                      }`}
                   >
                     <span className="truncate pr-2">{opt}</span>
                     {selectedCostCenter === opt && (
@@ -945,11 +917,10 @@ const AccountsReceivable = () => {
                   activeDropdown === "account" ? null : "account",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
-                selectedReceivableAccount !== ""
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedReceivableAccount !== ""
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
+                }`}
             >
               Account
             </button>
@@ -960,11 +931,10 @@ const AccountsReceivable = () => {
                     setSelectedReceivableAccount("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
-                    selectedReceivableAccount === ""
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                  }`}
+                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedReceivableAccount === ""
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-main hover:bg-app"
+                    }`}
                 >
                   All Accounts
                   {selectedReceivableAccount === "" && (
@@ -978,11 +948,10 @@ const AccountsReceivable = () => {
                       setSelectedReceivableAccount(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
-                      selectedReceivableAccount === opt
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-main hover:bg-app"
-                    }`}
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedReceivableAccount === opt
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                      }`}
                   >
                     <span className="truncate pr-2">{opt}</span>
                     {selectedReceivableAccount === opt && (
@@ -1002,23 +971,23 @@ const AccountsReceivable = () => {
             filterStatus !== "all" ||
             searchTerm !== "" ||
             reportDate !== getTodayDate()) && (
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setFilterStatus("all");
-                setSelectedVoucherType("");
-                setSelectedGroupBy([]);
-                setSelectedCustomers([]);
-                setSelectedCostCenter("");
-                setSelectedReceivableAccount("");
-                setReportDate(getTodayDate());
-                setActiveDropdown(null);
-              }}
-              className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
-            >
-              Clear All
-            </button>
-          )}
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterStatus("all");
+                  setSelectedVoucherType("");
+                  setSelectedGroupBy([]);
+                  setSelectedCustomers([]);
+                  setSelectedCostCenter("");
+                  setSelectedReceivableAccount("");
+                  setReportDate(getTodayDate());
+                  setActiveDropdown(null);
+                }}
+                className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
+              >
+                Clear All
+              </button>
+            )}
         </div>
 
         <div className="flex gap-2 w-full lg:w-auto justify-end">
@@ -1037,10 +1006,15 @@ const AccountsReceivable = () => {
         columns={columns}
         data={filteredReceivables}
         loading={isLoading}
-        showToolbar={false}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
+        showToolbar={true}
+        tableId="accounts-receivable"
+        searchValue={searchTerm}
+        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        toolbarPlaceholder="Search receivables..."
+        enableColumnSelector
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
         onPageSizeChange={(size) => setPageSize(size)}
@@ -1068,13 +1042,13 @@ const AccountsReceivable = () => {
                 <div className="h-8 w-20 bg-theme rounded mx-auto mt-1 animate-pulse"></div>
               ) : (
                 <p className="text-2xl font-bold text-main">
-                  ₹
+
                   {kpis?.ageing_summary[
                     item.key as keyof typeof kpis.ageing_summary
                   ]
                     ? kpis.ageing_summary[
-                        item.key as keyof typeof kpis.ageing_summary
-                      ].toLocaleString(undefined, { maximumFractionDigits: 0 })
+                      item.key as keyof typeof kpis.ageing_summary
+                    ].toLocaleString(undefined, { maximumFractionDigits: 0 })
                     : "0"}
                 </p>
               )}

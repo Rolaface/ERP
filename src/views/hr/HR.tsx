@@ -56,6 +56,7 @@ const EmployeeReports       = lazy(() => import("./EmployeeView/EmployeeReports"
 const EmployeeReimbursement = lazy(() => import("./EmployeeView/EmployeeReimbursement"));
 const EmployeeCompliance    = lazy(() => import("./EmployeeView/EmployeeCompliance"));
 const EmployeeAppraisals    = lazy(() => import("./EmployeeView/EmployeeAppraisals"));
+const EmployeeExpenses = lazy(() => import("../ExpenseManagement/expenseManagemetTable"));
 
 // ─── Employee tab IDs — must stay in sync with EMPLOYEE_HR_TABS in Sidebar.tsx
 
@@ -68,6 +69,7 @@ const EMPLOYEE_TAB_IDS = [
   "emp-documents",
   "emp-reports",
   "emp-reimburse",
+  "emp-expenses",    
   "emp-compliance",
   "emp-appraisals",
 ] as const;
@@ -163,6 +165,7 @@ const HrPayrollModule: React.FC = () => {
         case "emp-reimburse":  return <EmployeeReimbursement />;
         case "emp-compliance": return <EmployeeCompliance />;
         case "emp-appraisals": return <EmployeeAppraisals />;
+        case "emp-expenses": return <EmployeeExpenses />;
         default:               return <EmployeeDashboard />;
       }
     }

@@ -119,6 +119,8 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNewAccount, setShowNewAccount] = useState(false);
+  const [hideZero, setHideZero] = useState(false);
+
   const [selectedParent, setSelectedParent] = useState<COAAccount | null>(null);
   const navigate = useNavigate();
 
@@ -126,7 +128,8 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
     setLoading(true);
     setError(null);
     try {
-      const res: COAResponse = await getChartOfAccounts();
+      const res: COAResponse = await getChartOfAccounts(hideZero ? { balance_filter: "non_zero" } : {}
+      );
       if (res?.message?.status_code === 200 && res.message.data) {
         const normalizedAccounts = normalizeAccounts(res.message.data.accounts);
         setCoaData({ ...res.message.data, accounts: normalizedAccounts });
@@ -140,7 +143,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [hideZero]);
 
   useEffect(() => {
     fetchCOA();
@@ -269,7 +272,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
 
         return (
           <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-             {value}
+            {value}
           </code>
         );
       },
@@ -346,15 +349,27 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
         emptyMessage="No accounts found."
         expandIconRender={coaExpandIcon}
         extraFilters={
-          <button
-            type="button"
-            onClick={handleNewAccount}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
-          >
-            <Plus size={13} />
-            Add Account
-          </button>
+          <>
+            <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={hideZero}
+                onChange={(e) => setHideZero(e.target.checked)}
+                className="accent-primary w-3.5 h-3.5"
+              />
+              Hide Zero Values
+            </label>
+            <button
+              type="button"
+              onClick={handleNewAccount}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
+            >
+              <Plus size={13} />
+              Add Account
+            </button>
+          </>
         }
+
       />
     </>
   );

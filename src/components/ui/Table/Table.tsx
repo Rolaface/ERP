@@ -137,9 +137,22 @@ const TableInner = <T extends Record<string, any>>({
   const allKeys = useMemo(() => columns.map((col) => col.key), [columns]);
   const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
 
-  const [visibleKeys, setVisibleKeys] = useState<string[]>(() =>
-    tableId ? getVisibleKeys(tableId, allKeys) : allKeys
-  );
+const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
+  if (tableId) {
+    const persisted = useColumnStore.getState().columnPrefs[tableId];
+    if (persisted && persisted.length > 0) {
+      const filtered = persisted.filter((k) => allKeys.includes(k));
+      if (allKeys.includes("actions") && !filtered.includes("actions")) {
+        filtered.push("actions");
+      }
+      return filtered;
+    }
+  }
+  
+  const nonActionKeys = allKeys.filter((k) => k !== "actions");
+  const first5 = nonActionKeys.slice(0, 5);
+  return allKeys.includes("actions") ? [...first5, "actions"] : allKeys.slice(0, 6);
+});
 
 
   const handleApplyColumns = (keys: string[]) => {
