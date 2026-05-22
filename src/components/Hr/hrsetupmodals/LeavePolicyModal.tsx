@@ -157,7 +157,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
         }`}
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving…" : form.docstatus === 1 ? "Submit Policy" : isEdit ? "Update Policy" : "Save as Draft"}
+        {saving ? "Saving…" : form.docstatus === 1 ? "Submit Policy" : isEdit ? "Update Policy" : "Save Plicy"}
       </button>
     </div>
   ): null;
