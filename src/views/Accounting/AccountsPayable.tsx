@@ -139,6 +139,7 @@ const AccountsPayable = () => {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+  const [currency, setCurrency] = useState("-");
 
   const [paymentDrawerOpen, setPaymentDrawerOpen] = useState(false);
   const [paymentDrawerData, setPaymentDrawerData] =
@@ -224,7 +225,7 @@ const AccountsPayable = () => {
         const payload = response.message.data;
         const backendKpis = payload.kpis;
         const backendData = payload.rows || payload.data || [];
-
+        setCurrency(backendData?.[0]?.currency ?? "-");
         setKpis(backendKpis);
 
         const mappedPayables: Payable[] = backendData.map(
@@ -272,7 +273,7 @@ const AccountsPayable = () => {
                 row.supplier ||
                 row.party ||
                 row.supplier_name ||
-                (isSummary ? "" : "Unknown Vendor"),
+                (isSummary ? "" : "-"),
               voucherType: row.voucher_type || "-",
               invoicedAmount: row.amounts?.invoiced ?? row.invoiced ?? 0,
               paidAmount: row.amounts?.paid ?? row.paid ?? 0,
@@ -423,7 +424,7 @@ const AccountsPayable = () => {
         "Report Date": row.report_date || "",
         "Due Date": row.due_date || "",
         "Age (Days)": row.age || 0,
-        Currency: row.currency || "INR",
+        Currency: row.currency || "-",
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -476,13 +477,13 @@ const AccountsPayable = () => {
   const stats = [
     {
       label: "Total Payables (Outstanding)",
-      value: `₹${(kpis?.total_outstanding || 0).toLocaleString(undefined, {
+      value: `${currency}${(kpis?.total_outstanding || 0).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
     {
       label: "Overdue Amount",
-      value: `₹${(kpis?.overdue_amount || 0).toLocaleString(undefined, {
+      value: `${currency}${(kpis?.overdue_amount || 0).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
@@ -492,7 +493,7 @@ const AccountsPayable = () => {
     },
     {
       label: "Total Invoiced",
-      value: `₹${(kpis?.total_invoiced || 0).toLocaleString(undefined, {
+      value: `${currency} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
@@ -551,25 +552,24 @@ const AccountsPayable = () => {
     scheduleData.week3,
     scheduleData.week4Plus,
   ];
-  
-const formatDate = (date: string | Date) => {
-  if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  // Date object — use local methods
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
   const columns: Column<Payable>[] = [
     {
       key: "id",
       header: "Voucher No",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <span className="font-mono text-primary text-xs font-semibold">
@@ -580,7 +580,6 @@ const formatDate = (date: string | Date) => {
     {
       key: "billNo",
       header: "Bill No",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <span className="text-xs text-muted">{row.billNo}</span>
@@ -589,7 +588,6 @@ const formatDate = (date: string | Date) => {
     {
       key: "vendor",
       header: "Supplier",
-      sortable: true,
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
           {row.vendor}
@@ -599,7 +597,6 @@ const formatDate = (date: string | Date) => {
     {
       key: "voucherType",
       header: "Type",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <span className="text-xs">{row.voucherType}</span>
@@ -608,10 +605,9 @@ const formatDate = (date: string | Date) => {
     {
       key: "invoicedAmount",
       header: "Invoiced",
-      sortable: true,
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          ₹
+
           {row.invoicedAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
@@ -621,11 +617,10 @@ const formatDate = (date: string | Date) => {
     {
       key: "paidAmount",
       header: "Paid",
-      sortable: true,
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          ₹
-          {row.paidAmount.toLocaleString(undefined, {
+
+         {currency} {row.paidAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -634,13 +629,12 @@ const formatDate = (date: string | Date) => {
     {
       key: "outstandingAmount",
       header: "Outstanding",
-      sortable: true,
       render: (row) => (
         <span
           className={`text-main ${row.isSummary ? "font-bold" : "font-semibold"}`}
         >
-          ₹
-          {row.outstandingAmount.toLocaleString(undefined, {
+
+         {currency} {row.outstandingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -649,25 +643,22 @@ const formatDate = (date: string | Date) => {
     {
       key: "due",
       header: "Due/Posted Date",
-      sortable: true,
       render: (row) => (row.isSummary ? null : <span>{formatDate(row.due)}</span>),
     },
     {
       key: "days",
       header: "Days Left",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <div className="flex items-center gap-1">
             <FaClock className="text-muted text-xs" />
             <span
-              className={`text-xs font-medium ${
-                row.days < 0
+              className={`text-xs font-medium ${row.days < 0
                   ? "text-danger"
                   : row.days <= 7
                     ? "text-warning"
                     : "text-muted"
-              }`}
+                }`}
             >
               {row.days < 0
                 ? `${Math.abs(row.days)} days overdue`
@@ -679,21 +670,19 @@ const formatDate = (date: string | Date) => {
     {
       key: "status",
       header: "Status",
-      sortable: true,
       render: (row) => {
         if (row.isSummary) return null;
         const s = row.status.toLowerCase();
         return (
           <span
-            className={`px-3 py-1 rounded-full text-[10px] font-bold ${
-              s === "paid"
+            className={`px-3 py-1 rounded-full text-[10px] font-bold ${s === "paid"
                 ? "bg-success text-success"
                 : s === "overdue"
                   ? "bg-danger text-white"
                   : s === "pending"
                     ? "bg-warning text-warning"
                     : "bg-primary text-white"
-            }`}
+              }`}
           >
             {row.status}
           </span>
@@ -766,11 +755,10 @@ const formatDate = (date: string | Date) => {
               onClick={() =>
                 setActiveDropdown(activeDropdown === "status" ? null : "status")
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
-                filterStatus !== "all"
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${filterStatus !== "all"
                   ? "border-primary bg-primary/10 text-primary font-medium"
                   : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+                }`}
             >
               <FaFilter className="text-xs" /> {filterStatus}
             </button>
@@ -783,11 +771,10 @@ const formatDate = (date: string | Date) => {
                       setFilterStatus(s);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${
-                      filterStatus === s
+                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${filterStatus === s
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-main hover:bg-app"
-                    }`}
+                      }`}
                   >
                     {s}
                   </button>
@@ -803,11 +790,10 @@ const formatDate = (date: string | Date) => {
                   activeDropdown === "voucherType" ? null : "voucherType",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
-                selectedVoucherType !== ""
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedVoucherType !== ""
                   ? "border-primary bg-primary/10 text-primary font-medium"
                   : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+                }`}
             >
               Voucher Type
             </button>
@@ -819,11 +805,10 @@ const formatDate = (date: string | Date) => {
                     setSelectedVoucherType("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
-                    selectedVoucherType === ""
+                  className={`block w-full text-left px-4 py-2 text-sm transition-colors ${selectedVoucherType === ""
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-main hover:bg-app"
-                  }`}
+                    }`}
                 >
                   All Types
                 </button>
@@ -835,11 +820,10 @@ const formatDate = (date: string | Date) => {
                       setSelectedVoucherType(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
-                      selectedVoucherType === opt
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${selectedVoucherType === opt
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-main hover:bg-app"
-                    }`}
+                      }`}
                   >
                     {opt}
                   </button>
@@ -855,11 +839,10 @@ const formatDate = (date: string | Date) => {
                   activeDropdown === "groupBy" ? null : "groupBy",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
-                selectedGroupBy.length > 0
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${selectedGroupBy.length > 0
                   ? "border-primary bg-primary/10 text-primary font-medium"
                   : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+                }`}
             >
               Group By{" "}
               {selectedGroupBy.length > 0 && `(${selectedGroupBy.length})`}
@@ -897,11 +880,10 @@ const formatDate = (date: string | Date) => {
                   activeDropdown === "supplier" ? null : "supplier",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
-                selectedSuppliers.length > 0
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedSuppliers.length > 0
                   ? "border-primary bg-primary/10 text-primary font-medium"
                   : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+                }`}
             >
               Supplier{" "}
               {selectedSuppliers.length > 0 && `(${selectedSuppliers.length})`}
@@ -944,11 +926,10 @@ const formatDate = (date: string | Date) => {
                   activeDropdown === "costCenter" ? null : "costCenter",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
-                selectedCostCenter !== ""
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedCostCenter !== ""
                   ? "border-primary bg-primary/10 text-primary font-medium"
                   : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+                }`}
             >
               Cost Center
             </button>
@@ -959,11 +940,10 @@ const formatDate = (date: string | Date) => {
                     setSelectedCostCenter("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
-                    selectedCostCenter === ""
+                  className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === ""
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-main hover:bg-app"
-                  }`}
+                    }`}
                 >
                   All Cost Centers
                   {selectedCostCenter === "" && (
@@ -977,11 +957,10 @@ const formatDate = (date: string | Date) => {
                       setSelectedCostCenter(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
-                      selectedCostCenter === opt
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-main hover:bg-app"
-                    }`}
+                      }`}
                   >
                     <span className="truncate pr-2">{opt}</span>
                     {selectedCostCenter === opt && (
@@ -1000,11 +979,10 @@ const formatDate = (date: string | Date) => {
                   activeDropdown === "account" ? null : "account",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
-                selectedPayableAccount !== ""
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedPayableAccount !== ""
                   ? "border-primary bg-primary/10 text-primary font-medium"
                   : "border-theme bg-app text-main hover:bg-theme/50"
-              }`}
+                }`}
             >
               Account
             </button>
@@ -1015,11 +993,10 @@ const formatDate = (date: string | Date) => {
                     setSelectedPayableAccount("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
-                    selectedPayableAccount === ""
+                  className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedPayableAccount === ""
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-main hover:bg-app"
-                  }`}
+                    }`}
                 >
                   All Accounts
                   {selectedPayableAccount === "" && (
@@ -1033,11 +1010,10 @@ const formatDate = (date: string | Date) => {
                       setSelectedPayableAccount(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
-                      selectedPayableAccount === opt
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedPayableAccount === opt
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-main hover:bg-app"
-                    }`}
+                      }`}
                   >
                     <span className="truncate pr-2">{opt}</span>
                     {selectedPayableAccount === opt && (
@@ -1057,23 +1033,23 @@ const formatDate = (date: string | Date) => {
             filterStatus !== "all" ||
             searchTerm !== "" ||
             reportDate !== getTodayDate()) && (
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setFilterStatus("all");
-                setSelectedGroupBy([]);
-                setSelectedSuppliers([]);
-                setSelectedCostCenter("");
-                setSelectedPayableAccount("");
-                setReportDate(getTodayDate());
-                setSelectedVoucherType("");
-                setActiveDropdown(null);
-              }}
-              className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
-            >
-              Clear All
-            </button>
-          )}
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterStatus("all");
+                  setSelectedGroupBy([]);
+                  setSelectedSuppliers([]);
+                  setSelectedCostCenter("");
+                  setSelectedPayableAccount("");
+                  setReportDate(getTodayDate());
+                  setSelectedVoucherType("");
+                  setActiveDropdown(null);
+                }}
+                className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
+              >
+                Clear All
+              </button>
+            )}
         </div>
 
         <div className="flex gap-2 w-full lg:w-auto justify-end">
@@ -1124,7 +1100,7 @@ const formatDate = (date: string | Date) => {
                 <div className="h-8 w-24 bg-theme rounded mx-auto mt-1 animate-pulse"></div>
               ) : (
                 <p className="text-2xl font-bold text-main">
-                  ₹
+
                   {schedule.amount.toLocaleString(undefined, {
                     maximumFractionDigits: 0,
                   })}

@@ -58,27 +58,30 @@ export default function StockItemSelect({
         const base = {
           itemCode: item.item_code,
           itemName: item.item_name,
+          price_list: item.price_list,
           description: item.description,
           packingSize: item.packingSize,
           packingUnit: item.packingUnit,
           taxInfo: item.taxInfo || [],
           isServiceItem: item.is_service_item ,
+          
         };
 
         if (item.batches?.length) {
-          item.batches.forEach((b: any) => {
-            rows.push({
-              ...base,
-              batchNo: b.batch_no,
-              expiryDate: b.expiry_date,
-              mfgDate: b.manufacturing_date,
-              warehouse: b.warehouse,
-              qty: b.bal_qty,
-              valuation_rate: b.valuation_rate,
-              sellingPrice: b.sell_value,
-              purchasePrice: b.buy_value,
-            });
-          });
+         item.batches.forEach((b: any) => {
+  rows.push({
+    ...base,                        
+    batchNo: b.batch_no,
+    expiryDate: b.expiry_date,
+    mfgDate: b.manufacturing_date,
+    warehouse: b.warehouse,
+    qty: b.bal_qty,
+    valuation_rate: b.valuation_rate,
+    sellingPrice: b.sell_value,
+    purchasePrice: b.buy_value,
+    // price_list inherited from ...base 
+  });
+});
         } else {
           rows.push({
             ...base,
@@ -106,26 +109,27 @@ export default function StockItemSelect({
 
     const totalTaxRate = Number(selectedTax.totalTaxRate || 0);
 
-    onChange({
-      itemCode: row.itemCode,
-      itemName: row.itemName,
-      description: row.description,
-      batchNo: row.batchNo,
-      expiryDate: row.expiryDate,
-      mfgDate: row.mfgDate,
-      qty: row.qty,
-      packingSize: row.packingSize,
-      packingUnit: row.packingUnit,
-      valuation_rate: row.valuation_rate,
-      sellingPrice: row.sellingPrice,
-      purchasePrice: row.purchasePrice,
-      warehouse: row.warehouse,
-
-      vatRate: totalTaxRate,
-      vatCode: selectedTax.taxName || "",
-      taxInfo: row.taxInfo,
-      isServiceItem: row.isServiceItem,
-    });
+  onChange({
+  itemCode: row.itemCode,
+  itemName: row.itemName,
+  description: row.description,
+  batchNo: row.batchNo,
+  expiryDate: row.expiryDate,
+  mfgDate: row.mfgDate,
+  qty: row.qty,
+  price_list: row.price_list,
+  price: row.price_list ?? row.sellingPrice ?? row.purchasePrice ?? 0, 
+  packingSize: row.packingSize,
+  packingUnit: row.packingUnit,
+  valuation_rate: row.valuation_rate,
+  sellingPrice: row.sellingPrice,
+  purchasePrice: row.purchasePrice,
+  warehouse: row.warehouse,
+  vatRate: totalTaxRate,
+  vatCode: selectedTax.taxName || "",
+  taxInfo: row.taxInfo,
+  isServiceItem: row.isServiceItem,
+});
   };
 
   // Close dropdown on outside click

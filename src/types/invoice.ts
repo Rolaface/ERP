@@ -105,6 +105,10 @@ export interface InvoiceItem {
 qty?: number;
 availableQty?: number;
 warehouse?: string;
+ isServiceItem?: boolean;
+  originalQty?: number;
+  _skipCap?: boolean;
+
 }
 
 export interface PaymentInformation {
