@@ -101,10 +101,12 @@
 export async function getExpenseClaims(
   search?: string,
   page = 1,
-  pageSize = 10
+  pageSize = 10,
+  employeeId?: string,                                    
 ): Promise<{ data: ExpenseClaimRecord[]; pagination: { total_pages: number; total: number } }> {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
+  if (employeeId)  params.append("employee",  employeeId); 
   params.append("page", String(page));
   params.append("page_size", String(pageSize));
   const resp: AxiosResponse = await api.get(`${ExpenseClaimAPI.getExpenseClaims}?${params.toString()}`);

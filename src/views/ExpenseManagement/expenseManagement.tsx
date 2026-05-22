@@ -14,14 +14,14 @@ const ALL_EXPENSE_TABS = [
     id: "expenseType",
     label: "Expense Type",
     icon: <CreditCard size={16} strokeWidth={1.75} />,
-    module: "Expense Type",
+    module: "Expense Claim Type",
     action: "read" as const,
   },
   {
     id: "expenseHistory",
     label: "Expense Claim",
     icon: <CreditCard size={16} strokeWidth={1.75} />,
-    module: "Expense History",
+    module: "Expense Claim",
     action: "read" as const,
   },
   
