@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Receipt, Upload, X, FileText } from "lucide-react";
+import { Receipt, Upload, X, FileText,CreditCard} from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
@@ -19,8 +19,6 @@ const getCurrencyFromStorage = (): string => {
     return "";
   }
 };
-
-
 export interface ExpenseFormData {
   claim_title: string;
   id?: string; 
@@ -215,9 +213,9 @@ const handleSubmit = async () => {
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode ? "Edit Expense Claim" : "Expense Claim Form"}
+      title={isEditMode ? "Edit Expense Claim" : "Expense Claim"}
       subtitle={isEditMode ? "Update expense claim" : "Submit a new expense claim"}
-      icon={Receipt}
+      icon={CreditCard}
       footer={footer}
       customWidth="46vw"
       height="auto"

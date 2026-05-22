@@ -102,6 +102,7 @@ export const REFRESH_KEYS = {
 EMPLOYEE_GRADE_LIST: "employee_grade_list",
 DEPARTMENT_LIST: "department_list",
 DESIGNATION_LIST: "designation_list",
+EMAIL_TEMPLATE_LIST: "email_template"
 
 } as const;
 

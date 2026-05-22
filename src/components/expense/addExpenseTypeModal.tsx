@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { Tag } from "lucide-react";
+import { Tag,CreditCard} from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
@@ -148,7 +148,7 @@ const handleSubmit = async () => {
       onClose={onClose}
       title={isEditMode ? "Edit Expense Type" : "Add Expense Type"}
       subtitle={isEditMode ? "Update expense type" : "Create a new expense type"}
-      icon={Tag}
+      icon={CreditCard}
       footer={footer}
       customWidth="38vw"
       height="auto"

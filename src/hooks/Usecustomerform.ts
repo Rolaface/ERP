@@ -53,8 +53,8 @@ export interface CustomerFormState {
   type: "" | "Company" | "Individual";
   tpin: string;
   currency: string;
-  onboardingBalance?: number;
   displayName: string;
+  registration_no?: string;
   customerGroup: string;
   accountNumber: string;
   status: "Active" | "Inactive";
@@ -147,8 +147,8 @@ export const emptyForm: CustomerFormState = {
   type: "",
   tpin: "",
   currency: "",
-  onboardingBalance: undefined,
   displayName: "",
+  registration_no: "",
   customerGroup: "",
   accountNumber: "",
   status: "Active",
@@ -194,6 +194,7 @@ export function mapApiResponseToFormState(
         department: c.department ?? "",
         taxCategory: c.taxCategory ?? "",
         email: c.email ?? "",
+        registration_no: c.registration_no ?? "",
         mobileCode: mob.code,
         mobileNumber: mob.number,
         mobile: c.mobile ?? `${mob.code}${mob.number}`,
@@ -281,8 +282,8 @@ export function mapApiResponseToFormState(
     type: (data.type as CustomerFormState["type"]) ?? "",
     tpin: data.tpin ?? "",
     currency: data.currency ?? "",
-    onboardingBalance: data.onboardingBalance ?? 0,
     displayName: data.displayName ?? data.name ?? "",
+    registration_no: data.registration_no ?? "",
     customerGroup: data.customerGroup ?? "",
     accountNumber: data.accountNumber ?? "",
     status: (data.status as CustomerFormState["status"]) ?? "Active",
@@ -467,7 +468,7 @@ export function useCustomerForm({
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
-      [name]: name === "onboardingBalance" ? Number(value) : value,
+      [name]: name === "" ? Number(value) : value,
     }));
     if (errors[name as keyof CustomerFormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -811,11 +812,11 @@ export function useCustomerForm({
         type: base.type,
         tpin: base.tpin,
         currency: base.currency,
-        onboardingBalance: base.onboardingBalance,
         displayName: base.displayName,
         customerGroup: base.customerGroup,
         customerTaxCategory: base.customerTaxCategory,
         contacts: base.contacts,
+        registration_no: base.registration_no ?? "",
       }));
       return;
     }

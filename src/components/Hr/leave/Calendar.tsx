@@ -61,7 +61,7 @@ const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
         selected={selectedRange}
         onSelect={onRangeSelect}
         modifiers={modifiers}
-        disabled={{ before: today }}
+        // disabled={{ before: today }}
         modifiersClassNames={{
           approved: "bg-green-500/10 text-green-700",
           pending: "bg-yellow-500/10 text-yellow-700",

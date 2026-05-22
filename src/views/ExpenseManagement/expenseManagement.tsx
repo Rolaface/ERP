@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ReceiptText, Wallet } from "lucide-react";
+import { ReceiptText, CreditCard} from "lucide-react";
 import { usePermission } from "../../hooks/permission/usePermission";
 import {
   AppPage,
@@ -11,23 +11,24 @@ import ExpenseHistory from "./expenseManagemetTable";
 import ExpenseTypeTable from "./expenseTypeTable";
 const ALL_EXPENSE_TABS = [
   {
-    id: "expenseHistory",
-    label: "Expense History",
-    icon: <ReceiptText size={16} strokeWidth={1.75} />,
-    module: "Expense History",
-    action: "read" as const,
-  },
-  {
     id: "expenseType",
     label: "Expense Type",
-    icon: <ReceiptText size={16} strokeWidth={1.75} />,
+    icon: <CreditCard size={16} strokeWidth={1.75} />,
     module: "Expense Type",
     action: "read" as const,
   },
+  {
+    id: "expenseHistory",
+    label: "Expense Claim",
+    icon: <CreditCard size={16} strokeWidth={1.75} />,
+    module: "Expense History",
+    action: "read" as const,
+  },
+  
 ];
 
 const ExpenseManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("expenseHistory");
+  const [activeTab, setActiveTab] = useState("expenseType");
 
   const { can } = usePermission();
 
@@ -51,8 +52,8 @@ const ExpenseManagement: React.FC = () => {
       <AppPageHeader
         title="Expense Management"
         description="Track and manage your expense records"
-        icon={<Wallet />}
-      />
+        icon={<CreditCard />}
+      />  
 
       <AppTabs
         tabs={expenseTabs}
@@ -61,8 +62,8 @@ const ExpenseManagement: React.FC = () => {
       />
 
       <AppPageBody viewportLocked={isDashboardTab}>
+        {resolvedTab === "expenseType" && <ExpenseTypeTable />}
         {resolvedTab === "expenseHistory" && <ExpenseHistory />}
-         {resolvedTab === "expenseType" && <ExpenseTypeTable />}
       </AppPageBody>
     </AppPage>
   );

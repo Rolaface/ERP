@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { showApiError, showSuccess } from "../../utils/alert";
 import { getBankAccounts } from "../../api/BankAccountApi";
 import { createNewBankAccount } from "../../api/BankAccountApi";
-
+import type { AccountType } from "../../types/BankAccount/bank";
 
 const today = () => new Date().toISOString().split("T")[0];
 
-type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Currency";
 
 type Option = {
   label: string;
@@ -15,26 +14,29 @@ type Option = {
 };
 
 
+const getInitialForm = () => ({
+  dateAdded: today(),
+  accountFor: "" as AccountType | "",
+  name: "",
+  bank: "",
+  partyId: "",
+  displayName: "",
+  swiftCode: "",
+  currency: "",
+  accountNumber: "",
+  accountHolder: "",
+  sortCode: "",
+  address: "",
+  iban: "",
+  isDefault: false,
+  isDisabled: false,
+  reportingAccount: "",
+  accountHolderEdited: false,
+});
+
+
 export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
-  const [form, setForm] = useState({
-    dateAdded: today(),
-    accountFor: "" as AccountType | "",
-    name: "",
-    bank: "",
-    partyId: "",
-    displayName: "",
-    swiftCode: "",
-    currency: "",
-    accountNumber: "",
-    accountHolder: "",
-    sortCode: "",
-    address: "",
-    iban: "",
-    isDefault: false,
-    isDisabled: false,
-    reportingAccount: "",
-    accountHolderEdited: false,
-  });
+  const [form, setForm] = useState(getInitialForm());
 
   const [banks, setBanks] = useState<Option[]>([]);
   const [entities, setEntities] = useState<Option[]>([]);
@@ -112,7 +114,13 @@ export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
     })();
   }, [form.accountFor]);
 
-
+  const handleAccountForChange = (accountFor: AccountType) => {
+    setForm({
+      ...getInitialForm(),
+      accountFor,
+      dateAdded: form.dateAdded,
+    });
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -132,25 +140,7 @@ export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
   };
 
   const handleReset = () => {
-    setForm({
-      dateAdded: today(),
-      accountFor: "" as AccountType | "",
-      name: "",
-      bank: "",
-      partyId: "",
-      swiftCode: "",
-      displayName: "",
-      currency: "",
-      accountNumber: "",
-      accountHolder: "",
-      sortCode: "",
-      address: "",
-      iban: "",
-      isDefault: false,
-      isDisabled: false,
-      reportingAccount: "",
-      accountHolderEdited: false,
-    });
+    setForm(getInitialForm());
   };
 
 
@@ -229,5 +219,6 @@ export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
     entities,
     reportingAccounts,
     isCompany,
+    handleAccountForChange,
   };
 };

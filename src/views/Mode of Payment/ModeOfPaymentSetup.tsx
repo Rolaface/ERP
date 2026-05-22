@@ -88,26 +88,31 @@ const handleEdit = (name: string, e?: React.MouseEvent) => {
           <span className="text-red-500 font-semibold">Disabled</span>
         ),
     },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (row: any) => (
-        <ActionGroup>
-          {can(MODE_OF_PAYMENT_MODULE, "write") && (
-            <ActionMenu
-              customActions={[
-                {
-                  label: row.enabled ? "Disable" : "Enable",
-                  onClick: () => handleToggle(row),
-                  disabled: actionLoadingId === String(row.id),
-                },
-              ]}
-            />
-          )}
-        </ActionGroup>
-      ),
-    },
+   {
+  key: "actions",
+  header: "Actions",
+  align: "center",
+  render: (row: any) => (
+    <div className="flex items-center justify-center gap-2">
+      
+<ActionButton
+  type="edit"
+  onClick={(e) => handleEdit(row.id, e)}  
+  iconOnly
+  title="Edit Mode of Payment"
+/>
+      <ActionMenu
+        customActions={[
+          {
+            label: row.enabled ? "Disable" : "Enable",
+            onClick: () => handleToggle(row),
+            disabled: actionLoadingId === String(row.id),
+          },
+        ]}
+      />
+    </div>
+  ),
+},
   ];
 
   return (
