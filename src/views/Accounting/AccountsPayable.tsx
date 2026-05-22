@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import {
-  FaPlus,
-  FaSearch,
   FaFilter,
   FaDownload,
   FaEye,
@@ -620,7 +618,7 @@ const AccountsPayable = () => {
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
 
-         {currency} {row.paidAmount.toLocaleString(undefined, {
+          {currency} {row.paidAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -634,7 +632,7 @@ const AccountsPayable = () => {
           className={`text-main ${row.isSummary ? "font-bold" : "font-semibold"}`}
         >
 
-         {currency} {row.outstandingAmount.toLocaleString(undefined, {
+          {currency} {row.outstandingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -654,10 +652,10 @@ const AccountsPayable = () => {
             <FaClock className="text-muted text-xs" />
             <span
               className={`text-xs font-medium ${row.days < 0
-                  ? "text-danger"
-                  : row.days <= 7
-                    ? "text-warning"
-                    : "text-muted"
+                ? "text-danger"
+                : row.days <= 7
+                  ? "text-warning"
+                  : "text-muted"
                 }`}
             >
               {row.days < 0
@@ -676,12 +674,12 @@ const AccountsPayable = () => {
         return (
           <span
             className={`px-3 py-1 rounded-full text-[10px] font-bold ${s === "paid"
-                ? "bg-success text-success"
-                : s === "overdue"
-                  ? "bg-danger text-white"
-                  : s === "pending"
-                    ? "bg-warning text-warning"
-                    : "bg-primary text-white"
+              ? "bg-success text-success"
+              : s === "overdue"
+                ? "bg-danger text-white"
+                : s === "pending"
+                  ? "bg-warning text-warning"
+                  : "bg-primary text-white"
               }`}
           >
             {row.status}
@@ -730,15 +728,6 @@ const AccountsPayable = () => {
           ref={dropdownRef}
           className="flex flex-wrap gap-3 items-center w-full lg:w-auto"
         >
-          <div className="relative w-full sm:w-auto">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs" />
-            <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search payables..."
-              className="pl-9 pr-3 py-2 border border-theme bg-app rounded-lg text-sm text-main w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-            />
-          </div>
 
           <div className="relative">
             <input
@@ -756,8 +745,8 @@ const AccountsPayable = () => {
                 setActiveDropdown(activeDropdown === "status" ? null : "status")
               }
               className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${filterStatus !== "all"
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
                 }`}
             >
               <FaFilter className="text-xs" /> {filterStatus}
@@ -772,8 +761,8 @@ const AccountsPayable = () => {
                       setActiveDropdown(null);
                     }}
                     className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${filterStatus === s
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-main hover:bg-app"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
                       }`}
                   >
                     {s}
@@ -791,8 +780,8 @@ const AccountsPayable = () => {
                 )
               }
               className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedVoucherType !== ""
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
                 }`}
             >
               Voucher Type
@@ -806,8 +795,8 @@ const AccountsPayable = () => {
                     setActiveDropdown(null);
                   }}
                   className={`block w-full text-left px-4 py-2 text-sm transition-colors ${selectedVoucherType === ""
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-main hover:bg-app"
                     }`}
                 >
                   All Types
@@ -821,8 +810,8 @@ const AccountsPayable = () => {
                       setActiveDropdown(null);
                     }}
                     className={`block w-full text-left px-4 py-2 text-sm transition-colors ${selectedVoucherType === opt
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-main hover:bg-app"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
                       }`}
                   >
                     {opt}
@@ -840,8 +829,8 @@ const AccountsPayable = () => {
                 )
               }
               className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${selectedGroupBy.length > 0
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
                 }`}
             >
               Group By{" "}
@@ -881,8 +870,8 @@ const AccountsPayable = () => {
                 )
               }
               className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedSuppliers.length > 0
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
                 }`}
             >
               Supplier{" "}
@@ -927,8 +916,8 @@ const AccountsPayable = () => {
                 )
               }
               className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedCostCenter !== ""
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
                 }`}
             >
               Cost Center
@@ -941,8 +930,8 @@ const AccountsPayable = () => {
                     setActiveDropdown(null);
                   }}
                   className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === ""
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-main hover:bg-app"
                     }`}
                 >
                   All Cost Centers
@@ -958,8 +947,8 @@ const AccountsPayable = () => {
                       setActiveDropdown(null);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-main hover:bg-app"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
                       }`}
                   >
                     <span className="truncate pr-2">{opt}</span>
@@ -980,8 +969,8 @@ const AccountsPayable = () => {
                 )
               }
               className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedPayableAccount !== ""
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-theme bg-app text-main hover:bg-theme/50"
+                ? "border-primary bg-primary/10 text-primary font-medium"
+                : "border-theme bg-app text-main hover:bg-theme/50"
                 }`}
             >
               Account
@@ -994,8 +983,8 @@ const AccountsPayable = () => {
                     setActiveDropdown(null);
                   }}
                   className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedPayableAccount === ""
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-main hover:bg-app"
                     }`}
                 >
                   All Accounts
@@ -1011,8 +1000,8 @@ const AccountsPayable = () => {
                       setActiveDropdown(null);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedPayableAccount === opt
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-main hover:bg-app"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
                       }`}
                   >
                     <span className="truncate pr-2">{opt}</span>
@@ -1068,11 +1057,16 @@ const AccountsPayable = () => {
         columns={columns}
         data={filteredPayables}
         loading={isLoading}
-        showToolbar={false}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
+        showToolbar={true}
+        tableId="accounts-payable"
+        searchValue={searchTerm}
+        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        toolbarPlaceholder="Search payables..."
+        enableColumnSelector
         pageSizeOptions={[10, 25, 50, 100]}
         onPageSizeChange={(size) => setPageSize(size)}
         onPageChange={setPage}

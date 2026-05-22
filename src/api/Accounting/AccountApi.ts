@@ -16,7 +16,6 @@ export interface CreateCOAPayload {
   account_type?: string;
   parent?: string;
   root_type?: string;
-  // hardcoded fields sent from frontend
   doctype: "Account";
   is_root: "false";
 }
@@ -28,13 +27,16 @@ export async function createChartOfAccount(
   return resp.data;
 }
 
-/**
- * Get Chart of Accounts
- */
+export interface getChartOfAccountsPayload{
+  balance_filter? : string;
+}
 
-export async function getChartOfAccounts(): Promise<any> {
-  const resp: AxiosResponse = await api.get(AccountingAPI.getCOA);
-
+export async function getChartOfAccounts(
+  payload:getChartOfAccountsPayload
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(AccountingAPI.getCOA,{
+    params:payload
+  });
   return resp.data;
 }
 
