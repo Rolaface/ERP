@@ -53,7 +53,6 @@ const EmployeeLeave         = lazy<ComponentType<LeaveProps>>(
 const EmployeeTimesheet     = lazy(() => import("./EmployeeView/EmployeeTimesheet"));
 const EmployeeDocuments     = lazy(() => import("./EmployeeView/EmployeeDocuments"));
 const EmployeeReports       = lazy(() => import("./EmployeeView/EmployeeReports"));
-const EmployeeReimbursement = lazy(() => import("./EmployeeView/EmployeeReimbursement"));
 const EmployeeCompliance    = lazy(() => import("./EmployeeView/EmployeeCompliance"));
 const EmployeeAppraisals    = lazy(() => import("./EmployeeView/EmployeeAppraisals"));
 const EmployeeExpenses = lazy(() => import("../ExpenseManagement/expenseManagemetTable"));
@@ -162,7 +161,6 @@ const HrPayrollModule: React.FC = () => {
         case "emp-timesheet":  return <EmployeeTimesheet />;
         case "emp-documents":  return <EmployeeDocuments />;
         case "emp-reports":    return <EmployeeReports />;
-        case "emp-reimburse":  return <EmployeeReimbursement />;
         case "emp-compliance": return <EmployeeCompliance />;
         case "emp-appraisals": return <EmployeeAppraisals />;
         case "emp-expenses": return <EmployeeExpenses />;

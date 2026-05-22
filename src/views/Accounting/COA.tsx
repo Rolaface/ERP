@@ -359,14 +359,14 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
               />
               Hide Zero Values
             </label>
-            <button
+            {/* <button
               type="button"
               onClick={handleNewAccount}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
             >
               <Plus size={13} />
               Add Account
-            </button>
+            </button> */}
           </>
         }
 
