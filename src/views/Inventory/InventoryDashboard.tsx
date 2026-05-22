@@ -24,6 +24,7 @@ import {
   getInventoryTopItems 
 } from "../../api/inventoryDashboardApi";
 import { ChartSkeleton } from "../../components/ChartSkeleton";
+import { useCompanyStore } from "../../store/companyStore";
 
 const InventoryDashboard: React.FC = () => {
   const [chartsLoading, setChartsLoading] = useState(true);
@@ -50,31 +51,28 @@ const InventoryDashboard: React.FC = () => {
     [palette],
   );
 
- const currencyINR = useMemo(
-  () =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 2,
-    }),
-  [],
-);
- 
- const currencyINRCompact = useMemo(
-   () =>
-     new Intl.NumberFormat("en-IN", {
-       style: "currency",
-       currency: "INR",
-       notation: "compact",
-       compactDisplay: "short",
-       maximumFractionDigits: 1,
-     }),
-   []
- );
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || 'INR';
 
-  // ----------------------------------------------------
-  // API FETCH
-  // ----------------------------------------------------
+  const currencyINR = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: baseCurrency,
+      maximumFractionDigits: 2,
+    });
+  }, [baseCurrency]);
+
+  const currencyINRCompact = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: baseCurrency,
+      notation: "compact",
+      compactDisplay: "short",
+      maximumFractionDigits: 1,
+    });
+  }, [baseCurrency]);
+
   useEffect(() => {
     let mounted = true;
     const run = async () => {

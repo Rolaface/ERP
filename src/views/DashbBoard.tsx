@@ -15,6 +15,7 @@ import {
 } from '../api/dashboardApi';
 import BarChart from '../components/charts/BarChart';
 import { useHRView } from '../hooks/permission/useHRView';
+import { useCompanyStore } from '../store/companyStore';
 
 const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
 
@@ -42,10 +43,19 @@ const Dashboard = () => {
   const [salesData, setSalesData] = useState<SalesChartResponse['data'] | null>(null);
   const [purchaseData, setPurchaseData] = useState<PurchaseChartResponse['data'] | null>(null);
 
-  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
-  }), []);
+// Subscribe to baseCurrency from Zustand
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
 
+  const currencyFormatter = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    
+    return new Intl.NumberFormat(locale, {
+      style: 'currency', 
+      currency: baseCurrency, 
+      maximumFractionDigits: 2, 
+      notation: "compact"
+    });
+  }, [baseCurrency]);  
 
   useEffect(() => {
     let mounted = true;
@@ -326,7 +336,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-4 flex-1">
-              <NoteItem
+              {/* <NoteItem
                 label="Top Customer"
                 title={notesData?.topCustomer?.name || 'N/A'}
                 value={currencyFormatter.format(notesData?.topCustomer?.value || 0)}
@@ -337,16 +347,28 @@ const Dashboard = () => {
                 title={notesData?.topSupplier?.name || 'N/A'}
                 value={currencyFormatter.format(notesData?.topSupplier?.value || 0)}
                 icon={<FileText size={16} className="text-amber-500" />}
+              /> */}
+ <NoteItem
+                label="Top Customers"
+                icon={<Users size={16} className="text-blue-500" />}
+                list={notesData?.topCustomers || []} 
+                formatter={currencyFormatter}
               />
               <NoteItem
-                label="Top Item By Qty"
+                label="Top Suppliers"
+                icon={<FileText size={16} className="text-amber-500" />}
+                list={notesData?.topSuppliers || []}
+                formatter={currencyFormatter}
+              />
+              <NoteItem
+                label="Most Sold Item (By Quantity)"
                 title={notesData?.topSellingItemQty?.itemName || 'N/A'}
                 value={`${notesData?.topSellingItemQty?.quantity || 0} Units`}
                 // subTitle={notesData?.topSellingItemQty?.itemCode}
                 icon={<Package size={16} className="text-emerald-500" />}
               />
               <NoteItem 
-                label="Top Item By Value" 
+                label="Highest Revenue Item" 
                 title={notesData?.topSellingItemValue?.itemName || 'N/A'} 
                 value={currencyFormatter.format(notesData?.topSellingItemValue?.value || 0)} 
                 // subTitle={notesData?.topSellingItemValue?.itemCode}
@@ -375,14 +397,34 @@ const InfoBox = ({ title, icon, loading, children }: { title: string, icon?: Rea
   </div>
 );
 
-const NoteItem = ({ label, title, subTitle, value, icon }: any) => (
+const NoteItem = ({ label, title, subTitle, value, icon, list, formatter }: any) => (
   <div className="flex flex-col gap-1 p-3 rounded-lg bg-gray-50 border border-gray-300">
     <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
       {icon} {label}
     </div>
-    <div className="font-medium text-sm text-gray-800 truncate" title={title}>{title}</div>
-    {subTitle && subTitle !== 'N/A' && <div className="text-xs text-gray-400 truncate">Code: {subTitle}</div>}
-    <div className="text-base font-bold text-gray-900 mt-1">{value}</div>
+
+    {list ? (
+      <div className="flex flex-col mt-1">
+        {list.map((item: any, i: number) => (
+          <div key={i} className="flex items-center gap-2 py-1.5 border-b border-gray-200 last:border-0">
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0
+              ${i === 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+              {i + 1}
+            </span>
+            <span className="flex-1 text-sm text-gray-800 truncate">{item.name || 'N/A'}</span>
+            <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+  {formatter ? formatter.format(item.value || 0) : item.value}
+</span>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <>
+        <div className="font-medium text-sm text-gray-800 truncate" title={title}>{title}</div>
+        {subTitle && subTitle !== 'N/A' && <div className="text-xs text-gray-400 truncate">Code: {subTitle}</div>}
+        <div className="text-base font-bold text-gray-900 mt-1">{value}</div>
+      </>
+    )}
   </div>
 );
 

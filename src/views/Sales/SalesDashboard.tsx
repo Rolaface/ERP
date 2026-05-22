@@ -27,6 +27,7 @@ import { getRecentSales, getMonthlySalesBreakdown, getSalesCounts, getMonthlySal
 import { ChartSkeleton } from "../../components/ChartSkeleton";
 import { AppMetricCard, AppSectionCard } from "../../components/ui/app-shell";
 import { MonthlySalesBarChart } from "../../components/charts/MonthlySalesBarChart";
+import { useCompanyStore } from "../../store/companyStore";
 
 interface RecentSale {
   name: string;
@@ -58,27 +59,28 @@ const SalesDashboard: React.FC = () => {
     debit_notes: 0
   });
 
-  const currencyINR = useMemo(
-  () =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 2,
-    }),
-  [],
-);
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || 'INR';
 
-const currencyINRCompact = useMemo(
-  () =>
-    new Intl.NumberFormat("en-IN", {
+  const currencyINR = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    return new Intl.NumberFormat(locale, {
       style: "currency",
-      currency: "INR",
+      currency: baseCurrency,
+      maximumFractionDigits: 2,
+    });
+  }, [baseCurrency]);
+
+  const currencyINRCompact = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: baseCurrency,
       notation: "compact",
       compactDisplay: "short",
       maximumFractionDigits: 1,
-    }),
-  []
-);
+    });
+  }, [baseCurrency]);
+ 
 
   const dateWithDay = useMemo(
     () =>

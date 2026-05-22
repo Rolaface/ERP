@@ -50,7 +50,7 @@ const MyProfile             = lazy<ComponentType<MyProfileProps>>(
 const EmployeeLeave         = lazy<ComponentType<LeaveProps>>(
   () => import("./time_leave/LeaveManagementt")
 );
-const EmployeeTimesheet     = lazy(() => import("./EmployeeView/EmployeeTimesheet"));
+const EmployeeAttendanceTimesheet     = lazy(() => import("./EmployeeView/EmployeeTimesheetAttendance"));
 const EmployeeDocuments     = lazy(() => import("./EmployeeView/EmployeeDocuments"));
 const EmployeeReports       = lazy(() => import("./EmployeeView/EmployeeReports"));
 const EmployeeCompliance    = lazy(() => import("./EmployeeView/EmployeeCompliance"));
@@ -158,7 +158,7 @@ const HrPayrollModule: React.FC = () => {
         case "emp-financials": return <EmployeeFinancials />;
         case "emp-profile":    return <MyProfile isPureEmployee={isPureEmployee} />;
         case "emp-leave":      return <EmployeeLeave isEmployeeView={true} />;
-        case "emp-timesheet":  return <EmployeeTimesheet />;
+        case "emp-timesheet":  return <EmployeeAttendanceTimesheet />;
         case "emp-documents":  return <EmployeeDocuments />;
         case "emp-reports":    return <EmployeeReports />;
         case "emp-compliance": return <EmployeeCompliance />;
@@ -171,7 +171,7 @@ const HrPayrollModule: React.FC = () => {
     switch (tab) {
       case "dashboard":   return <HrDashboard />;
       case "management":  return <EmployeeManagement isEmployeeView={false} />;
-      case "attendance":  return <EmployeeTimesheet />;
+      case "attendance":  return <EmployeeAttendanceTimesheet />;
       case "performance": return <EmployeeAppraisals />;
       case "leave":       return <Leave isEmployeeView={false} />;
       case "payroll":     return <PayrollManagement />;

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';  
+import { useCompanyStore } from "../../store/companyStore"; 
 
 interface MonthlySalesData {
   month: string;
@@ -14,10 +15,26 @@ interface Props {
 }
 
 export const MonthlySalesBarChart: React.FC<Props> = ({ data }) => {
+  // 1. Hook into your store
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || 'INR';
+
+  // 2. Create the dynamic formatter
+  const currencyFormatter = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    return new Intl.NumberFormat(locale, {
+      style: 'currency', 
+      currency: baseCurrency, 
+      maximumFractionDigits: 2, 
+      notation: "compact"
+    });
+  }, [baseCurrency]);
+
   const option = {
     tooltip: {
       trigger: 'axis',
-      axisPointer: { type: 'shadow' }
+      axisPointer: { type: 'shadow' },
+      // 3. Format the values inside the hover tooltip
+      valueFormatter: (value: any) => currencyFormatter.format(Number(value))
     },
     legend: {
       data: ['Total Sales', 'Received', 'Receivable'],
@@ -40,6 +57,10 @@ export const MonthlySalesBarChart: React.FC<Props> = ({ data }) => {
     yAxis: [
       {
         type: 'value',
+        // 4. Format the labels on the Y-axis
+        axisLabel: {
+          formatter: (value: any) => currencyFormatter.format(Number(value))
+        },
         axisLine: {
           show: true,  
           lineStyle: {
