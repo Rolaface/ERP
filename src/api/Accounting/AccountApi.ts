@@ -96,25 +96,20 @@ export async function getProfitAndLoss(
 export interface AccountsPayableFilters {
   company?: string;
   report_date?: string;
-
+  currency?:string;
   cost_center?: string;
   payable_account?: string;
-
   party_type?: string;
   party?: string;
   supplier_group?: string;
-
   ageing_based_on?: "Due Date" | "Posting Date";
   calculate_ageing_with?: "Report Date" | "Today Date";
   range?: string;
-
   group_by?: "supplier" | "voucher" | "none";
   search?: any;
-
   voucher_type?: "Purchase Invoice" | "Payment Entry";
   // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
   status?: any;
-
   page?: number;
   page_size?: number;
 }
@@ -132,24 +127,20 @@ export async function getAllPayables(
 export interface AccountsReceivableFilters {
   company?: string;
   report_date?: string;
-
+  currency?:string;
   cost_center?: string;
   receivable_account?: string;
-
   party_type?: string;
   party?: string;
   customer_group?: string;
-
   ageing_based_on?: "Due Date" | "Posting Date";
   calculate_ageing_with?: "Report Date" | "Today Date";
   range?: string;
-
   group_by?: "customer" | "voucher" | "none";
   search?: any;
   voucher_type?: "Sales Invoice" | "Payment Entry";
   // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
   status?: any;
-
   page?: number;
   page_size?: number;
 }

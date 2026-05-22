@@ -96,6 +96,7 @@ const AccountsReceivable = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currency, setCurrency] = useState("");
   const [reportDate, setReportDate] = useState(getTodayDate());
 
   const [selectedGroupBy, setSelectedGroupBy] = useState<string[]>([]);
@@ -226,6 +227,7 @@ const AccountsReceivable = () => {
         const payload = response.message.data;
         const backendKpis = payload.kpis;
         const backendData = payload.rows || payload.data || [];
+        setCurrency(backendData?.[0]?.currency ?? "-");
 
         setKpis(backendKpis);
 
@@ -471,19 +473,19 @@ const AccountsReceivable = () => {
   const stats = [
     {
       label: "Total Outstanding",
-      value: `₹${(kpis?.total_outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currency} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
       label: "Overdue Amount",
-      value: `₹${(kpis?.overdue_amount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currency} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
       label: "Total Customers",
-      value: `${kpis?.total_customers || 0}`,
+      value: ` ${kpis?.total_customers || 0}`,
     },
     {
       label: "Total Invoiced",
-      value: `₹${(kpis?.total_invoiced || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currency} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
   ];
 
@@ -526,7 +528,6 @@ const AccountsReceivable = () => {
     {
       key: "id",
       header: "Voucher No",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <span className="font-mono text-primary text-xs font-semibold">
@@ -537,7 +538,6 @@ const AccountsReceivable = () => {
     {
       key: "customer",
       header: "Customer",
-      sortable: true,
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
           {row.customer}
@@ -547,7 +547,6 @@ const AccountsReceivable = () => {
     {
       key: "voucherType",
       header: "Type",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <span className="text-xs">{row.voucherType}</span>
@@ -556,10 +555,9 @@ const AccountsReceivable = () => {
     {
       key: "invoicedAmount",
       header: "Invoiced",
-      sortable: true,
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          ₹
+          
           {row.invoicedAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
@@ -569,11 +567,10 @@ const AccountsReceivable = () => {
     {
       key: "paidAmount",
       header: "Paid",
-      sortable: true,
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          ₹
-          {row.paidAmount.toLocaleString(undefined, {
+          
+          {currency} {row.paidAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -582,13 +579,12 @@ const AccountsReceivable = () => {
     {
       key: "outstandingAmount",
       header: "Outstanding",
-      sortable: true,
       render: (row) => (
         <span
           className={`text-main ${row.isSummary ? "font-bold" : "font-semibold"}`}
         >
-          ₹
-          {row.outstandingAmount.toLocaleString(undefined, {
+          
+          {currency} {row.outstandingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -597,13 +593,11 @@ const AccountsReceivable = () => {
     {
       key: "due",
       header: "Due/Posted Date",
-      sortable: true,
       render: (row) => (row.isSummary ? null : <span>{formatDate(row.due)}</span>),
     },
     {
       key: "days",
       header: "Aging",
-      sortable: true,
       render: (row) =>
         row.isSummary ? null : (
           <div className="flex items-center gap-1">
@@ -625,7 +619,6 @@ const AccountsReceivable = () => {
     {
       key: "status",
       header: "Status",
-      sortable: true,
       render: (row) => {
         if (row.isSummary) return null;
         const s = row.status.toLowerCase();
@@ -904,7 +897,7 @@ const AccountsReceivable = () => {
                     setSelectedCostCenter("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
                     selectedCostCenter === ""
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-main hover:bg-app"
@@ -922,7 +915,7 @@ const AccountsReceivable = () => {
                       setSelectedCostCenter(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
                       selectedCostCenter === opt
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-main hover:bg-app"
@@ -960,7 +953,7 @@ const AccountsReceivable = () => {
                     setSelectedReceivableAccount("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
                     selectedReceivableAccount === ""
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-main hover:bg-app"
@@ -978,7 +971,7 @@ const AccountsReceivable = () => {
                       setSelectedReceivableAccount(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
                       selectedReceivableAccount === opt
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-main hover:bg-app"
@@ -1068,7 +1061,7 @@ const AccountsReceivable = () => {
                 <div className="h-8 w-20 bg-theme rounded mx-auto mt-1 animate-pulse"></div>
               ) : (
                 <p className="text-2xl font-bold text-main">
-                  ₹
+                  
                   {kpis?.ageing_summary[
                     item.key as keyof typeof kpis.ageing_summary
                   ]
