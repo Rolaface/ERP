@@ -345,15 +345,15 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
                 </div>
               )}
             </div>
-            {/* Show tax info badge when loaded */}
-            {taxConfig && !isLoadingTax && (
+          
+            {/* {taxConfig && !isLoadingTax && (
               <p className="text-[10px] text-primary/70 leading-tight mt-0.5">
                 {taxConfig.slabs?.length ?? 0} slabs
                 {taxConfig.standard_tax_exemption_amount
                   ? ` · ₹${taxConfig.standard_tax_exemption_amount.toLocaleString()} exemption`
                   : ""}
               </p>
-            )}
+            )} */}
           </Field>
 
           <Field label="Currency">
