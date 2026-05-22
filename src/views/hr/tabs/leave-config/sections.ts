@@ -32,4 +32,10 @@ export const SETUP_SECTIONS: AppSetupSection[] = [
     icon: LayoutList,
     description: "Holiday list management",
   },
+  {
+    key: "shift",
+    label: "Shift Type",
+    icon: LayoutList,
+    description: "Shift type management",
+  },
 ];

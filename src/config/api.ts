@@ -325,6 +325,13 @@ export const API = {
   //   update: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.update_holiday`,
   //   delete: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.delete_holiday`,
   // },
+  shiftType: {
+    getAll: "/api/resource/Shift Type",
+    getByName: "/api/resource/Shift Type",
+    create: "/api/resource/Shift Type",
+    update: "/api/resource/Shift Type",
+    delete: "/api/resource/Shift Type",
+  },
 
   /* =========================
    * MODULES (SYSTEM)
