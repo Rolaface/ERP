@@ -78,7 +78,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       const searchParam = isEmployeeView
         ? user?.employeeId
         : searchTerm || undefined;
-      const res = await getAllEmployees(page, pageSize, "Active", searchParam);
+      const res = await getAllEmployees(page, pageSize, undefined, searchParam);
       if (!mountedRef.current) return;
 
       const mapped = (res.data || []).map((e: any) => ({
@@ -105,6 +105,13 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     }
   }, [page, pageSize, searchTerm, isEmployeeView, user?.employeeId]);
 
+  // Keep a stable ref to always call the latest fetchEmployees
+  const fetchEmployeesRef = useRef(fetchEmployees);
+  useEffect(() => {
+    fetchEmployeesRef.current = fetchEmployees;
+  }, [fetchEmployees]);
+
+  // Initial fetch
   useEffect(() => {
     mountedRef.current = true;
     fetchEmployees();
@@ -113,18 +120,22 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     };
   }, []);
 
+  // Refetch on pagination / search changes
   useEffect(() => {
     if (isInitialLoad) return;
     fetchEmployees();
   }, [page, pageSize, searchTerm]);
 
+  // Subscribe once; always calls the latest fetchEmployees via ref
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(
       REFRESH_KEYS.EMPLOYEE_LIST,
-      fetchEmployees,
+      () => fetchEmployeesRef.current(),
     );
     return unsubscribe;
-  }, [subscribeToRefresh, fetchEmployees]);
+  }, [subscribeToRefresh]);
+
+  // ── Handlers ────────────────────────────────────────────────────
 
   const handleViewEmployee = async (id: string) => {
     try {
@@ -152,6 +163,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     });
   };
 
+  // FIX: added onSuccess so status changes (Left, Suspended, etc.) trigger a refetch
   const handleEdit = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -159,13 +171,16 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       const res = await getEmployeeById(id);
       const employeeData = unwrapEmployee(res);
       closeSwal();
-      openEmployeeModal(employeeData, true);
+      openEmployeeModal(employeeData, true, {
+        onSuccess: () => triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST),
+      });
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
 
+  // FIX: added fetchEmployees() call so table updates immediately after disable
   const handleDisable = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const result = await fireManagedSwal({
@@ -181,6 +196,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       await updateEmployeeStatus(id, "Inactive");
       closeSwal();
       showSuccess("Employee disabled successfully");
+      await fetchEmployees();
       triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
     } catch (error) {
       closeSwal();
@@ -205,12 +221,15 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       await deleteEmployeeById(id);
       closeSwal();
       showSuccess("Employee deleted successfully");
+      await fetchEmployees();
       triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
+
+  // ── Columns ─────────────────────────────────────────────────────
 
   const columns: Column<EmployeeSummary>[] = [
     {
@@ -313,6 +332,8 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       ),
     },
   ];
+
+  // ── Render ───────────────────────────────────────────────────────
 
   return (
     <HrTableFrame>
