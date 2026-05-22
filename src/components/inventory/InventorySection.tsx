@@ -1,5 +1,4 @@
 import React, { useCallback } from "react";
-import Tooltip from "../Tooltip";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import { getBrands } from "../../api/itemApi";
@@ -91,7 +90,7 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
         <div className="grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
 
           {/* Brand — async search via Frappe search_link */}
-          <div className="min-w-0">
+          {/* <div className="min-w-0">
             <SearchSelect2
               label="Brand"
               value={form.brand ?? ""}
@@ -101,7 +100,7 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
               allowCustomInput
               disabled={isServiceItem}
             />
-          </div>
+          </div> */}
 
           {/* Dimensions: L x W x H + unit */}
           <div className="flex min-w-0 flex-col gap-0.5">

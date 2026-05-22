@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import type {
   ItemFieldSetter,
@@ -6,20 +6,28 @@ import type {
   ItemFormData,
   ItemGroupOption,
 } from "./itemModalTypes";
+import { getBrands } from "../../api/itemApi";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
 
 interface BasicDetailsSectionProps {
   form: ItemFormData;
   itemGroups: ItemGroupOption[];
   loadingItemGroups: boolean;
+  isServiceItem: boolean;
   onFormChange: ItemFormChangeHandler;
-  setField: ItemFieldSetter;
   errors?: Partial<Record<keyof ItemFormData, string>>;
+  setField: ItemFieldSetter;
 }
 
 
 const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
-  ({ form, itemGroups, loadingItemGroups, onFormChange, errors }) => {
+  ({ form, itemGroups, loadingItemGroups, onFormChange, errors, setField, isServiceItem }) => {
     const categoryPlaceholder = "Select Category";
+
+    const fetchBrandOptions = useCallback(
+      async (q: string) => getBrands(q),
+      [],
+    );
 
     return (
       <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-6">
@@ -35,6 +43,18 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           <option value="2">Finished Product</option>
           <option value="3">Service</option>
         </ModalSelect>
+
+
+        <SearchSelect2
+          label="Brand"
+          value={form.brand ?? ""}
+          fetchOptions={fetchBrandOptions}
+          onChange={(value) => setField("brand", value)}
+          placeholder="Search brand..."
+          allowCustomInput
+          disabled={isServiceItem}
+        />
+
 
         {/* Item Category */}
         <ModalSelect
