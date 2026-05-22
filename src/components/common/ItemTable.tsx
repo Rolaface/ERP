@@ -171,8 +171,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                 availableQty: item.qty,
                 quantity: 1, // default
 
-                price:
-                  item.price ?? item.sellingPrice ?? item.purchasePrice ?? 0,
+              price: item.price ?? 0,
 
                 // warehouse
                 warehouse: item.warehouse,

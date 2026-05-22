@@ -18,9 +18,11 @@ import { fireManagedSwal } from "../../utils/swalManager";
 import { openExpenseModal } from "../../store/modalStore";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { getExpenseClaims,getExpenseClaimById,deleteExpenseClaim } from "../../api/expenseClaimApi";
+import { getExpenseClaims, getExpenseClaimById, deleteExpenseClaim } from "../../api/expenseClaimApi";
+import { useAuth } from "../../context/AuthContext";
+import { useHRView } from "../../hooks/permission/useHRView";
 
-const EXPENSE_MODULE = "Expense History";
+const EXPENSE_MODULE = "Expense Claim";
 
 interface ExpenseSummary {
   id: string;
@@ -35,14 +37,14 @@ interface ExpenseSummary {
 }
 
 const statusOptions = [
-  { label: "Draft",     value: "Draft" },
-  { label: "Approved",  value: "Approved" },
-  { label: "Paid",      value: "Paid" },
+  { label: "Draft", value: "Draft" },
+  { label: "Approved", value: "Approved" },
+  { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
 ];
 const formatDate = (date: string) => {
   if (!date) return "";
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
   const [year, month, day] = date.split("T")[0].split("-").map(Number);
   return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
 };
@@ -50,58 +52,64 @@ const formatDate = (date: string) => {
 const ExpenseHistory: React.FC = () => {
   const mountedRef = useRef(true);
   const { can } = usePermission();
+  const { user } = useAuth();
+  const { viewMode } = useHRView();
+  const isEmployeeView = viewMode === "employee";
 
-  const [expenses,      setExpenses]      = useState<ExpenseSummary[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseSummary[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching,    setIsFetching]    = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   const [filters, setFilters] = useState<{
-    status?:    string;
-    category?:  string;
+    status?: string;
+    category?: string;
     from_date?: string;
-    to_date?:   string;
+    to_date?: string;
   }>({});
 
-  const [page,       setPage]       = useState(1);
-  const [pageSize,   setPageSize]   = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy,     setSortBy]     = useState("date");
-  const [sortOrder,  setSortOrder]  = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   useEffect(() => { setPage(1); }, [searchTerm, filters]);
 
-const fetchExpenses = useCallback(async () => {
-  if (!mountedRef.current) return;
-  setIsFetching(true);
-  try {
-    const res = await getExpenseClaims(searchTerm, page, pageSize);
+  const fetchExpenses = useCallback(async () => {
     if (!mountedRef.current) return;
-setExpenses(res.data.map((claim: any) => ({
-  id:       claim.name,
-  approver: claim.expense_approver_name ?? "",
-  name:     claim.employee_name,
-  date:     claim.posting_date,
-  category: claim.expense_type ?? "",
-  amount:   claim.total_claimed_amount ?? 0,
-  currency: claim.currency ?? "",
-  status:   claim.approval_status,
-})));
-    setTotalPages(res.pagination.total_pages);
-setTotalItems(res.pagination.total);
-  } catch (err) {
-    showApiError(err);
-    setExpenses([]);
-    setTotalPages(1);
-    setTotalItems(0);
-  } finally {
-    if (mountedRef.current) {
-      setIsFetching(false);
-      setIsInitialLoad(false);
+    setIsFetching(true);
+    try {
+      const res = await getExpenseClaims(searchTerm, page, pageSize,
+        isEmployeeView ? (user?.employeeId ?? undefined) : undefined,
+      );
+      if (!mountedRef.current) return;
+      setExpenses(res.data.map((claim: any) => ({
+        id: claim.name,
+        approver: claim.expense_approver_name ?? "",
+        name: claim.employee_name,
+        date: claim.posting_date,
+        category: claim.expense_type ?? "",
+        amount: claim.total_claimed_amount ?? 0,
+        currency: claim.currency ?? "",
+        status: claim.approval_status,
+      })));
+      setTotalPages(res.pagination.total_pages);
+      setTotalItems(res.pagination.total);
+    } catch (err) {
+      showApiError(err);
+      setExpenses([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      if (mountedRef.current) {
+        setIsFetching(false);
+        setIsInitialLoad(false);
+      }
     }
-  }
-}, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
+}, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
+
 
   useEffect(() => {
     mountedRef.current = true;
@@ -112,7 +120,8 @@ setTotalItems(res.pagination.total);
   useEffect(() => {
     if (isInitialLoad) return;
     fetchExpenses();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
+}, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
+
 
 
   const handleOpenAdd = () => {
@@ -125,58 +134,58 @@ setTotalItems(res.pagination.total);
   };
 
   const handleOpenEdit = async (exp: ExpenseSummary) => {
-  try {
-    const res = await getExpenseClaimById(exp.id);
-    closeSwal();
-    const claim = res.data;
-    const formData = {
-        id:            claim.name, 
-      claim_title:    claim.expenses?.[0]?.description ?? "",
-      category:      claim.expenses?.[0]?.expense_type ?? "",
-      date_incurred: claim.posting_date,
-      amount:        claim.total_claimed_amount,
-      currency:      claim.currency,
-      employee_name: claim.employee_name, 
-      employee:      claim.employee,
-      expense_approver: claim.expense_approver,   
-      receipt:       null,
-      remarks:       claim.remark ?? "",
-    };
-    openExpenseModal(formData, true, {
-      onSuccess: async () => {
-        showSuccess("Expense updated successfully");
-        fetchExpenses();
-      },
-    });
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+    try {
+      const res = await getExpenseClaimById(exp.id);
+      closeSwal();
+      const claim = res.data;
+      const formData = {
+        id: claim.name,
+        claim_title: claim.expenses?.[0]?.description ?? "",
+        category: claim.expenses?.[0]?.expense_type ?? "",
+        date_incurred: claim.posting_date,
+        amount: claim.total_claimed_amount,
+        currency: claim.currency,
+        employee_name: claim.employee_name,
+        employee: claim.employee,
+        expense_approver: claim.expense_approver,
+        receipt: null,
+        remarks: claim.remark ?? "",
+      };
+      openExpenseModal(formData, true, {
+        onSuccess: async () => {
+          showSuccess("Expense updated successfully");
+          fetchExpenses();
+        },
+      });
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
-const handleDelete = async (id: string, e?: React.MouseEvent) => {
-  e?.stopPropagation();
-  const result = await fireManagedSwal({
-    icon:               "warning",
-    title:              "Are you sure?",
-    text:               `Delete expense ${id}?`,
-    showCancelButton:   true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor:  "#6b7280",
-    confirmButtonText:  "Yes, delete",
-    reverseButtons:     true,
-  });
-  if (!result.isConfirmed) return;
-  try {
-    await deleteExpenseClaim(id);   
-    setExpenses((prev) => prev.filter((exp) => exp.id !== id));
-    closeSwal();
-    showSuccess("Expense deleted successfully");
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete expense ${id}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await deleteExpenseClaim(id);
+      setExpenses((prev) => prev.filter((exp) => exp.id !== id));
+      closeSwal();
+      showSuccess("Expense deleted successfully");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
   const handleExportExcel = async () => {
     try {
@@ -188,11 +197,11 @@ const handleDelete = async (id: string, e?: React.MouseEvent) => {
       const worksheet = XLSX.utils.json_to_sheet(
         expenses.map((exp) => ({
           "Approver": exp.approver,
-          "Date":       formatDate(exp.date),
-          "Category":   exp.category,
-          "Amount":     exp.amount,
-          "Currency":   exp.currency,
-          "Status":     exp.status,
+          "Date": formatDate(exp.date),
+          "Category": exp.category,
+          "Amount": exp.amount,
+          "Currency": exp.currency,
+          "Status": exp.status,
         }))
       );
       const workbook = XLSX.utils.book_new();
@@ -214,11 +223,10 @@ const handleDelete = async (id: string, e?: React.MouseEvent) => {
   const columns: Column<ExpenseSummary>[] = useMemo(
     () => [
       {
-        key:      "approver",
-        header:   "Approver",
-        align:    "left",
-        sortable: true,
-        render:   (exp) => (
+        key: "approver",
+        header: "Approver",
+        align: "left",
+        render: (exp) => (
           <div className="py-1.5">
             <span className="block font-medium">{exp.approver}</span>
           </div>
@@ -226,11 +234,10 @@ const handleDelete = async (id: string, e?: React.MouseEvent) => {
         tooltip: (exp) => `Expense Approver: ${exp.approver}`,
       },
       {
-        key:      "name",
-        header:   "EMP Name",
-        align:    "left",
-        sortable: true,
-        render:   (exp) => (
+        key: "name",
+        header: "EMP Name",
+        align: "left",
+        render: (exp) => (
           <div className="py-1.5">
             <span className="block font-medium">{exp.name}</span>
           </div>
@@ -238,46 +245,43 @@ const handleDelete = async (id: string, e?: React.MouseEvent) => {
         tooltip: (exp) => `Employee Name: ${exp.name}`,
       },
       {
-        key:      "date",
-        header:   "Date",
-        align:    "center",
-        sortable: true,
-        render:   (exp) => (
+        key: "date",
+        header: "Date",
+        align: "center",
+        render: (exp) => (
           <div className="py-1.5">
             <span className="block">{formatDate(exp.date)}</span>
           </div>
         ),
       },
       {
-        key:      "category",
-        header:   "Category",
-        align:    "left",
-        sortable: true,
-        render:   (exp) => (
+        key: "category",
+        header: "Category",
+        align: "left",
+        render: (exp) => (
           <div className="py-1.5">
             <span className="block">{exp.category}</span>
           </div>
         ),
         tooltip: (exp) => `Category: ${exp.category}`,
       },
-     {
-  key:      "amount",
-  header:   "Amount",
-  align:    "center",
-  sortable: true,
-  render:   (exp) => (
-    <div className="py-1.5">
-      <span className="block whitespace-nowrap">
-        {(exp.amount ?? 0).toLocaleString()} {exp.currency}
-      </span>
-    </div>
-  ),
-  tooltip: (exp) => `Amount: ${(exp.amount ?? 0).toLocaleString()} ${exp.currency}`,
-},
       {
-        key:    "status",
+        key: "amount",
+        header: "Amount",
+        align: "center",
+        render: (exp) => (
+          <div className="py-1.5">
+            <span className="block whitespace-nowrap">
+              {(exp.amount ?? 0).toLocaleString()} {exp.currency}
+            </span>
+          </div>
+        ),
+        tooltip: (exp) => `Amount: ${(exp.amount ?? 0).toLocaleString()} ${exp.currency}`,
+      },
+      {
+        key: "status",
         header: "Status",
-        align:  "center",
+        align: "center",
         render: (exp) => (
           <div className="py-1.5">
             <StatusBadge status={exp.status} />
@@ -285,9 +289,9 @@ const handleDelete = async (id: string, e?: React.MouseEvent) => {
         ),
       },
       {
-        key:    "actions",
+        key: "actions",
         header: "Actions",
-        align:  "center",
+        align: "center",
         render: (exp) => (
           <div className="flex items-center justify-center gap-2">
             <ActionButton

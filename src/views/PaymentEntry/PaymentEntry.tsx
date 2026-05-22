@@ -15,6 +15,9 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import { getPaymentEntryById } from "../../api/BankAccountApi";
 import { ActionMenu } from "../../components/ui/Table/ActionButton";
 import SendEmailModal from "../../components/common/SendEmailModal";
+import PaymentEntryDetailModal from "./PaymetnEntryDetailModal";
+import ActionButton from "../../components/ui/Table/ActionButton";
+import type { PaymentEntryDetail } from "./PaymetnEntryDetailModal";
 
 interface PaymentAPI {
   paymentId: string;
@@ -44,8 +47,8 @@ const PAYMENT_ENTRY_MODULE = "Payment Entry";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const MONTHS = [
-  "JAN","FEB","MAR","APR","MAY","JUN",
-  "JUL","AUG","SEP","OCT","NOV","DEC",
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
 ];
 
 const formatDate = (date: string | Date): string => {
@@ -80,6 +83,10 @@ const PaymentEntry: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerData, setDrawerData] = useState<PaymentEntryDetail | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
   // email
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailPayment, setEmailPayment] = useState<PaymentRow | null>(null);
@@ -205,30 +212,58 @@ const PaymentEntry: React.FC = () => {
       header: "Actions",
       align: "center",
       render: (row: PaymentRow) => (
-        <ActionMenu
-          customActions={[
-            {
-              label: "Send Email",
-              onClick: async () => {
-                setEmailPayment(row);
-                setEmailContactEmail(null);
-                setEmailAttachments([]);
-                setEmailModalOpen(true);
-                try {
-                  const res = await getPaymentEntryById(row.id);
-                  if (res?.message?.status_code === 200) {
-                    setEmailContactEmail(res.message.data?.contact_email ?? null);
-                    setEmailAttachments(res.message.data?.attachments ?? []);
-                  }
-                } catch {
-                  // non-critical: modal opens with empty To/attachments
+        <div className="flex items-center justify-center gap-2">
+          <ActionButton
+            type="view"
+            iconOnly
+            onClick={async () => {
+              setDrawerOpen(true);
+              setDrawerLoading(true);
+              setDrawerData(null);
+
+              try {
+                const res = await getPaymentEntryById(row.id);
+
+                if (res?.message?.status_code === 200) {
+                  setDrawerData(res.message.data as PaymentEntryDetail);
                 }
+              } finally {
+                setDrawerLoading(false);
+              }
+            }}
+          />
+
+          <ActionMenu
+            customActions={[
+              {
+                label: "Send Email",
+                onClick: async () => {
+                  setEmailPayment(row);
+                  setEmailContactEmail(null);
+                  setEmailAttachments([]);
+                  setEmailModalOpen(true);
+
+                  try {
+                    const res = await getPaymentEntryById(row.id);
+
+                    if (res?.message?.status_code === 200) {
+                      setEmailContactEmail(
+                        res.message.data?.contact_email ?? null
+                      );
+                      setEmailAttachments(
+                        res.message.data?.attachments ?? []
+                      );
+                    }
+                  } catch {
+                    // non-critical: modal opens with empty To/attachments
+                  }
+                },
               },
-            },
-          ]}
-        />
+            ]}
+          />
+        </div>
       ),
-    },
+    }
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -261,9 +296,9 @@ const PaymentEntry: React.FC = () => {
           onAdd={
             can(PAYMENT_ENTRY_MODULE, "create")
               ? () =>
-                  openPaymentEntryModal(null, false, {
-                    onSuccess: () => fetchPayments(),
-                  })
+                openPaymentEntryModal(null, false, {
+                  onSuccess: () => fetchPayments(),
+                })
               : undefined
           }
           // Fix: sorting now wired up
@@ -293,6 +328,16 @@ const PaymentEntry: React.FC = () => {
           setEmailPayment(null);
           setEmailContactEmail(null);
           setEmailAttachments([]);
+        }}
+      />
+
+      <PaymentEntryDetailModal
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerData(null);
         }}
       />
     </AppPage>

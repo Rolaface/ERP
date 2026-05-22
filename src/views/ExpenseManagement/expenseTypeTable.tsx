@@ -16,7 +16,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { openExpenseTypeModal } from "../../store/modalStore";
 import { getExpenseClaimTypes,getExpenseClaimTypeById,deleteExpenseClaimType } from "../../api/expenseClaimApi";
-const EXPENSE_TYPE_MODULE = "Expense Type";
+const EXPENSE_TYPE_MODULE = "Expense Claim Type";
 
 interface ExpenseType {
   id: string;

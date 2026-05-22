@@ -142,6 +142,12 @@ const HolidayListModal = lazy(
       default: m.HolidayListModal,
     })),
 );
+const ShiftTypeModal = lazy(
+  () =>
+    import("../Hr/hrsetupmodals/ShiftTypeModal").then((m) => ({
+      default: m.ShiftTypeModal,
+    })),
+);
 const TaxConfigModal = lazy(
   () =>
     import("../Hr/hrsetupmodals/TaxConfigModal").then((m) => ({
@@ -509,8 +515,8 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             onSubmit={handleSubmit}
-            initialData={getRecordInitialData(modal.initialData)}  
-      isEdit={modal.isEdit}  
+            initialData={getRecordInitialData(modal.initialData)}
+            isEdit={modal.isEdit}
           />,
         );
 
@@ -943,6 +949,21 @@ case "holidayList":
       }}
     />,
   );
+  
+  case "shiftType":
+        return wrappedModal(
+          <ShiftTypeModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+
+            }}
+          />,
+        );
     }
   };
 

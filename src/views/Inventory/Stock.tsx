@@ -19,6 +19,7 @@ import ViewStockModal from "../../components/inventory/ViewStockModal";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const Items: React.FC = () => {
@@ -194,7 +195,7 @@ const Items: React.FC = () => {
       key: "description",
       header: "Description",
       render: (row) => (
-        <span className="text-muted whitespace-nowrap">{row.description ?? "—"}</span>
+        <span className="font-medium">{row.description ?? "—"}</span>
       ),
     },
     {
@@ -282,8 +283,8 @@ const Items: React.FC = () => {
 
             <button
               onClick={() => { setSelectedBatch(null); setShowStockCorrection(true); }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all whitespace-nowrap"
-              style={{ background: "var(--primary,#c97d2e)", color: "#fff", boxShadow: "0 4px 12px rgba(201,125,46,0.25)" }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
+              style={{  border: "1.5px solid var(--primary,#c97d2e)", color: "var(--primary,#c97d2e)", boxShadow: "transparent" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.9"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
             >

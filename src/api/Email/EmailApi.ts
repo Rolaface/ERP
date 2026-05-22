@@ -43,7 +43,7 @@ export interface SendEmailParams {
 }
 
 export interface SendEmailResponse {
-  message: unknown; // Frappe returns various shapes; callers only check success
+  message: unknown; 
 }
 
 export async function sendEmail(
@@ -59,7 +59,7 @@ export async function sendEmail(
   formData.append("send_me_a_copy", params.send_me_a_copy);
   if (params.cc) formData.append("cc", params.cc);
   if (params.bcc) formData.append("bcc", params.bcc);
-  formData.append("print_format", "Standard");
+  formData.append("use_default_print_format", "1");
   formData.append(
     "attachments",
     JSON.stringify(params.attachmentNames ?? []),

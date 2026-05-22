@@ -345,15 +345,15 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
                 </div>
               )}
             </div>
-            {/* Show tax info badge when loaded */}
-            {taxConfig && !isLoadingTax && (
+          
+            {/* {taxConfig && !isLoadingTax && (
               <p className="text-[10px] text-primary/70 leading-tight mt-0.5">
                 {taxConfig.slabs?.length ?? 0} slabs
                 {taxConfig.standard_tax_exemption_amount
                   ? ` · ₹${taxConfig.standard_tax_exemption_amount.toLocaleString()} exemption`
                   : ""}
               </p>
-            )}
+            )} */}
           </Field>
 
           <Field label="Currency">
@@ -395,11 +395,9 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
             Monthly salary
           </span>
-          {currency && (
-            <span className="text-[10px] text-muted/60 font-mono bg-app/60 px-2 py-0.5 rounded-full border border-theme">
-              {currency}
-            </span>
-          )}
+         
+           
+        
         </div>
 
         <div className="grid grid-cols-2 gap-3 items-start">

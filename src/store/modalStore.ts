@@ -48,7 +48,8 @@ export type ModalType =
   | "holidayList"
   | "expense"
   | "expenseType"
-  |"emailTemplate";
+  |"emailTemplate"
+  | "shiftType";
 
 export interface ModalContext {
   source?: string;
@@ -793,16 +794,20 @@ export const openHolidayListModal = (
   context?: ModalContext,
   meta?: ModalMeta,
 ) => {
-  console.debug("openHolidayListModal clicked", {
-    initialData,
-    isEdit,
-    context,
-    meta,
-  });
-
   return useModalStore
     .getState()
     .openModal("holidayList", initialData, isEdit, context, meta);
+};
+
+export const openShiftTypeModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) => {
+  return useModalStore
+    .getState()
+    .openModal("shiftType", initialData, isEdit, context, meta);
 };
 
 export const openExpenseTypeModal = (

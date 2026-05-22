@@ -54,8 +54,8 @@ export const EMPLOYEE_HR_TABS: EmployeeTabItem[] = [
   { id: "emp-leave", label: "Leave", icon: <Calendar size={16} strokeWidth={1.75} /> },
   { id: "emp-timesheet", label: "Timesheet & Attendance", icon: <Clock size={16} strokeWidth={1.75} /> },
   { id: "emp-financials", label: "Financials", icon: <Wallet size={16} strokeWidth={1.75} /> },
-  { id: "emp-reimburse", label: "Reimbursement", icon: <Receipt size={16} strokeWidth={1.75} /> },
   { id: "emp-compliance", label: "Compliance", icon: <ShieldCheck size={16} strokeWidth={1.75} /> },
+   { id: "emp-expenses",   label: "Expense Claim",   icon: <CreditCard   size={16} strokeWidth={1.75} /> },  
   { id: "emp-appraisals", label: "Appraisals", icon: <Star size={16} strokeWidth={1.75} /> },
   { id: "emp-documents", label: "Documents", icon: <FileText size={16} strokeWidth={1.75} /> },
   { id: "emp-reports", label: "Reports", icon: <BarChart2 size={16} strokeWidth={1.75} /> },
@@ -176,13 +176,15 @@ const settingsItems: SettingsItem[] = [
     to: "/Expense-Management",
     label: "Expense Management",
     icon: <CreditCard {...iconProps} />,
-    modules: ["Expense Claim","Expense Claim Type"]
+    modules: ["Expense Claim","Expense Claim Type"],
+    hideInEmployeeView: true
   },
   {
     to: "/Email-Template",
     label: "Email Template",
     icon: <Mail {...iconProps} />,
     modules: ["Email Template"],
+    hideInEmployeeView: true
   },
   {
     to: "/settings",

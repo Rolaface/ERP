@@ -11,6 +11,7 @@ export const MODULE_STRUCTURE: Record<string, string[]> = {
   Accounting: ["Journal Entry","Account"],
   Assets: ["Asset Category", "Asset", "Asset Movement"],
   HumanResource: ["Employee", "Payroll Entry","Salary Slip","Leave Application"],
+   ExpenseManagement: ["Expense Claim Type", "Expense Claim"],
   Settings: ["Company", "User","Role","Bank", "Bank Account", "Mode of Payment", "Payment Entry", "Currency Exchange", "Customer Group", "Item Tax Template","Tax Category","Sales Taxes and Charges Template"],
 };
 
