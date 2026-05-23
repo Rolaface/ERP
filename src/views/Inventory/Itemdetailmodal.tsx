@@ -536,24 +536,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {item && (
-              <>
-                <button
-                  type="button"
-                  onClick={onEditItem}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-theme rounded-xl text-main hover:bg-row-hover transition-all"
-                >
-                  <Edit size={12} /> Edit Profile
-                </button>
-                <button
-                  type="button"
-                  onClick={onDeleteItem}
-                  className="w-8 h-8 flex items-center justify-center border border-red-400/30 rounded-xl text-red-500 hover:bg-red-500/5 transition-all"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </>
-            )}
+           
             <button
               type="button"
               onClick={onAddItem}
