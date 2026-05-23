@@ -229,7 +229,7 @@ const AssetRegister: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize,searchTerm]);
+  }, [page, pageSize, searchTerm]);
   useEffect(() => {
     fetchAssets();
   }, [fetchAssets, refreshKey]);
@@ -367,17 +367,14 @@ const AssetRegister: React.FC = () => {
         data={paginatedData}
         rowKey={(row) => row.id}
         tableId="fixed-assets"
-
         loading={loading}
         isFetching={false}
-
         showToolbar
-
-       searchValue={searchTerm}
-onSearch={(q) => {
-  setSearchTerm(q);
-  setPage(1);
-}}
+        searchValue={searchTerm}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
 
         enableAdd={can(ASSET_MODULE, "create")}
         addLabel="Add Asset"
@@ -386,8 +383,6 @@ onSearch={(q) => {
         })}
 
         enableColumnSelector
-        enableExport={can(ASSET_MODULE, "export")}
-
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}

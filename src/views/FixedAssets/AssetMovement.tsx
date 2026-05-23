@@ -262,7 +262,6 @@ const AssetMovement: React.FC = () => {
         onAdd={() => openAssetMovementModal({ mode: "create" })}
 
         enableColumnSelector
-        enableExport={can(ASSET_MOVEMENT_MODULE, "export")}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
