@@ -121,13 +121,25 @@ export function LeavePeriodSetup() {
         align: "center",
         render: (row) => (
           <ActionGroup>
+<ActionButton
+  type="view"
+  iconOnly
+  onClick={() => 
+    openLeavePeriodModal(
+      { ...row, _isView: true } as any,  
+      true,                             
+      { onSuccess: fetchAll }           
+    )
+  }
+/>
+            {/* Edit Button: Normal edit behavior */}
             <ActionButton
               type="edit"
               iconOnly
               onClick={() => openLeavePeriodModal(row, true, { onSuccess: fetchAll })}
               disabled={actionLoadingId === row.name}
-            />
-            <ActionMenu
+            />          
+             <ActionMenu
               customActions={[
                  {
                   label: row.is_active? "Inactive" : "Active",
