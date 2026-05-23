@@ -25,7 +25,7 @@ import {
 import {
   createPurchaseInvoice,
   getPurchaseInvoiceById,
-  updatePurchaseInvoice, // ← ADDED: was missing, caused edit to fail
+  updatePurchaseInvoice,
 } from "../api/procurement/PurchaseInvoiceApi";
 import {
   mapUIToCreatePI,
