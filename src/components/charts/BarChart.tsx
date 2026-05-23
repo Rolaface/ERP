@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useCompanyStore } from '../../store/companyStore';
 
 // 1. Updated interface to match your new backend response
 interface Item {
@@ -21,9 +22,18 @@ interface BarChartProps {
 }
 
 const BarChart: React.FC<BarChartProps> = ({ title, loading, data = [], mode, filterNode }) => {
-  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
-  }), []);
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
+  
+    const currencyFormatter = useMemo(() => {
+      const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+      
+      return new Intl.NumberFormat(locale, {
+        style: 'currency', 
+        currency: baseCurrency, 
+        maximumFractionDigits: 2, 
+        notation: "compact"
+      });
+    }, [baseCurrency]);  
 
   const option = useMemo(() => {
     const safeData = Array.isArray(data) ? data : [];    

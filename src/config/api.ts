@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
- export const ERP_BASE = getApiBaseUrl();
-//  export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -41,8 +41,7 @@ export const API = {
     forgotPassword: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.forgot_password`,
     logout: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`,
   },
-
- Email: {   
+   Email: {   
       get_contact_list:`${ERP_BASE}/api/method/frappe.email.get_contact_list`,
       send_email:`${ERP_BASE}/api/method/frappe.core.doctype.communication.email.make`,
       upload_file:`${ERP_BASE}/api/method/upload_file`,
@@ -229,6 +228,7 @@ export const API = {
     updateStatus:`${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee_status`,
     employeeDetailsById: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.custom_employee_details`,
     leaveApproverDetails: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_leave_approvers`,
+    employeeCheckInOut: `${ERP_BASE}/api/resource/Employee Checkin`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
   },
