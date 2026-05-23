@@ -17,9 +17,10 @@ import {
   Area,
   AreaChart,
 } from "recharts";
-import { Warehouse, PackagePlus, IndianRupee, TrendingUp } from "lucide-react";
+import { Warehouse, PackagePlus, IndianRupee, TrendingUp, Banknote } from "lucide-react";
 import { AppMetricCard, AppSectionCard } from "../../components/ui/app-shell";
 import { ChartSkeleton } from "../../components/ChartSkeleton";
+import { useCompanyStore } from "../../store/companyStore";
 
 /* ─────────────────────────────────────────────
    TYPES
@@ -53,16 +54,7 @@ const CATEGORY_COLORS = [
   "#ef4444",
   "#06b6d4",
 ];
-
-/* ─────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────── */
-const formatCurrency = (val: number) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(val);
+ 
 
 const chartPlaneStyle: React.CSSProperties = {
   backgroundImage:
@@ -104,8 +96,19 @@ const FixedAssetDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<AssetDashboardSummary | null>(null);
 
-  // const chartsLoading = loading || !summary;
-  const chartsLoading = loading || (!summary && !error);
+const baseCurrency = useCompanyStore((state) => state.baseCurrency) || 'INR';
+
+  // 2. Create the formatter function dynamically
+  const formatCurrency = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    const formatter = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: baseCurrency,
+      maximumFractionDigits: 2,
+    });
+    // Return a function so it works exactly like your old helper
+    return (val: number) => formatter.format(val); 
+  }, [baseCurrency]);  const chartsLoading = loading || (!summary && !error);
 
   useEffect(() => {
     let mounted = true;
@@ -150,7 +153,7 @@ const FixedAssetDashboard: React.FC = () => {
       {
         label: "Asset Value",
         value: formatCurrency(summary?.totalAssetValue ?? 0),
-        icon: IndianRupee,
+        icon: Banknote, // Changed from IndianRupee
         gradient: "from-emerald-500 to-emerald-600",
       },
       {
@@ -160,9 +163,8 @@ const FixedAssetDashboard: React.FC = () => {
         gradient: "from-amber-500 to-amber-600",
       },
     ],
-    [summary]
+    [summary, formatCurrency] // <-- Added formatCurrency here
   );
-
   const hasTrendData = (summary?.assetValueTrend ?? []).length > 0;
   const hasCategoryData = (summary?.categoryBreakdown ?? []).length > 0;
   const hasLocationData = (summary?.locationBreakdown ?? []).length > 0;

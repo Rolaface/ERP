@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useCompanyStore } from '../../store/companyStore';
 
 export interface ChartMetric {
   key: string;
@@ -16,10 +17,18 @@ interface LineChartProps {
 }
 
 const LineChart: React.FC<LineChartProps> = ({ title, loading, trendData = {}, metrics, filterNode }) => {
-  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
-  }), []);
-
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
+  
+    const currencyFormatter = useMemo(() => {
+      const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+      
+      return new Intl.NumberFormat(locale, {
+        style: 'currency', 
+        currency: baseCurrency, 
+        maximumFractionDigits: 2, 
+        notation: "compact"
+      });
+    }, [baseCurrency]);  
   const option = useMemo(() => {
     const rawData: any[][] = [['Month', 'MetricName', 'Value']];
     
