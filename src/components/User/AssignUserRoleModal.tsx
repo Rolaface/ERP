@@ -273,7 +273,7 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
           className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""
             }`}
         >
-          {isSubmitting ? "Saving..." : isEdit ? "Update Role" : "Create Role"}
+          {isSubmitting ? "Saving..." : isEdit ? "Update" : "Save"}
         </button>
       </div>
     </div>
