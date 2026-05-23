@@ -4,6 +4,7 @@ import { postEmployeeAttendance, getEmployeeByEmployeeId} from "../../../api/emp
 import { useAuth } from "../../../context/AuthContext";
 import { showApiError } from "../../../utils/alert";
 import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
+import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
 
 const SUMMARY_STATS = [
   { label: "Day off", value: "12", diff: "+ 12 vs last month", diffColor: "text-blue-500" },
@@ -16,7 +17,7 @@ const SUMMARY_STATS = [
 
 const segmentColors = {
   checked_in:        "bg-[#2578C5]",
-  checked_in_active: "bg-[#2578C5]",   // same color, you can add "animate-pulse" here
+  checked_in_active: "bg-[#2578C5]",   
   checked_out:       "bg-[#F58B1E]",
 };
 
@@ -243,17 +244,74 @@ const EmployeeAttendance = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timelineData, setTimelineData] = useState<TimelineRowData[]>([]);
 
- const fetchAttendanceData = async () => {
+  const [filters, setFilters] = useState(() => {
+    const today = new Date();
+    const from = new Date(today);
+    from.setDate(today.getDate() - 3);
+    const to = new Date(today);
+    to.setDate(today.getDate() + 3);
+    
+    const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    
+    return { from_date: toYMD(from), to_date: toYMD(to) };
+  });
+
+//  const fetchAttendanceData = async () => {
+//     if (!user?.employeeId) return;
+
+//     try {
+//       const response = await getEmployeeByEmployeeId(user.employeeId);
+//       const rawLogs = response?.data?.data || response?.data;
+
+//       if (Array.isArray(rawLogs) && rawLogs.length > 0) {
+//         const formattedData = formatTimelineData(rawLogs);
+//         setTimelineData(formattedData);
+
+//         const sorted = [...rawLogs].sort(
+//           (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
+//         );
+//         const latestLog = sorted[sorted.length - 1];
+//         if (latestLog) {
+//           setIsCheckedIn(latestLog.log_type === "IN");
+//         }
+//       } else {
+//         setTimelineData([]);
+//       }
+//     } catch (error) {
+//       console.error("Attendance Fetch Error:", error);
+//       showApiError("Failed to fetch attendance records.");
+//     }
+//   };
+const fetchAttendanceData = async () => {
     if (!user?.employeeId) return;
 
     try {
-      const response = await getEmployeeByEmployeeId(user.employeeId);
+      // 1. Construct the exact Frappe API filter format
+      const apiFilters: any[] = [
+        ["employee", "=", user.employeeId]
+      ];
+
+      if (filters.from_date && filters.to_date) {
+        apiFilters.push([
+          "time", 
+          "between", 
+          [`${filters.from_date} 00:00:00`, `${filters.to_date} 23:59:59`]
+        ]);
+      } else if (filters.from_date) {
+        apiFilters.push(["time", ">=", `${filters.from_date} 00:00:00`]);
+      } else if (filters.to_date) {
+        apiFilters.push(["time", "<=", `${filters.to_date} 23:59:59`]);
+      }
+
+      const response = await getEmployeeByEmployeeId(user.employeeId, apiFilters);
+      
       const rawLogs = response?.data?.data || response?.data;
 
       if (Array.isArray(rawLogs) && rawLogs.length > 0) {
         const formattedData = formatTimelineData(rawLogs);
         setTimelineData(formattedData);
 
+        // Determine current check-in status from the latest log in this batch
         const sorted = [...rawLogs].sort(
           (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
         );
@@ -269,10 +327,9 @@ const EmployeeAttendance = () => {
       showApiError("Failed to fetch attendance records.");
     }
   };
-
   useEffect(() => {
     fetchAttendanceData();
-  }, [user]);
+  }, [user,filters.from_date, filters.to_date]);
 
   const handleCheckInOut = async () => {
     if (!user) return;
@@ -291,7 +348,7 @@ const EmployeeAttendance = () => {
 
     try {
       await postEmployeeAttendance(payload);
-      // Toggle button state on successful API call
+      await fetchAttendanceData();
       setIsCheckedIn(!isCheckedIn);
     } catch (error) {
       showApiError(parseFrappeError(error) || "Failed to log attendance. Please try again.");
@@ -311,9 +368,13 @@ const EmployeeAttendance = () => {
           </button>
         </div>
         
-        <span className="text-[15px] font-bold text-gray-900">
-          26 Jan - 26 Feb 2023
-        </span>
+       <DateRangeFilter
+          from={filters.from_date}
+          to={filters.to_date}
+          onChange={(range) => {
+            setFilters((prev) => ({ ...prev, ...range }));
+          }}
+        />
         
         <div className="flex items-center gap-6">
           <div className="flex gap-2">

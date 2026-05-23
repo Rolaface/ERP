@@ -44,6 +44,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
   initialData,
   onSuccess,
 }) => {
+  const isView = Boolean((initialData as any)?._isView);
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<Omit<LeaveType, "name">>(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -127,7 +128,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
     }
   };
 
-  const footer = (
+  const footer = !isView ?(
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -151,14 +152,15 @@ export const LeaveTypeModal: React.FC<Props> = ({
             : "Create Leave Type"}
       </button>
     </div>
-  );
+  ): null;
 
   return (
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? "Edit Leave Type" : "New Leave Type"}
+      // title={isEdit ? "Edit Leave Type" : "New Leave Type"}
+      title={isView ? "View Leave Type" : isEdit ? "Edit Leave Type" : "New Leave Type"}
       subtitle="Configure leave policies and rules"
       icon={CalendarRange}
       maxWidth="2xl"
@@ -174,6 +176,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
             onChange={(e) => set("leave_type_name", e.target.value)}
             placeholder="e.g. Casual Leave"
             required
+            disabled={isView}
           />
           <ModalInput
             label="Max Leaves Allowed"
@@ -184,6 +187,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
             onChange={(e) =>
               set("max_leaves_allowed", Number(e.target.value) || 0)
             }
+            disabled={isView}
           />
         </div>
 
@@ -202,6 +206,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
                 Number(e.target.value) || 0,
               )
             }
+            disabled={isView}
           />
         </div>
 
@@ -217,6 +222,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
               label="Is Leave Without Pay"
               value={form.is_lwp ? "Y" : "N"}
               onChange={(name, value) => set("is_lwp", value === "Y" ? 1 : 0)}
+              disabled={isView}
             />
             <YesNoCheckbox
               name="is_carry_forward"
@@ -225,6 +231,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
               onChange={(name, value) =>
                 set("is_carry_forward", value === "Y" ? 1 : 0)
               }
+              disabled={isView}
             />
             <YesNoCheckbox
               name="allow_negative"
@@ -233,6 +240,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
               onChange={(name, value) =>
                 set("allow_negative", value === "Y" ? 1 : 0)
               }
+              disabled={isView}
             />
             <YesNoCheckbox
               name="include_holiday"
@@ -241,6 +249,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
               onChange={(name, value) =>
                 set("include_holiday", value === "Y" ? 1 : 0)
               }
+              disabled={isView}
             />
           </div>
         </div>

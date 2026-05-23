@@ -14,7 +14,6 @@ import { HrContentFrame, HrPrimaryTabs } from "./components/HrTabLayout";
 import { usePermission }  from "../../hooks/permission/usePermission";
 import { useHRView }      from "../../hooks/permission/useHRView";
 
-
 interface LeaveProps {
   isEmployeeView?: boolean;
 }
@@ -51,6 +50,7 @@ const EmployeeLeave         = lazy<ComponentType<LeaveProps>>(
   () => import("./time_leave/LeaveManagementt")
 );
 const EmployeeAttendanceTimesheet     = lazy(() => import("./EmployeeView/EmployeeTimesheetAttendance"));
+const HrAttendanceTimesheet     = lazy(() => import("./HrView/HrTimesheetAttendance"));
 const EmployeeDocuments     = lazy(() => import("./EmployeeView/EmployeeDocuments"));
 const EmployeeReports       = lazy(() => import("./EmployeeView/EmployeeReports"));
 const EmployeeCompliance    = lazy(() => import("./EmployeeView/EmployeeCompliance"));
@@ -171,7 +171,7 @@ const HrPayrollModule: React.FC = () => {
     switch (tab) {
       case "dashboard":   return <HrDashboard />;
       case "management":  return <EmployeeManagement isEmployeeView={false} />;
-      case "attendance":  return <EmployeeAttendanceTimesheet />;
+      case "attendance":  return <HrAttendanceTimesheet />;
       case "performance": return <EmployeeAppraisals />;
       case "leave":       return <Leave isEmployeeView={false} />;
       case "payroll":     return <PayrollManagement />;
