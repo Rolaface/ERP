@@ -285,12 +285,10 @@ const AssetRegister: React.FC = () => {
     {
       key: "name",
       header: "Asset Name",
-      sortable: true,
     },
     {
       key: "category",
       header: "Category",
-      sortable: true,
     },
     {
       key: "location",
@@ -299,13 +297,11 @@ const AssetRegister: React.FC = () => {
     {
       key: "purchaseDate",
       header: "Purchase Date",
-      sortable: true,
       render: (row) => formatDate(row.purchaseDate),
     },
     {
       key: "value",
       header: "Value",
-      sortable: true,
       render: (row) => `₹ ${row.value.toLocaleString()}`,
     },
     {
@@ -400,16 +396,16 @@ const AssetRegister: React.FC = () => {
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
 
-        extraFilters={
-          <DateRangeFilter
-            from={filters.from_date}
-            to={filters.to_date}
-            onChange={(range) => {
-              setFilters((prev) => ({ ...prev, ...range }));
-              setPage(1);
-            }}
-          />
-        }
+        // extraFilters={
+        //   <DateRangeFilter
+        //     from={filters.from_date}
+        //     to={filters.to_date}
+        //     onChange={(range) => {
+        //       setFilters((prev) => ({ ...prev, ...range }));
+        //       setPage(1);
+        //     }}
+        //   />
+        // }
       />
 
 
