@@ -42,27 +42,47 @@ export interface LeaveApplication {
  * GET /api/resource/Leave Application
  * Gets all leave applications.
  */
-export async function getAllLeaveApplications(filters?: any[][]): Promise<LeaveApplication[]> {
+// export async function getAllLeaveApplications(filters?: any[][]): Promise<LeaveApplication[]> {
+//   try {
+//     const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> = await api.get(
+//       LEAVE_APP_RESOURCE.getAll,
+//       { params: { fields: '["*"]', limit_page_length: 0, filters: JSON.stringify(filters) } }
+//     );
+
+//     return resp.data?.data || [];
+//   } catch (error: any) {
+//     throw error;
+//   }
+// }
+export async function getAllLeaveApplications(
+  filters?: any[][]
+): Promise<LeaveApplication[]> {
   try {
-    const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> = await api.get(
-      LEAVE_APP_RESOURCE.getAll,
-      { params: { fields: '["*"]', limit_page_length: 0, filters: JSON.stringify(filters) } }
-    );
+    const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> =
+      await api.get(LEAVE_APP_RESOURCE.getAll, {
+        params: {
+          fields: '["*"]',
+          limit_page_length: 0,
+          filters: JSON.stringify(filters),
+        },
+      });
 
     return resp.data?.data || [];
   } catch (error: any) {
     throw error;
   }
 }
-
-/**
- * GET /api/resource/Leave Application/{name}
- * Gets a single leave application by its ID (name).
- */
-export async function getLeaveApplicationById(name: string): Promise<LeaveApplication> {
+ 
+export async function getLeaveApplicationById(name: string, filters?: any[][]): Promise<LeaveApplication> {
   try {
     const url = `${LEAVE_APP_RESOURCE.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<LeaveApplication>> = await api.get(url);
+    // const resp: AxiosResponse<FrappeDetailResponse<LeaveApplication>> = await api.get(url);
+    const resp: AxiosResponse<FrappeDetailResponse<LeaveApplication>> =
+      await api.get(url, {
+        params: {
+          filters: JSON.stringify(filters),
+        },
+      });
     
     return resp.data?.data;
   } catch (error: any) {
