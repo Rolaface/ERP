@@ -29,19 +29,19 @@ export default function AddKRAModal({
 
 const handleSave = async () => {
   try {
-    if (!title.trim()) return;
+    if (!title) return;
 
     if (selectedKRA) {
       await updateKRA(selectedKRA.id, {
-        title: title.trim(),
+        title: title,
         description,
       });
 
       showSuccess("KRA updated successfully");
     } else {
       await createKRA({
-        name: title.trim(),
-        title: title.trim(),
+        name: title,
+        title: title,
         description,
       });
 
@@ -49,8 +49,8 @@ const handleSave = async () => {
     }
 
     onAdd({
-      id: title.trim(),
-      title: title.trim(),
+      id: title,
+      title: title,
       description,
     });
 

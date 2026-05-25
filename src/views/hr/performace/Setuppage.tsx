@@ -1,34 +1,33 @@
 import { useState } from "react";
-import {
-  FaDatabase,
-  FaChevronDown,
-  
-} from "react-icons/fa";
+import { FaDatabase, FaChevronDown } from "react-icons/fa";
 import TemplateSection from "./sections/TemplateSection";
 import KRASection from "./sections/KRASection";
 import FeedbackSection from "./sections/FeedbackSection";
+import CycleList from "./sections/CycleList";
 
-type SetupSection = "template" | "kra" | "feedback";
+type SetupSection = "template" | "kra" | "feedback" | "cycle";
 
 const SECTIONS = [
   { id: "template" as SetupSection, label: "Appraisal Template" },
   { id: "kra" as SetupSection, label: "KRA" },
   { id: "feedback" as SetupSection, label: "Employee Feedback Criteria" },
+  { id: "cycle" as SetupSection, label: "Cycles" },
 ];
 
 export default function SetupPage() {
   const [activeSection, setActiveSection] = useState<SetupSection>("template");
 
-
-
   const renderSection = () => {
     switch (activeSection) {
-      case "template":
-        return <TemplateSection />;
       case "kra":
         return <KRASection />;
       case "feedback":
         return <FeedbackSection />;
+      case "template":
+        return <TemplateSection />;
+
+      case "cycle":
+        return <CycleList />;
     }
   };
 
@@ -101,8 +100,6 @@ export default function SetupPage() {
           minWidth: 0,
         }}
       >
-     
-
         {/* Active section */}
         <div style={{ flex: 1, minHeight: 0, overflow: "hidden", padding: 16 }}>
           {renderSection()}

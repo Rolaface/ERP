@@ -1,192 +1,366 @@
-import { useState } from "react";
-import { RefreshCw } from "lucide-react";
+import React, { useState, useMemo, useCallback } from "react";
+import { ClipboardList, Trash2, Plus } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
-import {
-  ModalInput,
-  ModalSelect,
-  ModalTextarea,
-} from "../../../components/ui/modal/modalComponent";
+import { ModalInput } from "../../../components/ui/modal/modalComponent";
+import SearchSelect2 from "../../ui/modal/SearchSelect2";
+import { useCycleModal, type NewCyclePayload } from "../../../hooks/appraisal/useCycleModal";
+import type { AppraiseeRow, CycleItem } from "../../../api/Appraisalapi/performanceCycleApi";
+import DatePickerInput from "../../calendar/DatePickerInput";
 
-// ─── Types ──────────────────────────────────────────────────────────────────────
 
-export interface NewCyclePayload {
-  name: string;
-  frequency: string;
-  startDate: string;
-  endDate: string;
-  department: string;
-  template: string;
-  description: string;
-}
+const ROWS_PER_PAGE = 5;
 
 interface NewCycleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (payload: NewCyclePayload) => void;
   modalId?: string;
+  viewData?: CycleItem | null;
+  isViewMode?: boolean;
+  /** True while CycleList is fetching the full doc (getCycleById) */
+  viewLoading?: boolean;
 }
 
-// ─── Constants ──────────────────────────────────────────────────────────────────
-
-const DEPARTMENTS = [
-  "All Departments",
-  "Engineering",
-  "Design",
-  "Sales",
-  "HR",
-  "Finance",
-  "Operations",
-];
-
-const FREQUENCIES = ["Yearly", "Half-Yearly", "Quarterly", "Monthly"];
-
-const TEMPLATES = [
-  "Engineering — Standard",
-  "Design — Standard",
-  "Sales — Standard",
-  "HR — Standard",
-  "Custom / No Template",
-];
-
-const EMPTY_FORM: NewCyclePayload = {
-  name: "",
-  frequency: "Yearly",
-  startDate: "",
-  endDate: "",
-  department: "All Departments",
-  template: "Custom / No Template",
-  description: "",
-};
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────────
-
-/** Auto-generate cycle name from frequency + start date */
-const autoName = (frequency: string, startDate: string): string => {
-  if (!startDate) return "";
-  const d = new Date(startDate);
-  if (isNaN(d.getTime())) return "";
-  const year = d.getFullYear();
-  const q = Math.floor(d.getMonth() / 3) + 1;
-  switch (frequency) {
-    case "Yearly":      return `Annual Review ${year}`;
-    case "Half-Yearly": return `H${d.getMonth() < 6 ? 1 : 2} Review ${year}`;
-    case "Quarterly":   return `Q${q} Review ${year}`;
-    case "Monthly":     return `${d.toLocaleString("default", { month: "long" })} Review ${year}`;
-    default:            return "";
-  }
-};
-
-/** Auto-calculate end date from frequency + start date */
-const autoEndDate = (frequency: string, startDate: string): string => {
-  if (!startDate) return "";
-  const d = new Date(startDate);
-  if (isNaN(d.getTime())) return "";
-  switch (frequency) {
-    case "Yearly":      d.setFullYear(d.getFullYear() + 1);  break;
-    case "Half-Yearly": d.setMonth(d.getMonth() + 6);        break;
-    case "Quarterly":   d.setMonth(d.getMonth() + 3);        break;
-    case "Monthly":     d.setMonth(d.getMonth() + 1);        break;
-  }
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().split("T")[0];
-};
-
-// ─── Validation ──────────────────────────────────────────────────────────────────
-
-interface Errors {
-  name?: string;
-  startDate?: string;
-  endDate?: string;
-}
-
-const validate = (form: NewCyclePayload): Errors => {
-  const errors: Errors = {};
-  if (!form.name.trim())     errors.name      = "Cycle name is required";
-  if (!form.startDate)       errors.startDate = "Start date is required";
-  if (!form.endDate)         errors.endDate   = "End date is required";
-  if (form.startDate && form.endDate && form.endDate <= form.startDate)
-    errors.endDate = "End date must be after start date";
-  return errors;
-};
-
-// ─── Field group label ───────────────────────────────────────────────────────────
 
 const SectionLabel = ({ children }: { children: string }) => (
-  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mt-1 mb-2">
+  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2">
     {children}
   </p>
 );
 
-// ─── Main Component ──────────────────────────────────────────────────────────────
+const tabStyle = (active: boolean): React.CSSProperties => ({
+  padding: "6px 14px",
+  fontSize: 13,
+  fontWeight: active ? 600 : 400,
+  color: active ? "var(--primary)" : "var(--muted)",
+  background: "none",
+  border: "none",
+  borderBottom: `2px solid ${active ? "var(--primary)" : "transparent"}`,
+  cursor: "pointer",
+  transition: "all 0.15s",
+});
+
+// ─── Appraisee Table ──────────────────────────────────────────────────────────
+
+interface AppraiseeTableProps {
+  allRows: AppraiseeRow[];
+  pageRows: AppraiseeRow[];
+  loading: boolean;
+  isViewMode: boolean;
+  pageOffset: number;
+  currentPage: number;
+  totalPages: number;
+  onPrev: () => void;
+  onNext: () => void;
+  fetchTemplates: (q: string) => Promise<{ label: string; value: string }[]>;
+  fetchEmployees: (q: string) => Promise<{ label: string; value: string }[]>;
+  onUpdateTemplate: (employeeId: string, templateName: string) => void;
+  onUpdateEmployee: (oldId: string, newId: string, newName: string) => void;
+  onRemove: (employeeId: string) => void;
+  onAddRow: () => void;
+}
+
+const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
+  allRows,
+  pageRows,
+  loading,
+  isViewMode,
+  pageOffset,
+  currentPage,
+  totalPages,
+  onPrev,
+  onNext,
+  fetchTemplates,
+  fetchEmployees,
+  onUpdateTemplate,
+  onUpdateEmployee,
+  onRemove,
+  onAddRow,
+}) => {
+  const total = allRows.length;
+  const showingFrom = total === 0 ? 0 : pageOffset + 1;
+  const showingTo = Math.min(pageOffset + pageRows.length, total);
+
+  // ── Skeleton ──
+  if (loading) {
+    return (
+      <div className="border border-[var(--border)] rounded-lg overflow-hidden">
+        <table className="w-full table-fixed text-xs">
+          <thead>
+            <tr className="bg-[var(--border)]/10 border-b-2 border-[var(--border)]">
+              {["", "No.", "Employee *", "Employee Name", "Appraisal Template", "Department", "Designation", "Branch", ""].map((h, i) => (
+                <th key={i} className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: ROWS_PER_PAGE }).map((_, i) => (
+              <tr key={i} className="border-b border-[var(--border)]/20">
+                {Array.from({ length: 9 }).map((_, j) => (
+                  <td key={j} className="px-3 py-2">
+                    <div className="h-3 rounded animate-pulse" style={{ width: "70%", background: "rgba(0,0,0,0.07)" }} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-[var(--border)] rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full table-fixed text-xs" style={{ minWidth: 720 }}>
+          <colgroup>
+            <col style={{ width: 32 }} />
+            <col style={{ width: 42 }} />
+            <col style={{ width: 140 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 170 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 36 }} />
+          </colgroup>
+
+          <thead>
+            <tr className="bg-[var(--border)]/10 border-b-2 border-[var(--border)]">
+              <th className="px-2 py-2 text-center">
+                <input type="checkbox" className="w-3 h-3 accent-[var(--primary)]" disabled={isViewMode} />
+              </th>
+              <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">No.</th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
+                Employee <span className="text-red-500">*</span>
+              </th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Employee Name</th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Appraisal Template</th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Department</th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Designation</th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Branch</th>
+              <th className="px-2 py-2" />
+            </tr>
+          </thead>
+
+          <tbody>
+            {pageRows.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="py-10 text-center text-[var(--muted)] text-xs opacity-60">
+                  No appraisees — click "Get Employees" or add a row manually
+                </td>
+              </tr>
+            ) : (
+              pageRows.map((row, idx) => {
+                const globalIdx = pageOffset + idx;
+                // Composite key handles multiple empty rows without collision
+                const rowKey = `${globalIdx}-${row.employee || "__empty"}`;
+
+                return (
+                  <tr
+                    key={rowKey}
+                    className={[
+                      "group border-b border-[var(--border)]/20 transition-colors",
+                      idx % 2 === 0 ? "bg-transparent" : "bg-[var(--row-hover)]/10",
+                      "hover:bg-[var(--row-hover)]",
+                    ].join(" ")}
+                  >
+                    <td className="px-2 py-1 text-center">
+                      <input type="checkbox" className="w-3 h-3 accent-[var(--primary)]" disabled={isViewMode} />
+                    </td>
+                    <td className="px-2 py-1 text-center text-[var(--muted)] font-medium text-xs">
+                      {globalIdx + 1}
+                    </td>
+
+                    {/* Employee */}
+                    <td className="px-2 py-1">
+                      {isViewMode ? (
+                        <span className="block truncate text-xs text-[var(--text)]" title={row.employee}>
+                          {row.employee || "—"}
+                        </span>
+                      ) : (
+                        <SearchSelect2
+                          label=""
+                          value={row.employee}
+                          fetchOptions={fetchEmployees}
+                          onChange={(val, opt: any) =>
+                            onUpdateEmployee(row.employee, val, opt?.label ?? val)
+                          }
+                          placeholder="Search employee…"
+                        />
+                      )}
+                    </td>
+
+                    {/* Employee Name (auto-filled) */}
+                    <td className="px-3 py-1">
+                      <span className="block truncate text-xs text-[var(--text)]" title={row.employee_name}>
+                        {row.employee_name || "—"}
+                      </span>
+                    </td>
+
+                    {/* Appraisal Template — API-backed SearchSelect2 */}
+                    <td className="px-2 py-1">
+                      {isViewMode ? (
+                        <span className="block truncate text-xs text-[var(--text)]" title={row.appraisal_template}>
+                          {row.appraisal_template || "—"}
+                        </span>
+                      ) : (
+                        <SearchSelect2
+                          label=""
+                          value={row.appraisal_template}
+                          fetchOptions={fetchTemplates}
+                          onChange={(val) => onUpdateTemplate(row.employee, val)}
+                          placeholder="Select template…"
+                        />
+                      )}
+                    </td>
+
+                    <td className="px-3 py-1">
+                      <span className="block truncate text-xs text-[var(--text)]" title={row.department}>
+                        {row.department || "—"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-1">
+                      <span className="block truncate text-xs text-[var(--text)]" title={row.designation}>
+                        {row.designation || "—"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-1">
+                      <span className="block truncate text-xs text-[var(--text)]" title={row.branch}>
+                        {row.branch || "—"}
+                      </span>
+                    </td>
+
+                    <td className="px-2 py-1 text-center">
+                      {!isViewMode && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onRemove(row.employee); }}
+                          className="p-1 rounded text-[var(--muted)] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Remove row"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer: add row + pagination */}
+      <div className="border-t border-[var(--border)] bg-card px-3 py-1.5 flex items-center gap-3">
+        {!isViewMode && (
+          <button
+            type="button"
+            onClick={onAddRow}
+            className="flex items-center gap-1.5 text-[11px] text-[var(--primary)] hover:opacity-80 font-medium transition-opacity shrink-0"
+          >
+            <Plus size={12} />
+            Add row
+          </button>
+        )}
+
+        <div className="flex-1" />
+
+        {total > 0 && (
+          <span className="text-[10px] text-[var(--muted)] whitespace-nowrap shrink-0">
+            Showing {showingFrom} to {showingTo} of {total} items
+          </span>
+        )}
+
+        <button
+          type="button"
+          onClick={onPrev}
+          disabled={currentPage === 1}
+          className={[
+            "px-2.5 py-1 rounded border text-[10px] font-medium transition-colors shrink-0",
+            currentPage === 1
+              ? "border-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
+              : "border-[var(--border)] text-[var(--text)] hover:border-[var(--primary)] hover:text-[var(--primary)]",
+          ].join(" ")}
+        >
+          Previous
+        </button>
+
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={currentPage === totalPages}
+          className={[
+            "px-2.5 py-1 rounded border text-[10px] font-medium transition-colors shrink-0",
+            currentPage === totalPages
+              ? "border-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
+              : "border-[var(--border)] text-[var(--text)] hover:border-[var(--primary)] hover:text-[var(--primary)]",
+          ].join(" ")}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const NewCycleModal = ({
   isOpen,
   onClose,
   onSave,
   modalId = "new-cycle",
+  viewData,
+  isViewMode = false,
+  viewLoading = false,
 }: NewCycleModalProps) => {
-  const [form, setForm]     = useState<NewCyclePayload>({ ...EMPTY_FORM });
-  const [errors, setErrors] = useState<Errors>({});
-  const [touched, setTouched] = useState<Set<string>>(new Set());
+  const hook = useCycleModal(isOpen, onSave, onClose, modalId, viewData, isViewMode);
 
-  const set = (field: keyof NewCyclePayload, value: string) => {
-    setForm((prev) => {
-      const next = { ...prev, [field]: value };
+  // ── Pagination ──
+  const [appraiseePage, setAppraiseePage] = useState(1);
 
-      // Auto-fill name when frequency or startDate changes
-      if (field === "frequency" || field === "startDate") {
-        const freq  = field === "frequency" ? value : prev.frequency;
-        const start = field === "startDate"  ? value : prev.startDate;
-        const generated = autoName(freq, start);
-        if (generated && (!prev.name || prev.name === autoName(prev.frequency, prev.startDate))) {
-          next.name = generated;
-        }
-        // Auto-fill end date
-        if (start) {
-          next.endDate = autoEndDate(freq, start);
-        }
-      }
+  const totalAppraisees = hook.appraisees.length;
+  const totalPages = Math.max(1, Math.ceil(totalAppraisees / ROWS_PER_PAGE));
+  const safePage = Math.min(appraiseePage, totalPages);
+  const pageOffset = (safePage - 1) * ROWS_PER_PAGE;
 
-      return next;
-    });
-    setTouched((prev) => new Set(prev).add(field));
-  };
+  const paginatedRows = useMemo(
+    () => hook.appraisees.slice(pageOffset, pageOffset + ROWS_PER_PAGE),
+    [hook.appraisees, pageOffset],
+  );
 
-  const handleSave = () => {
-    const errs = validate(form);
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      // Mark all as touched to show errors
-      setTouched(new Set(Object.keys(form)));
-      return;
-    }
-    onSave(form);
-    // Reset
-    setForm({ ...EMPTY_FORM });
-    setErrors({});
-    setTouched(new Set());
-    onClose();
-  };
+  if (safePage !== appraiseePage) setAppraiseePage(safePage);
 
-  const handleClose = () => {
-    setForm({ ...EMPTY_FORM });
-    setErrors({});
-    setTouched(new Set());
-    onClose();
-  };
+  // ── Add empty row ──
+  const handleAddRow = useCallback(() => {
+    hook.addAppraisee();
+    const newTotalPages = Math.ceil((totalAppraisees + 1) / ROWS_PER_PAGE);
+    setAppraiseePage(newTotalPages);
+  }, [hook, totalAppraisees]);
 
-  const showError = (field: keyof Errors) =>
-    touched.has(field) && errors[field]
-      ? <p className="text-[10px] text-red-500 mt-0.5">{errors[field]}</p>
-      : null;
+  const handleUpdateEmployee = useCallback(
+    (oldId: string, newId: string, newName: string) => {
+      hook.updateAppraiseeEmployee(oldId, newId, newName);
+    },
+    [hook],
+  );
 
-  // ── Footer ──────────────────────────────────────────────────────────────────
-  const footer = (
+  // ── Footer ──
+  const footer = isViewMode ? (
+    <div className="flex items-center justify-end w-full">
+      <button type="button" onClick={hook.handleClose} className="btn btn-outline text-sm px-4 h-8">
+        Close
+      </button>
+    </div>
+  ) : (
     <div className="flex items-center justify-between w-full">
-      <button onClick={handleClose} className="btn btn-outline text-sm px-4 h-8">
+      <button type="button" onClick={hook.handleClose} className="btn btn-outline text-sm px-4 h-8">
         Cancel
       </button>
-      <button onClick={handleSave} className="btn btn-primary text-sm px-5 h-8">
+      <button type="button" onClick={hook.handleSave} className="btn btn-primary text-sm px-5 h-8">
         Create Cycle
       </button>
     </div>
@@ -196,123 +370,190 @@ const NewCycleModal = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={handleClose}
-      title="New Appraisal Cycle"
-      subtitle="Set up a new performance review cycle"
-      icon={RefreshCw}
-      maxWidth="xl"
-      height="auto"
+      onClose={hook.handleClose}
+      title={isViewMode ? "View Appraisal Cycle" : "New Appraisal Cycle"}
+      subtitle={
+        isViewMode
+          ? "Read-only view of this performance review cycle"
+          : "Configure and launch a new performance review cycle"
+      }
+      icon={ClipboardList}
+      customWidth="70vw"
+      height="620px"
       footer={footer}
     >
-      <div className="space-y-4 pb-2">
+      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
-        {/* ── Basic Info ─────────────────────────────────────────────────── */}
-        <SectionLabel>Basic Info</SectionLabel>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <ModalSelect
-              label="Frequency"
-              value={form.frequency}
-              onChange={(e) => set("frequency", e.target.value)}
-              options={FREQUENCIES.map((f) => ({ label: f, value: f }))}
-            />
-          </div>
-          <div>
-            <ModalSelect
-              label="Department"
-              value={form.department}
-              onChange={(e) => set("department", e.target.value)}
-              options={DEPARTMENTS.map((d) => ({ label: d, value: d }))}
-            />
-          </div>
+        {/* ── Tabs ── */}
+        <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 16, flexShrink: 0 }}>
+          <button type="button" style={tabStyle(hook.activeTab === "overview")} onClick={() => hook.setActiveTab("overview")}>Overview</button>
+          <button type="button" style={tabStyle(hook.activeTab === "applicable")} onClick={() => hook.setActiveTab("applicable")}>Applicable For</button>
         </div>
 
-        {/* Cycle name — auto-filled but editable */}
-        <div>
-          <div className="relative">
-            <ModalInput
-              label="Cycle Name"
-              required
-              value={form.name}
-              onChange={(e) => set("name", e.target.value)}
-              placeholder="e.g. Annual Review 2025"
-            />
-            {form.name && (
-              <span
-                title="Auto-generated from frequency & start date"
-                className="absolute right-2 top-7 text-[9px] text-[var(--primary)] bg-[var(--primary)]/10 px-1.5 py-0.5 rounded-full font-medium select-none"
-              >
-                auto
-              </span>
-            )}
-          </div>
-          {showError("name")}
+        {/* ── Tab content ── */}
+        <div style={{ flex: 1, overflowY: "auto", paddingRight: 2 }}>
+
+          {/* Overview */}
+          {hook.activeTab === "overview" && (
+            <div className="space-y-4 pb-2">
+              <div>
+                <ModalInput
+                  label="Cycle Name"
+                  required={!isViewMode}
+                  value={hook.form.cycle_name}
+                  onChange={(e) => !isViewMode && hook.setField("cycle_name", e.target.value)}
+                  placeholder="e.g. Annual Review 2025"
+                  disabled={isViewMode}
+                />
+                {hook.getError("cycle_name") && (
+                  <p className="text-[10px] text-red-500 mt-0.5">{hook.getError("cycle_name")}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <DatePickerInput
+                    name="start_date"
+                    label="Start Date"
+                    required={!isViewMode}
+                    value={hook.form.start_date}
+                    onChange={(_, value) => {
+                      if (!isViewMode) {
+                        hook.setField("start_date", value);
+                      }
+                    }}
+                    disabled={isViewMode}
+                  />
+                  {hook.getError("start_date") && (
+                    <p className="text-[10px] text-red-500 mt-0.5">{hook.getError("start_date")}</p>
+                  )}
+                </div>
+                <div>
+                  <DatePickerInput
+                    name="end_date"
+                    label="End Date"
+                    required={!isViewMode}
+                    value={hook.form.end_date}
+                    onChange={(_, value) => {
+                      if (!isViewMode) {
+                        hook.setField("end_date", value);
+                      }
+                    }}
+                    disabled={isViewMode}
+                  />
+                  {hook.getError("end_date") && (
+                    <p className="text-[10px] text-red-500 mt-0.5">{hook.getError("end_date")}</p>
+                  )}
+                </div>
+              </div>
+
+              {hook.dateRangeMonths !== null && (
+                <div className="flex items-center gap-2 text-[11px] text-[var(--muted)] bg-[var(--row-hover)] rounded-lg px-3 py-2">
+                  <span>📅</span>
+                  <span>
+                    {hook.formatDateDisplay(hook.form.start_date)}
+                    {" → "}
+                    {hook.formatDateDisplay(hook.form.end_date)}
+                  </span>
+                  <span className="ml-auto font-medium text-[var(--text)]">
+                    {hook.dateRangeMonths} months
+                  </span>
+                </div>
+              )}
+
+              {isViewMode && viewData?.status && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[var(--muted)]">Status:</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${viewData.status === "Active" ? "bg-green-100 text-green-700" :
+                    viewData.status === "Draft" ? "bg-yellow-100 text-yellow-700" :
+                      viewData.status === "Completed" ? "bg-[var(--row-hover)] text-[var(--muted)]" :
+                        viewData.status === "Not Started" ? "bg-blue-50 text-blue-600" :
+                          "bg-gray-100 text-gray-600"
+                    }`}>
+                    {viewData.status}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Applicable For */}
+          {hook.activeTab === "applicable" && (
+            <div className="space-y-4 pb-2">
+
+              {/* Filters — only in create mode */}
+              {!isViewMode && (
+                <>
+                  <SectionLabel>Filters</SectionLabel>
+                  <p className="text-[11px] text-[var(--muted)] -mt-1">
+                    Set optional filters to fetch employees into the appraisee list
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <SearchSelect2
+                      label="Branch"
+                      value={hook.filterBranch}
+                      fetchOptions={hook.fetchBranches}
+                      onChange={(val) => hook.setFilterBranch(val)}
+                      placeholder="All branches…"
+                    />
+                    <SearchSelect2
+                      label="Designation"
+                      value={hook.filterDesignation}
+                      fetchOptions={hook.fetchDesignations}
+                      onChange={(val) => hook.setFilterDesignation(val)}
+                      placeholder="All designations…"
+                    />
+                    <SearchSelect2
+                      label="Department"
+                      value={hook.filterDepartment}
+                      fetchOptions={hook.fetchDepartments}
+                      onChange={(val) => hook.setFilterDepartment(val)}
+                      placeholder="All departments…"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="flex items-center justify-between">
+                <SectionLabel>{isViewMode ? "Appraisees" : "Employees"}</SectionLabel>
+                {!isViewMode && (
+                  <button
+                    type="button"
+                    onClick={() => { setAppraiseePage(1); hook.handleGetEmployees(); }}
+                    disabled={hook.loadingEmps}
+                    className="btn btn-outline text-xs px-3 py-1 mb-2"
+                  >
+                    {hook.loadingEmps ? "Fetching…" : "Get Employees"}
+                  </button>
+                )}
+              </div>
+
+              {hook.empError && (
+                <p className="text-[11px] text-red-500 -mt-2">{hook.empError}</p>
+              )}
+
+              {/* Show skeleton while fetching full doc in view mode */}
+              <AppraiseeTable
+                allRows={hook.appraisees}
+                pageRows={paginatedRows}
+                loading={hook.loadingEmps || (isViewMode && viewLoading)}
+                isViewMode={isViewMode}
+                pageOffset={pageOffset}
+                currentPage={safePage}
+                totalPages={totalPages}
+                onPrev={() => setAppraiseePage((p) => Math.max(1, p - 1))}
+                onNext={() => setAppraiseePage((p) => Math.min(totalPages, p + 1))}
+                fetchTemplates={hook.fetchTemplates}
+                fetchEmployees={hook.fetchEmployees}
+                onUpdateTemplate={hook.updateAppraiseeTemplate}
+                onUpdateEmployee={handleUpdateEmployee}
+                onRemove={hook.removeAppraisee}
+                onAddRow={handleAddRow}
+              />
+            </div>
+          )}
+
         </div>
-
-        {/* ── Dates ──────────────────────────────────────────────────────── */}
-        <SectionLabel>Period</SectionLabel>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <ModalInput
-              label="Start Date"
-              type="date"
-              required
-              name="startDate"
-              value={form.startDate}
-              onChange={(e) => set("startDate", e.target.value)}
-            />
-            {showError("startDate")}
-          </div>
-          <div>
-            <ModalInput
-              label="End Date"
-              type="date"
-              required
-              name="endDate"
-              value={form.endDate}
-              onChange={(e) => set("endDate", e.target.value)}
-            />
-            {showError("endDate")}
-          </div>
-        </div>
-
-        {/* Date range preview */}
-        {form.startDate && form.endDate && !errors.endDate && (
-          <div className="flex items-center gap-2 text-[11px] text-[var(--muted)] bg-[var(--row-hover)] rounded-lg px-3 py-2">
-            <span>📅</span>
-            <span>
-              {new Date(form.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-              {" → "}
-              {new Date(form.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-            </span>
-            <span className="ml-auto font-medium text-[var(--text)]">
-              {Math.round(
-                (new Date(form.endDate).getTime() - new Date(form.startDate).getTime()) /
-                (1000 * 60 * 60 * 24 * 30)
-              )} months
-            </span>
-          </div>
-        )}
-
-        {/* ── Template & Notes ───────────────────────────────────────────── */}
-        <SectionLabel>Setup</SectionLabel>
-
-        <ModalSelect
-          label="KRA Template"
-          value={form.template}
-          onChange={(e) => set("template", e.target.value)}
-          options={TEMPLATES.map((t) => ({ label: t, value: t }))}
-        />
-
-        <ModalTextarea
-          label="Description (optional)"
-          value={form.description}
-          onChange={(e) => set("description", e.target.value)}
-          placeholder="Any notes about this cycle..."
-        />
-
       </div>
     </MinimizableModal>
   );
