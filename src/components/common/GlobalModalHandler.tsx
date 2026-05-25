@@ -6,14 +6,23 @@ import { useQuickAdd } from "../../context/QuickAddContext";
 import type { CustomerDetail } from "../../types/customer";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { ItemInitialData } from "../inventory/ItemModal";
+import type { FeedbackRow } from "../../components/Hr/performance/section/AddFeedbackModal";
+
+import type { SetupRow } from "../../views/hr/performace/types";
 import type { TaxCategoryFormData as TaxTemplateFormData } from "../../types/tax/taxTemplate";
 import type { SalesTaxTemplateFormData } from "../../types/tax/salesTemplate";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import type { UserRoleFormData } from "../../types/RoleManagement/UserRole";
 import { createUserRoles } from "../../api/RoleManagement/UserRoleApi";
 import { showSuccess } from "../../utils/alert";
+const AddKRAModal = lazy(
+  () => import("../../components/Hr/performance/section/AddKRAModal"),
+)
 import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
-import { MinimizableModal } from "./MinimizableModal";
+const AddFeedbackModal = lazy(
+  () => import("../../components/Hr/performance/section/AddFeedbackModal"),
+);
+
 import { createUser } from "../../api/RoleManagement/CreateUserApi";
 import type { SalaryComponent, PayrollPeriod, SalaryStructure } from "../../api/payrollConfigApi";
 
@@ -987,7 +996,35 @@ const GlobalModalHandler: React.FC = () => {
             }
           />,
         );
-
+       case "KRA":
+  return wrappedModal(
+    <AddKRAModal
+      key={modal.id}
+      modalId={modal.id}        // ← THIS IS MISSING in your handler
+      selectedKRA={getInitialData<SetupRow>(modal.initialData)}
+      isViewMode={modal.context?.isViewMode ?? false}
+      onClose={handleClose}
+      onAdd={(row) => {
+        if (context?.onSuccess) context.onSuccess(row);
+        handleClose();
+      }}
+    />,
+  );
+  // Add case in renderModal switch:
+case "feedback":
+  return wrappedModal(
+    <AddFeedbackModal
+      key={modal.id}
+      modalId={modal.id}
+      selectedFeedback={getInitialData<FeedbackRow>(modal.initialData)}
+      isViewMode={modal.context?.isViewMode ?? false}
+      onClose={handleClose}
+      onAdd={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+        handleClose();
+      }}
+    />,
+  );
       case "appraisalCycle":
         return wrappedModal(
           <NewCycleModal
