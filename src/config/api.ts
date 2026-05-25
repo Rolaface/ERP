@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -640,6 +640,19 @@ export const API = {
     delete: `${ERP_BASE}/api/resource/Leave Application`,
   },
 
+performance: {
+  kra: {
+    list: "/api/resource/KRA",
+  },
+  template: {
+    list: "/api/resource/Appraisal Template",
+  },
+  feedback: {
+    list: "/api/resource/Employee Feedback Criteria",
+  },
+},
+
+
   /* =========================
    * UTILS
    * ========================= */
@@ -662,4 +675,7 @@ export const API = {
     getshifts:`${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
    
   },
+
+
+
 } as const;
