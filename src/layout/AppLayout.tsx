@@ -5,6 +5,7 @@ import { FEATURES } from "../config/features";
 import Sidebar from "../components/SideBar";
 import PageLoader from "../components/ui/PageLoader";
 import { QuickAddProvider } from "../context/QuickAddContext";
+import FloatingViewSwitch from "../components/common/FloatingViewSwitch";
 import {
   openCustomerModal,
   openInvoiceModal,
@@ -292,7 +293,7 @@ return (
           </div>
         </AppContentContainer>
       </AppMain>
-
+       <FloatingViewSwitch />
       <GlobalModalHandler />
 
       {FEATURES.CHAT_ENABLED && (
