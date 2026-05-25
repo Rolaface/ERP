@@ -253,7 +253,6 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ onAddFeedback }) => {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSortChange={handleSortChange}
-                emptyMessage="No feedback records found. Feedback API will be available soon."
             />
         </div>
     );
