@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
 import CustomerGroupModal from "../../components/customerGroup/CustomerGroupModal";
-import { Users } from "lucide-react"
+import { Users, Folder, FolderOpen, Plus } from "lucide-react";
 import type { Column } from "../../components/ui/Table/type";
-import { getCustomerGroupTree } from "../../api/customerApi";
-import { Folder, FolderOpen, Plus } from "lucide-react";
 import {
   AppPage,
   AppPageHeader,
@@ -13,6 +11,12 @@ import {
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 
+// Import your updated APIs
+import { 
+  getCustomerGroups, 
+  createCustomerGroup,
+  type CustomerGroupPayload 
+} from "../../api/customerGroupApi"; 
 
 const CUSTOMER_GROUP_MODULE = "Customer Group";
 
@@ -24,8 +28,9 @@ const CustomerGroup: React.FC = () => {
   const { can } = usePermission();
 
   const normalizeCustomerGroups = (nodes: any[]): any[] => {
+    if (!nodes) return [];
     return nodes.map((node) => ({
-      id: node.name,
+      id: node.id, // Using standard 'id' from backend
       name: node.customer_group_name,
       isGroup: node.is_group === 1,
       parent: node.parent_customer_group,
@@ -38,8 +43,13 @@ const CustomerGroup: React.FC = () => {
   const fetchTree = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await getCustomerGroupTree();
-      setTreeData(normalizeCustomerGroups(res));
+      // Pass as_tree to leverage your backend's built-in build_tree utility
+      const res = await getCustomerGroups({ as_tree: 1 });
+      
+      // Axios generally returns the API response object in `res.data`
+      // Your python method returns { data: [...], pagination: {...} }
+      const nodes = res.data || res;
+      setTreeData(normalizeCustomerGroups(nodes));
     } catch (err) {
       console.error("Error fetching customer groups:", err);
     } finally {
@@ -50,6 +60,19 @@ const CustomerGroup: React.FC = () => {
   useEffect(() => {
     fetchTree();
   }, [fetchTree]);
+
+  const handleCreateCustomerGroup = async (payload: CustomerGroupPayload) => {
+    try {
+      setLoading(true);
+      await createCustomerGroup(payload);
+      await fetchTree(); // Refresh the table after creation
+    } catch (err) {
+      console.error("Failed to create customer group:", err);
+      // Handle error state/toast notifications here
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const columns: Column<any>[] = [
     {
@@ -67,24 +90,17 @@ const CustomerGroup: React.FC = () => {
       align: "right",
       render: (row) => (
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100">
-          <PermissionGate
-            module={CUSTOMER_GROUP_MODULE}
-            action="write"
-          >
+          <PermissionGate module={CUSTOMER_GROUP_MODULE} action="write">
             <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
               Edit
             </button>
           </PermissionGate>
-          {row.isGroup &&
-            can(CUSTOMER_GROUP_MODULE, "create") && (
-              <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
-                Add Child
-              </button>
-            )}
-          <PermissionGate
-            module={CUSTOMER_GROUP_MODULE}
-            action="delete"
-          >
+          {row.isGroup && can(CUSTOMER_GROUP_MODULE, "create") && (
+            <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
+              Add Child
+            </button>
+          )}
+          <PermissionGate module={CUSTOMER_GROUP_MODULE} action="delete">
             <button className="text-xs px-2 py-1 hover:bg-row-hover rounded text-red-500">
               Delete
             </button>
@@ -144,10 +160,7 @@ const CustomerGroup: React.FC = () => {
           <CustomerGroupModal
             isOpen={showModal}
             onClose={() => setShowModal(false)}
-            onSubmit={() => {
-              setShowModal(false);
-              fetchTree();
-            }}
+            onSubmit={handleCreateCustomerGroup}
           />
         )}
       </AppPageBody>

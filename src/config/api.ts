@@ -319,6 +319,13 @@ export const API = {
     update: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.update_holiday_list`,
     delete: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.delete_holiday_list`,
   },
+  customerGroup: {
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.get_customer_groups`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.get_customer_group`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.create_customer_group`,
+    update: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.update_customer_group`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.delete_customer_group`,
+  },
   // holidays: {
   //   getAll: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
   //   create: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.create_holiday`,
