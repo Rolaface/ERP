@@ -119,7 +119,7 @@ const EmployeeDashboard: React.FC = () => {
                 <EmployeeSnapshot />
               </div>
 
-              <div className="opacity-90">
+              <div className="xl:col-span-7 opacity-90">
                 <TeamAvailability />
               </div>
 
