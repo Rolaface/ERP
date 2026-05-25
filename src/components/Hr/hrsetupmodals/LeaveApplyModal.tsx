@@ -67,7 +67,7 @@ export default function LeaveApplyModal({
 
   const editId       = initialData?.name || initialData?.id;
   const isEditMode   = Boolean(editLeaveId || editId);
-
+const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
   const [selectedRange,   setSelectedRange]   = useState<DateRange | undefined>();
   const [loading,         setLoading]         = useState(false);
   const [leaveApprover,   setLeaveApprover]   = useState<string>("");
@@ -102,7 +102,10 @@ export default function LeaveApplyModal({
 
   useEffect(() => {
     const id = editLeaveId || editId;
-    if (!id || !isOpen) return;
+    if (!id || !isOpen){
+      setCalendarMonth(new Date());
+      return;
+    }
 
     const fetchLeaveDetail = async () => {
       try {
@@ -114,6 +117,9 @@ export default function LeaveApplyModal({
           isHalfDay: l.half_day === 1,
           reason:    l.description || "",
         });
+        if (l.from_date) {
+          setCalendarMonth(new Date(l.from_date));
+        }
       } catch (err) {
         showApiError(parseFrappeError(err) || `Failed to fetch leave: ${err}`);
       }
@@ -251,6 +257,7 @@ export default function LeaveApplyModal({
   const handleClose = () => {
     setFormData({ type: "", startDate: "", endDate: "", reason: "", isHalfDay: false });
     setSelectedRange(undefined);
+    setCalendarMonth(new Date());
     setLeaveApprover("");
     setLeaveApproverId("");
     onClose();
@@ -309,6 +316,8 @@ export default function LeaveApplyModal({
               leaves={[]}
               selectedRange={selectedRange}
               onRangeSelect={handleRangeSelect}
+              month={calendarMonth}            
+              onMonthChange={setCalendarMonth}
             />
           </div>
         </div>

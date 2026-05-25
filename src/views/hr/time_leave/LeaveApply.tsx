@@ -235,57 +235,6 @@ const handleStatusUpdate = async (
         return <StatusBadge status={displayStatus} />;
       },
     },
-//     {
-//   key: "actions",
-//   header: "Actions",
-//   align: "center",
-//   render: (row) => {
-//     const leaveId = row.name || row.id;
-//     const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(row.status);
-
-//     return (
-//       <ActionGroup>
-//         {/* View is typically always available */}
-//         <ActionButton
-//           type="view"
-//           iconOnly
-//           onClick={() =>
-//             openLeaveApplyModal(
-//               { ...row, _isView: true } as any,
-//               true,
-//               { onSuccess: fetchLeaves }
-//             )
-//           }
-//         />
-
-//         {!isActionDone && (
-//           <ActionButton
-//             type="edit"
-//             iconOnly
-//             onClick={() =>
-//               openLeaveApplyModal(row, true, { onSuccess: fetchLeaves })
-//             }
-//             disabled={actionLoadingId === row.name}
-//           />
-//         )}
-
-//         {/* Only show Delete menu if the action is NOT done */}
-//         {!isActionDone && (
-//           <ActionMenu
-//             customActions={[
-//               {
-//                 label: "Delete",
-//                 danger: true, // Carried over from your old config
-//                 onClick: () => handleStatusUpdate(leaveId, "Delete"),
-//                 disabled: actionLoadingId === row.name,
-//               },
-//             ]}
-//           />
-//         )}
-//       </ActionGroup>
-//     );
-//   },
-// }
    {
       key: "actions",
       header: "Actions",
@@ -358,6 +307,14 @@ const handleStatusUpdate = async (
     <Table
      extraFilters={
               <>
+              <DateRangeFilter
+                  from={filters.from_date}
+                  to={filters.to_date}
+                  onChange={(range) => {
+                    setFilters((prev) => ({ ...prev, ...range }));
+                    setPage(1);
+                  }}
+                />
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -367,14 +324,6 @@ const handleStatusUpdate = async (
                   />
                   Show Leave History
                 </label>
-                <DateRangeFilter
-                  from={filters.from_date}
-                  to={filters.to_date}
-                  onChange={(range) => {
-                    setFilters((prev) => ({ ...prev, ...range }));
-                    setPage(1);
-                  }}
-                />
               </>
             }
       loading={isLoading}
