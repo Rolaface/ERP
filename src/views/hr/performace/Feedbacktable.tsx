@@ -145,7 +145,6 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ onAddFeedback }) => {
                 key: "name",
                 header: "ID",
                 align: "left",
-                sortable: true,
                 render: (row) => (
                     <div className="py-1.5">
                         <span className="block text-xs text-muted">{row.name}</span>
@@ -156,7 +155,6 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ onAddFeedback }) => {
                 key: "for_employee",
                 header: "For Employee",
                 align: "left",
-                sortable: true,
                 render: (row) => (
                     <div className="py-1.5">
                         <span className="block font-medium">{row.for_employee_name ?? row.for_employee}</span>
@@ -171,7 +169,6 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ onAddFeedback }) => {
                 key: "reviewer",
                 header: "Reviewer",
                 align: "left",
-                sortable: true,
                 render: (row) => (
                     <div className="py-1.5">
                         <span className="block font-medium">{row.reviewer_name ?? row.reviewer}</span>
@@ -185,7 +182,6 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ onAddFeedback }) => {
                 key: "added_on",
                 header: "Added On",
                 align: "center",
-                sortable: true,
                 render: (row) => (
                     <div className="py-1.5">
                         <span className="block">{formatDate(row.added_on)}</span>

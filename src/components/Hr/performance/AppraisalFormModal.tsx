@@ -346,7 +346,6 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({
       icon={ClipboardList}
       footer={footerContent}
       maxWidth="4xl"
-      height="85vh"
     >
       <form
         id="appraisalForm"

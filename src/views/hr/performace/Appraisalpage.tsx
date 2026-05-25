@@ -130,7 +130,6 @@ const AppraisalTable: React.FC<AppraisalTableProps> = ({ onAddAppraisal }) => {
         key: "cycle_name",
         header: "Cycle Name",
         align: "left",
-        sortable: true,
         render: (row) => (
           <div className="py-1.5">
             <span className="block font-medium">{row.cycle_name}</span>
@@ -152,7 +151,6 @@ const AppraisalTable: React.FC<AppraisalTableProps> = ({ onAddAppraisal }) => {
         key: "start_date",
         header: "Start Date",
         align: "center",
-        sortable: true,
         render: (row) => (
           <div className="py-1.5">
             <span className="block">{formatDate(row.start_date)}</span>
@@ -163,7 +161,6 @@ const AppraisalTable: React.FC<AppraisalTableProps> = ({ onAddAppraisal }) => {
         key: "end_date",
         header: "End Date",
         align: "center",
-        sortable: true,
         render: (row) => (
           <div className="py-1.5">
             <span className="block">{formatDate(row.end_date)}</span>
