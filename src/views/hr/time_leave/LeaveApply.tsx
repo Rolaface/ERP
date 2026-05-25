@@ -21,6 +21,7 @@ import type { Column } from "../../../components/ui/Table/type";
 import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
 import ActionButton, { ActionGroup, ActionMenu } from "../../../components/ui/Table/ActionButton";
 import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
+import { useAuth } from "../../../context/AuthContext";
 interface MenuAction {
   label:        string;
   icon:         React.ReactNode;
@@ -85,6 +86,7 @@ interface LeaveApplyTableProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
+  const { user } = useAuth();
   const [data,       setData]       = useState<any[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,9 +103,20 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
   const fetchLeaves = async () => {
     try {
       setIsLoading(true);
-       const apiFilters: any[] = showHistory
-        ? [["status", "in", ["Approved", "Rejected", "Open", "Cancelled"]]]
-        : [["status", "=", "Open"]];
+       const apiFilters: any[] = [
+      ["employee", "=", user?.employeeId], 
+    ];
+    console.log("User Employee ID:", user?.employeeId);
+    console.log("apiFilters:", apiFilters);
+      if (showHistory) {
+      apiFilters.push([
+        "status",
+        "in",
+        ["Approved", "Rejected", "Open", "Cancelled"],
+      ]);
+    } else {
+      apiFilters.push(["status", "=", "Open"]);
+    }
 
       if (filters.from_date) {
         apiFilters.push(["from_date", ">=", filters.from_date]);
