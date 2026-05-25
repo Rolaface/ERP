@@ -239,13 +239,13 @@ export default function AddTemplateModal({
     },
   ]);
   const criteria = usePaginatedRows<CriteriaRow>([
-  {
-    id: crypto.randomUUID(),
-    criteria: "",
-    criteriaLabel: "",
-    weightage: null,
-  },
-]);
+    {
+      id: crypto.randomUUID(),
+      criteria: "",
+      criteriaLabel: "",
+      weightage: null,
+    },
+  ]);
 
   // ── Load template data by ID when editing / viewing ──────────────────────
   useEffect(() => {
@@ -260,14 +260,14 @@ export default function AddTemplateModal({
           weightage: null,
         },
       ]);
-    criteria.setRows([
-  {
-    id: crypto.randomUUID(),
-    criteria: "",
-    criteriaLabel: "",
-    weightage: null,
-  },
-]);
+      criteria.setRows([
+        {
+          id: crypto.randomUUID(),
+          criteria: "",
+          criteriaLabel: "",
+          weightage: null,
+        },
+      ]);
       return;
     }
 
@@ -289,13 +289,13 @@ export default function AddTemplateModal({
           kraRows.length
             ? kraRows
             : [
-                {
-                  id: crypto.randomUUID(),
-                  kra: "",
-                  kraLabel: "",
-                  weightage: 0,
-                },
-              ],
+              {
+                id: crypto.randomUUID(),
+                kra: "",
+                kraLabel: "",
+                weightage: 0,
+              },
+            ],
         );
 
         // Map rating_criteria → Criteria rows
@@ -420,22 +420,37 @@ export default function AddTemplateModal({
           }}
         >
           <span style={{ fontSize: 11, color: "var(--muted)" }}>
-            KRA weight:{" "}
+            KRA weight:
             <b
               style={{
                 color: kraWeightOk ? "var(--success)" : "var(--danger)",
               }}
             >
+              {" "}
               {totalKraWeight.toFixed(1)}%
             </b>
-            &nbsp;&nbsp;Criteria weight:{" "}
+            {!kraWeightOk && (
+              <span style={{ color: "var(--danger)", marginLeft: 4 }}>
+                (Must total 100%)
+              </span>
+            )}
+
+            &nbsp;&nbsp;
+
+            Criteria weight:
             <b
               style={{
                 color: criteriaWeightOk ? "var(--success)" : "var(--danger)",
               }}
             >
+              {" "}
               {totalCriteriaWeight.toFixed(1)}%
             </b>
+            {!criteriaWeightOk && (
+              <span style={{ color: "var(--danger)", marginLeft: 4 }}>
+                (Must total 100%)
+              </span>
+            )}
           </span>
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn btn-outline" onClick={onClose}>
