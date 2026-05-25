@@ -196,8 +196,11 @@ const ScanPIModal = lazy(
   () => import("../../views/Procurement/ScanPurchaseInvoiceModal"),
 );
 const NewCycleModal = lazy(
-  ()  => import("../../components/Hr/performance/Newcyclemodal")
+  () => import("../../components/Hr/performance/Newcyclemodal")
 )
+
+const AppraisalModal = lazy(() => import("../../components/Hr/performance/AppraisalFormModal"));
+const FeedbackModal = lazy(() => import("../../components/Hr/performance/FeedbackModal"));
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -998,6 +1001,33 @@ const GlobalModalHandler: React.FC = () => {
             }}
           />,
         );
+
+      case "appraisal":
+        return wrappedModal(
+          <AppraisalModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.initialData}
+            mode={modal.isEdit ? "edit" : "create"}
+          />,
+        );
+
+      case "employeeFeedback":
+        return wrappedModal(
+          <FeedbackModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.initialData}
+            mode={modal.isEdit ? "edit" : "create"}
+          />,
+        );
+
     }
   };
 

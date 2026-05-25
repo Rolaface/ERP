@@ -20,7 +20,7 @@ import {
   updateTemplate,
   getTemplateById,
 } from "../../../../api/Appraisalapi/templeteApi";
-import { getKRAList } from "../../../../api/Appraisalapi/appraisalApi";
+import { getKRAList } from "../../../../api/Appraisalapi/kraApi";
 import { showApiError, showSuccess } from "../../../../utils/alert";
 import { NumberInput } from "../../../../components/ui/modal/modalComponent";
 

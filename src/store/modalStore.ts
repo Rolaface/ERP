@@ -52,6 +52,8 @@ export type ModalType =
   | "shiftType"
   | "scanPI"
   | "appraisalCycle"
+  | "appraisal"
+  | "employeeFeedback"
   ;
 
 export interface ModalContext {
@@ -859,3 +861,23 @@ export const openAppraisalCycleModal = (
   useModalStore
     .getState()
     .openModal("appraisalCycle", initialData, isEdit, context, meta);
+
+export const openAppraisalModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("appraisal", initialData, isEdit, context, meta);
+
+export const openFeedbackModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("employeeFeedback", initialData, isEdit, context, meta);
