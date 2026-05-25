@@ -74,6 +74,7 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
   const [leaveApproverId, setLeaveApproverId] = useState<string>("");
   const [empDetails, setEmpDetails] = useState<any>(null);
   const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
+  const [leaveApproverName, setLeaveApproverName] = useState<string>("");
 
   useEffect(() => {
     if (!isOpen || !user?.employeeId) return;
@@ -83,6 +84,8 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
         const res = await getEmployeeById(user.employeeId!);
         const data = res?.message?.data ?? res?.data ?? res;
         const approver = data?.leave_approver ?? "";
+        const approver_name = data?.leave_approver_name ?? "";
+        setLeaveApproverName(approver_name);
         setLeaveApprover(approver);
         setLeaveApproverId(approver);
 
@@ -92,6 +95,7 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
         if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
         if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
       } catch {
+        setLeaveApproverName("");
         setLeaveApprover("");
         setLeaveApproverId("");
       }
@@ -217,6 +221,7 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
       description:    formData.reason,
       status:         "Open",
       ...(leaveApproverId && { leave_approver: leaveApproverId }),
+      ...(leaveApproverName && { leave_approver_name: leaveApproverName }), 
     };
   };
 
@@ -260,6 +265,7 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
     setCalendarMonth(new Date());
     setLeaveApprover("");
     setLeaveApproverId("");
+    setLeaveApproverName("");
     onClose();
   };
 

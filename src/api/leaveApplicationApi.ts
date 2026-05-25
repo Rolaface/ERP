@@ -18,7 +18,6 @@ interface FrappeListResponse<T> {
 }
 
 export interface LeaveApplication {
-  /** Frappe resource name (e.g., HR-LAPP-2026-00001) */
   name?: string;
   employee: string;
   leave_type: string;
@@ -29,6 +28,7 @@ export interface LeaveApplication {
   total_leave_days?: number;
   description?: string;
   leave_approver?: string;
+  leave_approver_name?: string;
   follow_via_email?: 0 | 1;
   posting_date?: string; // Format: YYYY-MM-DD
   status?: string; // e.g., Open, Approved, Rejected
