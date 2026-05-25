@@ -3,7 +3,7 @@ import { useAuth }         from "../../../context/AuthContext";
 import { getEmployeeById } from "../../../api/employeeapi";
 import { showApiError, showLoading, closeSwal } from "../../../utils/alert";
 import AppSkeleton         from "../../../components/ui/AppSkeleton";
-import EmployeeDetailView  from "../EmployeeManagement/mployeeDetailView";
+import EmployeeDetailView  from "../EmployeeManagement/employeeDetailView";
 
 interface MyProfileProps {
   isPureEmployee?: boolean;

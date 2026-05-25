@@ -10,6 +10,7 @@ import { MinimizableModal } from "../../../../components/common/MinimizableModal
 import {
   ModalInput,
   ModalTextarea,
+  NumericInput,
 } from "../../../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../../ui/modal/SearchSelect2";
 import type { SetupRow } from "../../../../views/hr/performace/types";
@@ -29,7 +30,7 @@ interface KRARow {
   id: string;
   kra: string;
   kraLabel: string;
-  weightage: number;
+  weightage: number | null;
   rowName?: string;
 }
 
@@ -37,7 +38,7 @@ interface CriteriaRow {
   id: string;
   criteria: string;
   criteriaLabel: string;
-  weightage: number;
+  weightage: number | null;
   rowName?: string;
 }
 
@@ -230,9 +231,21 @@ export default function AddTemplateModal({
   );
 
   const kra = usePaginatedRows<KRARow>([
-    { id: crypto.randomUUID(), kra: "", kraLabel: "", weightage: 0 },
+    {
+      id: crypto.randomUUID(),
+      kra: "",
+      kraLabel: "",
+      weightage: null,
+    },
   ]);
-  const criteria = usePaginatedRows<CriteriaRow>([]);
+  const criteria = usePaginatedRows<CriteriaRow>([
+  {
+    id: crypto.randomUUID(),
+    criteria: "",
+    criteriaLabel: "",
+    weightage: null,
+  },
+]);
 
   // ── Load template data by ID when editing / viewing ──────────────────────
   useEffect(() => {
@@ -240,9 +253,21 @@ export default function AddTemplateModal({
       setTitle("");
       setDescription("");
       kra.setRows([
-        { id: crypto.randomUUID(), kra: "", kraLabel: "", weightage: 0 },
+        {
+          id: crypto.randomUUID(),
+          kra: "",
+          kraLabel: "",
+          weightage: null,
+        },
       ]);
-      criteria.setRows([]);
+    criteria.setRows([
+  {
+    id: crypto.randomUUID(),
+    criteria: "",
+    criteriaLabel: "",
+    weightage: null,
+  },
+]);
       return;
     }
 
@@ -669,25 +694,18 @@ export default function AddTemplateModal({
                           <TD
                             style={{ padding: "3px 6px", textAlign: "right" }}
                           >
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              step={0.001}
+                            <NumericInput
                               value={row.weightage}
-                              onChange={(e) =>
+                              onChange={(value) =>
                                 kra.updateRow(row.id, {
-                                  weightage: parseFloat(e.target.value) || 0,
+                                  weightage: value,
                                 })
                               }
+                              placeholder="0"
+                              decimalScale={3}
+                              allowNegative={false}
                               disabled={isViewMode}
-                              className="input-base no-spinner"
-                              style={{
-                                width: "100%",
-                                textAlign: "right",
-                                padding: "3px 8px",
-                                fontSize: 12,
-                              }}
+                              className="w-full text-right"
                             />
                           </TD>
                           <TD>
@@ -730,7 +748,7 @@ export default function AddTemplateModal({
                       id: crypto.randomUUID(),
                       kra: "",
                       kraLabel: "",
-                      weightage: 0,
+                      weightage: null,
                     })
                   }
                   style={{
@@ -936,25 +954,18 @@ export default function AddTemplateModal({
                           <TD
                             style={{ padding: "3px 6px", textAlign: "right" }}
                           >
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              step={0.001}
+                            <NumericInput
                               value={row.weightage}
-                              onChange={(e) =>
+                              onChange={(value) =>
                                 criteria.updateRow(row.id, {
-                                  weightage: parseFloat(e.target.value) || 0,
+                                  weightage: value,
                                 })
                               }
+                              placeholder="0"
+                              decimalScale={3}
+                              allowNegative={false}
                               disabled={isViewMode}
-                              className="input-base no-spinner"
-                              style={{
-                                width: "100%",
-                                textAlign: "right",
-                                padding: "3px 8px",
-                                fontSize: 12,
-                              }}
+                              className="w-full text-right"
                             />
                           </TD>
                           <TD>
@@ -997,7 +1008,7 @@ export default function AddTemplateModal({
                       id: crypto.randomUUID(),
                       criteria: "",
                       criteriaLabel: "",
-                      weightage: 0,
+                      weightage: null,
                     })
                   }
                   style={{

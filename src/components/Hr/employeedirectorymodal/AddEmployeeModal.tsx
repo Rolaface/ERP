@@ -11,8 +11,7 @@ import WorkScheduleTab from "./WorkScheduletab";
 import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
 
-
-import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
+import { getEmployees } from "../../../api/utils/frappeUtilsApi";import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
 import { EMPLOYEE_ROLE_CONFIG } from "../../../api/config/employeeRoleConfig";
 import { filterEmployeesByRole } from "../../../api/config/employeeRoleFilter";
 
@@ -169,6 +168,40 @@ const AddEmployeeModal: React.FC<Props> = ({
     })();
   }, [isOpen]);
 
+useEffect(() => {
+  const loadReportingToLabel = async () => {
+    if (!formData.reports_to) {
+      return;
+    }
+
+    try {
+    const res = await getEmployees(
+  formData.reports_to,
+);
+
+      const matchedEmployee = (res || []).find(
+        (emp: any) =>
+          emp.value === formData.reports_to,
+      );
+
+      if (
+        matchedEmployee &&
+        matchedEmployee.label !==
+          formData.reportingToLabel
+      ) {
+        setFormData((prev: any) => ({
+          ...prev,
+          reportingToLabel:
+            matchedEmployee.label,
+        }));
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  loadReportingToLabel();
+}, [formData.reports_to]);
   // ── Helpers ─────────────────────────────────────────────────────────────
   const handleInputChange = (field: string, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));

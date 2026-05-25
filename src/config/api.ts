@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-//  export const ERP_BASE = getApiBaseUrl();
- export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -676,6 +676,7 @@ performance: {
     getBranches:`${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
     createbranch:`${ERP_BASE}/api/resource/Branch`,
     getshifts:`${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
+
    
   },
 

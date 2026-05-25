@@ -8,9 +8,9 @@ import CycleList from "./sections/CycleList";
 type SetupSection = "template" | "kra" | "feedback" | "cycle";
 
 const SECTIONS = [
-  { id: "template" as SetupSection, label: "Appraisal Template" },
   { id: "kra" as SetupSection, label: "KRA" },
   { id: "feedback" as SetupSection, label: "Employee Feedback Criteria" },
+  { id: "template" as SetupSection, label: "Appraisal Template" },
   { id: "cycle" as SetupSection, label: "Cycles" },
 ];
 
@@ -34,7 +34,15 @@ export default function SetupPage() {
   return (
     <div style={{ display: "flex", height: "100%", minHeight: 0 }}>
       {/* Sidebar */}
-      <div style={{ width: 220, flexShrink: 0, borderRight: "1px solid var(--border)", padding: "12px 0", overflowY: "auto" }}>
+      <div
+        style={{
+          width: 220,
+          flexShrink: 0,
+          borderRight: "1px solid var(--border)",
+          padding: "12px 0",
+          overflowY: "auto",
+        }}
+      >
         {SECTIONS.map((s) => (
           <button
             key={s.id}
@@ -66,9 +74,14 @@ export default function SetupPage() {
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        
-
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+        }}
+      >
         {/* Active section */}
         <div style={{ flex: 1, minHeight: 0, overflow: "hidden", padding: 16 }}>
           {renderSection()}

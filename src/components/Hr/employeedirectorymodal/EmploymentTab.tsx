@@ -10,8 +10,10 @@ import {
   createBranch,
   checkBranchExists,
   getshift,
+  getEmployees,
 } from "../../../api/utils/frappeUtilsApi";
-import { getAllEmployees } from "../../../api/employeeapi";
+import { resolveLabel } from "../../../api/utils/labelResolver";
+
 import DatePickerInput from "../../calendar/DatePickerInput";
 
 type EmploymentTabProps = {
@@ -48,32 +50,74 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
     }
   }, [formData.employment_type]);
 
-  // ── fetch helpers ──────────────────────────────────────────────
-  const fetchEmployeeOptions = async (q: string) => {
-    const res = await getAllEmployees(1, 200);
-    return (res.data || [])
-      .filter((emp: any) =>
-        `${emp.employee_name} ${emp.name}`
-          .toLowerCase()
-          .includes(q.toLowerCase())
-      )
-      .map((emp: any) => ({
-        label: emp.employee_name,
-        value: emp.name,
-        meta: { employeeId: emp.name },
-      }));
+  const fetchReportingToOptions = async (q: string) => {
+    const res = await getEmployees(q, {
+      currentEmployee: formData.employee,
+    });
+
+    return (res || []).map((emp: any) => ({
+      label: emp.label,
+      value: emp.value,
+      meta: {
+        description: emp.description,
+      },
+    }));
+  };
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.department,
+      fetcher: getAllDepartments,
+    });
+
+    handleInputChange(
+      "departmentLabel",
+      label,
+    );
   };
 
-  const fetchDepartmentOptions    = (q: string) => getAllDepartments(q);
-  const fetchGradeOptions         = (q: string) => getAllGrades(q);
-  const fetchDesignationOptions   = (q: string) => getAllDesignations(q);
+  loadLabel();
+}, [formData.department]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.reports_to,
+      fetcher: getEmployees,
+    });
+
+    handleInputChange(
+      "reportingToLabel",
+      label,
+    );
+  };
+
+  loadLabel();
+}, [formData.reports_to]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.branch,
+      fetcher: getallbranches,
+    });
+
+    handleInputChange(
+      "branchLabel",
+      label,
+    );
+  };
+
+  loadLabel();
+}, [formData.branch]);
+
+  const fetchDepartmentOptions = (q: string) => getAllDepartments(q);
+  const fetchGradeOptions = (q: string) => getAllGrades(q);
+  const fetchDesignationOptions = (q: string) => getAllDesignations(q);
   const fetchEmploymentTypeOptions = (q: string) => getAllEmploymentTypes(q);
-  const fetchBranchOptions        = (q: string) => getallbranches(q);
-  const fetchShiftOptions         = (q: string) => getshift(q);
+  const fetchBranchOptions = (q: string) => getallbranches(q);
+  const fetchShiftOptions = (q: string) => getshift(q);
 
   return (
     <div className="max-w-4xl mx-auto space-y-3">
-
       {/* ── Employment Details ───────────────────────────────────── */}
       <div className="bg-card p-3 rounded-lg border border-theme">
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
@@ -84,10 +128,14 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
         <div className="grid grid-cols-3 gap-2.5">
           <SearchSelect2
             label="Department"
-            value={formData.department}
+            value={formData.departmentLabel || formData.department}
             placeholder="Search Department..."
             fetchOptions={fetchDepartmentOptions}
-            onChange={(value) => handleInputChange("department", value)}
+            onChange={(value, option) => {
+              handleInputChange("department", value);
+
+              handleInputChange("departmentLabel", option?.label || "");
+            }}
           />
           <SearchSelect2
             label="Grade"
@@ -161,11 +209,12 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
         <div className="grid grid-cols-3 gap-2.5">
           <SearchSelect2
             label="Reporting To"
-            value={formData.reportingToLabel}
+            value={formData.reportingToLabel || formData.reports_to}
             placeholder="Search Employee..."
-            fetchOptions={fetchEmployeeOptions}
+            fetchOptions={fetchReportingToOptions}
             onChange={(value, option) => {
               handleInputChange("reports_to", value);
+
               handleInputChange("reportingToLabel", option?.label || "");
             }}
           />
@@ -208,7 +257,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
           />
         </div>
       </div>
-
     </div>
   );
 };

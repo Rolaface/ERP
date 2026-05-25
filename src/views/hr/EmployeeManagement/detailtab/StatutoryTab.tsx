@@ -14,9 +14,19 @@ export const StatutoryTab: React.FC<Props> = ({ emp }) => (
       icon={<ShieldCheck className="w-3.5 h-3.5" />}
     >
       <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-        <Field label="National Identification Number" value={fmt(emp.national_identification_number)} mono />
-        <Field label="Tax Identification Number" value={fmt(emp.tax_identification_number)} />
-        <Field label="Universal Account Number" value={fmtDate(emp.universal_account_number)} />
+        <Field
+          label="National Identification Number"
+          value={fmt(emp.national_identification_number)}
+          mono
+        />
+        <Field
+          label="Tax Identification Number"
+          value={fmt(emp.tax_identification_number)}
+        />
+        <Field
+          label="Universal Account Number"
+          value={fmt(emp.universal_account_number)}
+        />
         {/* <Field label="Valid Upto" value={fmtDate(emp.valid_upto)} /> */}
         <Field
           label="Health Insurance"
