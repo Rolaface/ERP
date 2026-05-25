@@ -195,7 +195,9 @@ const EmailTemplateModal = lazy(
 const ScanPIModal = lazy(
   () => import("../../views/Procurement/ScanPurchaseInvoiceModal"),
 );
-
+const NewCycleModal = lazy(
+  ()  => import("../../components/Hr/performance/Newcyclemodal")
+)
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -980,6 +982,20 @@ const GlobalModalHandler: React.FC = () => {
                 "pId",
               ) as string | undefined
             }
+          />,
+        );
+
+      case "appraisalCycle":
+        return wrappedModal(
+          <NewCycleModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSave={async (payload) => {
+              if (context?.onSubmit) await context.onSubmit(payload);
+              handleClose();
+            }}
           />,
         );
     }

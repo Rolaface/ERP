@@ -3,13 +3,15 @@ import { FaDatabase, FaChevronDown, FaSyncAlt, FaEllipsisH } from "react-icons/f
 import TemplateSection from "./sections/TemplateSection";
 import KRASection from "./sections/KRASection";
 import FeedbackSection from "./sections/FeedbackSection";
+import CycleList from "./sections/CycleList";
 
-type SetupSection = "template" | "kra" | "feedback";
+type SetupSection = "template" | "kra" | "feedback"|"cycle";
 
 const SECTIONS = [
   { id: "template" as SetupSection, label: "Appraisal Template"        },
   { id: "kra"      as SetupSection, label: "KRA"                       },
   { id: "feedback" as SetupSection, label: "Employee Feedback Criteria" },
+  { id : "cycle"  as SetupSection,label: "Cycles"}
 ];
 
 export default function SetupPage() {
@@ -22,6 +24,7 @@ export default function SetupPage() {
       case "template": return <TemplateSection />;
       case "kra":      return <KRASection />;
       case "feedback": return <FeedbackSection />;
+      case "cycle" : return <CycleList/>
     }
   };
 

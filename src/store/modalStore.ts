@@ -48,9 +48,11 @@ export type ModalType =
   | "holidayList"
   | "expense"
   | "expenseType"
-  |"emailTemplate"
+  | "emailTemplate"
   | "shiftType"
-  | "scanPI";
+  | "scanPI"
+  | "appraisalCycle"
+  ;
 
 export interface ModalContext {
   source?: string;
@@ -846,3 +848,14 @@ export const openScanPIModal = (
       context,
       meta,
     );
+
+
+export const openAppraisalCycleModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("appraisalCycle", initialData, isEdit, context, meta);
