@@ -14,6 +14,8 @@ import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
 import { usePermission } from "../../../hooks/permission/usePermission";
 import { useAuth } from "../../../context/AuthContext";
 import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
+import ActionButton, { ActionGroup, ActionMenu } from "../../../components/ui/Table/ActionButton";
+import { openLeaveApplyModal } from "../../../store/modalStore";
 
 interface MenuAction {
   label: string;
@@ -214,28 +216,55 @@ export default function LeaveApproval() {
       key: "actions",
       header: "Actions",
       align: "center",
-      render: (e) => {
-        const leaveId = e.name || e.id;
-        const isActionDone = ["Approved", "Rejected"].includes(e.status);
-        const actions: MenuAction[] = [];
+      // render: (e) => {
+      //   const leaveId = e.name || e.id;
+      //   const isActionDone = ["Approved", "Rejected"].includes(e.status);
+      render: (row) => {
+       const leaveId = row.name || row.id;
+       const isActionDone = ["Approved", "Rejected"].includes(row.status);
+        // const actions: MenuAction[] = [];
 
-        // ── Approve / Reject require can("Leave Application", "write") ──────
-        if (canApproveReject && !isActionDone) {
-          actions.push({
+        // if (canApproveReject && !isActionDone) {
+        //   actions.push({
+        const customMenuActions: MenuAction[] = [];
+
+if (canApproveReject && !isActionDone) {
+  customMenuActions.push({
             label: "Approve",
             icon: <CheckCircle size={14} className="text-green-600" />,
             onClick: () => handleStatusUpdate(leaveId, "Approved", "1"),
             dividerBefore: true,
           });
-          actions.push({
-            label: "Reject",
+          // actions.push({
+          customMenuActions.push({
+  label: "Reject",
+            // label: "Reject",
             icon: <XCircle size={14} />,
             onClick: () => handleStatusUpdate(leaveId, "Rejected", "1"),
             danger: true,
           });
         }
 
-        return <RowActionMenu actions={actions} />;
+        // return <RowActionMenu actions={actions} />;
+        return(
+        <ActionGroup>
+                    {/* View is typically always available */}
+                    <ActionButton
+                      type="view"
+                      iconOnly
+                      onClick={() =>
+                        openLeaveApplyModal(
+                          { ...row, _isView: true } as any,
+                          true,
+                          { onSuccess: getAllLeaveApplied }
+                        )
+                      }
+                    />
+                    {customMenuActions.length > 0 && (
+                      <ActionMenu customActions={customMenuActions} />
+                    )}
+                  </ActionGroup>
+        );
       },
     },
   ];
@@ -245,6 +274,14 @@ export default function LeaveApproval() {
       <Table
         extraFilters={
           <>
+           <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range) => {
+                setFilters((prev) => ({ ...prev, ...range }));
+                setPage(1);
+              }}
+            />
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
               <input
                 type="checkbox"
@@ -254,16 +291,9 @@ export default function LeaveApproval() {
               />
               Show Leave History
             </label>
-            <DateRangeFilter
-              from={filters.from_date}
-              to={filters.to_date}
-              onChange={(range) => {
-                setFilters((prev) => ({ ...prev, ...range }));
-                setPage(1);
-              }}
-            />
           </>
         }
+        defaultVisibleCount={7}
         loading={isLoading}
         columns={columns}
         data={data}

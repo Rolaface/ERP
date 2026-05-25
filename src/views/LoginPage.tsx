@@ -143,9 +143,7 @@ focus:scale-[1.01]"
                   onChange={() => setRememberMe(!rememberMe)}
                   className="w-4 h-4 accent-[var(--primary)]"
                 />
-                <label className="text-sm text-muted">
-                  Remember me for 30 days
-                </label>
+                
               </div>
             </div>
 

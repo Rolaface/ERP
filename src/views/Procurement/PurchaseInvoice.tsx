@@ -31,7 +31,7 @@ import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import PurchaseInvoiceDetailModal, {
   type PurchaseInvoiceDetail,
 } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
-
+import { openScanPIModal } from "../../store/modalStore";
 import {
   REFRESH_KEYS,
   useDataRefreshStore,
@@ -39,6 +39,7 @@ import {
 import { fireManagedSwal } from "../../utils/swalManager";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
+
 
 interface Purchaseinvoice {
   pId: string;
@@ -545,16 +546,16 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       tooltip: (o) => o.deliveryDate || "—",
     },
     {
-        key:"currency",
-        header:"Currency",
-        align:"center",
-        render: (o) => (
-          <div className="py-1.5">
-            <span className="block">
-              {o.currency || "-"}
-            </span>
-          </div>
-        )
+      key: "currency",
+      header: "Currency",
+      align: "center",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.currency || "-"}
+          </span>
+        </div>
+      )
     },
     {
       key: "amount",
@@ -638,6 +639,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               : {})}
             customActions={[
               { label: "View PDF", onClick: () => handleOpenPDF(o) },
+              {
+                label: "Scan PI",
+                onClick: () => openScanPIModal(o.pId),
+              },
 
               // Make Payment — needs Payment Entry create + outstanding > 0
               ...(can(PAYMENT_MODULE, "create") && Number(o.outstanding_amount || 0) > 0
