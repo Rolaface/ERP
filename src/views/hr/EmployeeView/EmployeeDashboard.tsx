@@ -25,7 +25,9 @@ const EmployeeDashboard: React.FC = () => {
         {/* ─────────────────────────────────────────────
             EMPLOYEE OPERATING BANNER
         ───────────────────────────────────────────── */}
-        <EmployeeOperatingBanner />
+        <section className="pb-2">
+          <EmployeeOperatingBanner />
+        </section>
 
         {/* ─────────────────────────────────────────────
             🥇 PRIMARY OPERATIONAL ZONE
