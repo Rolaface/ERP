@@ -1,215 +1,180 @@
 import React from "react";
 
 import DashboardSection from "../../primitives/DashboardSection";
-import DashboardGrid from "../../layout/DashboardGrid";
-import DashboardStack from "../../layout/DashboardStack";
 
+type EmployeeStatus =
+  | "available"
+  | "focus"
+  | "meeting"
+  | "away";
 
 type Employee = {
   name: string;
   role: string;
-  department: "engineering" | "hr" | "sales" | "ops";
-  availability: "available" | "busy" | "overloaded" | "on_leave";
-  workload: number;
-  tasksCompletedToday: number;
-  pendingApprovals: number;
-  lastActive: string;
+  status: EmployeeStatus;
+  note: string;
 };
 
-const mockEmployees: Employee[] = [
+const teamMembers: Employee[] = [
   {
     name: "Amit Sharma",
     role: "Frontend Engineer",
-    department: "engineering",
-    availability: "busy",
-    workload: 72,
-    tasksCompletedToday: 5,
-    pendingApprovals: 2,
-    lastActive: "5 min ago",
+    status: "focus",
+    note: "Working on dashboard redesign",
   },
   {
     name: "Neha Verma",
     role: "HR Manager",
-    department: "hr",
-    availability: "available",
-    workload: 45,
-    tasksCompletedToday: 3,
-    pendingApprovals: 4,
-    lastActive: "Just now",
+    status: "available",
+    note: "Available for approvals",
   },
   {
     name: "Rahul Mehta",
     role: "Sales Executive",
-    department: "sales",
-    availability: "overloaded",
-    workload: 91,
-    tasksCompletedToday: 7,
-    pendingApprovals: 1,
-    lastActive: "12 min ago",
+    status: "meeting",
+    note: "Client calls until 3 PM",
   },
   {
     name: "Priya Singh",
-    role: "Ops Coordinator",
-    department: "ops",
-    availability: "on_leave",
-    workload: 0,
-    tasksCompletedToday: 0,
-    pendingApprovals: 0,
-    lastActive: "1 day ago",
+    role: "Operations Coordinator",
+    status: "away",
+    note: "On leave today",
   },
 ];
 
-function getAvailabilityColor(status: Employee["availability"]) {
+function getStatusStyles(status: EmployeeStatus) {
   switch (status) {
     case "available":
-      return "text-green-500";
-    case "busy":
-      return "text-yellow-500";
-    case "overloaded":
-      return "text-red-500";
-    case "on_leave":
-      return "text-gray-400";
+      return {
+        dot: "bg-emerald-500",
+        badge:
+          "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+        label: "Available",
+      };
+
+    case "focus":
+      return {
+        dot: "bg-amber-500",
+        badge:
+          "bg-amber-500/10 text-amber-600 border-amber-500/20",
+        label: "Focus Mode",
+      };
+
+    case "meeting":
+      return {
+        dot: "bg-blue-500",
+        badge:
+          "bg-blue-500/10 text-blue-600 border-blue-500/20",
+        label: "In Meetings",
+      };
+
+    case "away":
+      return {
+        dot: "bg-zinc-400",
+        badge:
+          "bg-zinc-500/10 text-zinc-500 border-zinc-500/20",
+        label: "Away",
+      };
   }
 }
 
-function getWorkloadBar(workload: number) {
-  let color = "bg-green-500";
-
-  if (workload >= 85) color = "bg-red-500";
-  else if (workload >= 65) color = "bg-yellow-500";
-
-  return (
-    <div className="w-full h-2 bg-[var(--surface-muted)] rounded-full overflow-hidden">
-      <div
-        className={`h-full ${color}`}
-        style={{ width: `${workload}%` }}
-      />
-    </div>
-  );
-}
-
-function DepartmentBadge({ dept }: { dept: Employee["department"] }) {
-  return (
-    <span className="text-xs px-2 py-1 rounded-md bg-[var(--surface-muted)] text-[var(--text-muted)] uppercase">
-      {dept}
-    </span>
-  );
-}
-
 export default function EmployeeSnapshot() {
-  const avgWorkload = Math.round(
-    mockEmployees.reduce((acc, e) => acc + e.workload, 0) /
-      mockEmployees.length
-  );
-
-  const overloadedCount = mockEmployees.filter(
-    (e) => e.workload >= 85
-  ).length;
-
   return (
     <DashboardSection
-      title="Human Execution Intelligence"
-      subtitle="Real-time employee state monitoring system"
+      title="Team Pulse"
+      subtitle="Quick awareness about people around your workday"
     >
-      {/* System KPIs */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="p-3 rounded-xl border bg-[var(--surface)] border-[var(--border-subtle)]">
-          <div className="text-xs text-[var(--text-muted)]">
-            Avg Workload
-          </div>
-          <div className="text-lg font-medium text-[var(--text)]">
-            {avgWorkload}%
-          </div>
-        </div>
+      <div className="space-y-3">
 
-        <div className="p-3 rounded-xl border bg-[var(--surface)] border-[var(--border-subtle)]">
-          <div className="text-xs text-[var(--text-muted)]">
-            Overloaded Nodes
-          </div>
-          <div className="text-lg font-medium text-[var(--text)]">
-            {overloadedCount}
-          </div>
-        </div>
+        {teamMembers.map((member) => {
+          const styles = getStatusStyles(member.status);
 
-        <div className="p-3 rounded-xl border bg-[var(--surface)] border-[var(--border-subtle)]">
-          <div className="text-xs text-[var(--text-muted)]">
-            Active Nodes
-          </div>
-          <div className="text-lg font-medium text-[var(--text)]">
-            {mockEmployees.length}
-          </div>
-        </div>
-      </div>
+          return (
+            <div
+              key={member.name}
+              className="
+                rounded-2xl
+                border
+                border-[var(--border)]
+                bg-[var(--background)]
+                p-4
+                transition-all
+                duration-200
+                hover:border-[var(--primary)]
+              "
+            >
+              <div className="flex items-start justify-between gap-3">
 
-      {/* Employee Grid */}
-      <DashboardGrid cols={2}>
-        {mockEmployees.map((emp) => (
-          <div
-            key={emp.name}
-            className="p-4 rounded-xl border bg-[var(--surface)] border-[var(--border-subtle)]"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-[var(--text)]">
-                  {emp.name}
-                </h3>
-                <div className="text-xs text-[var(--text-muted)]">
-                  {emp.role}
+                {/* LEFT */}
+                <div className="min-w-0 flex-1">
+
+                  <div className="flex items-center gap-2">
+
+                    <div
+                      className={`
+                        h-2.5
+                        w-2.5
+                        rounded-full
+                        ${styles.dot}
+                      `}
+                    />
+
+                    <h3
+                      className="
+                        text-sm
+                        font-semibold
+                        text-[var(--foreground)]
+                      "
+                    >
+                      {member.name}
+                    </h3>
+
+                  </div>
+
+                  <p
+                    className="
+                      mt-1
+                      text-xs
+                      text-[var(--muted-foreground)]
+                    "
+                  >
+                    {member.role}
+                  </p>
+
+                  <p
+                    className="
+                      mt-3
+                      text-sm
+                      text-[var(--foreground)]
+                    "
+                  >
+                    {member.note}
+                  </p>
+
                 </div>
-              </div>
 
-              <span
-                className={`text-xs font-medium ${getAvailabilityColor(
-                  emp.availability
-                )}`}
-              >
-                {emp.availability.toUpperCase()}
-              </span>
+                {/* RIGHT */}
+                <div
+                  className={`
+                    shrink-0
+                    rounded-full
+                    border
+                    px-2.5
+                    py-1
+                    text-xs
+                    font-medium
+                    ${styles.badge}
+                  `}
+                >
+                  {styles.label}
+                </div>
+
+              </div>
             </div>
+          );
+        })}
 
-            {/* Meta */}
-            <div className="flex items-center justify-between mt-3">
-              <DepartmentBadge dept={emp.department} />
-
-              <span className="text-xs text-[var(--text-muted)]">
-                {emp.lastActive}
-              </span>
-            </div>
-
-            {/* Workload */}
-            <div className="mt-3">
-              <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1">
-                <span>Workload</span>
-                <span>{emp.workload}%</span>
-              </div>
-
-              {getWorkloadBar(emp.workload)}
-            </div>
-
-            {/* Activity Metrics */}
-            <DashboardStack gap="xs" className="mt-3">
-              <div className="flex justify-between text-xs">
-                <span className="text-[var(--text-muted)]">
-                  Tasks Completed
-                </span>
-                <span className="text-[var(--text)]">
-                  {emp.tasksCompletedToday}
-                </span>
-              </div>
-
-              <div className="flex justify-between text-xs">
-                <span className="text-[var(--text-muted)]">
-                  Pending Approvals
-                </span>
-                <span className="text-[var(--text)]">
-                  {emp.pendingApprovals}
-                </span>
-              </div>
-            </DashboardStack>
-          </div>
-        ))}
-      </DashboardGrid>
+      </div>
     </DashboardSection>
   );
 }
