@@ -13,7 +13,7 @@ import EmployeeSnapshot from "../../../components/dashboard/domains/hr/EmployeeS
 import TeamAvailability from "../../../components/dashboard/domains/hr/TeamAvailability";
 
 import CalendarStrip from "../../../components/dashboard/domains/hr/CalendarStrip";
-import WorkloadHeatmap from "../../../components/dashboard/domains/hr/WorkloadHeatmap";
+
 
 // ────────────────────────────────────────────────────────────────
 
@@ -185,45 +185,7 @@ const EmployeeDashboard: React.FC = () => {
 
           </section>
 
-          {/* 🧨 SYSTEM INSIGHTS */}
-          <section
-  className="
-    space-y-3
-    border-t/50
-    border-[var(--border)]
-    pt-4
-    opacity-60
-    scale-[0.985]
-    origin-top
-  "
->
 
-            <div className="space-y-1">
-              <h2
-                className="
-          text-sm
-          font-semibold
-          uppercase
-          tracking-wide
-          text-[var(--muted-foreground)]
-        "
-              >
-                System Insights
-              </h2>
-
-              <p
-                className="
-          text-sm
-          text-[var(--muted-foreground)]
-        "
-              >
-                Background operational analytics and workload patterns
-              </p>
-            </div>
-
-            <WorkloadHeatmap />
-
-          </section>
 
         </div>
       </div>
