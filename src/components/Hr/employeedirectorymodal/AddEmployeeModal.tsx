@@ -11,9 +11,14 @@ import WorkScheduleTab from "./WorkScheduletab";
 import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
 
-import { getEmployees } from "../../../api/utils/frappeUtilsApi";import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
+import { getAllDesignations, getEmployees } from "../../../api/utils/frappeUtilsApi";import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
 import { EMPLOYEE_ROLE_CONFIG } from "../../../api/config/employeeRoleConfig";
 import { filterEmployeesByRole } from "../../../api/config/employeeRoleFilter";
+import { resolveLabel } from "../../../api/utils/labelResolver";
+import { getAllDepartments } from "../../../api/utils/frappeUtilsApi";
+import { getAllLeavePolicies } from "../../../api/utils/frappeUtilsApi";
+import { getAllGrades } from "../../../api/utils/frappeUtilsApi";
+import { getAllShiftTypes } from "../../../api/employeeapi";
 
 import {
   getAllEmployees,
@@ -202,6 +207,81 @@ useEffect(() => {
 
   loadReportingToLabel();
 }, [formData.reports_to]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.department,
+      fetcher: getAllDepartments,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      departmentLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.department]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.leavePolicy,
+      fetcher: getAllLeavePolicies,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      leavePolicyLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.leavePolicy]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.grade,
+      fetcher: getAllGrades,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      gradeLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.grade]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.designation,
+      fetcher: getAllDesignations,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      designationLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.designation]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.shift,
+      fetcher: getAllShiftTypes,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      shiftLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.shift]);
   // ── Helpers ─────────────────────────────────────────────────────────────
   const handleInputChange = (field: string, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));

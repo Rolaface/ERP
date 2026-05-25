@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Target } from "lucide-react";
 import { MinimizableModal } from "../../../../components/common/MinimizableModal";
 import type { SetupRow } from "../..../../../../../views/hr/performace/types";
+import { useUnsavedChanges } from "../../../../hooks/useUnsavedChanges";
 import {
   ModalInput,
   ModalTextarea,
@@ -24,8 +25,11 @@ export default function AddKRAModal({
   onClose,
   onAdd,
 }: Props) {
+  
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const { markDirty, resetDirty, handleCloseWithConfirm } =
+  useUnsavedChanges();
 
 const handleSave = async () => {
   try {
@@ -33,7 +37,7 @@ const handleSave = async () => {
 
     if (selectedKRA) {
       await updateKRA(selectedKRA.id, {
-        title: title,
+        title,
         description,
       });
 
@@ -41,16 +45,18 @@ const handleSave = async () => {
     } else {
       await createKRA({
         name: title,
-        title: title,
+        title,
         description,
       });
 
       showSuccess("KRA created successfully");
     }
 
+    resetDirty();
+
     onAdd({
       id: title,
-      title: title,
+      title,
       description,
     });
 
@@ -72,7 +78,7 @@ const handleSave = async () => {
     <MinimizableModal
       modalId="add-kra-modal"
       isOpen
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, "add-kra-modal")}
       title={isViewMode ? "View KRA" : selectedKRA ? "Edit KRA" : "New KRA"}
       subtitle={
         isViewMode
@@ -106,25 +112,31 @@ const handleSave = async () => {
       }
     >
       <div className="flex flex-col gap-3">
-        <ModalInput
-          label="Name"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter KRA name"
-         disabled={isViewMode || !!selectedKRA}
-          autoFocus={!isViewMode}
-          required
-        />
+      <ModalInput
+  label="Name"
+  value={title}
+  onChange={(e) => {
+    setTitle(e.target.value);
+    markDirty();
+  }}
+  placeholder="Enter KRA name"
+  disabled={isViewMode || !!selectedKRA}
+  autoFocus={!isViewMode}
+  required
+/>
 
         <ModalTextarea
-          label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Enter description"
-          disabled={isViewMode}
-          rows={4}
-          className="h-[90px]"
-        />
+  label="Description"
+  value={description}
+  onChange={(e) => {
+    setDescription(e.target.value);
+    markDirty();
+  }}
+  placeholder="Enter description"
+  disabled={isViewMode}
+  rows={4}
+  className="h-[90px]"
+/>
       </div>
     </MinimizableModal>
   );

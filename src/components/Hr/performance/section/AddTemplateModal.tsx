@@ -22,6 +22,11 @@ import {
 } from "../../../../api/Appraisalapi/templeteApi";
 import { getKRAList } from "../../../../api/Appraisalapi/appraisalApi";
 import { showApiError, showSuccess } from "../../../../utils/alert";
+import { useUnsavedChanges } from "../../../../hooks/useUnsavedChanges";
+import {
+  REFRESH_KEYS,
+  useDataRefreshStore,
+} from "../../../../store/dataRefreshStore";
 import { NumberInput } from "../../../../components/ui/modal/modalComponent";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -229,6 +234,9 @@ export default function AddTemplateModal({
   const [criteriaSelected, setCriteriaSelected] = useState<Set<string>>(
     new Set(),
   );
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+
+  const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
 
   const kra = usePaginatedRows<KRARow>([
     {
@@ -239,13 +247,13 @@ export default function AddTemplateModal({
     },
   ]);
   const criteria = usePaginatedRows<CriteriaRow>([
-  {
-    id: crypto.randomUUID(),
-    criteria: "",
-    criteriaLabel: "",
-    weightage: null,
-  },
-]);
+    {
+      id: crypto.randomUUID(),
+      criteria: "",
+      criteriaLabel: "",
+      weightage: null,
+    },
+  ]);
 
   // ── Load template data by ID when editing / viewing ──────────────────────
   useEffect(() => {
@@ -260,14 +268,14 @@ export default function AddTemplateModal({
           weightage: null,
         },
       ]);
-    criteria.setRows([
-  {
-    id: crypto.randomUUID(),
-    criteria: "",
-    criteriaLabel: "",
-    weightage: null,
-  },
-]);
+      criteria.setRows([
+        {
+          id: crypto.randomUUID(),
+          criteria: "",
+          criteriaLabel: "",
+          weightage: null,
+        },
+      ]);
       return;
     }
 
@@ -377,6 +385,8 @@ export default function AddTemplateModal({
         await createTemplate(payload as any);
         showSuccess("Template created successfully");
       }
+      resetDirty();
+      triggerRefresh(REFRESH_KEYS.APPRAISAL_CYCLE_LIST);
 
       onAdd({ id: title.trim(), title: title.trim(), description });
       onClose();
@@ -398,7 +408,7 @@ export default function AddTemplateModal({
     <MinimizableModal
       modalId="add-template-modal"
       isOpen
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, "add-template-modal")}
       title={
         isViewMode
           ? "View Appraisal Template"
@@ -479,7 +489,10 @@ export default function AddTemplateModal({
             <ModalInput
               label="Appraisal Template Title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                markDirty();
+              }}
               placeholder="e.g. Annual Review 2025"
               disabled={isViewMode || !!selectedTemplate}
               autoFocus={!isViewMode}
@@ -518,7 +531,10 @@ export default function AddTemplateModal({
                 <ModalTextarea
                   label=""
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    markDirty();
+                  }}
                   placeholder="Add description..."
                   disabled={isViewMode}
                   rows={2}
@@ -668,6 +684,7 @@ export default function AddTemplateModal({
                                 e.target.checked
                                   ? n.add(row.id)
                                   : n.delete(row.id);
+                                markDirty();
                                 setKraSelected(n);
                               }}
                               disabled={isViewMode}
@@ -680,12 +697,14 @@ export default function AddTemplateModal({
                             <SearchSelect2
                               label=""
                               value={row.kraLabel}
-                              onChange={(val, opt) =>
+                              onChange={(val, opt) => {
                                 kra.updateRow(row.id, {
                                   kra: val,
                                   kraLabel: opt.label,
-                                })
-                              }
+                                });
+
+                                markDirty();
+                              }}
                               fetchOptions={fetchKRAOptions}
                               placeholder="Select KRA..."
                               disabled={isViewMode}
@@ -696,11 +715,13 @@ export default function AddTemplateModal({
                           >
                             <NumericInput
                               value={row.weightage}
-                              onChange={(value) =>
+                              onChange={(value) => {
                                 kra.updateRow(row.id, {
                                   weightage: value,
-                                })
-                              }
+                                });
+
+                                markDirty();
+                              }}
                               placeholder="0"
                               decimalScale={3}
                               allowNegative={false}
@@ -928,6 +949,7 @@ export default function AddTemplateModal({
                                 e.target.checked
                                   ? n.add(row.id)
                                   : n.delete(row.id);
+                                markDirty();
                                 setCriteriaSelected(n);
                               }}
                               disabled={isViewMode}
@@ -940,12 +962,14 @@ export default function AddTemplateModal({
                             <SearchSelect2
                               label=""
                               value={row.criteriaLabel}
-                              onChange={(val, opt) =>
+                              onChange={(val, opt) => {
                                 criteria.updateRow(row.id, {
                                   criteria: val,
                                   criteriaLabel: opt.label,
-                                })
-                              }
+                                });
+
+                                markDirty();
+                              }}
                               fetchOptions={resolveCriteriaOptions}
                               placeholder="Select criteria..."
                               disabled={isViewMode}
@@ -956,11 +980,13 @@ export default function AddTemplateModal({
                           >
                             <NumericInput
                               value={row.weightage}
-                              onChange={(value) =>
+                              onChange={(value) => {
                                 criteria.updateRow(row.id, {
                                   weightage: value,
-                                })
-                              }
+                                });
+
+                                markDirty();
+                              }}
                               placeholder="0"
                               decimalScale={3}
                               allowNegative={false}
