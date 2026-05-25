@@ -48,9 +48,18 @@ const EmployeeDashboard: React.FC = () => {
   <ActionCenter />
 </div>
 
-          <div className="xl:col-span-4">
-            <TodayStatusCard />
-          </div>
+          <div
+  className="
+    xl:col-span-4
+    rounded-3xl
+    border
+    border-[var(--border)]
+    bg-[var(--card)]
+    opacity-95
+  "
+>
+  <TodayStatusCard />
+</div>
 
         </div>
 
@@ -97,7 +106,7 @@ const EmployeeDashboard: React.FC = () => {
     rounded-3xl
     border
     border-[var(--border)]
-    bg-[var(--card)]
+    bg-[color-mix(in_srgb,var(--card)_92%,transparent)]
     p-4
   "
         >
@@ -145,26 +154,28 @@ const EmployeeDashboard: React.FC = () => {
               </div> */}
 
               <div
-                className="
+  className="
     xl:col-span-5
-    opacity-90
-    scale-[0.985]
+    opacity-80
+    scale-[0.98]
+    saturate-[0.96]
     origin-top
   "
-              >
-                <EmployeeSnapshot />
-              </div>
+>
+  <EmployeeSnapshot />
+</div>
 
               <div
-                className="
+  className="
     xl:col-span-7
-    opacity-90
-    scale-[0.985]
+    opacity-80
+    scale-[0.98]
+    saturate-[0.96]
     origin-top
   "
-              >
-                <TeamAvailability />
-              </div>
+>
+  <TeamAvailability />
+</div>
 
 
 
@@ -176,14 +187,16 @@ const EmployeeDashboard: React.FC = () => {
 
           {/* 🧨 SYSTEM INSIGHTS */}
           <section
-            className="
-      space-y-3
-      border-t/50
-      border-[var(--border)]
-      pt-4
-      opacity-70
-    "
-          >
+  className="
+    space-y-3
+    border-t/50
+    border-[var(--border)]
+    pt-4
+    opacity-60
+    scale-[0.985]
+    origin-top
+  "
+>
 
             <div className="space-y-1">
               <h2
