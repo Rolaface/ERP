@@ -1,12 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { FaTrash } from "react-icons/fa";
 import type { Column } from "../../../../components/ui/Table/type";
 import ModalTable from "../../../../components/ui/Table/ModalTableInside";
 import type { SetupRow } from "../types";
-import AddKRAModal from "../../../../components/Hr/performance/section/AddKRAModal";
 import { showApiError, showLoading, closeSwal } from "../../../../utils/alert";
 import { fireManagedSwal } from "../../../../utils/swalManager";
-
+import { openKRAModal } from "../../../../store/modalStore";
 import {
   getKRAList,
   deleteKRA,
@@ -25,11 +24,8 @@ export default function KRASection() {
   const [page, setPage] = useState(1);
   const [, setLoading] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedKRA, setSelectedKRA] = useState<SetupRow | null>(null);
-  const [isViewMode, setIsViewMode] = useState(false);
 
-  const fetchKRAs = async () => {
+  const fetchKRAs = useCallback(async () => {
     try {
       setLoading(true);
       const resp = await getKRAList({ page, pageSize: PAGE_SIZE, search });
@@ -46,22 +42,24 @@ export default function KRASection() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search]);
 
   useEffect(() => {
     fetchKRAs();
-  }, [page, search]);
+  }, [fetchKRAs]);
 
   const openDetail = async (id: string, mode: "view" | "edit") => {
     try {
       const detail = await getKRAById(id);
-      setSelectedKRA({
+      const row: SetupRow = {
         id: detail.name,
         title: detail.title,
         description: detail.description || "-",
+      };
+      openKRAModal(row, mode === "edit", {
+        isViewMode: mode === "view",
+        onSuccess: () => fetchKRAs(),
       });
-      setIsViewMode(mode === "view");
-      setShowModal(true);
     } catch (err) {
       console.error("Failed to fetch KRA detail", err);
     }
@@ -108,12 +106,6 @@ export default function KRASection() {
       }
       showApiError(message);
     }
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedKRA(null);
-    setIsViewMode(false);
   };
 
   const columns: Column<SetupRow>[] = [
@@ -172,45 +164,31 @@ export default function KRASection() {
   ];
 
   return (
-    <>
-      <ModalTable<SetupRow>
-        tableId="setup-kra"
-        columns={columns}
-        data={data}
-        rowKey={(r) => r.id}
-        showToolbar
-        toolbarPlaceholder="Search KRAs..."
-        searchValue={search}
-        onSearch={(q) => {
-          setSearch(q);
-          setPage(1);
-        }}
-        enableAdd
-        addLabel="+ Add KRA"
-        onAdd={() => {
-          setSelectedKRA(null);
-          setIsViewMode(false);
-          setShowModal(true);
-        }}
-        enableColumnSelector
-        currentPage={page}
-        totalPages={Math.max(1, Math.ceil(totalItems / PAGE_SIZE))}
-        pageSize={PAGE_SIZE}
-        totalItems={totalItems}
-        onPageChange={setPage}
-      />
-
-      {showModal && (
-        <AddKRAModal
-          selectedKRA={selectedKRA}
-          isViewMode={isViewMode}
-          onClose={closeModal}
-          onAdd={(row) => {
-            setData((prev) => [row, ...prev]);
-            closeModal();
-          }}
-        />
-      )}
-    </>
+    <ModalTable<SetupRow>
+      tableId="setup-kra"
+      columns={columns}
+      data={data}
+      rowKey={(r) => r.id}
+      showToolbar
+      toolbarPlaceholder="Search KRAs..."
+      searchValue={search}
+      onSearch={(q) => {
+        setSearch(q);
+        setPage(1);
+      }}
+      enableAdd
+      addLabel="+ Add KRA"
+      onAdd={() =>
+        openKRAModal(null, false, {
+          onSuccess: () => fetchKRAs(),
+        })
+      }
+      enableColumnSelector
+      currentPage={page}
+      totalPages={Math.max(1, Math.ceil(totalItems / PAGE_SIZE))}
+      pageSize={PAGE_SIZE}
+      totalItems={totalItems}
+      onPageChange={setPage}
+    />
   );
 }

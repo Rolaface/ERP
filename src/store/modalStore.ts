@@ -51,7 +51,10 @@ export type ModalType =
   | "emailTemplate"
   | "shiftType"
   | "scanPI"
+  | "KRA"
   | "appraisalCycle"
+  | "feedback"
+
   ;
 
 export interface ModalContext {
@@ -848,6 +851,15 @@ export const openScanPIModal = (
       context,
       meta,
     );
+    export const openKRAModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("KRA", initialData, isEdit, context, meta);
 
 
 export const openAppraisalCycleModal = (
@@ -859,3 +871,13 @@ export const openAppraisalCycleModal = (
   useModalStore
     .getState()
     .openModal("appraisalCycle", initialData, isEdit, context, meta);
+
+export const openFeedbackModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("feedback", initialData, isEdit, context, meta);
