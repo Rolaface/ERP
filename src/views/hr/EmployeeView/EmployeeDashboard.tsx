@@ -32,13 +32,15 @@ const EmployeeDashboard: React.FC = () => {
         {/* ─────────────────────────────────────────────
             🥇 PRIMARY OPERATIONAL ZONE
         ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
-          <div className="lg:col-span-2">
+          <div className="xl:col-span-8">
             <ActionCenter />
           </div>
 
-          <TodayStatusCard />
+          <div className="xl:col-span-4">
+            <TodayStatusCard />
+          </div>
 
         </div>
 
@@ -48,7 +50,7 @@ const EmployeeDashboard: React.FC = () => {
         {/* ─────────────────────────────────────────────
     🧭 TEMPORAL CONTEXT ZONE
 ───────────────────────────────────────────── */}
-        <section className="space-y-4">
+        <section className="max-w-5xl space-y-4">
 
           <div className="space-y-1">
             <h2
@@ -78,7 +80,7 @@ const EmployeeDashboard: React.FC = () => {
         {/* ─────────────────────────────────────────────
     SECONDARY & BACKGROUND CONTEXT LAYER
 ───────────────────────────────────────────── */}
-        <div className="space-y-5">
+        <div className="max-w-6xl space-y-5">
 
           {/* 📢 AWARENESS ZONE */}
           <section className="space-y-3">
@@ -111,9 +113,9 @@ const EmployeeDashboard: React.FC = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">
 
-              <div className="opacity-90">
+              <div className="xl:col-span-5 opacity-90">
                 <EmployeeSnapshot />
               </div>
 
