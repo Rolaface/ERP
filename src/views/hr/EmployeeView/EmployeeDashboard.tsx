@@ -55,7 +55,7 @@ const EmployeeDashboard: React.FC = () => {
           <div className="space-y-1">
             <h2
               className="
-        text-lg
+        text-base
         font-semibold
         text-[var(--foreground)]
       "
@@ -162,7 +162,7 @@ const EmployeeDashboard: React.FC = () => {
       border-t
       border-[var(--border)]
       pt-4
-      opacity-75
+      opacity-70
     "
           >
 
