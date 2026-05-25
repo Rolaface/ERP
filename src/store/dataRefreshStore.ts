@@ -104,6 +104,8 @@ export const REFRESH_KEYS = {
   DESIGNATION_LIST: "designation_list",
   EMAIL_TEMPLATE_LIST: "email_template",
   APPRAISAL_CYCLE_LIST: "appraisal_cycle_list",
+  APPRAISAL_LIST: "appraisal_list",
+  FEEDBACK_LIST:  "feedback_list",
 
 } as const;
 

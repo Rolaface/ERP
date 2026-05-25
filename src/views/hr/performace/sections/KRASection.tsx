@@ -10,7 +10,7 @@ import {
   getKRAList,
   deleteKRA,
   getKRAById,
-} from "../../../../api/Appraisalapi/appraisalApi";
+} from "../../../../api/Appraisalapi/kraApi";
 import ActionButton, {
   ActionGroup,
   ActionMenu,

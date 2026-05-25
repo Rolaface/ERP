@@ -10,7 +10,7 @@ import {
 import {
   createKRA,
   updateKRA,
-} from "../../../../api/Appraisalapi/appraisalApi";
+} from "../../../../api/Appraisalapi/kraApi";
 
 import { showApiError, showSuccess } from "../../../../utils/alert";
 interface Props {
