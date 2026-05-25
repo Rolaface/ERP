@@ -71,6 +71,7 @@ const EmployeeLeave = lazy<ComponentType<LeaveProps>>(
 const EmployeeAttendanceTimesheet = lazy(
   () => import("./EmployeeView/EmployeeTimesheetAttendance"),
 );
+const HrAttendanceTimesheet     = lazy(() => import("./HrView/HrTimesheetAttendance"));
 const EmployeeDocuments = lazy(
   () => import("./EmployeeView/EmployeeDocuments"),
 );
@@ -241,7 +242,7 @@ const HrPayrollModule: React.FC = () => {
       case "management":
         return <EmployeeManagement isEmployeeView={false} />;
       case "attendance":
-        return <EmployeeAttendanceTimesheet />;
+        return <HrAttendanceTimesheet />;
     case "performance-growth":
   return <PerformanceModule />;
       case "leave":
