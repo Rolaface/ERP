@@ -265,7 +265,9 @@ const SendEmailModal: React.FC<Props> = ({
 
         {/* ── Header ── */}
         <div style={s.header}>
-          <span style={s.title}>Sales Invoice: {invoiceNumber ?? "—"}</span>
+          <span style={s.title}>
+            {docType}: {invoiceNumber ?? "—"}
+          </span>
           <button type="button" style={s.iconBtn} title="Close" onClick={onClose}>✕</button>
         </div>
 

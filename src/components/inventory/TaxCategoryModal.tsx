@@ -93,7 +93,7 @@ const resolvedModalId = useMemo(
         loading={submitting}
         onClick={handleSave}
       >
-        Submit
+        Save
       </Button>
     </>
   );

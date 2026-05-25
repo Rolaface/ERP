@@ -155,7 +155,6 @@ const AssetMovement: React.FC = () => {
     {
       key: "id",
       header: "Movement ID",
-      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span className="font-mono text-xs" style={{ color: "var(--primary)" }}>
@@ -167,12 +166,10 @@ const AssetMovement: React.FC = () => {
     {
       key: "company",
       header: "Company",
-      sortable: true,
     },
     {
       key: "purpose",
       header: "Purpose",
-      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span className="badge">
@@ -184,7 +181,6 @@ const AssetMovement: React.FC = () => {
     {
       key: "transactionDate",
       header: "Transaction Date",
-      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span style={{ color: "var(--muted)", fontSize: 12 }}>
@@ -196,7 +192,6 @@ const AssetMovement: React.FC = () => {
     {
       key: "status",
       header: "Status",
-      sortable: true,
       render: (row) => (
         <div className="py-1.5">
           <span
@@ -262,7 +257,6 @@ const AssetMovement: React.FC = () => {
         onAdd={() => openAssetMovementModal({ mode: "create" })}
 
         enableColumnSelector
-        enableExport={can(ASSET_MOVEMENT_MODULE, "export")}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
@@ -276,16 +270,16 @@ const AssetMovement: React.FC = () => {
         sortBy={sortBy ?? ""}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
-        extraFilters={
-          <DateRangeFilter
-            from={filters.from_date}
-            to={filters.to_date}
-            onChange={(range) => {
-              setFilters((prev) => ({ ...prev, ...range }));
-              setPage(1);
-            }}
-          />
-        }
+        // extraFilters={
+        //   <DateRangeFilter
+        //     from={filters.from_date}
+        //     to={filters.to_date}
+        //     onChange={(range) => {
+        //       setFilters((prev) => ({ ...prev, ...range }));
+        //       setPage(1);
+        //     }}
+        //   />
+        // }
       />
 
 

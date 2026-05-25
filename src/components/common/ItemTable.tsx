@@ -169,7 +169,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                 expDate: item.expiryDate,
 
                 availableQty: item.qty,
-                quantity: 1, // default
+                quantity: 0,
 
               price: item.price ?? 0,
 

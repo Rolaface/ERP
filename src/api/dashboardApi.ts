@@ -85,11 +85,11 @@ export type DashboardNotesResponse = {
   status: string;
   message: string;
   data: {
-    topCustomer: {
+    topCustomers: {
       name: string;
       value: number;
     };
-    topSupplier: {
+    topSuppliers: {
       name: string;
       value: number;
     };

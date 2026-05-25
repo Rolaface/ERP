@@ -29,6 +29,7 @@ const CustomerGroup = lazy(() => import("../views/Customergroup/CustomerGroup"))
 const TaxMaintenance = lazy(() => import("../views/TaxMaintaince/taxmaintaince"));
 const ExpenseManagement = lazy(() => import("../views/ExpenseManagement/expenseManagement"));
 const EmailTemplate = lazy(() => import("../views/Email/EmailTemplate"))
+const Performance = lazy(() => import("../views/../views/hr/performace/PerformanceModule"))
 
 import { Toaster } from "react-hot-toast";
 import ResetPassword from "../ResetPassword";
@@ -271,6 +272,14 @@ const AppRoutes: React.FC = () => {
               element={
                 <PermissionRoute modules={["Expense History"]}>
                   <EmailTemplate />
+                </PermissionRoute>
+              }
+            />
+             <Route
+              path="/performance"
+              element={
+                <PermissionRoute modules={["Expense History"]}>
+                  <Performance />
                 </PermissionRoute>
               }
             />

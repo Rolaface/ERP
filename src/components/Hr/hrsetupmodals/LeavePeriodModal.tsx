@@ -30,6 +30,7 @@ export const LeavePeriodModal: React.FC<Props> = ({
   initialData,
   onSuccess,
 }) => {
+  const isView = Boolean((initialData as any)?._isView);
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<LeavePeriod>(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -93,7 +94,7 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     }
   };
 
-  const footer = (
+  const footer = !isView ?(
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -113,14 +114,15 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
         {saving ? "Saving…" : isEdit ? "Update Leave Period" : "Create Leave Period"}
       </button>
     </div>
-  );
+  ): null;
 
   return (
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? "Edit Leave Period" : "New Leave Period"}
+      // title={isEdit ? "Edit Leave Period" : "New Leave Period"}
+      title={isView ? "View Leave Period" : isEdit ? "Edit Leave Period" : "New Leave Period"}
       subtitle="Define fiscal or operational calendar periods for leave allocation"
       icon={Calendar}
       maxWidth="xl"
@@ -146,6 +148,7 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
       set(name as keyof typeof form, value)
     }
     required
+    disabled={isView}
   />
 
   <DatePickerInput
@@ -156,6 +159,7 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
       set(name as keyof typeof form, value)
     }
     required
+    disabled={isView}
   />
 
 
@@ -170,6 +174,7 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
             label="Is Active"
             value={form.is_active ? "Y" : "N"}
             onChange={(name, value) => set("is_active", value === "Y" ? 1 : 0)}
+            disabled={isView}
           />
         </div>
         </div>

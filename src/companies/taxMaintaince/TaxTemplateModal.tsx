@@ -170,7 +170,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
           Reset
         </Button>
         <Button variant="primary" loading={loading} onClick={handleSubmitInternal}>
-          {isEditMode ? "Update" : "Submit"}
+          {isEditMode ? "Update" : "Save"}
         </Button>
       </div>
     </>

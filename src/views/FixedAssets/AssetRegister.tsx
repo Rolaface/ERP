@@ -229,7 +229,7 @@ const AssetRegister: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize,searchTerm]);
+  }, [page, pageSize, searchTerm]);
   useEffect(() => {
     fetchAssets();
   }, [fetchAssets, refreshKey]);
@@ -285,12 +285,10 @@ const AssetRegister: React.FC = () => {
     {
       key: "name",
       header: "Asset Name",
-      sortable: true,
     },
     {
       key: "category",
       header: "Category",
-      sortable: true,
     },
     {
       key: "location",
@@ -299,13 +297,11 @@ const AssetRegister: React.FC = () => {
     {
       key: "purchaseDate",
       header: "Purchase Date",
-      sortable: true,
       render: (row) => formatDate(row.purchaseDate),
     },
     {
       key: "value",
       header: "Value",
-      sortable: true,
       render: (row) => `₹ ${row.value.toLocaleString()}`,
     },
     {
@@ -367,17 +363,14 @@ const AssetRegister: React.FC = () => {
         data={paginatedData}
         rowKey={(row) => row.id}
         tableId="fixed-assets"
-
         loading={loading}
         isFetching={false}
-
         showToolbar
-
-       searchValue={searchTerm}
-onSearch={(q) => {
-  setSearchTerm(q);
-  setPage(1);
-}}
+        searchValue={searchTerm}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
 
         enableAdd={can(ASSET_MODULE, "create")}
         addLabel="Add Asset"
@@ -386,8 +379,6 @@ onSearch={(q) => {
         })}
 
         enableColumnSelector
-        enableExport={can(ASSET_MODULE, "export")}
-
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
@@ -405,16 +396,16 @@ onSearch={(q) => {
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
 
-        extraFilters={
-          <DateRangeFilter
-            from={filters.from_date}
-            to={filters.to_date}
-            onChange={(range) => {
-              setFilters((prev) => ({ ...prev, ...range }));
-              setPage(1);
-            }}
-          />
-        }
+        // extraFilters={
+        //   <DateRangeFilter
+        //     from={filters.from_date}
+        //     to={filters.to_date}
+        //     onChange={(range) => {
+        //       setFilters((prev) => ({ ...prev, ...range }));
+        //       setPage(1);
+        //     }}
+        //   />
+        // }
       />
 
 
