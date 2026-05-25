@@ -168,7 +168,7 @@ const EmployeeDashboard: React.FC = () => {
           <section
             className="
       space-y-3
-      border-t
+      border-t/50
       border-[var(--border)]
       pt-4
       opacity-70
