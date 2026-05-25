@@ -115,13 +115,39 @@ const EmployeeDashboard: React.FC = () => {
 
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">
 
-              <div className="xl:col-span-5 opacity-90">
+              {/* <div className="xl:col-span-5 opacity-90">
                 <EmployeeSnapshot />
               </div>
 
               <div className="xl:col-span-7 opacity-90">
                 <TeamAvailability />
+              </div> */}
+
+              <div
+                className="
+    xl:col-span-5
+    opacity-90
+    scale-[0.985]
+    origin-top
+  "
+              >
+                <EmployeeSnapshot />
               </div>
+
+              <div
+                className="
+    xl:col-span-7
+    opacity-90
+    scale-[0.985]
+    origin-top
+  "
+              >
+                <TeamAvailability />
+              </div>
+
+
+
+
 
             </div>
 
