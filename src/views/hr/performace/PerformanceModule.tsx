@@ -5,6 +5,7 @@ import {
   FaStar,
   FaChartBar,
   FaCog,
+  FaCommentDots,
 } from "react-icons/fa";
 import {
   AppPage,
@@ -14,46 +15,41 @@ import {
 import AppSkeleton from "../../../components/ui/AppSkeleton";
 import { HrContentFrame, HrPrimaryTabs } from "../components/HrTabLayout";
 
-
 const AppraisalPage = lazy(() => import("./Employeeappraisalview"));
-// const ScoreView   = lazy(() => import("./Scoreview"));
-const SetupPage   = lazy(() => import("./Setuppage"));
-// const GoalTracker = lazy(() => import("./GoalTracker"));
-// const Reports     = lazy(() => import("./Reports"));
+const FeedbackPage  = lazy(() => import("./feedbackpage"));
+const SetupPage     = lazy(() => import("./Setuppage"));
 
 const TABS = [
   { id: "appraisal", label: "Appraisal", icon: <FaClipboardList /> },
-  { id: "scores",    label: "Scores",    icon: <FaStar />         },
-  { id: "reports",   label: "Reports",   icon: <FaChartBar />     },
-  { id: "setup",     label: "Setup",     icon: <FaCog />          },
+  { id: "feedback",  label: "Feedback",  icon: <FaCommentDots />   },
+  { id: "scores",    label: "Scores",    icon: <FaStar />           },
+  { id: "reports",   label: "Reports",   icon: <FaChartBar />       },
+  { id: "setup",     label: "Setup",     icon: <FaCog />            },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
 const PerformanceModule = () => {
   const [tab, setTab] = useState<TabId>("appraisal");
-  const [selectedCycle, setSelectedCycle] = useState<number | null>(null);
 
   const handleTabChange = (newTab: string) => {
     setTab(newTab as TabId);
-    setSelectedCycle(null);
   };
 
   const renderContent = () => {
     switch (tab) {
-
       case "appraisal":
         return <AppraisalPage />;
-
-      // case "scores":
-      //   return <ScoreView />;
-
-      // case "reports":
-      //   return <Reports />;
-
+      case "feedback":
+        return <FeedbackPage />;
       case "setup":
         return <SetupPage />;
-
+      default:
+        return (
+          <div className="flex items-center justify-center h-full text-muted text-sm">
+            Coming soon…
+          </div>
+        );
     }
   };
 

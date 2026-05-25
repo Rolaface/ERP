@@ -484,10 +484,6 @@ const NewCycleModal = ({
               {/* Filters — only in create mode */}
               {!isViewMode && (
                 <>
-                  <SectionLabel>Filters</SectionLabel>
-                  <p className="text-[11px] text-[var(--muted)] -mt-1">
-                    Set optional filters to fetch employees into the appraisee list
-                  </p>
                   <div className="grid grid-cols-3 gap-3">
                     <SearchSelect2
                       label="Branch"
