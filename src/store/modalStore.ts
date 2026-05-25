@@ -49,7 +49,8 @@ export type ModalType =
   | "expense"
   | "expenseType"
   |"emailTemplate"
-  | "shiftType";
+  | "shiftType"
+  | "scanPI";
 
 export interface ModalContext {
   source?: string;
@@ -829,3 +830,19 @@ export const openEmailTemplateModal = (
   useModalStore
     .getState()
     .openModal("emailTemplate", { templateId }, !!templateId, context, meta);
+
+
+export const openScanPIModal = (
+  pId?: string,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal(
+      "scanPI",
+      { pId },
+      !!pId,
+      context,
+      meta,
+    );
