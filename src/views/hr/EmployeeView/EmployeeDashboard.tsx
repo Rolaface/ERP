@@ -14,6 +14,8 @@ import TeamAvailability from "../../../components/dashboard/domains/hr/TeamAvail
 
 import CalendarStrip from "../../../components/dashboard/domains/hr/CalendarStrip";
 
+import MyWorkdayPanel from "../../../components/dashboard/domains/hr/MyWorkdayPanel";
+
 
 // ────────────────────────────────────────────────────────────────
 
@@ -35,7 +37,7 @@ const EmployeeDashboard: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
           <div
-  className="
+            className="
     xl:col-span-8
     rounded-3xl
     border
@@ -44,12 +46,12 @@ const EmployeeDashboard: React.FC = () => {
     shadow-sm
     overflow-hidden
   "
->
-  <ActionCenter />
-</div>
+          >
+            <ActionCenter />
+          </div>
 
           <div
-  className="
+            className="
     xl:col-span-4
     rounded-3xl
     border
@@ -57,9 +59,9 @@ const EmployeeDashboard: React.FC = () => {
     bg-[var(--card)]
     opacity-95
   "
->
-  <TodayStatusCard />
-</div>
+          >
+            <TodayStatusCard />
+          </div>
 
         </div>
 
@@ -102,7 +104,7 @@ const EmployeeDashboard: React.FC = () => {
         <div
           className="
     max-w-6xl
-    space-y-4
+    space-y-6
     rounded-3xl
     border
     border-[var(--border)]
@@ -154,28 +156,28 @@ const EmployeeDashboard: React.FC = () => {
               </div> */}
 
               <div
-  className="
+                className="
     xl:col-span-5
     opacity-80
     scale-[0.98]
     saturate-[0.96]
     origin-top
   "
->
-  <EmployeeSnapshot />
-</div>
+              >
+                <EmployeeSnapshot />
+              </div>
 
               <div
-  className="
+                className="
     xl:col-span-7
     opacity-80
     scale-[0.98]
     saturate-[0.96]
     origin-top
   "
->
-  <TeamAvailability />
-</div>
+              >
+                <TeamAvailability />
+              </div>
 
 
 
@@ -183,6 +185,11 @@ const EmployeeDashboard: React.FC = () => {
 
             </div>
 
+          </section>
+
+          {/* 🧭 MY WORKDAY */}
+          <section className="space-y-3">
+            <MyWorkdayPanel />
           </section>
 
 
