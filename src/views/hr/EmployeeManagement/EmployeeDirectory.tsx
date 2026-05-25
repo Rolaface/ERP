@@ -27,9 +27,15 @@ import {
 import EmployeeNameCell from "../../../components/ui/Table/Employeenamecell";
 import type { Column } from "../../../components/ui/Table/type";
 import type { EmployeeSummary } from "../../../types/employee";
-import EmployeeDetailView from "../EmployeeManagement/mployeeDetailView";
+import EmployeeDetailView from "./employeeDetailView";
 import { useAuth } from "../../../context/AuthContext";
 import { HrTableFrame } from "../components/HrTabLayout";
+import { resolveLabel } from "../../../api/utils/labelResolver";
+
+import {
+  getAllDepartments,
+  getallbranches,
+} from "../../../api/utils/frappeUtilsApi";
 
 const EMP_MODULE = "Employee";
 
@@ -81,17 +87,39 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       const res = await getAllEmployees(page, pageSize, undefined, searchParam);
       if (!mountedRef.current) return;
 
-      const mapped = (res.data || []).map((e: any) => ({
+    const mapped = await Promise.all(
+  (res.data || []).map(
+    async (e: any) => {
+      const departmentLabel =
+        await resolveLabel({
+          value: e.department,
+          fetcher:
+            getAllDepartments,
+        });
+
+      const branchLabel =
+        await resolveLabel({
+          value: e.branch,
+          fetcher:
+            getallbranches,
+        });
+
+      return {
         id: e.name,
         employeeId: e.name,
         name: e.employee_name,
         image: e.image ?? null,
-        jobTitle: e.designation,
-        department: e.department || "-",
-        branch: e.branch || "-",
+        jobTitle:
+          e.designation,
+        department:
+          departmentLabel || "-",
+        branch:
+          branchLabel || "-",
         status: e.status,
-      }));
-
+      };
+    },
+  ),
+);
       setEmployees(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);

@@ -83,6 +83,7 @@ export const DEFAULT_FORM: Record<string, any> = {
 
   // Employment
   department: "",
+  departmentLabel: "",
   designation: "",
   grade: "",
   employment_type: "",
@@ -206,13 +207,15 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     emergencyContactRelationship: data.relation || "",
 
     // ── Employment ────────────────────────────────────────────
-    department: data.department || "",
+   department: data.department || "",
+departmentLabel: "",
     designation: data.designation || "",
     grade: data.grade || "",
     employment_type: data.employment_type || "",
     employeeType: data.employee_type || "",
     employmentStatus: data.status || "Active",
-    reportingToLabel: data.reports_to || "",
+    reports_to: data.reports_to || "",
+reportingToLabel: "",
     branch: data.branch || "",
     dateOfJoining: data.date_of_joining || "",
     contractEndDate: data.contract_end_date || "",

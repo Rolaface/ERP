@@ -108,7 +108,7 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
   );
 
   const grossMonthly = formData.grossSalary
-    ? `${formData.currency || ""} ${(parseFloat(formData.grossSalary) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo`.trim()
+    ? `${formData.currency || ""} ${(parseFloat(formData.grossSalary) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}/month`.trim()
     : undefined;
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -122,11 +122,11 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
       {/* Avatar + Name */}
       <div className="flex flex-col items-center px-3 pt-2 pb-3 border-b border-theme">
         <div
-  className="relative group cursor-pointer mb-2"
-  onClick={() => fileInputRef.current?.click()}
->
-  <div
-    className="
+          className="relative group cursor-pointer mb-2"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <div
+            className="
       relative
       w-20 h-20 rounded-2xl overflow-hidden
       border border-dashed border-primary/30
@@ -136,52 +136,50 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
       group-hover:border-primary
       group-hover:bg-primary/10
     "
-  >
-    {displayUrl ? (
-      <>
-        <img
-          src={displayUrl}
-          alt="Employee"
-          className="w-full h-full object-cover"
-        />
+          >
+            {displayUrl ? (
+              <>
+                <img
+                  src={displayUrl}
+                  alt="Employee"
+                  className="w-full h-full object-cover"
+                />
 
-        <div
-          className="
+                <div
+                  className="
             absolute inset-0
             bg-black/45
             opacity-0 group-hover:opacity-100
             transition-opacity
             flex flex-col items-center justify-center
           "
-        >
-          <FaCamera className="w-4 h-4 text-white mb-1" />
-          <span className="text-[10px] text-white font-medium">
-            Change Photo
-          </span>
-        </div>
-      </>
-    ) : (
-      <div className="flex flex-col items-center justify-center">
-        <div
-          className="
+                >
+                  <FaCamera className="w-4 h-4 text-white mb-1" />
+                  <span className="text-[10px] text-white font-medium">
+                    Change Photo
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center">
+                <div
+                  className="
             w-10 h-10 rounded-full
             bg-primary/10
             flex items-center justify-center
             mb-1.5
           "
-        >
-          <FaCamera className="w-4 h-4 text-primary" />
+                >
+                  <FaCamera className="w-4 h-4 text-primary" />
+                </div>
+
+                <span className="text-[10px] font-medium text-primary">
+                  Upload Photo
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-
-        <span className="text-[10px] font-medium text-primary">
-          Upload Photo
-        </span>
-
-        
-      </div>
-    )}
-  </div>
-</div>
         <input
           id="employee-photo-input"
           type="file"
@@ -196,7 +194,7 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
 
         {formData.designation && (
           <p className="text-[10px] text-muted mt-0.5 text-center truncate max-w-full px-2">
-            {formData.designation}
+            {formData.designationLabel || formData.designation}
           </p>
         )}
 
@@ -216,12 +214,15 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
 
       {/* Info rows */}
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0">
-        <Row label="Department" value={formData.department} />
+        <Row
+          label="Department"
+          value={formData.departmentLabel || formData.department}
+        />
         <Row
           label="Type"
           value={formData.employeeType || formData.employment_type}
         />
-        <Row label="Grade" value={formData.grade} />
+        <Row label="Grade" value={formData.gradeLabel || formData.grade} />
         <Row label="Joined" value={formData.dateOfJoining} />
         <Row label="Location" value={formData.workLocation} />
         <Row
@@ -241,7 +242,7 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
           label="Leave"
           value={formData.leavePolicyLabel || formData.leavePolicy}
         />
-        <Row label="Shift" value={formData.shift} />
+        <Row label="Shift" value={formData.shiftLabel || formData.shift} />
       </div>
     </div>
   );

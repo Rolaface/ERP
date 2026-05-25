@@ -642,14 +642,17 @@ export const API = {
 
 performance: {
   kra: {
-    list: "/api/resource/KRA",
+    list: `${ERP_BASE}/api/resource/KRA`,
   },
   template: {
-    list: "/api/resource/Appraisal Template",
+    list: `${ERP_BASE}/api/resource/Appraisal Template`,
   },
   feedback: {
-    list: "/api/resource/Employee Feedback Criteria",
+    list: `${ERP_BASE}/api/resource/Employee Feedback Criteria`,
   },
+  cycle:{
+    list:`${ERP_BASE}/api/resource/Appraisal Cycle`
+  }
 },
 
 
@@ -673,6 +676,7 @@ performance: {
     getBranches:`${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
     createbranch:`${ERP_BASE}/api/resource/Branch`,
     getshifts:`${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
+
    
   },
 

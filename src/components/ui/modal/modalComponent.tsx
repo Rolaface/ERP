@@ -384,9 +384,7 @@ export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
   </label>
 );
 
-// ─── NumericInput ─────────────────────────────────────────────────────────────
-// Use this everywhere for number fields in tables (qty, rate, discount, vatRate)
-// Powered by react-number-format — handles 0, 0.1, decimals, no arrows, no scroll
+
 
 interface NumericInputProps {
   value: number | null | undefined ;
