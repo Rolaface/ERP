@@ -80,14 +80,23 @@ const EmployeeDashboard: React.FC = () => {
         {/* ─────────────────────────────────────────────
     SECONDARY & BACKGROUND CONTEXT LAYER
 ───────────────────────────────────────────── */}
-        <div className="max-w-6xl space-y-4">
-
+        <div
+          className="
+    max-w-6xl
+    space-y-4
+    rounded-3xl
+    border
+    border-[var(--border)]
+    bg-[var(--card)]
+    p-4
+  "
+        >
           {/* 📢 AWARENESS ZONE */}
           <section className="space-y-3">
             <AnnouncementPanel />
           </section>
 
-          
+
 
           {/* 🥉 TEAM CONTEXT ZONE */}
           <section className="space-y-3">
