@@ -30,8 +30,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+//  export const ERP_BASE = getApiBaseUrl();
+ export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -642,14 +642,17 @@ export const API = {
 
 performance: {
   kra: {
-    list: "/api/resource/KRA",
+    list: `${ERP_BASE}/api/resource/KRA`,
   },
   template: {
-    list: "/api/resource/Appraisal Template",
+    list: `${ERP_BASE}/api/resource/Appraisal Template`,
   },
   feedback: {
-    list: "/api/resource/Employee Feedback Criteria",
+    list: `${ERP_BASE}/api/resource/Employee Feedback Criteria`,
   },
+  cycle:{
+    list:`${ERP_BASE}/api/resource/Appraisal Cycle`
+  }
 },
 
 

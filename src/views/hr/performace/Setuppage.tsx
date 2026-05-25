@@ -34,33 +34,7 @@ export default function SetupPage() {
   return (
     <div style={{ display: "flex", height: "100%", minHeight: 0 }}>
       {/* Sidebar */}
-      <div
-        style={{
-          width: 220,
-          flexShrink: 0,
-          borderRight: "1px solid var(--border)",
-          padding: "12px 0",
-          overflowY: "auto",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "6px 14px 10px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <FaDatabase style={{ fontSize: 13, color: "var(--muted)" }} />
-            <span
-              style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}
-            >
-              Setup
-            </span>
-          </div>
-          <FaChevronDown style={{ fontSize: 11, color: "var(--muted)" }} />
-        </div>
+      <div style={{ width: 220, flexShrink: 0, borderRight: "1px solid var(--border)", padding: "12px 0", overflowY: "auto" }}>
         {SECTIONS.map((s) => (
           <button
             key={s.id}
@@ -92,14 +66,9 @@ export default function SetupPage() {
       </div>
 
       {/* Content */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          minWidth: 0,
-        }}
-      >
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        
+
         {/* Active section */}
         <div style={{ flex: 1, minHeight: 0, overflow: "hidden", padding: 16 }}>
           {renderSection()}
