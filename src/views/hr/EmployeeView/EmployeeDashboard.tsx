@@ -1,201 +1,278 @@
 import React from "react";
 
-// ── DOMAIN MODULES ────────────────────────────────────────────────
+// ── OPERATING SURFACE ─────────────────────────────────────────────
 import EmployeeOperatingBanner from "../../../components/dashboard/domains/hr/EmployeeOperatingBanner";
 
-import TodayStatusCard from "../../../components/dashboard/domains/hr/TodayStatusCard";
-
-import ActionCenter from "../../../components/dashboard/domains/hr/ActionCenter";
-
-import AnnouncementPanel from "../../../components/dashboard/domains/hr/AnnouncementPanel";
-
-import EmployeeSnapshot from "../../../components/dashboard/domains/hr/EmployeeSnapshot";
-import TeamAvailability from "../../../components/dashboard/domains/hr/TeamAvailability";
-
+// ── TEMPORAL FLOW ────────────────────────────────────────────────
 import CalendarStrip from "../../../components/dashboard/domains/hr/CalendarStrip";
 
+// ── OPERATIONAL FLOW STREAM ──────────────────────────────────────
+import TodayStatusCard from "../../../components/dashboard/domains/hr/TodayStatusCard";
+import ActionCenter from "../../../components/dashboard/domains/hr/ActionCenter";
 import MyWorkdayPanel from "../../../components/dashboard/domains/hr/MyWorkdayPanel";
+import AnnouncementPanel from "../../../components/dashboard/domains/hr/AnnouncementPanel";
 
+// ── AMBIENT INTELLIGENCE ─────────────────────────────────────────
+import AmbientSignalRail from "../../../components/dashboard/domains/hr/AmbientSignalRail";
 
-// ────────────────────────────────────────────────────────────────
+// ── TEAM FLOW STREAM ─────────────────────────────────────────────
+import EmployeeSnapshot from "../../../components/dashboard/domains/hr/EmployeeSnapshot";
+import TeamAvailability from "../../../components/dashboard/domains/hr/TeamAvailability";
+import FlowSupportPanel from "../../../components/dashboard/domains/hr/FlowSupportPanel";
+
+// ─────────────────────────────────────────────────────────────────
 
 const EmployeeDashboard: React.FC = () => {
   return (
-    <div className="h-full overflow-y-auto bg-[var(--background)]">
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-
-        {/* ─────────────────────────────────────────────
-            EMPLOYEE OPERATING BANNER
-        ───────────────────────────────────────────── */}
-        <section className="pb-2">
-          <EmployeeOperatingBanner />
-        </section>
-
-        {/* ─────────────────────────────────────────────
-            🥇 PRIMARY OPERATIONAL ZONE
-        ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-
-          <div
-            className="
-    xl:col-span-8
-    rounded-3xl
-    border
-    border-[var(--border)]
-    bg-[var(--card)]
-    shadow-sm
-    overflow-hidden
-  "
-          >
-            <ActionCenter />
-          </div>
-
-          <div
-            className="
-    xl:col-span-4
-    rounded-3xl
-    border
-    border-[var(--border)]
-    bg-[var(--card)]
-    opacity-95
-  "
-          >
-            <TodayStatusCard />
-          </div>
-
-        </div>
-
-        {/* ─────────────────────────────────────────────
-            🧭 TEMPORAL CONTEXT ZONE
-        ───────────────────────────────────────────── */}
-        {/* ─────────────────────────────────────────────
-    🧭 TEMPORAL CONTEXT ZONE
-───────────────────────────────────────────── */}
-        <section className="max-w-5xl space-y-4">
-
-          <div className="space-y-1">
-            <h2
-              className="
-        text-base
-        font-semibold
-        text-[var(--foreground)]
+    <div
+      className="
+        h-full
+        overflow-y-auto
+        bg-[var(--background)]
       "
-            >
-              Upcoming Schedule
-            </h2>
+    >
 
-            <p
-              className="
-        text-sm
-        text-[var(--muted-foreground)]
-      "
-            >
-              Stay aligned with your upcoming workday flow
-            </p>
-          </div>
+      {/* ROOT OPERATIONAL CANVAS */}
+      <div className="mx-auto max-w-7xl px-5 py-3">
 
-          <CalendarStrip />
-
-        </section>
-
-        {/* ─────────────────────────────────────────────
-    SECONDARY & BACKGROUND CONTEXT LAYER
-───────────────────────────────────────────── */}
-        <div
+        {/* ───────────────────────────────────────────── */}
+        {/* LEVEL 1 — OPERATING HEADER */}
+        {/* ───────────────────────────────────────────── */}
+        <section
           className="
-    max-w-6xl
-    space-y-6
-    rounded-3xl
-    border
-    border-[var(--border)]
-    bg-[color-mix(in_srgb,var(--card)_92%,transparent)]
-    p-4
-  "
+            mb-4
+            transition-all
+            duration-200
+          "
         >
-          {/* 📢 AWARENESS ZONE */}
-          <section className="space-y-3">
-            <AnnouncementPanel />
-          </section>
 
+          <EmployeeOperatingBanner />
 
+        </section>
 
-          {/* 🥉 TEAM CONTEXT ZONE */}
-          <section className="space-y-3">
+        {/* ───────────────────────────────────────────── */}
+        {/* LEVEL 2 — TEMPORAL RHYTHM */}
+        {/* ───────────────────────────────────────────── */}
+        <section
+          className="
+            mb-5
+            transition-colors
+            duration-200
+          "
+        >
 
-            <div className="space-y-1">
-              <h2
-                className="
-          text-sm
-          font-semibold
-          uppercase
-          tracking-wide
-          text-[var(--muted-foreground)]
-        "
-              >
-                Team Context
-              </h2>
+          <div
+            className="
+              pb-3
+              border-b
+              border-[color-mix(in_srgb,var(--border)_24%,transparent)]
+              transition-colors
+              duration-200
+            "
+          >
 
-              <p
-                className="
-          text-sm
-          text-[var(--muted-foreground)]
-        "
-              >
-                Lightweight awareness about surrounding team activity
-              </p>
-            </div>
+            <CalendarStrip />
 
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">
+          </div>
 
-              {/* <div className="xl:col-span-5 opacity-90">
-                <EmployeeSnapshot />
-              </div>
+        </section>
 
-              <div className="xl:col-span-7 opacity-90">
-                <TeamAvailability />
-              </div> */}
+        {/* ───────────────────────────────────────────── */}
+        {/* CONTINUOUS OPERATIONAL WORKSPACE */}
+        {/* ───────────────────────────────────────────── */}
+        <section
+          className="
+            grid
+            grid-cols-1
+            xl:grid-cols-12
+            gap-x-7
+            gap-y-4
+            items-start
+          "
+        >
 
+          {/* ───────────────────────────────────────── */}
+          {/* LEVEL 1 — PRIMARY OPERATIONAL FLOW */}
+          {/* ───────────────────────────────────────── */}
+          <div
+            className="
+              xl:col-span-7
+              min-w-0
+            "
+          >
+
+            <div className="space-y-5">
+
+              {/* CRITICAL STATUS */}
               <div
                 className="
-    xl:col-span-5
-    opacity-80
-    scale-[0.98]
-    saturate-[0.96]
-    origin-top
-  "
+                  group
+                  relative
+                  pl-3
+                  border-l
+                  border-[color-mix(in_srgb,var(--primary)_30%,transparent)]
+                  transition-colors
+                  duration-200
+                  hover:border-[color-mix(in_srgb,var(--primary)_45%,transparent)]
+                "
               >
-                <EmployeeSnapshot />
+
+                {/* LIVE STATUS BREATH */}
+                <div
+                  className="
+                    absolute
+                    left-[-1px]
+                    top-5
+                    h-2
+                    w-[2px]
+                    rounded-full
+                    bg-[var(--primary)]
+                    opacity-70
+                    motion-safe:animate-pulse
+                  "
+                />
+
+                <TodayStatusCard />
+
               </div>
 
+              {/* ACTIVE WORKDAY */}
               <div
                 className="
-    xl:col-span-7
-    opacity-80
-    scale-[0.98]
-    saturate-[0.96]
-    origin-top
-  "
+                  pl-3
+                  transition-all
+                  duration-200
+                "
               >
-                <TeamAvailability />
+
+                <MyWorkdayPanel />
+
               </div>
 
+              {/* CRITICAL ACTIONS */}
+              <div
+                className="
+                  pt-2
+                  pl-3
+                  border-t
+                  border-[color-mix(in_srgb,var(--border)_14%,transparent)]
+                  transition-colors
+                  duration-200
+                  hover:border-[color-mix(in_srgb,var(--border)_24%,transparent)]
+                "
+              >
 
+                <ActionCenter />
 
+              </div>
 
+              {/* AMBIENT ANNOUNCEMENTS */}
+              <div
+                className="
+                  pt-2
+                  border-t
+                  border-[color-mix(in_srgb,var(--border)_10%,transparent)]
+                  transition-colors
+                  duration-200
+                  hover:border-[color-mix(in_srgb,var(--border)_18%,transparent)]
+                "
+              >
+
+                <AnnouncementPanel />
+
+              </div>
 
             </div>
 
-          </section>
+          </div>
 
-          {/* 🧭 MY WORKDAY */}
-          <section className="space-y-3">
-            <MyWorkdayPanel />
-          </section>
+          {/* ───────────────────────────────────────── */}
+          {/* LEVEL 3 — AMBIENT INTELLIGENCE */}
+          {/* ───────────────────────────────────────── */}
+          <div
+            className="
+              xl:col-span-2
+              min-w-0
+              pt-1
+              transition-all
+              duration-200
+            "
+          >
 
+            <AmbientSignalRail />
 
+          </div>
 
-        </div>
+          {/* ───────────────────────────────────────── */}
+          {/* LEVEL 2 — TEAM FLOW STREAM */}
+          {/* ───────────────────────────────────────── */}
+          <div
+            className="
+              xl:col-span-3
+              min-w-0
+            "
+          >
+
+            {/* TEAM PRESENCE STREAM */}
+            <div
+              className="
+                divide-y
+                divide-[color-mix(in_srgb,var(--border)_14%,transparent)]
+                transition-colors
+                duration-200
+              "
+            >
+
+              {/* ACTIVE COLLABORATION */}
+              <div
+                className="
+                  pb-4
+                  transition-all
+                  duration-200
+                "
+              >
+
+                <TeamAvailability />
+
+              </div>
+
+              {/* TEAM CONTEXT */}
+              <div
+                className="
+                  py-4
+                  transition-all
+                  duration-200
+                "
+              >
+
+                <EmployeeSnapshot />
+
+              </div>
+
+              {/* FLOW SUPPORT */}
+              <div
+                className="
+                  pt-4
+                  transition-all
+                  duration-200
+                "
+              >
+
+                <FlowSupportPanel />
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* SPATIAL TERMINATION */}
+        <div className="h-8" />
+
       </div>
+
     </div>
   );
 };

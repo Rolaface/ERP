@@ -1,143 +1,212 @@
 import React from "react";
 
-import DashboardSection from "../../primitives/DashboardSection";
+// ── OPERATIONAL RHYTHM DATA ──────────────────────────────────────
 
-type DayLoad = {
-  day: string;
-  totalCapacity: number;
-  scheduledLoad: number;
+type TimelineEvent = {
+  time: string;
+  title: string;
+  status: "stable" | "active" | "focus" | "urgent";
 };
 
-const mockWeek: DayLoad[] = [
-  { day: "Mon", totalCapacity: 100, scheduledLoad: 72 },
-  { day: "Tue", totalCapacity: 100, scheduledLoad: 88 },
-  { day: "Wed", totalCapacity: 100, scheduledLoad: 95 },
-  { day: "Thu", totalCapacity: 100, scheduledLoad: 60 },
-  { day: "Fri", totalCapacity: 100, scheduledLoad: 78 },
-  { day: "Sat", totalCapacity: 100, scheduledLoad: 30 },
-  { day: "Sun", totalCapacity: 100, scheduledLoad: 20 },
+const timeline: TimelineEvent[] = [
+  {
+    time: "09:00",
+    title: "Team Standup",
+    status: "active",
+  },
+  {
+    time: "11:30",
+    title: "Invoice Review",
+    status: "focus",
+  },
+  {
+    time: "01:00",
+    title: "Lunch Window",
+    status: "stable",
+  },
+  {
+    time: "03:00",
+    title: "Approval Queue",
+    status: "urgent",
+  },
+  {
+    time: "05:30",
+    title: "Deployment Sync",
+    status: "active",
+  },
 ];
 
-function getUtilization(load: DayLoad) {
-  return Math.round((load.scheduledLoad / load.totalCapacity) * 100);
+// ── STATUS TONES ─────────────────────────────────────────────────
+
+function getStatusTone(status: TimelineEvent["status"]) {
+  switch (status) {
+    case "urgent":
+      return "bg-rose-400";
+
+    case "active":
+      return "bg-sky-400";
+
+    case "focus":
+      return "bg-violet-400";
+
+    default:
+      return "bg-emerald-400";
+  }
 }
 
-function getRiskColor(util: number) {
-  if (util >= 90) return "bg-red-500";
-  if (util >= 70) return "bg-yellow-500";
-  return "bg-green-500";
-}
-
-function getIntensityLabel(util: number) {
-  if (util >= 90) return "OVERLOADED";
-  if (util >= 70) return "BUSY";
-  if (util >= 40) return "NORMAL";
-  return "LIGHT";
-}
-
-function UtilBar({ value }: { value: number }) {
-  return (
-    <div className="w-full h-2 bg-[var(--surface-muted)] rounded-full overflow-hidden">
-      <div
-        className="h-full bg-[var(--color-primary)]"
-        style={{ width: `${value}%` }}
-      />
-    </div>
-  );
-}
+// ── COMPONENT ────────────────────────────────────────────────────
 
 export default function CalendarStrip() {
-  const enriched = mockWeek.map((d) => ({
-    ...d,
-    utilization: getUtilization(d),
-  }));
-
-  const avgUtil = Math.round(
-    enriched.reduce((acc, d) => acc + d.utilization, 0) / enriched.length
-  );
-
-  const peakDay = enriched.reduce((max, d) =>
-    d.utilization > max.utilization ? d : max
-  );
-
   return (
-    <DashboardSection
-      title="Workload Calendar Intelligence"
-      subtitle="Temporal execution load distribution"
+    <section
+      className="
+        relative
+        overflow-x-auto
+        scrollbar-none
+      "
     >
-      {/* System Signals */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="p-3 rounded-xl border bg-[var(--surface)] border-[var(--border-subtle)]">
-          <div className="text-xs text-[var(--text-muted)]">
-            Avg Weekly Load
-          </div>
-          <div className="text-lg font-medium text-[var(--text)]">
-            {avgUtil}%
-          </div>
-        </div>
 
-        <div className="p-3 rounded-xl border bg-[var(--surface)] border-[var(--border-subtle)]">
-          <div className="text-xs text-[var(--text-muted)]">
-            Peak Day
-          </div>
-          <div className="text-lg font-medium text-[var(--text)]">
-            {peakDay.day}
-          </div>
-        </div>
+      <div
+        className="
+          flex
+          items-center
+          gap-0
+          min-w-max
+        "
+      >
 
-        <div className="p-3 rounded-xl border bg-[var(--surface)] border-[var(--border-subtle)]">
-          <div className="text-xs text-[var(--text-muted)]">
-            High Load Days
-          </div>
-          <div className="text-lg font-medium text-[var(--text)]">
-            {enriched.filter((d) => d.utilization >= 70).length}
-          </div>
-        </div>
-      </div>
+        {/* NOW MARKER */}
+        <div
+          className="
+            flex
+            items-center
+            gap-3
+            pr-5
+            shrink-0
+          "
+        >
 
-      {/* Calendar Strip */}
-      <div className="grid grid-cols-7 gap-2">
-        {enriched.map((day) => {
-          const util = day.utilization;
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
 
-          return (
             <div
-              key={day.day}
-              className="p-3 rounded-xl border bg-[var(--surface)] border-[var(--border-subtle)] flex flex-col items-center gap-2"
-            >
-              {/* Day label */}
-              <span className="text-xs text-[var(--text-muted)]">
-                {day.day}
-              </span>
+              className="
+                h-2
+                w-2
+                rounded-full
+                bg-emerald-400
+                animate-pulse
+              "
+            />
 
-              {/* Circular intensity indicator */}
-              <div className="relative w-10 h-10">
-                <div className="absolute inset-0 rounded-full bg-[var(--surface-muted)]" />
+            <span
+              className="
+                text-[11px]
+                font-semibold
+                tracking-[0.24em]
+                text-[var(--muted-foreground)]
+              "
+            >
+              NOW
+            </span>
+
+          </div>
+
+          <div
+            className="
+              h-px
+              w-14
+              bg-[color-mix(in_srgb,var(--border)_45%,transparent)]
+            "
+          />
+
+        </div>
+
+        {/* TIMELINE EVENTS */}
+        {timeline.map((event, index) => (
+          <React.Fragment key={event.time}>
+
+            <div
+              className="
+                group
+                relative
+                flex
+                items-start
+                gap-3
+                px-4
+                py-1
+                shrink-0
+              "
+            >
+
+              {/* STATUS NODE */}
+              <div className="pt-[3px]">
 
                 <div
-                  className={`absolute inset-0 rounded-full ${getRiskColor(
-                    util
-                  )} opacity-20`}
+                  className={`
+                    h-2
+                    w-2
+                    rounded-full
+                    transition-transform
+                    duration-200
+                    group-hover:scale-125
+                    ${getStatusTone(event.status)}
+                  `}
                 />
 
-                <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-[var(--text)]">
-                  {util}%
+              </div>
+
+              {/* EVENT CONTENT */}
+              <div className="space-y-1">
+
+                <div
+                  className="
+                    text-[11px]
+                    font-medium
+                    tracking-wide
+                    text-[var(--muted-foreground)]
+                  "
+                >
+                  {event.time}
                 </div>
+
+                <div
+                  className="
+                    whitespace-nowrap
+                    text-sm
+                    font-medium
+                    text-[var(--foreground)]
+                  "
+                >
+                  {event.title}
+                </div>
+
               </div>
 
-              {/* Mini bar */}
-              <div className="w-full">
-                <UtilBar value={util} />
-              </div>
-
-              {/* Label */}
-              <span className="text-[10px] text-[var(--text-muted)]">
-                {getIntensityLabel(util)}
-              </span>
             </div>
-          );
-        })}
+
+            {/* CONNECTOR */}
+            {index !== timeline.length - 1 && (
+              <div
+                className="
+                  h-px
+                  w-10
+                  shrink-0
+                  bg-[color-mix(in_srgb,var(--border)_28%,transparent)]
+                "
+              />
+            )}
+
+          </React.Fragment>
+        ))}
+
       </div>
-    </DashboardSection>
+
+    </section>
   );
 }
