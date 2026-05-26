@@ -6,7 +6,7 @@ import {
   closeSwal,
 } from "../../../utils/alert";
 import { ShieldCheck } from "lucide-react";
-import { User, Briefcase, Banknote, FileText,Landmark } from "lucide-react";
+import { User, Briefcase, Banknote, FileText, Landmark } from "lucide-react";
 import {
   uploadEmployeeDocument,
   getEmployeeDocuments,
@@ -20,15 +20,10 @@ import { CompensationTab } from "./detailtab/Compensationtab";
 import EmployeeBankDetails from "./detailtab/EmployeeBank";
 import { DocumentsTab, DocumentUploadModal } from "./detailtab/documenttab";
 import { SalarySlipTable } from "./detailtab/Salaryslip";
-import { getSalarySlipsByEmployeeOnly } from "../../../api/payroll/payrollEntryApi";
 import { StatutoryTab } from "./detailtab/StatutoryTab";
-
-// ── Use your existing AppSubTabs primitive ────────────────────────────────────
-// AppSubTabs gives the same underline-tab style used throughout your app.
-// Adjust path to wherever AppLayoutPrimitives lives in your project.
 import { AppSubTabs } from "../../../components/ui/app-shell";
 
-// ─── Tabs config ──────────────────────────────────────────────────────────────
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 type TabId =
   | "personal"
@@ -40,17 +35,13 @@ type TabId =
   | "documents";
 
 const TABS = [
-  { id: "personal", label: "Personal", icon: <User size={14} /> },
-  {
-    id: "statutory",
-    label: "Statutory",
-    icon: <ShieldCheck size={14} />,
-  },
-  { id: "employment", label: "Employment", icon: <Briefcase size={14} /> },
-  { id: "compensation", label: "Compensation", icon: <Banknote size={14} /> },
-  { id: "BankAccount", label: "Bank Account", icon: <Landmark size={14} /> },
-  { id: "salarySlip", label: "Salary Slip", icon: <FileText size={14} /> },
-  { id: "documents", label: "Documents", icon: <FileText size={14} /> },
+  { id: "personal",     label: "Personal",     icon: <User      size={14} /> },
+  { id: "statutory",    label: "Statutory",    icon: <ShieldCheck size={14} /> },
+  { id: "employment",   label: "Employment",   icon: <Briefcase size={14} /> },
+  { id: "compensation", label: "Compensation", icon: <Banknote  size={14} /> },
+  { id: "BankAccount",  label: "Bank Account", icon: <Landmark  size={14} /> },
+  { id: "salarySlip",   label: "Salary Slip",  icon: <FileText  size={14} /> },
+  { id: "documents",    label: "Documents",    icon: <FileText  size={14} /> },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -70,22 +61,19 @@ const EmployeeDetailView: React.FC<Props> = ({
   onDocumentUploaded,
   hideFinancialTabs = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabId>("personal");
+  const [activeTab,       setActiveTab]       = useState<TabId>("personal");
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [salarySlips, setSalarySlips] = useState<any[]>([]);
-  const [salarySlipsLoading, setSalarySlipsLoading] = useState(false);
+  const [documents,       setDocuments]       = useState<any[]>([]);
 
   const fullName = [emp.first_name, emp.middle_name, emp.last_name]
-    .filter(Boolean)
-    .join(" ");
+    .filter(Boolean).join(" ");
   const currency = fmt(emp.salary_currency) || "";
 
   const visibleTabs = hideFinancialTabs
     ? TABS.filter((t) => t.id !== "compensation" && t.id !== "salarySlip")
     : TABS;
 
-  // ── Data fetching ──────────────────────────────────────────────────────────
+  // ── Documents ─────────────────────────────────────────────────────────────
 
   const fetchDocuments = async () => {
     if (!emp.employee) return;
@@ -97,22 +85,8 @@ const EmployeeDetailView: React.FC<Props> = ({
     }
   };
 
-const fetchSalarySlips = async () => {
-  if (!emp.employee) return;
-  setSalarySlipsLoading(true);
-  try {
-    const res = await getSalarySlipsByEmployeeOnly(emp.employee);
-    setSalarySlips(res || []);
-  } catch {
-    setSalarySlips([]);
-  } finally {
-    setSalarySlipsLoading(false);
-  }
-};
-
   useEffect(() => {
     fetchDocuments();
-    fetchSalarySlips();
   }, [emp.employee]);
 
   // ── Document upload ────────────────────────────────────────────────────────
@@ -137,16 +111,11 @@ const fetchSalarySlips = async () => {
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    /*
-     * Outer wrapper: flex row, fills whatever height the parent gives.
-     * Parent (Employee Directory page) should already be AppPage + AppPageBody
-     * so this just sits inside the body's flex-col.
-     */
     <div className="flex flex-1 min-h-0 gap-4">
-      {/* ── Sidebar — fixed width, sticky ─────────────────────────────────── */}
+      {/* Sidebar */}
       <div className="w-[256px] shrink-0 self-start sticky top-0">
         <EmployeeSidebar
           emp={emp}
@@ -157,35 +126,24 @@ const fetchSalarySlips = async () => {
         />
       </div>
 
-      {/* ── Detail panel — grows, clips, scrolls internally ───────────────── */}
+      {/* Detail panel */}
       <div className="flex flex-1 flex-col min-w-0 min-h-0 bg-card rounded-xl border border-[var(--border)] overflow-hidden">
-        {/*
-         * AppSubTabs — same underline style used in Employment Directory,
-         * Payroll, etc. Zero extra styling needed; it matches out of the box.
-         */}
         <AppSubTabs
           tabs={visibleTabs}
           activeTab={activeTab}
           onChange={(id) => setActiveTab(id as TabId)}
         />
 
-        {/* Scrollable tab body */}
         <div className="flex-1 overflow-y-auto p-5">
-          {activeTab === "personal" && (
-            <PersonalTab emp={emp} fullName={fullName} />
+          {activeTab === "personal"     && <PersonalTab emp={emp} fullName={fullName} />}
+          {activeTab === "statutory"    && <StatutoryTab emp={emp} />}
+          {activeTab === "employment"   && <EmploymentTab emp={emp} />}
+          {activeTab === "compensation" && <CompensationTab emp={emp} currency={currency} />}
+          {activeTab === "BankAccount"  && <EmployeeBankDetails employeename={emp.employee} />}
+          {activeTab === "salarySlip"   && (
+            <SalarySlipTable employeeId={emp.employee} />  // ← self-fetching, no props needed
           )}
-          {activeTab === "statutory" && <StatutoryTab emp={emp} />}
-          {activeTab === "employment" && <EmploymentTab emp={emp} />}
-          {activeTab === "compensation" && (
-            <CompensationTab emp={emp} currency={currency} />
-          )}
-           {activeTab === "BankAccount" && (
-  <EmployeeBankDetails employeename={emp.employee} />
-)}
-          {activeTab === "salarySlip" && (
-            <SalarySlipTable slips={salarySlips} loading={salarySlipsLoading} />
-          )}
-          {activeTab === "documents" && (
+          {activeTab === "documents"    && (
             <DocumentsTab
               documents={documents}
               onOpenUploadModal={() => setShowUploadModal(true)}

@@ -89,29 +89,41 @@ export default function LeaveApproval() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showHistory, setShowHistory] = useState(false);
-  const [filters, setFilters] = useState({ from_date: "", to_date: "" });
+  // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
+  const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // useEffect(() => {
+  //   getAllLeaveApplied();
+  // // }, [showHistory, filters.from_date, filters.to_date]); 
+  // }, [showHistory, filters.from_date, filters.to_date, filters.status]);
   useEffect(() => {
     getAllLeaveApplied();
-  }, [showHistory, filters.from_date, filters.to_date]); 
+  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize]);
 
   const getAllLeaveApplied = async () => {
     try {
       setIsLoading(true);
-       const apiFilters: any[] = [
-      ["leave_approver", "=", user?.email], 
-    ];
-      if (showHistory) {
-      apiFilters.push([
-        "status",
-        "in",
-        ["Approved", "Rejected", "Open", "Cancelled"],
-      ]);
-    } else {
-      apiFilters.push(["status", "=", "Open"]);
-    }
+    //    const apiFilters: any[] = [
+    //   ["leave_approver", "=", user?.email], 
+    // ];
+    const apiFilters: any[] = [];
+    const isAdmin = user?.roles?.includes("Administrator");
+      if (!isAdmin) {
+        apiFilters.push(["leave_approver", "=", user?.email]); 
+      }
+    if (filters.status) {
+        apiFilters.push(["status", "=", filters.status]);
+      } else if (showHistory) {
+        apiFilters.push([
+          "status",
+          "in",
+          ["Approved", "Rejected", "Open", "Cancelled"],
+        ]);
+      } else {
+        apiFilters.push(["status", "=", "Open"]);
+      }
 
       if (filters.from_date) {
         apiFilters.push(["from_date", ">=", filters.from_date]);
@@ -120,7 +132,12 @@ export default function LeaveApproval() {
         apiFilters.push(["from_date", "<=", filters.to_date]);
       }
 
-      const response = await getAllLeaveApplications(apiFilters);
+      // const response = await getAllLeaveApplications(apiFilters);
+      const limit_start = (page - 1) * pageSize;
+      const limit_page_length = pageSize;
+
+      // Pass the pagination params to your API call
+      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length);
       console.log("API Response:", response);
       setData(response || []);
     } catch (err) {
@@ -167,6 +184,27 @@ export default function LeaveApproval() {
       setIsLoading(false);
     }
   };
+const calculateLeaveDays = (fromDateStr: string, toDateStr: string, isHalfDay: number) => {
+  if (isHalfDay === 1) return "Half Day";
+  if (!fromDateStr || !toDateStr) return "-";
+
+  // Parse API strings into Date objects
+  const date1 = new Date(fromDateStr);
+  const date2 = new Date(toDateStr);
+
+  // Set time to midnight to avoid Daylight Saving Time (DST) shift bugs
+  date1.setHours(0, 0, 0, 0);
+  date2.setHours(0, 0, 0, 0);
+
+  const differenceInMs = date2.getTime() - date1.getTime();
+  const millisecondsInDay = 1000 * 60 * 60 * 24;
+
+  // Use Math.round() instead of floor() to be safe against minor hour shifts
+  // Add + 1 because leave is inclusive (e.g., May 1 to May 1 = 1 day)
+  const days = Math.round(differenceInMs / millisecondsInDay) + 1;
+
+  return days > 0 ? days : 0; 
+};
 
   const columns: Column<any>[] = [
      {
@@ -188,6 +226,12 @@ export default function LeaveApproval() {
       align: "left",
       render: (e) => (e.half_day === 1 ? "Half Day" : e.to_date || "-"),
     },
+   {
+    key: "no_of_days",
+    header: "No of Days",
+    align: "left",
+    render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
+  },
     {
       key: "description",
       header: "Reason",
@@ -221,7 +265,7 @@ export default function LeaveApproval() {
       //   const isActionDone = ["Approved", "Rejected"].includes(e.status);
       render: (row) => {
        const leaveId = row.name || row.id;
-       const isActionDone = ["Approved", "Rejected"].includes(row.status);
+       const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(row.status);
         // const actions: MenuAction[] = [];
 
         // if (canApproveReject && !isActionDone) {
@@ -282,6 +326,21 @@ if (canApproveReject && !isActionDone) {
                 setPage(1);
               }}
             />
+            <select
+              value={filters.status}
+              disabled={!showHistory} 
+              onChange={(e) => {
+                setFilters((prev) => ({ ...prev, status: e.target.value }));
+                setPage(1);
+              }}
+              className="border-gray-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 px-2 border outline-none"
+            >
+              <option value="">All Statuses</option>
+              <option value="Open">Pending Approval</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
               <input
                 type="checkbox"
@@ -293,7 +352,7 @@ if (canApproveReject && !isActionDone) {
             </label>
           </>
         }
-        defaultVisibleCount={7}
+        defaultVisibleCount={8}
         loading={isLoading}
         columns={columns}
         data={data}
@@ -303,8 +362,10 @@ if (canApproveReject && !isActionDone) {
         enableColumnSelector
         currentPage={page}
         pageSize={pageSize}
-        totalItems={data.length}
-        totalPages={Math.ceil(data.length / pageSize) || 1}
+        // totalItems={data.length}
+        totalItems={(page - 1) * pageSize + data.length}
+        // totalPages={Math.ceil(data.length / pageSize) || 1}
+        totalPages={data.length === pageSize ? page + 1 : page}
         pageSizeOptions={[10, 25, 50]}
         onPageSizeChange={(size) => {
           setPageSize(size);
