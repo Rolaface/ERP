@@ -7,7 +7,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-type ActionPriority = "critical" | "warning" | "info";
+type ActionPriority =
+  | "critical"
+  | "warning"
+  | "info";
 
 interface ActionItem {
   id: number;
@@ -21,57 +24,69 @@ const actions: ActionItem[] = [
   {
     id: 1,
     title: "Timesheet pending",
-    description: "Submit yesterday's work log before 6 PM",
+    description:
+      "Submit yesterday's work log before 6 PM",
     priority: "critical",
     ctaLabel: "Submit",
   },
   {
     id: 2,
     title: "Approval requests waiting",
-    description: "2 requests require your review",
+    description:
+      "2 requests require your review",
     priority: "warning",
     ctaLabel: "Review",
   },
   {
     id: 3,
     title: "Attendance anomaly detected",
-    description: "Missing punch-out from Tuesday",
+    description:
+      "Missing punch-out from Tuesday",
     priority: "critical",
     ctaLabel: "Resolve",
   },
   {
     id: 4,
     title: "Policy acknowledgement",
-    description: "Updated remote-work guidelines available",
+    description:
+      "Updated remote-work guidelines available",
     priority: "info",
     ctaLabel: "Open",
   },
 ];
 
-function getPriorityConfig(priority: ActionPriority) {
+function getPriorityConfig(
+  priority: ActionPriority
+) {
   switch (priority) {
     case "critical":
       return {
         icon: AlertTriangle,
-        tone: "text-rose-500",
-        line: "bg-rose-500",
+        dot: "bg-rose-500",
+        iconTone: "text-rose-600",
         cta: "text-rose-600",
+        badge:
+          "bg-rose-500/10 text-rose-700",
       };
 
     case "warning":
       return {
         icon: Clock3,
-        tone: "text-amber-500",
-        line: "bg-amber-500",
+        dot: "bg-amber-500",
+        iconTone: "text-amber-600",
         cta: "text-amber-600",
+        badge:
+          "bg-amber-500/10 text-amber-700",
       };
 
     case "info":
       return {
         icon: BellRing,
-        tone: "text-blue-500",
-        line: "bg-blue-500",
+        dot: "bg-blue-500",
+        iconTone: "text-blue-600",
         cta: "text-blue-600",
+        badge:
+          "bg-blue-500/10 text-blue-700",
       };
   }
 }
@@ -80,34 +95,47 @@ const ActionCenter: React.FC = () => {
   return (
     <section
       className="
-        rounded-b-[32px]
+        rounded-3xl
         border
-        border-t-0
         border-[var(--border)]
         bg-[var(--card)]
-        px-7
-        py-6
+        px-5
+        py-4
       "
     >
 
+      {/* HEADER */}
       <div className="flex items-center justify-between">
 
         <div>
 
-          <p
+          <div className="flex items-center gap-2">
+
+            <div className="h-2 w-2 rounded-full bg-emerald-500" />
+
+            <p
+              className="
+                text-xs
+                font-semibold
+                uppercase
+                tracking-[0.16em]
+                text-[var(--muted-foreground)]
+              "
+            >
+              Operational Queue
+            </p>
+
+          </div>
+
+          <h2
             className="
-              text-xs
-              font-medium
-              uppercase
-              tracking-[0.18em]
-              text-[var(--muted-foreground)]
+              mt-2
+              text-lg
+              font-semibold
+              text-[var(--foreground)]
             "
           >
-            Decision Queue
-          </p>
-
-          <h2 className="mt-2 text-xl font-semibold">
-            Operational Actions
+            Active Workflow Actions
           </h2>
 
         </div>
@@ -115,9 +143,11 @@ const ActionCenter: React.FC = () => {
         <div
           className="
             rounded-full
+            border
+            border-[var(--border)]
             bg-[var(--background)]
-            px-3
-            py-1.5
+            px-2.5
+            py-1
             text-xs
             font-medium
             text-[var(--muted-foreground)]
@@ -128,73 +158,93 @@ const ActionCenter: React.FC = () => {
 
       </div>
 
-      <div className="mt-7 space-y-3">
+      {/* ACTION STREAM */}
+      <div className="mt-5 divide-y divide-[var(--border)]">
 
         {actions.map((item) => {
-          const config = getPriorityConfig(item.priority);
+          const config =
+            getPriorityConfig(item.priority);
+
           const Icon = config.icon;
 
           return (
             <div
               key={item.id}
               className="
+                group
                 flex
                 items-start
-                gap-4
-                rounded-2xl
-                border
-                border-[var(--border)]
-                px-4
-                py-4
-                transition-all
-                hover:border-[color-mix(in_srgb,var(--border)_70%,black)]
-                hover:bg-[var(--background)]
+                gap-3
+                py-3
               "
             >
 
-              <div
-                className={`
-                  mt-1
-                  h-10
-                  w-1
-                  rounded-full
-                  ${config.line}
-                `}
-              />
+              {/* PRIORITY */}
+              <div className="pt-1">
 
-              <div
-                className={`
-                  flex
-                  h-10
-                  w-10
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-2xl
-                  bg-[var(--background)]
-                  ${config.tone}
-                `}
-              >
-
-                <Icon className="h-5 w-5" />
+                <div
+                  className={`
+                    h-2
+                    w-2
+                    rounded-full
+                    ${config.dot}
+                  `}
+                />
 
               </div>
 
+              {/* ICON */}
+              <div
+                className={`
+                  flex
+                  h-8
+                  w-8
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-[var(--background)]
+                  ${config.iconTone}
+                `}
+              >
+
+                <Icon className="h-4 w-4" />
+
+              </div>
+
+              {/* CONTENT */}
               <div className="min-w-0 flex-1">
 
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3">
 
-                  <div>
+                  <div className="min-w-0">
 
-                    <h3
-                      className="
-                        text-sm
-                        font-semibold
-                        text-[var(--foreground)]
-                      "
-                    >
-                      {item.title}
-                    </h3>
+                    <div className="flex items-center gap-2">
+
+                      <h3
+                        className="
+                          text-sm
+                          font-medium
+                          text-[var(--foreground)]
+                        "
+                      >
+                        {item.title}
+                      </h3>
+
+                      <span
+                        className={`
+                          rounded-full
+                          px-2
+                          py-0.5
+                          text-[10px]
+                          font-medium
+                          ${config.badge}
+                        `}
+                      >
+                        {item.priority}
+                      </span>
+
+                    </div>
 
                     <p
                       className="
@@ -209,12 +259,14 @@ const ActionCenter: React.FC = () => {
 
                   </div>
 
+                  {/* CTA */}
                   <button
                     className={`
                       inline-flex
+                      shrink-0
                       items-center
                       gap-1
-                      text-sm
+                      text-xs
                       font-medium
                       transition-colors
                       ${config.cta}
@@ -223,7 +275,7 @@ const ActionCenter: React.FC = () => {
 
                     {item.ctaLabel}
 
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-3.5 w-3.5" />
 
                   </button>
 

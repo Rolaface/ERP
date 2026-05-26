@@ -23,7 +23,7 @@ const signals: TeamSignal[] = [
   {
     id: 3,
     name: "Rahul Mehta",
-    signal: "In meetings until 3 PM",
+    signal: "Meetings until 3 PM",
     status: "meeting",
   },
   {
@@ -34,72 +34,127 @@ const signals: TeamSignal[] = [
   },
 ];
 
-function getStatusColor(status: TeamSignal["status"]) {
+function getStatusStyles(status: TeamSignal["status"]) {
   switch (status) {
     case "available":
-      return "bg-emerald-500";
+      return {
+        dot: "bg-emerald-500",
+        badge:
+          "bg-emerald-500/10 text-emerald-700",
+      };
 
     case "focus":
-      return "bg-amber-500";
+      return {
+        dot: "bg-amber-500",
+        badge:
+          "bg-amber-500/10 text-amber-700",
+      };
 
     case "meeting":
-      return "bg-blue-500";
+      return {
+        dot: "bg-blue-500",
+        badge:
+          "bg-blue-500/10 text-blue-700",
+      };
 
     case "away":
-      return "bg-zinc-400";
+      return {
+        dot: "bg-zinc-400",
+        badge:
+          "bg-zinc-500/10 text-zinc-600",
+      };
   }
 }
 
 export default function EmployeeSnapshot() {
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
 
-      <div className="flex items-center gap-2">
-        <div className="h-1.5 w-1.5 rounded-full bg-[var(--muted-foreground)]" />
-
+      <div>
         <h2
           className="
-            text-xs
+            text-sm
             font-semibold
-            uppercase
-            tracking-[0.18em]
+            text-[var(--foreground)]
+          "
+        >
+          Team Pulse
+        </h2>
+
+        <p
+          className="
+            mt-1
+            text-xs
             text-[var(--muted-foreground)]
           "
         >
-          Nearby Team Signals
-        </h2>
+          Nearby collaboration awareness
+        </p>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="space-y-3">
 
-        {signals.map((member) => (
-          <div
-            key={member.id}
-            className="
-              flex
-              items-center
-              gap-3
-              text-sm
-            "
-          >
+        {signals.map((member) => {
+          const styles = getStatusStyles(member.status);
+
+          return (
             <div
-              className={`
-                h-2
-                w-2
-                rounded-full
-                ${getStatusColor(member.status)}
-              `}
-            />
+              key={member.id}
+              className="
+                flex
+                items-center
+                justify-between
+                gap-3
+                rounded-2xl
+                border
+                border-[var(--border)]
+                bg-[var(--background)]
+                px-3
+                py-3
+              "
+            >
 
-            <span className="text-[var(--foreground)]">
-              {member.name}
-            </span>
+              <div className="flex items-center gap-3">
 
-            <span className="text-[var(--muted-foreground)]">
-              · {member.signal}
-            </span>
-          </div>
-        ))}
+                <div
+                  className={`
+                    h-2.5
+                    w-2.5
+                    rounded-full
+                    ${styles.dot}
+                  `}
+                />
+
+                <div>
+
+                  <p className="text-sm font-medium text-[var(--foreground)]">
+                    {member.name}
+                  </p>
+
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    {member.signal}
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div
+                className={`
+                  rounded-full
+                  px-2.5
+                  py-1
+                  text-[10px]
+                  font-medium
+                  ${styles.badge}
+                `}
+              >
+                {member.status}
+              </div>
+
+            </div>
+          );
+        })}
 
       </div>
 

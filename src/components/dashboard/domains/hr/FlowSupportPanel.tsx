@@ -1,5 +1,11 @@
 import React from "react";
 
+import {
+  AlertTriangle,
+  Focus,
+  BellDot,
+} from "lucide-react";
+
 type FlowSignal = {
   id: number;
   text: string;
@@ -29,71 +35,88 @@ const signals: FlowSignal[] = [
   },
 ];
 
-function getToneStyles(tone: FlowSignal["tone"]) {
+function getToneConfig(tone: FlowSignal["tone"]) {
   switch (tone) {
     case "warning":
-      return "text-amber-600";
+      return {
+        icon: AlertTriangle,
+        tone:
+          "text-amber-700 bg-amber-500/10 border-amber-500/20",
+      };
 
     case "focus":
-      return "text-blue-600";
+      return {
+        icon: Focus,
+        tone:
+          "text-blue-700 bg-blue-500/10 border-blue-500/20",
+      };
 
     default:
-      return "text-[var(--muted-foreground)]";
+      return {
+        icon: BellDot,
+        tone:
+          "text-[var(--foreground)] bg-[var(--background)] border-[var(--border)]",
+      };
   }
 }
 
 export default function FlowSupportPanel() {
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
 
-      <div className="flex items-center gap-2">
-        <div className="h-1.5 w-1.5 rounded-full bg-[var(--muted-foreground)]" />
-
+      <div>
         <h2
           className="
-            text-xs
+            text-sm
             font-semibold
-            uppercase
-            tracking-[0.18em]
+            text-[var(--foreground)]
+          "
+        >
+          Attention Queue
+        </h2>
+
+        <p
+          className="
+            mt-1
+            text-xs
             text-[var(--muted-foreground)]
           "
         >
-          Operational Signals
-        </h2>
+          Signals requiring awareness or follow-up
+        </p>
       </div>
 
-      <div className="space-y-2">
-        {signals.map((signal) => (
-          <div
-            key={signal.id}
-            className="
-              flex
-              items-start
-              gap-3
-              text-sm
-            "
-          >
-            <div
-              className={`
-                mt-[7px]
-                h-1.5
-                w-1.5
-                rounded-full
-                bg-current
-                ${getToneStyles(signal.tone)}
-              `}
-            />
+      <div className="space-y-3">
 
-            <p
+        {signals.map((signal) => {
+          const config = getToneConfig(signal.tone);
+          const Icon = config.icon;
+
+          return (
+            <div
+              key={signal.id}
               className={`
-                leading-relaxed
-                ${getToneStyles(signal.tone)}
+                flex
+                items-start
+                gap-3
+                rounded-2xl
+                border
+                px-3
+                py-3
+                ${config.tone}
               `}
             >
-              {signal.text}
-            </p>
-          </div>
-        ))}
+
+              <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+
+              <p className="text-sm leading-relaxed">
+                {signal.text}
+              </p>
+
+            </div>
+          );
+        })}
+
       </div>
 
     </section>

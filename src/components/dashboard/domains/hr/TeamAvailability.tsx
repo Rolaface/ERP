@@ -1,45 +1,85 @@
 import React from "react";
 
+import { Users2 } from "lucide-react";
+
 const TeamAvailability: React.FC = () => {
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
 
+      {/* HEADER */}
       <div className="flex items-center gap-2">
-        <div className="h-1.5 w-1.5 rounded-full bg-[var(--muted-foreground)]" />
+
+        <Users2 className="h-4 w-4 text-[var(--primary)]" />
 
         <h2
           className="
-            text-xs
+            text-sm
             font-semibold
-            uppercase
-            tracking-[0.18em]
-            text-[var(--muted-foreground)]
+            text-[var(--foreground)]
           "
         >
-          Collaboration Availability
+          Collaboration Context
         </h2>
+
       </div>
 
-      <div
-        className="
-          flex
-          flex-wrap
-          items-center
-          gap-x-3
-          gap-y-2
-          text-sm
-          text-[var(--muted-foreground)]
-        "
-      >
-        <span>Engineering busy</span>
+      {/* STATUS GRID */}
+      <div className="grid grid-cols-1 gap-3">
 
-        <span className="opacity-40">•</span>
+        <div
+          className="
+            rounded-2xl
+            border
+            border-[var(--border)]
+            bg-[var(--background)]
+            p-3
+          "
+        >
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Engineering
+          </p>
 
-        <span>Product available after 3 PM</span>
+          <p className="mt-1 text-sm font-medium text-[var(--foreground)]">
+            Deep work in progress
+          </p>
+        </div>
 
-        <span className="opacity-40">•</span>
+        <div
+          className="
+            rounded-2xl
+            border
+            border-[var(--border)]
+            bg-[var(--background)]
+            p-3
+          "
+        >
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Product Team
+          </p>
 
-        <span>HR responsive</span>
+          <p className="mt-1 text-sm font-medium text-[var(--foreground)]">
+            Available after 3 PM
+          </p>
+        </div>
+
+        <div
+          className="
+            rounded-2xl
+            border
+            border-[var(--border)]
+            bg-[var(--background)]
+            p-3
+          "
+        >
+          <p className="text-xs text-[var(--muted-foreground)]">
+            HR Operations
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-[var(--foreground)]">
+            Responding normally
+          </p>
+        </div>
+
       </div>
 
     </section>
