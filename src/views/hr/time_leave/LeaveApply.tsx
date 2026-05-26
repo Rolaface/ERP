@@ -93,12 +93,14 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
   const [page,       setPage]       = useState(1);
   const [pageSize,   setPageSize]   = useState(10);
   const [showHistory, setShowHistory] = useState(false);
-  const [filters, setFilters] = useState({ from_date: "", to_date: "" });
+  // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
+  const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "" });
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLeaves();
-  }, [showHistory, filters.from_date, filters.to_date]);
+  // }, [showHistory, filters.from_date, filters.to_date]);
+  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize]);
 
   const fetchLeaves = async () => {
     try {
@@ -106,17 +108,26 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
        const apiFilters: any[] = [
       ["employee", "=", user?.employeeId], 
     ];
-    console.log("User Employee ID:", user?.employeeId);
-    console.log("apiFilters:", apiFilters);
-      if (showHistory) {
-      apiFilters.push([
-        "status",
-        "in",
-        ["Approved", "Rejected", "Open", "Cancelled"],
-      ]);
-    } else {
-      apiFilters.push(["status", "=", "Open"]);
-    }
+    //    if (showHistory) {
+    //   apiFilters.push([
+    //     "status",
+    //     "in",
+    //     ["Approved", "Rejected", "Open", "Cancelled"],
+    //   ]);
+    // } else {
+    //   apiFilters.push(["status", "=", "Open"]);
+    // }
+    if (filters.status) {
+        apiFilters.push(["status", "=", filters.status]);
+      } else if (showHistory) {
+        apiFilters.push([
+          "status",
+          "in",
+          ["Approved", "Rejected", "Open", "Cancelled"],
+        ]);
+      } else {
+        apiFilters.push(["status", "=", "Open"]);
+      }
 
       if (filters.from_date) {
         apiFilters.push(["from_date", ">=", filters.from_date]);
@@ -124,7 +135,11 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
       if (filters.to_date) {
         apiFilters.push(["from_date", "<=", filters.to_date]);
       }
-      const response = await getAllLeaveApplications(apiFilters);
+      // const response = await getAllLeaveApplications(apiFilters);
+      const limit_start = (page - 1) * pageSize;
+      const limit_page_length = pageSize;
+
+      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length);
       setData(response || []);
     } catch (err) {
       console.error("Failed to fetch leave applications", err);
@@ -255,15 +270,21 @@ const handleStatusUpdate = async (
             disabled: actionLoadingId === leaveId,
           });
         }
-
-        // Add Cancel action if the leave is Approved / Submitted
         if (isApproved) {
-          customMenuActions.push({
-            label: "Cancel Leave",
-            danger: true,
-            onClick: () => handleStatusUpdate(leaveId, "Cancelled"),
-            disabled: actionLoadingId === leaveId,
-          });
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          const fromDate = new Date(row.from_date);
+          fromDate.setHours(0, 0, 0, 0);
+
+          if (today < fromDate) {
+            customMenuActions.push({
+              label: "Cancel Leave",
+              danger: true,
+              onClick: () => handleStatusUpdate(leaveId, "Cancelled"),
+              disabled: actionLoadingId === leaveId,
+            });
+          }
         }
 
         return (
@@ -315,6 +336,21 @@ const handleStatusUpdate = async (
                     setPage(1);
                   }}
                 />
+                <select
+            value={filters.status}
+            disabled={!showHistory} 
+            onChange={(e) => {
+              setFilters((prev) => ({ ...prev, status: e.target.value }));
+              setPage(1);
+            }}
+            className="border-gray-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 px-2 border outline-none"
+          >
+            <option value="">All Statuses</option>
+            <option value="Open">Pending Approval</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -338,8 +374,8 @@ const handleStatusUpdate = async (
       enableColumnSelector
       currentPage={page}
       pageSize={pageSize}
-      totalItems={data.length}
-      totalPages={Math.ceil(data.length / pageSize) || 1}
+      totalItems={(page - 1) * pageSize + data.length}
+      totalPages={data.length === pageSize ? page + 1 : page}
       pageSizeOptions={[10, 25, 50]}
       onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
       onPageChange={setPage}

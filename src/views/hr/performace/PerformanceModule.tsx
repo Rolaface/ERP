@@ -14,23 +14,20 @@ import {
 } from "../../../components/ui/app-shell";
 import AppSkeleton from "../../../components/ui/AppSkeleton";
 import { HrContentFrame, HrPrimaryTabs } from "../components/HrTabLayout";
+import CycleList from "./sections/CycleList";
 
-const AppraisalPage = lazy(() => import("./Employeeappraisalview"));
 const FeedbackPage  = lazy(() => import("./feedbackpage"));
 const SetupPage     = lazy(() => import("./Setuppage"));
 
 const TABS = [
-  { id: "appraisal", label: "Appraisal", icon: <FaClipboardList /> },
-  { id: "feedback",  label: "Feedback",  icon: <FaCommentDots />   },
-  { id: "scores",    label: "Scores",    icon: <FaStar />           },
-  { id: "reports",   label: "Reports",   icon: <FaChartBar />       },
+    { id: "cycle" , label: "Cycles" , icon:FaCommentDots},
   { id: "setup",     label: "Setup",     icon: <FaCog />            },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
 const PerformanceModule = () => {
-  const [tab, setTab] = useState<TabId>("appraisal");
+  const [tab, setTab] = useState<TabId>("cycle");
 
   const handleTabChange = (newTab: string) => {
     setTab(newTab as TabId);
@@ -38,10 +35,8 @@ const PerformanceModule = () => {
 
   const renderContent = () => {
     switch (tab) {
-      case "appraisal":
-        return <AppraisalPage />;
-      case "feedback":
-        return <FeedbackPage />;
+      case "cycle":
+        return <CycleList />;
       case "setup":
         return <SetupPage />;
       default:

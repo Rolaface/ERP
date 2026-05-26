@@ -12,6 +12,14 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
+import { frappeDelete } from "../../api/Delete/frappeDeleteApi";
+import { fireManagedSwal } from "../../utils/swalManager";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 
 interface RFQ {
   name: string;
@@ -34,7 +42,7 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-const { can } = usePermission();
+  const { can } = usePermission();
   // ================= FETCH RFQs =================
   const fetchRFQs = async () => {
     try {
@@ -84,26 +92,46 @@ const { can } = usePermission();
     });
   };
 
-  const handleDelete = (rfq: RFQ, e: React.MouseEvent) => {
+  const handleDelete = async (rfq: RFQ, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    if (window.confirm(`Delete RFQ "${rfq.name}"?`)) {
-      toast.success("Delete API ready");
+    const confirm = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete RFQ "${rfq.name}"?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      showLoading("Deleting RFQ...");
+      await frappeDelete({ name: rfq.name, doctype: "Request for Quotation" });
+      closeSwal();
+      showSuccess("RFQ deleted successfully");
+      await fetchRFQs();
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
     }
   };
+
   const formatDate = (date: string | Date) => {
-  if (!date) return "";
+    if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
 
-  // Date object — use local methods
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
 
   // ================= TABLE COLUMNS =================
@@ -138,7 +166,6 @@ const { can } = usePermission();
       align: "center",
       render: (o) => (
         <ActionGroup>
-          {/* Edit — needs write + Draft status */}
           <PermissionGate module={RFQ_MODULE} action="write">
             <ActionButton
               type="edit"
@@ -148,6 +175,12 @@ const { can } = usePermission();
               title={o.status !== "Draft" ? "Only Draft RFQs can be edited" : "Edit RFQ"}
             />
           </PermissionGate>
+
+          <ActionMenu
+            {...(can(RFQ_MODULE, "delete")
+              ? { onDelete: (e) => handleDelete(o, e as any) }
+              : {})}
+          />
         </ActionGroup>
       ),
     },
@@ -162,7 +195,7 @@ const { can } = usePermission();
         loading={loading}
         searchValue={searchTerm}
         onSearch={setSearchTerm}
-         enableAdd={can(RFQ_MODULE, "create")}
+        enableAdd={can(RFQ_MODULE, "create")}
         addLabel="Add RFQ"
         enableColumnSelector
         onAdd={handleAddClick}

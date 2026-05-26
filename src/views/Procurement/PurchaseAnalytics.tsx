@@ -6,6 +6,7 @@ import {
   type PurchaseAnalyticsFilters,
 } from "../../api/analyticsApi";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { useCompanyStore } from "../../store/companyStore";
 
 export type PurchaseNode = {
   entity: string;
@@ -47,14 +48,14 @@ export type PurchaseData = {
   pagination: PaginationMeta;
 };
 
-const nf = (value: number | undefined | null, isCurrency = true): string => {
+const nf = (value: number | undefined | null, isCurrency = true, symbol = ""): string => {
   if (value === null || value === undefined) return "—";
   const formatted = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: isCurrency ? 2 : 0,
     maximumFractionDigits: isCurrency ? 2 : 0,
   }).format(Math.abs(value));
 
-  const prefix = isCurrency ? "₹" : "";
+  const prefix = isCurrency && symbol ? `${symbol} ` : "";
   return value < 0 ? `-${prefix}${formatted}` : `${prefix}${formatted}`;
 };
 
@@ -75,6 +76,7 @@ function SummaryStrip({
   kpis: PurchaseKPIs;
   isQuantity: boolean;
 }) {
+  const currencySymbol = useCompanyStore((s) => s.currencySymbol);
   if (!kpis) return null;
 
   const topPerformer =
@@ -87,7 +89,7 @@ function SummaryStrip({
           {isQuantity ? "Total Purchase Quantity" : "Total Purchase Value"}
         </span>
         <div className="text-xl font-bold text-emerald-500 mt-1">
-          {nf(kpis.total_purchase_value, !isQuantity)}
+          {nf(kpis.total_purchase_value, !isQuantity, isQuantity ? "" : currencySymbol)}
         </div>
       </div>
       <div className="bg-card rounded-lg border border-theme p-4 shadow-sm">
@@ -101,7 +103,7 @@ function SummaryStrip({
           {isQuantity ? "Avg Quantity / Entity" : "Avg Value / Entity"}
         </span>
         <div className="text-xl font-bold text-violet-500 mt-1">
-          {nf(kpis.average_value_per_entity, !isQuantity)}
+          {nf(kpis.average_value_per_entity, !isQuantity, isQuantity ? "" : currencySymbol)}
         </div>
       </div>
       <div className="bg-card rounded-lg border border-theme p-4 shadow-sm overflow-hidden">
@@ -222,6 +224,7 @@ function FilterBar({ filters, setFilters }: FilterBarProps) {
 }
 
 const PurchaseAnalytics: React.FC = () => {
+  const currencySymbol = useCompanyStore((s) => s.currencySymbol);
   const [filters, setFilters] = useState<PurchaseAnalyticsFilters>({
     tree_type: "Supplier",
     doc_type: "Purchase Invoice",
@@ -277,6 +280,7 @@ const PurchaseAnalytics: React.FC = () => {
   const tableColumns = useMemo((): Column<PurchaseNode>[] => {
     if (!data?.columns) return [];
 
+
     return data.columns.map((col) => {
       const isNumeric =
         col.fieldtype === "Float" || col.fieldtype === "Currency";
@@ -285,7 +289,7 @@ const PurchaseAnalytics: React.FC = () => {
         key: col.fieldname,
         header: col.label,
         sortable: false,
-        width: isNumeric ? 120 : 200,
+        width: isNumeric ? "120px" : "200px",
         render: (row: PurchaseNode) => {
           const val = row[col.fieldname];
 
@@ -305,13 +309,13 @@ const PurchaseAnalytics: React.FC = () => {
                   : "text-main"
               }
             >
-              {isNumeric ? nf(val, filters.value_quantity === "Value") : val}
+              {isNumeric ? nf(val, filters.value_quantity === "Value", filters.value_quantity === "Value" ? currencySymbol : "") : val}
             </div>
           );
         },
       };
     });
-  }, [data, filters.value_quantity]);
+  }, [data, filters.value_quantity, currencySymbol]);
 
   if (loading && !data) {
     return (

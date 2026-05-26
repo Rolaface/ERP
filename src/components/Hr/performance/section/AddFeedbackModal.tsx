@@ -67,8 +67,8 @@ export default function AddFeedbackModal({
         isViewMode
           ? "View Feedback Criteria"
           : selectedFeedback
-            ? "Edit Feedback Criteria"
-            : "New Feedback Criteria"
+            ? "Edit  Employee Feedback Criteria"
+            : "Create Employee Feedback Criteria"
       }
       subtitle={
         isViewMode
@@ -79,7 +79,7 @@ export default function AddFeedbackModal({
       }
       icon={MessageCircle}
       customWidth="500px"
-      height="fit-content"
+      height="30vh"
       footer={
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", width: "100%" }}>
           <button

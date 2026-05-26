@@ -475,13 +475,13 @@ const AccountsPayable = () => {
   const stats = [
     {
       label: "Total Payables (Outstanding)",
-      value: `${currency}${(kpis?.total_outstanding || 0).toLocaleString(undefined, {
+      value: `${currency} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
     {
       label: "Overdue Amount",
-      value: `${currency}${(kpis?.overdue_amount || 0).toLocaleString(undefined, {
+      value: `${currency} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },

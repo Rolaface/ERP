@@ -839,6 +839,8 @@ export const openEmailTemplateModal = (
     .openModal("emailTemplate", { templateId }, !!templateId, context, meta);
 
 
+
+
 export const openScanPIModal = (
   pId?: string,
   context?: ModalContext,
@@ -853,7 +855,7 @@ export const openScanPIModal = (
       context,
       meta,
     );
-    export const openKRAModal = (
+export const openKRAModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,

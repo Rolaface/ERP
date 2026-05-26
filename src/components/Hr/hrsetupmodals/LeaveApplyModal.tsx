@@ -54,6 +54,7 @@ export default function LeaveApplyModal({
   onSuccess,
 }: LeaveApplyModalProps) {
   const isView = Boolean((initialData as any)?._isView);
+  console.log( "editLeaveId:", editLeaveId, "isView:", isView);
   const { user } = useAuth();
 
   // ── Form state ──────────────────────────────────────────────────────────
@@ -298,7 +299,14 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
       modalId={modalId}
       isOpen={isOpen}
       onClose={handleClose}
-      title={isEditMode ? "Edit Leave Application" : "New Leave Application"}
+      // title={isEditMode ? "Edit Leave Application" : isView ? "View Leave Application" : "New Leave Application"}
+title={
+  initialData && !isView
+    ? "Edit Leave Application"
+    : isView
+    ? "View Leave Application"
+    : "New Leave Application"
+}
       subtitle="Request time off and check your calendar availability"
       icon={Calendar}
       customWidth="65vw"
