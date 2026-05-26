@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import ExpandableTreeTable, { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
 import { useNavigate } from "react-router-dom";
 import {
@@ -16,16 +15,17 @@ import {
   ChevronRight,
   CheckCircle
 } from "lucide-react";
-import DeleteModal from "../../components/actionModal/DeleteModal";
 
 import { JournalEntriesModal } from "../../store/modalStore";
-
+import Table from "../../components/ui/Table/Table";
+import { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import { 
   getJournalEntries, 
   deleteJournalEntryById, 
   updateJournalEntryStatus 
 } from "../../api/Accounting/JournalEntryApi";
 import { showApiError, showSuccess, showConfirm } from "../../utils/alert";
+import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
 
 export interface JETabProps {
   searchTerm: string;
@@ -41,16 +41,6 @@ export interface JournalEntry {
   user_remark?: string;
 }
 
-function matchJENode(node: JournalEntry, term: string): boolean {
-  const t = term.toLowerCase();
-  return (
-    node.name.toLowerCase().includes(t) ||
-    (node.user_remark || "").toLowerCase().includes(t) ||
-    (node.posting_date || "").includes(t)
-  );
-}
-
-// ─── Dropdown Menu Component ───────────────────────────────────────────────
 interface MenuAction {
   label: string;
   icon: React.ReactNode;
@@ -105,21 +95,11 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
 };
 
 // ─── Main Component ────────────────────────────────────────────────────────
-const PAGE_SIZE = 20;
-
 const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [jeData, setJeData] = useState<JournalEntry[]>([]);
+  const [pageSize, setPageSize] = useState(10); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // --- Delete Modal States ---
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  
- 
-
-  // --- Pagination States ---
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
@@ -136,14 +116,14 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         "user_remark"
       ];
 
-      const limitStart = (currentPage - 1) * PAGE_SIZE;
+      const limitStart = (currentPage - 1) * pageSize;
 
-      const res = await getJournalEntries(fields, undefined, limitStart, PAGE_SIZE);
+      const res = await getJournalEntries(fields, undefined, limitStart, pageSize);
       const entriesData = res?.data || res?.message?.data;
 
       if (Array.isArray(entriesData)) {
         setJeData(entriesData);
-        setHasMore(entriesData.length === PAGE_SIZE);
+        setHasMore(entriesData.length === pageSize);
       } else {
         setError("Failed to load journal entries.");
         setJeData([]);
@@ -194,24 +174,25 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     }
   };
 
-  const initiateDelete = (id: string) => {
-    setItemToDelete(id);
-    setDeleteModalOpen(true);
-  };
+  const handleDeleteEntry = async (id: string) => {
+    const isConfirmed = await showConfirm(
+      `Are you sure you want to delete entry ${id}?`,
+      {
+        title: "Delete Entry",
+        confirmButtonText: "Yes, Delete",
+        confirmButtonColor: "#ef4444",
+      }
+    );
+    if (!isConfirmed) return;
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) return;
     try {
-      setDeleting(true);
-      await deleteJournalEntryById(itemToDelete);
-      showSuccess(`Entry ${itemToDelete} has been successfully deleted/cancelled.`);
-      setDeleteModalOpen(false);
-      setItemToDelete(null);
+      setLoading(true);
+      await deleteJournalEntryById(id);
+      showSuccess(`Entry ${id} has been successfully deleted.`);
       fetchJE();
     } catch (err: any) {
       showApiError(err?.response?.data?.message || err?.message || "Failed to delete entry.");
-    } finally {
-      setDeleting(false);
+      setLoading(false);
     }
   };
 
@@ -255,6 +236,10 @@ const formatDate = (date?: string | Date) => {
 
   return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
 };
+
+const handleAdd = () => {
+    JournalEntriesModal(null, false, { onSuccess: fetchJE });
+  };
 
   const jeColumns: Column<JournalEntry>[] = [
     {
@@ -332,84 +317,101 @@ const formatDate = (date?: string | Date) => {
     {
       key: "actions",
       header: "Actions",
-      align: "right",
+      align: "center", // Updated to center to match your new style
       render: (row: JournalEntry) => {
-        const actions: MenuAction[] = [
-          {
-            label: "View Entry",
-            icon: <Eye size={12} />,
-            // Passed isReadOnly through context so your global modal knows to disable inputs
-            onClick: () => JournalEntriesModal(row.name, false, { isReadOnly: true } as any),
-          },
-          ...(row.docstatus === 0
-            ? [
-                {
-                  label: "Submit",
-                  icon: <CheckCircle size={12} className="text-success" />,
-                  onClick: () => handleSubmitEntry(row.name), 
-                },
-                {
-                  label: "Edit",
-                  icon: <Pencil size={12} />,
-                  onClick: () => JournalEntriesModal(row.name, true, { onSuccess: fetchJE }),
-                },
-              ]
-            : []),
-          {
-            label: row.docstatus === 1 ? "Cancel Entry" : "Delete",
-            icon: <Trash2 size={12} />,
-            onClick: () => {
-              if (row.docstatus === 1) {
-                handleCancelEntry(row.name);
-              } else {
-                initiateDelete(row.name);
-              }
-            }, 
-            danger: true,
-            dividerBefore: true,
-          },
-        ];
+        const isDraft = row.docstatus === 0;
+        const isSubmitted = row.docstatus === 1;
 
-        return <RowActionMenu actions={actions} />;
+        // Dynamically build the menu actions for the dropdown
+        const customMenuActions: MenuAction[] = [];
+
+        // Submit action (only for Drafts)
+        if (isDraft) {
+          customMenuActions.push({
+            label: "Submit",
+            icon: <CheckCircle size={14} className="text-success" />,
+            onClick: () => handleSubmitEntry(row.name),
+          });
+        }
+
+        // Cancel or Delete action based on docstatus
+        if (isSubmitted) {
+          customMenuActions.push({
+            label: "Cancel Entry",
+            icon: <Trash2 size={14} />,
+            danger: true,
+            dividerBefore: isDraft, // Add divider if there are items above it
+            onClick: () => handleCancelEntry(row.name),
+          });
+        } else {
+          customMenuActions.push({
+            label: "Delete",
+            icon: <Trash2 size={14} />,
+            danger: true,
+            dividerBefore: isDraft, 
+            onClick: () => handleDeleteEntry(row.name),
+          });
+        }
+
+        return (
+          <ActionGroup>
+            {/* View is typically always available */}
+            <ActionButton
+              type="view"
+              iconOnly
+              onClick={() =>
+                JournalEntriesModal(row.name, false, { isReadOnly: true } as any)
+              }
+            />
+
+            {/* Edit is only available if it is a Draft (docstatus === 0) */}
+            {isDraft && (
+              <ActionButton
+                type="edit"
+                iconOnly
+                onClick={() =>
+                  JournalEntriesModal(row.name, true, { onSuccess: fetchJE })
+                }
+              />
+            )}
+
+            {/* Render action menu if there are options available */}
+            {customMenuActions.length > 0 && (
+              <ActionMenu customActions={customMenuActions} />
+            )}
+          </ActionGroup>
+        );
       },
     },
   ];
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative">
-        {loading && (
-          <div className="absolute inset-0 z-10 bg-white/50 flex items-center justify-center rounded-2xl backdrop-blur-[1px]">
-            <Loader2 size={24} className="animate-spin text-primary" />
-          </div>
-        )}
-        <ExpandableTreeTable<JournalEntry>
-          columns={jeColumns}
-          data={jeData}
-          childrenKey="children" 
-          nodeKey={(node) => node.name}
-          showToolbar
-          searchValue={searchTerm}
-          onSearch={setSearchTerm}
-          toolbarPlaceholder="Search journal entries..."
-          showExpandControls={false} 
-          onRefresh={fetchJE}
-          matchNode={matchJENode}
-          loading={false} 
-          emptyMessage="No journal entries found."
-          extraFilters={
-            <button
-              type="button"
-              // FIX: Correctly invoked JournalEntriesModal here
-              onClick={() => JournalEntriesModal(null, false, { onSuccess: fetchJE })}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:opacity-90 transition"
-            >
-              <Plus size={13} />
-              New Entry
-            </button>
-          }
-        />
-      </div>
+     <Table
+        columns={jeColumns}
+        data={jeData}
+        rowKey={(row) => row.name}
+        showToolbar
+        searchValue={searchTerm}
+        onSearch={setSearchTerm}
+        toolbarPlaceholder="Search journal entries..."
+        loading={loading}
+        emptyMessage="No journal entries found."
+        enableAdd
+        addLabel="New Entry"
+        onAdd={handleAdd}
+        enableColumnSelector
+        currentPage={currentPage}
+        pageSize={pageSize}
+        totalItems={(currentPage - 1) * pageSize + jeData.length}
+        totalPages={hasMore ? currentPage + 1 : currentPage}
+        pageSizeOptions={[10, 20, 50]}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setCurrentPage(1);
+        }}
+        onPageChange={setCurrentPage}
+      />
 
       {/* Pagination Controls */}
       <div className="flex items-center justify-between px-2">
@@ -434,19 +436,6 @@ const formatDate = (date?: string | Date) => {
         </div>
       </div>
       
-      {deleteModalOpen && itemToDelete && (
-        <DeleteModal
-          entityName="Journal Entry"
-          entityId={itemToDelete}
-          entityDisplayName={itemToDelete}
-          isLoading={deleting}
-          onClose={() => { 
-            setDeleteModalOpen(false); 
-            setItemToDelete(null); 
-          }}
-          onDelete={confirmDelete}
-        />
-      )}
     </div>
   );
 };
