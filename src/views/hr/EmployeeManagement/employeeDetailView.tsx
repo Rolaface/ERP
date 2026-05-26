@@ -20,7 +20,7 @@ import { CompensationTab } from "./detailtab/Compensationtab";
 import EmployeeBankDetails from "./detailtab/EmployeeBank";
 import { DocumentsTab, DocumentUploadModal } from "./detailtab/documenttab";
 import { SalarySlipTable } from "./detailtab/Salaryslip";
-import { getSalarySlipsByEmployee } from "../../../api/payroll/payrollEntryApi";
+import { getSalarySlipsByEmployeeOnly } from "../../../api/payroll/payrollEntryApi";
 import { StatutoryTab } from "./detailtab/StatutoryTab";
 
 // ── Use your existing AppSubTabs primitive ────────────────────────────────────
@@ -97,18 +97,18 @@ const EmployeeDetailView: React.FC<Props> = ({
     }
   };
 
-  const fetchSalarySlips = async () => {
-    if (!emp.employee) return;
-    setSalarySlipsLoading(true);
-    try {
-      const res = await getSalarySlipsByEmployee(emp.employee);
-      setSalarySlips(res || []);
-    } catch {
-      setSalarySlips([]);
-    } finally {
-      setSalarySlipsLoading(false);
-    }
-  };
+const fetchSalarySlips = async () => {
+  if (!emp.employee) return;
+  setSalarySlipsLoading(true);
+  try {
+    const res = await getSalarySlipsByEmployeeOnly(emp.employee);
+    setSalarySlips(res || []);
+  } catch {
+    setSalarySlips([]);
+  } finally {
+    setSalarySlipsLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchDocuments();
