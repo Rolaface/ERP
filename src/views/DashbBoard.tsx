@@ -172,7 +172,7 @@ const Dashboard = () => {
         <h1 className="text-xl font-bold text-gray-800">Dashboard Summary</h1>
         <div className="flex items-center gap-3">
           {/* View switch button — only visible to users who have both employee + professional roles */}
-          {canSwitchView && (
+          {/* {canSwitchView && (
             <button
               onClick={toggleViewMode}
               className={`
@@ -187,7 +187,7 @@ const Dashboard = () => {
               <ArrowLeftRight size={13} />
               {isEmployeeView ? "Switch to Professional View" : "Switch to Employee View"}
             </button>
-          )}
+          )} */}
           {/* <UserMenu /> */}
         </div>
       </div>

@@ -10,12 +10,13 @@ import {
 import {
   createKRA,
   updateKRA,
-} from "../../../../api/Appraisalapi/appraisalApi";
+} from "../../../../api/Appraisalapi/kraApi";
 
 import { showApiError, showSuccess } from "../../../../utils/alert";
 interface Props {
   selectedKRA?: SetupRow | null;
   isViewMode?: boolean;
+  modalId: string;
   onClose: () => void;
   onAdd: (row: SetupRow) => void;
 }
@@ -24,47 +25,46 @@ export default function AddKRAModal({
   isViewMode = false,
   onClose,
   onAdd,
+  modalId,
 }: Props) {
-  
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const { markDirty, resetDirty, handleCloseWithConfirm } =
-  useUnsavedChanges();
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
-const handleSave = async () => {
-  try {
-    if (!title) return;
+  const handleSave = async () => {
+    try {
+      if (!title) return;
 
-    if (selectedKRA) {
-      await updateKRA(selectedKRA.id, {
+      if (selectedKRA) {
+        await updateKRA(selectedKRA.id, {
+          title,
+          description,
+        });
+
+        showSuccess("KRA updated successfully");
+      } else {
+        await createKRA({
+          name: title,
+          title,
+          description,
+        });
+
+        showSuccess("KRA created successfully");
+      }
+
+      resetDirty();
+
+      onAdd({
+        id: title,
         title,
         description,
       });
 
-      showSuccess("KRA updated successfully");
-    } else {
-      await createKRA({
-        name: title,
-        title,
-        description,
-      });
-
-      showSuccess("KRA created successfully");
+      onClose();
+    } catch (err) {
+      showApiError(err);
     }
-
-    resetDirty();
-
-    onAdd({
-      id: title,
-      title,
-      description,
-    });
-
-    onClose();
-  } catch (err) {
-    showApiError(err);
-  }
-};
+  };
   useEffect(() => {
     if (selectedKRA) {
       setTitle(selectedKRA.title || "");
@@ -76,9 +76,9 @@ const handleSave = async () => {
   }, [selectedKRA]);
   return (
     <MinimizableModal
-      modalId="add-kra-modal"
+      modalId={modalId}
       isOpen
-      onClose={() => handleCloseWithConfirm(onClose, "add-kra-modal")}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isViewMode ? "View KRA" : selectedKRA ? "Edit KRA" : "New KRA"}
       subtitle={
         isViewMode
@@ -112,31 +112,31 @@ const handleSave = async () => {
       }
     >
       <div className="flex flex-col gap-3">
-      <ModalInput
-  label="Name"
-  value={title}
-  onChange={(e) => {
-    setTitle(e.target.value);
-    markDirty();
-  }}
-  placeholder="Enter KRA name"
-  disabled={isViewMode || !!selectedKRA}
-  autoFocus={!isViewMode}
-  required
-/>
+        <ModalInput
+          label="Name"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            markDirty();
+          }}
+          placeholder="Enter KRA name"
+          disabled={isViewMode || !!selectedKRA}
+          autoFocus={!isViewMode}
+          required
+        />
 
         <ModalTextarea
-  label="Description"
-  value={description}
-  onChange={(e) => {
-    setDescription(e.target.value);
-    markDirty();
-  }}
-  placeholder="Enter description"
-  disabled={isViewMode}
-  rows={4}
-  className="h-[90px]"
-/>
+          label="Description"
+          value={description}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            markDirty();
+          }}
+          placeholder="Enter description"
+          disabled={isViewMode}
+          rows={4}
+          className="h-[90px]"
+        />
       </div>
     </MinimizableModal>
   );

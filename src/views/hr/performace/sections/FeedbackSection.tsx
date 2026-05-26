@@ -1,21 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { FaTrash } from "react-icons/fa";
 import type { Column } from "../../../../components/ui/Table/type";
 import ModalTable from "../../../../components/ui/Table/ModalTableInside";
-import AddFeedbackModal from "../../../../components/Hr/performance/section/AddFeedbackModal";
+import { showApiError, showLoading, closeSwal } from "../../../../utils/alert";
+import { fireManagedSwal } from "../../../../utils/swalManager";
+import { openFeedbackModal } from "../../../../store/modalStore";
 import {
   deleteFeedback,
   getFeedbackById,
   getFeedbackList,
 } from "../../../../api/Appraisalapi/feedbackApi";
-import {
-  showApiError,
-  showLoading,
-  closeSwal,
-} from "../../../../utils/alert";
-
-import { fireManagedSwal } from "../../../../utils/swalManager";
-
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -35,11 +29,8 @@ export default function FeedbackSection() {
   const [page, setPage] = useState(1);
   const [, setLoading] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackRow | null>(null);
-  const [isViewMode, setIsViewMode] = useState(false);
 
-  const fetchFeedbacks = async () => {
+  const fetchFeedbacks = useCallback(async () => {
     try {
       setLoading(true);
       const resp = await getFeedbackList({ page, pageSize: PAGE_SIZE, search });
@@ -55,95 +46,69 @@ export default function FeedbackSection() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search]);
 
   useEffect(() => {
     fetchFeedbacks();
-  }, [page, search]);
+  }, [fetchFeedbacks]);
 
-  const openDetail = async (
-    id: string,
-    mode: "view" | "edit",
-  ) => {
+  const openDetail = async (id: string, mode: "view" | "edit") => {
     try {
       const detail = await getFeedbackById(id);
-      setSelectedFeedback({
-        id: detail.criteria,
-        criteria: detail.criteria,
-        creation: detail.creation,
-      });
-      setIsViewMode(mode === "view");
-      setShowModal(true);
+      openFeedbackModal(
+        { id: detail.criteria, criteria: detail.criteria, creation: detail.creation },
+        mode === "edit",
+        {
+          isViewMode: mode === "view",
+          onSuccess: () => fetchFeedbacks(),
+        },
+      );
     } catch (err) {
       console.error("Failed to fetch feedback detail", err);
     }
   };
 
-const deleteRow = async (id: string) => {
-  const result = await fireManagedSwal({
-    icon: "warning",
-    title: "Are you sure?",
-    text: `Delete feedback criteria "${id}"?`,
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, delete",
-    reverseButtons: true,
-  });
+  const deleteRow = async (id: string) => {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete feedback criteria "${id}"?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+      reverseButtons: true,
+    });
 
-  if (!result.isConfirmed) return;
-
-  try {
-    showLoading(
-      "Deleting feedback criteria...",
-    );
-
-    await deleteFeedback(id);
-
-    closeSwal();
-
-    setData((prev) =>
-      prev.filter((r) => r.id !== id),
-    );
-  } catch (err: any) {
-    closeSwal();
-
-    const raw =
-      err?.response?.data?._server_messages ||
-      err?.response?.data?.exception ||
-      err?.message;
-
-    let message =
-      "Failed to delete feedback criteria";
+    if (!result.isConfirmed) return;
 
     try {
-      if (raw) {
-        const parsed = JSON.parse(raw);
-
-        const first = JSON.parse(parsed[0]);
-
-        message = String(first.message)
-          .replace(
-            /<a [^>]*>(.*?)<\/a>/gi,
-            "$1",
-          )
-          .replace(/<[^>]+>/g, "")
-          .replace(/\s+/g, " ")
-          .trim();
+      showLoading("Deleting feedback criteria...");
+      await deleteFeedback(id);
+      closeSwal();
+      setData((prev) => prev.filter((r) => r.id !== id));
+    } catch (err: any) {
+      closeSwal();
+      const raw =
+        err?.response?.data?._server_messages ||
+        err?.response?.data?.exception ||
+        err?.message;
+      let message = "Failed to delete feedback criteria";
+      try {
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const first = JSON.parse(parsed[0]);
+          message = String(first.message)
+            .replace(/<a [^>]*>(.*?)<\/a>/gi, "$1")
+            .replace(/<[^>]+>/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+        }
+      } catch {
+        message = "Failed to delete feedback criteria";
       }
-    } catch {
-      message =
-        "Failed to delete feedback criteria";
+      showApiError(message);
     }
-
-    showApiError(message);
-  }
-};
-
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedFeedback(null);
-    setIsViewMode(false);
   };
 
   const columns: Column<FeedbackRow>[] = [
@@ -197,45 +162,31 @@ const deleteRow = async (id: string) => {
   ];
 
   return (
-    <>
-      <ModalTable<FeedbackRow>
-        tableId="setup-feedback"
-        columns={columns}
-        data={data}
-        rowKey={(r) => r.id}
-        showToolbar
-        toolbarPlaceholder="Search feedback criteria..."
-        searchValue={search}
-        onSearch={(q) => {
-          setSearch(q);
-          setPage(1);
-        }}
-        enableAdd
-        addLabel="+ Add Criteria"
-        onAdd={() => {
-          setSelectedFeedback(null);
-          setIsViewMode(false);
-          setShowModal(true);
-        }}
-        enableColumnSelector
-        currentPage={page}
-        totalPages={Math.max(1, Math.ceil(totalItems / PAGE_SIZE))}
-        pageSize={PAGE_SIZE}
-        totalItems={totalItems}
-        onPageChange={setPage}
-      />
-
-      {showModal && (
-        <AddFeedbackModal
-          selectedFeedback={selectedFeedback}
-          isViewMode={isViewMode}
-          onClose={closeModal}
-          onAdd={() => {
-            fetchFeedbacks();
-            closeModal();
-          }}
-        />
-      )}
-    </>
+    <ModalTable<FeedbackRow>
+      tableId="setup-feedback"
+      columns={columns}
+      data={data}
+      rowKey={(r) => r.id}
+      showToolbar
+      toolbarPlaceholder="Search feedback criteria..."
+      searchValue={search}
+      onSearch={(q) => {
+        setSearch(q);
+        setPage(1);
+      }}
+      enableAdd
+      addLabel="+ Add Criteria"
+      onAdd={() =>
+        openFeedbackModal(null, false, {
+          onSuccess: () => fetchFeedbacks(),
+        })
+      }
+      enableColumnSelector
+      currentPage={page}
+      totalPages={Math.max(1, Math.ceil(totalItems / PAGE_SIZE))}
+      pageSize={PAGE_SIZE}
+      totalItems={totalItems}
+      onPageChange={setPage}
+    />
   );
 }

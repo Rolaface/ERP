@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { FileText, Users, Settings } from "lucide-react";
 import type { PayrollEntry } from "../../../types/payrolltypes";
 import {
@@ -130,6 +130,7 @@ const NewPayrollEntry: React.FC<Props> = ({
     })();
   }, []);
 
+
   return (
     <MinimizableModal
       modalId={modalId}
@@ -165,17 +166,31 @@ const NewPayrollEntry: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Tab content */}
+        {/* Tab content — all three stay mounted; only active one is visible */}
         <div className="flex-1 min-h-0 overflow-y-auto bg-app p-5">
-          {step === 0 && <OverviewTab data={formData} onChange={update} />}
-          {step === 1 && <EmployeesTab data={formData} onChange={update} />}
-          {step === 2 && (
+          <div style={{ display: step === 0 ? "block" : "none" }}>
+            <OverviewTab
+              data={formData}
+              onChange={update}
+              isEditMode={!!isEdit}
+            />
+          </div>
+
+          <div style={{ display: step === 1 ? "block" : "none" }}>
+            <EmployeesTab
+              data={formData}
+              onChange={update}
+              isEditMode={!!isEdit}
+            />
+          </div>
+
+          <div style={{ display: step === 2 ? "block" : "none" }}>
             <AccountingTab
               data={formData}
               onChange={update}
               employees={employees}
             />
-          )}
+          </div>
         </div>
 
         {/* Footer */}
