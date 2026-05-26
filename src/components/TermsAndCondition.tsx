@@ -22,6 +22,7 @@ interface Props {
   terms: TermSection | null;
   setTerms: (updated: TermSection) => void;
   type?: "buying" | "selling";
+  isViewMode?: boolean;
 }
 
 type LocalPhase = TermPhase & { id?: string; isDelete?: number };
@@ -263,6 +264,7 @@ const TermsAndCondition: React.FC<Props> = ({
   terms,
   setTerms,
   type,
+  isViewMode = false,
 }) => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
