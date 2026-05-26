@@ -4,6 +4,7 @@ import React from "react";
 import EmployeeOperatingBanner from "../../../components/dashboard/domains/hr/EmployeeOperatingBanner";
 import TodayAttendance from "../../../components/dashboard/domains/hr/TodayAttendance";
 import LeaveBalance from "../../../components/dashboard/domains/hr/LeaveBalance";
+import LatestPayslip from "../../../components/dashboard/domains/hr/LatestPayslip";
 
 const EmployeeDashboard: React.FC = () => {
   return (
@@ -36,9 +37,14 @@ const EmployeeDashboard: React.FC = () => {
           "
         >
           <TodayAttendance />
+
           <LeaveBalance />
         </section>
 
+        {/* ── FINANCIAL OPERATIONS ─────────────────────────────── */}
+        <section className="mt-5">
+          <LatestPayslip />
+        </section>
       </div>
     </div>
   );
