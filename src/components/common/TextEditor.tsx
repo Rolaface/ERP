@@ -11,7 +11,7 @@ export interface RichTextEditorProps {
   onChange: (html: string) => void;
   minHeight?: number;
   placeholder: string;
-
+  editable?: boolean;
 }
 
 /* ─────────────────────────────────────────────
@@ -81,7 +81,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onChange,
   minHeight = 160,
   placeholder = "",
-
+  editable = true, 
 }) => {
   const editor = useEditor({
     extensions: [
@@ -97,6 +97,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     },
   });
 
+
+
   // Sync external value reset (e.g. when modal reopens)
   useEffect(() => {
     if (!editor) return;
@@ -105,6 +107,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       editor.commands.setContent(value, false);
     }
   }, [value, editor]);
+
+  useEffect(() => {
+  if (!editor) return;
+  editor.setEditable(editable);
+}, [editable, editor]);
 
   if (!editor) return null;
 
@@ -129,6 +136,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       }}
     >
       {/* ── Toolbar ── */}
+      {editable && (
       <div
         style={{
           display: "flex",
@@ -171,7 +179,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         {/* History */}
         {btn("Undo", false, () => editor.chain().focus().undo().run(), <>&#8617;</>)}
         {btn("Redo", false, () => editor.chain().focus().redo().run(), <>&#8618;</>)}
+      
       </div>
+      )}
 
       {/* ── Editor area ── */}
       <style>{`

@@ -6,7 +6,7 @@ import {
   type SalesAnalyticsFilters,
 } from "../../api/analyticsApi";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
-
+import { useCompanyStore } from "../../store/companyStore";
 /*  ── Types ── */
 
 export type SalesNode = {
@@ -51,13 +51,13 @@ export type SalesData = {
 
 /*  ── Helpers ── */
 
-const nf = (value: number | undefined | null, isCurrency = true): string => {
+const nf = (value: number | undefined | null, isCurrency = true, symbol = ""): string => {
   if (value === null || value === undefined) return "—";
   const formatted = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: isCurrency ? 2 : 0,
     maximumFractionDigits: isCurrency ? 2 : 0,
   }).format(Math.abs(value));
-  const prefix = isCurrency ? "₹" : "";
+  const prefix = isCurrency && symbol ? `${symbol} ` : "";
   return value < 0 ? `-${prefix}${formatted}` : `${prefix}${formatted}`;
 };
 
@@ -73,6 +73,7 @@ function SummaryStrip({
   kpis: SalesKPIs;
   isQuantity: boolean;
 }) {
+    const currencySymbol = useCompanyStore((s) => s.currencySymbol);
   if (!kpis) return null;
   const topPerformer = kpis.top_performers?.[0] ?? null;
 
@@ -230,6 +231,7 @@ function FilterBar({ filters, setFilters }: FilterBarProps) {
 /*  ── Main Component ── */
 
 const SalesAnalytics: React.FC = () => {
+    const currencySymbol = useCompanyStore((s) => s.currencySymbol); 
   const [filters, setFilters] = useState<SalesAnalyticsFilters>({
     tree_type: "Customer",
     doc_type: "Sales Invoice",
@@ -283,7 +285,7 @@ const SalesAnalytics: React.FC = () => {
         key: col.fieldname,
         header: col.label,
         sortable: false,
-        width: isNumeric ? 120 : 200,
+        width: isNumeric ? "120px" : "200px",
         render: (row: SalesNode) => {
           const val = row[col.fieldname];
           if (col.fieldname === "entity" || col.fieldname === "entity_name") {
@@ -293,13 +295,13 @@ const SalesAnalytics: React.FC = () => {
           }
           return (
             <div className={isNumeric ? "text-muted font-medium w-full text-right" : "text-main"}>
-              {isNumeric ? nf(val, filters.value_quantity === "Value") : val}
+              {isNumeric ? nf(val, filters.value_quantity === "Value", filters.value_quantity === "Value" ? currencySymbol : "") : val}
             </div>
           );
         },
       };
     });
-  }, [data, filters.value_quantity]);
+}, [data, filters.value_quantity, currencySymbol]);
 
   /* ── Error state ── */
   if (error && !data) {

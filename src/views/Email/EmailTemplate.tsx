@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
-import { AppPage , AppPageBody , AppPageHeader } from "../../components/ui/app-shell";
+import { AppPage, AppPageBody, AppPageHeader } from "../../components/ui/app-shell";
 import ActionButton, {
     ActionGroup,
     ActionMenu,
@@ -97,9 +97,14 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
     };
 
     const handleEdit = (template: EmailTemplate, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    openEmailTemplateModal(template.id); 
-};
+        e?.stopPropagation();
+        openEmailTemplateModal(template.id);
+    };
+
+    const handleView = (template: EmailTemplate, e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        openEmailTemplateModal(template.id, { isViewMode: true });
+    };
 
 
     const handleDelete = async (
@@ -177,6 +182,15 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
             align: "center",
             render: (t) => (
                 <ActionGroup>
+                    {/* View button — always visible, read permission */}
+                    <PermissionGate module={ET_MODULE} action="read">
+                        <ActionButton
+                            type="view"
+                            onClick={(e) => handleView(t, e)}
+                            iconOnly
+                        />
+                    </PermissionGate>
+
                     <PermissionGate module={ET_MODULE} action="write">
                         <ActionButton
                             type="edit"
@@ -196,34 +210,34 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
     ];
 
     return (
-         <AppPage>
-             <AppPageHeader
-        title="Email Template"
-        description="Create Email Templates"
-        icon={<Mail />}
-      />
+        <AppPage>
+            <AppPageHeader
+                title="Email Template"
+                description="Create Email Templates"
+                icon={<Mail />}
+            />
 
             <AppPageBody>
-            <Table
-                columns={columns}
-                tableId="email-templates"
-                data={templates}
-                showToolbar
-                loading={loading}
-                searchValue={searchTerm}
-                onSearch={setSearchTerm}
-                enableAdd={can(ET_MODULE, "create")}
-                addLabel="Add Email Template"
-                onAdd={handleAddClick}
-                enableColumnSelector
-                currentPage={page}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={setPage}
-                onPageSizeChange={(size) => setPageSize(size)}
-                pageSizeOptions={[10, 25, 50, 100]}
-            />
+                <Table
+                    columns={columns}
+                    tableId="email-templates"
+                    data={templates}
+                    showToolbar
+                    loading={loading}
+                    searchValue={searchTerm}
+                    onSearch={setSearchTerm}
+                    enableAdd={can(ET_MODULE, "create")}
+                    addLabel="Add Email Template"
+                    onAdd={handleAddClick}
+                    enableColumnSelector
+                    currentPage={page}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={setPage}
+                    onPageSizeChange={(size) => setPageSize(size)}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                />
             </AppPageBody>
         </AppPage>
     );

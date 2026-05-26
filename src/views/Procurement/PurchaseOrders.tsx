@@ -411,61 +411,49 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       return [];
     }
   };
+const handleExportCSV = async () => {
+  try {
+    showLoading("Exporting purchase orders...");
 
-  const handleExportPDF = async () => {
-    try {
-      showLoading("Generating PDF...");
+    const dataToExport = await fetchAllPOsForExport();
 
-      const dataToExport = await fetchAllPOsForExport();
-
-      if (!dataToExport.length) {
-        closeSwal();
-        showApiError("No purchase orders to export");
-        return;
-      }
-
-      const doc = new jsPDF("p", "mm", "a4");
-      doc.setFontSize(14);
-      doc.text("Purchase Orders Report", 14, 15);
-
-      const tableData = dataToExport.map((po, index) => [
-        index + 1,
-        po.id,
-        po.supplier,
-        po.referenceNumber || "-",
-        po.date,
-        po.deliveryDate,
-        `INR ${Number(po.amount || 0).toFixed(2)}`,
-        po.status,
-
-      ]);
-
-      autoTable(doc, {
-        startY: 22,
-        head: [
-          [
-            "SN",
-            "PO ID",
-            "Supplier",
-            "Date",
-            "Delivery Date",
-            "Amount",
-            "Status",
-          ],
-        ],
-        body: tableData,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [41, 128, 185] },
-      });
-
-      doc.save("Purchase_Orders_Report.pdf");
+    if (!dataToExport.length) {
       closeSwal();
-      showSuccess("PDF exported successfully");
-    } catch (error) {
-      closeSwal();
-      showApiError(error);
+      showApiError("No purchase orders to export");
+      return;
     }
-  };
+
+    const headers = ["PO ID", "Supplier", "Reference No", "Date", "Delivery Date", "Amount", "Status"];
+    const rows = dataToExport.map((po) => [
+      po.id ?? "",
+      po.supplier ?? "",
+      po.referenceNumber ?? "",
+      po.date ?? "",
+      po.deliveryDate ?? "",
+      Number(po.amount || 0).toFixed(2),
+      po.status ?? "",
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Purchase_Orders_Export.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+
+    closeSwal();
+    showSuccess("CSV exported successfully");
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
+
   const handleView = async (poId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setDrawerOpen(true);
@@ -677,7 +665,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
         loading={loading}
         searchValue={searchTerm}
         enableExport={can(PO_MODULE, "export")}
-        onExport={handleExportPDF}
+        onExport={handleExportCSV}
         onSearch={setSearchTerm}
         enableAdd={can(PO_MODULE, "create")}
         addLabel="Add Purchase Order"

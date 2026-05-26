@@ -70,6 +70,7 @@ interface EmailTemplateModalProps {
     /** If provided — edit mode; if omitted — create mode */
     templateId?: string;
     modalId?: string;
+    isViewMode?: boolean;
 }
 
 
@@ -79,6 +80,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
     onSubmit,
     templateId,
     modalId,
+    isViewMode = false,
 }) => {
     const resolvedModalId =
         modalId ||
@@ -230,7 +232,14 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
 
     // ── Footer ──
     const footer = useMemo(
-        () => (
+        () => isViewMode ? (
+            <Button
+                variant="secondary"
+                onClick={onClose}
+            >
+                Close
+            </Button>
+        ) : (
             <>
                 <Button
                     variant="secondary"
@@ -239,10 +248,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                     Cancel
                 </Button>
                 <div className="flex gap-2">
-                    <Button
-                        variant="secondary"
-                        onClick={handleReset}
-                    >
+                    <Button variant="secondary" onClick={handleReset}>
                         Reset
                     </Button>
                     <Button
@@ -251,16 +257,12 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                         form="emailTemplateForm"
                         disabled={saving}
                     >
-                        {saving
-                            ? "Saving..."
-                            : templateId
-                                ? "Update Template"
-                                : "Save Template"}
+                        {saving ? "Saving..." : templateId ? "Update Template" : "Save Template"}
                     </Button>
                 </div>
             </>
         ),
-        [handleCloseWithConfirm, onClose, resolvedModalId, handleReset, saving, templateId],
+        [isViewMode, handleCloseWithConfirm, onClose, resolvedModalId, handleReset, saving, templateId],
     );
 
     return (
@@ -268,8 +270,8 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
             modalId={resolvedModalId}
             isOpen={isOpen}
             onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-            title={templateId ? "Edit Email Template" : "Create Email Template"}
-            subtitle="Create email templates"
+            title={isViewMode ? "View Email Template" : templateId ? "Edit Email Template" : "Create Email Template"}
+            subtitle={isViewMode ? "Read-only view of this email template" : "Create email templates"}
             icon={Mail}
             customWidth="65vw"
             height="auto"
@@ -282,8 +284,8 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
             ) : (
                 <form
                     id="emailTemplateForm"
-                    onSubmit={handleSubmit}
-                    onChange={() => markDirty()}
+                    onSubmit={isViewMode ? (e) => e.preventDefault() : handleSubmit}
+                    onChange={() => !isViewMode && markDirty()}
                     className="flex gap-4 p-4"
                 >
                     {/* ── Left: form fields ── */}
@@ -292,7 +294,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                         {/* Name + Subject */}
                         <div className="flex gap-4">
                             <div className="w-48 shrink-0">
-                                {templateId ? (
+                                {templateId || isViewMode ? (
                                     <ModalInput
                                         label="Name"
                                         value={form.name}
@@ -327,6 +329,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                                     onFocus={() => { focusedField.current = "subject"; }}
                                     onChange={(e) => handleFieldChange("subject", e.target.value)}
                                     placeholder="Enter email subject..."
+                                    disabled={isViewMode}
                                 />
                             </div>
                         </div>
@@ -343,123 +346,105 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                                         onChange={(html) => handleFieldChange("message", html)}
                                         onInsertRef={(fn) => { editorInsertRef.current = fn; }}
                                         minHeight={240}
+                                         editable={!isViewMode} 
                                     />
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    {/* ── Right: variable chips ── */}
-                    {/* ── Right: variable chips ── */}
-                    <div
-                        style={{
-                            width: "140px",
-                            flexShrink: 0,
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "8px",
-                            paddingTop: "4px",
-                        }}
-                    >
-                        <p style={{
-                            fontSize: "11px", fontWeight: 600, color: "var(--muted)",
-                            textTransform: "uppercase", letterSpacing: "0.05em", margin: 0,
-                        }}>
-                            Variables
-                        </p>
-
-                        {form.name ? (
-                            <>
-                                <p style={{ fontSize: "11px", color: "var(--muted)", margin: 0, lineHeight: 1.4 }}>
-                                    Click to insert at cursor
-                                </p>
-                                <div className="flex flex-col gap-2 mt-1">
-                                    {getVariableChips(form.name).map((chip) => (
-                                        <button
-                                            key={chip.value}
-                                            type="button"
-                                            onClick={() => handleChipClick(chip.value)}
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                padding: "5px 8px",
-                                                borderRadius: "6px",
-                                                border: "1px solid var(--primary, #3b82f6)",
-                                                background: "color-mix(in srgb, var(--primary) 8%, transparent)",
-                                                color: "var(--primary)",
-                                                fontSize: "12px",
-                                                fontFamily: "monospace",
-                                                cursor: "pointer",
-                                                whiteSpace: "nowrap",
-                                                transition: "background 0.15s",
-                                                width: "100%",
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                (e.currentTarget as HTMLButtonElement).style.background =
-                                                    "color-mix(in srgb, var(--primary) 18%, transparent)";
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                (e.currentTarget as HTMLButtonElement).style.background =
-                                                    "color-mix(in srgb, var(--primary) 8%, transparent)";
-                                            }}
-                                        >
-                                            {chip.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        ) : (
-                            <p style={{ fontSize: "11px", color: "var(--muted)", margin: 0, lineHeight: 1.4 }}>
-                                Select a template type to see available variables
+                    {!isViewMode && (
+                        <div
+                            style={{
+                                width: "140px",
+                                flexShrink: 0,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "8px",
+                                paddingTop: "4px",
+                            }}
+                        >
+                            <p style={{
+                                fontSize: "11px", fontWeight: 600, color: "var(--muted)",
+                                textTransform: "uppercase", letterSpacing: "0.05em", margin: 0,
+                            }}>
+                                Variables
                             </p>
-                        )}
-                    </div>
+
+                            {form.name ? (
+                                <>
+                                    <p style={{ fontSize: "11px", color: "var(--muted)", margin: 0, lineHeight: 1.4 }}>
+                                        Click to insert at cursor
+                                    </p>
+                                    <div className="flex flex-col gap-2 mt-1">
+                                        {getVariableChips(form.name).map((chip) => (
+                                            <button
+                                                key={chip.value}
+                                                type="button"
+                                                onClick={() => handleChipClick(chip.value)}
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    padding: "5px 8px",
+                                                    borderRadius: "6px",
+                                                    border: "1px solid var(--primary, #3b82f6)",
+                                                    background: "color-mix(in srgb, var(--primary) 8%, transparent)",
+                                                    color: "var(--primary)",
+                                                    fontSize: "12px",
+                                                    fontFamily: "monospace",
+                                                    cursor: "pointer",
+                                                    whiteSpace: "nowrap",
+                                                    transition: "background 0.15s",
+                                                    width: "100%",
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    (e.currentTarget as HTMLButtonElement).style.background =
+                                                        "color-mix(in srgb, var(--primary) 18%, transparent)";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    (e.currentTarget as HTMLButtonElement).style.background =
+                                                        "color-mix(in srgb, var(--primary) 8%, transparent)";
+                                                }}
+                                            >
+                                                {chip.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <p style={{ fontSize: "11px", color: "var(--muted)", margin: 0, lineHeight: 1.4 }}>
+                                    Select a template type to see available variables
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </form>
             )}
         </MinimizableModal>
     );
 };
 
-// ─────────────────────────────────────────────
-// RichTextEditorWithInsert
-// Wraps RichTextEditor and exposes an insertAtCursor function
-// via the onInsertRef callback so the parent can call it.
-// ─────────────────────────────────────────────
+
 
 interface RichTextEditorWithInsertProps {
     value: string;
     onChange: (html: string) => void;
     onInsertRef: (fn: (text: string) => void) => void;
     minHeight?: number;
+     editable?: boolean;
 }
 
-/**
- * We can't reach into RichTextEditor's tiptap instance from outside,
- * so we render a thin wrapper that keeps a local ref to the insert fn.
- *
- * Strategy:
- *  - The editor's `onUpdate` gives us the latest HTML.
- *  - For insertion we store the tiptap editor instance via a custom prop
- *    added to the existing RichTextEditor.
- *
- * Since we can't modify RichTextEditor here, we instead forward the
- * insertAtCursor function by using the editor's own `document.execCommand`
- * fallback approach on the focused contenteditable.
- *
- * This is production-safe and cursor-position aware.
- */
+
 const RichTextEditorWithInsert: React.FC<RichTextEditorWithInsertProps> = ({
     value,
     onChange,
     onInsertRef,
     minHeight,
+     editable = true,
 }) => {
-    // Register the insert function with the parent once on mount
     useEffect(() => {
         const insertFn = (text: string) => {
-            // The tiptap editor renders a [contenteditable] div.
-            // Find it within our wrapper div and use execCommand to insert at cursor.
             const editorEl = document.querySelector(
                 ".rte-send-email .tiptap",
             ) as HTMLElement | null;
@@ -468,8 +453,7 @@ const RichTextEditorWithInsert: React.FC<RichTextEditorWithInsertProps> = ({
 
             editorEl.focus();
 
-            // execCommand insertText works in all chromium-based browsers
-            // and is cursor-aware (works at current selection).
+
             if (document.execCommand) {
                 document.execCommand("insertText", false, text);
             }
@@ -482,6 +466,8 @@ const RichTextEditorWithInsert: React.FC<RichTextEditorWithInsertProps> = ({
             value={value}
             onChange={onChange}
             minHeight={minHeight}
+            placeholder=""
+            editable={editable}  
         />
     );
 };

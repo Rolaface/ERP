@@ -949,8 +949,11 @@ const GlobalModalHandler: React.FC = () => {
               | string
               | undefined
             }
+            isViewMode={context?.isViewMode ?? false}
           />,
         );
+
+
 
       case "holidayList":
         return wrappedModal(
@@ -996,35 +999,35 @@ const GlobalModalHandler: React.FC = () => {
             }
           />,
         );
-       case "KRA":
-  return wrappedModal(
-    <AddKRAModal
-      key={modal.id}
-      modalId={modal.id}        // ← THIS IS MISSING in your handler
-      selectedKRA={getInitialData<SetupRow>(modal.initialData)}
-      isViewMode={modal.context?.isViewMode ?? false}
-      onClose={handleClose}
-      onAdd={(row) => {
-        if (context?.onSuccess) context.onSuccess(row);
-        handleClose();
-      }}
-    />,
-  );
-  // Add case in renderModal switch:
-case "feedback":
-  return wrappedModal(
-    <AddFeedbackModal
-      key={modal.id}
-      modalId={modal.id}
-      selectedFeedback={getInitialData<FeedbackRow>(modal.initialData)}
-      isViewMode={modal.context?.isViewMode ?? false}
-      onClose={handleClose}
-      onAdd={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
-      }}
-    />,
-  );
+      case "KRA":
+        return wrappedModal(
+          <AddKRAModal
+            key={modal.id}
+            modalId={modal.id}
+            selectedKRA={getInitialData<SetupRow>(modal.initialData)}
+            isViewMode={modal.context?.isViewMode ?? false}
+            onClose={handleClose}
+            onAdd={(row) => {
+              if (context?.onSuccess) context.onSuccess(row);
+              handleClose();
+            }}
+          />,
+        );
+      // Add case in renderModal switch:
+      case "feedback":
+        return wrappedModal(
+          <AddFeedbackModal
+            key={modal.id}
+            modalId={modal.id}
+            selectedFeedback={getInitialData<FeedbackRow>(modal.initialData)}
+            isViewMode={modal.context?.isViewMode ?? false}
+            onClose={handleClose}
+            onAdd={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+              handleClose();
+            }}
+          />,
+        );
       case "appraisalCycle":
         return wrappedModal(
           <NewCycleModal
