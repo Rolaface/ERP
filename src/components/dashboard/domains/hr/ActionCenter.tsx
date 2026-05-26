@@ -53,48 +53,25 @@ function getPriorityConfig(priority: ActionPriority) {
     case "critical":
       return {
         icon: AlertTriangle,
-        iconTone: "text-rose-500",
+        tone: "text-rose-500",
         line: "bg-rose-500",
-        container:
-          "bg-[color-mix(in_srgb,var(--card)_88%,transparent)]",
-        title:
-          "text-[15px] font-semibold text-[var(--foreground)]",
-        description:
-          "text-sm text-[var(--muted-foreground)]",
-        cta:
-          "text-rose-600 hover:text-rose-700",
-        spacing: "py-4",
+        cta: "text-rose-600",
       };
 
     case "warning":
       return {
         icon: Clock3,
-        iconTone: "text-amber-500",
+        tone: "text-amber-500",
         line: "bg-amber-500",
-        container:
-          "bg-[color-mix(in_srgb,var(--card)_70%,transparent)]",
-        title:
-          "text-sm font-medium text-[var(--foreground)]",
-        description:
-          "text-sm text-[var(--muted-foreground)]",
-        cta:
-          "text-amber-600 hover:text-amber-700",
-        spacing: "py-3",
+        cta: "text-amber-600",
       };
 
     case "info":
       return {
         icon: BellRing,
-        iconTone: "text-blue-500",
+        tone: "text-blue-500",
         line: "bg-blue-500",
-        container: "bg-transparent",
-        title:
-          "text-sm font-medium text-[var(--foreground)]",
-        description:
-          "text-sm text-[var(--muted-foreground)]",
-        cta:
-          "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
-        spacing: "py-2.5",
+        cta: "text-blue-600",
       };
   }
 }
@@ -103,50 +80,40 @@ const ActionCenter: React.FC = () => {
   return (
     <section
       className="
-        rounded-[28px]
+        rounded-b-[32px]
         border
+        border-t-0
         border-[var(--border)]
         bg-[var(--card)]
-        px-5
-        py-4
+        px-7
+        py-6
       "
     >
 
-      {/* HEADER */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between">
 
-        <div className="space-y-1">
-
-          <div className="flex items-center gap-2">
-
-            <div className="h-2 w-2 rounded-full bg-emerald-500" />
-
-            <h2
-              className="
-                text-base
-                font-semibold
-                text-[var(--foreground)]
-              "
-            >
-              Operational Queue
-            </h2>
-
-          </div>
+        <div>
 
           <p
             className="
-              text-sm
+              text-xs
+              font-medium
+              uppercase
+              tracking-[0.18em]
               text-[var(--muted-foreground)]
             "
           >
-            Actions affecting today's workflow momentum
+            Decision Queue
           </p>
+
+          <h2 className="mt-2 text-xl font-semibold">
+            Operational Actions
+          </h2>
 
         </div>
 
         <div
           className="
-            shrink-0
             rounded-full
             bg-[var(--background)]
             px-3
@@ -161,100 +128,103 @@ const ActionCenter: React.FC = () => {
 
       </div>
 
-      {/* FLOW STREAM */}
-      <div className="mt-5">
+      <div className="mt-7 space-y-3">
 
-        {actions.map((item, index) => {
+        {actions.map((item) => {
           const config = getPriorityConfig(item.priority);
           const Icon = config.icon;
 
           return (
             <div
               key={item.id}
-              className={`
-                group
-                relative
+              className="
                 flex
                 items-start
                 gap-4
-                ${config.spacing}
-                ${index !== actions.length - 1
-                  ? "border-b border-[var(--border)]"
-                  : ""
-                }
-              `}
+                rounded-2xl
+                border
+                border-[var(--border)]
+                px-4
+                py-4
+                transition-all
+                hover:border-[color-mix(in_srgb,var(--border)_70%,black)]
+                hover:bg-[var(--background)]
+              "
             >
 
-              {/* PRIORITY COLUMN */}
-              <div className="flex flex-col items-center pt-1">
+              <div
+                className={`
+                  mt-1
+                  h-10
+                  w-1
+                  rounded-full
+                  ${config.line}
+                `}
+              />
 
-                <div
-                  className={`
-                    h-10
-                    w-1
-                    rounded-full
-                    ${config.line}
-                  `}
-                />
-
-              </div>
-
-              {/* ICON */}
               <div
                 className={`
                   flex
-                  h-9
-                  w-9
+                  h-10
+                  w-10
                   shrink-0
                   items-center
                   justify-center
                   rounded-2xl
                   bg-[var(--background)]
-                  ${config.iconTone}
+                  ${config.tone}
                 `}
               >
-                <Icon className="h-4 w-4" />
+
+                <Icon className="h-5 w-5" />
+
               </div>
 
-              {/* CONTENT */}
               <div className="min-w-0 flex-1">
 
                 <div className="flex items-start justify-between gap-4">
 
-                  <div className="min-w-0">
+                  <div>
 
-                    <h3 className={config.title}>
+                    <h3
+                      className="
+                        text-sm
+                        font-semibold
+                        text-[var(--foreground)]
+                      "
+                    >
                       {item.title}
                     </h3>
 
                     <p
-                      className={`
+                      className="
                         mt-1
+                        text-sm
                         leading-relaxed
-                        ${config.description}
-                      `}
+                        text-[var(--muted-foreground)]
+                      "
                     >
                       {item.description}
                     </p>
 
                   </div>
 
-                  {/* CTA */}
                   <button
                     className={`
                       inline-flex
-                      shrink-0
                       items-center
                       gap-1
-                      text-xs
+                      text-sm
                       font-medium
                       transition-colors
                       ${config.cta}
                     `}
                   >
+
                     {item.ctaLabel}
 
-                    <ChevronRight className="h-3.5 w-3.5" />
+                    <ChevronRight className="h-4 w-4" />
+
                   </button>
 
                 </div>

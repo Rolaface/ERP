@@ -6,16 +6,14 @@ import EmployeeOperatingBanner from "../../../components/dashboard/domains/hr/Em
 // ── TEMPORAL FLOW ────────────────────────────────────────────────
 import CalendarStrip from "../../../components/dashboard/domains/hr/CalendarStrip";
 
-// ── OPERATIONAL FLOW STREAM ──────────────────────────────────────
+// ── PRIMARY OPERATIONAL FLOW ─────────────────────────────────────
 import TodayStatusCard from "../../../components/dashboard/domains/hr/TodayStatusCard";
 import ActionCenter from "../../../components/dashboard/domains/hr/ActionCenter";
 import MyWorkdayPanel from "../../../components/dashboard/domains/hr/MyWorkdayPanel";
 import AnnouncementPanel from "../../../components/dashboard/domains/hr/AnnouncementPanel";
 
-// ── AMBIENT INTELLIGENCE ─────────────────────────────────────────
+// ── CONTEXTUAL INTELLIGENCE ──────────────────────────────────────
 import AmbientSignalRail from "../../../components/dashboard/domains/hr/AmbientSignalRail";
-
-// ── TEAM FLOW STREAM ─────────────────────────────────────────────
 import EmployeeSnapshot from "../../../components/dashboard/domains/hr/EmployeeSnapshot";
 import TeamAvailability from "../../../components/dashboard/domains/hr/TeamAvailability";
 import FlowSupportPanel from "../../../components/dashboard/domains/hr/FlowSupportPanel";
@@ -33,14 +31,14 @@ const EmployeeDashboard: React.FC = () => {
     >
 
       {/* ROOT OPERATIONAL CANVAS */}
-      <div className="mx-auto max-w-7xl px-5 py-3">
+      <div className="mx-auto max-w-7xl px-5 py-4">
 
         {/* ───────────────────────────────────────────── */}
         {/* LEVEL 1 — OPERATING HEADER */}
         {/* ───────────────────────────────────────────── */}
         <section
           className="
-            mb-4
+            mb-5
             transition-all
             duration-200
           "
@@ -55,7 +53,7 @@ const EmployeeDashboard: React.FC = () => {
         {/* ───────────────────────────────────────────── */}
         <section
           className="
-            mb-5
+            mb-6
             transition-colors
             duration-200
           "
@@ -65,9 +63,7 @@ const EmployeeDashboard: React.FC = () => {
             className="
               pb-3
               border-b
-              border-[color-mix(in_srgb,var(--border)_24%,transparent)]
-              transition-colors
-              duration-200
+              border-[color-mix(in_srgb,var(--border)_20%,transparent)]
             "
           >
 
@@ -85,180 +81,202 @@ const EmployeeDashboard: React.FC = () => {
             grid
             grid-cols-1
             xl:grid-cols-12
-            gap-x-7
-            gap-y-4
+            gap-x-10
+            gap-y-6
             items-start
           "
         >
 
           {/* ───────────────────────────────────────── */}
-          {/* LEVEL 1 — PRIMARY OPERATIONAL FLOW */}
+          {/* PRIMARY OPERATIONAL SPINE */}
+          {/* 8 COLUMN DOMINANT EXECUTION FLOW */}
           {/* ───────────────────────────────────────── */}
           <div
             className="
-              xl:col-span-7
+              xl:col-span-8
               min-w-0
             "
           >
 
-            <div className="space-y-5">
+            <div
+              className="
+                relative
+                space-y-0
+              "
+            >
 
-              {/* CRITICAL STATUS */}
+              {/* CONTINUOUS OPERATIONAL GUIDE */}
               <div
                 className="
-                  group
+                  absolute
+                  left-0
+                  top-0
+                  bottom-0
+                  w-px
+                  bg-[color-mix(in_srgb,var(--border)_14%,transparent)]
+                "
+              />
+
+              {/* TODAY STATUS */}
+              <section
+                className="
                   relative
-                  pl-3
-                  border-l
-                  border-[color-mix(in_srgb,var(--primary)_30%,transparent)]
-                  transition-colors
-                  duration-200
-                  hover:border-[color-mix(in_srgb,var(--primary)_45%,transparent)]
+                  pl-6
+                  pb-6
                 "
               >
 
-                {/* LIVE STATUS BREATH */}
+                {/* ACTIVE STATE INDICATOR */}
                 <div
                   className="
                     absolute
-                    left-[-1px]
-                    top-5
+                    left-[-3px]
+                    top-6
                     h-2
-                    w-[2px]
+                    w-2
                     rounded-full
-                    bg-[var(--primary)]
-                    opacity-70
+                    bg-emerald-500
                     motion-safe:animate-pulse
                   "
                 />
 
                 <TodayStatusCard />
 
-              </div>
+              </section>
 
-              {/* ACTIVE WORKDAY */}
-              <div
+              {/* WORKDAY FLOW */}
+              <section
                 className="
-                  pl-3
-                  transition-all
-                  duration-200
+                  relative
+                  pl-6
+                  py-6
+                  border-t
+                  border-[color-mix(in_srgb,var(--border)_10%,transparent)]
                 "
               >
 
                 <MyWorkdayPanel />
 
-              </div>
+              </section>
 
-              {/* CRITICAL ACTIONS */}
-              <div
+              {/* ACTION CENTER */}
+              <section
                 className="
-                  pt-2
-                  pl-3
+                  relative
+                  pl-6
+                  py-6
                   border-t
-                  border-[color-mix(in_srgb,var(--border)_14%,transparent)]
-                  transition-colors
-                  duration-200
-                  hover:border-[color-mix(in_srgb,var(--border)_24%,transparent)]
+                  border-[color-mix(in_srgb,var(--border)_10%,transparent)]
                 "
               >
 
                 <ActionCenter />
 
-              </div>
+              </section>
 
-              {/* AMBIENT ANNOUNCEMENTS */}
-              <div
+              {/* ANNOUNCEMENTS */}
+              <section
                 className="
-                  pt-2
+                  relative
+                  pl-6
+                  pt-6
                   border-t
-                  border-[color-mix(in_srgb,var(--border)_10%,transparent)]
-                  transition-colors
-                  duration-200
-                  hover:border-[color-mix(in_srgb,var(--border)_18%,transparent)]
+                  border-[color-mix(in_srgb,var(--border)_8%,transparent)]
                 "
               >
 
                 <AnnouncementPanel />
 
-              </div>
+              </section>
 
             </div>
 
           </div>
 
           {/* ───────────────────────────────────────── */}
-          {/* LEVEL 3 — AMBIENT INTELLIGENCE */}
+          {/* CONTEXTUAL INTELLIGENCE RAIL */}
+          {/* 4 COLUMN PERIPHERAL SYSTEM */}
           {/* ───────────────────────────────────────── */}
           <div
             className="
-              xl:col-span-2
-              min-w-0
-              pt-1
-              transition-all
-              duration-200
-            "
-          >
-
-            <AmbientSignalRail />
-
-          </div>
-
-          {/* ───────────────────────────────────────── */}
-          {/* LEVEL 2 — TEAM FLOW STREAM */}
-          {/* ───────────────────────────────────────── */}
-          <div
-            className="
-              xl:col-span-3
+              xl:col-span-4
               min-w-0
             "
           >
 
-            {/* TEAM PRESENCE STREAM */}
             <div
               className="
-                divide-y
-                divide-[color-mix(in_srgb,var(--border)_14%,transparent)]
-                transition-colors
-                duration-200
+                sticky
+                top-4
               "
             >
 
-              {/* ACTIVE COLLABORATION */}
+              {/* CONTEXTUAL STREAM */}
               <div
                 className="
-                  pb-4
-                  transition-all
-                  duration-200
+                  rounded-[28px]
+                  border
+                  border-[color-mix(in_srgb,var(--border)_12%,transparent)]
+                  bg-[color-mix(in_srgb,var(--card)_40%,transparent)]
+                  overflow-hidden
+                  backdrop-blur-sm
                 "
               >
 
-                <TeamAvailability />
+                {/* TEAM AVAILABILITY */}
+                <section
+                  className="
+                    px-5
+                    pt-5
+                    pb-5
+                  "
+                >
 
-              </div>
+                  <TeamAvailability />
 
-              {/* TEAM CONTEXT */}
-              <div
-                className="
-                  py-4
-                  transition-all
-                  duration-200
-                "
-              >
+                </section>
 
-                <EmployeeSnapshot />
+                {/* AMBIENT SIGNALS */}
+                <section
+                  className="
+                    px-5
+                    py-5
+                    border-t
+                    border-[color-mix(in_srgb,var(--border)_10%,transparent)]
+                  "
+                >
 
-              </div>
+                  <AmbientSignalRail />
 
-              {/* FLOW SUPPORT */}
-              <div
-                className="
-                  pt-4
-                  transition-all
-                  duration-200
-                "
-              >
+                </section>
 
-                <FlowSupportPanel />
+                {/* EMPLOYEE CONTEXT */}
+                <section
+                  className="
+                    px-5
+                    py-5
+                    border-t
+                    border-[color-mix(in_srgb,var(--border)_10%,transparent)]
+                  "
+                >
+
+                  <EmployeeSnapshot />
+
+                </section>
+
+                {/* SUPPORT FLOW */}
+                <section
+                  className="
+                    px-5
+                    py-5
+                    border-t
+                    border-[color-mix(in_srgb,var(--border)_8%,transparent)]
+                  "
+                >
+
+                  <FlowSupportPanel />
+
+                </section>
 
               </div>
 
@@ -269,7 +287,7 @@ const EmployeeDashboard: React.FC = () => {
         </section>
 
         {/* SPATIAL TERMINATION */}
-        <div className="h-8" />
+        <div className="h-10" />
 
       </div>
 

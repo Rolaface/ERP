@@ -38,28 +38,53 @@ const MyWorkdayPanel: React.FC = () => {
   return (
     <section
       className="
-        rounded-2xl
-        border
+        border-x
         border-[var(--border)]
         bg-[var(--card)]
-        px-4
-        py-3
+        px-7
+        py-6
       "
     >
 
       <div className="flex items-center justify-between">
 
-        <h2 className="text-sm font-medium text-[var(--foreground)]">
-          Workday Flow
-        </h2>
+        <div>
 
-        <span className="text-xs text-[var(--muted-foreground)]">
+          <p
+            className="
+              text-xs
+              font-medium
+              uppercase
+              tracking-[0.18em]
+              text-[var(--muted-foreground)]
+            "
+          >
+            Workflow Stream
+          </p>
+
+          <h2 className="mt-2 text-xl font-semibold">
+            Workday Flow
+          </h2>
+
+        </div>
+
+        <div
+          className="
+            rounded-full
+            bg-[var(--background)]
+            px-3
+            py-1.5
+            text-xs
+            font-medium
+            text-[var(--muted-foreground)]
+          "
+        >
           4 active
-        </span>
+        </div>
 
       </div>
 
-      <div className="mt-3 divide-y divide-[var(--border)]">
+      <div className="mt-7 space-y-2">
 
         {items.map((item) => {
           const Icon = item.icon;
@@ -69,37 +94,41 @@ const MyWorkdayPanel: React.FC = () => {
               key={item.title}
               className="
                 flex
-                items-center
-                gap-3
-                py-3
+                items-start
+                gap-4
+                rounded-2xl
+                px-4
+                py-4
+                transition-colors
+                hover:bg-[var(--background)]
               "
             >
 
               <div
                 className="
+                  mt-0.5
                   flex
-                  h-8
-                  w-8
+                  h-10
+                  w-10
+                  shrink-0
                   items-center
                   justify-center
-                  rounded-xl
+                  rounded-2xl
                   bg-[var(--background)]
                 "
               >
-                <Icon className={`h-4 w-4 ${item.tone}`} />
+
+                <Icon className={`h-5 w-5 ${item.tone}`} />
+
               </div>
 
               <div className="min-w-0 flex-1">
 
-                <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-[var(--foreground)]">
+                  {item.title}
+                </p>
 
-                  <p className="text-sm font-medium text-[var(--foreground)]">
-                    {item.title}
-                  </p>
-
-                </div>
-
-                <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                   {item.description}
                 </p>
 
