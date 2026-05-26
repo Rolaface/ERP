@@ -379,3 +379,30 @@ export function downloadSalarySlipPdf(blob: Blob, filename?: string): void {
 
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
+
+export async function getSalarySlipsByEmployeeOnly(
+  employeeId: string,
+): Promise<Pick<SalarySlip, "name" | "employee" | "employee_name" | "status" | "posting_date" | "start_date" | "end_date" | "gross_pay" | "net_pay" | "currency">[]> {
+  const filters = JSON.stringify([
+    ["employee", "=", employeeId],
+  ]);
+
+  const fields = JSON.stringify([
+    "name",
+    "employee",
+    "employee_name",
+    "status",
+    "posting_date",
+    "start_date",
+    "end_date",
+    "gross_pay",
+    "net_pay",
+    "currency",
+  ]);
+
+  const resp: AxiosResponse = await api.get(
+    `${API.payroll.payrollentry.salaryslip}?filters=${filters}&fields=${fields}&order_by=posting_date desc`,
+  );
+
+  return resp.data?.data || [];
+}
