@@ -374,8 +374,6 @@ const handleStatusUpdate = async (
       enableColumnSelector
       currentPage={page}
       pageSize={pageSize}
-      // totalItems={data.length}
-      // totalPages={Math.ceil(data.length / pageSize) || 1}
       totalItems={(page - 1) * pageSize + data.length}
       totalPages={data.length === pageSize ? page + 1 : page}
       pageSizeOptions={[10, 25, 50]}
