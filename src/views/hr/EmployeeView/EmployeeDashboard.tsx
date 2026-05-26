@@ -3,6 +3,7 @@ import React from "react";
 // ── OPERATING SURFACE ─────────────────────────────────────────────
 import EmployeeOperatingBanner from "../../../components/dashboard/domains/hr/EmployeeOperatingBanner";
 import TodayAttendance from "../../../components/dashboard/domains/hr/TodayAttendance";
+import LeaveBalance from "../../../components/dashboard/domains/hr/LeaveBalance";
 
 const EmployeeDashboard: React.FC = () => {
   return (
@@ -35,7 +36,9 @@ const EmployeeDashboard: React.FC = () => {
           "
         >
           <TodayAttendance />
+          <LeaveBalance />
         </section>
+
       </div>
     </div>
   );
