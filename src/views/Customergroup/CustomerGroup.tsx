@@ -11,26 +11,36 @@ import {
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 
-// Import your updated APIs
-import { 
-  getCustomerGroups, 
+import {
+  getCustomerGroups,
   createCustomerGroup,
-  type CustomerGroupPayload 
-} from "../../api/customerGroupApi"; 
+  updateCustomerGroup,
+  deleteCustomerGroupById,
+  type CustomerGroupPayload,
+} from "../../api/customerGroupApi";
 
 const CUSTOMER_GROUP_MODULE = "Customer Group";
+
+type ModalMode = "create" | "edit" | "view";
 
 const CustomerGroup: React.FC = () => {
   const [treeData, setTreeData] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    mode: ModalMode;
+    data: any | null;
+  }>({ isOpen: false, mode: "create", data: null });
+
   const { can } = usePermission();
 
   const normalizeCustomerGroups = (nodes: any[]): any[] => {
     if (!nodes) return [];
     return nodes.map((node) => ({
-      id: node.id, // Using standard 'id' from backend
+      ...node,
+      id: node.id,
       name: node.customer_group_name,
       isGroup: node.is_group === 1,
       parent: node.parent_customer_group,
@@ -43,11 +53,7 @@ const CustomerGroup: React.FC = () => {
   const fetchTree = useCallback(async () => {
     try {
       setLoading(true);
-      // Pass as_tree to leverage your backend's built-in build_tree utility
       const res = await getCustomerGroups({ as_tree: 1 });
-      
-      // Axios generally returns the API response object in `res.data`
-      // Your python method returns { data: [...], pagination: {...} }
       const nodes = res.data || res;
       setTreeData(normalizeCustomerGroups(nodes));
     } catch (err) {
@@ -61,15 +67,31 @@ const CustomerGroup: React.FC = () => {
     fetchTree();
   }, [fetchTree]);
 
-  const handleCreateCustomerGroup = async (payload: CustomerGroupPayload) => {
+  const handleSaveCustomerGroup = async (payload: CustomerGroupPayload) => {
     try {
       setLoading(true);
-      await createCustomerGroup(payload);
-      await fetchTree(); // Refresh the table after creation
+      if (modalConfig.mode === "edit" && modalConfig.data) {
+        await updateCustomerGroup(modalConfig.data.id, payload);
+      } else {
+        await createCustomerGroup(payload);
+      }
+      await fetchTree();
     } catch (err) {
-      console.error("Failed to create customer group:", err);
-      // Handle error state/toast notifications here
+      console.error("Failed to save customer group:", err);
     } finally {
+      setLoading(false);
+      setModalConfig({ isOpen: false, mode: "create", data: null });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this customer group?")) return;
+    try {
+      setLoading(true);
+      await deleteCustomerGroupById(id);
+      await fetchTree();
+    } catch (err) {
+      console.error("Failed to delete customer group:", err);
       setLoading(false);
     }
   };
@@ -79,9 +101,7 @@ const CustomerGroup: React.FC = () => {
       key: "name",
       header: "Customer Groups",
       render: (row) => (
-        <span className={row.isGroup ? "font-semibold" : ""}>
-          {row.name}
-        </span>
+        <span className={row.isGroup ? "font-semibold" : ""}>{row.name}</span>
       ),
     },
     {
@@ -90,18 +110,41 @@ const CustomerGroup: React.FC = () => {
       align: "right",
       render: (row) => (
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100">
+          <PermissionGate module={CUSTOMER_GROUP_MODULE} action="read">
+            <button
+              onClick={() => setModalConfig({ isOpen: true, mode: "view", data: row })}
+              className="text-xs px-2 py-1 hover:bg-row-hover rounded"
+            >
+              View
+            </button>
+          </PermissionGate>
           <PermissionGate module={CUSTOMER_GROUP_MODULE} action="write">
-            <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
+            <button
+              onClick={() => setModalConfig({ isOpen: true, mode: "edit", data: row })}
+              className="text-xs px-2 py-1 hover:bg-row-hover rounded"
+            >
               Edit
             </button>
           </PermissionGate>
           {row.isGroup && can(CUSTOMER_GROUP_MODULE, "create") && (
-            <button className="text-xs px-2 py-1 hover:bg-row-hover rounded">
+            <button
+              onClick={() =>
+                setModalConfig({
+                  isOpen: true,
+                  mode: "create",
+                  data: { parent_customer_group: row.id },
+                })
+              }
+              className="text-xs px-2 py-1 hover:bg-row-hover rounded"
+            >
               Add Child
             </button>
           )}
           <PermissionGate module={CUSTOMER_GROUP_MODULE} action="delete">
-            <button className="text-xs px-2 py-1 hover:bg-row-hover rounded text-red-500">
+            <button 
+              onClick={() => handleDelete(row.id)}
+              className="text-xs px-2 py-1 hover:bg-row-hover rounded text-red-500"
+            >
               Delete
             </button>
           </PermissionGate>
@@ -138,7 +181,7 @@ const CustomerGroup: React.FC = () => {
           toolbarPlaceholder="Search customer groups..."
           showExpandControls
           onRefresh={fetchTree}
-          defaultExpandDepth={0}
+          defaultExpandDepth={99}
           indentSize={18}
           loading={loading}
           emptyMessage="No customer groups found"
@@ -146,7 +189,9 @@ const CustomerGroup: React.FC = () => {
           extraFilters={
             can(CUSTOMER_GROUP_MODULE, "create") ? (
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() =>
+                  setModalConfig({ isOpen: true, mode: "create", data: null })
+                }
                 className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded text-xs"
               >
                 <Plus size={12} />
@@ -156,11 +201,15 @@ const CustomerGroup: React.FC = () => {
           }
         />
 
-        {showModal && (
+        {modalConfig.isOpen && (
           <CustomerGroupModal
-            isOpen={showModal}
-            onClose={() => setShowModal(false)}
-            onSubmit={handleCreateCustomerGroup}
+            isOpen={modalConfig.isOpen}
+            mode={modalConfig.mode}
+            initialData={modalConfig.data}
+            onClose={() =>
+              setModalConfig({ isOpen: false, mode: "create", data: null })
+            }
+            onSubmit={handleSaveCustomerGroup}
           />
         )}
       </AppPageBody>

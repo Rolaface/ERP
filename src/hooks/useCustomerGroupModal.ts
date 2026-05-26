@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import type { RestrictedItem } from "../components/selects/customer group/ItemRescritionSelect";
-import type { CustomerGroupPayload } from "../api/customerGroupApi"; 
+import type { CustomerGroupPayload } from "../api/customerGroupApi";
 
 export interface CustomerGroupForm {
   customerGroupName: string;
@@ -10,7 +10,7 @@ export interface CustomerGroupForm {
   paymentTerms: string;
 }
 
-export type RestrictionMode = "allowed" | "disallowed";
+export type RestrictionMode = "Allow" | "Deny";
 
 const INITIAL_FORM: CustomerGroupForm = {
   customerGroupName: "",
@@ -22,11 +22,38 @@ const INITIAL_FORM: CustomerGroupForm = {
 
 export const ITEMS_PER_PAGE = 5;
 
-export function useCustomerGroupModal() {
+export function useCustomerGroupModal(initialData?: any) {
   const [form, setForm] = useState<CustomerGroupForm>(INITIAL_FORM);
-  const [restrictionMode, setRestrictionMode] = useState<RestrictionMode>("allowed");
+  const [restrictionMode, setRestrictionMode] = useState<RestrictionMode>("Allow");
   const [restrictedItems, setRestrictedItems] = useState<RestrictedItem[]>([]);
   const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        customerGroupName: initialData.customer_group_name || initialData.name || "",
+        parentCustomerGroup: initialData.parent_customer_group || "",
+        isGroup: initialData.is_group === 1 || initialData.isGroup === true,
+        defaultPriceList: initialData.default_price_list || "",
+        paymentTerms: initialData.payment_terms || "",
+      });
+
+      if (initialData.restrictions) {
+        setRestrictionMode(initialData.restrictions.restriction_mode === "Deny" ? "Deny" : "Allow");
+        setRestrictedItems(
+          initialData.restrictions.items?.map((item: any) => ({
+            id: item.item,
+            itemName: item.item,
+          })) || []
+        );
+      } else {
+        setRestrictionMode("Allow");
+        setRestrictedItems([]);
+      }
+    } else {
+      resetModal();
+    }
+  }, [initialData]);
 
   useEffect(() => {
     if (restrictedItems.length === 0) return;
@@ -48,27 +75,26 @@ export function useCustomerGroupModal() {
     [totalPages]
   );
 
-  // Handle both standard inputs and checkboxes
   const handleFormChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value, type } = e.target;
       const checked = (e.target as HTMLInputElement).checked;
-      
-      setForm((prev) => ({ 
-        ...prev, 
-        [name]: type === "checkbox" ? checked : value 
+
+      setForm((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
       }));
     },
     []
   );
 
   const toggleRestrictionMode = useCallback(() => {
-    setRestrictionMode((prev) => (prev === "allowed" ? "disallowed" : "allowed"));
+    setRestrictionMode((prev) => (prev === "Allow" ? "Deny" : "Allow"));
   }, []);
 
   const addRestrictedItem = useCallback((item: RestrictedItem) => {
     setRestrictedItems((prev) => {
-      if (prev.some((x) => x.id === item.id)) return prev; 
+      if (prev.some((x) => x.id === item.id)) return prev;
       return [...prev, item];
     });
   }, []);
@@ -89,26 +115,28 @@ export function useCustomerGroupModal() {
 
   const resetModal = useCallback(() => {
     setForm(INITIAL_FORM);
-    setRestrictionMode("allowed");
+    setRestrictionMode("Allow");
     setRestrictedItems([]);
     setPage(0);
   }, []);
 
-  // Format the payload perfectly for the API
   const buildPayload = useCallback((): CustomerGroupPayload => ({
     customer_group_name: form.customerGroupName,
     parent_customer_group: form.parentCustomerGroup || "All Customer Groups",
     is_group: form.isGroup ? 1 : 0,
     default_price_list: form.defaultPriceList,
     payment_terms: form.paymentTerms,
-    restrictions: restrictedItems.length > 0 ? {
-      restriction_mode: restrictionMode === "allowed" ? "Allow" : "Deny", // Matches backend expectations
-      enabled: 1,
-      items: restrictedItems.map((item) => ({
-        target_type: "Item",
-        item: item.id,
-      })),
-    } : undefined, // Omit if no restrictions
+    restrictions:
+      restrictedItems.length > 0
+        ? {
+            restriction_mode: restrictionMode, 
+            enabled: 1,
+            items: restrictedItems.map((item) => ({
+              target_type: "Item",
+              item: item.id,
+            })),
+          }
+        : undefined,
   }), [form, restrictionMode, restrictedItems]);
 
   const isValid = form.customerGroupName.trim().length > 0;
