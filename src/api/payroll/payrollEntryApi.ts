@@ -383,7 +383,7 @@ export function downloadSalarySlipPdf(blob: Blob, filename?: string): void {
 const SLIP_FIELDS = [
   "name", "employee", "employee_name", "status",
   "posting_date", "start_date", "end_date",
-  "gross_pay", "net_pay", "currency",
+  "gross_pay", "net_pay", "currency","total_income_tax","total_deduction",
 ];
 
 export async function getSalarySlipsByEmployeeOnly(
