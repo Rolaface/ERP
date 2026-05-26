@@ -43,7 +43,7 @@ export default function Step2Workspace({
   const fullCurrencyList = [
     "USD", "EUR", "GBP", "INR", "JPY", "CNY", "AUD", "CAD", "CHF", "SGD",
     "AED", "NZD", "ZAR", "SEK", "NOK", "DKK", "HKD", "KRW", "THB",
-    "MYR", "IDR", "PHP", "BRL", "MXN",
+    "MYR", "IDR", "PHP", "BRL", "MXN", "ZMW"
   ];
 
   const currencies =
