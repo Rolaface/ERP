@@ -9,14 +9,17 @@ import {
   viewSalarySlipPdf,
   downloadSalarySlipPdf,
 } from "../../../../../api/payroll/payrollEntryApi";
-import { type SlipListItem } from "./Salarysliphelpers ";
-import { SalarySlipList, ListSkeleton } from "./Salarysliplist";
-import { DetailPanel, DetailSkeleton, EmptyDetail } from "./Salaryslipdetail";
+
+import { DetailPanel, DetailSkeleton } from "./Salaryslipdetail";
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
   employee: PayrollEmployeeDetail;
   payrollEntryId: string;
 }
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
 
 const EmptyList: React.FC<{ employeeName: string }> = ({ employeeName }) => (
   <div className="flex flex-col items-center justify-center py-16 px-6 gap-4">
@@ -41,125 +44,76 @@ const EmptyList: React.FC<{ employeeName: string }> = ({ employeeName }) => (
   </div>
 );
 
-export const SalarySlipTab: React.FC<Props> = ({
-  employee,
-  payrollEntryId,
-}) => {
-  const [listLoading, setListLoading] = useState(false);
-  const [slips, setSlips] = useState<SlipListItem[]>([]);
-  const [detailCache, setDetailCache] = useState<Record<string, SalarySlip>>({});
-  const [selectedSlipName, setSelectedSlipName] = useState<string | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [mobileView, setMobileView] = useState<"list" | "detail">("list");
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
-  const selectedSlip = selectedSlipName ? detailCache[selectedSlipName] ?? null : null;
-  const latestSlipName = slips[0]?.name ?? null;
+export const SalarySlipTab: React.FC<Props> = ({ employee, payrollEntryId }) => {
+  const [loading,     setLoading]     = useState(false);
+  const [slip,        setSlip]        = useState<SalarySlip | null>(null);
+  const [pdfLoading,  setPdfLoading]  = useState(false);
 
+  // ── Fetch latest slip detail on mount ─────────────────────────────────────
   useEffect(() => {
     const load = async () => {
-      setListLoading(true);
-      setSlips([]);
-      setDetailCache({});
-      setSelectedSlipName(null);
-      setMobileView("list");
-
+      setLoading(true);
+      setSlip(null);
       try {
-        const list = await getSalarySlipsByEmployee(
-  payrollEntryId,
-  employee.employee
-);
+        const list = await getSalarySlipsByEmployee(payrollEntryId, employee.employee);
         if (!list?.length) return;
 
+        // Sort by posting_date desc, pick latest
         const sorted = [...list].sort(
-          (a: SlipListItem, b: SlipListItem) =>
-            new Date(b.posting_date).getTime() - new Date(a.posting_date).getTime()
+          (a, b) => new Date(b.posting_date).getTime() - new Date(a.posting_date).getTime(),
         );
 
-      setSlips(sorted);
-
-setSelectedSlipName((prev) => {
-  if (prev && sorted.some((s) => s.name === prev)) {
-    return prev;
-  }
-
-  return sorted[0].name;
-});
-
-        sorted.forEach(async (item: SlipListItem) => {
-          try {
-            const detail = await getSalarySlipDetail(item.name);
-            if (detail) {
-              setDetailCache((prev) => ({ ...prev, [item.name]: detail }));
-            }
-          } catch {}
-        });
+        const detail = await getSalarySlipDetail(sorted[0].name);
+        if (detail) setSlip(detail);
+      } catch (err) {
+        console.error("Failed to load salary slip", err);
       } finally {
-        setListLoading(false);
+        setLoading(false);
       }
     };
 
     load();
-  }, [employee.employee]);
+  }, [employee.employee, payrollEntryId]);
 
-  const handleSelect = useCallback(
-    async (name: string) => {
-      setSelectedSlipName(name);
-     
+  // ── Actions ───────────────────────────────────────────────────────────────
 
-      if (detailCache[name]) return;
-
-      setDetailLoading(true);
-      try {
-        const detail = await getSalarySlipDetail(name);
-        if (detail) {
-          setDetailCache((prev) => ({ ...prev, [name]: detail }));
-        }
-      } finally {
-        setDetailLoading(false);
-      }
-    },
-    [detailCache]
-  );
-
-  const handleDownload = useCallback(
-    async (name: string, slipData?: SalarySlip) => {
-      setPdfLoading(true);
-      try {
-        const blob = await getSalarySlipPdf(name);
-        const slip = slipData ?? detailCache[name];
-        downloadSalarySlipPdf(
-          blob,
-          `salary-slip-${slip?.employee ?? name}-${slip?.start_date ?? "unknown"}.pdf`
-        );
-      } catch (err) {
-        console.error("Download failed", err);
-      } finally {
-        setPdfLoading(false);
-      }
-    },
-    [detailCache]
-  );
-
-  const handleView = useCallback(async () => {
-    if (!selectedSlipName) return;
+  const handleDownload = useCallback(async () => {
+    if (!slip) return;
     setPdfLoading(true);
     try {
-      const blob = await getSalarySlipPdf(selectedSlipName);
+      const blob = await getSalarySlipPdf(slip.name);
+      downloadSalarySlipPdf(
+        blob,
+        `salary-slip-${slip.employee}-${slip.start_date}.pdf`,
+      );
+    } catch (err) {
+      console.error("Download failed", err);
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [slip]);
+
+  const handleView = useCallback(async () => {
+    if (!slip) return;
+    setPdfLoading(true);
+    try {
+      const blob = await getSalarySlipPdf(slip.name);
       viewSalarySlipPdf(blob);
     } catch (err) {
       console.error("View failed", err);
     } finally {
       setPdfLoading(false);
     }
-  }, [selectedSlipName]);
+  }, [slip]);
 
   const handlePrint = useCallback(async () => {
-    if (!selectedSlipName) return;
+    if (!slip) return;
     setPdfLoading(true);
     try {
-      const blob = await getSalarySlipPdf(selectedSlipName);
-      const url = URL.createObjectURL(blob);
+      const blob = await getSalarySlipPdf(slip.name);
+      const url    = URL.createObjectURL(blob);
       const iframe = document.createElement("iframe");
       iframe.style.display = "none";
       iframe.src = url;
@@ -176,31 +130,17 @@ setSelectedSlipName((prev) => {
     } finally {
       setPdfLoading(false);
     }
-  }, [selectedSlipName]);
+  }, [slip]);
 
-  if (listLoading) {
-    return (
-      <div
-        className="flex rounded-xl overflow-hidden"
-        style={{ border: "1px solid var(--border)", minHeight: 500 }}
-      >
-        <div className="w-64 shrink-0 border-r" style={{ borderColor: "var(--border)" }}>
-          <ListSkeleton />
-        </div>
-        <div className="flex-1">
-          <DetailSkeleton />
-        </div>
-      </div>
-    );
-  }
+  // ── Render ────────────────────────────────────────────────────────────────
 
-  if (!slips.length) {
-    return <EmptyList employeeName={employee.employee_name} />;
-  }
+  if (loading) return <DetailSkeleton />;
+
+  if (!slip) return <EmptyList employeeName={employee.employee_name} />;
 
   return (
     <div
-      className="flex rounded-xl overflow-hidden"
+      className="rounded-xl overflow-hidden"
       style={{
         border: "1px solid var(--border)",
         background: "var(--card)",
@@ -209,48 +149,13 @@ setSelectedSlipName((prev) => {
         maxHeight: 900,
       }}
     >
-      <div
-        className="shrink-0 border-r overflow-hidden"
-        style={{
-          width: 256,
-          borderColor: "var(--border)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <SalarySlipList
-          slips={slips}
-          detailCache={detailCache}
-          selectedSlipName={selectedSlipName}
-          latestSlipName={latestSlipName}
-          onSelect={handleSelect}
-          onDownload={handleDownload}
-        />
-      </div>
-
-      <div
-        className="flex-1 overflow-hidden"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {detailLoading ? (
-          <DetailSkeleton />
-        ) : selectedSlip ? (
-          <DetailPanel
-            slip={selectedSlip}
-            onDownload={() => handleDownload(selectedSlipName!, selectedSlip)}
-            onView={handleView}
-            onPrint={handlePrint}
-            pdfLoading={pdfLoading}
-            onBack={() => setMobileView("list")}
-            isMobile={mobileView === "detail"}
-          />
-        ) : (
-          <EmptyDetail />
-        )}
-      </div>
+      <DetailPanel
+        slip={slip}
+        onDownload={handleDownload}
+        onView={handleView}
+        onPrint={handlePrint}
+        pdfLoading={pdfLoading}
+      />
     </div>
   );
 };
