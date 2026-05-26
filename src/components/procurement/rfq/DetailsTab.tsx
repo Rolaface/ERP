@@ -26,6 +26,7 @@ interface DetailsTabProps {
   onItemChange: (idx: number, field: keyof ItemRow, value: any) => void;
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
+  isViewMode?: boolean;
 }
 
 export const DetailsTab: React.FC<DetailsTabProps> = ({
@@ -45,6 +46,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
   onItemChange,
   onAddItem,
   onRemoveItem,
+  isViewMode = false
 }) => {
   const ITEMS_PER_PAGE = 4;
 
@@ -87,6 +89,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
             <DatePickerInput
               label="Request Date"
               name="requestDate"
+              disabled={isViewMode}
               value={requestDate}
               onChange={(name, value) => onRequestDateChange(value)}
             />
@@ -97,6 +100,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
             <DatePickerInput
               label="Quote Deadline"
               name="quoteDeadline"
+              disabled={isViewMode}
               value={quoteDeadline}
               onChange={(name, value) => onQuoteDeadlineChange(value)}
             />
@@ -151,6 +155,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                             value={sup.supplierName}
                             selectedId={sup.supplier}
                             required
+                            disabled={isViewMode}
                             onChange={async (selected: any) => {
                               onSupplierChange(
                                 i,
@@ -181,7 +186,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                                   "email",
                                   primaryContact?.email ?? "",
                                 );
-                              } catch {}
+                              } catch { }
                             }}
                           />
                         </div>
@@ -212,20 +217,21 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         <input
                           type="checkbox"
                           checked={sup.sendEmail}
+                          disabled={isViewMode}
                           onChange={(e) =>
                             onSupplierChange(i, "sendEmail", e.target.checked)
                           }
                         />
                       </td>
 
-                      {/* Remove */}
+
+                      {/* Remove button in supplier row */}
                       <td className="px-2 py-1 text-center">
-                        <Button
-                          variant="ghost"
-                          onClick={() => onRemoveSupplier(i)}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
+                        {!isViewMode && (
+                          <Button variant="ghost" onClick={() => onRemoveSupplier(i)}>
+                            <Trash2 size={16} />
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -235,14 +241,15 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
 
             {/* Suppliers Footer */}
             <div className="mt-3 flex justify-between items-center gap-3">
-              <button
-                type="button"
-                onClick={onAddSupplier}
-                className="px-4 py-1.5 bg-primary text-white rounded text-xs flex items-center gap-1"
-              >
-                <Plus size={14} /> Add Supplier
-              </button>
-
+              {!isViewMode && (
+                <button
+                  type="button"
+                  onClick={onAddSupplier}
+                  className="px-4 py-1.5 bg-primary text-white rounded text-xs flex items-center gap-1"
+                >
+                  <Plus size={14} /> Add Supplier
+                </button>
+              )}
               {(suppliers.length > ITEMS_PER_PAGE || supPage > 0) && (
                 <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
                   <span className="text-[11px] text-muted whitespace-nowrap">
@@ -311,6 +318,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                             value={it.itemName}
                             required
                             selectedId={it.itemCode}
+                            disabled={isViewMode}
                             onChange={(detail: any) => {
                               onItemChange(i, "itemCode", detail.id ?? "");
                               onItemChange(
@@ -352,6 +360,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         <NumericInput
                           name="quantity"
                           placeholder="1"
+                          disabled={isViewMode} 
                           value={it.quantity ?? ""}
                           onChange={(value) =>
                             onItemChange(i, "quantity", value)
@@ -375,6 +384,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         <WarehouseSelect
                           compact
                           value={it.warehouse}
+                          disabled={isViewMode} 
                           onChange={(e) =>
                             onItemChange(i, "warehouse", e.target.value)
                           }
@@ -385,11 +395,14 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         />
                       </td>
 
-                      {/* Remove */}
+
+                      {/* Remove button in item row */}
                       <td className="px-2 py-1 text-center">
-                        <Button variant="ghost" onClick={() => onRemoveItem(i)}>
-                          <Trash2 size={16} />
-                        </Button>
+                        {!isViewMode && (
+                          <Button variant="ghost" onClick={() => onRemoveItem(i)}>
+                            <Trash2 size={16} />
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -399,13 +412,15 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
 
             {/* Items Footer */}
             <div className="mt-3 flex justify-between items-center gap-3">
-              <button
-                type="button"
-                onClick={onAddItem}
-                className="px-4 py-1.5 bg-primary text-white rounded text-xs flex items-center gap-1"
-              >
-                <Plus size={14} /> Add Item
-              </button>
+              {!isViewMode && (
+                <button
+                  type="button"
+                  onClick={onAddItem}
+                  className="px-4 py-1.5 bg-primary text-white rounded text-xs flex items-center gap-1"
+                >
+                  <Plus size={14} /> Add Item
+                </button>
+              )}
 
               {(items.length > ITEMS_PER_PAGE || itemPage > 0) && (
                 <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">

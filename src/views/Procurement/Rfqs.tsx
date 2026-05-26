@@ -92,6 +92,11 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
     });
   };
 
+  const handleView = (rfq: RFQ, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    openRfqModal(rfq.name, true, { isViewMode: true });
+  };
+
   const handleDelete = async (rfq: RFQ, e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -166,6 +171,14 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
       align: "center",
       render: (o) => (
         <ActionGroup>
+          <PermissionGate module={RFQ_MODULE} action="read">
+            <ActionButton
+              type="view"
+              onClick={(e) => handleView(o, e)}
+              iconOnly
+            />
+          </PermissionGate>
+
           <PermissionGate module={RFQ_MODULE} action="write">
             <ActionButton
               type="edit"
