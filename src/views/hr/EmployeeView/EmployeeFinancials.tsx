@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  Banknote, Shield, FileText, TrendingDown, CreditCard,
+  Banknote, Shield, FileText, TrendingDown, CreditCard, Info,
 } from "lucide-react";
 import { useAuth }                  from "../../../context/AuthContext";
 import { getEmployeeById }          from "../../../api/employeeapi";
@@ -60,6 +60,8 @@ const DUMMY_LOANS = [
   },
 ];
 
+// ─── Insurance Tab ────────────────────────────────────────────────────────────
+
 const InsuranceTab: React.FC = () => (
   <div className="space-y-4 p-4">
     {DUMMY_INSURANCE.map((ins) => (
@@ -89,10 +91,10 @@ const InsuranceTab: React.FC = () => (
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Policy No",   value: ins.policyNo },
-            { label: "Coverage",    value: `₹ ${ins.coverage.toLocaleString("en-IN")}` },
-            { label: "Premium/yr",  value: `₹ ${ins.premium.toLocaleString("en-IN")}` },
-            { label: "Valid Till",  value: ins.validTill },
+            { label: "Policy No",  value: ins.policyNo },
+            { label: "Coverage",   value: `₹ ${ins.coverage.toLocaleString("en-IN")}` },
+            { label: "Premium/yr", value: `₹ ${ins.premium.toLocaleString("en-IN")}` },
+            { label: "Valid Till", value: ins.validTill },
           ].map((f) => (
             <div key={f.label}>
               <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-0.5">
@@ -107,18 +109,134 @@ const InsuranceTab: React.FC = () => (
   </div>
 );
 
+// ─── Income Tax — Slab Data ───────────────────────────────────────────────────
+
+const NEW_REGIME_SLABS = [
+  { range: "Up to ₹ 3,00,000",           rate: "NIL", from: 0,       to: 300000   },
+  { range: "₹ 3,00,001 – ₹ 7,00,000",   rate: "5%",  from: 300001,  to: 700000   },
+  { range: "₹ 7,00,001 – ₹ 10,00,000",  rate: "10%", from: 700001,  to: 1000000  },
+  { range: "₹ 10,00,001 – ₹ 12,00,000", rate: "15%", from: 1000001, to: 1200000  },
+  { range: "₹ 12,00,001 – ₹ 15,00,000", rate: "20%", from: 1200001, to: 1500000  },
+  { range: "Above ₹ 15,00,000",          rate: "30%", from: 1500001, to: Infinity },
+];
+
+const OLD_REGIME_SLABS = [
+  { range: "Up to ₹ 2,50,000",          rate: "NIL", from: 0,       to: 250000   },
+  { range: "₹ 2,50,001 – ₹ 5,00,000",  rate: "5%",  from: 250001,  to: 500000   },
+  { range: "₹ 5,00,001 – ₹ 10,00,000", rate: "20%", from: 500001,  to: 1000000  },
+  { range: "Above ₹ 10,00,000",         rate: "30%", from: 1000001, to: Infinity },
+];
+
+const RATE_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
+  "NIL": { bg: "bg-green-50",  text: "text-green-700",  bar: "bg-green-400"  },
+  "5%":  { bg: "bg-blue-50",   text: "text-blue-700",   bar: "bg-blue-400"   },
+  "10%": { bg: "bg-yellow-50", text: "text-yellow-700", bar: "bg-yellow-400" },
+  "15%": { bg: "bg-orange-50", text: "text-orange-600", bar: "bg-orange-400" },
+  "20%": { bg: "bg-red-50",    text: "text-red-600",    bar: "bg-red-400"    },
+  "30%": { bg: "bg-rose-100",  text: "text-rose-700",   bar: "bg-rose-500"   },
+};
+
+const TaxSlabTab: React.FC<{ taxableIncome: number; regime: "new" | "old" }> = ({
+  taxableIncome,
+  regime,
+}) => {
+  const slabs = regime === "new" ? NEW_REGIME_SLABS : OLD_REGIME_SLABS;
+  const maxIncome = regime === "new" ? 1500000 : 1000000;
+
+  const activeSlab = slabs.findIndex(
+    (s) => taxableIncome >= s.from && taxableIncome <= s.to
+  );
+
+  const barWidth = (slab: (typeof slabs)[0]) => {
+    if (slab.to === Infinity) return 100;
+    return Math.min(Math.round((slab.to / maxIncome) * 100), 100);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div
+        className="flex items-start gap-2 rounded-xl px-4 py-3 text-xs"
+        style={{
+          background: "color-mix(in srgb, var(--primary) 8%, transparent)",
+          color: "var(--primary)",
+        }}
+      >
+        <Info size={14} className="mt-0.5 shrink-0" />
+        <span>
+          Tax slabs for <strong>FY 2025-26</strong> under the{" "}
+          <strong>{regime === "new" ? "New" : "Old"} Tax Regime</strong>.
+          Your taxable income of{" "}
+          <strong>₹ {taxableIncome.toLocaleString("en-IN")}</strong> falls in
+          the highlighted slab.
+        </span>
+      </div>
+
+      {slabs.map((slab, idx) => {
+        const colors = RATE_COLORS[slab.rate] ?? RATE_COLORS["30%"];
+        const isActive = idx === activeSlab;
+
+        return (
+          <div
+            key={slab.range}
+            className={`rounded-xl border transition-all bg-[var(--card)] overflow-hidden ${
+              isActive
+                ? "border-[var(--primary)] shadow-sm"
+                : "border-[var(--border)]"
+            }`}
+          >
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                {isActive && (
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: "var(--primary)" }}
+                  />
+                )}
+                <p
+                  className={`text-sm font-semibold ${
+                    isActive ? "text-[var(--text)]" : "text-[var(--muted)]"
+                  }`}
+                >
+                  {slab.range}
+                </p>
+              </div>
+              <span
+                className={`text-xs font-bold px-3 py-1 rounded-full ${colors.bg} ${colors.text}`}
+              >
+                {slab.rate}
+              </span>
+            </div>
+            <div className="px-4 pb-3">
+              <div className="h-1.5 rounded-full bg-[var(--row-hover)]">
+                <div
+                  className={`h-full rounded-full ${colors.bar} transition-all`}
+                  style={{ width: `${barWidth(slab)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ─── Income Tax Tab ───────────────────────────────────────────────────────────
+
 const IncomeTaxTab: React.FC = () => {
-  const [subtab, setSubtab] = useState<"overview" | "form16" | "report">("overview");
+  const [subtab, setSubtab] = useState<"overview" | "slabs" | "form16" | "report">("overview");
   const d = DUMMY_TAX;
   const fmtInr = (n: number) => `₹ ${n.toLocaleString("en-IN")}`;
+  const regime: "new" | "old" = d.regime === "New Regime" ? "new" : "old";
 
   return (
     <div className="p-4 space-y-4">
       <div className="flex gap-2 flex-wrap">
         {[
-          { id: "overview" as const, label: "Overview"    },
-          { id: "form16"   as const, label: "Form 16"     },
-          { id: "report"   as const, label: "Tax Report"  },
+          { id: "overview" as const, label: "Overview"   },
+          { id: "slabs"    as const, label: "Tax Slabs"  },
+          { id: "form16"   as const, label: "Form 16"    },
+          { id: "report"   as const, label: "Tax Report" },
         ].map((s) => (
           <button
             key={s.id}
@@ -138,12 +256,12 @@ const IncomeTaxTab: React.FC = () => {
       {subtab === "overview" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
-            { label: "PAN",            value: d.pan                  },
-            { label: "Tax Regime",     value: d.regime               },
-            { label: "Total Income",   value: fmtInr(d.totalIncome)  },
-            { label: "Taxable Income", value: fmtInr(d.taxableIncome)},
-            { label: "Tax Liability",  value: fmtInr(d.taxLiability) },
-            { label: "TDS Paid",       value: fmtInr(d.tdsPaid)      },
+            { label: "PAN",            value: d.pan                   },
+            { label: "Tax Regime",     value: d.regime                },
+            { label: "Total Income",   value: fmtInr(d.totalIncome)   },
+            { label: "Taxable Income", value: fmtInr(d.taxableIncome) },
+            { label: "Tax Liability",  value: fmtInr(d.taxLiability)  },
+            { label: "TDS Paid",       value: fmtInr(d.tdsPaid)       },
           ].map((f) => (
             <div
               key={f.label}
@@ -156,6 +274,10 @@ const IncomeTaxTab: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {subtab === "slabs" && (
+        <TaxSlabTab taxableIncome={d.taxableIncome} regime={regime} />
       )}
 
       {subtab === "form16" && (
@@ -207,6 +329,8 @@ const IncomeTaxTab: React.FC = () => {
   );
 };
 
+// ─── Loan & Advance Tab ───────────────────────────────────────────────────────
+
 const LoanAdvanceTab: React.FC = () => (
   <div className="p-4 space-y-4">
     {DUMMY_LOANS.map((loan) => (
@@ -236,9 +360,9 @@ const LoanAdvanceTab: React.FC = () => (
         </div>
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Total Amount",  value: `₹ ${loan.amount.toLocaleString("en-IN")}` },
-            { label: "Outstanding",   value: `₹ ${loan.outstanding.toLocaleString("en-IN")}` },
-            { label: "Monthly EMI",   value: `₹ ${loan.emi.toLocaleString("en-IN")}` },
+            { label: "Total Amount", value: `₹ ${loan.amount.toLocaleString("en-IN")}` },
+            { label: "Outstanding",  value: `₹ ${loan.outstanding.toLocaleString("en-IN")}` },
+            { label: "Monthly EMI",  value: `₹ ${loan.emi.toLocaleString("en-IN")}` },
           ].map((f) => (
             <div key={f.label}>
               <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-0.5">
@@ -278,11 +402,11 @@ const LoanAdvanceTab: React.FC = () => (
 // ─── Tab config ───────────────────────────────────────────────────────────────
 
 const FINANCIALS_TABS = [
-  { id: "compensation", label: "Compensation",  icon: <Banknote size={14} /> },
-  { id: "insurance",    label: "Insurance",     icon: <Shield     size={14} /> },
-  { id: "salary-slip",  label: "Salary Slip",   icon: <FileText   size={14} /> },
-  { id: "income-tax",   label: "Income Tax",    icon: <TrendingDown size={14} /> },
-  { id: "loan",         label: "Loan & Advance",icon: <CreditCard  size={14} /> },
+  { id: "compensation", label: "Compensation",   icon: <Banknote size={14} /> },
+  { id: "insurance",    label: "Insurance",      icon: <Shield size={14} /> },
+  { id: "salary-slip",  label: "Salary Slip",    icon: <FileText size={14} /> },
+  { id: "income-tax",   label: "Income Tax",     icon: <TrendingDown size={14} /> },
+  { id: "loan",         label: "Loan & Advance", icon: <CreditCard size={14} /> },
 ];
 
 const unwrap = (res: any): any =>
@@ -291,17 +415,14 @@ const unwrap = (res: any): any =>
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const EmployeeFinancials: React.FC = () => {
-  const { user }       = useAuth();
-  const baseCurrency   = useCompanyStore((s) => s.baseCurrency);
+  const { user }     = useAuth();
+  const baseCurrency = useCompanyStore((s) => s.baseCurrency);
   const [activeTab, setActiveTab] = useState("compensation");
 
-  // ── Employee record (needed for CompensationTab) ──────────────────────────
-  const [emp,            setEmp]            = useState<any>(null);
-  const [empLoading,     setEmpLoading]     = useState(true);
-
-  // ── Salary slips (needed for SalarySlipTable) ─────────────────────────────
-  const [slips,          setSlips]          = useState<SalarySlip[]>([]);
-  const [slipsLoading,   setSlipsLoading]   = useState(true);
+  const [emp,          setEmp]          = useState<any>(null);
+  const [empLoading,   setEmpLoading]   = useState(true);
+  const [slips,        setSlips]        = useState<SalarySlip[]>([]);
+  const [slipsLoading, setSlipsLoading] = useState(true);
 
   useEffect(() => {
     if (!user?.employeeId) {
@@ -310,7 +431,6 @@ const EmployeeFinancials: React.FC = () => {
       return;
     }
 
-    // Fetch employee record
     const loadEmp = async () => {
       try {
         setEmpLoading(true);
@@ -323,28 +443,23 @@ const EmployeeFinancials: React.FC = () => {
       }
     };
 
-    // Fetch salary slips
-  const loadSlips = async () => {
-  try {
-    setSlipsLoading(true);
-
-    const { data } =
-      await getSalarySlipsByEmployeeOnly(user.employeeId!);
-
-    setSlips(data || []);
-  } catch {
-    setSlips([]);
-  } finally {
-    setSlipsLoading(false);
-  }
-};
+    const loadSlips = async () => {
+      try {
+        setSlipsLoading(true);
+        const { data } = await getSalarySlipsByEmployeeOnly(user.employeeId!);
+        setSlips(data || []);
+      } catch {
+        setSlips([]);
+      } finally {
+        setSlipsLoading(false);
+      }
+    };
 
     loadEmp();
     loadSlips();
   }, [user?.employeeId]);
 
   if (empLoading) return <AppSkeleton />;
-
 
   const currency = emp
     ? (fmt(emp.salary_currency) || baseCurrency || "")
@@ -359,8 +474,6 @@ const EmployeeFinancials: React.FC = () => {
       }
     : {};
 
-  // ─── Render ───────────────────────────────────────────────────────────────
-
   return (
     <div className="h-full flex flex-col">
       <AppSubTabs
@@ -372,19 +485,13 @@ const EmployeeFinancials: React.FC = () => {
       <div className="flex-1 overflow-y-auto mt-5">
 
         {activeTab === "compensation" && (
-          <CompensationTab
-            emp={empForComp}
-            currency={currency}
-          />
+          <CompensationTab emp={empForComp} currency={currency} />
         )}
 
         {activeTab === "insurance" && <InsuranceTab />}
 
         {activeTab === "salary-slip" && (
-          <SalarySlipTable
-            slips={slips}
-            loading={slipsLoading}
-          />
+          <SalarySlipTable slips={slips} loading={slipsLoading} />
         )}
 
         {activeTab === "income-tax" && <IncomeTaxTab />}

@@ -136,15 +136,7 @@ focus:scale-[1.01]"
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={() => setRememberMe(!rememberMe)}
-                  className="w-4 h-4 accent-[var(--primary)]"
-                />
-                
-              </div>
+              
             </div>
 
             {/* Button */}
