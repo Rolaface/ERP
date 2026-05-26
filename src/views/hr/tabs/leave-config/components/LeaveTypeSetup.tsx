@@ -126,6 +126,17 @@ export function LeaveTypeSetup() {
         render: (row) => (
           <ActionGroup>
             <ActionButton
+              type="view"
+              iconOnly
+              onClick={() => 
+                openLeaveTypeModal(
+                  { ...row, _isView: true } as any,  
+                  true,                             
+                  { onSuccess: fetchAll }           
+                )
+              }
+            />
+            <ActionButton
               type="edit"
               iconOnly
               onClick={() => openLeaveTypeModal(row, true, { onSuccess: fetchAll })}

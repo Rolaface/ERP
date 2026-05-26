@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
 import PurchaseInvoiceView from "../../views/Procurement/PurchaseInvoiceView";
-// Shared UI Table Components
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openPaymentEntryModal } from "../../store/modalStore";
@@ -32,7 +31,7 @@ import PdfPreviewModal from ".././Sales/PdfPreviewModal";
 import PurchaseInvoiceDetailModal, {
   type PurchaseInvoiceDetail,
 } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
-
+import { openScanPIModal } from "../../store/modalStore";
 import {
   REFRESH_KEYS,
   useDataRefreshStore,
@@ -41,10 +40,12 @@ import { fireManagedSwal } from "../../utils/swalManager";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 
+
 interface Purchaseinvoice {
   pId: string;
   supplier: string;
   podate: string;
+  currency?: string;
   amount: number;
   grandTotal: number;
   grandTotalWithTax: number;
@@ -171,6 +172,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         registrationType: pi.registrationType,
         grandTotalWithTax: pi.grandTotalWithTax,
         outstanding_amount: pi.outstanding_amount,
+        currency: pi.currency
       }));
 
       setOrders(mappedInvoice);
@@ -396,6 +398,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
             status: pi.status,
             registrationType: pi.registrationType,
             outstanding_amount: pi.outstanding_amount,
+            currency: pi.currency,
           }));
           allData = [...allData, ...mapped];
           totalPagesLocal = res.pagination?.total_pages || 1;
@@ -543,6 +546,18 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       tooltip: (o) => o.deliveryDate || "—",
     },
     {
+      key: "currency",
+      header: "Currency",
+      align: "center",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">
+            {o.currency || "-"}
+          </span>
+        </div>
+      )
+    },
+    {
       key: "amount",
       header: "Amount",
       align: "center",
@@ -624,6 +639,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               : {})}
             customActions={[
               { label: "View PDF", onClick: () => handleOpenPDF(o) },
+              {
+                label: "Scan PI",
+                onClick: () => openScanPIModal(o.pId),
+              },
 
               // Make Payment — needs Payment Entry create + outstanding > 0
               ...(can(PAYMENT_MODULE, "create") && Number(o.outstanding_amount || 0) > 0
@@ -634,7 +653,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               ...(can(PI_MODULE, "write")
                 ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map((status) => ({
                   label: status === "Submitted" ? "Approve" : status === "Cancelled" ? "Cancel" : status,
-                  
+
                   danger: status === "Cancelled" || status === "Debit Note Issued",
                   onClick: () => handleStatusChange(o.pId, status),
                 }))

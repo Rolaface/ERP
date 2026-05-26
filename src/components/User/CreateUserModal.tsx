@@ -231,7 +231,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
           className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""
             }`}
         >
-          {isSubmitting ? "Creating..." : isEditMode ? "Update User" : "Create User"}
+          {isSubmitting ? "Creating..." : isEditMode ? "Update" : "Save"}
         </button>
       </div>
     </div>

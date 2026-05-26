@@ -249,10 +249,10 @@ const BankAccountSetup: React.FC = () => {
         <ActionGroup>
           <PermissionGate module={BANK_ACCOUNT_MODULE} action="write">
             <ActionButton
-              type="edit"
+              type="view"
               onClick={() =>
                 openBankAccountModal(row, true, {
-                  onSuccess: () => fetchAccounts(),
+                  isViewMode: true,
                 })
               }
               iconOnly

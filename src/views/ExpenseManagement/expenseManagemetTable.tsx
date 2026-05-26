@@ -13,33 +13,38 @@ import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import { showApiError, showSuccess, closeSwal } from "../../utils/alert";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { openExpenseModal } from "../../store/modalStore";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { getExpenseClaims, getExpenseClaimById, deleteExpenseClaim } from "../../api/expenseClaimApi";
+import { useAuth } from "../../context/AuthContext";
+import { useHRView } from "../../hooks/permission/useHRView";
 
-const EXPENSE_MODULE = "Expense History";
+const EXPENSE_MODULE = "Expense Claim";
 
 interface ExpenseSummary {
   id: string;
+  approver: string;
   date: string;
   category: string;
   amount: number;
   currency: string;
   status: string;
   description?: string;
+  name: string;
 }
 
 const statusOptions = [
-  { label: "Draft",     value: "Draft" },
-  { label: "Approved",  value: "Approved" },
-  { label: "Paid",      value: "Paid" },
+  { label: "Draft", value: "Draft" },
+  { label: "Approved", value: "Approved" },
+  { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
 ];
 const formatDate = (date: string) => {
   if (!date) return "";
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
   const [year, month, day] = date.split("T")[0].split("-").map(Number);
   return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
 };
@@ -47,33 +52,51 @@ const formatDate = (date: string) => {
 const ExpenseHistory: React.FC = () => {
   const mountedRef = useRef(true);
   const { can } = usePermission();
+  const { user } = useAuth();
+  const { viewMode } = useHRView();
+  const isEmployeeView = viewMode === "employee";
 
-  const [expenses,      setExpenses]      = useState<ExpenseSummary[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseSummary[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching,    setIsFetching]    = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   const [filters, setFilters] = useState<{
-    status?:    string;
-    category?:  string;
+    status?: string;
+    category?: string;
     from_date?: string;
-    to_date?:   string;
+    to_date?: string;
   }>({});
 
-  const [page,       setPage]       = useState(1);
-  const [pageSize,   setPageSize]   = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy,     setSortBy]     = useState("date");
-  const [sortOrder,  setSortOrder]  = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   useEffect(() => { setPage(1); }, [searchTerm, filters]);
 
-const fetchExpenses = useCallback(async () => {
+  const fetchExpenses = useCallback(async () => {
     if (!mountedRef.current) return;
     setIsFetching(true);
     try {
-      
+      const res = await getExpenseClaims(searchTerm, page, pageSize,
+        isEmployeeView ? (user?.employeeId ?? undefined) : undefined,
+      );
+      if (!mountedRef.current) return;
+      setExpenses(res.data.map((claim: any) => ({
+        id: claim.name,
+        approver: claim.expense_approver_name ?? "",
+        name: claim.employee_name,
+        date: claim.posting_date,
+        category: claim.expense_type ?? "",
+        amount: claim.total_claimed_amount ?? 0,
+        currency: claim.currency ?? "",
+        status: claim.approval_status,
+      })));
+      setTotalPages(res.pagination.total_pages);
+      setTotalItems(res.pagination.total);
     } catch (err) {
       showApiError(err);
       setExpenses([]);
@@ -85,7 +108,8 @@ const fetchExpenses = useCallback(async () => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
+}, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
+
 
   useEffect(() => {
     mountedRef.current = true;
@@ -96,7 +120,8 @@ const fetchExpenses = useCallback(async () => {
   useEffect(() => {
     if (isInitialLoad) return;
     fetchExpenses();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
+}, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
+
 
 
   const handleOpenAdd = () => {
@@ -108,41 +133,51 @@ const fetchExpenses = useCallback(async () => {
     });
   };
 
-  const handleOpenEdit = (exp: ExpenseSummary) => {
-    const formData = {
-      claim_title:    exp.id,
-      category:       exp.category,
-      date_incurred:  exp.date.split("T")[0],
-      payment_method: "",
-      amount:         exp.amount,
-      currency:       exp.currency,
-      receipt:        null,
-      notes:          exp.description ?? "",
-      acknowledged:   true,
-    };
-    openExpenseModal(formData, true, {
-      onSuccess: async () => {
-        showSuccess("Expense updated successfully");
-        fetchExpenses();
-      },
-    });
+  const handleOpenEdit = async (exp: ExpenseSummary) => {
+    try {
+      const res = await getExpenseClaimById(exp.id);
+      closeSwal();
+      const claim = res.data;
+      const formData = {
+        id: claim.name,
+        claim_title: claim.expenses?.[0]?.description ?? "",
+        category: claim.expenses?.[0]?.expense_type ?? "",
+        date_incurred: claim.posting_date,
+        amount: claim.total_claimed_amount,
+        currency: claim.currency,
+        employee_name: claim.employee_name,
+        employee: claim.employee,
+        expense_approver: claim.expense_approver,
+        receipt: null,
+        remarks: claim.remark ?? "",
+      };
+      openExpenseModal(formData, true, {
+        onSuccess: async () => {
+          showSuccess("Expense updated successfully");
+          fetchExpenses();
+        },
+      });
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
   };
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     const result = await fireManagedSwal({
-      icon:               "warning",
-      title:              "Are you sure?",
-      text:               `Delete expense ${id}?`,
-      showCancelButton:   true,
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete expense ${id}?`,
+      showCancelButton: true,
       confirmButtonColor: "#ef4444",
-      cancelButtonColor:  "#6b7280",
-      confirmButtonText:  "Yes, delete",
-      reverseButtons:     true,
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+      reverseButtons: true,
     });
     if (!result.isConfirmed) return;
     try {
-      showLoading("Deleting expense...");
+      await deleteExpenseClaim(id);
       setExpenses((prev) => prev.filter((exp) => exp.id !== id));
       closeSwal();
       showSuccess("Expense deleted successfully");
@@ -154,7 +189,6 @@ const fetchExpenses = useCallback(async () => {
 
   const handleExportExcel = async () => {
     try {
-      showLoading("Exporting expenses...");
       if (!expenses.length) {
         closeSwal();
         showApiError("No expenses to export");
@@ -162,12 +196,12 @@ const fetchExpenses = useCallback(async () => {
       }
       const worksheet = XLSX.utils.json_to_sheet(
         expenses.map((exp) => ({
-          "Expense ID": exp.id,
-          "Date":       formatDate(exp.date),
-          "Category":   exp.category,
-          "Amount":     exp.amount,
-          "Currency":   exp.currency,
-          "Status":     exp.status,
+          "Approver": exp.approver,
+          "Date": formatDate(exp.date),
+          "Category": exp.category,
+          "Amount": exp.amount,
+          "Currency": exp.currency,
+          "Status": exp.status,
         }))
       );
       const workbook = XLSX.utils.book_new();
@@ -189,34 +223,42 @@ const fetchExpenses = useCallback(async () => {
   const columns: Column<ExpenseSummary>[] = useMemo(
     () => [
       {
-        key:      "id",
-        header:   "Expense ID",
-        align:    "left",
-        sortable: true,
-        render:   (exp) => (
+        key: "approver",
+        header: "Approver",
+        align: "left",
+        render: (exp) => (
           <div className="py-1.5">
-            <span className="block font-medium">{exp.id}</span>
+            <span className="block font-medium">{exp.approver}</span>
           </div>
         ),
-        tooltip: (exp) => `Expense ID: ${exp.id}`,
+        tooltip: (exp) => `Expense Approver: ${exp.approver}`,
       },
       {
-        key:      "date",
-        header:   "Date",
-        align:    "center",
-        sortable: true,
-        render:   (exp) => (
+        key: "name",
+        header: "EMP Name",
+        align: "left",
+        render: (exp) => (
+          <div className="py-1.5">
+            <span className="block font-medium">{exp.name}</span>
+          </div>
+        ),
+        tooltip: (exp) => `Employee Name: ${exp.name}`,
+      },
+      {
+        key: "date",
+        header: "Date",
+        align: "center",
+        render: (exp) => (
           <div className="py-1.5">
             <span className="block">{formatDate(exp.date)}</span>
           </div>
         ),
       },
       {
-        key:      "category",
-        header:   "Category",
-        align:    "left",
-        sortable: true,
-        render:   (exp) => (
+        key: "category",
+        header: "Category",
+        align: "left",
+        render: (exp) => (
           <div className="py-1.5">
             <span className="block">{exp.category}</span>
           </div>
@@ -224,23 +266,22 @@ const fetchExpenses = useCallback(async () => {
         tooltip: (exp) => `Category: ${exp.category}`,
       },
       {
-        key:      "amount",
-        header:   "Amount",
-        align:    "center",
-        sortable: true,
-        render:   (exp) => (
+        key: "amount",
+        header: "Amount",
+        align: "center",
+        render: (exp) => (
           <div className="py-1.5">
             <span className="block whitespace-nowrap">
-              {exp.amount.toLocaleString()} {exp.currency}
+              {(exp.amount ?? 0).toLocaleString()} {exp.currency}
             </span>
           </div>
         ),
-        tooltip: (exp) => `Amount: ${exp.amount.toLocaleString()} ${exp.currency}`,
+        tooltip: (exp) => `Amount: ${(exp.amount ?? 0).toLocaleString()} ${exp.currency}`,
       },
       {
-        key:    "status",
+        key: "status",
         header: "Status",
-        align:  "center",
+        align: "center",
         render: (exp) => (
           <div className="py-1.5">
             <StatusBadge status={exp.status} />
@@ -248,9 +289,9 @@ const fetchExpenses = useCallback(async () => {
         ),
       },
       {
-        key:    "actions",
+        key: "actions",
         header: "Actions",
-        align:  "center",
+        align: "center",
         render: (exp) => (
           <div className="flex items-center justify-center gap-2">
             <ActionButton
@@ -261,7 +302,7 @@ const fetchExpenses = useCallback(async () => {
             <PermissionGate module={EXPENSE_MODULE} action="write">
               <ActionButton
                 type="edit"
-                onClick={(e) => { e.stopPropagation(); handleOpenEdit(exp); }}
+                onClick={() => { handleOpenEdit(exp); }}
                 iconOnly
                 disabled={exp.status !== "Draft"}
                 title={exp.status !== "Draft" ? "Only Draft expenses can be edited" : "Edit Expense"}
@@ -269,7 +310,7 @@ const fetchExpenses = useCallback(async () => {
             </PermissionGate>
             <ActionMenu
               {...(can(EXPENSE_MODULE, "delete")
-                ? { onDelete: (e) => handleDelete(exp.id, e) }
+                ? { onDelete: () => handleDelete(exp.id,) }
                 : {})}
             />
           </div>

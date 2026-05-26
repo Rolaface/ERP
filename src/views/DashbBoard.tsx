@@ -15,6 +15,7 @@ import {
 } from '../api/dashboardApi';
 import BarChart from '../components/charts/BarChart';
 import { useHRView } from '../hooks/permission/useHRView';
+import { useCompanyStore } from '../store/companyStore';
 
 const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
 
@@ -42,10 +43,19 @@ const Dashboard = () => {
   const [salesData, setSalesData] = useState<SalesChartResponse['data'] | null>(null);
   const [purchaseData, setPurchaseData] = useState<PurchaseChartResponse['data'] | null>(null);
 
-  const currencyFormatter = useMemo(() => new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 2, notation: "compact"
-  }), []);
+// Subscribe to baseCurrency from Zustand
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
 
+  const currencyFormatter = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    
+    return new Intl.NumberFormat(locale, {
+      style: 'currency', 
+      currency: baseCurrency, 
+      maximumFractionDigits: 2, 
+      notation: "compact"
+    });
+  }, [baseCurrency]);  
 
   useEffect(() => {
     let mounted = true;
@@ -158,15 +168,15 @@ const Dashboard = () => {
     <div className="flex h-screen w-full flex-col bg-gray-50 p-4">
 
       {/* Header */}
-      <div className="flex justify-between items-center mb-4 shrink-0">
+      <div className="flex justify-between items-center mb-3 shrink-0">
         <h1 className="text-xl font-bold text-gray-800">Dashboard Summary</h1>
         <div className="flex items-center gap-3">
           {/* View switch button — only visible to users who have both employee + professional roles */}
-          {canSwitchView && (
+          {/* {canSwitchView && (
             <button
               onClick={toggleViewMode}
               className={`
-                flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold
+                flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold
                 border transition-all duration-200
                 ${isEmployeeView
                   ? "border-blue-500 bg-blue-50 text-blue-600 hover:bg-blue-100"
@@ -177,7 +187,7 @@ const Dashboard = () => {
               <ArrowLeftRight size={13} />
               {isEmployeeView ? "Switch to Professional View" : "Switch to Employee View"}
             </button>
-          )}
+          )} */}
           {/* <UserMenu /> */}
         </div>
       </div>
@@ -239,7 +249,7 @@ const Dashboard = () => {
                   <select
                     value={salesInterval}
                     onChange={e => setSalesInterval(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
@@ -249,7 +259,7 @@ const Dashboard = () => {
                   <select
                     value={salesYear}
                     onChange={e => setSalesYear(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -270,7 +280,7 @@ const Dashboard = () => {
                   <select
                     value={purchaseInterval}
                     onChange={e => setPurchaseInterval(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-black text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
@@ -280,7 +290,7 @@ const Dashboard = () => {
                   <select
                     value={purchaseYear}
                     onChange={e => setPurchaseYear(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -299,7 +309,7 @@ const Dashboard = () => {
                   <select
                     value={inventoryMode}
                     onChange={e => setInventoryMode(e.target.value as 'value' | 'quantity')}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-black text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     <option value="value">By Value</option>
                     <option value="quantity">By Qty</option>
@@ -307,7 +317,7 @@ const Dashboard = () => {
                   <select
                     value={inventoryYear}
                     onChange={e => setInventoryYear(e.target.value)}
-                    className="border rounded text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="border rounded-xl text-xs px-2 py-1 outline-none text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   >
                     {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -318,7 +328,7 @@ const Dashboard = () => {
         </div>
 
         {/* RIGHT AREA (Vertical Notes) */}
-        <div className="w-[300px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col p-5 overflow-y-auto">
+        <div className="w-[300px] shrink-0 bg-white rounded-xl shadow-sm border border-gray-300 flex flex-col p-5 overflow-y-auto">
           <h2 className="text-sm font-bold tracking-wider text-gray-800 border-b pb-2 mb-4 uppercase">Notes</h2>
           {loadingSummary ? (
             <div className="animate-pulse space-y-4">
@@ -326,7 +336,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-4 flex-1">
-              <NoteItem
+              {/* <NoteItem
                 label="Top Customer"
                 title={notesData?.topCustomer?.name || 'N/A'}
                 value={currencyFormatter.format(notesData?.topCustomer?.value || 0)}
@@ -337,16 +347,28 @@ const Dashboard = () => {
                 title={notesData?.topSupplier?.name || 'N/A'}
                 value={currencyFormatter.format(notesData?.topSupplier?.value || 0)}
                 icon={<FileText size={16} className="text-amber-500" />}
+              /> */}
+ <NoteItem
+                label="Top Customers"
+                icon={<Users size={16} className="text-blue-500" />}
+                list={notesData?.topCustomers || []} 
+                formatter={currencyFormatter}
               />
               <NoteItem
-                label="Top Item By Qty"
+                label="Top Suppliers"
+                icon={<FileText size={16} className="text-amber-500" />}
+                list={notesData?.topSuppliers || []}
+                formatter={currencyFormatter}
+              />
+              <NoteItem
+                label="Most Sold Item (By Quantity)"
                 title={notesData?.topSellingItemQty?.itemName || 'N/A'}
                 value={`${notesData?.topSellingItemQty?.quantity || 0} Units`}
                 // subTitle={notesData?.topSellingItemQty?.itemCode}
                 icon={<Package size={16} className="text-emerald-500" />}
               />
               <NoteItem 
-                label="Top Item By Value" 
+                label="Highest Revenue Item" 
                 title={notesData?.topSellingItemValue?.itemName || 'N/A'} 
                 value={currencyFormatter.format(notesData?.topSellingItemValue?.value || 0)} 
                 // subTitle={notesData?.topSellingItemValue?.itemCode}
@@ -366,7 +388,7 @@ const Dashboard = () => {
 
 // --- Sub-Components ---
 const InfoBox = ({ title, icon, loading, children }: { title: string, icon?: React.ReactNode, loading: boolean, children: React.ReactNode }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-center">
+  <div className="bg-white rounded-xl shadow-sm border border-gray-300 p-4 flex flex-col justify-center">
     <div className="flex items-center gap-2 mb-1">
       {icon && <span className="text-gray-400">{icon}</span>}
       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{title}</h3>
@@ -375,14 +397,34 @@ const InfoBox = ({ title, icon, loading, children }: { title: string, icon?: Rea
   </div>
 );
 
-const NoteItem = ({ label, title, subTitle, value, icon }: any) => (
-  <div className="flex flex-col gap-1 p-3 rounded-lg bg-gray-50 border border-gray-100">
+const NoteItem = ({ label, title, subTitle, value, icon, list, formatter }: any) => (
+  <div className="flex flex-col gap-1 p-3 rounded-lg bg-gray-50 border border-gray-300">
     <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
       {icon} {label}
     </div>
-    <div className="font-medium text-sm text-gray-800 truncate" title={title}>{title}</div>
-    {subTitle && subTitle !== 'N/A' && <div className="text-xs text-gray-400 truncate">Code: {subTitle}</div>}
-    <div className="text-base font-bold text-gray-900 mt-1">{value}</div>
+
+    {list ? (
+      <div className="flex flex-col mt-1">
+        {list.map((item: any, i: number) => (
+          <div key={i} className="flex items-center gap-2 py-1.5 border-b border-gray-200 last:border-0">
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0
+              ${i === 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+              {i + 1}
+            </span>
+            <span className="flex-1 text-sm text-gray-800 truncate">{item.name || 'N/A'}</span>
+            <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+  {formatter ? formatter.format(item.value || 0) : item.value}
+</span>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <>
+        <div className="font-medium text-sm text-gray-800 truncate" title={title}>{title}</div>
+        {subTitle && subTitle !== 'N/A' && <div className="text-xs text-gray-400 truncate">Code: {subTitle}</div>}
+        <div className="text-base font-bold text-gray-900 mt-1">{value}</div>
+      </>
+    )}
   </div>
 );
 

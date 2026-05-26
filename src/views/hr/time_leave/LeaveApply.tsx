@@ -10,6 +10,7 @@ import {
 import {
   getAllLeaveApplications,
   updateLeaveApplication,
+  deleteLeaveApplication
 } from "../../../api/leaveApplicationApi";
 import { openLeaveApplyModal } from "../../../store/modalStore";
 import { showApiError, showSuccess, showConfirm } from "../../../utils/alert";
@@ -17,6 +18,10 @@ import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable
 import Table        from "../../../components/ui/Table/Table";
 import StatusBadge  from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
+import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
+import ActionButton, { ActionGroup, ActionMenu } from "../../../components/ui/Table/ActionButton";
+import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
+import { useAuth } from "../../../context/AuthContext";
 interface MenuAction {
   label:        string;
   icon:         React.ReactNode;
@@ -81,20 +86,45 @@ interface LeaveApplyTableProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
+  const { user } = useAuth();
   const [data,       setData]       = useState<any[]>([]);
   const [isLoading,  setIsLoading]  = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [page,       setPage]       = useState(1);
   const [pageSize,   setPageSize]   = useState(10);
+  const [showHistory, setShowHistory] = useState(false);
+  const [filters, setFilters] = useState({ from_date: "", to_date: "" });
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLeaves();
-  }, []);
+  }, [showHistory, filters.from_date, filters.to_date]);
 
   const fetchLeaves = async () => {
     try {
       setIsLoading(true);
-      const response = await getAllLeaveApplications();
+       const apiFilters: any[] = [
+      ["employee", "=", user?.employeeId], 
+    ];
+    console.log("User Employee ID:", user?.employeeId);
+    console.log("apiFilters:", apiFilters);
+      if (showHistory) {
+      apiFilters.push([
+        "status",
+        "in",
+        ["Approved", "Rejected", "Open", "Cancelled"],
+      ]);
+    } else {
+      apiFilters.push(["status", "=", "Open"]);
+    }
+
+      if (filters.from_date) {
+        apiFilters.push(["from_date", ">=", filters.from_date]);
+      }
+      if (filters.to_date) {
+        apiFilters.push(["from_date", "<=", filters.to_date]);
+      }
+      const response = await getAllLeaveApplications(apiFilters);
       setData(response || []);
     } catch (err) {
       console.error("Failed to fetch leave applications", err);
@@ -103,17 +133,18 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
     }
   };
 
-  const handleStatusUpdate = async (
+const handleStatusUpdate = async (
     id:       string,
     status:   string,
     doc_type?: string,
   ) => {
-    if (status === "Cancelled" || status === "Rejected") {
+    if (status === "Delete" || status === "Cancelled") {
+      const actionName = status === "Delete" ? "delete" : "cancel";
       const isConfirmed = await showConfirm(
-        `Are you sure you want to ${status.toLowerCase()} this leave application?`,
+        `Are you sure you want to ${actionName} this leave application?`,
         {
-          title:             `${status === "Cancelled" ? "Cancel" : "Reject"} Leave`,
-          confirmButtonText: `Yes, ${status === "Cancelled" ? "Cancel" : "Reject"}`,
+          title: `${status} Leave`,
+          confirmButtonText: `Yes, ${status}`,
           confirmButtonColor: "#ef4444",
         },
       );
@@ -121,20 +152,37 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
     }
 
     try {
-      setIsLoading(true);
+      if (status === "Delete") {
+        setActionLoadingId(id);
+        await deleteLeaveApplication(id);
+        showSuccess("Leave application has been deleted successfully.");
+        
+        await fetchLeaves();
+        onAfterApply?.();
+        
+        setActionLoadingId(null);
+        return; 
+      }
+
+      setActionLoadingId(id);
       const payload: any = { status };
       if (doc_type) payload.doc_type = doc_type;
+      
+      // If cancelling an approved leave, set docstatus to 2 (Cancelled in Frappe)
+      if (status === "Cancelled") payload.docstatus = 2;
 
       await updateLeaveApplication(id, payload);
       showSuccess(`Leave application has been ${status.toLowerCase()} successfully.`);
 
       await fetchLeaves();
-      onAfterApply?.();   // ← notify parent to refresh balance + recent
+      onAfterApply?.();
+      setActionLoadingId(null);
     } catch (err: any) {
       showApiError(
-        err?.response?.data?.message ?? err?.message ?? "Failed to update status.",
+        parseFrappeError(err) || "Failed to update status."
       );
       setIsLoading(false);
+      setActionLoadingId(null);
     }
   };
 
@@ -177,56 +225,107 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
       key:    "status",
       header: "Status",
       align:  "left",
-      render: (e) => <StatusBadge status={e.status || "Open"} />,
-    },
-    {
-      key:    "actions",
-      header: "Actions",
-      align:  "center",
       render: (e) => {
-        const leaveId     = e.name || e.id;
-        const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(e.status);
-        const actions: MenuAction[] = [];
+        let displayStatus = e.status || "Open";
+        
+        if (displayStatus === "Open") {
+          displayStatus = "Pending Approval";
+        } 
 
-        if (!isActionDone) {
-          actions.push({
-            label:   "Edit",
-            icon:    <Edit2 size={14} />,
-            onClick: () => openLeaveApplyModal(e, true),
-          });
-          // actions.push({
-          //   label:         "Approve",
-          //   icon:          <CheckCircle size={14} className="text-green-600" />,
-          //   onClick:       () => handleStatusUpdate(leaveId, "Approved", "1"),
-          //   dividerBefore: true,
-          // });
-          // actions.push({
-          //   label:  "Reject",
-          //   icon:   <XCircle size={14} />,
-          //   onClick: () => handleStatusUpdate(leaveId, "Rejected", "1"),
-          //   danger: true,
-          // });
-        }
-
-        if (!isActionDone) {
-          actions.push({
-            label:         "Cancel Leave",
-            icon:          <Ban size={14} />,
-            onClick:       () => handleStatusUpdate(leaveId, "Cancelled"),
-            danger:        true,
-            dividerBefore: actions.length > 0,
-          });
-        }
-
-        return <RowActionMenu actions={actions} />;
+        return <StatusBadge status={displayStatus} />;
       },
     },
+   {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (row) => {
+        const leaveId = row.name || row.id;
+        const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(row.status);
+        const isApproved = row.status === "Approved" || row.docstatus === 1;
+
+        // Dynamically build the menu actions
+        const customMenuActions = [];
+
+        if (!isActionDone) {
+          customMenuActions.push({
+            label: "Delete",
+            danger: true,
+            onClick: () => handleStatusUpdate(leaveId, "Delete"),
+            disabled: actionLoadingId === leaveId,
+          });
+        }
+
+        // Add Cancel action if the leave is Approved / Submitted
+        if (isApproved) {
+          customMenuActions.push({
+            label: "Cancel Leave",
+            danger: true,
+            onClick: () => handleStatusUpdate(leaveId, "Cancelled"),
+            disabled: actionLoadingId === leaveId,
+          });
+        }
+
+        return (
+          <ActionGroup>
+            {/* View is typically always available */}
+            <ActionButton
+              type="view"
+              iconOnly
+              onClick={() =>
+                openLeaveApplyModal(
+                  { ...row, _isView: true } as any,
+                  true,
+                  { onSuccess: fetchLeaves }
+                )
+              }
+            />
+
+            {!isActionDone && (
+              <ActionButton
+                type="edit"
+                iconOnly
+                onClick={() =>
+                  openLeaveApplyModal(row, true, { onSuccess: fetchLeaves })
+                }
+                disabled={actionLoadingId === leaveId}
+              />
+            )}
+
+            {/* Render action menu if there are options available */}
+            {customMenuActions.length > 0 && (
+              <ActionMenu customActions={customMenuActions} />
+            )}
+          </ActionGroup>
+        );
+      },
+    }
   ];
 
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <Table
+     extraFilters={
+              <>
+              <DateRangeFilter
+                  from={filters.from_date}
+                  to={filters.to_date}
+                  onChange={(range) => {
+                    setFilters((prev) => ({ ...prev, ...range }));
+                    setPage(1);
+                  }}
+                />
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showHistory}
+                    onChange={(e) => setShowHistory(e.target.checked)}
+                    className="cursor-pointer"
+                  />
+                  Show Leave History
+                </label>
+              </>
+            }
       loading={isLoading}
       columns={columns}
       data={data}

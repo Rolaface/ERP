@@ -13,6 +13,7 @@ interface LeaveTypeSelectProps {
   label?: string;
   required?: boolean;
   disabled?: boolean;
+  leaveBalances?: any[];
 }
 
 export default function LeaveTypeSelect({
@@ -22,6 +23,7 @@ export default function LeaveTypeSelect({
   label = "Leave Type",
   required = false,
   disabled = false,
+  leaveBalances = [],
 }: LeaveTypeSelectProps) {
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [loading, setLoading] = useState(false);
@@ -177,7 +179,7 @@ export default function LeaveTypeSelect({
                   </div>
                 )}
 
-                {filteredTypes.map((type) => (
+                {/* {filteredTypes.map((type) => (
                   <li
                     key={type.name}
                     className="px-2 py-1.5 cursor-pointer hover:bg-primary/5 hover:bg-gray-100 text-main text-[11px]"
@@ -194,7 +196,39 @@ export default function LeaveTypeSelect({
                       <span className="font-medium truncate">{type.name}</span>
                     </div>
                   </li>
-                ))}
+                ))} */}
+                {/* Replace your existing filteredTypes.map block with this: */}
+{filteredTypes.map((type) => {
+  // Find the matching balance from the passed array
+  const matchingBalance = leaveBalances.find(
+    (b) => b.leave_type === type.name
+  );
+  
+  return (
+    <li
+      key={type.name}
+      className="px-2 py-1.5 cursor-pointer hover:bg-primary/5 hover:bg-gray-100 text-main text-[11px]"
+      onMouseDown={(e) => {
+        e.preventDefault(); 
+      }}
+      onClick={() => {
+        setSearch(type.name); 
+        setOpen(false);
+        onChange({ name: type.name });
+      }}
+    >
+      <div className="flex justify-between items-center">
+        <span className="font-medium truncate">{type.name}</span>
+        {/* Render the balance if leaveBalances are provided */}
+        {leaveBalances.length > 0 && (
+          <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap ml-2">
+            {matchingBalance ? `${matchingBalance.balance.toFixed(1)} left` : "0.0 left"}
+          </span>
+        )}
+      </div>
+    </li>
+  );
+})}
 
                 {!loading && filteredTypes.length === 0 && (
                   <li className="px-2 py-1 text-muted text-[11px]">

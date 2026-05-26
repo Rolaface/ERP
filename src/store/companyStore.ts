@@ -5,74 +5,84 @@ type CompanyState = {
   companyName: string;
   baseCurrency: string;
   currencySymbol: string;
+  companyAddress: {
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    district?: string;
+    province?: string;
+    postalCode?: string;
+    country?: string;
+  };
+
   isHydrated: boolean;
 
   setCompanyInfo: (data: {
     companyName?: string;
     baseCurrency?: string;
     currencySymbol?: string;
+    companyAddress?: {
+      addressLine1?: string;
+      addressLine2?: string;
+      city?: string;
+      district?: string;
+      province?: string;
+      postalCode?: string;
+      country?: string;
+    };
   }) => void;
 
-  setCurrencySymbol: (
-    symbol: string,
-  ) => void;
+  setCurrencySymbol: (symbol: string) => void;
 
   clearCompanyInfo: () => void;
 
   setHydrated: () => void;
 };
 
-export const useCompanyStore =
-  create<CompanyState>()(
-    persist(
-      (set) => ({
-        companyName: "",
-        baseCurrency: "",
-        currencySymbol: "",
-        isHydrated: false,
+export const useCompanyStore = create<CompanyState>()(
+  persist(
+    (set) => ({
+      companyName: "",
+      baseCurrency: "",
+      currencySymbol: "",
+      companyAddress: {},
+      isHydrated: false,
 
-        setCompanyInfo: (data) =>
-          set((state) => ({
-            companyName:
-              data.companyName ??
-              state.companyName,
+      setCompanyInfo: (data) =>
+        set((state) => ({
+          companyName: data.companyName ?? state.companyName,
 
-            baseCurrency:
-              data.baseCurrency ??
-              state.baseCurrency,
+          baseCurrency: data.baseCurrency ?? state.baseCurrency,
 
-            currencySymbol:
-              data.currencySymbol ??
-              state.currencySymbol,
-          })),
+          currencySymbol: data.currencySymbol ?? state.currencySymbol,
 
-        setCurrencySymbol: (
-          symbol,
-        ) =>
-          set({
-            currencySymbol:
-              symbol,
-          }),
+          companyAddress: data.companyAddress ?? state.companyAddress,
+        })),
 
-        clearCompanyInfo: () =>
-          set({
-            companyName: "",
-            baseCurrency: "",
-            currencySymbol: "",
-          }),
+      setCurrencySymbol: (symbol) =>
+        set({
+          currencySymbol: symbol,
+        }),
 
-        setHydrated: () =>
-          set({
-            isHydrated: true,
-          }),
-      }),
-      {
-        name: "company-info",
+      clearCompanyInfo: () =>
+        set({
+          companyName: "",
+          baseCurrency: "",
+          currencySymbol: "",
+          companyAddress: {},
+        }),
 
-        onRehydrateStorage:
-          () => (state) => {
-            state?.setHydrated();
-          },
+      setHydrated: () =>
+        set({
+          isHydrated: true,
+        }),
+    }),
+    {
+      name: "company-info",
+
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated();
       },
-    ),
-  );
+    },
+  ),
+);

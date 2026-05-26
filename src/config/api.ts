@@ -41,6 +41,21 @@ export const API = {
     forgotPassword: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.forgot_password`,
     logout: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`,
   },
+   Email: {   
+      get_contact_list:`${ERP_BASE}/api/method/frappe.email.get_contact_list`,
+      send_email:`${ERP_BASE}/api/method/frappe.core.doctype.communication.email.make`,
+      upload_file:`${ERP_BASE}/api/method/upload_file`,
+      remove_attachments:`${ERP_BASE}/api/method/frappe.desk.form.utils.remove_attach`,
+      make_email_template:`${ERP_BASE}/api/method/custom_api.api.email_template.api.make_email_template`,
+      create_email_template:`${ERP_BASE}/api/method/custom_api.api.email_template.api.create`,
+      get_email_templates: `${ERP_BASE}/api/method/custom_api.api.email_template.api.get_all?`,
+      get_email_template_by_id: `${ERP_BASE}/api/method/custom_api.api.email_template.api.get_by_id`,
+      update_email_template: `${ERP_BASE}/api/method/custom_api.api.email_template.api.update`,
+      delete_email_template: `${ERP_BASE}/api/method/frappe.client.delete`
+  },
+   pdf:{
+    getDocumentPdf: `${ERP_BASE}/api/method/custom_hrms.api.pdf.api.get_document_pdf`,
+   },
 
   /* =========================
    * DASHBOARD
@@ -61,6 +76,8 @@ export const API = {
     summary: `${ERP_BASE}/api/method/erpnext.dashboards.sale.api.summary`,
     recentSales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.top_recent_sales`,
     salesSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.monthly_sales_breakdown`,
+    salesCount: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.get_document_counts`,
+    monthlySales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.get_monthly_sales`,
    },
 
   /* =========================
@@ -93,6 +110,7 @@ export const API = {
    * ========================= */
   hrDashboard: {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
+    hrSummary: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_employee_status_counts`,
   },
 
   Get: {
@@ -134,6 +152,7 @@ export const API = {
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
+    getBankAccountById:`${ERP_BASE}api/method/custom_api.api.bank_account.get_by_id`,
     getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
     ModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.create`,
@@ -147,6 +166,7 @@ export const API = {
     getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
     getAccountsResource: `${ERP_BASE}/api/resource/Account`,
+    getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`
   },
 
   accounting: {
@@ -208,6 +228,7 @@ export const API = {
     updateStatus:`${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee_status`,
     employeeDetailsById: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.custom_employee_details`,
     leaveApproverDetails: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_leave_approvers`,
+    employeeCheckInOut: `${ERP_BASE}/api/resource/Employee Checkin`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
   },
@@ -304,6 +325,13 @@ export const API = {
   //   update: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.update_holiday`,
   //   delete: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.delete_holiday`,
   // },
+  shiftType: {
+    getAll: "/api/resource/Shift Type",
+    getByName: "/api/resource/Shift Type",
+    create: "/api/resource/Shift Type",
+    update: "/api/resource/Shift Type",
+    delete: "/api/resource/Shift Type",
+  },
 
   /* =========================
    * MODULES (SYSTEM)
@@ -370,6 +398,8 @@ export const API = {
   ExpenseClaim:{
     Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
     Claim_Type: `${ERP_BASE}/api/resource/Expense Claim Type`,
+    getExpenseClaims: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claims`,
+    getExpenseType: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claim_types`,
   },
   /* =========================
    * STOCK
@@ -610,6 +640,22 @@ export const API = {
     delete: `${ERP_BASE}/api/resource/Leave Application`,
   },
 
+performance: {
+  kra: {
+    list: `${ERP_BASE}/api/resource/KRA`,
+  },
+  template: {
+    list: `${ERP_BASE}/api/resource/Appraisal Template`,
+  },
+  feedback: {
+    list: `${ERP_BASE}/api/resource/Employee Feedback Criteria`,
+  },
+  cycle:{
+    list:`${ERP_BASE}/api/resource/Appraisal Cycle`
+  }
+},
+
+
   /* =========================
    * UTILS
    * ========================= */
@@ -628,6 +674,12 @@ export const API = {
     getUsers: `${ERP_BASE}/api/method/custom_hrms.api.search.get_users`,
     getPayrollEmployees:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_employee`,
     getBranches:`${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
-    createbranch:`${ERP_BASE}/api/resource/Branch`
+    createbranch:`${ERP_BASE}/api/resource/Branch`,
+    getshifts:`${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
+
+   
   },
+
+
+
 } as const;

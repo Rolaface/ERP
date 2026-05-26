@@ -15,6 +15,8 @@ interface AdvancedCalendarProps {
   leaves: CalendarLeave[];
   selectedRange?: DateRange;
   onRangeSelect: (range: DateRange | undefined) => void;
+  month?: Date;                           // <-- Add this
+  onMonthChange?: (month: Date) => void;
 }
 
 const expandDateRange = (start: Date, end: Date): Date[] => {
@@ -31,6 +33,8 @@ const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
   leaves,
   selectedRange,
   onRangeSelect,
+  month,
+  onMonthChange,
 }) => {
   const modifiers = useMemo(() => {
     const result: Record<LeaveStatus, Date[]> = {
@@ -60,8 +64,10 @@ const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
         fixedWeeks
         selected={selectedRange}
         onSelect={onRangeSelect}
+        month={month}                  
+        onMonthChange={onMonthChange}
         modifiers={modifiers}
-        disabled={{ before: today }}
+        // disabled={{ before: today }}
         modifiersClassNames={{
           approved: "bg-green-500/10 text-green-700",
           pending: "bg-yellow-500/10 text-yellow-700",

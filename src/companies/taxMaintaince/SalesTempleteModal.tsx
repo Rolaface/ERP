@@ -201,7 +201,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
           loading={loading}
           onClick={handleSubmitInternal}
         >
-          {isEditMode ? "Update" : "Submit"}
+          {isEditMode ? "Update" : "Save"}
         </Button>
       </div>
     </>

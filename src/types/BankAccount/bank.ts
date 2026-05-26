@@ -1,4 +1,4 @@
-type AccountType = "Supplier" | "Customer" | "Company" | "Bank";
+export type AccountType = "Supplier" | "Customer" | "Company" | "Bank"  | "Employee";
 export interface BankAccount {
   id: number | string;
 

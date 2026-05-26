@@ -5,6 +5,7 @@ import { FEATURES } from "../config/features";
 import Sidebar from "../components/SideBar";
 import PageLoader from "../components/ui/PageLoader";
 import { QuickAddProvider } from "../context/QuickAddContext";
+import FloatingViewSwitch from "../components/common/FloatingViewSwitch";
 import {
   openCustomerModal,
   openInvoiceModal,
@@ -18,8 +19,9 @@ import {
   openWarehouseModal,
   type ModalContext,
 } from "../store/modalStore";
-import { AppMain, AppShell, AppContentContainer, RightPanel } from "./layoutSystem";
+import { AppMain, AppShell, AppContentContainer } from "./layoutSystem";
 import GlobalModalHandler from "../components/common/GlobalModalHandler";
+import { FloatingMinimizedDock } from "../components/common/FloatingMinimizedDock";
 import { showApiError, showSuccess } from "../utils/alert";
 import { createSalesInvoice } from "../api/salesApi";
 import { createQuotation } from "../api/quotationApi";
@@ -272,32 +274,39 @@ const AppLayout: React.FC = () => {
     );
   }
 
-  return (
+return (
+  <QuickAddProvider>
+    <AppShell
+      sidebar={
+        <Sidebar
+          open={sidebarOpen}
+          setOpen={setSidebarOpen}
+        />
+      }
+    >
+      <AppMain sidebarOpen={sidebarOpen}>
+        <AppContentContainer viewportLocked={isRootDashboard}>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <Suspense fallback={<PageLoader />}>
+              <Outlet context={sharedProps} />
+            </Suspense>
+          </div>
+        </AppContentContainer>
+      </AppMain>
+       <FloatingViewSwitch />
+      <GlobalModalHandler />
 
-    <QuickAddProvider>
-      <AppShell
-        sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
-        rightPanel={<RightPanel />}
-      >
-        <AppMain sidebarOpen={sidebarOpen}>
-          <AppContentContainer viewportLocked={isRootDashboard}>
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <Suspense fallback={<PageLoader />}>
-                <Outlet context={sharedProps} />
-              </Suspense>
-            </div>
-          </AppContentContainer>
-        </AppMain>
-        <GlobalModalHandler />
-        {FEATURES.CHAT_ENABLED && (
-          <ChatWindow
-            isOpen={isChatOpen}
-            onToggle={() => setIsChatOpen(prev => !prev)}
-          />
-        )}
-      </AppShell>
-    </QuickAddProvider>
-  );
+      {FEATURES.CHAT_ENABLED && (
+        <ChatWindow
+          isOpen={isChatOpen}
+          onToggle={() => setIsChatOpen((prev) => !prev)}
+        />
+      )}
+    </AppShell>
+
+    <FloatingMinimizedDock />
+  </QuickAddProvider>
+);
 };
 
 export default AppLayout;

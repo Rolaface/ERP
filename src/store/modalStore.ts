@@ -47,7 +47,17 @@ export type ModalType =
   | "leavePolicyAssignment"
   | "holidayList"
   | "expense"
-  | "expenseType";
+  | "expenseType"
+  | "emailTemplate"
+  | "shiftType"
+  | "scanPI"
+  | "KRA"
+  | "appraisalCycle"
+  | "feedback"
+
+  | "appraisal"
+  | "employeeFeedback"
+  ;
 
 export interface ModalContext {
   source?: string;
@@ -55,6 +65,8 @@ export interface ModalContext {
   callback?: ModalCallback;
   onSuccess?: ModalCallback;
   onSubmit?: (data: unknown) => Promise<void> | void;
+  isViewMode?: boolean;
+
 }
 
 export interface ModalMeta {
@@ -216,14 +228,14 @@ export const useModalStore = create<ModalState>((set, get) => ({
       modals: state.modals.map((m) =>
         m.id === id
           ? {
-              ...m,
-              meta: {
-                title: meta.title,
-                subtitle: meta.subtitle,
-                icon: meta.icon,
-                onRequestClose: meta.onRequestClose,
-              },
-            }
+            ...m,
+            meta: {
+              title: meta.title,
+              subtitle: meta.subtitle,
+              icon: meta.icon,
+              onRequestClose: meta.onRequestClose,
+            },
+          }
           : m,
       ),
     }));
@@ -250,6 +262,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
       const newFocusOrder = state.focusCounter + 1;
       return {
         focusCounter: newFocusOrder,
+        activeModalId: id,
         modals: state.modals.map((m) =>
           m.id === id
             ? { ...m, minimized: false, focusOrder: newFocusOrder }
@@ -508,6 +521,7 @@ export const openSalesTaxTemplateModal = (
 
 export const openBankAccountModal = (
   initialData?: unknown,
+
   isEdit = false,
   context?: ModalContext,
   meta?: ModalMeta,
@@ -788,16 +802,20 @@ export const openHolidayListModal = (
   context?: ModalContext,
   meta?: ModalMeta,
 ) => {
-  console.debug("openHolidayListModal clicked", {
-    initialData,
-    isEdit,
-    context,
-    meta,
-  });
-
   return useModalStore
     .getState()
     .openModal("holidayList", initialData, isEdit, context, meta);
+};
+
+export const openShiftTypeModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) => {
+  return useModalStore
+    .getState()
+    .openModal("shiftType", initialData, isEdit, context, meta);
 };
 
 export const openExpenseTypeModal = (
@@ -809,3 +827,69 @@ export const openExpenseTypeModal = (
   useModalStore
     .getState()
     .openModal("expenseType", initialData, isEdit, context, meta);
+
+
+export const openEmailTemplateModal = (
+  templateId?: string,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("emailTemplate", { templateId }, !!templateId, context, meta);
+
+
+export const openScanPIModal = (
+  pId?: string,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal(
+      "scanPI",
+      { pId },
+      !!pId,
+      context,
+      meta,
+    );
+    export const openKRAModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("KRA", initialData, isEdit, context, meta);
+
+
+export const openAppraisalCycleModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("appraisalCycle", initialData, isEdit, context, meta);
+
+export const openAppraisalModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("appraisal", initialData, isEdit, context, meta);
+
+export const openFeedbackModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("feedback", initialData, isEdit, context, meta);

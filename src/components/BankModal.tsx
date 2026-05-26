@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Landmark } from "lucide-react";
 import { MinimizableModal } from "./common/MinimizableModal";
 import { useUnsavedChanges } from "../hooks/useUnsavedChanges";
-import { createBank , updateBank } from "../api/BankApi";
+import { createBank, updateBank } from "../api/BankApi";
 import type { Bank, BankPayload } from "../api/BankApi";
 import { useDataRefreshStore, REFRESH_KEYS } from "../store/dataRefreshStore";
-import { showApiError,showSuccess } from "../utils/alert";
+import { showApiError, showSuccess } from "../utils/alert";
+import { ModalInput } from "./ui/modal/modalComponent";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -42,12 +43,12 @@ const validate = (form: BankFormData): BankFormErrors => {
     errors.bank_name = "Bank name is required.";
   }
 
-  if (!form.swift_number.trim()) {
-    errors.swift_number = "SWIFT number is required.";
-  } else if (!/^[A-Z0-9]{8,11}$/.test(form.swift_number.trim().toUpperCase())) {
-    errors.swift_number =
-      "SWIFT must be 8–11 alphanumeric characters (e.g. HDFCINBB).";
-  }
+  // if (!form.swift_number.trim()) {
+  //   errors.swift_number = "SWIFT number is required.";
+  // } else if (!/^[A-Z0-9]{8,11}$/.test(form.swift_number.trim().toUpperCase())) {
+  //   errors.swift_number =
+  //     "SWIFT must be 8–11 alphanumeric characters (e.g. HDFCINBB).";
+  // }
 
   return errors;
 };
@@ -161,15 +162,14 @@ const BankModal: React.FC<BankModalProps> = ({
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${
-            isSubmitting ? "opacity-60 cursor-not-allowed" : ""
-          }`}
+          className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""
+            }`}
         >
           {isSubmitting
             ? "Saving..."
             : isEditMode
-            ? "Update Bank"
-            : "Add Bank"}
+              ? "Update Bank"
+              : "Add Bank"}
         </button>
       </div>
     </div>
@@ -190,55 +190,27 @@ const BankModal: React.FC<BankModalProps> = ({
       <div className="flex flex-col gap-5 py-1">
         {/* Bank Name */}
         <div>
-          <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1.5">
-            Bank Name <span className="text-[var(--danger)]">*</span>
-          </label>
-          <input
-            type="text"
+          <ModalInput
+            label="Bank Name"
+            required
             value={form.bank_name}
             onChange={(e) => handleChange("bank_name", e.target.value)}
-            autoFocus
-            className={`w-full px-3 py-2 text-sm bg-app border rounded-lg text-main placeholder:text-muted focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${
-              errors.bank_name
-                ? "border-[var(--danger)]"
-                : "border-[var(--border)]"
-            }`}
+            disabled={isEditMode}
+            error={errors.bank_name}
+            autoFocus={!isEditMode}
           />
-          {errors.bank_name && (
-            <p className="text-[10px] text-[var(--danger)] mt-1">
-              {errors.bank_name}
-            </p>
-          )}
         </div>
 
         {/* SWIFT Number */}
-        <div>
-          <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1.5">
-            SWIFT  Number <span className="text-[var(--danger)]">*</span>
-          </label>
-          <input
-            type="text"
-            value={form.swift_number}
-            onChange={(e) =>
-              handleChange("swift_number", e.target.value.toUpperCase())
-            }
-            maxLength={11}
-            className={`w-full px-3 py-2 text-sm bg-app border rounded-lg text-main placeholder:text-muted font-mono tracking-wider focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all ${
-              errors.swift_number
-                ? "border-[var(--danger)]"
-                : "border-[var(--border)]"
-            }`}
-          />
-          {errors.swift_number ? (
-            <p className="text-[10px] text-[var(--danger)] mt-1">
-              {errors.swift_number}
-            </p>
-          ) : (
-            <p className="text-[10px] text-muted mt-1">
-              8–11 alphanumeric characters
-            </p>
-          )}
-        </div>
+        <ModalInput
+          label="SWIFT Number"
+          value={form.swift_number}
+          onChange={(e) =>
+            handleChange("swift_number", e.target.value.toUpperCase())
+          }
+          error={errors.swift_number}
+          maxLength={11}
+        />
       </div>
     </MinimizableModal>
   );

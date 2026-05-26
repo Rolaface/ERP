@@ -451,7 +451,6 @@ const [fiscalYearEndDate, setFiscalYearEndDate] = useState<string>("");
         showToolbar
         showSearch={false}
         extraFilters={filtersUI}
-        onRefresh={fetchTB}
         defaultExpandDepth={0}
         expandIconRender={expandIcon}
         loading={loading}

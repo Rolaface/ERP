@@ -23,9 +23,11 @@ import {
   ScrollText,
 } from "lucide-react";
 // Make sure to export these two from your api file
-import { getRecentSales, getMonthlySalesBreakdown } from "../../api/salesDashboardApi";
+import { getRecentSales, getMonthlySalesBreakdown, getSalesCounts, getMonthlySales } from "../../api/salesDashboardApi";
 import { ChartSkeleton } from "../../components/ChartSkeleton";
 import { AppMetricCard, AppSectionCard } from "../../components/ui/app-shell";
+import { MonthlySalesBarChart } from "../../components/charts/MonthlySalesBarChart";
+import { useCompanyStore } from "../../store/companyStore";
 
 interface RecentSale {
   name: string;
@@ -46,32 +48,39 @@ interface MonthlySales {
 
 const SalesDashboard: React.FC = () => {
   const [chartsLoading, setChartsLoading] = useState(true);
-  
-  // Data States
+ const [monthlyEchartsData, setMonthlyEchartsData] = useState<any[]>([]);
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
   const [monthlySales, setMonthlySales] = useState<MonthlySales[]>([]);
+  const [salesCounts, setSalesCounts] = useState({
+    proforma_invoices: 0,
+    quotations: 0,
+    sales_invoices: 0,
+    credit_notes: 0,
+    debit_notes: 0
+  });
 
-  const currencyINR = useMemo(
-  () =>
-    new Intl.NumberFormat("en-IN", {
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || 'INR';
+
+  const currencyINR = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    return new Intl.NumberFormat(locale, {
       style: "currency",
-      currency: "INR",
+      currency: baseCurrency,
       maximumFractionDigits: 2,
-    }),
-  [],
-);
+    });
+  }, [baseCurrency]);
 
-const currencyINRCompact = useMemo(
-  () =>
-    new Intl.NumberFormat("en-IN", {
+  const currencyINRCompact = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    return new Intl.NumberFormat(locale, {
       style: "currency",
-      currency: "INR",
+      currency: baseCurrency,
       notation: "compact",
       compactDisplay: "short",
       maximumFractionDigits: 1,
-    }),
-  []
-);
+    });
+  }, [baseCurrency]);
+ 
 
   const dateWithDay = useMemo(
     () =>
@@ -84,11 +93,6 @@ const currencyINRCompact = useMemo(
     [],
   );
 
-  // ----------------------------------------------------
-  // DATA MEMOS
-  // ----------------------------------------------------
-
-  // 1. Top Customers (Invoice Breakdown Pie)
   const customerSharePieData = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of recentSales) {
@@ -124,18 +128,17 @@ const currencyINRCompact = useMemo(
 
   const pieColors = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#14b8a6"];
 
-  // ----------------------------------------------------
-  // API FETCH
-  // ----------------------------------------------------
   useEffect(() => {
     let mounted = true;
     const run = async () => {
       try {
         setChartsLoading(true);
         // Fetch both APIs concurrently
-        const [recentRes, monthlyRes] = await Promise.all([
+        const [recentRes, monthlyRes, countsRes, echartsMonthlyRes] = await Promise.all([
           getRecentSales(),
-          getMonthlySalesBreakdown()
+          getMonthlySalesBreakdown(),
+          getSalesCounts(),
+          getMonthlySales()
         ]);
 
         if (!mounted) return;
@@ -149,6 +152,12 @@ const currencyINRCompact = useMemo(
     totalPending: item.totalPending ?? 0,
   }))
 );
+if (countsRes?.data) {
+          setSalesCounts(countsRes.data);
+        }
+        if (echartsMonthlyRes?.data) {
+          setMonthlyEchartsData(echartsMonthlyRes.data);
+        }
       } catch (e: any) {
         console.error("Failed to load sales dashboard charts:", e);
       } finally {
@@ -181,13 +190,12 @@ const currencyINRCompact = useMemo(
     );
   };
 
-  // Hardcoded Top Boxes
-  const stats = [
-    { label: "Proforma Invoices", value: "0", icon: FileSignature, gradient: "from-blue-500 to-blue-600" },
-    { label: "Quotations", value: "0", icon: ScrollText, gradient: "from-amber-500 to-amber-600" },
-    { label: "Sales Invoices", value: "0", icon: Receipt, gradient: "from-emerald-500 to-emerald-600" },
-    { label: "Credit Notes", value: "0", icon: FileText, gradient: "from-sky-500 to-sky-600" },
-    { label: "Debit Notes", value: "0", icon: Banknote, gradient: "from-purple-500 to-purple-600" },
+const stats = [
+    { label: "Proforma Invoices", value: salesCounts.proforma_invoices, icon: FileSignature, gradient: "from-blue-500 to-blue-600" },
+    { label: "Quotations", value: salesCounts.quotations, icon: ScrollText, gradient: "from-amber-500 to-amber-600" },
+    { label: "Sales Invoices", value: salesCounts.sales_invoices, icon: Receipt, gradient: "from-emerald-500 to-emerald-600" },
+    { label: "Credit Notes", value: salesCounts.credit_notes, icon: FileText, gradient: "from-sky-500 to-sky-600" },
+    { label: "Debit Notes", value: salesCounts.debit_notes, icon: Banknote, gradient: "from-purple-500 to-purple-600" },
   ];
 
   // Component for 'No Data' Fallback
@@ -214,46 +222,14 @@ const currencyINRCompact = useMemo(
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* --- MONTHLY SALES (LINE CHART) --- */}
-        <AppSectionCard title="Monthly Sales">
+      <AppSectionCard title="Monthly Sales Overview">
           <div className="relative h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
             {chartsLoading ? (
-              <ChartSkeleton variant="line" />
-            ) : monthlySales.every(m => m.totalSales === 0) ? (
+              <ChartSkeleton variant="bar" />
+            ) : monthlyEchartsData.length === 0 ? (
               <NoDataOverlay />
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlySales} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    width={52}
-                    tickFormatter={(v) => currencyINRCompact.format(Number(v))}
-                  />
-                  <Tooltip
-                    formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                    cursor={{ fill: "var(--primary)", opacity: 0.1 }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line
-                    type="monotone"
-                    dataKey="totalSales"
-                    stroke="#8b5cf6"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                    name="Total Sales"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <MonthlySalesBarChart data={monthlyEchartsData} />
             )}
           </div>
         </AppSectionCard>
@@ -270,7 +246,7 @@ const currencyINRCompact = useMemo(
                 <BarChart data={recentSales} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis
-                    dataKey="name"
+                    dataKey="customer_name"
                     tick={{ fontSize: 11 }}
                     interval={0}
                     angle={-15}
@@ -321,7 +297,6 @@ const currencyINRCompact = useMemo(
             )}
           </div>
         </AppSectionCard>
-
        {/* --- SALES BREAKDOWN (PIE CHART) --- */}
         <AppSectionCard title="Sales Breakdown">
           <div className="relative h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>

@@ -25,7 +25,9 @@ import {
   BarChart2,
   ShieldCheck,
   Star,
+  Mail,
   User,
+  CreditCard,
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -69,16 +71,61 @@ interface EmployeeTabItem {
 }
 
 export const EMPLOYEE_HR_TABS: EmployeeTabItem[] = [
-  { id: "emp-dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} strokeWidth={1.75} /> },
-  { id: "emp-profile", label: "My Profile", icon: <User size={16} strokeWidth={1.75} /> },
-  { id: "emp-leave", label: "Leave", icon: <Calendar size={16} strokeWidth={1.75} /> },
-  { id: "emp-timesheet", label: "Timesheet & Attendance", icon: <Clock size={16} strokeWidth={1.75} /> },
-  { id: "emp-financials", label: "Financials", icon: <Wallet size={16} strokeWidth={1.75} /> },
-  { id: "emp-reimburse", label: "Reimbursement", icon: <Receipt size={16} strokeWidth={1.75} /> },
-  { id: "emp-compliance", label: "Compliance", icon: <ShieldCheck size={16} strokeWidth={1.75} /> },
-  { id: "emp-appraisals", label: "Appraisals", icon: <Star size={16} strokeWidth={1.75} /> },
-  { id: "emp-documents", label: "Documents", icon: <FileText size={16} strokeWidth={1.75} /> },
-  { id: "emp-reports", label: "Reports", icon: <BarChart2 size={16} strokeWidth={1.75} /> },
+  {
+    id: "emp-dashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-profile",
+    label: "My Profile",
+    icon: <User size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-leave",
+    label: "Leave",
+    icon: <Calendar size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-timesheet",
+    label: "Timesheet & Attendance",
+    icon: <Clock size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-financials",
+    label: "Financials",
+    icon: <Wallet size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-compliance",
+    label: "Compliance",
+    icon: <ShieldCheck size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-expenses",
+    label: "Expense Claim",
+    icon: <CreditCard size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-appraisals",
+    label: "Appraisals",
+    icon: <Star size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-performance-growth",
+    label: "Performance & Growth",
+    icon: <BarChart2 size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-documents",
+    label: "Documents",
+    icon: <FileText size={16} strokeWidth={1.75} />,
+  },
+  {
+    id: "emp-reports",
+    label: "Reports",
+    icon: <BarChart2 size={16} strokeWidth={1.75} />,
+  },
 ];
 
 // ─── Main menu items ──────────────────────────────────────────────────────────
@@ -89,7 +136,7 @@ const menuItems: MenuItem[] = [
     to: "/dashboard",
     icon: <LayoutDashboard {...iconProps} />,
     modules: [],
-    hideInEmployeeView: true,   // ← hidden in employee view
+    hideInEmployeeView: true, // ← hidden in employee view
   },
   {
     name: "Sales",
@@ -109,7 +156,13 @@ const menuItems: MenuItem[] = [
     name: "Procurement",
     to: "/procurement",
     icon: <ShoppingBag {...iconProps} />,
-    modules: ["Supplier", "Payment Entry", "Request For Quotation", "Purchase Order", "Purchase Invoice"],
+    modules: [
+      "Supplier",
+      "Payment Entry",
+      "Request For Quotation",
+      "Purchase Order",
+      "Purchase Invoice",
+    ],
     hideInEmployeeView: true,
   },
   {
@@ -133,6 +186,13 @@ const menuItems: MenuItem[] = [
     modules: ["Asset Category", "Asset", "Asset Movement"],
     hideInEmployeeView: true,
   },
+  {
+    name: "Performance",
+    to: "/performance",
+    icon: <BarChart2 {...iconProps} />,
+    modules: ["Performance"],
+    hideInEmployeeView: false, 
+  },
 ];
 
 const settingsItems: SettingsItem[] = [
@@ -141,7 +201,7 @@ const settingsItems: SettingsItem[] = [
     label: "Company Setup",
     icon: <Building2 {...iconProps} />,
     modules: ["Company"],
-    hideInEmployeeView: true,   // ← hidden in employee view
+    hideInEmployeeView: true,
   },
   {
     to: "/userManagement",
@@ -189,21 +249,33 @@ const settingsItems: SettingsItem[] = [
     to: "/Tax-Maintenance",
     label: "Tax Maintenance",
     icon: <Calculator {...iconProps} />,
-    modules: ["Item Tax Template", "Tax Category", "Sales Taxes and Charges Template"],
+    modules: [
+      "Item Tax Template",
+      "Tax Category",
+      "Sales Taxes and Charges Template",
+    ],
     hideInEmployeeView: true,
   },
-   {
+  {
     to: "/Expense-Management",
     label: "Expense Management",
-    icon: <Users {...iconProps} />,
-    modules: ["Expense History"],
+    icon: <CreditCard {...iconProps} />,
+    modules: ["Expense Claim", "Expense Claim Type"],
+    hideInEmployeeView: true,
+  },
+  {
+    to: "/Email-Template",
+    label: "Email Template",
+    icon: <Mail {...iconProps} />,
+    modules: ["Email Template"],
+    hideInEmployeeView: true,
   },
   {
     to: "/settings",
     label: "General Settings",
     icon: <Settings {...iconProps} />,
     modules: [],
-    hideInEmployeeView: true,   // ← hidden in employee view
+    hideInEmployeeView: true, // ← hidden in employee view
   },
 ];
 
@@ -243,7 +315,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [company, setCompany] = useState<{ name: string; logo?: string } | null>(null);
+  const [company, setCompany] = useState<{
+    name: string;
+    logo?: string;
+  } | null>(null);
   const { logout, user } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
 
@@ -302,7 +377,12 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     .slice(0, 2);
 
   const companyInitials = company?.name
-    ? company.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    ? company.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
     : "CO";
 
   // ── Load company ──────────────────────────────────────────────────────────
@@ -331,9 +411,15 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   }, []);
 
   const isSettingsRoute = [
-    "/settings", "/companySetup", "/userManagement",
-    "/bank-management", "/mode-of-payment-setup", "/payment-entry",
-    "/currency-conversion", "/customer-group", "/Tax-Maintenance",
+    "/settings",
+    "/companySetup",
+    "/userManagement",
+    "/bank-management",
+    "/mode-of-payment-setup",
+    "/payment-entry",
+    "/currency-conversion",
+    "/customer-group",
+    "/Tax-Maintenance",
   ].some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
@@ -348,9 +434,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           fixed inset-y-0 left-0 flex flex-col
           border-r border-[var(--border)] bg-sidebar
           transition-[width] duration-300 ease-out overflow-hidden
-          ${open
-            ? "w-[var(--app-sidebar-width)]"
-            : "w-[var(--app-sidebar-width-collapsed)]"
+          ${
+            open
+              ? "w-[var(--app-sidebar-width)]"
+              : "w-[var(--app-sidebar-width-collapsed)]"
           }
         `}
         style={{ zIndex: MODAL_LAYER.sidebar }}
@@ -384,7 +471,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             ${open ? "px-4 py-4" : "px-2 py-3"}
           `}
         >
-          <div className={`flex items-center gap-3 ${open ? "" : "justify-center"}`}>
+          <div
+            className={`flex items-center gap-3 ${open ? "" : "justify-center"}`}
+          >
             <div
               className={`
                 flex shrink-0 items-center justify-center overflow-hidden
@@ -406,9 +495,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             <div
               className={`
                 flex flex-col min-w-0 transition-all duration-200
-                ${open
-                  ? "opacity-100 w-auto"
-                  : "opacity-0 w-0 overflow-hidden pointer-events-none"
+                ${
+                  open
+                    ? "opacity-100 w-auto"
+                    : "opacity-0 w-0 overflow-hidden pointer-events-none"
                 }
               `}
             >
@@ -421,7 +511,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
 
         {/* ── Nav ── */}
         <nav className="custom-scrollbar flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden px-2 py-3">
-
           {/* ── Regular menu items ── */}
           {visibleMenuItems.map((item) => (
             <NavLink
@@ -429,9 +518,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               to={item.to}
               className={({ isActive }) =>
                 `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
-                ${isActive
-                  ? "bg-primary/10 text-primary font-semibold"
-                  : "text-muted hover:bg-row-hover hover:text-main"
+                ${
+                  isActive
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted hover:bg-row-hover hover:text-main"
                 }`
               }
             >
@@ -460,8 +550,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               Employee view  → flat employee tabs list
               Professional   → single "Human Resource" NavLink
           ────────────────────────────────────────────────────────────── */}
-          {canSeeHr && (
-            isEmployeeView ? (
+          {canSeeHr &&
+            (isEmployeeView ? (
               <div className="pt-1">
                 {/* Section label (expanded only) */}
                 {/* {open && (
@@ -469,9 +559,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                     Human Resources
                   </p>
                 )} */}
-                {!open && (
-                  <div className="mx-3 mb-1 h-px bg-[var(--border)]" />
-                )}
+                {!open && <div className="mx-3 mb-1 h-px bg-[var(--border)]" />}
 
                 <div className="space-y-0.5">
                   {EMPLOYEE_HR_TABS.map((t) => {
@@ -485,9 +573,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                         className={`
                           group relative flex h-10 w-full items-center rounded-lg
                           transition-all duration-150
-                          ${isActive
-                            ? "bg-primary/10 text-primary font-semibold"
-                            : "text-muted hover:bg-row-hover hover:text-main"
+                          ${
+                            isActive
+                              ? "bg-primary/10 text-primary font-semibold"
+                              : "text-muted hover:bg-row-hover hover:text-main"
                           }
                         `}
                       >
@@ -528,9 +617,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 to="/hr"
                 className={({ isActive }) =>
                   `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
-                  ${isActive
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-muted hover:bg-row-hover hover:text-main"
+                  ${
+                    isActive
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "text-muted hover:bg-row-hover hover:text-main"
                   }`
                 }
               >
@@ -553,8 +643,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 </span>
                 {!open && <Tooltip label="Human Resource" />}
               </NavLink>
-            )
-          )}
+            ))}
 
           {/* ── Settings ── */}
           {showSettingsSection && (
@@ -565,9 +654,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 title={!open ? "Settings" : undefined}
                 className={`
                   group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
-                  ${settingsOpen || isSettingsRoute
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-muted hover:bg-row-hover hover:text-main"
+                  ${
+                    settingsOpen || isSettingsRoute
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "text-muted hover:bg-row-hover hover:text-main"
                   }
                 `}
               >
@@ -590,7 +680,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 </span>
                 {open && (
                   <span className="mr-2 shrink-0 opacity-50 text-xs">
-                    {settingsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    {settingsOpen ? (
+                      <ChevronUp size={14} />
+                    ) : (
+                      <ChevronDown size={14} />
+                    )}
                   </span>
                 )}
                 {!open && <Tooltip label="Settings" />}
@@ -604,9 +698,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                       to={sub.to}
                       className={({ isActive }) =>
                         `flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all
-                        ${isActive
-                          ? "bg-primary text-white shadow-sm"
-                          : "text-muted hover:bg-row-hover hover:text-primary"
+                        ${
+                          isActive
+                            ? "bg-primary text-white shadow-sm"
+                            : "text-muted hover:bg-row-hover hover:text-primary"
                         }`
                       }
                     >
@@ -632,13 +727,16 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             <div
               className={`
                 flex min-w-0 flex-1 flex-col leading-tight transition-all duration-200
-                ${open
-                  ? "opacity-100"
-                  : "opacity-0 w-0 overflow-hidden pointer-events-none"
+                ${
+                  open
+                    ? "opacity-100"
+                    : "opacity-0 w-0 overflow-hidden pointer-events-none"
                 }
               `}
             >
-              <span className="truncate text-sm font-bold text-main">{username}</span>
+              <span className="truncate text-sm font-bold text-main">
+                {username}
+              </span>
               <span className="text-[10px] font-black uppercase tracking-tight text-muted">
                 {user?.username || "User"}
               </span>

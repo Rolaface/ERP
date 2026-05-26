@@ -6,9 +6,6 @@ import { Layers, RefreshCw } from "lucide-react";
 import type { Column } from "./type";
 
 
-// ── PortalDropdown ─────────────────────────────────────────────────────────────
-// Renders the dropdown menu at document.body level so it is never clipped
-// by the table's overflow:auto scroll container.
 
 export interface PortalDropdownProps {
   trigger: React.ReactNode;

@@ -33,7 +33,9 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
 
     const loadWarehouses = async () => {
       try {
-        const data = await getAllWarehouses();
+        const data = await getAllWarehouses({
+          is_disabled:0,
+        });
 
         const options = data.map((wh: string) => ({
           value: wh,
@@ -41,11 +43,6 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
         }));
 
         setWarehouses(options);
-
-        // ✅ Auto-select first warehouse only if:
-        // 1. onDefaultLoad callback is provided
-        // 2. current value is empty
-        // 3. at least one warehouse exists
         if (onDefaultLoad && !value && options.length > 0) {
           onDefaultLoad(options[0].value);
         }

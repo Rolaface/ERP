@@ -13,7 +13,6 @@ import { useTaxCategory } from "../../hooks/useTaxCategory";
 import TaxCategoryModal from "../../components/inventory/TaxCategoryModal";
 import type { TaxCategoryFormData } from "../../hooks/useTaxCategory";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface TaxCategorySummary {

@@ -77,15 +77,14 @@ export function buildInvoicePayload(
       vatRate: String(item.vatRate ?? 0),
       vatCode: item.vatCode ?? "",
     }));
- const mappedTaxes = (formData.taxes || []).map((t: any) => ({
-  chargeType: t.chargeType,
-  accountHead: t.accountHead,
-  description: t.description || "",
-  ...(t.chargeType === "Actual"
-    ? { amount: Number(t.amount) || 0 }
-    : { rate: t.rate ?? 0 }
-  ),
-}));
+  const mappedTaxes = (formData.taxes || []).map((t: any) => ({
+    chargeType: t.chargeType,
+    accountHead: t.accountHead,
+    description: t.description || "",
+    ...(t.chargeType === "Actual"
+      ? { amount: Number(t.amount) || 0 }
+      : { rate: t.rate ?? 0 }),
+  }));
   return {
     customerId: formData.customerId,
     currency: formData.currencyCode,
@@ -175,6 +174,7 @@ export const useInvoiceForm = (
   );
 
   const shippingEditedRef = useRef(false);
+  const isLoadingRef = useRef(false);
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
@@ -228,7 +228,7 @@ export const useInvoiceForm = (
       setExchangeRateError(null);
       if (mode !== "edit") {
         setFormData((prev) => {
-          if (prev.exchangeRt === "1") return prev; 
+          if (prev.exchangeRt === "1") return prev;
           return { ...prev, exchangeRt: "1" };
         });
       }
@@ -238,7 +238,7 @@ export const useInvoiceForm = (
     let cancelled = false;
     setExchangeRateLoading(true);
     setFormData((prev) => {
-      if (prev.exchangeRt === "1") return prev; 
+      if (prev.exchangeRt === "1") return prev;
       return { ...prev, exchangeRt: "1" };
     });
     setExchangeRateError(null);
@@ -502,13 +502,46 @@ export const useInvoiceForm = (
       let nextValue: any = value;
       if (isNum) {
         nextValue =
-          value === ""
-            ? ""
+          value === "" || value === null
+            ? null
             : Number.isFinite(Number(value))
               ? Number(value)
-              : "";
+              : null;
       }
-      const updatedItem = { ...items[idx], [name]: nextValue };
+  if (name === "quantity" && nextValue !== null) {
+      const item = items[idx];
+      if (!item._skipCap) {
+        if (!item.isServiceItem) {
+        const stockAvailable = item.availableQty ?? item.qty ?? 0;
+const thisRowOriginal = Number(item.originalQty ?? 0);
+
+// Total pool = actual stock remaining + what this invoice already reserved
+const available = stockAvailable + thisRowOriginal;
+
+// How much other rows of same batch are using
+const usedByOthers = items
+  .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
+  .reduce((sum, x) => {
+    const qty = Number(x.quantity || 0);
+    const orig = Number(x.originalQty || 0);
+    // Net consumption = current qty - what was already allocated
+    // (original was already counted in stockAvailable pool)
+    return sum + Math.max(0, qty - orig);
+  }, 0);
+
+const maxAllowed = Math.max(0, available - usedByOthers);
+          if (nextValue > maxAllowed) {
+            nextValue = maxAllowed;
+            showValidationError(
+              `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
+            );
+          }
+        }
+      }
+    }
+      // ─────────────────────────────────────────────────────
+
+      const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
       const start = Number(updatedItem.boxStart || 0);
       const end = Number(updatedItem.boxEnd || 0);
 
@@ -542,7 +575,6 @@ export const useInvoiceForm = (
         return sum + net;
       }, 0);
 
-     
       const mappedTaxes = taxes.map((t: any) => {
         const rate = Number(t.rate) || 0;
 
@@ -550,16 +582,15 @@ export const useInvoiceForm = (
           t.charge_type === "Actual"
             ? Number(t.tax_amount) || 0
             : (subTotal * rate) / 100;
-            const isActual = t.charge_type === "Actual"; 
+        const isActual = t.charge_type === "Actual";
 
         return {
-         chargeType: t.charge_type,
-  accountHead: t.account_head,
-  description: t.description || "",
-  ...(isActual
-    ? { amount: Number(t.tax_amount) || 0 }
-    : { rate: Number(t.rate) || 0 }
-  ),
+          chargeType: t.charge_type,
+          accountHead: t.account_head,
+          description: t.description || "",
+          ...(isActual
+            ? { amount: Number(t.tax_amount) || 0 }
+            : { rate: Number(t.rate) || 0 }),
         };
       });
 
@@ -674,6 +705,7 @@ export const useInvoiceForm = (
   };
 
   const setFormDataFromInvoice = (invoice: any) => {
+    isLoadingRef.current = true;
     // charges[] from GET response map to taxes[] in formData
     // (taxes[] in GET is always empty; actual applied charges are in charges[])
     const mappedTaxesFromCharges =
@@ -766,10 +798,10 @@ export const useInvoiceForm = (
           exclusiveBase > 0
             ? Number(((amount / exclusiveBase) * 100).toFixed(2))
             : 0;
-            const taxTypes = (it.taxInfo || [])
-  .flatMap((tax: any) => tax.taxRates || [])
-  .map((r: any) => r.tax_type)
-  .filter((t: string) => t && t.trim() !== "");
+        const taxTypes = (it.taxInfo || [])
+          .flatMap((tax: any) => tax.taxRates || [])
+          .map((r: any) => r.tax_type)
+          .filter((t: string) => t && t.trim() !== "");
         return {
           itemCode: it.itemCode,
           itemName: it.itemName ?? "",
@@ -788,12 +820,17 @@ export const useInvoiceForm = (
           mfgDate: it.mfgDate ?? "",
           expDate: it.expDate ?? "",
           warehouse: it.warehouse ?? "",
+          originalQty: Number(it.quantity),
+          _skipCap: true,
         };
       }),
     }));
 
     setCustomerDetails({ name: invoice.customerName, id: invoice.customerId });
     setCustomerNameDisplay(invoice.customerName ?? "");
+    setTimeout(() => {
+      isLoadingRef.current = false;
+    }, 0);
   };
 
   const setTerms = (selling: TermSection) => {

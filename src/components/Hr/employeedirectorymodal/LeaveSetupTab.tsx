@@ -5,7 +5,7 @@ import { getAllLeavePolicies } from "../../../api/utils/frappeUtilsApi";
 import { getLeavePolicyById } from "../../../api/leaveConfigApi";
 import { getAllEmployees } from "../../../api/employeeapi";
 import { getalluser } from "../../../api/utils/frappeUtilsApi";
-
+import { resolveLabel } from "../../../api/utils/labelResolver";
 type LeaveSetupTabProps = {
   formData: any;
   handleInputChange: (field: string, value: string | boolean | any) => void;
@@ -54,8 +54,6 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
     await loadPolicyDetails(value);
   };
 
-  
-
   // Load on mount if already set (edit mode)
   useEffect(() => {
     if (formData.leavePolicy) {
@@ -69,7 +67,61 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
     (s: number, i: any) => s + (i.annual_allocation ?? 0),
     0,
   );
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({
+        value: formData.leavePolicy,
+        fetcher: getAllLeavePolicies,
+      });
 
+      handleInputChange("leavePolicyLabel", label);
+    };
+
+    loadLabel();
+  }, [formData.leavePolicy]);
+
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({
+        value: formData.leaveApprover,
+        fetcher: getalluser,
+      });
+
+      handleInputChange("leaveApproverLabel", label);
+    };
+
+    loadLabel();
+  }, [formData.leaveApprover]);
+  useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.expenseApprover,
+      fetcher: getalluser,
+    });
+
+    handleInputChange(
+      "expenseApproverLabel",
+      label,
+    );
+  };
+
+  loadLabel();
+}, [formData.expenseApprover]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.shiftRequestApprover,
+      fetcher: getalluser,
+    });
+
+    handleInputChange(
+      "shiftRequestApproverLabel",
+      label,
+    );
+  };
+
+  loadLabel();
+}, [formData.shiftRequestApprover]);
   return (
     <div className="max-w-4xl mx-auto space-y-3">
       <div className="grid grid-cols-2 gap-3">
@@ -103,16 +155,48 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
               </p>
             </div>
           )}
-          <SearchSelect2
-            label="Leave Approver"
-            value={formData.leaveApproverLabel || formData.leaveApprover || ""}
-            placeholder="Search ..."
-            fetchOptions={getalluser}
-            onChange={(value: string, option: any) => {
-              handleInputChange("leaveApprover", value);
-              handleInputChange("leaveApproverLabel", option?.label); // UI
-            }}
-          />
+          <div className="grid grid-cols-3 gap-2">
+            <SearchSelect2
+              label="Leave Approver"
+              value={
+                formData.leaveApproverLabel || formData.leaveApprover || ""
+              }
+              placeholder="Search ..."
+              fetchOptions={getalluser}
+              onChange={(value: string, option: any) => {
+                handleInputChange("leaveApprover", value);
+                handleInputChange("leaveApproverLabel", option?.label);
+              }}
+            />
+
+            <SearchSelect2
+              label="Expense Approver"
+              value={
+                formData.expenseApproverLabel || formData.expenseApprover || ""
+              }
+              placeholder="Search ..."
+              fetchOptions={getalluser}
+              onChange={(value: string, option: any) => {
+                handleInputChange("expenseApprover", value);
+                handleInputChange("expenseApproverLabel", option?.label);
+              }}
+            />
+            <SearchSelect2
+              label="Shift Request Approver"
+              value={
+                formData.shiftRequestApproverLabel ||
+                formData.shiftRequestApprover ||
+                ""
+              }
+              placeholder="Search ..."
+              fetchOptions={getalluser}
+              onChange={(value: string, option: any) => {
+                handleInputChange("shiftRequestApprover", value);
+
+                handleInputChange("shiftRequestApproverLabel", option?.label);
+              }}
+            />
+          </div>
         </div>
 
         {/* RIGHT — policy detail table */}

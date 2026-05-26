@@ -6,9 +6,14 @@ import {
   getAllGrades,
   getAllDesignations,
   getAllEmploymentTypes,
-  getallbranches,createBranch,checkBranchExists
+  getallbranches,
+  createBranch,
+  checkBranchExists,
+  getshift,
+  getEmployees,
 } from "../../../api/utils/frappeUtilsApi";
-import { getAllEmployees } from "../../../api/employeeapi";
+import { resolveLabel } from "../../../api/utils/labelResolver";
+
 import DatePickerInput from "../../calendar/DatePickerInput";
 
 type EmploymentTabProps = {
@@ -27,16 +32,9 @@ const EMPLOYMENT_STATUS_OPTIONS = [
   { label: "Left", value: "Left" },
 ];
 
-const SHIFT_OPTIONS = [
-  { label: "Day", value: "Day" },
-  { label: "Night", value: "Night" },
-  { label: "Split", value: "Split" },
-];
-
 const EmploymentTab: React.FC<EmploymentTabProps> = ({
   formData,
   handleInputChange,
-
   hrManagers,
 }) => {
   const isContractBased =
@@ -44,76 +42,101 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
     formData.employment_type === "Temporary" ||
     formData.employment_type === "Intern";
 
+  const isLeft = formData.employmentStatus === "Left";
+
   useEffect(() => {
     if (!isContractBased && formData.contractEndDate) {
       handleInputChange("contractEndDate", "");
     }
-  }, [formData.employeeType]);
-  const fetchEmployeeOptions = async (q: string) => {
-    const res = await getAllEmployees(1, 200);
+  }, [formData.employment_type]);
 
-    return (res.data || [])
-      .filter((emp: any) =>
-        `${emp.employee_name} ${emp.name}`
-          .toLowerCase()
-          .includes(q.toLowerCase()),
-      )
-      .map((emp: any) => ({
-        label: emp.employee_name,
-        value: emp.name,
-        meta: {
-          employeeId: emp.name,
-        },
-      }));
+  const fetchReportingToOptions = async (q: string) => {
+    const res = await getEmployees(q, {
+      currentEmployee: formData.employee,
+    });
+
+    return (res || []).map((emp: any) => ({
+      label: emp.label,
+      value: emp.value,
+      meta: {
+        description: emp.description,
+      },
+    }));
   };
-  const hrManagerOptions = hrManagers.map((mgr) => ({
-    label: mgr.name,
-    value: mgr.employeeId,
-  }));
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.department,
+      fetcher: getAllDepartments,
+    });
 
-  const fetchDepartmentOptions = async (q: string) => {
-    const data = await getAllDepartments(q);
-
-    return data;
-  };
-  const fetchGradeOptions = async (q: string) => {
-    const data = await getAllGrades(q);
-
-    return data;
-  };
-  const fetchDesignationOptions = async (q: string) => {
-    const data = await getAllDesignations(q);
-
-    return data;
-  };
-  const fetchEmploymentTypeOptions = async (q: string) => {
-    const data = await getAllEmploymentTypes(q);
-
-    return data;
+    handleInputChange(
+      "departmentLabel",
+      label,
+    );
   };
 
-  const fetchbranchoption = async (q: string) => {
-    const data = await getallbranches(q);
+  loadLabel();
+}, [formData.department]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.reports_to,
+      fetcher: getEmployees,
+    });
 
-    return data;
+    handleInputChange(
+      "reportingToLabel",
+      label,
+    );
   };
+
+  loadLabel();
+}, [formData.reports_to]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.branch,
+      fetcher: getallbranches,
+    });
+
+    handleInputChange(
+      "branchLabel",
+      label,
+    );
+  };
+
+  loadLabel();
+}, [formData.branch]);
+
+  const fetchDepartmentOptions = (q: string) => getAllDepartments(q);
+  const fetchGradeOptions = (q: string) => getAllGrades(q);
+  const fetchDesignationOptions = (q: string) => getAllDesignations(q);
+  const fetchEmploymentTypeOptions = (q: string) => getAllEmploymentTypes(q);
+  const fetchBranchOptions = (q: string) => getallbranches(q);
+  const fetchShiftOptions = (q: string) => getshift(q);
 
   return (
     <div className="max-w-4xl mx-auto space-y-3">
-      {/* Employment Details */}
+      {/* ── Employment Details ───────────────────────────────────── */}
       <div className="bg-card p-3 rounded-lg border border-theme">
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Employment Details
         </h4>
+
+        {/* Row 1 – Department / Grade / Designation */}
         <div className="grid grid-cols-3 gap-2.5">
           <SearchSelect2
             label="Department"
-            value={formData.department}
+            value={formData.departmentLabel || formData.department}
             placeholder="Search Department..."
             fetchOptions={fetchDepartmentOptions}
-            onChange={(value) => handleInputChange("department", value)}
-          />
+            onChange={(value, option) => {
+              handleInputChange("department", value);
 
+              handleInputChange("departmentLabel", option?.label || "");
+            }}
+          />
           <SearchSelect2
             label="Grade"
             value={formData.grade}
@@ -121,7 +144,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             fetchOptions={fetchGradeOptions}
             onChange={(value) => handleInputChange("grade", value)}
           />
-
           <SearchSelect2
             label="Designation"
             value={formData.designation}
@@ -129,6 +151,10 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             fetchOptions={fetchDesignationOptions}
             onChange={(value) => handleInputChange("designation", value)}
           />
+        </div>
+
+        {/* Row 2 – Employee Number / Shift / Employment Status */}
+        <div className="grid grid-cols-3 gap-2.5 mt-2.5">
           <ModalInput
             label="Employee Number"
             name="employee_number"
@@ -137,7 +163,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
               handleInputChange("employee_number", e.target.value)
             }
           />
-
           <SearchSelect2
             label="Employee Type"
             value={formData.employment_type}
@@ -145,7 +170,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             fetchOptions={fetchEmploymentTypeOptions}
             onChange={(value) => handleInputChange("employment_type", value)}
           />
-
           <ModalSelect
             label="Employment Status"
             name="employmentStatus"
@@ -155,18 +179,29 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             }
             options={EMPLOYMENT_STATUS_OPTIONS}
           />
+        </div>
 
-          <ModalSelect
+        {/* Row 3 – Shift always + Relieving Date only when Left */}
+        <div className="grid grid-cols-3 gap-2.5 mt-2.5">
+          <SearchSelect2
             label="Shift"
-            name="shift"
             value={formData.shift}
-            onChange={(e) => handleInputChange("shift", e.target.value)}
-            options={SHIFT_OPTIONS}
+            placeholder="Search Shift Type..."
+            fetchOptions={fetchShiftOptions}
+            onChange={(value) => handleInputChange("shift", value)}
           />
+          {isLeft && (
+            <DatePickerInput
+              label="Relieving Date"
+              name="relievingDate"
+              value={formData.relievingDate}
+              onChange={handleInputChange}
+            />
+          )}
         </div>
       </div>
 
-      {/* Reporting & Dates */}
+      {/* ── Reporting & Dates ────────────────────────────────────── */}
       <div className="bg-card p-3 rounded-lg border border-theme">
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Reporting & Dates
@@ -174,33 +209,21 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
         <div className="grid grid-cols-3 gap-2.5">
           <SearchSelect2
             label="Reporting To"
-            value={formData.reportingToLabel}
+            value={formData.reportingToLabel || formData.reports_to}
             placeholder="Search Employee..."
-            fetchOptions={fetchEmployeeOptions}
+            fetchOptions={fetchReportingToOptions}
             onChange={(value, option) => {
               handleInputChange("reports_to", value);
 
               handleInputChange("reportingToLabel", option?.label || "");
             }}
           />
-
-          {/* <ModalInput
-            label="Probation Period (months)"
-            name="probationPeriod"
-            type="number"
-            value={formData.probationPeriod}
-            onChange={(e) =>
-              handleInputChange("probationPeriod", e.target.value)
-            }
-          /> */}
-
           <DatePickerInput
             label="Date of Joining"
             name="dateOfJoining"
             value={formData.dateOfJoining}
             onChange={handleInputChange}
           />
-
           <DatePickerInput
             label="Contract End Date"
             name="contractEndDate"
@@ -209,41 +232,29 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             disabled={!isContractBased}
           />
         </div>
-        {!isContractBased && (
-          <p className="text-[10px] text-muted mt-1.5">
-        
-          </p>
-        )}
       </div>
 
-      {/* Work Location */}
+      {/* ── Work Location ────────────────────────────────────────── */}
       <div className="bg-card p-3 rounded-lg border border-theme">
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Work Location
         </h4>
         <div className="grid grid-cols-2 gap-2.5">
           <SearchSelect2
-  label="Branch"
-  value={formData.branch}
-  placeholder="Search branch..."
-  fetchOptions={fetchbranchoption}
-  allowCustomInput
-  onChange={async (value, option) => {
-    let finalBranch = value;
-
-    const exists = await checkBranchExists(value);
-
-    if (!exists && value?.trim()) {
-      await createBranch(value);
-    }
-
-    handleInputChange("branch", finalBranch);
-    handleInputChange(
-      "branchLabel",
-      option?.label || finalBranch,
-    );
-  }}
-/>
+            label="Branch"
+            value={formData.branch}
+            placeholder="Search Branch..."
+            fetchOptions={fetchBranchOptions}
+            allowCustomInput
+            onChange={async (value, option) => {
+              const exists = await checkBranchExists(value);
+              if (!exists && value?.trim()) {
+                await createBranch(value);
+              }
+              handleInputChange("branch", value);
+              handleInputChange("branchLabel", option?.label || value);
+            }}
+          />
         </div>
       </div>
     </div>

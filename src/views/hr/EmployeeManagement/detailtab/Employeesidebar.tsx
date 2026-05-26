@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { getAllDepartments } from "../../../../api/utils/frappeUtilsApi";
+
+import { resolveLabel } from "../../../../api/utils/labelResolver";
 import {
   Mail,
   Phone,
-
   Calendar,
   Building2,
   Briefcase,
@@ -11,7 +13,6 @@ import {
 import {
   fmt,
   fmtDate,
-  
   initials,
   getFileUrl,
 } from "../detailtab/Employeehelpers";
@@ -28,12 +29,25 @@ interface Props {
 export const EmployeeSidebar: React.FC<Props> = ({
   emp,
   fullName,
-  
+
   erpBase = "",
   onBack,
 }) => {
   const avatarUrl = emp.image ? getFileUrl(emp.image, erpBase) : null;
+  const [departmentLabel, setDepartmentLabel] = useState("");
 
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({
+        value: emp?.department,
+        fetcher: getAllDepartments,
+      });
+
+      setDepartmentLabel(label);
+    };
+
+    loadLabel();
+  }, [emp?.department]);
   return (
     <div className="bg-card rounded-xl border border-theme shadow-sm sticky top-2 overflow-hidden">
       <div className="bg-primary px-4 py-6 text-center relative">
@@ -161,7 +175,7 @@ export const EmployeeSidebar: React.FC<Props> = ({
           <QuickStat
             icon={<Building2 className="w-3.5 h-3.5" />}
             label="Department"
-            value={fmt(emp.department)}
+            value={fmt(departmentLabel || emp.department)}
           />
 
           <QuickStat

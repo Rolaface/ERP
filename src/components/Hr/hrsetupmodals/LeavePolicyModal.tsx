@@ -35,6 +35,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
   initialData,
   onSuccess,
 }) => {
+  const isView = Boolean((initialData as any)?._isView);
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<LeavePolicy>(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -138,7 +139,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
     }
   };
 
-  const footer = !isEdit ? (
+  const footer = !isView ? (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -157,7 +158,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
         }`}
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving…" : form.docstatus === 1 ? "Submit Policy" : isEdit ? "Update Policy" : "Save as Draft"}
+        {saving ? "Saving…" : form.docstatus === 1 ? "Submit Policy" : isEdit ? "Update Policy" : "Create Leave Policy"}
       </button>
     </div>
   ): null;
@@ -167,7 +168,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? "Edit Leave Policy" : "New Leave Policy"}
+      title={isView ? "View Leave Policy" : isEdit ? "Edit Leave Policy" : "New Leave Policy"}
       subtitle="Define annual leave allocations by type"
       icon={FileText}
       maxWidth="2xl"

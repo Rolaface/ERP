@@ -99,9 +99,13 @@ export const REFRESH_KEYS = {
   SALARY_STRUCTURE_LIST: "salary_structure_list",
   TAX_CONFIGURATION_LIST: "tax_configuration_list",
   EMPLOYEE_TYPE_LIST: "employee_type_list",
-EMPLOYEE_GRADE_LIST: "employee_grade_list",
-DEPARTMENT_LIST: "department_list",
-DESIGNATION_LIST: "designation_list",
+  EMPLOYEE_GRADE_LIST: "employee_grade_list",
+  DEPARTMENT_LIST: "department_list",
+  DESIGNATION_LIST: "designation_list",
+  EMAIL_TEMPLATE_LIST: "email_template",
+  APPRAISAL_CYCLE_LIST: "appraisal_cycle_list",
+  APPRAISAL_LIST: "appraisal_list",
+  FEEDBACK_LIST:  "feedback_list",
 
 } as const;
 

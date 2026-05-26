@@ -162,13 +162,13 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             options={MARITAL_STATUS_OPTIONS}
           />
 
-          <ModalInput
+          {/* <ModalInput
             label="Nationality"
             name="nationality"
             value={formData.nationality}
             onChange={(e) => handleInputChange("nationality", e.target.value)}
             placeholder=" India"
-          />
+          /> */}
         </div>
 
       </div>

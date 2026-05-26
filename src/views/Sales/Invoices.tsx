@@ -45,7 +45,8 @@ import { saveAs } from "file-saver";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
-
+import SendEmailModal from "../../components/common/SendEmailModal";
+import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -80,10 +81,8 @@ interface InvoiceTableProps {
   onExportInvoice?: () => void;
 }
 
-
 const SALES_MODULE = "Sales Invoice";
 const PAYMENT_MODULE = "Payment Entry";
-
 
 const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const { openInvoiceEdit } = useOutletContext<OutletContextType>();
@@ -100,12 +99,23 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
 
+  //email
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailInvoice, setEmailInvoice] = useState<InvoiceSummary | null>(null);
+  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(
+    null,
+  );
+  const [emailInvoiceAttachments, setEmailInvoiceAttachments] = useState<
+    { name: string; file_name: string }[]
+  >([]);
+
   const { can } = usePermission();
   // ── Drawer (same pattern as ProformaInvoicesTable)
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<InvoiceDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+  const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   const [filters, setFilters] = useState<{
     status?: string;
@@ -397,15 +407,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const handleDrawerPdf = async (invoiceNumber: string) => {
     setDrawerPdfLoading(true);
     setDrawerPdfUrl(null);
+
     try {
-      if (!company) return;
-      const res = await getSalesInvoiceById(invoiceNumber);
-      if (!res || res.message.status_code !== 200) return;
-      const blobUrl = await generateInvoicePDF(
-        res.message.data as Invoice,
-        company,
-        "bloburl",
-      );
+      const blob = await getSalesInvoicePdf(invoiceNumber);
+      setDrawerPdfBlob(blob);
+      const blobUrl = URL.createObjectURL(blob);
       setDrawerPdfUrl(blobUrl);
     } catch (err) {
       showApiError(err);
@@ -422,67 +428,32 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     e?.stopPropagation();
     try {
       showLoading("Preparing invoice preview...");
-
-      if (!company) {
-        closeSwal();
-        showApiError("Company data not loaded");
-        return;
-      }
-
-      const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      console.log("🚀 ~ handlePreviewPDF ~ invoiceRes:", invoiceRes);
-      if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
-        closeSwal();
-        showApiError("Failed to load invoice");
-        return;
-      }
-
-      const blobUrl = await generateInvoicePDF(
-        invoiceRes.message.data,
-        company,
-        "bloburl",
-      );
+      const blob = await getSalesInvoicePdf(inv.invoiceNumber);
+      const blobUrl = URL.createObjectURL(blob);
       closeSwal();
       setPdfUrl(blobUrl);
-      setSelectedInvoice(invoiceRes.data);
+      setSelectedInvoice(null); // no longer needed for PDF generation
       setPdfOpen(true);
     } catch (err: any) {
       closeSwal();
       showApiError(err);
     }
   };
+  const handleDrawerDownload = () => {
+    if (!drawerPdfBlob || !drawerData) return;
 
-  const handleDownload = async (inv: InvoiceSummary, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Preparing invoice download...");
+    const url = URL.createObjectURL(drawerPdfBlob);
 
-      if (!company) {
-        closeSwal();
-        showApiError("Company data not loaded");
-        return;
-      }
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${drawerData.id || "invoice"}.pdf`;
 
-      const invoiceRes = await getSalesInvoiceById(inv.invoiceNumber);
-      if (!invoiceRes.message || invoiceRes.message.status_code !== 200) {
-        closeSwal();
-        showApiError("Failed to load invoice");
-        return;
-      }
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
-      await generateInvoicePDF(
-        invoiceRes.message.data as Invoice,
-        company,
-        "save",
-      );
-      closeSwal();
-      showSuccess("Invoice downloaded successfully!");
-    } catch (err: any) {
-      closeSwal();
-      showApiError(err);
-    }
+    URL.revokeObjectURL(url);
   };
-
 
   const handleClosePdf = () => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
@@ -493,7 +464,20 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
 
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
@@ -534,7 +518,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         showApiError(res?.message.message || "Failed to update invoice status");
         return;
       }
-
 
       const updatedStatus = res.message.data?.status;
 
@@ -599,9 +582,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortable: true,
         render: (inv) => (
           <div className="py-1.5">
-            <span className="block">
-              {inv.invoiceNumber}
-            </span>
+            <span className="block">{inv.invoiceNumber}</span>
           </div>
         ),
         tooltip: (inv) => `Invoice Number: ${inv.invoiceNumber}`,
@@ -635,9 +616,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         align: "center",
         render: (inv) => (
           <div className="py-1.5">
-            <span className="block">
-              {formatDate(inv.dateOfInvoice)}
-            </span>
+            <span className="block">{formatDate(inv.dateOfInvoice)}</span>
           </div>
         ),
       },
@@ -688,7 +667,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         key: "invoiceStatus",
         header: "Status",
         align: "center",
-        render: (inv) => <div className="py-1.5"><StatusBadge status={inv.invoiceStatus} /></div>,
+        render: (inv) => (
+          <div className="py-1.5">
+            <StatusBadge status={inv.invoiceStatus} />
+          </div>
+        ),
       },
       {
         key: "actions",
@@ -716,7 +699,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             </PermissionGate>
             <ActionMenu
               showDownload
-              onDownload={(e) => handleDownload(inv, e)}
+              // onDownload={(e) => handleDownload(inv, e)}
               // Delete — needs delete permission
               {...(can(SALES_MODULE, "delete")
                 ? { onDelete: (e) => handleDelete(inv.invoiceNumber, e) }
@@ -724,26 +707,55 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
               customActions={[
                 // Receive Payment — needs Payment Entry create
                 ...(inv.invoiceStatus !== "Draft" &&
-                  inv.invoiceStatus !== "Cancelled" &&
-                  inv.outstandingAmount > 0 &&
-                  can(PAYMENT_MODULE, "create")
-                  ? [{ label: "Receive Payment", onClick: () => handleReceivePayment(inv) }]
+                inv.invoiceStatus !== "Cancelled" &&
+                inv.outstandingAmount > 0 &&
+                can(PAYMENT_MODULE, "create")
+                  ? [
+                      {
+                        label: "Receive Payment",
+                        onClick: () => handleReceivePayment(inv),
+                      },
+                    ]
                   : []),
+                {
+                  label: "Send Email",
+                  onClick: async () => {
+                    setEmailInvoice(inv);
+                    setEmailContactEmail(null);
+                    setEmailInvoiceAttachments([]); // clear stale attachments
+                    setEmailModalOpen(true);
+                    try {
+                      const res = await getSalesInvoiceById(inv.invoiceNumber);
+                      if (res?.message?.status_code === 200) {
+                        setEmailContactEmail(
+                          res.message.data?.contact_email ?? null,
+                        );
+                        setEmailInvoiceAttachments(
+                          res.message.data?.attachments ?? [],
+                        );
+                      }
+                    } catch {
+                      // non-critical: modal opens with empty To/attachments if fetch fails
+                    }
+                  },
+                },
                 {
                   label: "View PDF",
                   onClick: () => handlePreviewPDF(inv),
                 },
                 // Status transitions — needs write
                 ...(can(SALES_MODULE, "write")
-                  ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
-                    label: status === "Approved" ? "Approve" : status,
-                    danger: status === "Paid",
-                    onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
-                  }))
+                  ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
+                      (status) => ({
+                        label: status === "Approved" ? "Approve" : status,
+                        danger: status === "Paid",
+                        onClick: () =>
+                          handleRowStatusChange(inv.invoiceNumber, status),
+                      }),
+                    )
                   : []),
               ]}
             />
-
           </div>
         ),
       },
@@ -752,7 +764,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       handleEdit,
       handleDelete,
       handleView,
-      handleDownload,
       handleReceivePayment,
       handleRowStatusChange,
       handlePreviewPDF,
@@ -831,11 +842,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
         onViewPdf={() => drawerData && handleDrawerPdf(drawerData.id)}
-        onDownload={() =>
-          drawerData &&
-          company &&
-          generateInvoicePDF(drawerData as unknown as Invoice, company, "save")
-        }
+        onDownload={handleDrawerDownload}
         onClosePdf={() => {
           if (drawerPdfUrl?.startsWith("blob:"))
             URL.revokeObjectURL(drawerPdfUrl);
@@ -854,6 +861,20 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           company &&
           generateInvoicePDF(selectedInvoice, company, "save")
         }
+      />
+      <SendEmailModal
+        open={emailModalOpen}
+        docType="Sales Invoice"
+        invoiceNumber={emailInvoice?.invoiceNumber}
+        contactEmail={emailContactEmail}
+        customerName={emailInvoice?.customerName}
+        invoiceAttachments={emailInvoiceAttachments}
+        onClose={() => {
+          setEmailModalOpen(false);
+          setEmailInvoice(null);
+          setEmailContactEmail(null);
+          setEmailInvoiceAttachments([]);
+        }}
       />
     </div>
   );

@@ -18,7 +18,6 @@ interface FrappeListResponse<T> {
 }
 
 export interface LeaveApplication {
-  /** Frappe resource name (e.g., HR-LAPP-2026-00001) */
   name?: string;
   employee: string;
   leave_type: string;
@@ -29,6 +28,7 @@ export interface LeaveApplication {
   total_leave_days?: number;
   description?: string;
   leave_approver?: string;
+  leave_approver_name?: string;
   follow_via_email?: 0 | 1;
   posting_date?: string; // Format: YYYY-MM-DD
   status?: string; // e.g., Open, Approved, Rejected
@@ -42,27 +42,47 @@ export interface LeaveApplication {
  * GET /api/resource/Leave Application
  * Gets all leave applications.
  */
-export async function getAllLeaveApplications(filters?: any[][]): Promise<LeaveApplication[]> {
+// export async function getAllLeaveApplications(filters?: any[][]): Promise<LeaveApplication[]> {
+//   try {
+//     const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> = await api.get(
+//       LEAVE_APP_RESOURCE.getAll,
+//       { params: { fields: '["*"]', limit_page_length: 0, filters: JSON.stringify(filters) } }
+//     );
+
+//     return resp.data?.data || [];
+//   } catch (error: any) {
+//     throw error;
+//   }
+// }
+export async function getAllLeaveApplications(
+  filters?: any[][]
+): Promise<LeaveApplication[]> {
   try {
-    const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> = await api.get(
-      LEAVE_APP_RESOURCE.getAll,
-      { params: { fields: '["*"]', limit_page_length: 0, filters: JSON.stringify(filters) } }
-    );
+    const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> =
+      await api.get(LEAVE_APP_RESOURCE.getAll, {
+        params: {
+          fields: '["*"]',
+          limit_page_length: 0,
+          filters: JSON.stringify(filters),
+        },
+      });
 
     return resp.data?.data || [];
   } catch (error: any) {
     throw error;
   }
 }
-
-/**
- * GET /api/resource/Leave Application/{name}
- * Gets a single leave application by its ID (name).
- */
-export async function getLeaveApplicationById(name: string): Promise<LeaveApplication> {
+ 
+export async function getLeaveApplicationById(name: string, filters?: any[][]): Promise<LeaveApplication> {
   try {
     const url = `${LEAVE_APP_RESOURCE.getById}/${encodeURIComponent(name)}`;
-    const resp: AxiosResponse<FrappeDetailResponse<LeaveApplication>> = await api.get(url);
+    // const resp: AxiosResponse<FrappeDetailResponse<LeaveApplication>> = await api.get(url);
+    const resp: AxiosResponse<FrappeDetailResponse<LeaveApplication>> =
+      await api.get(url, {
+        params: {
+          filters: JSON.stringify(filters),
+        },
+      });
     
     return resp.data?.data;
   } catch (error: any) {

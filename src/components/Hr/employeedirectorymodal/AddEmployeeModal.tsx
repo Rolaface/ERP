@@ -11,10 +11,14 @@ import WorkScheduleTab from "./WorkScheduletab";
 import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
 
-
-import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
+import { getAllDesignations, getEmployees } from "../../../api/utils/frappeUtilsApi";import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
 import { EMPLOYEE_ROLE_CONFIG } from "../../../api/config/employeeRoleConfig";
 import { filterEmployeesByRole } from "../../../api/config/employeeRoleFilter";
+import { resolveLabel } from "../../../api/utils/labelResolver";
+import { getAllDepartments } from "../../../api/utils/frappeUtilsApi";
+import { getAllLeavePolicies } from "../../../api/utils/frappeUtilsApi";
+import { getAllGrades } from "../../../api/utils/frappeUtilsApi";
+import { getAllShiftTypes } from "../../../api/employeeapi";
 
 import {
   getAllEmployees,
@@ -169,6 +173,115 @@ const AddEmployeeModal: React.FC<Props> = ({
     })();
   }, [isOpen]);
 
+useEffect(() => {
+  const loadReportingToLabel = async () => {
+    if (!formData.reports_to) {
+      return;
+    }
+
+    try {
+    const res = await getEmployees(
+  formData.reports_to,
+);
+
+      const matchedEmployee = (res || []).find(
+        (emp: any) =>
+          emp.value === formData.reports_to,
+      );
+
+      if (
+        matchedEmployee &&
+        matchedEmployee.label !==
+          formData.reportingToLabel
+      ) {
+        setFormData((prev: any) => ({
+          ...prev,
+          reportingToLabel:
+            matchedEmployee.label,
+        }));
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  loadReportingToLabel();
+}, [formData.reports_to]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.department,
+      fetcher: getAllDepartments,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      departmentLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.department]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.leavePolicy,
+      fetcher: getAllLeavePolicies,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      leavePolicyLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.leavePolicy]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.grade,
+      fetcher: getAllGrades,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      gradeLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.grade]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.designation,
+      fetcher: getAllDesignations,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      designationLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.designation]);
+useEffect(() => {
+  const loadLabel = async () => {
+    const label = await resolveLabel({
+      value: formData.shift,
+      fetcher: getAllShiftTypes,
+    });
+
+    setFormData((prev: any) => ({
+      ...prev,
+      shiftLabel: label,
+    }));
+  };
+
+  loadLabel();
+}, [formData.shift]);
   // ── Helpers ─────────────────────────────────────────────────────────────
   const handleInputChange = (field: string, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -485,7 +598,7 @@ const AddEmployeeModal: React.FC<Props> = ({
                 hrManagers={hrManagers}
               />
             )}
-            {activeTab === "Leave Setup" && (
+            {activeTab === "Attendance & Leaves" && (
               <LeaveSetupTab
                 formData={formData}
                 handleInputChange={handleInputChange}

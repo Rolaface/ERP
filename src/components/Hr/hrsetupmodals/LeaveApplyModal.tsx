@@ -22,6 +22,7 @@ import { MinimizableModal } from "../../common/MinimizableModal";
 import { ModalInput }     from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import { useAuth }        from "../../../context/AuthContext";
+import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,7 @@ export default function LeaveApplyModal({
   editLeaveId,
   onSuccess,
 }: LeaveApplyModalProps) {
+  const isView = Boolean((initialData as any)?._isView);
   const { user } = useAuth();
 
   // ── Form state ──────────────────────────────────────────────────────────
@@ -65,13 +67,14 @@ export default function LeaveApplyModal({
 
   const editId       = initialData?.name || initialData?.id;
   const isEditMode   = Boolean(editLeaveId || editId);
-
+const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
   const [selectedRange,   setSelectedRange]   = useState<DateRange | undefined>();
   const [loading,         setLoading]         = useState(false);
   const [leaveApprover,   setLeaveApprover]   = useState<string>("");
   const [leaveApproverId, setLeaveApproverId] = useState<string>("");
   const [empDetails, setEmpDetails] = useState<any>(null);
   const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
+  const [leaveApproverName, setLeaveApproverName] = useState<string>("");
 
   useEffect(() => {
     if (!isOpen || !user?.employeeId) return;
@@ -79,9 +82,10 @@ export default function LeaveApplyModal({
     const fetchEmployeeData = async () => {
       try {
         const res = await getEmployeeById(user.employeeId!);
-        console.log("Res", res);
         const data = res?.message?.data ?? res?.data ?? res;
         const approver = data?.leave_approver ?? "";
+        const approver_name = data?.leave_approver_name ?? "";
+        setLeaveApproverName(approver_name);
         setLeaveApprover(approver);
         setLeaveApproverId(approver);
 
@@ -91,6 +95,7 @@ export default function LeaveApplyModal({
         if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
         if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
       } catch {
+        setLeaveApproverName("");
         setLeaveApprover("");
         setLeaveApproverId("");
       }
@@ -101,7 +106,10 @@ export default function LeaveApplyModal({
 
   useEffect(() => {
     const id = editLeaveId || editId;
-    if (!id || !isOpen) return;
+    if (!id || !isOpen){
+      setCalendarMonth(new Date());
+      return;
+    }
 
     const fetchLeaveDetail = async () => {
       try {
@@ -113,8 +121,11 @@ export default function LeaveApplyModal({
           isHalfDay: l.half_day === 1,
           reason:    l.description || "",
         });
+        if (l.from_date) {
+          setCalendarMonth(new Date(l.from_date));
+        }
       } catch (err) {
-        console.error("Failed to fetch leave", err);
+        showApiError(parseFrappeError(err) || `Failed to fetch leave: ${err}`);
       }
     };
     fetchLeaveDetail();
@@ -161,6 +172,7 @@ export default function LeaveApplyModal({
 
   // ── Calendar range select ────────────────────────────────────────────────
   const handleRangeSelect = (range?: DateRange) => {
+    if (isView) return;
     if (!range?.from) return;
     setSelectedRange(range);
     const from = formatLocalDate(range.from);
@@ -209,6 +221,7 @@ export default function LeaveApplyModal({
       description:    formData.reason,
       status:         "Open",
       ...(leaveApproverId && { leave_approver: leaveApproverId }),
+      ...(leaveApproverName && { leave_approver_name: leaveApproverName }), 
     };
   };
 
@@ -216,10 +229,9 @@ export default function LeaveApplyModal({
     e.preventDefault();
     if (!formData.type)      { showApiError("Leave Type is required"); return; }
     if (!formData.startDate) { showApiError("Start date is required"); return; }
-    if (!formData.isHalfDay && !formData.endDate) {
+    if (!formData.endDate) {
       showApiError("End date is required"); return;
     }
-
     setLoading(true);
     try {
       showLoading(isEditMode ? "Updating Leave..." : "Applying Leave...");
@@ -240,7 +252,7 @@ export default function LeaveApplyModal({
       handleClose();
     } catch (err) {
       closeSwal();
-      showApiError(err);
+      showApiError(parseFrappeError(err) || err);
     } finally {
       setLoading(false);
     }
@@ -250,15 +262,16 @@ export default function LeaveApplyModal({
   const handleClose = () => {
     setFormData({ type: "", startDate: "", endDate: "", reason: "", isHalfDay: false });
     setSelectedRange(undefined);
+    setCalendarMonth(new Date());
     setLeaveApprover("");
     setLeaveApproverId("");
+    setLeaveApproverName("");
     onClose();
   };
 
   if (!isOpen) return null;
 
-  // ── Footer ───────────────────────────────────────────────────────────────
-  const footer = (
+  const footer = !isView ? (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -269,7 +282,8 @@ export default function LeaveApplyModal({
       </button>
       <button
         type="submit"
-        form="leave-form"
+        // form="leave-form"
+        form={`leave-form-${modalId}`}
         disabled={loading}
         className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
@@ -277,9 +291,8 @@ export default function LeaveApplyModal({
         {loading ? "Saving…" : isEditMode ? "Update Leave" : "Apply Leave"}
       </button>
     </div>
-  );
+  ): null;
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <MinimizableModal
       modalId={modalId}
@@ -292,28 +305,33 @@ export default function LeaveApplyModal({
       height="auto"
       footer={footer}
     >
-      {/* <div className="p-4 sm:p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 140px)" }}>
-        <div className="grid lg:grid-cols-12 gap-8"> */}
+    
 <div className="p-4 sm:p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 140px)" }}>
   <div className="flex flex-col lg:flex-row gap-6"> 
       <div className="flex-1 grid lg:grid-cols-12 gap-8 order-2 lg:order-1">
           {/* ── LEFT: Calendar ── */}
-          <div className="lg:col-span-5 space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-sub">
-              Select Dates
-            </p>
-            <div className="rounded-xl border border-[var(--border)] bg-app p-4 shadow-sm">
-              <AdvancedCalendar
-                leaves={[]}
-                selectedRange={selectedRange}
-                onRangeSelect={handleRangeSelect}
-              />
-            </div>
+          <div className="lg:col-span-5 space-y-4 min-w-0 w-full">
+        <p className="text-xs font-semibold uppercase tracking-wider text-sub">
+          Select Dates
+        </p>
+        {/* Added overflow-x-auto and dynamic padding for smaller screens */}
+        <div className="rounded-xl border border-[var(--border)] bg-app p-2 sm:p-4 shadow-sm w-full overflow-x-auto">
+          {/* Wrapper to keep calendar centered but allow horizontal scroll if it exceeds screen width */}
+          <div className="min-w-fit flex justify-center w-full">
+            <AdvancedCalendar
+              leaves={[]}
+              selectedRange={selectedRange}
+              onRangeSelect={handleRangeSelect}
+              month={calendarMonth}            
+              onMonthChange={setCalendarMonth}
+            />
           </div>
+        </div>
+      </div>
 
           {/* ── RIGHT: Form ── */}
           <div className="lg:col-span-7">
-            <form id="leave-form" onSubmit={handleSubmit} className="space-y-5">
+            <form id={`leave-form-${modalId}`} onSubmit={handleSubmit} noValidate className="space-y-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-sub">
                 Application Details
               </p>
@@ -338,6 +356,7 @@ export default function LeaveApplyModal({
                     value={formData.type}
                     onChange={(lt) => setFormData((p) => ({ ...p, type: lt.name }))}
                     disabled={isEditMode}
+                    leaveBalances={leaveBalances}
                   />
                 </div>
 
@@ -363,6 +382,7 @@ export default function LeaveApplyModal({
                     checked={formData.isHalfDay}
                     onChange={handleChange}
                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    disabled={isView}
                   />
                   <label htmlFor="isHalfDay" className="text-sm font-medium text-main cursor-pointer">
                     Apply for Half Day
@@ -377,18 +397,18 @@ export default function LeaveApplyModal({
                     value={formData.startDate}
                     required
                     onChange={handleDateChange}
+                     disabled={isView}
                   />
                   <DatePickerInput
                     label="To Date"
                     name="endDate"
                     value={formData.endDate}
                     required={!formData.isHalfDay}
-                    disabled={formData.isHalfDay}
+                    disabled={formData.isHalfDay || isView}
                     onChange={handleDateChange}
                   />
                 </div>
 
-                {/* ── Day summary ── */}
                 {showSummary && (
                   <div className="flex items-center gap-3 rounded-lg bg-[var(--border)]/30 px-3 py-2 text-xs text-main">
                     <div className="flex items-center gap-1.5">
@@ -421,6 +441,7 @@ export default function LeaveApplyModal({
                   id="reason"
                   value={formData.reason}
                   onChange={handleChange}
+                  disabled={isView}
                   rows={3}
                   placeholder="Brief description for your leave request..."
                   className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-app text-main focus:border-primary focus:outline-none transition-colors resize-none"
@@ -430,35 +451,25 @@ export default function LeaveApplyModal({
           </div>
 
         </div>
-         <div className="w-full lg:w-[220px] flex-shrink-0 space-y-4 order-1 lg:order-2">
+         {/* <div className="w-full lg:w-[220px] flex-shrink-0 space-y-4 order-1 lg:order-2"> */}
       
       {/* Employee Details */}
-      <div className="bg-card rounded-lg p-3 border border-[var(--border)]">
+      {/* <div className="bg-card rounded-lg p-3 border border-[var(--border)]">
         <h3 className="text-[12px] font-semibold text-main mb-2">Employee Details</h3>
         <div className="flex flex-col gap-2 text-xs">
           <div className="flex items-center gap-2 text-main font-medium">
             <User size={14} className="text-muted shrink-0" />
             <span className="truncate">{empDetails?.employee_name ?? "Loading..."}</span>
           </div>
-          {/* <div className="flex items-center gap-2 text-[11px] text-muted">
-            <Briefcase size={12} className="shrink-0" />
-            <span className="truncate">{empDetails?.designation || "-"}</span>
-          </div> */}
-          {/* <div className="flex justify-between text-[11px]">
-            <span className="text-muted">Dept</span>
-            <span className="text-main font-medium truncate ml-2">
-              {empDetails?.department || "-"}
-            </span>
-          </div> */}
           <div className="flex items-center gap-2 text-[11px] text-muted mt-1">
             <CalendarDays size={12} className="shrink-0" />
             Joined: {empDetails?.date_of_joining || "-"}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Leave Balances Summary */}
-      <div className="bg-card rounded-lg p-3 border border-[var(--border)]">
+      {/* <div className="bg-card rounded-lg p-3 border border-[var(--border)]">
         <h3 className="text-[13px] font-semibold text-main mb-2">Leave Balances</h3>
         <div className="flex flex-col gap-3">
           {leaveBalances.length > 0 ? (
@@ -489,8 +500,8 @@ export default function LeaveApplyModal({
             <span className="text-xs text-muted">No balances found.</span>
           )}
         </div>
-      </div>
-    </div>
+      </div> */}
+    {/* </div> */}
 
   </div>
 </div>

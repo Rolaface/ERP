@@ -6,7 +6,6 @@ import {
   Clock,
 } from "lucide-react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
-import { getAllQuotations } from "../../api/quotationApi";
 import { showApiError } from "../../utils/alert";
 
 interface Quotation {
@@ -32,28 +31,28 @@ const CustomerQuotations = ({ customerId }: Props) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
-    if (!customerId) return;
+  // useEffect(() => {
+  //   if (!customerId) return;
 
-    const loadQuotations = async () => {
-      setLoading(true);
-      try {
-        const res = await getAllQuotations(page, pageSize, {
-          customer: customerId,
-        });
-        const payload = res?.data || {};
-        setQuotations(payload?.quotations || []);
-        setTotalPages(payload?.pagination?.totalPages || 1);
-        setTotalItems(payload?.pagination?.total || 0);
-      } catch (err) {
-        showApiError(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  //   const loadQuotations = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const res = await getAllQuotations(page, pageSize, {
+  //         customer: customerId,
+  //       });
+  //       const payload = res?.data || {};
+  //       setQuotations(payload?.quotations || []);
+  //       setTotalPages(payload?.pagination?.totalPages || 1);
+  //       setTotalItems(payload?.pagination?.total || 0);
+  //     } catch (err) {
+  //       showApiError(err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    loadQuotations();
-  }, [customerId, page, pageSize]);
+  //   loadQuotations();
+  // }, [customerId, page, pageSize]);
 
   useEffect(() => {
     setPage(1);

@@ -12,6 +12,7 @@ import {
 } from "../../../../../api/leaveConfigApi";
 import { showApiError } from "../../../../../utils/alert";
 import { useLeavePolicyAssignments } from "../hooks/useLeavePolicyAssignments";
+import { confirmCancel } from "../../../../../api/utils/confirmCancel";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeavePolicyAssignmentModal } from "../../../../../store/modalStore";
 
@@ -62,8 +63,8 @@ export function LeavePolicyAssignmentSetup() {
       if (!row.name) return;
       try {
         setActionLoadingId(row.name);
-        const cancelled = await confirmDelete({
-          text: `Cancel assignment for "${row.employee}"?`,
+        const cancelled = await confirmCancel({
+          text: `Cancel assignment for "${row.employee_name}"?`,
           loadingText: "Cancelling Leave Policy Assignment..",
           successMessage: "Leave Policy Assignment cancelled",
           action: async () => {
@@ -172,7 +173,13 @@ export function LeavePolicyAssignmentSetup() {
               <ActionButton
                 type="view"
                 iconOnly
-                onClick={() => openLeavePolicyAssignmentModal(row, true, { onSuccess: fetchAll })}
+                onClick={() => 
+                  openLeavePolicyAssignmentModal(
+                    { ...row, _isView: true } as any,  
+                    true,                             
+                    { onSuccess: fetchAll }           
+                  )
+                }
               />
                {menuActions.length > 0 && (
                 <ActionMenu customActions={menuActions} />

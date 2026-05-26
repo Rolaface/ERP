@@ -41,6 +41,7 @@ export const LeavePolicyAssignmentModal: React.FC<Props> = ({
   initialData,
   onSuccess,
 }) => {
+    const isView = Boolean((initialData as any)?._isView);
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<LeavePolicyAssignment>(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -161,7 +162,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
     }
   };
 
-  const footer = !isEdit ? (
+  const footer = !isView ? (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -188,7 +189,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? "Edit Leave Policy Assignment" : "New Leave Policy Assignment"}
+      title={isView ? "View Leave Policy Assignment" : isEdit ? "Edit Leave Policy Assignment" : "New Leave Policy Assignment"}
       subtitle="Link an Employee to a Leave Policy"
       icon={Link2}
       maxWidth="xl"
@@ -208,14 +209,14 @@ const fetchLeavePeriodsOptions = async (query: string) => {
               set("employee", val); 
             }}
             required={true}
-            disabled={isEdit}
+            disabled={isView}
           />
             
                  <PolicySelect
   label="Leave Policy"
   value={form.leave_policy}
   onChange={(policy) => set("leave_policy", policy.name)}
-  disabled={isEdit}
+  disabled={isView}
   required
   className="w-full"
 />
@@ -235,7 +236,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
               <select
                 value={form.assignment_based_on}
                 onChange={(e) => set("assignment_based_on", e.target.value as "Leave Period" | "Joining Date")}
-                disabled={isEdit}
+                disabled={isView}
                 className="w-full rounded-lg border border-[var(--border)] bg-app px-3 py-2 text-sm text-main outline-none transition focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
               >
                 <option value="Leave Period">Leave Period</option>
@@ -255,7 +256,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
           console.log("Selected Leave Period Name:", val); 
         }}
         required={true}
-        disabled={isEdit}
+        disabled={isView}
       />
             )}
           </div>
@@ -268,7 +269,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
               label="Carry Forward Unused Leaves"
               value={form.carry_forward ? "Y" : "N"}
               onChange={(name, value) => set("carry_forward", value === "Y" ? 1 : 0)}
-              disabled={isEdit}
+              disabled={isView}
             />
             
             {/* {!isEdit && (
