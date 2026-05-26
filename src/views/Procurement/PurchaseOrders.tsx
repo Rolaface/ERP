@@ -620,24 +620,27 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
             customActions={[
               { label: "View PDF", onClick: () => handlePreviewPDF(o) },
 
-              {
-                label: "Send Email",
-                onClick: async () => {
-                  setEmailPurchaseOrder(o);
-                  setEmailContactEmail(null);
-                  setEmailPurchaseOrderAttachments([]);
-                  setEmailModalOpen(true);
-                  try {
-                    const res = await getPurchaseOrderById(o.id);
-                    if (res?.status === "success") {
-                      setEmailContactEmail(res.data?.contact_email ?? null);
-                      setEmailPurchaseOrderAttachments(res.data?.attachments ?? []);
+              ...(o.status !== "Cancelled"
+                ? [{
+                  label: "Compose Email",
+                  onClick: async () => {
+                    setEmailPurchaseOrder(o);
+                    setEmailContactEmail(null);
+                    setEmailPurchaseOrderAttachments([]);
+                    setEmailModalOpen(true);
+
+                    try {
+                      const res = await getPurchaseOrderById(o.id);
+                      if (res?.status === "success") {
+                        setEmailContactEmail(res.data?.contact_email ?? null);
+                        setEmailPurchaseOrderAttachments(res.data?.attachments ?? []);
+                      }
+                    } catch {
+                      // non-critical
                     }
-                  } catch {
-                    // non-critical
-                  }
-                },
-              },
+                  },
+                }]
+                : []),
 
               // Advance Payment — needs Payment Entry create + Approved status
               ...(can(PAYMENT_MODULE, "create") && o.status === "Approved"
