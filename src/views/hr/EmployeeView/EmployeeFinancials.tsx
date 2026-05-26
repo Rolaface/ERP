@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { useAuth }                  from "../../../context/AuthContext";
 import { getEmployeeById }          from "../../../api/employeeapi";
-import { getSalarySlipsByEmployee } from "../../../api/payroll/payrollEntryApi";
+import { getSalarySlipsByEmployeeOnly } from "../../../api/payroll/payrollEntryApi";
 import { showApiError }             from "../../../utils/alert";
 import AppSkeleton                  from "../../../components/ui/AppSkeleton";
 import { AppSubTabs }               from "../../../components/ui/app-shell";
@@ -324,17 +324,20 @@ const EmployeeFinancials: React.FC = () => {
     };
 
     // Fetch salary slips
-    const loadSlips = async () => {
-      try {
-        setSlipsLoading(true);
-        const res = await getSalarySlipsByEmployee(user.employeeId!);
-        setSlips(res || []);
-      } catch {
-        setSlips([]);
-      } finally {
-        setSlipsLoading(false);
-      }
-    };
+  const loadSlips = async () => {
+  try {
+    setSlipsLoading(true);
+
+    const { data } =
+      await getSalarySlipsByEmployeeOnly(user.employeeId!);
+
+    setSlips(data || []);
+  } catch {
+    setSlips([]);
+  } finally {
+    setSlipsLoading(false);
+  }
+};
 
     loadEmp();
     loadSlips();
