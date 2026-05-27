@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-
+import { getAllTaxCategories } from "../../api/taxCategoryApi";
 import { showApiError, showSuccess } from "../../utils/alert";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import {
@@ -118,6 +118,9 @@ const Items: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [activeSummary, setActiveSummary] = useState<ItemSummary | null>(null);
 
+  // tax cat filter
+  const [taxCategories, setTaxCategories] = useState<{ label: string; value: string }[]>([]);
+
   /* ── All items for sidebar (unpaginated) ── */
   const [allItems, setAllItems] = useState<ItemSummary[]>([]);
 
@@ -137,6 +140,23 @@ const Items: React.FC = () => {
     }, 600);
     return () => clearTimeout(t);
   }, [searchTerm]);
+
+  useEffect(() => {
+  const fetchTaxCategories = async () => {
+    try {
+      const res = await getAllTaxCategories(1, 1000);
+      const categories = Array.isArray(res?.data)
+        ? res.data
+            .filter((cat: any) => cat.disabled === 0)
+            .map((cat: any) => ({ label: cat.title, value: cat.name }))
+        : [];
+      setTaxCategories(categories);
+    } catch (err) {
+      showApiError(err);
+    }
+  };
+  void fetchTaxCategories();
+}, []);
 
   /* ── Fetch item list ── */
   const fetchItems = useCallback(async () => {
@@ -541,11 +561,7 @@ const Items: React.FC = () => {
                     }));
                     setPage(1);
                   }}
-                  options={[
-                    { label: "Export", value: "Export" },
-                    { label: "Non-Export", value: "Non-Export" },
-                    { label: "LPO", value: "LPO" },
-                  ]}
+                  options={taxCategories}
                 />
               </div>
             }

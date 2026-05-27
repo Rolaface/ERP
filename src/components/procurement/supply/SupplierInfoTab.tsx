@@ -4,7 +4,7 @@ import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { fetchCurrencyOptions } from "../../../utils/currencyOptions";
 import TaxCategorySelect from "../../selects/TaxCategorySelect";
 import { CreditDaysInput, ModalInput } from "../../ui/modal/modalComponent";
-import DatePickerInput from "../../calendar/DatePickerInput";
+import PhoneCodeSelect from "../../common/PhoneCodeSelect";
 import Tooltip from "../../Tooltip";
 
 interface SupplierInfoTabProps {
@@ -153,26 +153,13 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                 Phone No <span className="text-danger">*</span>
               </span>
               <div className="flex">
-                <input
-                  name="phoneCode"
-                  value={form.phoneCode}
-                  onChange={onChange}
-                  placeholder="+"
-                  className={[
-                    "w-[50px] py-1 px-2 border rounded-l text-[11px] text-main bg-card transition-all min-w-0",
-                    errors.phoneNo
-                      ? "border-danger"
-                      : "border-[var(--border)] hover:border-primary/40",
-                  ].join(" ")}
-                  onFocus={(e) => {
-                    e.currentTarget.style.boxShadow = errors.phoneNo
-                      ? "0 0 0 3px rgba(239,68,68,0.18)"
-                      : "0 0 0 3px rgba(37,99,235,0.16)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.boxShadow = "";
-                  }}
-                />
+             <PhoneCodeSelect
+  value={form.phoneCode}
+  onChange={(code) =>
+    onChange({ target: { name: "phoneCode", value: code } } as React.ChangeEvent<HTMLInputElement>)
+  }
+  error={errors.phoneNo}
+/>
                 <input
                   name="phoneNo"
                   type="tel"

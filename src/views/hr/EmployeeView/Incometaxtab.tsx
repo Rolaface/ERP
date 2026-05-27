@@ -31,7 +31,7 @@ interface IncomeTaxProps {
   employeeId?: string;
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Current regime card ──────────────────────────────────────────────────────
 
 export const IncomeTax: React.FC<IncomeTaxProps> = ({
   employeeId,

@@ -1,10 +1,27 @@
 import { SupplierFormData, Supplier } from "../../types/Supply/supplier";
 import { emptySupplierForm } from "./supplier";
+import { parsePhoneNumberWithError } from "libphonenumber-js";
+
+
+const splitPhone = (full: string): { code: string; number: string } => {
+  if (!full?.startsWith("+")) return { code: "", number: full ?? "" };
+  try {
+    const parsed = parsePhoneNumberWithError(full);
+    if (parsed) {
+      return {
+        code: `+${parsed.countryCallingCode}`,
+        number: parsed.nationalNumber,
+      };
+    }
+  } catch {
+    // fall through
+  }
+  return { code: "", number: full };
+};
+
 
 export const mapSupplierApi = (d: any): Supplier => {
   if (!d) return emptySupplierForm as Supplier;
-
-
   const contact =
     d.contacts?.find((c: any) => c.isPrimary) ?? d.contacts?.[0] ?? {};
 
@@ -15,12 +32,12 @@ export const mapSupplierApi = (d: any): Supplier => {
     {};
 
   return {
-    id: d.id ?? "", 
-    supplierId: d.id ?? "", 
-    supplierName: d.name ?? "", 
+    id: d.id ?? "",
+    supplierId: d.id ?? "",
+    supplierName: d.name ?? "",
     supplierCode: d.code ?? "",
 
-    taxCategory: d.supplierTaxCategory ?? "", 
+    taxCategory: d.supplierTaxCategory ?? "",
     tpin: d.tpin ?? "",
     currency: d.currency ?? "",
     type: d.type ?? "",
@@ -50,8 +67,8 @@ export const mapSupplierApi = (d: any): Supplier => {
     province: address.state ?? "",
     billingPostalCode: address.postalCode ?? "",
     billingCountry: address.country ?? "",
-    billingCounty: address.county ?? "", 
-    district: address.county ?? "", 
+    billingCounty: address.county ?? "",
+    district: address.county ?? "",
     openingBalance: 0,
     paymentTerms: "",
     dateOfAddition: d.createdAt ?? "",
@@ -79,56 +96,56 @@ export const mapSupplierToApi = (f: SupplierFormData, id?: string | number) => {
     contacts:
       f.contacts && f.contacts.length > 0
         ? f.contacts.map((c) => ({
-            ...(c.id ? { id: c.id } : {}),
-            firstName: c.firstName || "",
-            lastName: c.lastName || "",
-            designation: c.designation || "",
-            department: c.department || "",
-            email: c.email || "",
-            phone: c.phone || "",
-            mobile: c.mobile || "",
-            isPrimary: c.isPrimary ?? true,
-            isBilling: c.isBilling ?? true,
-          }))
+          ...(c.id ? { id: c.id } : {}),
+          firstName: c.firstName || "",
+          lastName: c.lastName || "",
+          designation: c.designation || "",
+          department: c.department || "",
+          email: c.email || "",
+          phone: c.phone || "",
+          mobile: c.mobile || "",
+          isPrimary: c.isPrimary ?? true,
+          isBilling: c.isBilling ?? true,
+        }))
         : [
-            {
-              firstName: f.contactPerson || "",
-              lastName: "",
-              email: f.emailId || "",
-              mobile: `${f.phoneCode || ""}${(f.phoneNo || "").replace(/^\+\d{1,3}/, "")}`,
-              phone: "",
-              isPrimary: true,
-              isBilling: true,
-            },
-          ],
+          {
+            firstName: f.contactPerson || "",
+            lastName: "",
+            email: f.emailId || "",
+            mobile: `${f.phoneCode || ""}${(f.phoneNo || "").replace(/^\+\d{1,3}/, "")}`,
+            phone: "",
+            isPrimary: true,
+            isBilling: true,
+          },
+        ],
 
     addresses:
       f.addresses && f.addresses.length > 0
         ? f.addresses.map((a) => ({
-            ...(a.id ? { id: a.id } : {}),
-            type: a.type,
-            line1: a.line1 || "",
-            line2: a.line2 || "",
-            city: a.city || "",
-            state: a.state || "",
-            county: a.county || "",
-            postalCode: a.postalCode || "",
-            country: a.country || "",
-            isPrimary: a.isPrimary ?? false,
-          }))
+          ...(a.id ? { id: a.id } : {}),
+          type: a.type,
+          line1: a.line1 || "",
+          line2: a.line2 || "",
+          city: a.city || "",
+          state: a.state || "",
+          county: a.county || "",
+          postalCode: a.postalCode || "",
+          country: a.country || "",
+          isPrimary: a.isPrimary ?? false,
+        }))
         : [
-            {
-              type: "Billing",
-              line1: f.billingAddressLine1 || "",
-              line2: f.billingAddressLine2 || "",
-              city: f.billingCity || "",
-              state: f.province || "",
-              county: f.district || "",
-              postalCode: f.billingPostalCode || "",
-              country: f.billingCountry || "",
-              isPrimary: true,
-            },
-          ],
+          {
+            type: "Billing",
+            line1: f.billingAddressLine1 || "",
+            line2: f.billingAddressLine2 || "",
+            city: f.billingCity || "",
+            state: f.province || "",
+            county: f.district || "",
+            postalCode: f.billingPostalCode || "",
+            country: f.billingCountry || "",
+            isPrimary: true,
+          },
+        ],
 
     terms: {
       buying: f.terms?.buying ?? { payment: { phases: [] } },
@@ -164,10 +181,10 @@ export const mapSupplierToForm = (s?: Supplier | null): SupplierFormData => {
     taxCategory: s.taxCategory ?? (s as any).supplierTaxCategory ?? "",
 
     contactPerson,
-    phoneCode: phoneNo.startsWith("+") ? phoneNo.slice(0, 3) : "",
-phoneNo: phoneNo.startsWith("+") ? phoneNo.slice(3).replace(/^\+\d{1,3}/, "") : phoneNo,
-    alternateCode: (s.alternateNo ?? "").slice(0, 3),
-    alternateNo: (s.alternateNo ?? "").slice(3),
+    phoneCode: splitPhone(phoneNo).code,
+    phoneNo: splitPhone(phoneNo).number,
+    alternateCode: splitPhone(s.alternateNo ?? "").code,
+    alternateNo: splitPhone(s.alternateNo ?? "").number,
     emailId,
 
     currency: s.currency ?? "",
@@ -195,27 +212,27 @@ phoneNo: phoneNo.startsWith("+") ? phoneNo.slice(3).replace(/^\+\d{1,3}/, "") : 
     bankAccounts:
       (s as any).bankAccounts?.length > 0
         ? (s as any).bankAccounts.map((acc: any) => ({
-            id: acc.id || crypto.randomUUID(),
-            bankName: acc.bankName ?? "",
-            accountNumber: acc.accountNumber ?? "",
-            accountHolder: acc.accountHolder ?? "",
-            sortCode: acc.sortCode ?? "",
-            swiftCode: acc.swiftCode ?? "",
-            branchAddress: acc.branchAddress ?? "",
-            isDefault: acc.isDefault ?? false,
-          }))
+          id: acc.id || crypto.randomUUID(),
+          bankName: acc.bankName ?? "",
+          accountNumber: acc.accountNumber ?? "",
+          accountHolder: acc.accountHolder ?? "",
+          sortCode: acc.sortCode ?? "",
+          swiftCode: acc.swiftCode ?? "",
+          branchAddress: acc.branchAddress ?? "",
+          isDefault: acc.isDefault ?? false,
+        }))
         : [
-            {
-              id: crypto.randomUUID(),
-              bankName: (s as any).bankAccount ?? "",
-              accountNumber: (s as any).accountNumber ?? "",
-              accountHolder: (s as any).accountHolder ?? "",
-              sortCode: (s as any).sortCode ?? "",
-              swiftCode: (s as any).swiftCode ?? "",
-              branchAddress: (s as any).branchAddress ?? "",
-              isDefault: true,
-            },
-          ],
+          {
+            id: crypto.randomUUID(),
+            bankName: (s as any).bankAccount ?? "",
+            accountNumber: (s as any).accountNumber ?? "",
+            accountHolder: (s as any).accountHolder ?? "",
+            sortCode: (s as any).sortCode ?? "",
+            swiftCode: (s as any).swiftCode ?? "",
+            branchAddress: (s as any).branchAddress ?? "",
+            isDefault: true,
+          },
+        ],
 
     terms: {
       buying:

@@ -6,6 +6,7 @@ import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/a
 import { fireManagedSwal } from "../../utils/swalManager";
 import { getWarehouseTree, deleteWarehouseById } from "../../api/WarehouseApi";
 import { usePermission } from "../../hooks/permission/usePermission";
+import { openWarehouseModal } from "../../store/modalStore";
 import {
   AlertCircle,
   Loader2,
@@ -328,7 +329,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
               {
                 label: "Edit",
                 icon: <Pencil size={12} />,
-                onClick: () => openWarehouseEdit(row.name, row),
+                onClick: () => openWarehouseEdit(row.name, { ...row, onSuccess: fetchTree }),
               },
             ]
             : []),
@@ -346,9 +347,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
                 label: "View Stock",
                 icon: <Boxes size={12} />,
                 onClick: () =>
-                  navigate("/stock-balance", {
-                    state: { warehouse: row.name },
-                  }),
+                  openWarehouseModal(row, false, { isViewMode: true }),
               },
             ]),
 

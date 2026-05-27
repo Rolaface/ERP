@@ -100,11 +100,19 @@ export async function createPayrollEntry(
 export async function getAllPayrollEntries(
   page = 1,
   pageSize = 20,
+  search = "",
 ): Promise<any> {
-  const start = (page - 1) * pageSize;
+  const queryParams = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
+
+  if (search.trim()) {
+    queryParams.append("search", search);
+  }
 
   const resp: AxiosResponse = await api.get(
-    `${API.payroll.payrollentry.createpayrollentry}?fields=["name","company","posting_date","status","branch","currency","payroll_frequency"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&order_by=creation desc`,
+    `${API.payroll.payrollentry.getPayrollEntryList}?${queryParams.toString()}`
   );
 
   return {
@@ -112,7 +120,6 @@ export async function getAllPayrollEntries(
     pagination: resp.data?.pagination || {},
   };
 }
-
 export async function runPayrollEntry(id: string): Promise<any> {
   const resp: AxiosResponse = await api.post(
     API.payroll.payrollentry.runpayroll,

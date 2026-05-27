@@ -2,11 +2,9 @@ import React, { useState, useEffect } from "react";
 import {
   ExternalLink,
   Download,
+  Eye,
   Loader2,
   X,
-  ZoomIn,
-  ZoomOut,
-  RotateCw,
 } from "lucide-react";
 import type { SalarySlip } from "./salarytypes";
 import {
@@ -75,11 +73,13 @@ const StatusPill: React.FC<{ status: string }> = ({ status }) => {
   const styles: Record<string, string> = {
     Submitted: "bg-emerald-50 text-emerald-700 border-emerald-200",
     Draft: "bg-amber-50 text-amber-700 border-amber-200",
+    Paid: "bg-blue-50 text-blue-700 border-blue-200",
     Cancelled: "bg-red-50 text-red-600 border-red-200",
   };
   const dots: Record<string, string> = {
     Submitted: "bg-emerald-500",
     Draft: "bg-amber-400",
+    Paid: "bg-blue-500",
     Cancelled: "bg-red-500",
   };
   const cls = styles[status] ?? "bg-gray-50 text-gray-500 border-gray-200";
@@ -198,6 +198,7 @@ interface SalarySlipTableProps {
   slips?: SalarySlip[];
   employeeId?: string;
   loading?: boolean;
+  tableBodyMaxHeight?: number | string;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -206,6 +207,7 @@ export const SalarySlipTable: React.FC<SalarySlipTableProps> = ({
   slips: slipsProp,
   employeeId,
   loading: loadingProp = false,
+  tableBodyMaxHeight,
 }) => {
   // ── Fetch ────────────────────────────────────────────────────────────────
   const [fetchedSlips, setFetchedSlips] = useState<SalarySlip[]>([]);
@@ -334,28 +336,36 @@ export const SalarySlipTable: React.FC<SalarySlipTableProps> = ({
     {
       key: "period",
       header: "Period",
-      width: "20%",
+      width: "220px",
+      minWidth: "220px",
       render: (slip) => (
         <div className="flex flex-col">
           <span className="text-[12px] font-semibold text-main">
             {getSlipPeriodLabel(slip)}
           </span>
-          <span className="text-[10px] text-muted font-mono truncate max-w-[220px]">
-            {slip.name}
+          <span className="text-[10px] text-muted">
+            {formatDate(slip.start_date)} - {formatDate(slip.end_date)}
           </span>
-          {slip.posting_date && (
-            <span className="text-[10px] text-muted">
-              Posted: {formatDate(slip.posting_date)}
-            </span>
-          )}
         </div>
+      ),
+    },
+    {
+      key: "posting_date",
+      header: "Posting Date",
+      width: "160px",
+      minWidth: "160px",
+      render: (slip) => (
+        <span className="text-[12px] font-medium text-main">
+          {formatDate(slip.posting_date)}
+        </span>
       ),
     },
     {
       key: "gross_pay",
       header: "Gross Pay",
       align: "right",
-      width: "15%",
+      width: "140px",
+      minWidth: "140px",
       render: (slip) => (
         <span className="text-[12px] font-semibold text-main">
           {slip.gross_pay
@@ -366,9 +376,10 @@ export const SalarySlipTable: React.FC<SalarySlipTableProps> = ({
     },
    {
   key: "total_deduction",
-  header: "Deduction",
+  header: "Total Deductions",
   align: "right",
-  width: "15%",
+  width: "170px",
+  minWidth: "170px",
   render: (slip) => (
     <span>
       {formatCurrency(
@@ -378,24 +389,12 @@ export const SalarySlipTable: React.FC<SalarySlipTableProps> = ({
     </span>
   ),
 },
-{
-  key: "total_income_tax",
-  header: "Income Tax",
-  align: "right",
-  render: (slip) => (
-    <span>
-      {formatCurrency(
-        slip.total_income_tax || 0,
-        slip.currency,
-      )}
-    </span>
-  ),
-},
     {
       key: "net_pay",
       header: "Net Pay",
       align: "right",
-      width: "15%",
+      width: "140px",
+      minWidth: "140px",
       render: (slip) => (
         <span className="text-[12px] font-semibold text-emerald-600">
           {slip.net_pay
@@ -404,18 +403,35 @@ export const SalarySlipTable: React.FC<SalarySlipTableProps> = ({
         </span>
       ),
     },
+{
+  key: "total_income_tax",
+  header: "Tax Deducted",
+  align: "right",
+  width: "160px",
+  minWidth: "160px",
+  render: (slip) => (
+    <span>
+      {formatCurrency(
+        slip.current_month_income_tax || slip.total_income_tax || 0,
+        slip.currency,
+      )}
+    </span>
+  ),
+},
     {
       key: "status",
       header: "Status",
       align: "center",
-      width: "15%",
+      width: "120px",
+      minWidth: "120px",
       render: (slip) => <StatusPill status={slip.status} />,
     },
     {
       key: "actions",
       header: "Actions",
       align: "right",
-      width: "15%",
+      width: "120px",
+      minWidth: "120px",
       render: (slip) => {
         const isViewing = viewingId === slip.name;
         const isDownloading = downloadingId === slip.name;
@@ -428,14 +444,14 @@ export const SalarySlipTable: React.FC<SalarySlipTableProps> = ({
                 handleView(slip);
               }}
               disabled={busy}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-primary text-white hover:bg-primary/85 transition-colors disabled:opacity-60"
+              title="View PDF"
+              className="p-1.5 rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 transition-colors disabled:opacity-50"
             >
               {isViewing ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
               ) : (
-                <ExternalLink className="w-3 h-3" />
+                <Eye className="w-3.5 h-3.5 text-muted" />
               )}
-              View
             </button>
             <button
               onClick={(e) => {
@@ -518,6 +534,7 @@ export const SalarySlipTable: React.FC<SalarySlipTableProps> = ({
       <ModalTable<SalarySlip>
         tableId="employee-salary-slips"
         columns={columns}
+        defaultVisibleKeys={columns.map((column) => column.key)}
         data={paginated}
         rowKey={(s) => s.name}
         loading={loading}
@@ -525,7 +542,7 @@ export const SalarySlipTable: React.FC<SalarySlipTableProps> = ({
           isFiltered ? "No matching salary slips" : "No salary slips yet"
         }
         showToolbar
-        toolbarPlaceholder="Search by name or period…"
+        toolbarPlaceholder="Search by name or period..."
         searchValue={search}
         onSearch={(q) => resetPage(() => setSearch(q))}
         extraFilters={filtersNode}
@@ -534,6 +551,7 @@ export const SalarySlipTable: React.FC<SalarySlipTableProps> = ({
         pageSize={PAGE_SIZE}
         totalItems={slipsProp ? filtered.length : totalItems}
         onPageChange={setPage}
+        bodyMaxHeight={tableBodyMaxHeight}
       />
 
       {/* PDF Viewer Portal */}
