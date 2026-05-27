@@ -391,6 +391,9 @@ const SLIP_FIELDS = [
   "name", "employee", "employee_name", "status",
   "posting_date", "start_date", "end_date",
   "gross_pay", "net_pay", "currency","total_income_tax","total_deduction",
+"income_from_other_sources", "non_taxable_earnings","standard_tax_exemption_amount", "tax_exemption_declaration",
+"deductions_before_tax_calculation", "annual_taxable_amount","income_tax_deducted_till_date",
+            "current_month_income_tax", "future_income_tax_deductions","total_income_tax"
 ];
 
 export async function getSalarySlipsByEmployeeOnly(

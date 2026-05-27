@@ -13,8 +13,7 @@ import { fmt }                      from "../EmployeeManagement/detailtab/Employ
 import { CompensationTab }  from "../EmployeeManagement/detailtab/Compensationtab";
 import { SalarySlipTable }  from "../EmployeeManagement/detailtab/Salaryslip";
 import type { SalarySlip }  from "../EmployeeManagement/detailtab/salarytypes";
-import ApiIncomeTaxTab from "./Incometaxtab";
-
+import IncomeTax from "./Incometaxtab";
 
 const DUMMY_INSURANCE = [
   {
@@ -487,13 +486,8 @@ const EmployeeFinancials: React.FC = () => {
           <SalarySlipTable slips={slips} loading={slipsLoading} />
         )}
 
-        {activeTab === "income-tax" && (
-          <ApiIncomeTaxTab
-            slips={slips}
-            slipsLoading={slipsLoading}
-            currency={currency}
-          />
-        )}
+        {activeTab === "income-tax" && <IncomeTax />}
+
 
         {activeTab === "loan" && <LoanAdvanceTab />}
 
