@@ -6,6 +6,7 @@ import { ModalInput } from "../../components/ui/modal/modalComponent";
 import { useCustomerGroupModal } from "../../hooks/useCustomerGroupModal";
 import type { CustomerGroupPayload } from "../../api/customerGroupApi";
 import ItemRestrictionSelect from "../selects/customer group/ItemRescritionSelect";
+import { showValidationError } from "../../utils/alert";
 
 interface Props {
   isOpen: boolean;
@@ -30,7 +31,6 @@ const CustomerGroupModal: React.FC<Props> = ({
     form,
     restrictionMode,
     restrictedItems,
-    isValid,
     handleFormChange,
     toggleRestrictionMode,
     addRestrictedItem,
@@ -51,8 +51,8 @@ const CustomerGroupModal: React.FC<Props> = ({
     mode === "create"
       ? "Create Customer Group"
       : mode === "edit"
-      ? "Edit Customer Group"
-      : "View Customer Group";
+        ? "Edit Customer Group"
+        : "View Customer Group";
 
   const handleClose = () => {
     resetModal();
@@ -60,10 +60,14 @@ const CustomerGroupModal: React.FC<Props> = ({
   };
 
   const handleSave = () => {
-    if (!isValid || isView) return;
+    if (isView) return;
+
+    if (!form.customerGroupName.trim()) {
+      return showValidationError("Customer Group Name is required");
+    }
+
     onSubmit(buildPayload());
     resetModal();
-    onClose();
   };
 
   const footer = (
@@ -72,7 +76,7 @@ const CustomerGroupModal: React.FC<Props> = ({
         {isView ? "Close" : "Cancel"}
       </Button>
       {!isView && (
-        <Button variant="primary" onClick={handleSave} disabled={!isValid}>
+        <Button variant="primary" onClick={handleSave}>
           Save
         </Button>
       )}
@@ -154,7 +158,9 @@ const CustomerGroupModal: React.FC<Props> = ({
         {/* ── Item Restriction Section ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-main">Item Restrictions</h3>
+            <h3 className="text-sm font-semibold text-main">
+              Item Restrictions
+            </h3>
 
             {/* ── Pill toggle ── */}
             <button
@@ -188,7 +194,9 @@ const CustomerGroupModal: React.FC<Props> = ({
                   borderRadius: (TOGGLE_H - PILL_PAD * 2) / 2,
                   backgroundColor: "#ffffff",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
-                  transform: isAllowed ? "translateX(0)" : `translateX(${pillSlide}px)`,
+                  transform: isAllowed
+                    ? "translateX(0)"
+                    : `translateX(${pillSlide}px)`,
                   transition: "transform 0.25s ease",
                   zIndex: 1,
                 }}
@@ -245,9 +253,15 @@ const CustomerGroupModal: React.FC<Props> = ({
                 <table className="w-full text-[12px]">
                   <thead>
                     <tr className="bg-row-hover border-b border-theme">
-                      <th className="text-left px-4 py-2 text-muted font-semibold w-[30px]">#</th>
-                      <th className="text-left px-4 py-2 text-muted font-semibold w-[200px]">Item ID</th>
-                      <th className="text-left px-4 py-2 text-muted font-semibold">Item Name</th>
+                      <th className="text-left px-4 py-2 text-muted font-semibold w-[30px]">
+                        #
+                      </th>
+                      <th className="text-left px-4 py-2 text-muted font-semibold w-[200px]">
+                        Item ID
+                      </th>
+                      <th className="text-left px-4 py-2 text-muted font-semibold">
+                        Item Name
+                      </th>
                       {!isView && <th className="w-10" />}
                     </tr>
                   </thead>
@@ -261,9 +275,15 @@ const CustomerGroupModal: React.FC<Props> = ({
                             globalIdx % 2 === 0 ? "bg-card" : "bg-app"
                           }`}
                         >
-                          <td className="px-4 py-2 text-muted text-[11px]">{globalIdx + 1}</td>
-                          <td className="px-4 py-2 text-muted font-mono">{item.id}</td>
-                          <td className="px-4 py-2 text-main font-medium">{item.itemName}</td>
+                          <td className="px-4 py-2 text-muted text-[11px]">
+                            {globalIdx + 1}
+                          </td>
+                          <td className="px-4 py-2 text-muted font-mono">
+                            {item.id}
+                          </td>
+                          <td className="px-4 py-2 text-main font-medium">
+                            {item.itemName}
+                          </td>
                           {!isView && (
                             <td className="px-2 py-2 text-center">
                               <button
@@ -288,8 +308,11 @@ const CustomerGroupModal: React.FC<Props> = ({
                   <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
                     <div className="text-[11px] text-muted whitespace-nowrap">
                       Showing {page * ITEMS_PER_PAGE + 1} to{" "}
-                      {Math.min((page + 1) * ITEMS_PER_PAGE, restrictedItems.length)} of{" "}
-                      {restrictedItems.length} items
+                      {Math.min(
+                        (page + 1) * ITEMS_PER_PAGE,
+                        restrictedItems.length,
+                      )}{" "}
+                      of {restrictedItems.length} items
                     </div>
                     <div className="flex gap-1.5 items-center">
                       <button
@@ -315,7 +338,9 @@ const CustomerGroupModal: React.FC<Props> = ({
             </>
           ) : (
             <div className="border border-dashed border-theme rounded py-8 text-center text-muted text-xs">
-              {isView ? "No items restricted." : "No items added yet. Search above to add items to the restriction list."}
+              {isView
+                ? "No items restricted."
+                : "No items added yet. Search above to add items to the restriction list."}
             </div>
           )}
         </div>

@@ -11,6 +11,8 @@ import {
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 
+import { showApiError, showSuccess } from "../../utils/alert";
+import { confirmDelete } from "../../api/utils/confirmDelete";
 import {
   getCustomerGroups,
   createCustomerGroup,
@@ -27,7 +29,7 @@ const CustomerGroup: React.FC = () => {
   const [treeData, setTreeData] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  
+
   const [modalConfig, setModalConfig] = useState<{
     isOpen: boolean;
     mode: ModalMode;
@@ -56,8 +58,9 @@ const CustomerGroup: React.FC = () => {
       const res = await getCustomerGroups({ as_tree: 1 });
       const nodes = res.data || res;
       setTreeData(normalizeCustomerGroups(nodes));
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching customer groups:", err);
+      showApiError(err?.message || "Failed to fetch customer groups");
     } finally {
       setLoading(false);
     }
@@ -72,27 +75,35 @@ const CustomerGroup: React.FC = () => {
       setLoading(true);
       if (modalConfig.mode === "edit" && modalConfig.data) {
         await updateCustomerGroup(modalConfig.data.id, payload);
+        showSuccess("Customer Group updated successfully");
       } else {
         await createCustomerGroup(payload);
+        showSuccess("Customer Group created successfully");
       }
+
+      setModalConfig({ isOpen: false, mode: "create", data: null });
       await fetchTree();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save customer group:", err);
+      showApiError(err?.message || "Failed to save customer group");
     } finally {
       setLoading(false);
-      setModalConfig({ isOpen: false, mode: "create", data: null });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this customer group?")) return;
-    try {
-      setLoading(true);
-      await deleteCustomerGroupById(id);
+    const isDeleted = await confirmDelete({
+      title: "Delete Customer Group?",
+      text: "Are you sure you want to delete this customer group? This action cannot be undone.",
+      loadingText: "Deleting Customer Group...",
+      successMessage: "Customer Group deleted successfully",
+      action: async () => {
+        await deleteCustomerGroupById(id);
+      },
+    });
+
+    if (isDeleted) {
       await fetchTree();
-    } catch (err) {
-      console.error("Failed to delete customer group:", err);
-      setLoading(false);
     }
   };
 
@@ -112,7 +123,9 @@ const CustomerGroup: React.FC = () => {
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100">
           <PermissionGate module={CUSTOMER_GROUP_MODULE} action="read">
             <button
-              onClick={() => setModalConfig({ isOpen: true, mode: "view", data: row })}
+              onClick={() =>
+                setModalConfig({ isOpen: true, mode: "view", data: row })
+              }
               className="text-xs px-2 py-1 hover:bg-row-hover rounded"
             >
               View
@@ -120,7 +133,9 @@ const CustomerGroup: React.FC = () => {
           </PermissionGate>
           <PermissionGate module={CUSTOMER_GROUP_MODULE} action="write">
             <button
-              onClick={() => setModalConfig({ isOpen: true, mode: "edit", data: row })}
+              onClick={() =>
+                setModalConfig({ isOpen: true, mode: "edit", data: row })
+              }
               className="text-xs px-2 py-1 hover:bg-row-hover rounded"
             >
               Edit
@@ -141,7 +156,7 @@ const CustomerGroup: React.FC = () => {
             </button>
           )}
           <PermissionGate module={CUSTOMER_GROUP_MODULE} action="delete">
-            <button 
+            <button
               onClick={() => handleDelete(row.id)}
               className="text-xs px-2 py-1 hover:bg-row-hover rounded text-red-500"
             >
