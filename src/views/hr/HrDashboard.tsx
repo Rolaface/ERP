@@ -1,26 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  LabelList,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Users, UserCheck, UserX, ClipboardList, Layers } from "lucide-react";
-
-import { ChartSkeleton } from "../../components/ChartSkeleton";
-import { AppMetricCard, AppSectionCard } from "../../components/ui/app-shell";
-import { getEmployeeStatusCount } from "../../api/hrDashboardApi";
+import React, { useEffect, useState } from "react";
+import { 
+  getEmployeeStatusCount, 
+  getEmployeeTrend, 
+  getHrDashboardData 
+} from "../../api/hrDashboardApi";
 import { parseFrappeError } from "./tabs/leave-config/hooks/parseFrappeError";
+import { EmployeeTrendChart, DepartmentPayrollChart, AttendancePatternChart } from "../../components/charts/HrDashboardCharts";
+
 
 const HrDashboard: React.FC = () => {
+  // Existing Summary State
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryData, setSummaryData] = useState<{
@@ -29,63 +18,29 @@ const HrDashboard: React.FC = () => {
     inactive: number;
     onLeave: number;
     totalLeaveTypes: number;
+    activeWorking: number;
+    pendingLeaves: number;
+    presentToday: number;
+    approvedLeaves: number;
+    rejectedLeaves: number;
   } | null>(null);
 
-  const chartsLoading = summaryLoading || (!summaryData && !summaryError);
+  // New Trend State
+  const [trendLoading, setTrendLoading] = useState(false);
+  const [trendData, setTrendData] = useState<any>(null);
+  const [visibleMonths, setVisibleMonths] = useState(6); // Default filter
 
-  const palette = useMemo(
-    () => ({
-      purple: "#8b5cf6",
-      blue: "#3b82f6",
-      emerald: "#10b981",
-      amber: "#f59e0b",
-      red: "#ef4444",
-      slate: "#64748b",
-    }),
-    [],
-  );
+  // New Dashboard Data State (Payroll & Attendance)
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardData, setDashboardData] = useState<any>(null);
 
-  const pieColors = useMemo(
-    () => [
-      palette.emerald,
-      palette.slate,
-      palette.amber,
-      palette.purple,
-      palette.blue,
-      palette.red,
-    ],
-    [palette],
-  );
-
-  const chartPlaneStyle = useMemo(
-    () => ({
-      backgroundImage:
-        "linear-gradient(rgba(229,231,235,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.7) 1px, transparent 1px)",
-      backgroundSize: "24px 24px",
-      backgroundPosition: "-1px -1px",
-    }),
-    [],
-  );
-
-  const legendProps = useMemo(
-    () => ({
-      wrapperStyle: { fontSize: 12 },
-      layout: "horizontal" as const,
-      verticalAlign: "bottom" as const,
-      align: "center" as const,
-      iconType: "square" as const,
-      height: 36,
-    }),
-    [],
-  );
-
+  // Fetch KPI Summary
   useEffect(() => {
     let mounted = true;
     const run = async () => {
       try {
         setSummaryLoading(true);
         setSummaryError(null);
-        setSummaryData(null);
         const resp = await getEmployeeStatusCount();
         if (!mounted) return;
         
@@ -96,6 +51,11 @@ const HrDashboard: React.FC = () => {
           inactive: data?.inactive || 0,
           onLeave: data?.on_leave || 0,
           totalLeaveTypes: data?.total_leave_types || 0,
+          activeWorking: data?.active_working || 0,
+          pendingLeaves: data?.pending_leaves || 0,
+          presentToday: data?.present_today || 0,
+          approvedLeaves: data?.approved_leaves || 0,
+          rejectedLeaves: data?.rejected_leaves || 0,
         });
       } catch (e: any) {
         if (!mounted) return;
@@ -107,283 +67,334 @@ const HrDashboard: React.FC = () => {
     };
 
     run();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  const employeeStatusData = useMemo(
-    () => [
-      { name: "Active", value: Number(summaryData?.active ?? 0) },
-      { name: "Inactive", value: Number(summaryData?.inactive ?? 0) },
-      { name: "On Leave", value: Number(summaryData?.onLeave ?? 0) },
-    ],
-    [summaryData],
-  );
+// Fetch Employee Trend
+  useEffect(() => {
+    let mounted = true;
+    const fetchTrend = async () => {
+      try {
+        setTrendLoading(true);
+        const currentYear = new Date().getFullYear();
+        const resp = await getEmployeeTrend(currentYear, visibleMonths);
+        if (!mounted) return;
+        
+        // FIX: Unwrap Frappe's 'message' wrapper
+        // Fallbacks added just in case your Axios interceptor already unwraps it
+        const actualData = resp.message?.data || (resp as any).data?.message?.data || resp.data;
+        
+        setTrendData(actualData);
+      } catch (e: any) {
+        if (!mounted) return;
+        console.error("Failed to load trend data", e);
+      } finally {
+        if (!mounted) return;
+        setTrendLoading(false);
+      }
+    };
 
-  const activeRateDonutData = useMemo(() => {
-    const total = Number(summaryData?.total ?? 0);
-    const active = Number(summaryData?.active ?? 0);
-    const notActive = Math.max(0, total - active);
-    return [
-      { name: "Active", value: active },
-      { name: "Not Active", value: notActive },
-    ];
-  }, [summaryData]);
+    fetchTrend();
+    return () => { mounted = false; };
+  }, [visibleMonths]);
 
-  const totalsVsLeaveTypesData = useMemo(
-    () => [
-      { name: "Employees", value: Number(summaryData?.total ?? 0) },
-      { name: "Leave Types", value: Number(summaryData?.totalLeaveTypes ?? 0) },
-    ],
-    [summaryData],
-  );
+  // Fetch Payroll & Attendance Dashboard Data
+  useEffect(() => {
+    let mounted = true;
+    const fetchDashboardData = async () => {
+      try {
+        setDashboardLoading(true);
+        const currentYear = new Date().getFullYear();
+        const resp = await getHrDashboardData(currentYear);
+        if (!mounted) return;
+        
+        // FIX: Unwrap Frappe's 'message' wrapper
+        const actualData = resp.message?.data || (resp as any).data?.message?.data || resp.data;
+        
+        setDashboardData(actualData);
+      } catch (e: any) {
+        if (!mounted) return;
+        console.error("Failed to load dashboard data", e);
+      } finally {
+        if (!mounted) return;
+        setDashboardLoading(false);
+      }
+    };
 
-  const renderDonutLabel = (props: any) => {
-    const { x, y, name, value } = props;
-    return (
-      <text
-        x={x}
-        y={y}
-        fill="#374151"
-        fontSize={11}
-        textAnchor="middle"
-        dominantBaseline="central"
-      >
-        {String(name)}: {String(value)}
-      </text>
-    );
-  };
-
-  const stats = [
-    {
-      label: "Total Employees",
-      value: String(summaryData?.total ?? 0),
-      icon: Users,
-      accentClassName: "from-blue-500 to-blue-600",
-    },
-    {
-      label: "Active",
-      value: String(summaryData?.active ?? 0),
-      icon: UserCheck,
-      accentClassName: "from-emerald-500 to-emerald-600",
-    },
-    {
-      label: "Inactive",
-      value: String(summaryData?.inactive ?? 0),
-      icon: UserX,
-      accentClassName: "from-slate-500 to-slate-600",
-    },
-    {
-      label: "On Leave",
-      value: String(summaryData?.onLeave ?? 0),
-      icon: ClipboardList,
-      accentClassName: "from-amber-500 to-amber-600",
-    },
-    {
-      label: "Leave Types",
-      value: String(summaryData?.totalLeaveTypes ?? 0),
-      icon: Layers,
-      accentClassName: "from-purple-500 to-purple-600",
-    },
-  ];
+    fetchDashboardData();
+    return () => { mounted = false; };
+  }, []);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {chartsLoading
-          ? Array.from({ length: 5 }).map((_, idx) => (
-              <div key={idx} className="app-surface min-h-[124px] animate-pulse p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="h-3 w-28 rounded bg-gray-300" />
-                    <div className="mt-3 h-8 w-20 rounded bg-gray-300" />
-                  </div>
-                  <div className="h-12 w-12 rounded-xl border border-gray-300 bg-gray-300" />
-                </div>
-              </div>
-            ))
-          : stats.map((stat) => (
-              <AppMetricCard
-                key={stat.label}
-                label={stat.label}
-                value={stat.value}
-                icon={stat.icon}
-                accentClassName={stat.accentClassName}
-              />
-            ))}
+    <div className="bg-gray-100 min-h-screen p-6 font-sans">
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-2 mb-6">
+        <div className="bg-white rounded-2xl shadow p-4">
+          <p className="text-gray-500 text-sm">Employees</p>
+          <h2 className="text-2xl font-bold mt-2">
+            {summaryLoading ? "..." : summaryData?.active || "0"}
+          </h2>
+          <p className="text-green-500 text-sm mt-1">+{summaryLoading ? "..." : summaryData?.active || "0"} this month</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow p-4">
+          <p className="text-gray-500 text-sm">Attendance</p>
+          <h2 className="text-2xl font-bold mt-2">
+            {summaryLoading 
+              ? "..." 
+              : `${summaryData?.active ? Math.round((summaryData.presentToday / summaryData.active) * 100) : 0}%`
+            }
+          </h2>
+          <p className="text-blue-500 text-sm mt-1">
+            {summaryLoading 
+              ? "Loading..." 
+              : `${summaryData?.presentToday || 0} / ${summaryData?.active || 0} Present Today`
+            }
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow p-4">
+          <p className="text-gray-500 text-sm">Pending Leaves</p>
+          <h2 className="text-2xl font-bold mt-2">
+            {summaryLoading ? "..." : summaryData?.pendingLeaves || "0"}
+          </h2>
+          <p className="text-orange-500 text-sm mt-1">Need Approval</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow p-4">
+          <p className="text-gray-500 text-sm">Reimbursements</p>
+          <h2 className="text-2xl font-bold mt-2">8</h2>
+          <p className="text-red-500 text-sm mt-1">Pending Claims</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow p-4">
+          <p className="text-gray-500 text-sm">Upcoming Appraisals</p>
+          <h2 className="text-2xl font-bold mt-2">21</h2>
+          <p className="text-purple-500 text-sm mt-1">Next 30 days</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow p-4">
+          <p className="text-gray-500 text-sm">Compliance</p>
+          <h2 className="text-2xl font-bold mt-2">87%</h2>
+          <p className="text-green-500 text-sm mt-1">Completed</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AppSectionCard title="Employee Status (Bar)">
-          <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
-            {chartsLoading ? (
-              <ChartSkeleton variant="bar" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={employeeStatusData}
-                  margin={{ top: 28, right: 18, left: 6, bottom: 4 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
-                  <Tooltip
-                    formatter={(v: any) => Number(v ?? 0)}
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                    cursor={{ fill: "var(--primary)", opacity: 0.1 }}
-                  />
-                  <Legend {...legendProps} />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Employees">
-                    {employeeStatusData.map((_, idx) => (
-                      <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
-                    ))}
-                    <LabelList
-                      dataKey="value"
-                      position="top"
-                      offset={8}
-                      fill="#6b7280"
-                      fontSize={10}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </AppSectionCard>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-        <AppSectionCard title="Employee Status (Donut)">
-          <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
-            {chartsLoading ? (
-              <ChartSkeleton variant="pie" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
-                  <Tooltip
-                    formatter={(v: any) => Number(v ?? 0)}
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                  />
-                  <Legend {...legendProps} />
-                  <Pie
-                    data={employeeStatusData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={58}
-                    outerRadius={88}
-                    paddingAngle={2}
-                    label={renderDonutLabel}
-                    labelLine={false}
-                  >
-                    {employeeStatusData.map((_, idx) => (
-                      <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </AppSectionCard>
+        {/* LEFT SECTION */}
+        <div className="xl:col-span-2 space-y-6">
 
-        <AppSectionCard title="Active Rate">
-          <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
-            {chartsLoading ? (
-              <ChartSkeleton variant="pie" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart margin={{ top: 8, right: 12, bottom: 24, left: 12 }}>
-                  <Tooltip
-                    formatter={(v: any) => Number(v ?? 0)}
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                  />
-                  <Legend {...legendProps} />
-                  <Pie
-                    data={activeRateDonutData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="42%"
-                    innerRadius={58}
-                    outerRadius={88}
-                    paddingAngle={2}
-                    label={renderDonutLabel}
-                    labelLine={false}
-                  >
-                    {activeRateDonutData.map((_, idx) => (
-                      <Cell key={idx} fill={idx === 0 ? palette.emerald : palette.slate} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </AppSectionCard>
+          {/* Employee Trend */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">Employee Trend</h2>
+              </div>
 
-        <AppSectionCard title="Employees vs Leave Types">
-          <div className="h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
-            {chartsLoading ? (
-              <ChartSkeleton variant="bar" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={totalsVsLeaveTypesData}
-                  margin={{ top: 28, right: 18, left: 6, bottom: 16 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} width={52} />
-                  <Tooltip
-                    formatter={(v: any) => Number(v ?? 0)}
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                    cursor={{ fill: "var(--primary)", opacity: 0.1 }}
-                  />
-                  <Legend {...legendProps} />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Count">
-                    {totalsVsLeaveTypesData.map((_, idx) => (
-                      <Cell key={idx} fill={idx === 0 ? palette.blue : palette.purple} />
-                    ))}
-                    <LabelList
-                      dataKey="value"
-                      position="top"
-                      offset={8}
-                      fill="#6b7280"
-                      fontSize={10}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+              <select 
+                className="border rounded-lg px-3 py-2 text-sm outline-none cursor-pointer"
+                onChange={(e) => setVisibleMonths(e.target.value === "Yearly" ? 12 : e.target.value === "Quarterly" ? 3 : 6)}
+                defaultValue="Monthly"
+              >
+                <option value="Monthly">Monthly (6M)</option>
+                <option value="Quarterly">Quarterly (3M)</option>
+                <option value="Yearly">Yearly (12M)</option>
+              </select>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+              {/* Hired */}
+              <div className="bg-green-50 rounded-xl p-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-500">Hired</p>
+                  <h3 className="text-2xl font-bold text-green-600">
+                    {trendLoading ? "..." : trendData?.summary?.hired || "0"}
+                  </h3>
+                </div>
+                <p className="text-xs text-green-500 mt-2">+12% from last month</p>
+              </div>
+
+              {/* Resigned */}
+              <div className="bg-orange-50 rounded-xl p-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-500">Resigned</p>
+                  <h3 className="text-2xl font-bold text-orange-500">
+                    {trendLoading ? "..." : trendData?.summary?.resigned || "0"}
+                  </h3>
+                </div>
+                <p className="text-xs text-orange-500 mt-2">Voluntary exits</p>
+              </div>
+
+              {/* Fired */}
+              <div className="bg-red-50 rounded-xl p-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-500">Fired</p>
+                  <h3 className="text-2xl font-bold text-red-600">
+                    {trendLoading ? "..." : trendData?.summary?.fired || "0"}
+                  </h3>
+                </div>
+                <p className="text-xs text-red-500 mt-2">Terminated employees</p>
+              </div>
+
+              {/* Net Growth */}
+              <div className="bg-blue-50 rounded-xl p-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-500">Net Growth</p>
+                  <h3 className="text-2xl font-bold text-blue-600">
+                    {trendLoading 
+                      ? "..." 
+                      : `${(trendData?.summary?.net_growth || 0) > 0 ? "+" : ""}${trendData?.summary?.net_growth || "0"}`
+                    }
+                  </h3>
+                </div>
+                <p className="text-xs text-blue-500 mt-2">Current workforce growth</p>
+              </div>
+            </div>
+
+            <EmployeeTrendChart data={trendData?.trend} loading={trendLoading} />
           </div>
-        </AppSectionCard>
+
+          {/* Payroll & Attendance */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Payroll (Rose Type EChart) */}
+            <div className="bg-white rounded-2xl shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Department Wise Payroll</h2>
+              <DepartmentPayrollChart data={dashboardData?.["Department Wise Payroll"]} loading={dashboardLoading} />
+            </div>
+
+            {/* Attendance (Dataset Link EChart) */}
+            <div className="bg-white rounded-2xl shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Attendance Pattern</h2>
+              <AttendancePatternChart data={dashboardData?.["Attendance Pattern"]} loading={dashboardLoading} />
+            </div>
+
+          </div>
+
+          {/* Compliance */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Compliance Tracker</h2>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span>PF Filing</span>
+                  <span className="text-green-600">Completed</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="bg-green-500 h-3 rounded-full w-full"></div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span>POSH Training</span>
+                  <span className="text-orange-500">Pending</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="bg-orange-500 h-3 rounded-full w-[70%]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Reimbursement & Leave */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          </div>
+        </div>
+
+        {/* RIGHT SECTION */}
+        <div className="space-y-6">
+
+          {/* Birthdays */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Birthdays & Events</h2>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-pink-200"></div>
+                <div>
+                  <p className="font-medium">Rahul Sharma</p>
+                  <p className="text-sm text-gray-500">Birthday Today 🎂</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-200"></div>
+                <div>
+                  <p className="font-medium">Priya Singh</p>
+                  <p className="text-sm text-gray-500">5 Year Anniversary 🎉</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Appraisals */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Appraisals</h2>
+            <div className="space-y-4">
+              <div className="border rounded-xl p-4">
+                <p className="text-sm text-gray-500">Last Approval</p>
+                <h3 className="font-semibold mt-1">Amit Kumar</h3>
+                <p className="text-sm text-gray-400">Approved on 12 May 2026</p>
+              </div>
+
+              <div className="border rounded-xl p-4">
+                <p className="text-sm text-gray-500">Upcoming Approval</p>
+                <h3 className="font-semibold mt-1">Neha Verma</h3>
+                <p className="text-sm text-gray-400">Due on 28 May 2026</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Leaves */}
+            <div className="bg-white rounded-2xl shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Leave Summary</h2>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>Pending</span>
+                  <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm">
+                    {summaryLoading ? "..." : summaryData?.pendingLeaves || "0"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Approved</span>
+                  <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-sm">
+                    {summaryLoading ? "..." : summaryData?.approvedLeaves || "0"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Rejected</span>
+                  <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm">
+                    {summaryLoading ? "..." : summaryData?.rejectedLeaves || "0"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          {/* Reimbursement */}
+            <div className="bg-white rounded-2xl shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Reimbursements</h2>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="bg-orange-100 rounded-xl p-4">
+                  <h3 className="text-2xl font-bold text-orange-600">12</h3>
+                  <p className="text-sm mt-1">Pending</p>
+                </div>
+                <div className="bg-blue-100 rounded-xl p-4">
+                  <h3 className="text-2xl font-bold text-blue-600">18</h3>
+                  <p className="text-sm mt-1">Approved</p>
+                </div>
+                <div className="bg-green-100 rounded-xl p-4">
+                  <h3 className="text-2xl font-bold text-green-600">105</h3>
+                  <p className="text-sm mt-1">Paid</p>
+                </div>
+              </div>
+            </div>
+
+        </div>
+
       </div>
     </div>
   );
