@@ -6,6 +6,8 @@ import {
 } from "../../api/hrDashboardApi";
 import { parseFrappeError } from "./tabs/leave-config/hooks/parseFrappeError";
 import { EmployeeTrendChart, DepartmentPayrollChart, AttendancePatternChart } from "../../components/charts/HrDashboardCharts";
+import { CalendarRange, Gavel, HandCoins, Icon, NotebookPen, UserCheck, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 
 
 const HrDashboard: React.FC = () => {
@@ -28,7 +30,8 @@ const HrDashboard: React.FC = () => {
   // New Trend State
   const [trendLoading, setTrendLoading] = useState(false);
   const [trendData, setTrendData] = useState<any>(null);
-  const [visibleMonths, setVisibleMonths] = useState(6); // Default filter
+  const [visibleMonths, setVisibleMonths] = useState(6);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   // New Dashboard Data State (Payroll & Attendance)
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -77,7 +80,8 @@ const HrDashboard: React.FC = () => {
       try {
         setTrendLoading(true);
         const currentYear = new Date().getFullYear();
-        const resp = await getEmployeeTrend(currentYear, visibleMonths);
+        // const resp = await getEmployeeTrend(currentYear, visibleMonths);
+        const resp = await getEmployeeTrend(selectedYear, visibleMonths);
         if (!mounted) return;
         
         // FIX: Unwrap Frappe's 'message' wrapper
@@ -96,7 +100,7 @@ const HrDashboard: React.FC = () => {
 
     fetchTrend();
     return () => { mounted = false; };
-  }, [visibleMonths]);
+  }, [visibleMonths, selectedYear]);
 
   // Fetch Payroll & Attendance Dashboard Data
   useEffect(() => {
@@ -125,13 +129,19 @@ const HrDashboard: React.FC = () => {
     return () => { mounted = false; };
   }, []);
 
+const currentY = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 4 }, (_, i) => currentY - i);
+
   return (
     <div className="bg-gray-100 min-h-screen p-6 font-sans">
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-2 mb-6">
         <div className="bg-white rounded-2xl shadow p-4">
+          <div className="flex items-center gap-3">
+          <Users size={16} className="text-black-500" />
           <p className="text-gray-500 text-sm">Employees</p>
+          </div>
           <h2 className="text-2xl font-bold mt-2">
             {summaryLoading ? "..." : summaryData?.active || "0"}
           </h2>
@@ -139,7 +149,10 @@ const HrDashboard: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow p-4">
+           <div className="flex items-center gap-3">
+          <CalendarRange size={16} className="text-blue-500" />
           <p className="text-gray-500 text-sm">Attendance</p>
+          </div>
           <h2 className="text-2xl font-bold mt-2">
             {summaryLoading 
               ? "..." 
@@ -154,28 +167,53 @@ const HrDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow p-4">
+        {/* <div className="bg-white rounded-2xl shadow p-4">
+           <div className="flex items-center gap-3">
+          <NotebookPen size={16} className="text-red-500" />
           <p className="text-gray-500 text-sm">Pending Leaves</p>
+          </div>
           <h2 className="text-2xl font-bold mt-2">
             {summaryLoading ? "..." : summaryData?.pendingLeaves || "0"}
           </h2>
           <p className="text-orange-500 text-sm mt-1">Need Approval</p>
-        </div>
+        </div> */}
+        <Link 
+          to="?tab=leave"
+          className="block bg-white rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200"
+        >
+          <div className="flex items-center gap-3">
+            <NotebookPen size={16} className="text-red-500" />
+            <p className="text-gray-500 text-sm">Pending Leaves</p>
+          </div>
+          <h2 className="text-2xl font-bold mt-2">
+            {summaryLoading ? "..." : summaryData?.pendingLeaves || "0"}
+          </h2>
+          <p className="text-orange-500 text-sm mt-1">Need Approval</p>
+        </Link>
 
         <div className="bg-white rounded-2xl shadow p-4">
+           <div className="flex items-center gap-3">
+          <HandCoins size={16} className="text-green-500" />
           <p className="text-gray-500 text-sm">Reimbursements</p>
+          </div>
           <h2 className="text-2xl font-bold mt-2">8</h2>
           <p className="text-red-500 text-sm mt-1">Pending Claims</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow p-4">
+           <div className="flex items-center gap-3">
+          <UserCheck size={16} className="text-green-500" />
           <p className="text-gray-500 text-sm">Upcoming Appraisals</p>
+          </div>
           <h2 className="text-2xl font-bold mt-2">21</h2>
           <p className="text-purple-500 text-sm mt-1">Next 30 days</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow p-4">
+           <div className="flex items-center gap-3">
+          <Gavel size={16} className="text-black-500" />
           <p className="text-gray-500 text-sm">Compliance</p>
+          </div>
           <h2 className="text-2xl font-bold mt-2">87%</h2>
           <p className="text-green-500 text-sm mt-1">Completed</p>
         </div>
@@ -193,7 +231,16 @@ const HrDashboard: React.FC = () => {
               <div>
                 <h2 className="text-lg font-semibold">Employee Trend</h2>
               </div>
-
+              <div className="flex items-center gap-3">
+             <select 
+                className="border rounded-lg px-3 py-2 text-sm outline-none cursor-pointer"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+              >
+                {yearOptions.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
               <select 
                 className="border rounded-lg px-3 py-2 text-sm outline-none cursor-pointer"
                 onChange={(e) => setVisibleMonths(e.target.value === "Yearly" ? 12 : e.target.value === "Quarterly" ? 3 : 6)}
@@ -203,6 +250,7 @@ const HrDashboard: React.FC = () => {
                 <option value="Quarterly">Quarterly (3M)</option>
                 <option value="Yearly">Yearly (12M)</option>
               </select>
+              </div>
             </div>
 
             {/* Summary Cards */}
