@@ -110,9 +110,9 @@ export const API = {
    * ========================= */
   hrDashboard: {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
-    hrSummary: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_employee_status_counts`,
-    dashboardData: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_hr_dashboard_data`,
-    employeeTrend: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_employee_trend`,
+    hrSummary: `${ERP_BASE}/api/method/custom_hrms.api.dashboard.api.get_employee_status_counts`,
+    dashboardData: `${ERP_BASE}/api/method/custom_hrms.api.dashboard.api.get_hr_dashboard_data`,
+    employeeTrend: `${ERP_BASE}/api/method/custom_hrms.api.dashboard.api.get_employee_trend`,
   },
 
   Get: {
