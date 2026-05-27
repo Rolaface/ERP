@@ -12,9 +12,9 @@ import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
 import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
 import { usePermission } from "../../../hooks/permission/usePermission";
+import { useAuth } from "../../../context/AuthContext";
 import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
 
-// ─── Dropdown Menu Component ───────────────────────────────────────────
 interface MenuAction {
   label: string;
   icon: React.ReactNode;
@@ -77,6 +77,8 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function LeaveApproval() {
   const { can } = usePermission();
+  const { user } = useAuth();
+  console.log("Current User:", user);
 
   // Permission flag — Approve / Reject require write on Leave Application
   const canApproveReject = can("Leave Application", "write");
@@ -91,14 +93,23 @@ export default function LeaveApproval() {
 
   useEffect(() => {
     getAllLeaveApplied();
-  }, [showHistory, filters.from_date, filters.to_date]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showHistory, filters.from_date, filters.to_date]); 
 
   const getAllLeaveApplied = async () => {
     try {
       setIsLoading(true);
-      const apiFilters: any[] = showHistory
-        ? [["status", "in", ["Approved", "Rejected", "Open", "Cancelled"]]]
-        : [["status", "=", "Open"]];
+       const apiFilters: any[] = [
+      ["leave_approver", "=", user?.email], 
+    ];
+      if (showHistory) {
+      apiFilters.push([
+        "status",
+        "in",
+        ["Approved", "Rejected", "Open", "Cancelled"],
+      ]);
+    } else {
+      apiFilters.push(["status", "=", "Open"]);
+    }
 
       if (filters.from_date) {
         apiFilters.push(["from_date", ">=", filters.from_date]);
@@ -108,6 +119,7 @@ export default function LeaveApproval() {
       }
 
       const response = await getAllLeaveApplications(apiFilters);
+      console.log("API Response:", response);
       setData(response || []);
     } catch (err) {
       showApiError(parseFrappeError(err) || "Failed to fetch leave applications.");
@@ -159,13 +171,13 @@ export default function LeaveApproval() {
       key: "employee_name",
       header: "Employee Name",
       align: "left",
-      render: (e) => <span className="font-medium">{e.employee_name || "-"}</span>,
+      render: (e) => <span className=" font-base">{e.employee_name || "-"}</span>,
     },
     {
       key: "leave_type",
       header: "Leave Type",
       align: "left",
-      render: (e) => <span className="font-medium">{e.leave_type || "-"}</span>,
+      render: (e) => <span className="font-base">{e.leave_type || "-"}</span>,
     },
     { key: "from_date", header: "From Date", align: "left" },
     {
@@ -179,7 +191,7 @@ export default function LeaveApproval() {
       header: "Reason",
       align: "left",
       render: (e) => (
-        <div className="max-w-xs truncate" title={e.description}>
+        <div className=" font-base" title={e.description}>
           {e.description || "-"}
         </div>
       ),
@@ -189,7 +201,7 @@ export default function LeaveApproval() {
       header: "Status",
       align: "left",
       render: (e) => {
-        let displayStatus = e.status || "Open";
+        let displayStatus = e.status ?? "Open";
         
         if (displayStatus === "Open") {
           displayStatus = "Pending Approval";
