@@ -6,6 +6,9 @@ import {
   BriefcaseMedical,
   Clock3,
   ArrowRight,
+  ShieldCheck,
+  AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 
 const LeaveBalance: React.FC = () => {
@@ -17,18 +20,21 @@ const LeaveBalance: React.FC = () => {
       label: "Casual Leave",
       value: "4 Days",
       tone: "text-emerald-600 bg-emerald-500/10",
+      insight: "Best for short breaks",
     },
     {
       icon: BriefcaseMedical,
       label: "Sick Leave",
       value: "2 Days",
       tone: "text-amber-600 bg-amber-500/10",
+      insight: "Medical proof may apply",
     },
     {
       icon: CalendarDays,
       label: "Earned Leave",
       value: "2 Days",
       tone: "text-blue-600 bg-blue-500/10",
+      insight: "Expires in 45 days",
     },
   ];
 
@@ -129,45 +135,82 @@ const LeaveBalance: React.FC = () => {
             p-5
           "
         >
-          <p
-            className="
-              text-sm
-              font-medium
-              text-[var(--muted-foreground)]
-            "
-          >
-            Available Leave Balance
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p
+                className="
+                  text-sm
+                  font-medium
+                  text-[var(--muted-foreground)]
+                "
+              >
+                Available Leave Balance
+              </p>
 
-          <div
-            className="
-              mt-3
-              flex
-              items-end
-              gap-2
-            "
-          >
-            <h3
+              <div
+                className="
+                  mt-3
+                  flex
+                  items-end
+                  gap-2
+                "
+              >
+                <h3
+                  className="
+                    text-4xl
+                    font-bold
+                    tracking-tight
+                    text-[var(--foreground)]
+                  "
+                >
+                  8
+                </h3>
+
+                <span
+                  className="
+                    mb-1
+                    text-sm
+                    font-medium
+                    text-[var(--muted-foreground)]
+                  "
+                >
+                  Days Available
+                </span>
+              </div>
+            </div>
+
+            <div
               className="
-                text-4xl
-                font-bold
-                tracking-tight
-                text-[var(--foreground)]
+                rounded-2xl
+                border
+                border-[var(--border)]
+                bg-[var(--card)]
+                px-4
+                py-3
+                text-right
               "
             >
-              8
-            </h3>
+              <p
+                className="
+                  text-xs
+                  font-medium
+                  text-[var(--muted-foreground)]
+                "
+              >
+                Reserved Leave
+              </p>
 
-            <span
-              className="
-                mb-1
-                text-sm
-                font-medium
-                text-[var(--muted-foreground)]
-              "
-            >
-              Days Available
-            </span>
+              <p
+                className="
+                  mt-1
+                  text-lg
+                  font-semibold
+                  text-[var(--foreground)]
+                "
+              >
+                1 Day
+              </p>
+            </div>
           </div>
 
           {/* Leave Burn Visualization */}
@@ -221,6 +264,16 @@ const LeaveBalance: React.FC = () => {
                 }}
               />
             </div>
+
+            <p
+              className="
+                mt-2
+                text-xs
+                text-amber-600
+              "
+            >
+              2 earned leave days expire next month
+            </p>
           </div>
         </div>
 
@@ -238,9 +291,6 @@ const LeaveBalance: React.FC = () => {
               <div
                 key={leave.label}
                 className="
-                  flex
-                  items-center
-                  justify-between
                   rounded-2xl
                   border
                   border-[var(--border)]
@@ -248,52 +298,64 @@ const LeaveBalance: React.FC = () => {
                   p-4
                 "
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`
-                      flex
-                      h-10
-                      w-10
-                      items-center
-                      justify-center
-                      rounded-xl
-                      ${leave.tone}
-                    `}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`
+                        flex
+                        h-10
+                        w-10
+                        items-center
+                        justify-center
+                        rounded-xl
+                        ${leave.tone}
+                      `}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+
+                    <div>
+                      <p
+                        className="
+                          text-sm
+                          font-medium
+                          text-[var(--foreground)]
+                        "
+                      >
+                        {leave.label}
+                      </p>
+
+                      <p
+                        className="
+                          mt-0.5
+                          text-xs
+                          text-[var(--muted-foreground)]
+                        "
+                      >
+                        Available Balance
+                      </p>
+                    </div>
+                  </div>
+
+                  <p
+                    className="
+                      text-sm
+                      font-semibold
+                      text-[var(--foreground)]
+                    "
                   >
-                    <Icon className="h-4 w-4" />
-                  </div>
-
-                  <div>
-                    <p
-                      className="
-                        text-sm
-                        font-medium
-                        text-[var(--foreground)]
-                      "
-                    >
-                      {leave.label}
-                    </p>
-
-                    <p
-                      className="
-                        mt-0.5
-                        text-xs
-                        text-[var(--muted-foreground)]
-                      "
-                    >
-                      Available Balance
-                    </p>
-                  </div>
+                    {leave.value}
+                  </p>
                 </div>
 
                 <p
                   className="
-                    text-sm
-                    font-semibold
-                    text-[var(--foreground)]
+                    mt-3
+                    text-xs
+                    text-[var(--muted-foreground)]
                   "
                 >
-                  {leave.value}
+                  {leave.insight}
                 </p>
               </div>
             );
@@ -350,6 +412,16 @@ const LeaveBalance: React.FC = () => {
             >
               1
             </p>
+
+            <p
+              className="
+                mt-1
+                text-xs
+                text-[var(--muted-foreground)]
+              "
+            >
+              Awaiting manager approval
+            </p>
           </div>
 
           {/* Upcoming Holiday */}
@@ -392,6 +464,111 @@ const LeaveBalance: React.FC = () => {
             >
               May 30
             </p>
+
+            <p
+              className="
+                mt-1
+                text-xs
+                text-[var(--muted-foreground)]
+              "
+            >
+              Creates 3-day weekend opportunity
+            </p>
+          </div>
+        </div>
+
+        {/* Leave Intelligence */}
+        <div
+          className="
+            mt-5
+            grid
+            grid-cols-1
+            gap-3
+            sm:grid-cols-2
+          "
+        >
+          {/* Payroll Safety */}
+          <div
+            className="
+              rounded-2xl
+              border
+              border-emerald-500/20
+              bg-emerald-500/5
+              p-4
+            "
+          >
+            <div className="flex items-center gap-2">
+              <ShieldCheck
+                className="
+                  h-4
+                  w-4
+                  text-emerald-500
+                "
+              />
+
+              <p
+                className="
+                  text-sm
+                  font-medium
+                  text-emerald-700
+                "
+              >
+                Payroll Safety
+              </p>
+            </div>
+
+            <p
+              className="
+                mt-3
+                text-sm
+                font-semibold
+                text-[var(--foreground)]
+              "
+            >
+              No LOP risk detected
+            </p>
+          </div>
+
+          {/* Smart Suggestion */}
+          <div
+            className="
+              rounded-2xl
+              border
+              border-blue-500/20
+              bg-blue-500/5
+              p-4
+            "
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles
+                className="
+                  h-4
+                  w-4
+                  text-blue-500
+                "
+              />
+
+              <p
+                className="
+                  text-sm
+                  font-medium
+                  text-blue-700
+                "
+              >
+                Smart Suggestion
+              </p>
+            </div>
+
+            <p
+              className="
+                mt-3
+                text-sm
+                font-semibold
+                text-[var(--foreground)]
+              "
+            >
+              Use earned leave before expiry
+            </p>
           </div>
         </div>
 
@@ -416,7 +593,7 @@ const LeaveBalance: React.FC = () => {
             hover:bg-emerald-500/5
           "
         >
-          <span>Apply Leave</span>
+          <span>Open Leave Details</span>
 
           <ArrowRight className="h-4 w-4" />
         </button>
