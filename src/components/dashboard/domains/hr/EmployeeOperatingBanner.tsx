@@ -62,6 +62,12 @@ const EmployeeOperatingBanner: React.FC = () => {
   ] = useState<boolean>(false);
 
   /**
+   * Live Session Timer
+   */
+  const [liveNow, setLiveNow] =
+    useState<number>(Date.now());
+
+  /**
    * Greeting Logic
    */
   const greeting = useMemo(() => {
@@ -75,6 +81,22 @@ const EmployeeOperatingBanner: React.FC = () => {
       return "Good afternoon";
 
     return "Good evening";
+  }, []);
+
+  /**
+   * Live Clock Refresh
+   *
+   * Re-renders active session duration
+   * every minute while checked in.
+   */
+  useEffect(() => {
+    const interval =
+      setInterval(() => {
+        setLiveNow(Date.now());
+      }, 60000);
+
+    return () =>
+      clearInterval(interval);
   }, []);
 
   /**
@@ -97,9 +119,22 @@ const EmployeeOperatingBanner: React.FC = () => {
 
       setError(null);
 
+      /**
+       * Same backend truth source
+       * as EmployeeAttendance.tsx
+       */
+      const apiFilters: any[] = [
+        [
+          "employee",
+          "=",
+          user.employeeId,
+        ],
+      ];
+
       const response =
         await getEmployeeByEmployeeId(
-          user.employeeId
+          user.employeeId,
+          apiFilters
         );
 
       /**
@@ -136,6 +171,10 @@ const EmployeeOperatingBanner: React.FC = () => {
 
       setError(
         "Unable to load attendance data"
+      );
+
+      showApiError(
+        "Failed to fetch attendance records."
       );
     } finally {
       setLoading(false);
@@ -202,6 +241,12 @@ const EmployeeOperatingBanner: React.FC = () => {
       ];
     }, [attendanceRecords]);
 
+  /**
+   * Backend-Derived Truth
+   *
+   * Same architecture as
+   * EmployeeAttendance.tsx
+   */
   const isCheckedIn =
     useMemo(() => {
       if (!latestAttendance) {
@@ -247,7 +292,7 @@ const EmployeeOperatingBanner: React.FC = () => {
         new Date(
           record.time
         ).toDateString() ===
-        today
+          today
     );
   }, [attendanceRecords]);
 
@@ -295,8 +340,8 @@ const EmployeeOperatingBanner: React.FC = () => {
 
       const latestCheckOut =
         todayCheckOuts[
-        todayCheckOuts.length -
-        1
+          todayCheckOuts.length -
+            1
         ];
 
       return new Date(
@@ -309,6 +354,8 @@ const EmployeeOperatingBanner: React.FC = () => {
 
   /**
    * Active Session Duration
+   *
+   * Live updating while checked in.
    */
   const activeSession =
     useMemo(() => {
@@ -330,16 +377,12 @@ const EmployeeOperatingBanner: React.FC = () => {
           latestAttendance.time
         ).getTime();
 
-      const currentTime =
-        Date.now();
-
       const diffMs =
-        currentTime -
-        checkInTime;
+        liveNow - checkInTime;
 
       const hours = Math.floor(
         diffMs /
-        (1000 * 60 * 60)
+          (1000 * 60 * 60)
       );
 
       const minutes =
@@ -348,11 +391,14 @@ const EmployeeOperatingBanner: React.FC = () => {
             (1000 *
               60 *
               60)) /
-          (1000 * 60)
+            (1000 * 60)
         );
 
       return `${hours}h ${minutes}m`;
-    }, [latestAttendance]);
+    }, [
+      latestAttendance,
+      liveNow,
+    ]);
 
   /**
    * WORKED TODAY
@@ -378,7 +424,7 @@ const EmployeeOperatingBanner: React.FC = () => {
 
         if (
           log.log_type ===
-          "OUT" &&
+            "OUT" &&
           currentIn?.time &&
           log.time
         ) {
@@ -395,15 +441,15 @@ const EmployeeOperatingBanner: React.FC = () => {
       });
 
       /**
-       * Active session
+       * Active Session
        */
       if (
         currentIn?.time &&
         latestAttendance?.log_type ===
-        "IN"
+          "IN"
       ) {
         totalMs +=
-          Date.now() -
+          liveNow -
           new Date(
             currentIn.time
           ).getTime();
@@ -411,7 +457,7 @@ const EmployeeOperatingBanner: React.FC = () => {
 
       const hours = Math.floor(
         totalMs /
-        (1000 * 60 * 60)
+          (1000 * 60 * 60)
       );
 
       const minutes =
@@ -420,13 +466,14 @@ const EmployeeOperatingBanner: React.FC = () => {
             (1000 *
               60 *
               60)) /
-          (1000 * 60)
+            (1000 * 60)
         );
 
       return `${hours}h ${minutes}m`;
     }, [
       todayLogs,
       latestAttendance,
+      liveNow,
     ]);
 
   /**
@@ -442,7 +489,7 @@ const EmployeeOperatingBanner: React.FC = () => {
 
       const action =
         latestAttendance.log_type ===
-          "IN"
+        "IN"
           ? "Checked In"
           : "Checked Out";
 
@@ -474,6 +521,7 @@ const EmployeeOperatingBanner: React.FC = () => {
         return {
           label:
             "No attendance marked today",
+
           tone: "danger",
         };
       }
@@ -514,6 +562,7 @@ const EmployeeOperatingBanner: React.FC = () => {
             return {
               label:
                 "Late check-in detected",
+
               tone: "warning",
             };
           }
@@ -525,11 +574,11 @@ const EmployeeOperatingBanner: React.FC = () => {
        */
       if (
         latestAttendance?.log_type ===
-        "IN" &&
+          "IN" &&
         latestAttendance.time
       ) {
         const sessionMs =
-          Date.now() -
+          liveNow -
           new Date(
             latestAttendance.time
           ).getTime();
@@ -544,6 +593,7 @@ const EmployeeOperatingBanner: React.FC = () => {
           return {
             label:
               "Long running work session",
+
             tone: "danger",
           };
         }
@@ -552,12 +602,14 @@ const EmployeeOperatingBanner: React.FC = () => {
       return {
         label:
           "Attendance healthy",
+
         tone: "success",
       };
     }, [
       todayLogs,
       latestAttendance,
       checkedInTime,
+      liveNow,
     ]);
 
   /**
@@ -581,7 +633,7 @@ const EmployeeOperatingBanner: React.FC = () => {
         Math.max(
           0,
           currentHour -
-          shiftStart
+            shiftStart
         );
 
       const progress =
@@ -590,7 +642,7 @@ const EmployeeOperatingBanner: React.FC = () => {
           Math.floor(
             (completedHours /
               totalShiftHours) *
-            100
+              100
           )
         );
 
@@ -599,50 +651,41 @@ const EmployeeOperatingBanner: React.FC = () => {
 
   /**
    * Check-In / Check-Out Handler
+   *
+   * Same backend workflow
+   * as EmployeeAttendance.tsx
    */
   const handleCheckInOut =
     async () => {
-      if (
-        !user ||
-        isSubmittingAttendance
-      ) {
-        return;
-      }
+      if (!user) return;
+
+      setIsSubmittingAttendance(
+        true
+      );
+
+      const payload = {
+        docstatus: 0,
+
+        doctype:
+          "Employee Checkin",
+
+        owner: user.email,
+
+        log_type: isCheckedIn
+          ? "OUT"
+          : "IN",
+
+        time:
+          getCurrentFormattedTime(),
+
+        employee_name:
+          user.fullName,
+
+        employee:
+          user.employeeId,
+      };
 
       try {
-        setIsSubmittingAttendance(
-          true
-        );
-
-        /**
-         * Backend-derived truth
-         */
-        const nextLogType =
-          isCheckedIn
-            ? "OUT"
-            : "IN";
-
-        const payload = {
-          docstatus: 0,
-
-          doctype:
-            "Employee Checkin",
-
-          owner: user.email,
-
-          log_type:
-            nextLogType,
-
-          time:
-            getCurrentFormattedTime(),
-
-          employee_name:
-            user.fullName,
-
-          employee:
-            user.employeeId,
-        };
-
         /**
          * Persist attendance
          */
@@ -651,7 +694,7 @@ const EmployeeOperatingBanner: React.FC = () => {
         );
 
         /**
-         * Reload backend truth
+         * Refresh backend truth
          */
         await loadAttendance();
       } catch (error) {
@@ -664,7 +707,7 @@ const EmployeeOperatingBanner: React.FC = () => {
           parseFrappeError(
             error
           ) ||
-          "Failed to update attendance."
+            "Failed to log attendance. Please try again."
         );
       } finally {
         setIsSubmittingAttendance(
@@ -689,7 +732,7 @@ const EmployeeOperatingBanner: React.FC = () => {
 
       tone:
         attendanceStatus ===
-          "Checked In"
+        "Checked In"
           ? "success"
           : "warning",
     },
@@ -866,11 +909,12 @@ const EmployeeOperatingBanner: React.FC = () => {
                     border-2
                     border-[var(--card)]
 
-                    ${attendanceStatus ===
-                        "Checked In"
+                    ${
+                      attendanceStatus ===
+                      "Checked In"
                         ? "bg-emerald-500"
                         : "bg-amber-500"
-                      }
+                    }
                   `}
                   />
                 </div>
@@ -891,11 +935,12 @@ const EmployeeOperatingBanner: React.FC = () => {
                       text-[11px]
                       font-semibold
 
-                      ${attendanceStatus ===
-                          "Checked In"
+                      ${
+                        attendanceStatus ===
+                        "Checked In"
                           ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600"
                           : "border-amber-500/20 bg-amber-500/10 text-amber-600"
-                        }
+                      }
                     `}
                     >
                       <span
@@ -904,11 +949,12 @@ const EmployeeOperatingBanner: React.FC = () => {
                         w-2
                         rounded-full
 
-                        ${attendanceStatus ===
-                            "Checked In"
+                        ${
+                          attendanceStatus ===
+                          "Checked In"
                             ? "bg-emerald-500"
                             : "bg-amber-500"
-                          }
+                        }
                       `}
                       />
 
@@ -932,15 +978,16 @@ const EmployeeOperatingBanner: React.FC = () => {
                           text-[11px]
                           font-medium
 
-                          ${toneStyles[
-                            attendanceWarning
-                              .tone
+                          ${
+                            toneStyles[
+                              attendanceWarning
+                                .tone
                             ]
-                            }
+                          }
                         `}
                         >
                           {attendanceWarning.tone ===
-                            "success" ? (
+                          "success" ? (
                             <ShieldAlert className="h-3.5 w-3.5" />
                           ) : (
                             <AlertTriangle className="h-3.5 w-3.5" />
@@ -1033,15 +1080,17 @@ const EmployeeOperatingBanner: React.FC = () => {
                   shadow-sm
                   transition-all
 
-                  ${isCheckedIn
+                  ${
+                    isCheckedIn
                       ? "bg-orange-500 hover:bg-orange-600"
                       : "bg-[var(--primary)] hover:opacity-90"
-                    }
+                  }
 
-                  ${isSubmittingAttendance
+                  ${
+                    isSubmittingAttendance
                       ? "cursor-not-allowed opacity-70"
                       : ""
-                    }
+                  }
                 `}
                 >
                   {isCheckedIn ? (
@@ -1128,10 +1177,11 @@ const EmployeeOperatingBanner: React.FC = () => {
                         text-xs
                         transition-all
 
-                        ${toneStyles[
-                          item.tone
+                        ${
+                          toneStyles[
+                            item.tone
                           ]
-                          }
+                        }
                       `}
                       >
                         <Icon className="h-3.5 w-3.5" />
