@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  Banknote, Shield, FileText, TrendingDown, CreditCard, Info,
+  Banknote, Shield, FileText, TrendingDown, CreditCard,
 } from "lucide-react";
 import { useAuth }                  from "../../../context/AuthContext";
 import { getEmployeeById }          from "../../../api/employeeapi";
@@ -13,6 +13,7 @@ import { fmt }                      from "../EmployeeManagement/detailtab/Employ
 import { CompensationTab }  from "../EmployeeManagement/detailtab/Compensationtab";
 import { SalarySlipTable }  from "../EmployeeManagement/detailtab/Salaryslip";
 import type { SalarySlip }  from "../EmployeeManagement/detailtab/salarytypes";
+import ApiIncomeTaxTab from "./Incometaxtab";
 
 
 const DUMMY_INSURANCE = [
@@ -37,16 +38,6 @@ const DUMMY_INSURANCE = [
     status: "Active",
   },
 ];
-
-const DUMMY_TAX = {
-  pan: "ABCDE1234F",
-  regime: "New Regime",
-  totalIncome: 1020000,
-  taxableIncome: 820000,
-  taxLiability: 82000,
-  tdsPaid: 75000,
-  balance: 7000,
-};
 
 const DUMMY_LOANS = [
   {
@@ -111,6 +102,7 @@ const InsuranceTab: React.FC = () => (
 
 // ─── Income Tax — Slab Data ───────────────────────────────────────────────────
 
+/*
 const NEW_REGIME_SLABS = [
   { range: "Up to ₹ 3,00,000",           rate: "NIL", from: 0,       to: 300000   },
   { range: "₹ 3,00,001 – ₹ 7,00,000",   rate: "5%",  from: 300001,  to: 700000   },
@@ -331,6 +323,7 @@ const IncomeTaxTab: React.FC = () => {
 
 // ─── Loan & Advance Tab ───────────────────────────────────────────────────────
 
+*/
 const LoanAdvanceTab: React.FC = () => (
   <div className="p-4 space-y-4">
     {DUMMY_LOANS.map((loan) => (
@@ -494,7 +487,13 @@ const EmployeeFinancials: React.FC = () => {
           <SalarySlipTable slips={slips} loading={slipsLoading} />
         )}
 
-        {activeTab === "income-tax" && <IncomeTaxTab />}
+        {activeTab === "income-tax" && (
+          <ApiIncomeTaxTab
+            slips={slips}
+            slipsLoading={slipsLoading}
+            currency={currency}
+          />
+        )}
 
         {activeTab === "loan" && <LoanAdvanceTab />}
 

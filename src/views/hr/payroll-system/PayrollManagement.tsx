@@ -24,13 +24,24 @@ import { QuickCreateModal } from "../../../components/Hr/payrollmodal/QuickCreat
 import { PayrollValidationModal } from "../../../components/Hr/payrollmodal/payrollvalidationmodal";
 import { usePermission } from "../../../hooks/permission/usePermission";
 import { HrTableFrame } from "../components/HrTabLayout";
+import PayrollVerificationModal from "../../../views/hr/payroll-system/Payrollverificationmodal";
 
 // ─── Month helper ─────────────────────────────────────────────────────────────
 // payrollMonth is UI-only and never stored by the API.
 // We derive it from start_date at the point of mapping the edit response.
 const MONTH_NAMES = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ] as const;
 
 /** Safe parse: splits "YYYY-MM-DD" and reads index 1 (MM) — no UTC offset risk. */
@@ -58,12 +69,14 @@ const buildPayload = (
       : (formData.bankAccount ?? ""),
   employees: empIds.map((id) => ({ employee: id, is_salary_withheld: 0 })),
   ...(formData.costCenter ? { cost_center: formData.costCenter } : {}),
-  ...(formData.project    ? { project:      formData.project }    : {}),
-  ...(formData.currency   ? { currency:     formData.currency }   : {}),
-  deduct_tax_for_unsubmitted_tax_exemption_proof: formData.deductTaxForProof ? 1 : 0,
+  ...(formData.project ? { project: formData.project } : {}),
+  ...(formData.currency ? { currency: formData.currency } : {}),
+  deduct_tax_for_unsubmitted_tax_exemption_proof: formData.deductTaxForProof
+    ? 1
+    : 0,
   salary_slip_based_on_timesheet: formData.salarySlipTimesheet ? 1 : 0,
   validate_attendance: 0,
-  validate_holidays:  0,
+  validate_holidays: 0,
 });
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -71,21 +84,25 @@ export default function PayrollManagement() {
   const { can } = usePermission();
 
   const canCreate = can("Payroll Entry", "create");
-  const canWrite  = can("Payroll Entry", "write");
+  const canWrite = can("Payroll Entry", "write");
 
-  const [page,            setPage]            = useState(1);
-  const [totalPages,      setTotalPages]      = useState(1);
-  const [payrollRecords,  setPayrollRecords]  = useState<PayrollRecord[]>([]);
-  const [loading,         setLoading]         = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showValidation,  setShowValidation]  = useState(false);
-  const [selectedRecord,  setSelectedRecord]  = useState<PayrollRecord | null>(null);
-  const [detailRecord,    setDetailRecord]    = useState<PayrollRecord | null>(null);
-  const [selectedEmpIds,  setSelectedEmpIds]  = useState<string[]>([]);
-
+  const [showValidation, setShowValidation] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<PayrollRecord | null>(
+    null,
+  );
+  const [detailRecord, setDetailRecord] = useState<PayrollRecord | null>(null);
+  const [selectedEmpIds, setSelectedEmpIds] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   type ValidationResult = ReturnType<typeof runPayrollValidation> | null;
-  const [validationResult, setValidationResult] = useState<ValidationResult>(null);
-  const [isProcessing,     setIsProcessing]     = useState(false);
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [verifyRecord, setVerifyRecord] = useState<PayrollRecord | null>(null);
 
   // ── Data loading ─────────────────────────────────────────────────────────
   const loadPayrollEntries = async () => {
@@ -103,8 +120,7 @@ export default function PayrollManagement() {
 
   useEffect(() => {
     loadPayrollEntries();
-  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, [page, searchTerm]);
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleCreatePayroll = async (
     empIds: string[],
@@ -122,7 +138,9 @@ export default function PayrollManagement() {
       setSelectedEmpIds([]);
       setShowCreateModal(false);
       closeSwal();
-      showSuccess(`Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`);
+      showSuccess(
+        `Payroll created for ${empIds.length} employee${empIds.length > 1 ? "s" : ""}`,
+      );
     } catch (error) {
       closeSwal();
       showApiError(error);
@@ -162,20 +180,28 @@ export default function PayrollManagement() {
     setIsProcessing(true);
     const ids = pendingRecords.map((r) => r.id);
     setPayrollRecords((p) =>
-      p.map((r) => ids.includes(r.id) ? { ...r, status: "Processing" as const } : r)
+      p.map((r) =>
+        ids.includes(r.id) ? { ...r, status: "Processing" as const } : r,
+      ),
     );
     setTimeout(() => {
       setPayrollRecords((p) =>
         p.map((r) =>
           ids.includes(r.id)
-            ? { ...r, status: "Paid" as const, paymentDate: new Date().toLocaleDateString("en-IN") }
-            : r
-        )
+            ? {
+                ...r,
+                status: "Paid" as const,
+                paymentDate: new Date().toLocaleDateString("en-IN"),
+              }
+            : r,
+        ),
       );
       setIsProcessing(false);
       setShowValidation(false);
       setValidationResult(null);
-      showSuccess(`Payroll processed for ${ids.length} employee${ids.length > 1 ? "s" : ""}.`);
+      showSuccess(
+        `Payroll processed for ${ids.length} employee${ids.length > 1 ? "s" : ""}.`,
+      );
     }, 2500);
   };
 
@@ -202,6 +228,7 @@ export default function PayrollManagement() {
         onQuickCreate={() => setShowCreateModal(true)}
         canCreate={canCreate}
         canWrite={canWrite}
+        
         onNewPayroll={() =>
           openPayrollModal(null, false, {
             onSubmit: async ({ empIds, formData }: any) => {
@@ -209,6 +236,8 @@ export default function PayrollManagement() {
             },
           })
         }
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
         onRunPayroll={handleRunPayroll}
         onViewPayslip={(r) => setSelectedRecord(r)}
         onDeleteRecord={(r) => handleDeletePayroll((r as any).name)}
@@ -218,25 +247,27 @@ export default function PayrollManagement() {
             const payroll = await getPayrollEntryDetail((r as any).name);
 
             const mappedPayroll = {
-              payrollName:           payroll.name,
-              postingDate:           payroll.posting_date,
+              payrollName: payroll.name,
+              postingDate: payroll.posting_date,
               // ── Derived from start_date — API never stores payrollMonth ──
-              payrollMonth:          monthFromDateStr(payroll.start_date),
-              startDate:             payroll.start_date,
-              endDate:               payroll.end_date,
-              currency:              payroll.currency,
-              exchangeRate:          payroll.exchange_rate,
-              company:               payroll.company,
+              payrollMonth: monthFromDateStr(payroll.start_date),
+              startDate: payroll.start_date,
+              endDate: payroll.end_date,
+              currency: payroll.currency,
+              exchangeRate: payroll.exchange_rate,
+              company: payroll.company,
               payrollPayableAccount: payroll.payroll_payable_account,
-              status:                payroll.status,
-              salarySlipTimesheet:   payroll.salary_slip_based_on_timesheet === 1,
-              deductTaxForProof:     payroll.deduct_tax_for_unsubmitted_tax_exemption_proof === 1,
-              payrollFrequency:      payroll.payroll_frequency,
-              paymentAccount:        payroll.payment_account  || "",
-              bankAccount:           payroll.bank_account     || "",
-              project:               payroll.project          || "",
-              costCenter:            payroll.cost_center      || "",
-              selectedEmployees:     payroll.employees?.map((e: any) => e.employee) || [],
+              status: payroll.status,
+              salarySlipTimesheet: payroll.salary_slip_based_on_timesheet === 1,
+              deductTaxForProof:
+                payroll.deduct_tax_for_unsubmitted_tax_exemption_proof === 1,
+              payrollFrequency: payroll.payroll_frequency,
+              paymentAccount: payroll.payment_account || "",
+              bankAccount: payroll.bank_account || "",
+              project: payroll.project || "",
+              costCenter: payroll.cost_center || "",
+              selectedEmployees:
+                payroll.employees?.map((e: any) => e.employee) || [],
             };
 
             closeSwal();
@@ -244,7 +275,10 @@ export default function PayrollManagement() {
               onSubmit: async ({ formData }: any) => {
                 try {
                   showLoading("Updating Payroll");
-                  const payload = buildPayload(formData, formData.selectedEmployees || []);
+                  const payload = buildPayload(
+                    formData,
+                    formData.selectedEmployees || [],
+                  );
                   await updatePayrollEntry(payroll.name, payload);
                   closeSwal();
                   await loadPayrollEntries();
@@ -271,7 +305,7 @@ export default function PayrollManagement() {
         selectedEmployees={selectedEmpIds}
         onToggleEmployee={(id) =>
           setSelectedEmpIds((p) =>
-            p.includes(id) ? p.filter((i) => i !== id) : [...p, id]
+            p.includes(id) ? p.filter((i) => i !== id) : [...p, id],
           )
         }
         onSelectAll={() => {
@@ -292,15 +326,41 @@ export default function PayrollManagement() {
           setValidationResult(null);
         }}
         onProceed={handleConfirmPayroll}
-        onRevalidate={() => setValidationResult(runPayrollValidation(pendingRecords))}
+        onRevalidate={() =>
+          setValidationResult(runPayrollValidation(pendingRecords))
+        }
       />
 
       <PayslipModal
         record={selectedRecord}
         onClose={() => setSelectedRecord(null)}
-        onDownload={() => showSuccess(`Payslip downloaded for ${selectedRecord?.employeeName}`)}
-        onEmail={() => showSuccess(`Payslip emailed to ${selectedRecord?.email}`)}
+        onDownload={() =>
+          showSuccess(`Payslip downloaded for ${selectedRecord?.employeeName}`)
+        }
+        onEmail={() =>
+          showSuccess(`Payslip emailed to ${selectedRecord?.email}`)
+        }
       />
+      {/* {verifyRecord && (
+        <PayrollVerificationModal
+          modalId={`payroll-verify-${verifyRecord.id}`}
+          isOpen={!!verifyRecord}
+          onClose={() => setVerifyRecord(null)}
+          payrollId={(verifyRecord as any).name}
+          // Pass real data from your API here once you wire getPayrollEntryDetail:
+          // payrollData={...}
+          // employees={...}
+          onSubmitForApproval={async () => {
+            // call your submit API here
+            showSuccess("Payroll submitted for approval");
+            setVerifyRecord(null);
+            await loadPayrollEntries();
+          }}
+          onSaveAsDraft={async () => {
+            showSuccess("Saved as draft");
+          }}
+        />
+      )} */}
     </HrTableFrame>
   );
 }

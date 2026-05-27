@@ -1,33 +1,36 @@
 import React from "react";
-import { Trash2 ,Users } from "lucide-react";
+import { Trash2, Users } from "lucide-react";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import { useCustomerGroupModal } from "../../hooks/useCustomerGroupModal";
-import type { CustomerGroupPayload } from "../../hooks/useCustomerGroupModal";
+import type { CustomerGroupPayload } from "../../api/customerGroupApi";
 import ItemRestrictionSelect from "../selects/customer group/ItemRescritionSelect";
-
-// ─── Props ────────────────────────────────────────────────────────────────────
+import { showValidationError } from "../../utils/alert";
 
 interface Props {
   isOpen: boolean;
+  mode: "create" | "edit" | "view";
+  initialData?: any;
   onClose: () => void;
   onSubmit: (payload: CustomerGroupPayload) => void;
 }
 
+const TOGGLE_W = 156;
+const TOGGLE_H = 28;
+const PILL_PAD = 3;
 
-const TOGGLE_W = 156; // total width  (px)
-const TOGGLE_H = 28;  // total height (px)
-const PILL_PAD = 3;   // padding around the sliding pill (px)
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
+const CustomerGroupModal: React.FC<Props> = ({
+  isOpen,
+  mode,
+  initialData,
+  onClose,
+  onSubmit,
+}) => {
   const {
     form,
     restrictionMode,
     restrictedItems,
-    isValid,
     handleFormChange,
     toggleRestrictionMode,
     addRestrictedItem,
@@ -41,46 +44,79 @@ const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
     goToPrevPage,
     goToNextPage,
     ITEMS_PER_PAGE,
-  } = useCustomerGroupModal();
+  } = useCustomerGroupModal(initialData);
 
-  const handleClose = () => { resetModal(); onClose(); };
-  const handleSave  = () => { if (!isValid) return; onSubmit(buildPayload()); resetModal(); onClose(); };
+  const isView = mode === "view";
+  const title =
+    mode === "create"
+      ? "Create Customer Group"
+      : mode === "edit"
+        ? "Edit Customer Group"
+        : "View Customer Group";
+
+  const handleClose = () => {
+    resetModal();
+    onClose();
+  };
+
+  const handleSave = () => {
+    if (isView) return;
+
+    if (!form.customerGroupName.trim()) {
+      return showValidationError("Customer Group Name is required");
+    }
+
+    onSubmit(buildPayload());
+    resetModal();
+  };
 
   const footer = (
     <div className="flex justify-between w-full">
-      <Button variant="secondary" onClick={handleClose}>Cancel</Button>
-      <Button variant="primary"   onClick={handleSave}  disabled={!isValid}>Save</Button>
+      <Button variant="secondary" onClick={handleClose}>
+        {isView ? "Close" : "Cancel"}
+      </Button>
+      {!isView && (
+        <Button variant="primary" onClick={handleSave}>
+          Save
+        </Button>
+      )}
     </div>
   );
 
   const selectedIds = restrictedItems.map((x) => x.id);
-  const isAllowed   = restrictionMode === "allowed";
-
-  // Pill slides exactly half the toggle width
-  const pillW        = TOGGLE_W / 2 - PILL_PAD;       // width of each half minus one pad
-  const pillSlide    = TOGGLE_W / 2;                   // how far to slide right
+  const isAllowed = restrictionMode === "Allow";
+  const pillW = TOGGLE_W / 2 - PILL_PAD;
+  const pillSlide = TOGGLE_W / 2;
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Customer Group"
-      subtitle="Manage customer groups"
+      title={title}
+      subtitle="Manage customer group details"
       footer={footer}
       icon={Users}
       customWidth="50vw"
       height="82vh"
     >
       <div className="p-6 space-y-8 bg-app">
-
         {/* ── Top form row ── */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 gap-6">
           <ModalInput
-            label="Customer Group Name"
+            label="Customer Group Name *"
             name="customerGroupName"
             value={form.customerGroupName}
             onChange={handleFormChange}
             placeholder="e.g. Retail Customers"
+            disabled={isView}
+          />
+          <ModalInput
+            label="Parent Customer Group"
+            name="parentCustomerGroup"
+            value={form.parentCustomerGroup}
+            onChange={handleFormChange}
+            placeholder="e.g. All Customer Groups"
+            disabled={isView}
           />
           <ModalInput
             label="Default Price List"
@@ -88,30 +124,52 @@ const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
             value={form.defaultPriceList}
             onChange={handleFormChange}
             placeholder="e.g. Standard Selling"
+            disabled={isView}
           />
           <ModalInput
             label="Default Payment Terms Template"
-            name="defaultPaymentTerms"
-            value={form.defaultPaymentTerms}
+            name="paymentTerms"
+            value={form.paymentTerms}
             onChange={handleFormChange}
             placeholder="e.g. Net 30"
+            disabled={isView}
           />
+        </div>
+
+        {/* Is Group Checkbox */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="isGroup"
+            name="isGroup"
+            checked={form.isGroup}
+            onChange={handleFormChange}
+            disabled={isView}
+            className="rounded border-theme"
+          />
+          <label
+            htmlFor="isGroup"
+            className={`text-sm ${isView ? "text-muted" : "text-main"}`}
+          >
+            Is Group (Can have child groups)
+          </label>
         </div>
 
         {/* ── Item Restriction Section ── */}
         <div className="space-y-3">
-
-          {/* Section header + toggle */}
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-main">Item Restrictions</h3>
+            <h3 className="text-sm font-semibold text-main">
+              Item Restrictions
+            </h3>
 
-            {/* ── Pill toggle  ── */}
+            {/* ── Pill toggle ── */}
             <button
               type="button"
-              onClick={toggleRestrictionMode}
+              onClick={isView ? undefined : toggleRestrictionMode}
+              disabled={isView}
               aria-label="Toggle restriction mode"
               style={{
-                width:  TOGGLE_W,
+                width: TOGGLE_W,
                 height: TOGGLE_H,
                 padding: PILL_PAD,
                 borderRadius: TOGGLE_H / 2,
@@ -120,88 +178,91 @@ const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
                 display: "flex",
                 alignItems: "center",
                 border: "none",
-                cursor: "pointer",
+                cursor: isView ? "default" : "pointer",
+                opacity: isView ? 0.7 : 1,
                 transition: "background-color 0.25s ease",
                 outline: "none",
               }}
             >
-              {/* Sliding white pill */}
               <span
                 style={{
-                  position:     "absolute",
-                  top:          PILL_PAD,
-                  left:         PILL_PAD,
-                  width:        pillW,
-                  height:       TOGGLE_H - PILL_PAD * 2,
+                  position: "absolute",
+                  top: PILL_PAD,
+                  left: PILL_PAD,
+                  width: pillW,
+                  height: TOGGLE_H - PILL_PAD * 2,
                   borderRadius: (TOGGLE_H - PILL_PAD * 2) / 2,
                   backgroundColor: "#ffffff",
-                  boxShadow:    "0 1px 3px rgba(0,0,0,0.18)",
-                  transform:    isAllowed ? "translateX(0)" : `translateX(${pillSlide}px)`,
-                  transition:   "transform 0.25s ease",
-                  zIndex:       1,
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
+                  transform: isAllowed
+                    ? "translateX(0)"
+                    : `translateX(${pillSlide}px)`,
+                  transition: "transform 0.25s ease",
+                  zIndex: 1,
                 }}
               />
-
-              {/* "Allowed" label */}
               <span
                 style={{
-                  position:   "relative",
-                  zIndex:     2,
-                  flex:       1,
-                  textAlign:  "center",
-                  fontSize:   11,
+                  position: "relative",
+                  zIndex: 2,
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: 11,
                   fontWeight: 600,
                   color: isAllowed ? "#15803d" : "rgba(0,0,0,0.6)",
                   transition: "color 0.25s ease",
                   userSelect: "none",
                 }}
               >
-                Allowed
+                Allow
               </span>
-
-              {/* "Disallowed" label */}
               <span
                 style={{
-                  position:   "relative",
-                  zIndex:     2,
-                  flex:       1,
-                  textAlign:  "center",
-                  fontSize:   11,
+                  position: "relative",
+                  zIndex: 2,
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: 11,
                   fontWeight: 600,
                   color: !isAllowed ? "#b91c1c" : "rgba(0,0,0,0.6)",
                   transition: "color 0.25s ease",
                   userSelect: "none",
                 }}
               >
-                Disallowed
+                Deny
               </span>
             </button>
           </div>
 
-          {/* Mode hint */}
           <p className="text-xs text-muted">
             {isAllowed
-              ? "Only the items listed below will be available for this customer group."
-              : "The items listed below will NOT be available for this customer group."}
+              ? "Only the items listed below are allowed for this customer group."
+              : "The items listed below are denied for this customer group."}
           </p>
 
-          {/* Search / add input */}
-          <ItemRestrictionSelect
-            selectedIds={selectedIds}
-            onSelect={addRestrictedItem}
-          />
+          {!isView && (
+            <ItemRestrictionSelect
+              selectedIds={selectedIds}
+              onSelect={addRestrictedItem}
+            />
+          )}
 
-          {/* Restriction table */}
           {restrictedItems.length > 0 ? (
             <>
               <div className="border border-theme rounded overflow-hidden">
                 <table className="w-full text-[12px]">
                   <thead>
                     <tr className="bg-row-hover border-b border-theme">
-                      <th className="text-left px-4 py-2 text-muted font-semibold w-[30px]">#</th>
-                      <th className="text-left px-4 py-2 text-muted font-semibold w-[200px]">Item ID</th>
-                      <th className="text-left px-4 py-2 text-muted font-semibold">Item Name</th>
-                      <th className="w-10" />
+                      <th className="text-left px-4 py-2 text-muted font-semibold w-[30px]">
+                        #
+                      </th>
+                      <th className="text-left px-4 py-2 text-muted font-semibold w-[200px]">
+                        Item ID
+                      </th>
+                      <th className="text-left px-4 py-2 text-muted font-semibold">
+                        Item Name
+                      </th>
+                      {!isView && <th className="w-10" />}
                     </tr>
                   </thead>
                   <tbody>
@@ -210,21 +271,31 @@ const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
                       return (
                         <tr
                           key={item.id}
-                          className={`border-b border-theme last:border-0 ${globalIdx % 2 === 0 ? "bg-card" : "bg-app"}`}
+                          className={`border-b border-theme last:border-0 ${
+                            globalIdx % 2 === 0 ? "bg-card" : "bg-app"
+                          }`}
                         >
-                          <td className="px-4 py-2 text-muted text-[11px]">{globalIdx + 1}</td>
-                          <td className="px-4 py-2 text-muted font-mono">{item.id}</td>
-                          <td className="px-4 py-2 text-main font-medium">{item.itemName}</td>
-                          <td className="px-2 py-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => removeRestrictedItem(item.id)}
-                              className="text-red-400 hover:text-red-400 transition-colors"
-                              aria-label={`Remove ${item.itemName}`}
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                          <td className="px-4 py-2 text-muted text-[11px]">
+                            {globalIdx + 1}
                           </td>
+                          <td className="px-4 py-2 text-muted font-mono">
+                            {item.id}
+                          </td>
+                          <td className="px-4 py-2 text-main font-medium">
+                            {item.itemName}
+                          </td>
+                          {!isView && (
+                            <td className="px-2 py-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => removeRestrictedItem(item.id)}
+                                className="text-red-400 hover:text-red-400 transition-colors"
+                                aria-label={`Remove ${item.itemName}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -232,14 +303,16 @@ const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
                 </table>
               </div>
 
-              {/* Pagination */}
               {hasPagination && (
                 <div className="flex justify-end">
                   <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
                     <div className="text-[11px] text-muted whitespace-nowrap">
                       Showing {page * ITEMS_PER_PAGE + 1} to{" "}
-                      {Math.min((page + 1) * ITEMS_PER_PAGE, restrictedItems.length)} of{" "}
-                      {restrictedItems.length} items
+                      {Math.min(
+                        (page + 1) * ITEMS_PER_PAGE,
+                        restrictedItems.length,
+                      )}{" "}
+                      of {restrictedItems.length} items
                     </div>
                     <div className="flex gap-1.5 items-center">
                       <button
@@ -265,10 +338,11 @@ const CustomerGroupModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
             </>
           ) : (
             <div className="border border-dashed border-theme rounded py-8 text-center text-muted text-xs">
-              No items added yet. Search above to add items to the restriction list.
+              {isView
+                ? "No items restricted."
+                : "No items added yet. Search above to add items to the restriction list."}
             </div>
           )}
-
         </div>
       </div>
     </Modal>
