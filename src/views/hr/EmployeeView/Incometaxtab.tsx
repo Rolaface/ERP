@@ -1,69 +1,65 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
-  FileText,
-  TrendingDown,
-  Info,
-  ChevronDown,
-  Loader2,
   AlertCircle,
-  Calendar,
+  ArrowLeftRight,
   BadgePercent,
+  CheckCircle2,
+  ChevronDown,
+  FileText,
+  Info,
+  Loader2,
+  Send,
   ShieldCheck,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+  X,
 } from "lucide-react";
 import { getAllTaxConfigs, getTaxConfig } from "../../../api/payrollConfigApi";
 import type { TaxConfig, TaxSlabRow } from "../../../api/payrollConfigApi";
+import { SalarySlipTable } from "../EmployeeManagement/detailtab/Salaryslip";
+import type { SalarySlip } from "../EmployeeManagement/detailtab/salarytypes";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const fmtAmt = (n: number, currency = "") =>
-  `${currency} ${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`.trim();
-const rateLabel = (pct: number) => (pct === 0 ? "NIL" : `${pct}%`);
+interface IncomeTaxTabProps {
+  taxableIncome?: number;
+  slips?: SalarySlip[];
+  slipsLoading?: boolean;
+  currency?: string;
+}
 
-const RATE_COLORS: Record<
-  string,
-  { bg: string; text: string; bar: string; border: string }
-> = {
-  NIL: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    bar: "bg-emerald-400",
-    border: "border-emerald-200",
-  },
-  "5%": {
-    bg: "bg-sky-50",
-    text: "text-sky-700",
-    bar: "bg-sky-400",
-    border: "border-sky-200",
-  },
-  "10%": {
-    bg: "bg-amber-50",
-    text: "text-amber-700",
-    bar: "bg-amber-400",
-    border: "border-amber-200",
-  },
-  "15%": {
-    bg: "bg-orange-50",
-    text: "text-orange-600",
-    bar: "bg-orange-400",
-    border: "border-orange-200",
-  },
-  "20%": {
-    bg: "bg-red-50",
-    text: "text-red-600",
-    bar: "bg-red-400",
-    border: "border-red-200",
-  },
-  "30%": {
-    bg: "bg-rose-100",
-    text: "text-rose-700",
-    bar: "bg-rose-500",
-    border: "border-rose-200",
-  },
-};
+type TaxSubtab = "overview" | "form16" | "report";
 
-const getRateColor = (pct: number) => {
-  const key = rateLabel(pct);
-  return RATE_COLORS[key] ?? RATE_COLORS["30%"];
+interface RegimeSnapshot {
+  name: string;
+  grossSalary: number;
+  totalExemptions: number;
+  standardDeduction: number;
+  taxableIncome: number;
+  estimatedAnnualTax: number;
+  monthlyTds: number;
+  netInHand: number;
+  estimatedSavings: number;
+}
+
+type RequestStatus = "idle" | "confirm" | "submitting" | "submitted";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const INR = (n: number, currency = "") =>
+  `${currency} ${Math.round(Math.abs(n || 0)).toLocaleString("en-IN")}`.trim();
+
+const fmtDate = (date?: string) => {
+  if (!date) return "—";
+  const p = new Date(date);
+  if (isNaN(p.getTime())) return date;
+  return p.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const normalizeSlabs = (slabs: TaxSlabRow[]) =>
@@ -75,126 +71,555 @@ const normalizeSlabs = (slabs: TaxSlabRow[]) =>
         : (s.to_amount ?? Infinity),
   }));
 
-// ─── Slab Visual ──────────────────────────────────────────────────────────────
+/** Calculate tax due on a given income using slabs */
+const calcTaxOnSlabs = (
+  income: number,
+  slabs: ReturnType<typeof normalizeSlabs>,
+): number =>
+  slabs.reduce((total, slab) => {
+    const from = slab.from_amount ?? 0;
+    const to = slab.to_amount ?? Infinity;
+    const rate = (slab.percent_deduction ?? 0) / 100;
+    if (income <= from) return total;
+    const applicable = Math.min(income, to === Infinity ? income : to) - from;
+    return total + Math.max(0, applicable) * rate;
+  }, 0);
 
-const SlabVisual: React.FC<{
-  slabs: TaxSlabRow[];
+// ─── Small reusable components ────────────────────────────────────────────────
+
+const Divider = () => <div className="border-b border-[var(--border)]" />;
+
+const Tag: React.FC<{
+  children: React.ReactNode;
+  variant?: "success" | "warning" | "info" | "muted";
+}> = ({ children, variant = "muted" }) => {
+  const cls = {
+    success: "bg-success text-white",
+    warning: "bg-warning text-white",
+    info: "bg-info text-white",
+    muted: "bg-[var(--row-hover)] text-muted",
+  }[variant];
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}
+    >
+      {children}
+    </span>
+  );
+};
+
+const SectionLabel: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
+  <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+    {children}
+  </p>
+);
+
+const MetaValue: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+}> = ({ children, className = "" }) => (
+  <p className={`text-xs font-semibold text-main ${className}`}>{children}</p>
+);
+
+// ─── Progress bar ─────────────────────────────────────────────────────────────
+
+const TaxProgressBar: React.FC<{
+  paid: number;
+  total: number;
   currency: string;
-  taxableIncome?: number;
-}> = ({ slabs, currency, taxableIncome }) => {
-  const normalized = normalizeSlabs(slabs);
-  const maxAmount = normalized
-    .filter((s) => s.to_amount !== Infinity)
-    .reduce((m, s) => Math.max(m, s.to_amount ?? 0), 0);
-
-  const activeSlab =
-    taxableIncome != null
-      ? normalized.findIndex(
-          (s) =>
-            taxableIncome >= (s.from_amount ?? 0) &&
-            taxableIncome <= (s.to_amount ?? Infinity),
-        )
-      : -1;
-
-  const barWidth = (slab: (typeof normalized)[0]) => {
-    if (slab.to_amount === Infinity || !maxAmount) return 100;
-    return Math.min(Math.round(((slab.to_amount ?? 0) / maxAmount) * 100), 100);
-  };
+}> = ({ paid, total, currency }) => {
+  const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+  const remaining = Math.max(0, total - paid);
 
   return (
-    <div className="space-y-2.5">
-      {normalized.map((slab, idx) => {
-        const pct = slab.percent_deduction ?? 0;
-        const colors = getRateColor(pct);
-        const isActive = idx === activeSlab;
-        const label = rateLabel(pct);
+    <div className="card p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <TrendingUp size={13} className="text-primary" />
+          <span className="text-xs font-semibold text-main">
+            Annual tax progress
+          </span>
+        </div>
+        <span className="text-[11px] text-muted">{pct}% paid</span>
+      </div>
 
-        const rangeText =
-          slab.to_amount === Infinity
-            ? `Above ${fmtAmt(slab.from_amount ?? 0, currency)}`
-            : `${fmtAmt(slab.from_amount ?? 0, currency)} – ${fmtAmt(slab.to_amount as number, currency)}`;
+      {/* Track */}
+      <div
+        className="relative h-2 overflow-hidden rounded-full"
+        style={{ background: "var(--row-hover)" }}
+      >
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-primary transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
 
-        return (
-          <div
-            key={idx}
-            className={`rounded-xl border transition-all duration-200 bg-[var(--card)] overflow-hidden ${
-              isActive
-                ? "border-[var(--primary)] shadow-md"
-                : "border-[var(--border)]"
-            }`}
+      <div className="grid grid-cols-3 gap-2 pt-0.5">
+        <div>
+          <SectionLabel>Paid</SectionLabel>
+          <MetaValue className="text-success">{INR(paid, currency)}</MetaValue>
+        </div>
+        <div>
+          <SectionLabel>Remaining</SectionLabel>
+          <MetaValue
+            className={remaining > 0 ? "text-warning" : "text-success"}
           >
-            <div className="flex items-center justify-between px-4 py-3 gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {isActive ? (
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: "var(--primary)" }}
-                  />
-                ) : (
-                  <span className="w-2 h-2 rounded-full shrink-0 bg-[var(--border)]" />
-                )}
-                <p
-                  className={`text-sm truncate ${
-                    isActive
-                      ? "font-semibold text-[var(--text)]"
-                      : "font-medium text-[var(--muted)]"
-                  }`}
-                >
-                  {rangeText}
-                </p>
-              </div>
-              <span
-                className={`text-xs font-bold px-3 py-1 rounded-full shrink-0 border ${colors.bg} ${colors.text} ${colors.border}`}
-              >
-                {label}
-              </span>
-            </div>
-            <div className="px-4 pb-3">
-              <div className="h-1 rounded-full bg-[var(--row-hover)]">
-                <div
-                  className={`h-full rounded-full ${colors.bar} transition-all duration-500`}
-                  style={{ width: `${barWidth(slab)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        );
-      })}
+            {remaining > 0 ? INR(remaining, currency) : "Fully paid"}
+          </MetaValue>
+        </div>
+        <div>
+          <SectionLabel>Annual total</SectionLabel>
+          <MetaValue>{INR(total, currency)}</MetaValue>
+        </div>
+      </div>
     </div>
   );
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Regime comparison modal ──────────────────────────────────────────────────
 
-interface IncomeTaxTabProps {
-  taxableIncome?: number;
+const RegimeCard: React.FC<{
+  regime: RegimeSnapshot;
+
+  currency: string;
+  isCurrent: boolean;
+}> = ({ regime, currency, isCurrent }) => {
+  const rows: [string, string, string?][] = [
+    ["Gross salary", INR(regime.grossSalary, currency)],
+    ["Total exemptions", INR(regime.totalExemptions, currency)],
+    ["Standard deduction", INR(regime.standardDeduction, currency)],
+    ["Taxable income", INR(regime.taxableIncome, currency)],
+    [
+      "Estimated annual tax",
+      INR(regime.estimatedAnnualTax, currency),
+      "text-danger",
+    ],
+    ["Monthly TDS", INR(regime.monthlyTds, currency), "text-warning"],
+    [
+      "Net in-hand (monthly)",
+      INR(regime.netInHand / 12, currency),
+      "text-success",
+    ],
+  ];
+
+  return (
+    <div className="flex flex-col rounded-lg border overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-main">{regime.name}</p>
+          {isCurrent && <Tag variant="muted">Current regime</Tag>}
+        </div>
+      </div>
+
+      {/* Rows */}
+      <div className="flex-1 divide-y divide-[var(--border)]">
+        {rows.map(([label, value, colorClass]) => (
+          <div
+            key={label}
+            className="flex items-center justify-between px-4 py-2 gap-3"
+          >
+            <span className="text-[11px] text-muted">{label}</span>
+            <span
+              className={`text-[11px] font-semibold ${colorClass ?? "text-main"}`}
+            >
+              {value}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Savings footer */}
+      <div className="px-4 py-2.5 border-t border-[var(--border)]">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-muted">
+            Estimated savings vs. other
+          </span>
+          <span
+            className={`text-xs font-bold ${regime.estimatedSavings >= 0 ? "text-success" : "text-danger"}`}
+          >
+            {regime.estimatedSavings >= 0 ? "+" : "−"}{" "}
+            {INR(Math.abs(regime.estimatedSavings), currency)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CompareModal: React.FC<{
+  onClose: () => void;
+  onRequestChange: () => void;
+  oldRegime: RegimeSnapshot;
+  newRegime: RegimeSnapshot;
+  currency: string;
+  currentRegimeName: string;
+}> = ({
+  onClose,
+  onRequestChange,
+  oldRegime,
+  newRegime,
+  currency,
+  currentRegimeName,
+}) => {
+  const recommended =
+    oldRegime.estimatedAnnualTax <= newRegime.estimatedAnnualTax
+      ? oldRegime.name
+      : newRegime.name;
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ background: "rgba(15,23,42,0.45)", zIndex: "var(--z-modal)" }}
+    >
+      <div
+        className="bg-card rounded-xl border border-[var(--border)] w-full max-w-2xl flex flex-col"
+        style={{ maxHeight: "90vh" }}
+      >
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)]">
+          <div className="flex items-center gap-2">
+            <ArrowLeftRight size={16} className="text-primary" />
+            <p className="text-sm font-semibold text-main">Regime comparison</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[var(--row-hover)] text-muted transition-colors"
+            aria-label="Close"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 p-5 space-y-4">
+          {/* Side by side cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <RegimeCard
+              regime={oldRegime}
+              currency={currency}
+              isCurrent={currentRegimeName === oldRegime.name}
+            />
+            <RegimeCard
+              regime={newRegime}
+              currency={currency}
+              isCurrent={currentRegimeName === newRegime.name}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-[var(--border)]">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="rounded-lg border border-[var(--border)] bg-card px-4 py-1.5 text-xs font-semibold text-muted hover:text-main transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Tax breakdown accordion ──────────────────────────────────────────────────
+
+interface BreakdownItem {
+  label: string;
+  amount: number;
+  icon: React.ReactNode;
 }
 
-const IncomeTaxTab: React.FC<IncomeTaxTabProps> = ({ taxableIncome }) => {
-  const [subtab, setSubtab] = useState<"slabs" | "form16" | "report">("slabs");
+const TaxBreakdownAccordion: React.FC<{
+  currency: string;
+  taxableIncome: number;
+  exemption: number;
+}> = ({ currency, exemption }) => {
+  const [open, setOpen] = useState(false);
 
+  const items: BreakdownItem[] = [
+    {
+      label: "80C Investments",
+      amount: Math.round(exemption * 0.45),
+      icon: <ShieldCheck size={12} />,
+    },
+    {
+      label: "HRA Exemption",
+      amount: Math.round(exemption * 0.25),
+      icon: <Wallet size={12} />,
+    },
+    {
+      label: "PF Contribution",
+      amount: Math.round(exemption * 0.15),
+      icon: <BadgePercent size={12} />,
+    },
+    { label: "Professional Tax", amount: 2400, icon: <FileText size={12} /> },
+    {
+      label: "Health Insurance",
+      amount: Math.round(exemption * 0.1),
+      icon: <ShieldCheck size={12} />,
+    },
+    {
+      label: "Other deductions",
+      amount: Math.round(exemption * 0.05),
+      icon: <Info size={12} />,
+    },
+  ];
+
+  const total = items.reduce((s, i) => s + i.amount, 0);
+
+  return (
+    <div className="card overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--row-hover)] transition-colors"
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-2">
+          <BadgePercent size={14} className="text-primary" />
+          <span className="text-xs font-semibold text-main">
+            Tax deduction breakdown
+          </span>
+          <Tag variant="muted">{INR(total, currency)} total</Tag>
+        </div>
+        <ChevronDown
+          size={14}
+          className="text-muted transition-transform"
+          style={{ transform: open ? "rotate(180deg)" : undefined }}
+        />
+      </button>
+
+      {open && (
+        <>
+          <Divider />
+          <div className="divide-y divide-[var(--border)]">
+            {items.map(({ label, amount, icon }) => (
+              <div
+                key={label}
+                className="flex items-center justify-between px-4 py-2.5"
+              >
+                <div className="flex items-center gap-2 text-muted">
+                  {icon}
+                  <span className="text-[11px]">{label}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="h-1 rounded-full bg-primary"
+                    style={{
+                      width: Math.max(20, Math.round((amount / total) * 80)),
+                    }}
+                    aria-hidden
+                  />
+                  <span className="text-[11px] font-semibold text-main w-24 text-right">
+                    {INR(amount, currency)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div
+            className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)]"
+            style={{ background: "var(--row-hover)" }}
+          >
+            <span className="text-[11px] font-semibold text-main">
+              Total deductions claimed
+            </span>
+            <span className="text-[11px] font-bold text-primary">
+              {INR(total, currency)}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─── Current regime card ──────────────────────────────────────────────────────
+
+const CurrentRegimeCard: React.FC<{
+  detail: TaxConfig | null;
+  summary: ReturnType<typeof buildSummary>;
+  onCompare: () => void;
+  onRequestChange: () => void;
+}> = ({ detail, summary, onCompare, onRequestChange }) => {
+  const monthlyTds = Math.round(summary.totalTax / 12);
+  const monthlyGross = Math.round(summary.totalIncome / 12);
+  const monthlyNet = Math.round((summary.totalIncome - summary.totalTax) / 12);
+
+  const tiles: [string, string, string][] = [
+    ["Total tax paid", INR(summary.taxPaid, summary.currency), "text-success"],
+    [
+      "Remaining tax",
+      INR(Math.max(0, summary.balance), summary.currency),
+      summary.balance > 0 ? "text-warning" : "text-success",
+    ],
+    ["Monthly TDS", INR(monthlyTds, summary.currency), "text-danger"],
+    [
+      "Est. annual tax",
+      INR(summary.totalTax, summary.currency),
+      "text-warning",
+    ],
+    ["Monthly gross", INR(monthlyGross, summary.currency), "text-main"],
+    ["Monthly net in-hand", INR(monthlyNet, summary.currency), "text-success"],
+  ];
+
+  return (
+    <div className="card overflow-hidden">
+      {/* Card header */}
+      <div className="flex items-start justify-between gap-3 px-4 py-3 border-b border-[var(--border)]">
+        <div className="flex items-center gap-2">
+          <ShieldCheck size={15} className="text-primary" />
+          <p className="text-sm font-semibold text-main">Current tax regime</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={onCompare}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-card px-3 py-1.5 text-xs font-semibold text-muted hover:text-main transition-colors"
+          >
+            <ArrowLeftRight size={12} />
+            Compare regimes
+          </button>
+        </div>
+      </div>
+
+      {/* Meta strip */}
+      <div className="grid grid-cols-4 divide-x divide-[var(--border)] border-b border-[var(--border)]">
+        {[
+          ["Regime", detail?.name ?? "—"],
+          ["Financial year", "2025–26"],
+          ["Effective from", fmtDate(detail?.effective_from)],
+          [
+            "Exemption",
+            INR(detail?.standard_tax_exemption_amount ?? 0, summary.currency),
+          ],
+        ].map(([label, value]) => (
+          <div key={label} className="px-4 py-2.5">
+            <SectionLabel>{label}</SectionLabel>
+            <MetaValue>{value}</MetaValue>
+          </div>
+        ))}
+      </div>
+
+      {/* KPI tiles */}
+      <div className="grid grid-cols-3 divide-x divide-[var(--border)] sm:grid-cols-6">
+        {tiles.map(([label, value, cls]) => (
+          <div key={label} className="px-3 py-3">
+            <SectionLabel>{label}</SectionLabel>
+            <p className={`text-sm font-semibold mt-0.5 ${cls}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── Summary builder (pure fn, memoized outside render) ───────────────────────
+
+function buildSummary(
+  currency: string,
+  detail: TaxConfig | null,
+  latestSlip: SalarySlip | undefined,
+  slips: SalarySlip[],
+  taxableIncome?: number,
+) {
+  const cur = latestSlip?.currency || currency;
+  const totalIncome =
+    latestSlip?.gross_year_to_date ||
+    slips.reduce((s, sl) => s + (Number(sl.gross_pay) || 0), 0);
+  const exemption = detail?.standard_tax_exemption_amount ?? 0;
+  const effectiveTaxable =
+    taxableIncome !== undefined
+      ? taxableIncome
+      : latestSlip?.annual_taxable_amount ||
+        Math.max(totalIncome - exemption, 0);
+  const taxPaid =
+    latestSlip?.income_tax_deducted_till_date ||
+    slips.reduce(
+      (s, sl) =>
+        s +
+        (Number(sl.current_month_income_tax) ||
+          Number(sl.total_income_tax) ||
+          0),
+      0,
+    );
+  const totalTax =
+    latestSlip?.total_income_tax ||
+    (latestSlip?.future_income_tax_deductions ?? 0) + taxPaid ||
+    taxPaid;
+  const balance = totalTax - taxPaid;
+  const otherTax = (detail?.other_taxes_and_charges ?? []).reduce(
+    (s, c) => s + (effectiveTaxable * (c.percent ?? 0)) / 100,
+    0,
+  );
+  return {
+    currency: cur,
+    totalIncome,
+    taxableIncome: effectiveTaxable,
+    totalTax,
+    taxPaid,
+    balance,
+    otherTax,
+  };
+}
+
+// ─── Placeholder panel ────────────────────────────────────────────────────────
+
+const PlaceholderPanel: React.FC<{
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}> = ({ icon, title, description }) => (
+  <div className="card p-10 text-center">
+    <div
+      className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-lg text-primary"
+      style={{
+        background: "color-mix(in srgb, var(--primary) 10%, transparent)",
+      }}
+    >
+      {icon}
+    </div>
+    <p className="text-sm font-semibold text-main">{title}</p>
+    <p className="mt-1 text-xs text-muted">{description}</p>
+  </div>
+);
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+const IncomeTaxTab: React.FC<IncomeTaxTabProps> = ({
+  taxableIncome,
+  slips = [],
+  slipsLoading = false,
+  currency = "",
+}) => {
+  const [subtab, setSubtab] = useState<TaxSubtab>("overview");
   const [slabList, setSlabList] = useState<TaxConfig[]>([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
-
-  const [selectedName, setSelectedName] = useState<string>("");
+  const [selectedName, setSelectedName] = useState("");
   const [detail, setDetail] = useState<TaxConfig | null>(null);
+  const [altDetail, setAltDetail] = useState<TaxConfig | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
+  const [showRequest, setShowRequest] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<RequestStatus>("idle");
 
+  // Load all active configs
   useEffect(() => {
     const load = async () => {
       try {
         setListLoading(true);
         setListError(null);
         const res = await getAllTaxConfigs(0, 50, "");
-        const active = (res.data ?? []).filter(
-          (s: any) => Number(s.disabled) !== 1,
-        );
+        const active = (res.data ?? []).filter((c) => Number(c.disabled) !== 1);
         setSlabList(active);
-        if (active.length > 0) setSelectedName(active[0].name);
+        setSelectedName((cur) => cur || active[0]?.name || "");
       } catch {
-        setListError("Failed to load tax slabs.");
+        setListError("Failed to load tax configurations.");
       } finally {
         setListLoading(false);
       }
@@ -202,14 +627,17 @@ const IncomeTaxTab: React.FC<IncomeTaxTabProps> = ({ taxableIncome }) => {
     load();
   }, []);
 
+  // Load current detail
   useEffect(() => {
-    if (!selectedName) return;
+    if (!selectedName) {
+      setDetail(null);
+      return;
+    }
     const load = async () => {
       try {
         setDetailLoading(true);
         setDetailError(null);
-        const res = await getTaxConfig(selectedName);
-        setDetail(res);
+        setDetail(await getTaxConfig(selectedName));
       } catch {
         setDetailError("Failed to load slab details.");
       } finally {
@@ -219,243 +647,189 @@ const IncomeTaxTab: React.FC<IncomeTaxTabProps> = ({ taxableIncome }) => {
     load();
   }, [selectedName]);
 
+  // Load alternate config for comparison (second in list)
+  useEffect(() => {
+    const alt = slabList.find((c) => c.name !== selectedName);
+    if (!alt) {
+      setAltDetail(null);
+      return;
+    }
+    getTaxConfig(alt.name)
+      .then(setAltDetail)
+      .catch(() => setAltDetail(null));
+  }, [slabList, selectedName]);
+
+  const latestSlip = slips[0];
+
+  const summary = useMemo(
+    () => buildSummary(currency, detail, latestSlip, slips, taxableIncome),
+    [currency, detail, latestSlip, slips, taxableIncome],
+  );
+
+  // Build regime snapshots for comparison
+  const buildSnapshot = useCallback(
+    (cfg: TaxConfig | null, label: string): RegimeSnapshot => {
+      if (!cfg)
+        return {
+          name: label,
+          grossSalary: summary.totalIncome,
+          totalExemptions: 0,
+          standardDeduction: 0,
+          taxableIncome: summary.totalIncome,
+          estimatedAnnualTax: 0,
+          monthlyTds: 0,
+          netInHand: summary.totalIncome,
+          estimatedSavings: 0,
+        };
+      const exempt = cfg.standard_tax_exemption_amount ?? 0;
+      const deductions = exempt;
+      const taxable = Math.max(summary.totalIncome - deductions, 0);
+      const slabs = normalizeSlabs(cfg.slabs ?? []);
+      const annualTax = calcTaxOnSlabs(taxable, slabs);
+      const monthlyTds = Math.round(annualTax / 12);
+      const netInHand = summary.totalIncome - annualTax;
+      return {
+        name: cfg.name,
+        grossSalary: summary.totalIncome,
+        totalExemptions: exempt,
+        standardDeduction: exempt,
+        taxableIncome: taxable,
+        estimatedAnnualTax: annualTax,
+        monthlyTds,
+        netInHand,
+        estimatedSavings: 0, // filled below
+      };
+    },
+    [summary.totalIncome],
+  );
+
+  const oldSnapshot = useMemo(
+    () => buildSnapshot(detail, "Old regime"),
+    [buildSnapshot, detail],
+  );
+  const newSnapshot = useMemo(
+    () => buildSnapshot(altDetail, "New regime"),
+    [buildSnapshot, altDetail],
+  );
+
+  // Fill cross-savings
+  oldSnapshot.estimatedSavings =
+    newSnapshot.estimatedAnnualTax - oldSnapshot.estimatedAnnualTax;
+  newSnapshot.estimatedSavings =
+    oldSnapshot.estimatedAnnualTax - newSnapshot.estimatedAnnualTax;
+
+  const subtabs: { id: TaxSubtab; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "form16", label: "Form 16" },
+    { id: "report", label: "Tax report" },
+  ];
+
   return (
-    <div className="p-4 space-y-4">
-      {/* Subtabs */}
-      <div className="flex gap-2 flex-wrap">
-        {[
-          { id: "slabs" as const, label: "Tax Slabs" },
-          { id: "form16" as const, label: "Form 16" },
-          { id: "report" as const, label: "Tax Report" },
-        ].map((s) => (
+    <div className="space-y-3">
+      {/* Subtab bar */}
+      <div className="flex gap-2 overflow-x-auto pb-0.5">
+        {subtabs.map((tab) => (
           <button
-            key={s.id}
-            onClick={() => setSubtab(s.id)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              subtab === s.id
-                ? "text-white"
-                : "bg-[var(--card)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]"
+            key={tab.id}
+            onClick={() => setSubtab(tab.id)}
+            className={`whitespace-nowrap rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors ${
+              subtab === tab.id
+                ? "bg-primary text-white"
+                : "border border-[var(--border)] bg-card text-muted hover:text-main"
             }`}
-            style={subtab === s.id ? { background: "var(--primary)" } : {}}
           >
-            {s.label}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* ── Tax Slabs ── */}
-      {subtab === "slabs" && (
+      {subtab === "overview" ? (
         <>
-          {listLoading ? (
-            <div className="flex items-center justify-center py-16 gap-2 text-[var(--muted)]">
-              <Loader2 size={18} className="animate-spin" />
-              <span className="text-sm">Loading tax slabs…</span>
+          {/* Loading / error for configs */}
+          {listLoading || detailLoading ? (
+            <div className="flex items-center justify-center gap-2 py-10 text-xs text-muted">
+              <Loader2 size={14} className="animate-spin" />
+              Loading tax details…
             </div>
-          ) : listError ? (
-            <div className="flex items-center gap-2 rounded-xl px-4 py-3 bg-red-50 text-red-600 text-sm border border-red-200">
-              <AlertCircle size={16} /> {listError}
-            </div>
-          ) : slabList.length === 0 ? (
-            <div className="text-center py-16 text-[var(--muted)] text-sm">
-              No active tax slabs found.
+          ) : listError || detailError ? (
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-xs text-danger">
+              <AlertCircle size={13} />
+              {listError || detailError}
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Selector — only if multiple */}
-              {slabList.length > 1 && (
-                <div className="relative">
-                  <select
-                    value={selectedName}
-                    onChange={(e) => setSelectedName(e.target.value)}
-                    className="w-full appearance-none bg-[var(--card)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-medium text-[var(--text)] pr-10 cursor-pointer focus:outline-none"
-                  >
-                    {slabList.map((s) => (
-                      <option key={s.name} value={s.name}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    size={14}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none"
-                  />
-                </div>
-              )}
+            <>
+              {/* 1 — Current regime card */}
+              <CurrentRegimeCard
+                detail={detail}
+                summary={summary}
+                onCompare={() => setShowCompare(true)}
+                onRequestChange={() => {
+                  setRequestStatus("idle");
+                  setShowRequest(true);
+                }}
+              />
 
-              {detailLoading ? (
-                <div className="flex items-center justify-center py-12 gap-2 text-[var(--muted)]">
-                  <Loader2 size={16} className="animate-spin" />
-                  <span className="text-sm">Loading details…</span>
-                </div>
-              ) : detailError ? (
-                <div className="flex items-center gap-2 rounded-xl px-4 py-3 bg-red-50 text-red-600 text-sm border border-red-200">
-                  <AlertCircle size={16} /> {detailError}
-                </div>
-              ) : detail ? (
-                <div className="space-y-4">
-                  {/* Meta cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {[
-                      {
-                        icon: <Calendar size={13} />,
-                        label: "Effective From",
-                        value: new Date(
-                          detail.effective_from,
-                        ).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        }),
-                      },
-                      {
-                        icon: <ShieldCheck size={13} />,
-                        label: "Std. Exemption",
-                        value: fmtAmt(
-                          detail.standard_tax_exemption_amount ?? 0,
-                          (detail as any).currency ?? "",
-                        ),
-                      },
-                      {
-                        icon: <BadgePercent size={13} />,
-                        label: "Exemption Allowed",
-                        value: detail.allow_tax_exemption ? "Yes" : "No",
-                      },
-                    ].map((f) => (
-                      <div
-                        key={f.label}
-                        className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 flex flex-col gap-1"
-                      >
-                        <div className="flex items-center gap-1.5 text-[var(--muted)]">
-                          {f.icon}
-                          <p className="text-[10px] uppercase tracking-wider font-medium">
-                            {f.label}
-                          </p>
-                        </div>
-                        <p className="text-sm font-bold text-[var(--text)]">
-                          {f.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+              {/* 2 — Tax progress */}
+              <TaxProgressBar
+                paid={summary.taxPaid}
+                total={summary.totalTax}
+                currency={summary.currency}
+              />
 
-                  {/* Info banner — only if taxableIncome passed */}
-                  {taxableIncome != null && (
-                    <div
-                      className="flex items-start gap-2 rounded-xl px-4 py-3 text-xs"
-                      style={{
-                        background:
-                          "color-mix(in srgb, var(--primary) 8%, transparent)",
-                        color: "var(--primary)",
-                      }}
-                    >
-                      <Info size={14} className="mt-0.5 shrink-0" />
-                      <span>
-                        Your taxable income of{" "}
-                        <strong>
-                          {fmtAmt(
-                            taxableIncome,
-                            (detail as any).currency ?? "",
-                          )}
-                        </strong>{" "}
-                        is highlighted in the slab below.
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Slab rows */}
-                  <SlabVisual
-                    slabs={detail.slabs ?? []}
-                    currency={(detail as any).currency ?? ""}
-                    taxableIncome={taxableIncome}
-                  />
-
-                  {/* Other taxes — only non-zero */}
-                  {(detail.other_taxes_and_charges ?? []).filter(
-                    (c) => (c.percent ?? 0) > 0,
-                  ).length > 0 && (
-                    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden">
-                      <p className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-semibold px-4 pt-3 pb-2">
-                        Other Taxes &amp; Charges
-                      </p>
-                      {detail
-                        .other_taxes_and_charges!.filter(
-                          (c) => (c.percent ?? 0) > 0,
-                        )
-                        .map((c, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)]"
-                          >
-                            <p className="text-sm text-[var(--text)]">
-                              {c.description}
-                            </p>
-                            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
-                              {c.percent}%
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              ) : null}
-            </div>
+              {/* 3 — Breakdown accordion */}
+              <TaxBreakdownAccordion
+                currency={summary.currency}
+                taxableIncome={summary.taxableIncome}
+                exemption={detail?.standard_tax_exemption_amount ?? 0}
+              />
+            </>
           )}
+
+          {/* 4 — Salary slips */}
+          <section className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-main">Salary slips</h3>
+              <span className="text-xs text-muted">
+                Payroll history and tax deducted
+              </span>
+            </div>
+            <SalarySlipTable
+              slips={slips}
+              loading={slipsLoading}
+              tableBodyMaxHeight="calc(100vh - 380px)"
+            />
+          </section>
         </>
+      ) : subtab === "form16" ? (
+        <PlaceholderPanel
+          icon={<FileText size={20} />}
+          title="Form 16 not yet available"
+          description="Your Form 16 will appear here after TDS filing by your employer — typically after March 31."
+        />
+      ) : (
+        <PlaceholderPanel
+          icon={<TrendingDown size={20} />}
+          title="Tax computation report"
+          description="Detailed tax computation for FY 2025–26 will be available at year end."
+        />
       )}
 
-      {/* ── Form 16 ── */}
-      {subtab === "form16" && (
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 text-center space-y-3">
-          <div
-            className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center"
-            style={{
-              background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-              color: "var(--primary)",
-            }}
-          >
-            <FileText size={24} />
-          </div>
-          <p className="text-sm font-semibold text-[var(--text)]">
-            Form 16 — FY 2025-26
-          </p>
-          <p className="text-xs text-[var(--muted)]">
-            Your Form 16 will be available after TDS filing by the employer.
-          </p>
-          <button
-            className="mt-2 px-5 py-2 rounded-lg text-sm font-semibold text-white"
-            style={{ background: "var(--primary)" }}
-          >
-            Download Form 16
-          </button>
-        </div>
-      )}
-
-      {/* ── Tax Report ── */}
-      {subtab === "report" && (
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 text-center space-y-3">
-          <div
-            className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center"
-            style={{
-              background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-              color: "var(--primary)",
-            }}
-          >
-            <TrendingDown size={24} />
-          </div>
-          <p className="text-sm font-semibold text-[var(--text)]">
-            Tax Computation Report
-          </p>
-          <p className="text-xs text-[var(--muted)]">
-            Detailed tax computation for FY 2025-26
-          </p>
-          <button
-            className="mt-2 px-5 py-2 rounded-lg text-sm font-semibold text-white"
-            style={{ background: "var(--primary)" }}
-          >
-            Download Report
-          </button>
-        </div>
+      {/* Compare modal */}
+      {showCompare && (
+        <CompareModal
+          onClose={() => setShowCompare(false)}
+          onRequestChange={() => {
+            setRequestStatus("idle");
+            setShowRequest(true);
+          }}
+          oldRegime={oldSnapshot}
+          newRegime={newSnapshot}
+          currency={summary.currency}
+          currentRegimeName={selectedName}
+        />
       )}
     </div>
   );
 };
+
+export default IncomeTaxTab;
