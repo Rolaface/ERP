@@ -15,6 +15,7 @@ import type { TermSection } from "../types/termsAndCondition";
 import type { CustomerDetail } from "../types/customer";
 import type { ModalSubmitHandler } from "../types/modal";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
+import { parsePhoneNumberWithError } from "libphonenumber-js"; 
 
 const companyId = import.meta.env.VITE_COMPANY_ID;
 
@@ -163,18 +164,20 @@ export const emptyForm: CustomerFormState = {
 
 function splitMobile(mobile?: string): { code: string; number: string } {
   if (!mobile) return { code: "", number: "" };
-
   const clean = mobile.replace(/\s/g, "");
-
-  if (!clean.startsWith("+")) {
-    return { code: "", number: clean };
+  if (!clean.startsWith("+")) return { code: "", number: clean };
+  try {
+    const parsed = parsePhoneNumberWithError(clean);
+    if (parsed) {
+      return {
+        code: `+${parsed.countryCallingCode}`,
+        number: parsed.nationalNumber,
+      };
+    }
+  } catch {
+    // fall through
   }
-
-  // Same logic as mapSupplierToForm: slice(0, 3) = "+" + 2 digit code
-  const code = clean.slice(0, 3); // e.g. "+91"
-  const number = clean.slice(3); // e.g. "3534656"
-
-  return { code, number };
+  return { code: "", number: clean };
 }
 
 export function mapApiResponseToFormState(
@@ -484,31 +487,41 @@ export function useCustomerForm({
   };
 
   const updatePrimaryContact = (name: string, value: string) => {
-    if (name === "mobileCode") {
-      let val = value;
-
-      if (!val.startsWith("+")) {
-        val = "+" + val.replace(/\D/g, "");
-      }
-
-      val = "+" + val.replace(/\D/g, "");
-
-      setForm((prev) => ({
-        ...prev,
-        contacts: prev.contacts.map((c) =>
-          c.isPrimary ? { ...c, mobileCode: val } : c,
-        ),
-      }));
-      return;
-    }
+  if (name === "mobileCode") {
+    let val = value;
+    if (!val.startsWith("+")) val = "+" + val.replace(/\D/g, "");
+    val = "+" + val.replace(/\D/g, "");
 
     setForm((prev) => ({
       ...prev,
       contacts: prev.contacts.map((c) =>
-        c.isPrimary ? { ...c, [name]: value } : c,
+        c.isPrimary
+          ? { ...c, mobileCode: val, mobile: `${val}${c.mobileNumber}` } 
+          : c,
       ),
     }));
-  };
+    return;
+  }
+
+  if (name === "mobileNumber") {
+    setForm((prev) => ({
+      ...prev,
+      contacts: prev.contacts.map((c) =>
+        c.isPrimary
+          ? { ...c, mobileNumber: value, mobile: `${c.mobileCode}${value}` } 
+          : c,
+      ),
+    }));
+    return;
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    contacts: prev.contacts.map((c) =>
+      c.isPrimary ? { ...c, [name]: value } : c,
+    ),
+  }));
+};
 
   const handleAddressChange = (
     addressType: "Billing" | "Shipping",

@@ -280,6 +280,26 @@ export const useSupplierForm = ({
         return;
       }
 
+      if (name === "phoneCode" || name === "phoneNo") {
+        setForm((prev) => {
+          const newPhoneCode = name === "phoneCode" ? value : prev.phoneCode;
+          const newPhoneNo = name === "phoneNo" ? value : prev.phoneNo;
+          const newMobile = `${newPhoneCode || ""}${newPhoneNo || ""}`;
+
+          const updatedContacts = prev.contacts?.length
+            ? prev.contacts.map((c, i) =>
+              i === 0 ? { ...c, mobile: newMobile } : c
+            )
+            : prev.contacts;
+
+          return {
+            ...prev,
+            [name]: value,
+            contacts: updatedContacts,
+          };
+        });
+        return; // ← stop, don't fall through to the generic setForm below
+      }
       setForm((p) => ({ ...p, [name]: value }));
     }
   };

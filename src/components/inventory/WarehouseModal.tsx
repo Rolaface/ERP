@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { showValidationError, showApiError,showSuccess } from "../../utils/alert";
+import { showValidationError, showApiError, showSuccess } from "../../utils/alert";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { Button } from "../ui/modal/formComponent";
@@ -28,8 +28,9 @@ const WarehouseModal: React.FC<{
   onSubmit?: (data: CreateWarehousePayload) => void;
   initialData?: Record<string, any> | null;
   isEditMode?: boolean;
+  isViewMode?: boolean;
   modalId?: string;
-}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false, modalId }) => {
+}> = ({ isOpen, onClose, onSubmit, initialData, isEditMode = false, modalId, isViewMode = false }) => {
   const resolvedModalId =
     modalId ||
     (isEditMode && initialData?.name
@@ -96,7 +97,7 @@ const WarehouseModal: React.FC<{
     return true;
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     if (!validateForm()) return;
@@ -118,28 +119,29 @@ const handleSubmit = async (e: React.FormEvent) => {
         payload.name = initialData.name;
       }
 
-let res;
+      let res;
 
-if (isEditMode && initialData?.name) {
-  res = await updateWarehouseById(initialData.name, payload);
-} else {
-  res = await createWarehouseNode(payload);
-}
+      if (isEditMode && initialData?.name) {
+        res = await updateWarehouseById(initialData.name, payload);
+      } else {
+        res = await createWarehouseNode(payload);
+      }
 
-if (!res || ![200, 201].includes(res.status)) {
-  showApiError(res);
-  return;
-}
+      if (!res || ![200, 201].includes(res.status)) {
+        showApiError(res);
+        return;
+      }
 
-showSuccess(
-  isEditMode
-    ? "Warehouse updated successfully"
-    : "Warehouse created successfully"
-);
+      showSuccess(
+        isEditMode
+          ? "Warehouse updated successfully"
+          : "Warehouse created successfully"
+      );
 
-onSubmit?.(payload);
-handleClose();
-     
+      onSubmit?.(payload);
+      initialData?.onSuccess?.();
+      handleClose();
+
     } catch (err: any) {
       showApiError(err);
     } finally {
@@ -179,8 +181,8 @@ handleClose();
       onClose={() =>
         handleCloseWithConfirm(handleClose, resolvedModalId)
       }
-      title={isEditMode ? "Edit Warehouse" : "Create Warehouse"}
-      subtitle="Manage your inventory locations"
+      title={isViewMode ? "View Warehouse" : isEditMode ? "Edit Warehouse" : "Create Warehouse"}
+      subtitle={isViewMode ? "Read-only view of this warehouse" : "Manage your inventory locations"}
       icon={Warehouse}
       customWidth="35vw"
       height="auto"
@@ -201,11 +203,9 @@ handleClose();
               name="parent"
               value={form.parent}
               onChange={handleChange}
-              disabled={isEditMode}
-              placeholder="e.g. All Warehouses - RPL"
-              className={`${inputClass} ${
-                isEditMode ? "opacity-60 cursor-not-allowed" : ""
-              }`}
+              disabled={isEditMode || isViewMode}
+              className={`${inputClass} ${isEditMode || isViewMode ? "opacity-60 cursor-not-allowed" : ""}`}
+              placeholder=""
             />
           </label>
 
@@ -219,8 +219,8 @@ handleClose();
               value={form.warehouse_name}
               onChange={handleChange}
               required
-              disabled={isEditMode}
-              className={`${inputClass} ${isEditMode ? "opacity-60 cursor-not-allowed bg-gray-50" : ""}`}
+              disabled={isEditMode || isViewMode}
+              className={`${inputClass} ${isEditMode || isViewMode ? "opacity-60 cursor-not-allowed bg-gray-50" : ""}`}
             />
             {isEditMode && (
               <span className="text-[10px] text-muted mt-1 inline-block">
@@ -231,12 +231,7 @@ handleClose();
 
           <label className="flex flex-col gap-0.5">
             <span className={labelClass}>Group Node</span>
-            <select
-              name="is_group"
-              value={form.is_group}
-              onChange={handleChange}
-              className={inputClass}
-            >
+            <select name="is_group" value={form.is_group} onChange={handleChange} disabled={isViewMode} className={inputClass}>
               <option value="0">Leaf Node (Contains Items)</option>
               <option value="1">Group Node (Contains Sub-Groups)</option>
             </select>
@@ -244,18 +239,20 @@ handleClose();
         </section>
 
         <div className="flex justify-end gap-3 border-t border-theme px-6 py-4 bg-app">
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={() =>
-              handleCloseWithConfirm(handleClose, resolvedModalId)
-            }
-          >
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit" loading={loading}>
-            {isEditMode ? "Update" : "Create New"}
-          </Button>
+          {isViewMode ? (
+            <Button variant="secondary" type="button" onClick={handleClose}>
+              Close
+            </Button>
+          ) : (
+            <>
+              <Button variant="secondary" type="button" onClick={() => handleCloseWithConfirm(handleClose, resolvedModalId)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" loading={loading}>
+                {isEditMode ? "Update" : "Create New"}
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </MinimizableModal>
