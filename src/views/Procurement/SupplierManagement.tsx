@@ -15,7 +15,7 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { SupplierFilters } from "../../api/procurement/supplierApi";
-import { showApiError, showSuccess } from "../../utils/alert";
+import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
 import { openPaymentEntryModal } from "../../store/modalStore";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 import { usePermission } from "../../hooks/permission/usePermission";
@@ -258,12 +258,69 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     }
   };
 
+  const handleExportCSV = async () => {
+    try {
+      showLoading("Exporting suppliers...");
+
+      let allData: Supplier[] = [];
+      let currentPage = 1;
+      let totalPagesLocal = 1;
+
+      do {
+        const res = await getSuppliers(currentPage, 100, filters);
+        if (res?.status_code === 200) {
+          const mapped = (res.data || []).map((s: any) => {
+            const m = mapSupplierApi(s);
+            return { ...m, status: normalizeStatus(m.status) };
+          });
+          allData = [...allData, ...mapped];
+          totalPagesLocal = res.pagination?.total_pages || 1;
+        }
+        currentPage++;
+      } while (currentPage <= totalPagesLocal);
+
+      if (!allData.length) {
+        closeSwal();
+        showApiError("No suppliers to export");
+        return;
+      }
+
+      const headers = ["Supplier ID", "Name", "Tax Category", "Phone", "TPIN", "Currency", "Status"];
+      const rows = allData.map((s) => [
+        s.supplierId ?? "",
+        s.supplierName ?? "",
+        s.taxCategory ?? "",
+        s.phoneNo ?? "",
+        s.tpin ?? "",
+        s.currency ?? "",
+        s.status ?? "",
+      ]);
+
+      const csvContent = [headers, ...rows]
+        .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Suppliers_Export.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+
+      closeSwal();
+      showSuccess("CSV exported successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
+
   const handleBack = () => {
     setViewMode("table");
     setSelectedSupplier(null);
   };
 
-  // ── Columns — memoized, styled to match CustomerManagement
   const columns: Column<Supplier>[] = useMemo(
     () => [
       {
@@ -331,11 +388,10 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
         align: "center",
         render: (supplier) => (
           <span
-            className={`inline-flex items-center justify-center text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${
-              supplier.status === "active"
+            className={`inline-flex items-center justify-center text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${supplier.status === "active"
                 ? "bg-green-100 text-green-700"
                 : "bg-gray-100 text-gray-600"
-            }`}
+              }`}
           >
             {supplier.status === "active" ? "Active" : "Inactive"}
           </span>
@@ -406,6 +462,7 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
           onAdd={handleAddSupplier}
           enableColumnSelector
           enableExport={can(SUPPLIER_MODULE, "export")}
+          onExport={handleExportCSV}
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}

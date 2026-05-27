@@ -3,7 +3,6 @@ import { FaDatabase, FaChevronDown } from "react-icons/fa";
 import TemplateSection from "./sections/TemplateSection";
 import KRASection from "./sections/KRASection";
 import FeedbackSection from "./sections/FeedbackSection";
-import CycleList from "./sections/CycleList";
 
 type SetupSection = "template" | "kra" | "feedback" | "cycle";
 
@@ -11,11 +10,10 @@ const SECTIONS = [
   { id: "kra" as SetupSection, label: "KRA" },
   { id: "feedback" as SetupSection, label: "Employee Feedback Criteria" },
   { id: "template" as SetupSection, label: "Appraisal Template" },
-  { id: "cycle" as SetupSection, label: "Cycles" },
 ];
 
 export default function SetupPage() {
-  const [activeSection, setActiveSection] = useState<SetupSection>("template");
+  const [activeSection, setActiveSection] = useState<SetupSection>("kra");
 
   const renderSection = () => {
     switch (activeSection) {
@@ -25,9 +23,6 @@ export default function SetupPage() {
         return <FeedbackSection />;
       case "template":
         return <TemplateSection />;
-
-      case "cycle":
-        return <CycleList />;
     }
   };
 

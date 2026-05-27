@@ -54,6 +54,7 @@ export default function LeaveApplyModal({
   onSuccess,
 }: LeaveApplyModalProps) {
   const isView = Boolean((initialData as any)?._isView);
+  console.log( "editLeaveId:", editLeaveId, "isView:", isView);
   const { user } = useAuth();
 
   // ── Form state ──────────────────────────────────────────────────────────
@@ -76,34 +77,62 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
   const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
   const [leaveApproverName, setLeaveApproverName] = useState<string>("");
 
-  useEffect(() => {
-    if (!isOpen || !user?.employeeId) return;
+  // useEffect(() => {
+  //   if (!isOpen || !user?.employeeId) return;
 
-    const fetchEmployeeData = async () => {
-      try {
-        const res = await getEmployeeById(user.employeeId!);
-        const data = res?.message?.data ?? res?.data ?? res;
-        const approver = data?.leave_approver ?? "";
-        const approver_name = data?.leave_approver_name ?? "";
-        setLeaveApproverName(approver_name);
-        setLeaveApprover(approver);
-        setLeaveApproverId(approver);
+  //   const fetchEmployeeData = async () => {
+  //     try {
+  //       const res = await getEmployeeById(user.employeeId!);
+  //       const data = res?.message?.data ?? res?.data ?? res;
+  //       const approver = data?.leave_approver ?? "";
+  //       const approver_name = data?.leave_approver_name ?? "";
+  //       setLeaveApproverName(approver_name);
+  //       setLeaveApprover(approver);
+  //       setLeaveApproverId(approver);
 
-        const detailsRes = await getEmployeeDetailsById(user.employeeId!);
-        const detailsData = detailsRes?.message?.data ?? detailsRes?.data ?? detailsRes;
+  //       const detailsRes = await getEmployeeDetailsById(user.employeeId!);
+  //       const detailsData = detailsRes?.message?.data ?? detailsRes?.data ?? detailsRes;
         
-        if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
-        if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
-      } catch {
-        setLeaveApproverName("");
-        setLeaveApprover("");
-        setLeaveApproverId("");
-      }
-    };
+  //       if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
+  //       if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
+  //     } catch {
+  //       setLeaveApproverName("");
+  //       setLeaveApprover("");
+  //       setLeaveApproverId("");
+  //     }
+  //   };
 
-    fetchEmployeeData();
-  }, [isOpen, user?.employeeId]);
+  //   fetchEmployeeData();
+  // }, [isOpen, user?.employeeId]);
+useEffect(() => {
+  if (!isOpen) return;
 
+  const fetchEmployeeData = async () => {
+    const id = editLeaveId || editId;
+    if (id) return; 
+
+    if (!user?.employeeId) return; 
+
+    try {
+      const res = await getEmployeeById(user.employeeId!);
+      const data = res?.message?.data ?? res?.data ?? res;
+      setLeaveApproverName(data?.leave_approver_name ?? "");
+      setLeaveApprover(data?.leave_approver ?? "");
+      setLeaveApproverId(data?.leave_approver ?? "");
+
+      const detailsRes = await getEmployeeDetailsById(user.employeeId!);
+      const detailsData = detailsRes?.message?.data ?? detailsRes?.data ?? detailsRes;
+      if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
+      if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
+    } catch {
+      setLeaveApproverName("");
+      setLeaveApprover("");
+      setLeaveApproverId("");
+    }
+  };
+
+  fetchEmployeeData();
+}, [isOpen, user?.employeeId]);
   useEffect(() => {
     const id = editLeaveId || editId;
     if (!id || !isOpen){
@@ -121,6 +150,13 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
           isHalfDay: l.half_day === 1,
           reason:    l.description || "",
         });
+         if (l.leave_approver) {
+      setLeaveApprover(l.leave_approver);
+      setLeaveApproverId(l.leave_approver);
+    }
+    if (l.leave_approver_name) {
+      setLeaveApproverName(l.leave_approver_name);
+    }
         if (l.from_date) {
           setCalendarMonth(new Date(l.from_date));
         }
@@ -298,7 +334,14 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
       modalId={modalId}
       isOpen={isOpen}
       onClose={handleClose}
-      title={isEditMode ? "Edit Leave Application" : "New Leave Application"}
+      // title={isEditMode ? "Edit Leave Application" : isView ? "View Leave Application" : "New Leave Application"}
+title={
+  initialData && !isView
+    ? "Edit Leave Application"
+    : isView
+    ? "View Leave Application"
+    : "New Leave Application"
+}
       subtitle="Request time off and check your calendar availability"
       icon={Calendar}
       customWidth="65vw"

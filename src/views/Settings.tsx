@@ -19,12 +19,12 @@ import {
 } from "../components/ui/app-shell";
 
 const Settings = () => {
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState("appearance");
   const [showSuccess, setShowSuccess] = useState(false);
   const [taxRate, setTaxRate] = useState(10);
-  const [currency, setCurrency] = useState("USD");
-  const [invoicePrefix, setInvoicePrefix] = useState("INV");
-  const [defaultPaymentMethod, setDefaultPaymentMethod] = useState("Cash");
+  const [currency, setCurrency] = useState("-");
+  const [invoicePrefix, setInvoicePrefix] = useState("-");
+  const [defaultPaymentMethod, setDefaultPaymentMethod] = useState("-");
 
   const handleSave = () => {
     setShowSuccess(true);
@@ -32,10 +32,7 @@ const Settings = () => {
   };
 
   const tabs = [
-    { id: "general", label: "General Settings", icon: <FaGlobe /> },
     { id: "appearance", label: "Appearance", icon: <FaPalette /> },
-    { id: "notifications", label: "Notifications", icon: <FaBell /> },
-    { id: "security", label: "Security", icon: <FaShieldAlt /> },
   ];
 
   return (

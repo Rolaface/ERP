@@ -55,15 +55,20 @@ export interface LeaveApplication {
 //   }
 // }
 export async function getAllLeaveApplications(
-  filters?: any[][]
+  filters?: any[][],
+  limit_start: number = 0,
+  limit_page_length: number = 10
 ): Promise<LeaveApplication[]> {
   try {
     const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> =
       await api.get(LEAVE_APP_RESOURCE.getAll, {
         params: {
           fields: '["*"]',
-          limit_page_length: 0,
-          filters: JSON.stringify(filters),
+          // limit_page_length: 0,
+          // filters: JSON.stringify(filters),
+          limit_start: limit_start,
+          limit_page_length: limit_page_length,
+          filters: filters ? JSON.stringify(filters) : undefined,
         },
       });
 

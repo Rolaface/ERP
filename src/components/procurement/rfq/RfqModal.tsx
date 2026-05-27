@@ -1,4 +1,4 @@
-import React, { useMemo , useEffect } from "react";
+import React, { useMemo, useEffect } from "react";
 import { Building2, FileText } from "lucide-react";
 import { Button } from "../../ui/modal/formComponent";
 import { DetailsTab } from "./DetailsTab";
@@ -18,6 +18,7 @@ interface RfqModalProps {
   modalId: string;
   initialData?: unknown;
   isEdit?: boolean;
+  isViewMode?: boolean;
 }
 
 /* ---------- TABS ---------- */
@@ -34,6 +35,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
   modalId,
   initialData,
   isEdit = false,
+  isViewMode = false
 }) => {
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
@@ -71,7 +73,11 @@ const RfqModal: React.FC<RfqModalProps> = ({
   /* ---------- FOOTER  ---------- */
 
   const footer = useMemo(
-    () => (
+    () => isViewMode ? (
+      <Button variant="secondary" onClick={onClose}>
+        Close
+      </Button>
+    ) : (
       <>
         <Button
           variant="secondary"
@@ -79,18 +85,13 @@ const RfqModal: React.FC<RfqModalProps> = ({
         >
           Cancel
         </Button>
-
         <div className="flex gap-2">
           <Button
             variant="secondary"
-            onClick={() => {
-              resetDirty();
-              reset();
-            }}
+            onClick={() => { resetDirty(); reset(); }}
           >
             Reset
           </Button>
-
           <Button
             variant="primary"
             type="submit"
@@ -102,22 +103,16 @@ const RfqModal: React.FC<RfqModalProps> = ({
         </div>
       </>
     ),
-    [
-      handleCloseWithConfirm,
-      onClose,
-      modalId,
-      resetDirty,
-      reset,
-      saving,
-    ]
+    [isViewMode, handleCloseWithConfirm, onClose, modalId, resetDirty, reset, saving],
   );
+
   return (
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? `Edit RFQ` : "Create Request For Quotation"}
-      subtitle={isEdit ? `${initialData}` : "Create and send RFQ to suppliers"}
+      title={isViewMode ? `View RFQ` : isEdit ? `Edit RFQ` : "Create Request For Quotation"}
+      subtitle={isViewMode ? `${initialData}` : isEdit ? `${initialData}` : "Create and send RFQ to suppliers"}
       icon={FileText}
       customWidth="73vw"
       height="81vh"
@@ -127,9 +122,10 @@ const RfqModal: React.FC<RfqModalProps> = ({
 
       <form
         id="rfqForm"
-        onChange={() => markDirty()}
+        onChange={() => !isViewMode && markDirty()}
         onSubmit={async (e) => {
           e.preventDefault();
+          if (isViewMode) return;
           resetDirty();
           await handleSubmit();
         }}
@@ -184,6 +180,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
               onItemChange={handleItemChange}
               onAddItem={addItem}
               onRemoveItem={removeItem}
+                isViewMode={isViewMode}
             />
           )}
 
@@ -193,6 +190,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
             <TermsAndCondition
               title="Terms & Conditions"
               terms={form.terms?.buying ?? null}
+              isViewMode={isViewMode}
               setTerms={(updated) =>
                 setTermsBuying(updated)
               }

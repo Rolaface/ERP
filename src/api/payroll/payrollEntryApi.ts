@@ -379,3 +379,40 @@ export function downloadSalarySlipPdf(blob: Blob, filename?: string): void {
 
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
+
+const SLIP_FIELDS = [
+  "name", "employee", "employee_name", "status",
+  "posting_date", "start_date", "end_date",
+  "gross_pay", "net_pay", "currency","total_income_tax","total_deduction",
+];
+
+export async function getSalarySlipsByEmployeeOnly(
+  employeeId: string,
+  params?: string,
+  extraFilters?: [string, string, string][],
+): Promise<{ data: SalarySlip[]; total: number }> {
+  try {
+    const filters = JSON.stringify([
+      ["employee", "=", employeeId],
+      ...(extraFilters ?? []),
+    ]);
+
+    const base = `${API.payroll.payrollentry.salaryslip}?filters=${filters}`;
+    const url  = params
+      ? `${base}&${params}`
+      : `${base}&fields=${JSON.stringify(SLIP_FIELDS)}&order_by=posting_date desc&limit_page_length=0`;
+
+    const resp: AxiosResponse = await api.get(url);
+
+    return {
+      data:  resp.data?.data ?? [],
+      total: resp.data?.pagination?.total_count ?? resp.data?.data?.length ?? 0,
+    };
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to fetch salary slips",
+    );
+  }
+}

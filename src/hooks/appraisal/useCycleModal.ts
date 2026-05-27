@@ -34,12 +34,12 @@ export interface SSOption {
 // ─── Empty row factory ────────────────────────────────────────────────────────
 
 export const makeEmptyRow = (): AppraiseeRow => ({
-  employee:           "",
-  employee_name:      "",
+  employee: "",
+  employee_name: "",
   appraisal_template: "",
-  department:         "",
-  designation:        "",
-  branch:             "",
+  department: "",
+  designation: "",
+  branch: "",
 });
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -55,25 +55,41 @@ export function useCycleModal(
   const [activeTab, setActiveTab] = useState<"overview" | "applicable">("overview");
 
   // ── Form ──
-  const [form, setForm]       = useState<FormState>({ cycle_name: "", start_date: "", end_date: "" });
-  const [errors, setErrors]   = useState<Errors>({});
+  const [form, setForm] = useState<FormState>({ cycle_name: "", start_date: "", end_date: "" });
+  const [errors, setErrors] = useState<Errors>({});
   const [touched, setTouched] = useState<Set<string>>(new Set());
 
   // ── Filters ──
-  const [filterBranch,      setFilterBranch]      = useState("");
+  const [filterBranch, setFilterBranch] = useState("");
   const [filterDesignation, setFilterDesignation] = useState("");
-  const [filterDepartment,  setFilterDepartment]  = useState("");
+  const [filterDepartment, setFilterDepartment] = useState("");
 
   // ── Appraisees──
-  const [appraisees,  setAppraisees]  = useState<AppraiseeRow[]>([makeEmptyRow()]);
+  const [appraisees, setAppraisees] = useState<AppraiseeRow[]>([makeEmptyRow()]);
   const [loadingEmps, setLoadingEmps] = useState(false);
-  const [empError,    setEmpError]    = useState<string | null>(null);
+  const [empError, setEmpError] = useState<string | null>(null);
 
   // ── Templates cache ──
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
 
   // ── Unsaved changes ──
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+
+  // ── Reset + auto-fetch on modal open (create mode) ──
+  useEffect(() => {
+    if (isOpen && !isViewMode) {
+      setAppraisees([]);           // clear first so skeleton shows
+      setForm({ cycle_name: "", start_date: "", end_date: "" });
+      setErrors({});
+      setTouched(new Set());
+      setFilterBranch("");
+      setFilterDesignation("");
+      setFilterDepartment("");
+      setEmpError(null);
+    }
+  }, [isOpen, isViewMode]);
+
+  
 
   // ── Fetch templates once when modal opens ──
   useEffect(() => {
@@ -89,7 +105,7 @@ export function useCycleModal(
       setForm({
         cycle_name: viewData.cycle_name,
         start_date: viewData.start_date,
-        end_date:   viewData.end_date,
+        end_date: viewData.end_date,
       });
     }
   }, [isOpen, isViewMode, viewData]);
@@ -101,20 +117,19 @@ export function useCycleModal(
     }
   }, [isViewMode, viewData]);
 
-  // ── Reset to one empty row when create modal opens ──
-  useEffect(() => {
-    if (isOpen && !isViewMode) {
-      setAppraisees([makeEmptyRow()]);
-      setForm({ cycle_name: "", start_date: "", end_date: "" });
-      setErrors({});
-      setTouched(new Set());
-      setActiveTab("overview");
-      setFilterBranch("");
-      setFilterDesignation("");
-      setFilterDepartment("");
-      setEmpError(null);
-    }
-  }, [isOpen, isViewMode]);
+// ── Auto-fetch employees when modal opens or filters change (create mode) ──
+useEffect(() => {
+  if (!isOpen || isViewMode) return;
+
+  // Debounce: wait 300ms after last filter change before fetching
+  const timer = setTimeout(() => {
+    handleGetEmployees();
+  }, 300);
+
+  return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [isOpen, isViewMode, filterBranch, filterDesignation, filterDepartment]);
+
 
   // ── SearchSelect fetch functions ──────────────────────────────────────────
 
@@ -183,8 +198,8 @@ export function useCycleModal(
   const validate = (): Errors => {
     const e: Errors = {};
     if (!form.cycle_name.trim()) e.cycle_name = "Cycle name is required";
-    if (!form.start_date)        e.start_date = "Start date is required";
-    if (!form.end_date)          e.end_date   = "End date is required";
+    if (!form.start_date) e.start_date = "Start date is required";
+    if (!form.end_date) e.end_date = "End date is required";
     if (form.start_date && form.end_date && form.end_date <= form.start_date)
       e.end_date = "End date must be after start date";
     return e;
@@ -199,20 +214,20 @@ export function useCycleModal(
       const resp = await getAllEmployees(1, 200, "Active");
       let employees: any[] = resp?.data ?? resp ?? [];
 
-      if (filterBranch)       employees = employees.filter((e) => e.branch       === filterBranch);
-      if (filterDesignation)  employees = employees.filter((e) => e.designation  === filterDesignation);
-      if (filterDepartment)   employees = employees.filter((e) => e.department   === filterDepartment);
+      if (filterBranch) employees = employees.filter((e) => e.branch === filterBranch);
+      if (filterDesignation) employees = employees.filter((e) => e.designation === filterDesignation);
+      if (filterDepartment) employees = employees.filter((e) => e.department === filterDepartment);
 
       const defaultTemplate = templates[0]?.name ?? "";
 
       setAppraisees(
         employees.map((e) => ({
-          employee:           e.name,
-          employee_name:      e.employee_name ?? e.full_name ?? "",
+          employee: e.name,
+          employee_name: e.employee_name ?? e.full_name ?? "",
           appraisal_template: defaultTemplate,
-          department:         e.department  ?? "",
-          designation:        e.designation ?? "",
-          branch:             e.branch      ?? "",
+          department: e.department ?? "",
+          designation: e.designation ?? "",
+          branch: e.branch ?? "",
         }))
       );
       markDirty();
@@ -292,7 +307,7 @@ export function useCycleModal(
     onSave({
       cycle_name: form.cycle_name,
       start_date: form.start_date,
-      end_date:   form.end_date,
+      end_date: form.end_date,
       appraisees: validAppraisees,
     });
     resetDirty();
@@ -326,9 +341,9 @@ export function useCycleModal(
   const dateRangeMonths =
     form.start_date && form.end_date && !errors.end_date
       ? Math.round(
-          (new Date(form.end_date).getTime() - new Date(form.start_date).getTime()) /
-          (1000 * 60 * 60 * 24 * 30)
-        )
+        (new Date(form.end_date).getTime() - new Date(form.start_date).getTime()) /
+        (1000 * 60 * 60 * 24 * 30)
+      )
       : null;
 
   const formatDateDisplay = (d: string) =>
@@ -344,9 +359,9 @@ export function useCycleModal(
     form, setField, getError,
 
     // Filters
-    filterBranch,      setFilterBranch,
+    filterBranch, setFilterBranch,
     filterDesignation, setFilterDesignation,
-    filterDepartment,  setFilterDepartment,
+    filterDepartment, setFilterDepartment,
 
     // Fetch fns for SearchSelect2
     fetchBranches,
