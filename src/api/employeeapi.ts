@@ -30,6 +30,11 @@ export async function getEmployeeById(id: string): Promise<any> {
   return resp.data || null;
 }
 
+export async function getAllGenders(): Promise<any>{
+  const resp: AxiosResponse = await api.get(EmployeeAPI.getGender);
+  return resp.data || null;
+}
+
 export async function createEmployee(payload: any): Promise<any> {
   const resp: AxiosResponse = await api.post(EmployeeAPI.create, payload);
   return resp.data;
