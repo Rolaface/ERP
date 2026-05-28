@@ -435,18 +435,19 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-      case "itemCategory":
-        return wrappedModal(
-          <ItemsCategoryModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            onSubmit={handleSubmit}
-            initialData={getRecordInitialData(modal.initialData)}
-            isEditMode={modal.isEdit}
-          />,
-        );
+case "itemCategory":
+  return wrappedModal(
+    <ItemsCategoryModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+      initialData={getRecordInitialData(modal.initialData)}
+      isEditMode={modal.isEdit}
+      isViewMode={context?.isViewMode ?? false}
+    />,
+  );
 
       case "taxTemplate":
         return wrappedModal(
@@ -471,6 +472,7 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
             initialData={getRecordInitialData(modal.initialData)}
             isEditMode={modal.isEdit}
+            isViewMode={context?.isViewMode ?? false}
           />,
         );
 

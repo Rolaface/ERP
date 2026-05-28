@@ -23,7 +23,7 @@ import {
   Plus,
   PackageSearch
 } from "lucide-react";
-
+import { openItemCategoryModal } from "../../store/modalStore";
 
 type OutletContextType = {
   openCategoryCreate: (options?: {
@@ -300,7 +300,7 @@ const ItemsCategory: React.FC = () => {
               {
                 label: "Edit",
                 icon: <Pencil size={12} />,
-                onClick: () => openCategoryEdit(row.name, row),
+                onClick: () => openCategoryEdit(row.name, { ...row, onSuccess: fetchTree }),
               },
             ]
             : []),
@@ -318,9 +318,7 @@ const ItemsCategory: React.FC = () => {
                 label: "View Items",
                 icon: <PackageSearch size={12} />,
                 onClick: () =>
-                  navigate("/items", {
-                    state: { item_group: row.name },
-                  }),
+                  openItemCategoryModal(row, false, { isViewMode: true }),
               },
             ]),
 
@@ -378,8 +376,6 @@ const ItemsCategory: React.FC = () => {
           ) : null
         }
       />
-
-
     </div>
   );
 };

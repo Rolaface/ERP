@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { ShieldCheck } from "lucide-react";
 import type { PayrollRecord } from "../../../types/payrolltypes";
 
 import Table from "../../../components/ui/Table/Table";
@@ -22,17 +23,17 @@ interface Props {
   onViewPayslip: (r: PayrollRecord) => void;
   onDeleteRecord?: (r: PayrollRecord) => void;
   onEditRecord: (r: PayrollRecord) => void;
+  onVerify: (r: PayrollRecord) => void;         // ← NEW
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  // ── Permission flags passed from PayrollManagement ──────────────────────
-  // canCreate → gates "New Payroll" button and "Run Payroll" action
-  // canWrite  → gates "Edit Record" action
   canCreate?: boolean;
   canWrite?: boolean;
+  searchTerm: string;
+  setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
 }
 
-// ── Status color map (matches Customer badge pattern)
+// ── Status color map
 const STATUS_COLORS: Record<string, string> = {
   Draft: "bg-yellow-100 text-yellow-700",
   Submitted: "bg-blue-100 text-blue-700",
@@ -46,41 +47,21 @@ const STATUS_COLORS: Record<string, string> = {
 export const PayrollDashboard: React.FC<Props> = ({
   records,
   loading = false,
-
   onNewPayroll,
   onRunPayroll,
-
   onEditRecord,
+  onVerify,                                      // ← NEW
   currentPage,
   totalPages,
   onDeleteRecord,
   onPageChange,
   canCreate = false,
   canWrite = false,
+  searchTerm,
+  setSearchTerm,
 }) => {
-  const [searchQuery] = useState("");
-  const [selectedDept] = useState("All");
-  const [filterStatus] = useState("All");
-
-  // When set, renders the full-page detail view instead of the table
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
 
-  const filtered = useMemo(
-    () =>
-      records.filter((r) => {
-        const deptOk = selectedDept === "All" || r.department === selectedDept;
-        const statusOk = filterStatus === "All" || r.status === filterStatus;
-        const q = searchQuery.toLowerCase();
-        const searchOk =
-          !q ||
-          r.employeeName.toLowerCase().includes(q) ||
-          r.employeeId.toLowerCase().includes(q);
-        return deptOk && statusOk && searchOk;
-      }),
-    [records, selectedDept, filterStatus, searchQuery],
-  );
-
-  // ── Full-page detail view
   if (detailEntryId) {
     return (
       <div className="flex-1 min-h-0 flex flex-col h-full">
@@ -92,7 +73,6 @@ export const PayrollDashboard: React.FC<Props> = ({
     );
   }
 
-  // ── Columns — styled to match CustomerManagement
   const payrollColumns: Column<any>[] = [
     {
       key: "name",
@@ -100,6 +80,17 @@ export const PayrollDashboard: React.FC<Props> = ({
       sortable: true,
       render: (row) => (
         <span className="font-medium whitespace-nowrap">{row.name ?? "—"}</span>
+      ),
+    },
+    {
+      key: "employee_count",
+      header: "Total Employees",
+      sortable: true,
+      align: "center",
+      render: (row) => (
+        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+          {row.employee_count ?? "—"}
+        </code>
       ),
     },
     {
@@ -114,26 +105,15 @@ export const PayrollDashboard: React.FC<Props> = ({
       ),
     },
     {
-      key: "branch",
-      header: "Branch",
-      sortable: true,
+      key: "total_net_payable",
+      header: "Total Payable",
       align: "left",
       render: (row) => (
-        <span className="text-muted whitespace-nowrap">
-          {row.branch || "—"}
-        </span>
+        <span className="whitespace-nowrap">{row.total_net_payable ?? "—"}</span>
       ),
     },
-    {
-      key: "payroll_frequency",
-      header: "Frequency",
-      align: "left",
-      render: (row) => (
-        <span className="whitespace-nowrap">
-          {row.payroll_frequency ?? "—"}
-        </span>
-      ),
-    },
+
+    // ── Status ──────────────────────────────────────────────────────────────
     {
       key: "status",
       header: "Status",
@@ -148,67 +128,76 @@ export const PayrollDashboard: React.FC<Props> = ({
         </span>
       ),
     },
+
+    // ── Actions ──────────────────────────────────────────────────────────────
     {
       key: "actions",
       header: "Actions",
       align: "center",
       render: (row) => (
         <ActionGroup>
-          {/* View — always visible */}
           <ActionButton
             type="view"
             iconOnly
             onClick={() => setDetailEntryId(row.name)}
             title="View details"
           />
-
           <ActionMenu
-            // Edit: only when user has Payroll Entry write
             {...(canWrite && row.status !== "Submitted"
               ? { onEdit: () => onEditRecord(row), editLabel: "Edit Record" }
               : {})}
             onDelete={() => onDeleteRecord?.(row)}
             deleteLabel="Delete"
-            // Run Payroll: only when user has Payroll Entry create
-            customActions={
-              canCreate
+            customActions={[
+              ...(row.status === "Draft"
+                ? [
+                    {
+                      label: "Verify Payroll",
+                      icon: <ShieldCheck className="w-4 h-4" />,
+                      onClick: () => onVerify(row),
+                    },
+                    { divider: true, label: "", onClick: () => {} },
+                  ]
+                : []),
+              ...(canCreate
                 ? [
                     {
                       label:
-                        row.status === "Failed"
-                          ? "Re-Run Payroll"
-                          : "Run Payroll",
+                        row.status === "Failed" ? "Re-Run Payroll" : "Run Payroll",
                       icon: <Play className="w-4 h-4" />,
                       onClick: () => onRunPayroll(row.name),
                       disabled: !["Draft", "Failed"].includes(row.status),
                     },
                   ]
-                : []
-            }
+                : []),
+            ]}
           />
         </ActionGroup>
       ),
     },
   ];
 
-  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <Table
       tableId="payroll-dashboard"
       showToolbar
-    
       enableAdd={canCreate}
       addLabel="New Payroll"
       onAdd={onNewPayroll}
       columns={payrollColumns}
       enableColumnSelector
-      data={filtered}
+      data={records}
       loading={loading}
-      totalItems={filtered.length}
+      totalItems={records.length}
       currentPage={currentPage}
       totalPages={totalPages}
       onPageChange={onPageChange}
       pageSize={10}
+      searchValue={searchTerm}
+      onSearch={(q) => {
+        setSearchTerm(q);
+        onPageChange(1);
+      }}
     />
   );
 };

@@ -26,6 +26,7 @@ import {
 } from "../../hooks/Usecustomerform";
 import type { CustomerDetail } from "../../types/customer";
 import type { StandardModalProps } from "../../types/modal";
+import PhoneCodeSelect from "../common/PhoneCodeSelect";
 import type { ActiveTab } from "../../hooks/Usecustomerform";
 
 type CustomerModalProps = StandardModalProps<unknown, CustomerDetail>;
@@ -127,11 +128,10 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
-                  activeTab === tab
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === tab
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                  }`}
               >
                 {tab === "details" && <User className="w-4 h-4" />}
                 {tab === "bank" && <Banknote className="w-4 h-4" />}
@@ -302,21 +302,9 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 
                   <div className="flex">
                     {/* Country Code */}
-                    <input
-                      name="mobileCode"
-                      value={primaryContact?.mobileCode ?? "+"}
-                      placeholder="+"
-                      onChange={handlePrimaryContactChange}
-                      onBlur={(e) => {
-                        if (!e.target.value.startsWith("+")) {
-                          updatePrimaryContact(
-                            "mobileCode",
-                            "+" + e.target.value,
-                          );
-                        }
-                      }}
-                      maxLength={5}
-                      className="w-[60px] py-1 px-2 border rounded  text-main  text-[11px] bg-card border-[var(--border)] hover:border-primary/40"
+                    <PhoneCodeSelect
+                      value={primaryContact?.mobileCode ?? ""}
+                      onChange={(code) => updatePrimaryContact("mobileCode", code)}
                     />
 
                     {/* Actual Mobile Number */}
@@ -334,7 +322,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                       {errors.contactMobile}
                     </span>
                   )}
-                  
+
                 </div>
 
                 <Tooltip
