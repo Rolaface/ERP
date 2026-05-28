@@ -51,12 +51,15 @@ function formatDuration(mins: number): string {
 }
 
 /** Initials from full name */
-function initials(name: string): string {
+function initials(name?: string | null): string {
+  if (!name || typeof name !== "string") return "?";
+
   return name
+    .trim()
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
+    .map((w) => w[0]?.toUpperCase() || "")
     .join("");
 }
 

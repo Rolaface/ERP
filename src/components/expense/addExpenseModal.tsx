@@ -19,6 +19,8 @@ import {
 } from "../../api/expenseClaimApi";
 import { showApiError } from "../../utils/alert";
 import DatePickerInput from "../calendar/DatePickerInput";
+import { useHRView } from "../../hooks/permission/useHRView";
+import { useAuth } from "../../context/AuthContext";
 
 
 const getCurrencyFromStorage = (): string => {
@@ -74,18 +76,18 @@ const defaultExpenseForm: ExpenseFormData = {
   employee: "",
   employee_name: "",
   expense_approver: "",
-   receipts: [],
+  receipts: [],
   existingAttachments: [],
   remarks: "",
 };
 
 // const defaultAdvanceForm: AdvanceFormData = {
-  // advance_account: "",
-  // advance_amount: "",
-  // purpose: "",
-  // repayment_date: new Date().toISOString().split("T")[0],
-  // mode_of_payment: "",
-  // advance_remarks: "",
+// advance_account: "",
+// advance_amount: "",
+// purpose: "",
+// repayment_date: new Date().toISOString().split("T")[0],
+// mode_of_payment: "",
+// advance_remarks: "",
 // };
 
 interface ExpenseModalProps {
@@ -151,6 +153,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const modal = useMemo(() => modals.find((m) => m.id === modalId), [modals, modalId]);
   const isEditMode = modal?.isEdit ?? false;
 
+  const { viewMode } = useHRView();
+  const { user } = useAuth();
+  const isEmployeeView = viewMode === "employee";
+
   const [activeTab, setActiveTab] = useState<ActiveTab>("expense");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -172,15 +178,27 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       const data = modal?.initialData as ExpenseFormData | undefined;
-      setForm(data ?? defaultExpenseForm);
-      // setAdvanceForm(defaultAdvanceForm);
+      // Merge over defaults so partial seed objects (employee only) work correctly
+      setForm(data ? { ...defaultExpenseForm, ...data } : defaultExpenseForm);
       setErrors({});
       setSelectedEmployee(null);
       setEmployeeDisplayName(data?.employee_name ?? data?.employee ?? "");
       setActiveTab("expense");
-      // setAdvanceAllocations({});
-      // setEmployeeAdvances([]);
-      // setAdvancesFetchError(undefined);
+
+      // Employee view: seed employee is pre-filled, auto-fetch their approver
+      if (isEmployeeView && data?.employee) {
+        getEmployeeById(data.employee)
+          .then((emp) => {
+            setSelectedEmployee(emp);
+            setForm((prev) => ({
+              ...prev,
+              expense_approver: emp?.message?.data?.expense_approver ?? "",
+            }));
+          })
+          .catch(() => {
+            // silently fail — form still usable, approver stays blank
+          });
+      }
     }
   }, [isOpen]);
 
@@ -222,7 +240,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-    const handleFile = (files: FileList | null) => {
+  const handleFile = (files: FileList | null) => {
     if (!files) return;
     const valid: File[] = [];
     Array.from(files).forEach((file) => {
@@ -241,7 +259,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
-     handleFile(e.dataTransfer.files);
+    handleFile(e.dataTransfer.files);
   };
 
   const removeNewReceipt = (index: number) => {
@@ -309,75 +327,75 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   //   }
   // };
   const handleSubmit = async () => {
-  await handleExpenseSubmit();
-};
+    await handleExpenseSubmit();
+  };
 
- const handleExpenseSubmit = async () => {
-  if (!validateExpense()) return;
-  setLoading(true);
-  try {
-    const payload: CreateExpenseClaimPayload = {
-      employee: form.employee,
-      expense_approver: form.expense_approver ?? "",
-      posting_date: new Date().toISOString().split("T")[0],
-      currency: getCurrencyFromStorage(),
-      exchange_rate: 1,
-      expenses: [
-        {
-          expense_date: form.date_incurred,
-          expense_type: form.category,
-          description: form.claim_title,
-          amount: Number(form.amount),
-          sanctioned_amount: Number(form.amount),
-        },
-      ],
-      remark: form.remarks,
-    };
+  const handleExpenseSubmit = async () => {
+    if (!validateExpense()) return;
+    setLoading(true);
+    try {
+      const payload: CreateExpenseClaimPayload = {
+        employee: form.employee,
+        expense_approver: form.expense_approver ?? "",
+        posting_date: new Date().toISOString().split("T")[0],
+        currency: getCurrencyFromStorage(),
+        exchange_rate: 1,
+        expenses: [
+          {
+            expense_date: form.date_incurred,
+            expense_type: form.category,
+            description: form.claim_title,
+            amount: Number(form.amount),
+            sanctioned_amount: Number(form.amount),
+          },
+        ],
+        remark: form.remarks,
+      };
 
-    let claimId: string;
+      let claimId: string;
 
-    if (isEditMode) {
-      await updateExpenseClaim(form.id!, payload);
-      claimId = form.id!;
-    } else {
-    
-      const createRes = await createExpenseClaim(payload);
-    
+      if (isEditMode) {
+        await updateExpenseClaim(form.id!, payload);
+        claimId = form.id!;
+      } else {
 
-     
-      const rawId = createRes?.name ?? createRes?.data?.name;
-  
+        const createRes = await createExpenseClaim(payload);
 
-      if (!rawId) throw new Error("Could not determine new expense claim ID");
 
-     
-      const fetched = await getExpenseClaimById(rawId);
-      
-      claimId = fetched?.name ?? rawId;
-    }
 
-    if (form.receipts.length > 0) {
-      await Promise.allSettled(
-        form.receipts.map((file) =>
-          attachDocumentToExpenseClaim(claimId, file).catch((err) =>
-            console.warn(`Failed to attach "${file.name}":`, err)
+        const rawId = createRes?.name ?? createRes?.data?.name;
+
+
+        if (!rawId) throw new Error("Could not determine new expense claim ID");
+
+
+        const fetched = await getExpenseClaimById(rawId);
+
+        claimId = fetched?.name ?? rawId;
+      }
+
+      if (form.receipts.length > 0) {
+        await Promise.allSettled(
+          form.receipts.map((file) =>
+            attachDocumentToExpenseClaim(claimId, file).catch((err) =>
+              console.warn(`Failed to attach "${file.name}":`, err)
+            )
           )
-        )
-      );
-    }
+        );
+      }
 
-    if (modal?.context?.callback) {
-      await modal.context.callback(payload);
+      if (modal?.context?.callback) {
+        await modal.context.callback(payload);
+      }
+      onSubmit?.({ ...form });
+      reset();
+      onClose();
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setLoading(false);
     }
-    onSubmit?.({ ...form });
-    reset();
-    onClose();
-  } catch (err) {
-    showApiError(err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   // const handleAdvanceSubmit = async () => {
   //   setLoading(true);
   //   try {
@@ -408,7 +426,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           : isEditMode
           ? "Update"
           : "Submit"} */}
-          {isEditMode ? "Update" : "Submit"}
+        {isEditMode ? "Update" : "Submit"}
       </Button>
     </>
   );
@@ -436,202 +454,204 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
         {/* ── expense tab ──────────────────────────────────────────────────── */}
         {/* {activeTab === "expense" && ( */}
-        
-          <div className="p-4 flex flex-col gap-4">
-            <ModalInput
-              label="Claim title"
-              name="claim_title"
-              value={form.claim_title}
-              onChange={handleChange}
-              error={errors.claim_title}
-              required
-              placeholder="For example: Client meeting lunch"
-            />
 
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-6">
-                <SearchSelect2
-                  label="Category"
-                  required
-                  value={form.category}
-                  onChange={(val) => {
-                    setForm((prev) => ({ ...prev, category: val || "" }));
-                    if (errors.category) setErrors((prev) => ({ ...prev, category: "" }));
+        <div className="p-4 flex flex-col gap-4">
+          <ModalInput
+            label="Claim title"
+            name="claim_title"
+            value={form.claim_title}
+            onChange={handleChange}
+            error={errors.claim_title}
+            required
+            placeholder="For example: Client meeting lunch"
+          />
+
+          <div className="grid grid-cols-12 gap-4">
+            <div className="col-span-6">
+              <SearchSelect2
+                label="Category"
+                required
+                value={form.category}
+                onChange={(val) => {
+                  setForm((prev) => ({ ...prev, category: val || "" }));
+                  if (errors.category) setErrors((prev) => ({ ...prev, category: "" }));
+                }}
+                fetchOptions={fetchCategories}
+                placeholder="Select a category"
+                error={errors.category}
+              />
+            </div>
+            <div className="col-span-6">
+              <div className="flex flex-col gap-1">
+                <DatePickerInput
+                  label="Date incurred"
+                  name="date_incurred"
+                  value={form.date_incurred}
+                  onChange={(name, value) => {
+                    setForm((prev) => ({ ...prev, [name]: value }));
+                    if (errors.date_incurred)
+                      setErrors((prev) => ({ ...prev, date_incurred: "" }));
                   }}
-                  fetchOptions={fetchCategories}
-                  placeholder="Select a category"
-                  error={errors.category}
                 />
-              </div>
-              <div className="col-span-6">
-                <div className="flex flex-col gap-1">
-                  <DatePickerInput
-                    label="Date incurred"
-                    name="date_incurred"
-                    value={form.date_incurred}
-                    onChange={(name, value) => {
-                      setForm((prev) => ({ ...prev, [name]: value }));
-                      if (errors.date_incurred)
-                        setErrors((prev) => ({ ...prev, date_incurred: "" }));
-                    }}
-                  />
-                  {errors.date_incurred && (
-                    <span className="text-danger text-[10px]">{errors.date_incurred}</span>
-                  )}
-                </div>
+                {errors.date_incurred && (
+                  <span className="text-danger text-[10px]">{errors.date_incurred}</span>
+                )}
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-12 gap-4 items-start">
-              <div className="col-span-6">
-                <SearchSelect2
-                  label="Employee"
-                  required
-                  value={employeeDisplayName}
-                  onChange={async (val, option) => {
-                    // 1. Update form fields
-                    setForm((prev) => ({
-                      ...prev,
-                      employee: val || "",
-                      expense_approver: "",
-                    }));
-                    setEmployeeDisplayName(option?.label || "");
-                    if (errors.employee)
-                      setErrors((prev) => ({ ...prev, employee: "" }));
+          <div className="grid grid-cols-12 gap-4 items-start">
+            <div className="col-span-6">
+              <SearchSelect2
+                label="Employee"
+                required
+                value={employeeDisplayName}
+                onChange={async (val, option) => {
+                  // 1. Update form fields
+                  setForm((prev) => ({
+                    ...prev,
+                    employee: val || "",
+                    expense_approver: "",
+                  }));
+                  setEmployeeDisplayName(option?.label || "");
+                  if (errors.employee)
+                    setErrors((prev) => ({ ...prev, employee: "" }));
 
-                    // 2. Clear previous advances
-                    // setEmployeeAdvances([]);
-                    // setAdvanceAllocations({});
-                    // setAdvancesFetchError(undefined);
+                  // 2. Clear previous advances
+                  // setEmployeeAdvances([]);
+                  // setAdvanceAllocations({});
+                  // setAdvancesFetchError(undefined);
 
-                    if (val) {
-                     
-                      try {
-                        // const [employee] = await Promise.all([
-                        //   getEmployeeById(val),
-                        //   fetchAdvancesForEmployee(val),   
-                        // ]);
-                        const employee = await getEmployeeById(val);
-                        setSelectedEmployee(employee);
-                        setForm((prev) => ({
-                          ...prev,
-                           expense_approver: employee?.message?.data?.expense_approver ?? "",
-                        }));
-                      } catch (err) {
-                        showApiError(err);
-                        setSelectedEmployee(null);
-                      }
-                    } else {
+                  if (val) {
+
+                    try {
+                      // const [employee] = await Promise.all([
+                      //   getEmployeeById(val),
+                      //   fetchAdvancesForEmployee(val),   
+                      // ]);
+                      const employee = await getEmployeeById(val);
+                      setSelectedEmployee(employee);
+                      setForm((prev) => ({
+                        ...prev,
+                        expense_approver: employee?.message?.data?.expense_approver ?? "",
+                      }));
+                    } catch (err) {
+                      showApiError(err);
                       setSelectedEmployee(null);
                     }
-                  }}
-                  fetchOptions={fetchEmployees}
-                  placeholder="Select the employee"
-                  error={errors.employee}
-                />
-              </div>
-              <div className="col-span-6">
-                <ModalInput
-                  label="Amount"
-                  name="amount"
-                  type="number"
-                  value={form.amount}
-                  onChange={handleChange}
-                  error={errors.amount}
-                  required
-                  placeholder="0.00"
-                  className="no-spinner"
-                />
-              </div>
-            </div>
+                  } else {
+                    setSelectedEmployee(null);
+                  }
+                }}
+                fetchOptions={fetchEmployees}
+                placeholder="Select the employee"
+                error={errors.employee}
+                disabled={isEmployeeView}
 
-            {/* receipt upload */}
-            <div>
-              <label className="block text-xs font-medium text-muted mb-1">
-                Upload Receipt
-              </label>
-
-              {/* existing attachments (edit mode) */}
-              {form.existingAttachments.length > 0 && (
-                <div className="flex flex-col gap-2 mb-2">
-                  {form.existingAttachments.map((att) => (
-                    <div key={att.name} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10">
-                      <FileText size={16} className="text-primary shrink-0" />
-                      <span className="text-sm text-main truncate flex-1">{att.file_name}</span>
-                      <span className="text-xs text-muted shrink-0">{(att.file_size / 1024).toFixed(0)} KB</span>
-                      <a href={att.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">View</a>
-                      <button type="button" onClick={() => removeExistingAttachment(att.name)} className="text-muted hover:text-danger ml-1">
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* new files queued */}
-              {form.receipts.length > 0 && (
-                <div className="flex flex-col gap-2 mb-2">
-                  {form.receipts.map((file, index) => (
-                    <div key={index} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10">
-                      <FileText size={16} className="text-primary shrink-0" />
-                      <span className="text-sm text-main truncate flex-1">{file.name}</span>
-                      <span className="text-xs text-muted shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
-                      <button type="button" onClick={() => removeNewReceipt(index)} className="text-muted hover:text-danger ml-1">
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* drop zone always visible */}
-              <div
-                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed
-                  py-6 cursor-pointer transition-colors
-                  ${isDragOver
-                    ? "border-primary bg-primary/5"
-                    : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"}`}
-              >
-                <Upload size={22} className="text-muted" />
-                <p className="text-sm text-muted">
-                  Drag and drop files, or{" "}
-                  <span className="text-primary font-medium cursor-pointer">Browse</span>
-                </p>
-                <p className="text-xs text-muted">Max 10MB per file</p>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,application/pdf"
-                multiple
-                className="hidden"
-                onChange={(e) => handleFile(e.target.files)}
               />
-              {errors.receipt && (
-                <p className="text-xs text-danger mt-1">{errors.receipt}</p>
-              )}
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-muted mb-1">
-                Remarks (optional)
-              </label>
-              <textarea
-                name="remarks"
-                value={form.remarks}
+            <div className="col-span-6">
+              <ModalInput
+                label="Amount"
+                name="amount"
+                type="number"
+                value={form.amount}
                 onChange={handleChange}
-                rows={3}
-                placeholder="Add any context for the approver"
-                className="w-full rounded-lg border border-[var(--border)] bg-transparent
-                  px-3 py-2 text-sm text-main placeholder:text-muted
-                  focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                error={errors.amount}
+                required
+                placeholder="0.00"
+                className="no-spinner"
               />
             </div>
           </div>
+
+          {/* receipt upload */}
+          <div>
+            <label className="block text-xs font-medium text-muted mb-1">
+              Upload Receipt
+            </label>
+
+            {/* existing attachments (edit mode) */}
+            {form.existingAttachments.length > 0 && (
+              <div className="flex flex-col gap-2 mb-2">
+                {form.existingAttachments.map((att) => (
+                  <div key={att.name} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10">
+                    <FileText size={16} className="text-primary shrink-0" />
+                    <span className="text-sm text-main truncate flex-1">{att.file_name}</span>
+                    <span className="text-xs text-muted shrink-0">{(att.file_size / 1024).toFixed(0)} KB</span>
+                    <a href={att.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">View</a>
+                    <button type="button" onClick={() => removeExistingAttachment(att.name)} className="text-muted hover:text-danger ml-1">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* new files queued */}
+            {form.receipts.length > 0 && (
+              <div className="flex flex-col gap-2 mb-2">
+                {form.receipts.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10">
+                    <FileText size={16} className="text-primary shrink-0" />
+                    <span className="text-sm text-main truncate flex-1">{file.name}</span>
+                    <span className="text-xs text-muted shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
+                    <button type="button" onClick={() => removeNewReceipt(index)} className="text-muted hover:text-danger ml-1">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* drop zone always visible */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed
+                  py-6 cursor-pointer transition-colors
+                  ${isDragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"}`}
+            >
+              <Upload size={22} className="text-muted" />
+              <p className="text-sm text-muted">
+                Drag and drop files, or{" "}
+                <span className="text-primary font-medium cursor-pointer">Browse</span>
+              </p>
+              <p className="text-xs text-muted">Max 10MB per file</p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFile(e.target.files)}
+            />
+            {errors.receipt && (
+              <p className="text-xs text-danger mt-1">{errors.receipt}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted mb-1">
+              Remarks (optional)
+            </label>
+            <textarea
+              name="remarks"
+              value={form.remarks}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Add any context for the approver"
+              className="w-full rounded-lg border border-[var(--border)] bg-transparent
+                  px-3 py-2 text-sm text-main placeholder:text-muted
+                  focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+            />
+          </div>
+        </div>
         {/* )} */}
 
         {/* {activeTab === "advance" && (
