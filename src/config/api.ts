@@ -1,4 +1,4 @@
-import InventoryDashboard from "../views/Inventory/InventoryDashboard";
+
 import { ENV } from "./env";
 
 const getApiBaseUrl = (): string => {
@@ -418,10 +418,15 @@ export const API = {
     Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
     Claim_Type: `${ERP_BASE}/api/resource/Expense Claim Type`,
     getExpenseClaims: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claims`,
+    getExpenseClaimbyId: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_by_id`,
     getExpenseType: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claim_types`,
+    approveClaim: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.update_expense_claim_status`,
+    getAdvanceById: `${ERP_BASE}/api/resource/Employee Advance`,
+    attachDocument:`${ERP_BASE}/api/method/upload_file`,
   },
   /* =========================
    * STOCK
+
    * ========================= */
   stock: {
     getAll: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.get_stock_balance`,

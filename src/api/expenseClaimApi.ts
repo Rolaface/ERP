@@ -132,9 +132,9 @@ export async function getExpenseClaimTypes(
 }
 
   export async function getExpenseClaimById(id: string): Promise<any> {
-    const url = `${ExpenseClaimAPI.Expense_Claim}/${encodeURIComponent(id)}`;
+    const url = `${ExpenseClaimAPI.getExpenseClaimbyId}/?id=${encodeURIComponent(id)}`;
     const resp: AxiosResponse = await api.get(url);
-    return resp.data || null;
+      return resp.data?.message?.data || null;
   }
 
   export async function updateExpenseClaim(
@@ -166,5 +166,105 @@ export async function updateExpenseClaimType(
 export async function deleteExpenseClaimType(name: string): Promise<any> {
   const url = `${ExpenseClaimAPI.Claim_Type}/${encodeURIComponent(name)}`;
   const resp: AxiosResponse = await api.delete(url);
+  return resp.data || null;
+}
+export async function approveExpenseClaim(id: string): Promise<any> {
+  const resp: AxiosResponse = await api.put(ExpenseClaimAPI.approveClaim, {
+    claim_id: id,
+    status: "Approved",
+  });
+  return resp.data || null;
+}
+export interface EmployeeAdvanceRaw {
+  name: string;
+  employee: string;
+  employee_name: string;
+  posting_date: string;
+  advance_amount: number;
+  paid_amount: number;
+  claimed_amount: number;
+  pending_amount: number;
+  return_amount: number;
+  advance_account: string;
+  mode_of_payment: string;
+  purpose: string;
+  currency: string;
+  status: string;
+}
+export interface MappedEmployeeAdvance {
+  id: string;              
+  employeeName: string;   
+  employeeId: string;       
+  advanceDate: string; 
+  allocatedAmount: number;  
+  unclaimedAmount: number; 
+  claimedAmount: number;
+  status: "Pending" | "Partially Claimed" | "Fully Claimed";
+}
+function deriveStatus(raw: EmployeeAdvanceRaw): MappedEmployeeAdvance["status"] {
+  if (raw.claimed_amount <= 0) return "Pending";
+  if (raw.claimed_amount >= raw.advance_amount) return "Fully Claimed";
+  return "Partially Claimed";
+}
+export async function getAdvancesByEmployee(
+  employeeId: string
+): Promise<MappedEmployeeAdvance[]> {
+  const fields  = encodeURIComponent(JSON.stringify(["*"]));
+  const filters = encodeURIComponent(
+    JSON.stringify([
+      ["status", "=", "Paid"],
+      ["employee", "=", employeeId],
+    ])
+  );
+ 
+  const url = `${ExpenseClaimAPI.getAdvanceById}?fields=${fields}&limit_page_length=0&filters=${filters}`;
+ 
+  const resp: AxiosResponse = await api.get(url);
+  const raw: EmployeeAdvanceRaw[] = resp?.data?.data ?? [];
+ 
+  return raw.map((item): MappedEmployeeAdvance => ({
+    id:              item.name,
+    employeeName:    item.employee_name,
+    employeeId:      item.employee,
+    advanceDate:     item.posting_date,
+    allocatedAmount: item.advance_amount,
+    unclaimedAmount: Math.max(0, item.advance_amount - item.claimed_amount),
+    claimedAmount:   item.claimed_amount,
+    status:          deriveStatus(item),
+  }));
+}
+
+export interface AttachDocumentPayload {
+  filename: string;
+  filedata: string; // base64
+  doctype: string;
+  docname: string;
+  is_private: number;
+  folder: string;
+}
+
+
+
+
+export async function attachDocumentToExpenseClaim(
+  claimId: string,
+  file: File
+): Promise<any> {
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+  formData.append("doctype", "Expense Claim");
+  formData.append("docname", claimId);
+  formData.append("is_private", "1");
+  formData.append("folder", "Home/Attachments");
+
+  const resp: AxiosResponse = await api.post(
+    ExpenseClaimAPI.attachDocument,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
   return resp.data || null;
 }

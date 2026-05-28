@@ -9,6 +9,7 @@ import {
 } from "../../components/ui/app-shell";
 import ExpenseHistory from "./expenseManagemetTable";
 import ExpenseTypeTable from "./expenseTypeTable";
+import EmployeeAdvanceTable from "./employeeAdvanceTable";
 const ALL_EXPENSE_TABS = [
   {
     id: "expenseType",
@@ -22,6 +23,13 @@ const ALL_EXPENSE_TABS = [
     label: "Expense Claim",
     icon: <CreditCard size={16} strokeWidth={1.75} />,
     module: "Expense Claim",
+    action: "read" as const,
+  },
+  {
+    id: "advance",
+    label: "Employee Advance",
+    icon: <CreditCard size={16} strokeWidth={1.75} />,
+    module: "Employee Advance",
     action: "read" as const,
   },
   
@@ -64,6 +72,7 @@ const ExpenseManagement: React.FC = () => {
       <AppPageBody viewportLocked={isDashboardTab}>
         {resolvedTab === "expenseType" && <ExpenseTypeTable />}
         {resolvedTab === "expenseHistory" && <ExpenseHistory />}
+        {resolvedTab === "advance" && <EmployeeAdvanceTable />}
       </AppPageBody>
     </AppPage>
   );
