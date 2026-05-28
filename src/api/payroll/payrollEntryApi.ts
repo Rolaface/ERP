@@ -356,8 +356,11 @@ export async function getSalarySlipPdf(
     `${API.payroll.payrollentry.salaryslip_pdf}`,
     {
       params: {
-        name,
         doctype,
+        name,
+        no_letterhead: 0,
+        _lang: "en",
+        pdf_generator: "chrome",
       },
       responseType: "blob",
     },
