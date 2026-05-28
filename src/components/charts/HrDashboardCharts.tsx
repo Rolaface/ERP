@@ -42,6 +42,7 @@ export const EmployeeTrendChart: React.FC<EmployeeTrendProps> = ({ data, loading
     },
     yAxis: {
       type: "value",
+      minInterval: 1,
     },
     series: [
       {
