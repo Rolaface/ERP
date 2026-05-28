@@ -27,6 +27,7 @@ export async function getAllEmployees(
 export async function getEmployeeById(id: string): Promise<any> {
   const url = `${EmployeeAPI.getById}?id=${id}`;
   const resp: AxiosResponse = await api.get(url);
+  
   return resp.data || null;
 }
 

@@ -43,6 +43,7 @@ const ProformaInvoiceModal = lazy(
 const ExpenseModal = lazy(
   () => import("../../components/expense/addExpenseModal"),
 );
+
 const QuotationModal = lazy(() => import("../sales/QuotationModal"));
 const PurchaseOrderModal = lazy(
   () => import("../procurement/PurchaseOrderModal"),
@@ -222,6 +223,9 @@ const getRecordInitialData = (
 ): Record<string, unknown> | null => (isRecord(value) ? value : null);
 const ExpenseTypeModal = lazy(
   () => import("../../components/expense/addExpenseTypeModal"),
+);
+const EmployeeAdvanceModal = lazy(
+  () => import("../../components/expense/addEmployeeAdvance"),
 );
 
 const getModalSeedValue = (
@@ -405,6 +409,16 @@ const GlobalModalHandler: React.FC = () => {
       case "expenseType":
         return wrappedModal(
           <ExpenseTypeModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+          />,
+        );
+        case "employeeAdvance":
+        return wrappedModal(
+          <EmployeeAdvanceModal
             key={modal.id}
             modalId={modal.id}
             isOpen={true}

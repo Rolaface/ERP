@@ -54,10 +54,10 @@ export type ModalType =
   | "KRA"
   | "appraisalCycle"
   | "feedback"
-
   | "appraisal"
   | "employeeFeedback"
-  ;
+  |"emailTemplate"
+  |"employeeAdvance";
 
 export interface ModalContext {
   source?: string;
@@ -827,6 +827,17 @@ export const openExpenseTypeModal = (
   useModalStore
     .getState()
     .openModal("expenseType", initialData, isEdit, context, meta);
+
+ export const openEmployeeAdvanceModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("employeeAdvance", initialData, isEdit, context, meta);
+   
 
 
 export const openEmailTemplateModal = (
