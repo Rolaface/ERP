@@ -9,11 +9,14 @@ export async function getSalesInvoicePdf(
   doctype: string = "Sales Invoice",
 ): Promise<Blob> {
   const resp: AxiosResponse = await api.get(
-    `${API.pdf.getDocumentPdf}`,
+    `${API.invoice.getPdf}`,
     {
       params: {
-        name,
         doctype,
+        name,
+        no_letterhead: 0,
+        _lang: "en",
+        pdf_generator: "chrome",
       },
       responseType: "blob",
     },
