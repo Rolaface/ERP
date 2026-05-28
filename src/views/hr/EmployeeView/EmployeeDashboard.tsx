@@ -423,10 +423,10 @@ const EmployeeDashboard: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="rounded-lg bg-[var(--background)] px-3 py-2 text-xs text-[var(--muted-foreground)] flex items-center gap-2">
+                  {/* <div className="rounded-lg bg-[var(--background)] px-3 py-2 text-xs text-[var(--muted-foreground)] flex items-center gap-2">
                     <TrendingUp size={12} />
                     Joined {formatDate(emp.dateOfJoining)}
-                  </div>
+                  </div> */}
                 </div>
               )}
             </div>
