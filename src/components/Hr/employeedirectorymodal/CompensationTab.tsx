@@ -26,14 +26,15 @@ import {
   type SalaryResult,
   type ComponentResult,
 } from "./salaryengine";
+import DatePickerInput from "../../calendar/DatePickerInput";
 
 export { buildCompensationPayload };
 
 type CompensationTabProps = {
   formData: any;
   handleInputChange: (field: string, value: any) => void;
+  isEditMode?: boolean;
 };
-
 const fmt = (n: number) => n.toLocaleString();
 const toNum = (v: any): number => {
   if (v === null || v === undefined) return 0;
@@ -120,6 +121,7 @@ const SummaryRow: React.FC<{
 export const CompensationTab: React.FC<CompensationTabProps> = ({
   formData,
   handleInputChange,
+  isEditMode = false,
 }) => {
   const [componentDefs, setComponentDefs] = useState<SalaryComponentDef[]>([]);
   const [isLoadingStructure, setIsLoadingStructure] = useState(false);
@@ -137,7 +139,11 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const [grossInput, setGrossInput] = useState<number | null>(
     toNum(formData.grossSalary) || null,
   );
-
+  const initialSalaryRef = useRef({
+    base: toNum(formData.basicSalary),
+    gross: toNum(formData.grossSalary),
+    structure: formData.salaryStructure || "",
+  });
   // Derived values shown in the non-active field
   const [computedGross, setComputedGross] = useState<number | null>(null);
   const [computedBase, setComputedBase] = useState<number | null>(null);
@@ -200,6 +206,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     const result = calculateSalary(base, componentDefs, {}, taxConfig);
     setSalaryResult(result);
     setComputedGross(result.gross);
+      setGrossInput(result.gross);  
     setComputedBase(null);
   }, [componentDefs]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -215,6 +222,8 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     handleInputChange("_salaryResult", result);
     handleInputChange("grossSalary", String(result.gross));
   }, [taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  //Auto lOad the effictive date when employee on boarding
 
   const loadTaxConfig = async (name: string) => {
     setIsLoadingTax(true);
@@ -307,6 +316,24 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
 
   const isLoading = isLoadingStructure || isLoadingTax;
 
+  const salaryChanged =
+    isEditMode &&
+    (toNum(baseInput) !== initialSalaryRef.current.base ||
+      toNum(grossInput) !== initialSalaryRef.current.gross ||
+      formData.salaryStructure !== initialSalaryRef.current.structure);
+  useEffect(() => {
+    if (!isEditMode && formData.dateOfJoining && !formData.effectiveFrom) {
+      handleInputChange("effectiveFrom", formData.dateOfJoining);
+    }
+  }, [
+    isEditMode,
+    formData.dateOfJoining,
+    formData.effectiveFrom,
+    handleInputChange,
+  ]);
+  useEffect(() => {
+    handleInputChange("_salaryChanged", salaryChanged);
+  }, [salaryChanged, handleInputChange]);
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
@@ -345,7 +372,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
                 </div>
               )}
             </div>
-          
+
             {/* {taxConfig && !isLoadingTax && (
               <p className="text-[10px] text-primary/70 leading-tight mt-0.5">
                 {taxConfig.slabs?.length ?? 0} slabs
@@ -395,16 +422,26 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
             Monthly salary
           </span>
-         
-           
-        
         </div>
 
-        <div className="grid grid-cols-2 gap-3 items-start">
+        <div className="grid grid-cols-3 gap-3 items-start">
+          <Field label="Effective from">
+            <DatePickerInput
+              name="effectiveFrom"
+              value={formData.effectiveFrom || ""}
+              required={salaryChanged}
+              disabled={!isEditMode}
+              onChange={(name, value) => handleInputChange(name, value)}
+            />
+          </Field>
           <Field label="Base salary / month">
             <div
-              onFocus={() => { activeField.current = "base"; }}
-              onBlur={() => { activeField.current = null; }}
+              onFocus={() => {
+                activeField.current = "base";
+              }}
+              onBlur={() => {
+                activeField.current = null;
+              }}
             >
               <NumericInput
                 name="basicSalary"
@@ -420,8 +457,12 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
 
           <Field label="Gross salary / month">
             <div
-              onFocus={() => { activeField.current = "gross"; }}
-              onBlur={() => { activeField.current = null; }}
+              onFocus={() => {
+                activeField.current = "gross";
+              }}
+              onBlur={() => {
+                activeField.current = null;
+              }}
             >
               <NumericInput
                 name="grossSalary"
@@ -440,7 +481,9 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           <div className="flex items-center gap-2 mt-2">
             <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <span className="text-xs text-muted">
-              {isLoadingStructure ? "Loading components…" : "Loading tax config…"}
+              {isLoadingStructure
+                ? "Loading components…"
+                : "Loading tax config…"}
             </span>
           </div>
         )}

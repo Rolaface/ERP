@@ -10,6 +10,9 @@ import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import DatePickerInput from "../calendar/DatePickerInput";
 import RoleMultiSelect from "../ui/modal/RoleMultiSelect";
 import { getUserById } from "../../api/RoleManagement/CreateUserApi";
+import { getAllGenders } from "../../api/employeeapi";
+import { showApiError } from "../../utils/alert";
+import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 
 const TIMEZONES = [
   "Africa/Casablanca", "Europe/Rome", "Europe/Paris", "America/Aruba", "Asia/Baghdad",
@@ -152,6 +155,28 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     handleSubmit,
     handleReset,
   } = useCreateUser({ onSubmit, onClose, initialData: initialData ?? null });
+  
+  const [genderOptions, setGenderOptions] = useState<any[]>([]);
+  const fetchGenderOptions = async () => {
+      try {
+        const response = await getAllGenders();
+        
+        const rawData = response?.data || [];
+  
+        const formattedOptions = rawData.map((item: { name: string }) => ({
+          label: item.name, 
+          value: item.name
+        }));
+  
+        setGenderOptions(formattedOptions);
+      } catch (error) {
+        showApiError(parseFrappeError(error) || "Failed to fetch Gender API");
+      }
+    };
+  
+    useEffect(() => {
+      fetchGenderOptions();
+    }, []);
 
   useEffect(() => {
     if (!isOpen || !isEditMode || !initialData?.id) return;
@@ -365,7 +390,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   value={form.gender ?? ""}
                   onChange={(e) => dirty("gender", e.target.value)}
                   placeholder="Select gender"
-                  options={GENDER_OPTIONS.map((g) => ({ label: g, value: g }))}
+                  options={genderOptions || []}
                 />
 
 

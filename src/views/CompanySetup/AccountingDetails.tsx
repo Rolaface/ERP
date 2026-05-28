@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import {
   FaDollarSign,
   FaChartArea,
@@ -13,11 +13,12 @@ import {
 } from "react-icons/fa";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
 import { fireManagedSwal } from "../../utils/swalManager";
-
-
+import { useCompanyStore } from "../../store/companyStore";
 import type { AccountingSetup, FinancialConfig } from "../../types/company";
 import { updateCompanyById } from "../../api/companySetupApi";
 import { Terms } from "../../types/termsAndCondition";
+import { getCompanyById } from "../../api/companySetupApi";
+import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
 
 const defaultForm = {
   accountingSetup: {
@@ -31,7 +32,7 @@ const defaultForm = {
     appreciationAccount: "",
   },
   financialConfig: {
-    baseCurrency: "INR",
+    baseCurrency: "",
     financialYearStart: "April",
   },
 };
@@ -43,6 +44,7 @@ interface InputFieldProps {
   required?: boolean;
   placeholder?: string;
   value: string;
+  disabled?: boolean; 
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 const VITE_COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
@@ -55,6 +57,7 @@ const InputField: React.FC<InputFieldProps> = ({
   required = false,
   placeholder = "",
   value,
+  disabled = false,
   onChange,
 }) => (
   <div className="relative">
@@ -93,6 +96,7 @@ interface SelectFieldProps {
   icon?: React.ComponentType<{ className?: string }>;
   required?: boolean;
   value: string;
+  disabled?: boolean;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
@@ -103,6 +107,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
   icon: Icon,
   required = false,
   value,
+  disabled = false,
   onChange,
 }) => (
   <div>
@@ -119,6 +124,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
         value={value}
         onChange={onChange}
         required={required}
+        disabled={disabled}
         className={`w-full border bg-theme rounded-lg ${
           Icon ? "pl-10" : "pl-3.5"
         } pr-10 py-2.5 text-sm`}
@@ -148,8 +154,21 @@ const AccountingDetails: React.FC<AccountingDetailsProps> = ({
     id: VITE_COMPANY_ID,
     ...(terms !== undefined && terms !== null ? { terms } : {}),
   });
-  
-  const [activeTab, setActiveTab] = useState("financial");
+   const [activeTab, setActiveTab] = useState("financial");
+ const[companyData, setCompanyData] = useState<any>(null);
+
+  const fetchCompanyDetails = async () => {
+    try {
+      const response = await getCompanyById(VITE_COMPANY_ID);
+      setCompanyData(response.data);
+      console.log("Fetched company details:", response);
+      console.log("Fiscal Year", response.data?.fiscalYear?.startMonth);
+    }catch(error){
+      showApiError(parseFrappeError(error) || "Failed to fetch company details");
+    }}
+    useEffect(() => {
+      fetchCompanyDetails();
+    }, []);
 
   const [form, setForm] = useState(() => ({
     accountingSetup: {
@@ -291,34 +310,33 @@ const handleReset = async () => {
 
         {/* CONTENT */}
         <div className="p-8">
-          {activeTab === "financial" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {renderSelect(
-                "Base Currency",
-                "baseCurrency",
-                "financialConfig",
-                [
-                  { value: "INR", label: "INR - Indian Rupee" },
-                  { value: "USD", label: "USD - US Dollar" },
-                  { value: "EUR", label: "EUR - Euro" },
-                ],
-                { icon: FaDollarSign, required: true },
-              )}
+        {activeTab === "financial" && (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="flex items-end gap-3">
+      <div className="flex-1">
+        <InputField
+          label="Base Currency"
+          name="baseCurrency"
+          value={companyData?.baseCurrency || ""}         
+          icon={FaMoneyBillWave}
+          required
+          disabled
+          onChange={() => {}}
+        />
+      </div>
+    </div>
 
-              {renderSelect(
-                "Financial Year",
-                "financialYearStart",
-                "financialConfig",
-                [
-                  { value: "January", label: "January" },
-                  { value: "April", label: "April" },
-                  { value: "July", label: "July" },
-                  { value: "October", label: "October" },
-                ],
-                { icon: FaCalendarAlt, required: true },
-              )}
-            </div>
-          )}
+     <InputField
+      label="Financial Year Start"
+      name="fiscalYearStart"
+      value={companyData?.fiscalYear?.startMonth || ""} 
+      icon={FaCalendarAlt}
+      required
+      disabled
+      onChange={() => {}}
+    />
+  </div>
+)}
 
           {activeTab === "accounts" && (
             <div className="space-y-8">
@@ -421,6 +439,7 @@ const handleReset = async () => {
         </div>
 
         {/* FOOTER */}
+        {activeTab !== "financial" && (
         <div className="bg-app px-8 py-4 border-t flex justify-between">
           <button
             onClick={handleReset}
@@ -438,6 +457,7 @@ const handleReset = async () => {
             Save Changes
           </button>
         </div>
+)}
       </div>
     </div>
   );
