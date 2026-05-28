@@ -105,11 +105,11 @@ export const PayrollDashboard: React.FC<Props> = ({
       ),
     },
     {
-      key: "total_payable",
+      key: "total_net_payable",
       header: "Total Payable",
       align: "left",
       render: (row) => (
-        <span className="whitespace-nowrap">{row.total_payable ?? "—"}</span>
+        <span className="whitespace-nowrap">{row.total_net_payable ?? "—"}</span>
       ),
     },
 
@@ -152,7 +152,7 @@ export const PayrollDashboard: React.FC<Props> = ({
               ...(row.status === "Draft"
                 ? [
                     {
-                      label: "Verify Payroll",
+                      label: " preview Entry",
                       icon: <ShieldCheck className="w-4 h-4" />,
                       onClick: () => onVerify(row),
                     },
