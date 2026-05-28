@@ -7,6 +7,24 @@ import LeaveBalance from "../../../components/dashboard/domains/hr/LeaveBalance"
 import LatestPayslip from "../../../components/dashboard/domains/hr/LatestPayslip";
 
 const EmployeeDashboard: React.FC = () => {
+  const employeeDetails = {
+    employeeId: "EMP-001",
+
+    employeeNumber: "1001",
+
+    firstName: "Manoj",
+
+    middleName: "",
+
+    lastName: "Kumar",
+
+    employeeName: "Manoj Kumar",
+
+    profilePhoto: "",
+
+    dateOfJoining: "2024-01-10",
+  };
+
   return (
     <div
       className="
@@ -16,7 +34,6 @@ const EmployeeDashboard: React.FC = () => {
       "
     >
       <div className="mx-auto max-w-7xl px-5 py-4">
-        {/* ── OPERATING BANNER ───────────────────────────────────── */}
         <section
           className="
             mb-5
@@ -24,10 +41,11 @@ const EmployeeDashboard: React.FC = () => {
             duration-200
           "
         >
-          <EmployeeOperatingBanner />
+          <EmployeeOperatingBanner
+            employeeDetails={employeeDetails}
+          />
         </section>
 
-        {/* ── DAILY OPERATIONS GRID ─────────────────────────────── */}
         <section
           className="
             grid
@@ -41,7 +59,6 @@ const EmployeeDashboard: React.FC = () => {
           <LeaveBalance />
         </section>
 
-        {/* ── FINANCIAL OPERATIONS ─────────────────────────────── */}
         <section className="mt-5">
           <LatestPayslip />
         </section>
