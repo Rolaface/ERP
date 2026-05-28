@@ -35,6 +35,7 @@ interface ModalTableProps<T> {
   enableExport?: boolean;
   onExport?: () => void;
   enableColumnSelector?: boolean;
+  defaultVisibleKeys?: string[];
 
   // Sorting
   sortBy?: string;
@@ -49,6 +50,7 @@ interface ModalTableProps<T> {
   pageSizeOptions?: number[];
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
+  bodyMaxHeight?: number | string;
 }
 
 // ─── Skeleton Row ─────────────────────────────────────────────────────────────
@@ -108,6 +110,7 @@ const ModalTableInner = <T extends Record<string, any>>({
   enableExport = false,
   onExport,
   enableColumnSelector = false,
+  defaultVisibleKeys,
 
   sortBy,
   sortOrder: sortOrderProp,
@@ -120,6 +123,7 @@ const ModalTableInner = <T extends Record<string, any>>({
   pageSizeOptions = [10, 25, 50],
   onPageChange,
   onPageSizeChange,
+  bodyMaxHeight = 300,
 }: ModalTableProps<T>) => {
   const allKeys = useMemo(() => columns.map((col) => col.key), [columns]);
   const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
@@ -139,6 +143,13 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
   }
  
   const nonActionKeys = allKeys.filter((k) => k !== "actions");
+  if (defaultVisibleKeys?.length) {
+    const filtered = defaultVisibleKeys.filter((k) => allKeys.includes(k));
+    if (allKeys.includes("actions") && !filtered.includes("actions")) {
+      filtered.push("actions");
+    }
+    return filtered;
+  }
   const first5 = nonActionKeys.slice(0, 5);
   return allKeys.includes("actions") ? [...first5, "actions"] : allKeys.slice(0, 6);
 });
@@ -171,6 +182,29 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
     }
   };
 
+  const getColumnWidth = (col: Column<T>) =>
+    col.minWidth ?? col.width ?? col.maxWidth ?? "120px";
+
+  const getColumnWidthPx = (value: string) => {
+    const pxMatch = value.match(/^(\d+(?:\.\d+)?)px$/);
+    if (pxMatch) return Number(pxMatch[1]);
+
+    const numeric = Number.parseFloat(value);
+    return Number.isFinite(numeric) ? numeric : 120;
+  };
+
+  const tableMinWidth = useMemo(
+    () =>
+      Math.max(
+        visibleColumns.reduce(
+          (total, col) => total + getColumnWidthPx(getColumnWidth(col)),
+          0,
+        ),
+        320,
+      ),
+    [visibleColumns],
+  );
+
   // ── Shared colgroup ──────────────────────────────────────────────────────
   const Colgroup = () => (
     <colgroup>
@@ -178,8 +212,7 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
         <col
           key={col.key}
           style={{
-            width: col.width ?? (col.maxWidth ?? "auto"),
-            minWidth: col.minWidth ?? (col.maxWidth ?? "80px"),
+            width: getColumnWidth(col),
           }}
         />
       ))}
@@ -239,8 +272,10 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
         </div>
       )}
 
+      <div className="min-w-0 overflow-x-auto">
+        <div style={{ minWidth: `${tableMinWidth}px` }}>
       {/* ── Sticky Header ────────────────────────────────────────────────── */}
-      <div className="shrink-0 border-b-2 border-[var(--border)] bg-card w-full overflow-x-auto">
+      <div className="shrink-0 border-b-2 border-[var(--border)] bg-card w-full">
         <table className="w-full table-fixed border-separate border-spacing-0">
           <Colgroup />
           <thead>
@@ -262,7 +297,7 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
                       isActive ? "text-primary" : "",
                     ].join(" ")}
                   >
-                    <span className="inline-flex max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap leading-none">
                       {column.header}
                       {isSortable && (
                         <span className="inline-flex opacity-60">
@@ -281,7 +316,15 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
       </div>
 
       {/* ── Scrollable Body — keeps ModalTable's compact max-h ───────────── */}
-      <div className="custom-scrollbar max-h-[300px] overflow-y-auto overflow-x-auto">
+      <div
+        className="custom-scrollbar overflow-y-auto"
+        style={{
+          maxHeight:
+            typeof bodyMaxHeight === "number"
+              ? `${bodyMaxHeight}px`
+              : bodyMaxHeight,
+        }}
+      >
         <table className="w-full table-fixed border-separate border-spacing-0">
           <Colgroup />
           <tbody className="relative z-10">
@@ -392,6 +435,9 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
             )}
           </tbody>
         </table>
+      </div>
+
+        </div>
       </div>
 
       {/* ── Footer: total + page-size + pagination ────────────────────────── */}

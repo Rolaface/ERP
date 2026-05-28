@@ -31,8 +31,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -120,7 +120,9 @@ export const API = {
    * ========================= */
   hrDashboard: {
     summary: `${ERP_BASE}/api/method/hrms.dashboards.main.api.summary`,
-    hrSummary: `${ERP_BASE}/api/method/custom_hrms.api.leave.api.get_employee_status_counts`,
+    hrSummary: `${ERP_BASE}/api/method/custom_hrms.api.dashboard.api.get_employee_status_counts`,
+    dashboardData: `${ERP_BASE}/api/method/custom_hrms.api.dashboard.api.get_hr_dashboard_data`,
+    employeeTrend: `${ERP_BASE}/api/method/custom_hrms.api.dashboard.api.get_employee_trend`,
   },
 
   Get: {
@@ -328,6 +330,13 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.create_holiday_list`,
     update: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.update_holiday_list`,
     delete: `${ERP_BASE}/api/method/custom_hrms.api.leave.holiday.api.delete_holiday_list`,
+  },
+  customerGroup: {
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.get_customer_groups`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.get_customer_group`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.create_customer_group`,
+    update: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.update_customer_group`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.customer_group.api.delete_customer_group`,
   },
   // holidays: {
   //   getAll: `${ERP_BASE}/api/method/hrms.napsa_client.holidays.api.get_holidays`,
@@ -598,9 +607,11 @@ export const API = {
 
     payrollentry: {
       createpayrollentry: `${ERP_BASE}/api/resource/Payroll Entry`,
+      getPayrollEntryList: `${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entries`,
       runpayroll: `${ERP_BASE}/api/method/custom_hrms.api.payroll.api.run_payroll`,
       salaryslip: `${ERP_BASE}/api/resource/Salary Slip`,
       salaryslip_pdf: `${ERP_BASE}/api/method/custom_hrms.api.pdf.api.get_document_pdf`,
+      getpayrollpreview:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
     },
 
   },

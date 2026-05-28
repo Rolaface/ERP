@@ -100,11 +100,19 @@ export async function createPayrollEntry(
 export async function getAllPayrollEntries(
   page = 1,
   pageSize = 20,
+  search = "",
 ): Promise<any> {
-  const start = (page - 1) * pageSize;
+  const queryParams = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
+
+  if (search.trim()) {
+    queryParams.append("search", search);
+  }
 
   const resp: AxiosResponse = await api.get(
-    `${API.payroll.payrollentry.createpayrollentry}?fields=["name","company","posting_date","status","branch","currency","payroll_frequency"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}&order_by=creation desc`,
+    `${API.payroll.payrollentry.getPayrollEntryList}?${queryParams.toString()}`
   );
 
   return {
@@ -112,7 +120,6 @@ export async function getAllPayrollEntries(
     pagination: resp.data?.pagination || {},
   };
 }
-
 export async function runPayrollEntry(id: string): Promise<any> {
   const resp: AxiosResponse = await api.post(
     API.payroll.payrollentry.runpayroll,
@@ -384,6 +391,9 @@ const SLIP_FIELDS = [
   "name", "employee", "employee_name", "status",
   "posting_date", "start_date", "end_date",
   "gross_pay", "net_pay", "currency","total_income_tax","total_deduction",
+"income_from_other_sources", "non_taxable_earnings","standard_tax_exemption_amount", "tax_exemption_declaration",
+"deductions_before_tax_calculation", "annual_taxable_amount","income_tax_deducted_till_date",
+            "current_month_income_tax", "future_income_tax_deductions","total_income_tax"
 ];
 
 export async function getSalarySlipsByEmployeeOnly(

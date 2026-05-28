@@ -19,6 +19,8 @@ const segmentColors = {
   checked_in:        "bg-[#2578C5]",
   checked_in_active: "bg-[#2578C5]",   
   checked_out:       "bg-[#F58B1E]",
+  overtime:          "bg-red-500",       
+  overtime_active:   "bg-red-500",
 };
 
 // --- Subcomponents ---
@@ -50,7 +52,7 @@ const TimelineRow = ({ data }) => (
     <div className="flex items-end gap-6">
       {/* Clock In */}
       <div className="w-24 border-r border-gray-100 pb-1">
-        <p className="text-[11px] text-gray-400 mb-1 font-medium">Clock-in</p>
+        <p className="text-[11px] text-gray-400 mb-1 font-medium">Check-in</p>
         <p className="text-sm font-bold text-gray-900">{data.clockIn}</p>
       </div>
 
@@ -81,7 +83,7 @@ const TimelineRow = ({ data }) => (
 
       {/* Clock Out */}
       <div className="w-20 pl-4 border-l border-gray-100 pb-1">
-        <p className="text-[11px] text-gray-400 mb-1 font-medium">Clock-out</p>
+        <p className="text-[11px] text-gray-400 mb-1 font-medium">Check-out</p>
         <p className="text-sm font-bold text-gray-900">{data.clockOut}</p>
       </div>
 
@@ -167,6 +169,20 @@ const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
     let totalDurationMs = 0;
     let lastStartPct: number = 0;
 
+    const addSegments = (segmentsArr: any[], start: number, end: number, shiftEnd: number, isActive: boolean) => {
+      if (start >= shiftEnd) {
+        // Entirely overtime
+        segmentsArr.push({ start, end, type: isActive ? "overtime_active" : "overtime", label: "" });
+      } else if (end > shiftEnd) {
+        // Split segment at shift end
+        segmentsArr.push({ start, end: shiftEnd, type: isActive ? "checked_in_active" : "checked_in", label: "" });
+        segmentsArr.push({ start: shiftEnd, end, type: isActive ? "overtime_active" : "overtime", label: "" });
+      } else {
+        // Entirely normal hours
+        segmentsArr.push({ start, end, type: isActive ? "checked_in_active" : "checked_in", label: "" });
+      }
+    };
+
     // Loop through all logs for this day to pair INs and OUTs
     logs.forEach((log) => {
       if (log.log_type === "IN") {
@@ -178,38 +194,70 @@ const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
         // Close the segment
         const startPct = timeToPercent(currentIn.timeOnly);
         const endPct = timeToPercent(log.timeOnly);
-        
-        segments.push({
-          start: startPct,
-          // Ensure a minimum width so 1-minute checkins don't disappear visually
-          end: Math.max(startPct + 0.5, endPct), 
-          type: "checked_in",
-          label: "" 
-        });
+        const endPctClamped = Math.max(startPct + 0.5, endPct);
 
-        // Add to total duration
+        // segments.push({
+        //   start: startPct,
+        //    end: Math.max(startPct + 0.5, endPct), 
+        //   type: "checked_in",
+        //   label: "" 
+        // });
+
+        const shiftEndStr = currentIn.shift_end 
+          ? currentIn.shift_end.split(" ")[1].substring(0, 5) 
+          : "17:00";
+        const shiftEndPct = timeToPercent(shiftEndStr);
+
+        addSegments(segments, startPct, endPctClamped, shiftEndPct, false);
+
         totalDurationMs += new Date(log.time).getTime() - new Date(currentIn.time).getTime();
         currentIn = null; // Reset for the next pair
       }
     });
 
-    // Handle case where they are currently checked in (no OUT yet)
-    if (currentIn) {
-  const now = new Date();
-  const nowPct = timeToPercent(
-    `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
-  );
+//   if (currentIn) {
+//   const now = new Date();
+//   const nowPct = timeToPercent(
+//     `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
+//   );
 
-  segments.push({
-    start: lastStartPct,
-    end: Math.max(lastStartPct + 0.5, nowPct),
-    type: "checked_in_active",   // ← new type
-    label: ""
-  });
+//   segments.push({
+//     start: lastStartPct,
+//     end: Math.max(lastStartPct + 0.5, nowPct),
+//     type: "checked_in_active",   // ← new type
+//     label: ""
+//   });
 
-  // Duration shows elapsed time so far
-  totalDurationMs += now.getTime() - new Date(currentIn.time).getTime();
-}
+//    totalDurationMs += now.getTime() - new Date(currentIn.time).getTime();
+// }
+if (currentIn) {
+      const now = new Date();
+      const checkInTime = new Date(currentIn.time).getTime();
+      const diffMs = now.getTime() - checkInTime;
+
+      const shiftEndStr = currentIn.shift_end 
+        ? currentIn.shift_end.split(" ")[1].substring(0, 5) 
+        : "17:00";
+      const shiftEndPct = timeToPercent(shiftEndStr);
+
+      if (diffMs >= 24 * 60 * 60 * 1000) {
+        // --- AUTO CHECKOUT AFTER 24 HOURS ---
+        const endPct = timeToPercent("23:59"); 
+        addSegments(segments, lastStartPct, endPct, shiftEndPct, false);
+        
+        totalDurationMs += (24 * 60 * 60 * 1000); 
+        currentIn = null; 
+      } else {
+        // --- NORMAL ACTIVE CHECK-IN ---
+        const nowPct = timeToPercent(
+          `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
+        );
+        const endPct = Math.max(lastStartPct + 0.5, nowPct);
+        
+        addSegments(segments, lastStartPct, endPct, shiftEndPct, true);
+        totalDurationMs += diffMs;
+      }
+    }
 
     // Format Duration
     let duration = "--h --m";
