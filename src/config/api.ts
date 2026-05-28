@@ -31,8 +31,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -59,9 +59,7 @@ export const API = {
     update_email_template: `${ERP_BASE}/api/method/custom_api.api.email_template.api.update`,
     delete_email_template: `${ERP_BASE}/api/method/frappe.client.delete`
   },
-  pdf: {
-    getDocumentPdf: `${ERP_BASE}/api/method/custom_hrms.api.pdf.api.get_document_pdf`,
-  },
+  
 
   /* =========================
    * DASHBOARD
@@ -398,6 +396,7 @@ export const API = {
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice_status`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.delete_sales_invoice`,
     editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
+    getPdf: `${ERP_BASE}/api/method/frappe.utils.print_format.download_pdf`,
   },
 
   CreditNote: {
