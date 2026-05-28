@@ -94,7 +94,7 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
   const [pageSize,   setPageSize]   = useState(10);
   const [showHistory, setShowHistory] = useState(false);
   // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
-  const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "" });
+  const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -119,15 +119,16 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
     // }
     if (filters.status) {
         apiFilters.push(["status", "=", filters.status]);
-      } else if (showHistory) {
-        apiFilters.push([
-          "status",
-          "in",
-          ["Approved", "Rejected", "Open", "Cancelled"],
-        ]);
-      } else {
-        apiFilters.push(["status", "=", "Open"]);
-      }
+      } 
+      // else if (showHistory) {
+      //   apiFilters.push([
+      //     "status",
+      //     "in",
+      //     ["Approved", "Rejected", "Open", "Cancelled"],
+      //   ]);
+      // } else {
+      //   apiFilters.push(["status", "=", "Open"]);
+      // }
 
       if (filters.from_date) {
         apiFilters.push(["from_date", ">=", filters.from_date]);
@@ -209,7 +210,27 @@ const handleStatusUpdate = async (
       },
     });
   };
+const calculateLeaveDays = (fromDateStr: string, toDateStr: string, isHalfDay: number) => {
+  if (isHalfDay === 1) return "Half Day";
+  if (!fromDateStr || !toDateStr) return "-";
 
+  // Parse API strings into Date objects
+  const date1 = new Date(fromDateStr);
+  const date2 = new Date(toDateStr);
+
+  // Set time to midnight to avoid Daylight Saving Time (DST) shift bugs
+  date1.setHours(0, 0, 0, 0);
+  date2.setHours(0, 0, 0, 0);
+
+  const differenceInMs = date2.getTime() - date1.getTime();
+  const millisecondsInDay = 1000 * 60 * 60 * 24;
+
+  // Use Math.round() instead of floor() to be safe against minor hour shifts
+  // Add + 1 because leave is inclusive (e.g., May 1 to May 1 = 1 day)
+  const days = Math.round(differenceInMs / millisecondsInDay) + 1;
+
+  return days > 0 ? days : 0; 
+};
   // ── Columns ───────────────────────────────────────────────────────────────
 
   const columns: Column<any>[] = [
@@ -226,6 +247,12 @@ const handleStatusUpdate = async (
       align:  "left",
       render: (e) => (e.half_day === 1 ? "Half Day" : e.to_date || "—"),
     },
+    {
+    key: "no_of_days",
+    header: "No of Days",
+    align: "left",
+    render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
+  },
     {
       key:    "description",
       header: "Reason",
@@ -257,7 +284,7 @@ const handleStatusUpdate = async (
       render: (row) => {
         const leaveId = row.name || row.id;
         const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(row.status);
-        const isApproved = row.status === "Approved" || row.docstatus === 1;
+        const isApproved = row.status === "Approved";
 
         // Dynamically build the menu actions
         const customMenuActions = [];
@@ -338,7 +365,7 @@ const handleStatusUpdate = async (
                 />
                 <select
             value={filters.status}
-            disabled={!showHistory} 
+            // disabled={!showHistory} 
             onChange={(e) => {
               setFilters((prev) => ({ ...prev, status: e.target.value }));
               setPage(1);
@@ -351,7 +378,7 @@ const handleStatusUpdate = async (
             <option value="Rejected">Rejected</option>
             <option value="Cancelled">Cancelled</option>
           </select>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                {/* <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={showHistory}
@@ -359,10 +386,11 @@ const handleStatusUpdate = async (
                     className="cursor-pointer"
                   />
                   Show Leave History
-                </label>
+                </label> */}
               </>
             }
       loading={isLoading}
+      defaultVisibleCount={8}
       columns={columns}
       data={data}
       showToolbar

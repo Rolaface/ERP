@@ -241,6 +241,7 @@ export const API = {
     employeeCheckInOut: `${ERP_BASE}/api/resource/Employee Checkin`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
+    getGender:`${ERP_BASE}/api/resource/Gender`,
   },
 
   employeeDocumnet: {

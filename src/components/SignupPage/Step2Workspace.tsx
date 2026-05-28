@@ -3,6 +3,7 @@ import FormFieldPro from "../form/FormFieldV2";
 import ButtonPro from "../form/ButtonPro";
 import FloatingDropdown from "./FloatingDropdown";
 import { ChevronDown } from "lucide-react";
+import { getCurrencyList } from "../../api/lookupApi";
 
 export default function Step2Workspace({
   form,
@@ -20,6 +21,8 @@ export default function Step2Workspace({
   const [search, setSearch] = useState("");
   const [tzSearch, setTzSearch] = useState("");
   const [currencySearch, setCurrencySearch] = useState("");
+  const [apiCurrencies, setApiCurrencies] = useState<any[]>([]);
+const [loadingCurrencies, setLoadingCurrencies] = useState(false);
 
   const countryRef = useRef<any>(null);
   const tzRef = useRef<any>(null);
@@ -40,19 +43,25 @@ export default function Step2Workspace({
     t.toLowerCase().includes(tzSearch.toLowerCase())
   );
 
-  const fullCurrencyList = [
-    "USD", "EUR", "GBP", "INR", "JPY", "CNY", "AUD", "CAD", "CHF", "SGD",
-    "AED", "NZD", "ZAR", "SEK", "NOK", "DKK", "HKD", "KRW", "THB",
-    "MYR", "IDR", "PHP", "BRL", "MXN", "ZMW"
-  ];
-
-  const currencies =
-    currencyOptions?.length > 1 ? currencyOptions : fullCurrencyList;
-
-  const filteredCurrencies = currencies.filter((c: string) =>
-    c.toLowerCase().includes(currencySearch.toLowerCase())
-  );
-
+const fetchCurrencyOptions = async (q: string = "") => {
+    setLoadingCurrencies(true);
+    try {
+      const response = await getCurrencyList({ search: q, page: 1, page_size: 20 });
+      
+      const list = response || [];
+      
+      const formattedList = list.map((c: any) => ({
+        label: `${c.name}${c.symbol ? ` (${c.symbol})` : ""}`,
+        value: c.name,
+      }));
+      
+      setApiCurrencies(formattedList);
+    } catch (error) {
+      console.error("Failed to fetch currencies:", error);
+    } finally {
+      setLoadingCurrencies(false);
+    }
+  };
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
   const getMonthLabel = (month: number) => {
@@ -204,49 +213,64 @@ export default function Step2Workspace({
         />
 
         {/* CURRENCY */}
-        <div
-          ref={currencyRef}
-          className="w-full cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            toggle("currency");
-          }}
-        >
-          <FormFieldPro
-            label="Currency"
-            value={form.currency}
-            readOnly
-            rightElement={<ChevronDown className="icon-muted" />}
-          />
-        </div>
+{/* CURRENCY */}
+<div
+  ref={currencyRef}
+  className="w-full cursor-pointer"
+  onClick={(e) => {
+    e.stopPropagation();
+    toggle("currency");
+    
+    // Fetch immediately when the user opens the dropdown
+    if (openDropdown !== "currency") {
+      fetchCurrencyOptions(currencySearch);
+    }
+  }}
+>
+  <FormFieldPro
+    label="Currency"
+    value={form.currency}
+    readOnly
+    rightElement={<ChevronDown className="icon-muted" />}
+  />
+</div>
 
-        <FloatingDropdown
-          open={openDropdown === "currency"}
-          onClose={close}
-          referenceRef={currencyRef}
-        >
-          <input
-            autoFocus
-            className="dropdown-search"
-            placeholder="Search currency..."
-            value={currencySearch}
-            onChange={(e) => setCurrencySearch(e.target.value)}
-          />
+<FloatingDropdown
+  open={openDropdown === "currency"}
+  onClose={close}
+  referenceRef={currencyRef}
+>
+  <input
+    autoFocus
+    className="dropdown-search"
+    placeholder="Search currency..."
+    value={currencySearch}
+    onChange={(e) => {
+      const query = e.target.value;
+      setCurrencySearch(query);
+      // Fetch new options as the user types
+      fetchCurrencyOptions(query); 
+    }}
+  />
 
-          {filteredCurrencies.map((c: string) => (
-            <div
-              key={c}
-              onClick={(e) => {
-                e.stopPropagation();
-                update("currency", c);
-                close();
-              }}
-              className="dropdown-item"
-            >
-              {c}
-            </div>
-          ))}
-        </FloatingDropdown>
+  {loadingCurrencies ? (
+    <div className="dropdown-item text-gray-400">Loading...</div>
+  ) : (
+    apiCurrencies.map((c: any) => (
+      <div
+        key={c.value}
+        onClick={(e) => {
+          e.stopPropagation();
+          update("currency", c.value); // Updates form with the value (e.g. "AED")
+          close();
+        }}
+        className="dropdown-item"
+      >
+        {c.label} {/* Renders "AED (د.إ)" */}
+      </div>
+    ))
+  )}
+</FloatingDropdown>
 
       </div>
 
