@@ -1,14 +1,26 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Receipt, Upload, X, FileText,CreditCard} from "lucide-react";
+import { Upload, X, FileText, CreditCard } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import { getAllEmployees, getEmployeeById } from "../../api/employeeapi";
-import { createExpenseClaim, CreateExpenseClaimPayload, getExpenseCategories,updateExpenseClaim } from "../../api/expenseClaimApi";
+// import EmployeeAdvanceList from "../../views/ExpenseManagement/advanceList";
+import {
+  createExpenseClaim,
+  CreateExpenseClaimPayload,
+  getExpenseCategories,
+  updateExpenseClaim,
+  // getAdvancesByEmployee,
+  getExpenseClaimById,
+  // type MappedEmployeeAdvance,
+  attachDocumentToExpenseClaim,
+} from "../../api/expenseClaimApi";
 import { showApiError } from "../../utils/alert";
 import DatePickerInput from "../calendar/DatePickerInput";
+
+
 const getCurrencyFromStorage = (): string => {
   try {
     const raw = localStorage.getItem("company-info");
@@ -19,30 +31,62 @@ const getCurrencyFromStorage = (): string => {
     return "";
   }
 };
+
+// ─── types ───────────────────────────────────────────────────────────────────
 export interface ExpenseFormData {
   claim_title: string;
-  id?: string; 
+  id?: string;
   category: string;
   date_incurred: string;
   amount: number | "";
   employee: string;
-  employee_name?: string; 
-  expense_approver?: string; 
-  receipt: File | null;
+  employee_name?: string;
+  expense_approver?: string;
+  receipts: File[];
+  existingAttachments: {
+    name: string;
+    file_name: string;
+    file_url: string;
+    file_size: number;
+    file_type: string;
+    is_private: number;
+  }[];
   remarks: string;
 }
 
-const defaultForm: ExpenseFormData = {
+// export interface AdvanceFormData {
+//   advance_account: string;
+//   advance_amount: number | "";
+//   purpose: string;
+//   repayment_date: string;
+//   mode_of_payment: string;
+//   advance_remarks: string;
+// }
+
+// type ActiveTab = "expense" | "advance";
+type ActiveTab = "expense";
+
+const defaultExpenseForm: ExpenseFormData = {
   claim_title: "",
   category: "",
   date_incurred: new Date().toISOString().split("T")[0],
   amount: "",
   employee: "",
-  employee_name: "", 
+  employee_name: "",
   expense_approver: "",
-  receipt: null,
+   receipts: [],
+  existingAttachments: [],
   remarks: "",
 };
+
+// const defaultAdvanceForm: AdvanceFormData = {
+  // advance_account: "",
+  // advance_amount: "",
+  // purpose: "",
+  // repayment_date: new Date().toISOString().split("T")[0],
+  // mode_of_payment: "",
+  // advance_remarks: "",
+// };
 
 interface ExpenseModalProps {
   modalId: string;
@@ -51,6 +95,52 @@ interface ExpenseModalProps {
   onSubmit?: (data: ExpenseFormData) => void;
 }
 
+// ─── tab strip ───────────────────────────────────────────────────────────────
+interface TabStripProps {
+  active: ActiveTab;
+  onChange: (tab: ActiveTab) => void;
+}
+
+// const TabStrip: React.FC<TabStripProps> = ({ active, onChange }) => {
+//   const tabs: { key: ActiveTab; label: string }[] = [
+//     { key: "expense", label: "Expense" },
+//     { key: "advance", label: "Advance" },
+//   ];
+
+//   return (
+//     <div className="flex border-b border-[var(--border)]" style={{ marginBottom: 0 }}>
+//       {tabs.map((tab) => {
+//         const isActive = active === tab.key;
+//         return (
+//           <button
+//             key={tab.key}
+//             type="button"
+//             onClick={() => onChange(tab.key)}
+//             style={{
+//               padding: "10px 20px",
+//               fontSize: "13px",
+//               fontWeight: isActive ? 600 : 400,
+//               color: isActive ? "var(--color-primary, #4f46e5)" : "var(--color-muted)",
+//               borderBottom: isActive
+//                 ? "2px solid var(--color-primary, #4f46e5)"
+//                 : "2px solid transparent",
+//               background: "transparent",
+//               border: "none",
+//               cursor: "pointer",
+//               transition: "color 0.15s, border-color 0.15s",
+//               outline: "none",
+//               marginBottom: "-1px",
+//             }}
+//           >
+//             {tab.label}
+//           </button>
+//         );
+//       })}
+//     </div>
+//   );
+// };
+
+// ─── main modal ──────────────────────────────────────────────────────────────
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   modalId,
   isOpen,
@@ -60,35 +150,68 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const modals = useModalStore((state) => state.modals);
   const modal = useMemo(() => modals.find((m) => m.id === modalId), [modals, modalId]);
   const isEditMode = modal?.isEdit ?? false;
-const initialData = modal?.initialData as ExpenseFormData | undefined;
 
-
+  const [activeTab, setActiveTab] = useState<ActiveTab>("expense");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [form, setForm] = useState<ExpenseFormData>(defaultForm);
+  const [form, setForm] = useState<ExpenseFormData>(defaultExpenseForm);
+  // const [advanceForm, setAdvanceForm] = useState<AdvanceFormData>(defaultAdvanceForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  // const [advanceListLoading, setAdvanceListLoading] = useState(false);
   const [employeeDisplayName, setEmployeeDisplayName] = useState("");
-  
 
-useEffect(() => {
-  if (isOpen) {
-    const data = modal?.initialData as ExpenseFormData | undefined;
-    setForm(data ?? defaultForm);
-    setErrors({});
-    setSelectedEmployee(null);
-    setEmployeeDisplayName(data?.employee_name ?? data?.employee ?? "");
-  }
-}, [isOpen]);
+  // ── advance list state ────────────────────────────────────────────────────
+  // const [employeeAdvances, setEmployeeAdvances] = useState<MappedEmployeeAdvance[]>([]);
+  // const [advancesFetchLoading, setAdvancesFetchLoading] = useState(false);
+  // const [advancesFetchError, setAdvancesFetchError] = useState<string | undefined>();
+  // const [advanceAllocations, setAdvanceAllocations] = useState<Record<string, number>>({});
+
+
+  useEffect(() => {
+    if (isOpen) {
+      const data = modal?.initialData as ExpenseFormData | undefined;
+      setForm(data ?? defaultExpenseForm);
+      // setAdvanceForm(defaultAdvanceForm);
+      setErrors({});
+      setSelectedEmployee(null);
+      setEmployeeDisplayName(data?.employee_name ?? data?.employee ?? "");
+      setActiveTab("expense");
+      // setAdvanceAllocations({});
+      // setEmployeeAdvances([]);
+      // setAdvancesFetchError(undefined);
+    }
+  }, [isOpen]);
 
   const reset = () => {
-    setForm(defaultForm);
+    setForm(defaultExpenseForm);
+    // setAdvanceForm(defaultAdvanceForm);
     setErrors({});
     setSelectedEmployee(null);
-     setEmployeeDisplayName("");
+    setEmployeeDisplayName("");
+    setActiveTab("expense");
+    // setAdvanceAllocations({});
+    // setEmployeeAdvances([]);
+    // setAdvancesFetchError(undefined);
   };
 
+  // ── fetch advances for an employee ───────────────────────────────────────
+  // const fetchAdvancesForEmployee = useCallback(async (employeeId: string) => {
+  //   setAdvancesFetchLoading(true);
+  //   setAdvancesFetchError(undefined);
+  //   setEmployeeAdvances([]);
+  //   try {
+  //     const mapped = await getAdvancesByEmployee(employeeId);
+  //     setEmployeeAdvances(mapped);
+  //   } catch (err) {
+  //     setAdvancesFetchError("Failed to load advances for this employee.");
+  //   } finally {
+  //     setAdvancesFetchLoading(false);
+  //   }
+  // }, []);
+
+  // ── expense field handlers ────────────────────────────────────────────────
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const target = e.target as HTMLInputElement;
     const { name, value, type } = target;
@@ -99,31 +222,53 @@ useEffect(() => {
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleFile = (file: File | null) => {
-    if (!file) return;
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setErrors((prev) => ({ ...prev, receipt: "File exceeds 10 MB limit" }));
-      return;
+    const handleFile = (files: FileList | null) => {
+    if (!files) return;
+    const valid: File[] = [];
+    Array.from(files).forEach((file) => {
+      if (file.size > 10 * 1024 * 1024) {
+        setErrors((prev) => ({ ...prev, receipt: `"${file.name}" exceeds 10 MB limit` }));
+      } else {
+        valid.push(file);
+      }
+    });
+    if (valid.length) {
+      setForm((prev) => ({ ...prev, receipts: [...prev.receipts, ...valid] }));
+      setErrors((prev) => ({ ...prev, receipt: "" }));
     }
-    setForm((prev) => ({ ...prev, receipt: file }));
-    setErrors((prev) => ({ ...prev, receipt: "" }));
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
-    handleFile(e.dataTransfer.files?.[0] ?? null);
+     handleFile(e.dataTransfer.files);
   };
 
-  const removeReceipt = () => setForm((prev) => ({ ...prev, receipt: null }));
+  const removeNewReceipt = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      receipts: prev.receipts.filter((_, i) => i !== index),
+    }));
+  };
 
+  const removeExistingAttachment = (name: string) => {
+    setForm((prev) => ({
+      ...prev,
+      existingAttachments: prev.existingAttachments.filter((a) => a.name !== name),
+    }));
+  };
+
+  // const handleAdvanceAllocationChange = (id: string, newAllocated: number) => {
+  //   setAdvanceAllocations((prev) => ({ ...prev, [id]: newAllocated }));
+  // };
+
+  // ── fetch helpers ─────────────────────────────────────────────────────────
   const fetchCategories = useCallback(async (search: string) => {
     try {
       const res = await getExpenseCategories(search || undefined);
       const data: { name: string }[] = res?.data ?? [];
       return data.map((opt) => ({ value: opt.name, label: opt.name }));
-    } catch(err) {
+    } catch (err) {
       showApiError(err);
       return [];
     }
@@ -137,13 +282,14 @@ useEffect(() => {
         value: emp.name,
         label: emp.employee_name,
       }));
-    } catch(err) {
+    } catch (err) {
       showApiError(err);
       return [];
     }
   }, []);
 
-  const validate = () => {
+  // ── validation ────────────────────────────────────────────────────────────
+  const validateExpense = () => {
     const newErrors: Record<string, string> = {};
     if (!form.claim_title.trim()) newErrors.claim_title = "Title is required";
     if (!form.category) newErrors.category = "Category is required";
@@ -154,13 +300,25 @@ useEffect(() => {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = async () => {
-  if (!validate()) return;
+  // ── submit ────────────────────────────────────────────────────────────────
+  // const handleSubmit = async () => {
+  //   if (activeTab === "expense") {
+  //     await handleExpenseSubmit();
+  //   } else {
+  //     await handleAdvanceSubmit();
+  //   }
+  // };
+  const handleSubmit = async () => {
+  await handleExpenseSubmit();
+};
+
+ const handleExpenseSubmit = async () => {
+  if (!validateExpense()) return;
   setLoading(true);
   try {
     const payload: CreateExpenseClaimPayload = {
       employee: form.employee,
-      expense_approver: form.expense_approver?? "", 
+      expense_approver: form.expense_approver ?? "",
       posting_date: new Date().toISOString().split("T")[0],
       currency: getCurrencyFromStorage(),
       exchange_rate: 1,
@@ -171,17 +329,43 @@ const handleSubmit = async () => {
           description: form.claim_title,
           amount: Number(form.amount),
           sanctioned_amount: Number(form.amount),
-          
         },
       ],
       remark: form.remarks,
     };
 
+    let claimId: string;
+
     if (isEditMode) {
-  await updateExpenseClaim(form.id!, payload);
-} else {
-  await createExpenseClaim(payload);
-}
+      await updateExpenseClaim(form.id!, payload);
+      claimId = form.id!;
+    } else {
+    
+      const createRes = await createExpenseClaim(payload);
+    
+
+     
+      const rawId = createRes?.name ?? createRes?.data?.name;
+  
+
+      if (!rawId) throw new Error("Could not determine new expense claim ID");
+
+     
+      const fetched = await getExpenseClaimById(rawId);
+      
+      claimId = fetched?.name ?? rawId;
+    }
+
+    if (form.receipts.length > 0) {
+      await Promise.allSettled(
+        form.receipts.map((file) =>
+          attachDocumentToExpenseClaim(claimId, file).catch((err) =>
+            console.warn(`Failed to attach "${file.name}":`, err)
+          )
+        )
+      );
+    }
+
     if (modal?.context?.callback) {
       await modal.context.callback(payload);
     }
@@ -194,15 +378,38 @@ const handleSubmit = async () => {
     setLoading(false);
   }
 };
+  // const handleAdvanceSubmit = async () => {
+  //   setLoading(true);
+  //   try {
+  //     reset();
+  //     onClose();
+  //   } catch (err) {
+  //     showApiError(err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
+  // ── footer ────────────────────────────────────────────────────────────────
   const footer = (
     <>
       <Button variant="secondary" onClick={onClose}>
         Cancel
       </Button>
-     <Button variant="primary" onClick={handleSubmit} loading={loading}>
-  {isEditMode ? "Update" : "Submit"}
-</Button>
+      <Button
+        variant="primary"
+        onClick={handleSubmit}
+        // loading={loading || (activeTab === "advance" && advanceListLoading)}
+        // disabled={activeTab === "advance" && advanceListLoading}
+        loading={loading}
+      >
+        {/* {activeTab === "advance"
+          ? "Save Allocations"
+          : isEditMode
+          ? "Update"
+          : "Submit"} */}
+          {isEditMode ? "Update" : "Submit"}
+      </Button>
     </>
   );
 
@@ -221,164 +428,230 @@ const handleSubmit = async () => {
       height="auto"
     >
       <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col">
-        <div className="p-4 flex flex-col gap-4">
 
-          <ModalInput
-            label="Claim title"
-            name="claim_title"
-            value={form.claim_title}
-            onChange={handleChange}
-            error={errors.claim_title}
-            required
-            placeholder="For example: Client meeting lunch"
-          />
+        {/* ── tab strip ── */}
+        {/* <div className="px-4 pt-3">
+          <TabStrip active={activeTab} onChange={setActiveTab} />
+        </div> */}
 
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-6">
-              <SearchSelect2
-                label="Category"
-                required
-                value={form.category}
-                onChange={(val) => {
-                  setForm((prev) => ({ ...prev, category: val || "" }));
-                  if (errors.category) setErrors((prev) => ({ ...prev, category: "" }));
-                }}
-                fetchOptions={fetchCategories}
-                placeholder="Select a category"
-                error={errors.category}
-              />
-            </div>
-            <div className="col-span-6">
-  <div className="flex flex-col gap-1">
-    <DatePickerInput
-      label="Date incurred"
-      name="date_incurred"
-      value={form.date_incurred}
-      onChange={(name, value) => {
-        setForm((prev) => ({ ...prev, [name]: value }));
-        if (errors.date_incurred) setErrors((prev) => ({ ...prev, date_incurred: "" }));
-      }}
-    />
-    {errors.date_incurred && (
-      <span className="text-danger text-[10px]">{errors.date_incurred}</span>
-    )}
-  </div>
-</div>
-          </div>
+        {/* ── expense tab ──────────────────────────────────────────────────── */}
+        {/* {activeTab === "expense" && ( */}
+        
+          <div className="p-4 flex flex-col gap-4">
+            <ModalInput
+              label="Claim title"
+              name="claim_title"
+              value={form.claim_title}
+              onChange={handleChange}
+              error={errors.claim_title}
+              required
+              placeholder="For example: Client meeting lunch"
+            />
 
-          <div className="grid grid-cols-12 gap-4 items-start">
-            <div className="col-span-6">
-              <SearchSelect2
-                label="Employee"
-                required
-                value={employeeDisplayName}
-onChange={async (val, option) => {
-  setForm((prev) => ({ ...prev, employee: val || "", expense_approver: "" }));
-  setEmployeeDisplayName(option?.label || "");
-  if (errors.employee) setErrors((prev) => ({ ...prev, employee: "" }));
-  if (val) {
-    try {
-      const employee = await getEmployeeById(val);
-      setSelectedEmployee(employee);
-      setForm((prev) => ({
-        ...prev,
-        expense_approver: employee?.message?.data?.expense_approver ?? "",
-      }));
-    } catch (err) {
-      showApiError(err);
-      setSelectedEmployee(null);
-    }
-  } else {
-    setSelectedEmployee(null);
-  }
-}}
-                fetchOptions={fetchEmployees}
-                placeholder="Select the employee"
-                error={errors.employee}
-              />
-            </div>
-            <div className="col-span-6">
-              <ModalInput
-                label="Amount"
-                name="amount"
-                type="number"
-                value={form.amount}
-                onChange={handleChange}
-                error={errors.amount}
-                required
-                placeholder="0.00"
-                className="no-spinner"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-muted mb-1">
-              Upload Receipt
-            </label>
-            {form.receipt ? (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10">
-                <FileText size={16} className="text-primary shrink-0" />
-                <span className="text-sm text-main truncate flex-1">{form.receipt.name}</span>
-                <span className="text-xs text-muted shrink-0">
-                  {(form.receipt.size / 1024).toFixed(0)} KB
-                </span>
-                <button type="button" onClick={removeReceipt} className="text-muted hover:text-danger ml-1">
-                  <X size={14} />
-                </button>
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-6">
+                <SearchSelect2
+                  label="Category"
+                  required
+                  value={form.category}
+                  onChange={(val) => {
+                    setForm((prev) => ({ ...prev, category: val || "" }));
+                    if (errors.category) setErrors((prev) => ({ ...prev, category: "" }));
+                  }}
+                  fetchOptions={fetchCategories}
+                  placeholder="Select a category"
+                  error={errors.category}
+                />
               </div>
-            ) : (
+              <div className="col-span-6">
+                <div className="flex flex-col gap-1">
+                  <DatePickerInput
+                    label="Date incurred"
+                    name="date_incurred"
+                    value={form.date_incurred}
+                    onChange={(name, value) => {
+                      setForm((prev) => ({ ...prev, [name]: value }));
+                      if (errors.date_incurred)
+                        setErrors((prev) => ({ ...prev, date_incurred: "" }));
+                    }}
+                  />
+                  {errors.date_incurred && (
+                    <span className="text-danger text-[10px]">{errors.date_incurred}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-4 items-start">
+              <div className="col-span-6">
+                <SearchSelect2
+                  label="Employee"
+                  required
+                  value={employeeDisplayName}
+                  onChange={async (val, option) => {
+                    // 1. Update form fields
+                    setForm((prev) => ({
+                      ...prev,
+                      employee: val || "",
+                      expense_approver: "",
+                    }));
+                    setEmployeeDisplayName(option?.label || "");
+                    if (errors.employee)
+                      setErrors((prev) => ({ ...prev, employee: "" }));
+
+                    // 2. Clear previous advances
+                    // setEmployeeAdvances([]);
+                    // setAdvanceAllocations({});
+                    // setAdvancesFetchError(undefined);
+
+                    if (val) {
+                     
+                      try {
+                        // const [employee] = await Promise.all([
+                        //   getEmployeeById(val),
+                        //   fetchAdvancesForEmployee(val),   
+                        // ]);
+                        const employee = await getEmployeeById(val);
+                        setSelectedEmployee(employee);
+                        setForm((prev) => ({
+                          ...prev,
+                           expense_approver: employee?.message?.data?.expense_approver ?? "",
+                        }));
+                      } catch (err) {
+                        showApiError(err);
+                        setSelectedEmployee(null);
+                      }
+                    } else {
+                      setSelectedEmployee(null);
+                    }
+                  }}
+                  fetchOptions={fetchEmployees}
+                  placeholder="Select the employee"
+                  error={errors.employee}
+                />
+              </div>
+              <div className="col-span-6">
+                <ModalInput
+                  label="Amount"
+                  name="amount"
+                  type="number"
+                  value={form.amount}
+                  onChange={handleChange}
+                  error={errors.amount}
+                  required
+                  placeholder="0.00"
+                  className="no-spinner"
+                />
+              </div>
+            </div>
+
+            {/* receipt upload */}
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1">
+                Upload Receipt
+              </label>
+
+              {/* existing attachments (edit mode) */}
+              {form.existingAttachments.length > 0 && (
+                <div className="flex flex-col gap-2 mb-2">
+                  {form.existingAttachments.map((att) => (
+                    <div key={att.name} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10">
+                      <FileText size={16} className="text-primary shrink-0" />
+                      <span className="text-sm text-main truncate flex-1">{att.file_name}</span>
+                      <span className="text-xs text-muted shrink-0">{(att.file_size / 1024).toFixed(0)} KB</span>
+                      <a href={att.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline shrink-0">View</a>
+                      <button type="button" onClick={() => removeExistingAttachment(att.name)} className="text-muted hover:text-danger ml-1">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* new files queued */}
+              {form.receipts.length > 0 && (
+                <div className="flex flex-col gap-2 mb-2">
+                  {form.receipts.map((file, index) => (
+                    <div key={index} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10">
+                      <FileText size={16} className="text-primary shrink-0" />
+                      <span className="text-sm text-main truncate flex-1">{file.name}</span>
+                      <span className="text-xs text-muted shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
+                      <button type="button" onClick={() => removeNewReceipt(index)} className="text-muted hover:text-danger ml-1">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* drop zone always visible */}
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`
-                  flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed
+                className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed
                   py-6 cursor-pointer transition-colors
                   ${isDragOver
                     ? "border-primary bg-primary/5"
-                    : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"
-                  }
-                `}
+                    : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"}`}
               >
                 <Upload size={22} className="text-muted" />
                 <p className="text-sm text-muted">
-                  Drag and drop a file, or{" "}
+                  Drag and drop files, or{" "}
                   <span className="text-primary font-medium cursor-pointer">Browse</span>
                 </p>
-                <p className="text-xs text-muted">Max file size is 10MB</p>
+                <p className="text-xs text-muted">Max 10MB per file</p>
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files)}
+              />
+              {errors.receipt && (
+                <p className="text-xs text-danger mt-1">{errors.receipt}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1">
+                Remarks (optional)
+              </label>
+              <textarea
+                name="remarks"
+                value={form.remarks}
+                onChange={handleChange}
+                rows={3}
+                placeholder="Add any context for the approver"
+                className="w-full rounded-lg border border-[var(--border)] bg-transparent
+                  px-3 py-2 text-sm text-main placeholder:text-muted
+                  focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              />
+            </div>
+          </div>
+        {/* )} */}
+
+        {/* {activeTab === "advance" && (
+          <div className="p-4 overflow-y-auto" style={{ height: "420px" }}>
+            {!form.employee ? (
+              <div className="flex items-center justify-center h-full text-muted">
+                <span className="text-sm">Select an employee in the Expense tab to view advances.</span>
+              </div>
+            ) : (
+              <EmployeeAdvanceList
+                advances={employeeAdvances}
+                loading={advancesFetchLoading}
+                fetchError={advancesFetchError}
+                onRetry={() => fetchAdvancesForEmployee(form.employee)}
+                onAllocationChange={handleAdvanceAllocationChange}
+                onLoadingChange={setAdvanceListLoading}
+              />
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,application/pdf"
-              className="hidden"
-              onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-            />
-            {errors.receipt && <p className="text-xs text-danger mt-1">{errors.receipt}</p>}
           </div>
-
-          <div>
-            <label className="block text-xs font-medium text-muted mb-1">
-              Remarks (optional)
-            </label>
-            <textarea
-              name="remarks"
-              value={form.remarks}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Add any context for the approver"
-              className="
-                w-full rounded-lg border border-[var(--border)] bg-transparent
-                px-3 py-2 text-sm text-main placeholder:text-muted
-                focus:outline-none focus:ring-1 focus:ring-primary resize-none
-              "
-            />
-          </div>
-
-        </div>
+        )} */}
       </form>
     </MinimizableModal>
   );
