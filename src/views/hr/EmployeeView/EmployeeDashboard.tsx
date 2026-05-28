@@ -3,30 +3,44 @@ import {
   getEmployeeDashboardSummary,
   EmployeeDashboardData,
 } from "../../../api/dashboard/EmployeeDashboardApi";
+
 import { useAuth } from "../../../context/AuthContext";
 import QuickActions from "../../../components/dashboard/domains/hr/QuickActions";
+
+
+
 import {
   Clock,
   LogIn,
   LogOut,
   CalendarDays,
-  UserCircle2,
   Briefcase,
   CheckCircle2,
-  TrendingUp,
   Umbrella,
+  IndianRupee,
+  Wallet,
+  Receipt,
+  ArrowRight,
+  Sparkles,
+  Gift,
+  Trophy,
+  ChevronRight,
 } from "lucide-react";
-
 
 function formatTime(dt: string | null): string {
   if (!dt) return "—";
-  const d = new Date(dt.replace(" ", "T"));
-  return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-}
 
+  const d = new Date(dt.replace(" ", "T"));
+
+  return d.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function formatDate(d: string | null): string {
   if (!d) return "—";
+
   return new Date(d).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "long",
@@ -34,23 +48,28 @@ function formatDate(d: string | null): string {
   });
 }
 
-
-function workingMinutes(inTime: string | null, outTime: string | null): number {
+function workingMinutes(
+  inTime: string | null,
+  outTime: string | null
+): number {
   if (!inTime || !outTime) return 0;
+
   const diff =
     new Date(outTime.replace(" ", "T")).getTime() -
     new Date(inTime.replace(" ", "T")).getTime();
+
   return Math.max(0, Math.floor(diff / 60000));
 }
 
 function formatDuration(mins: number): string {
   if (mins === 0) return "—";
+
   const h = Math.floor(mins / 60);
   const m = mins % 60;
+
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-/** Initials from full name */
 function initials(name?: string | null): string {
   if (!name || typeof name !== "string") return "?";
 
@@ -63,29 +82,112 @@ function initials(name?: string | null): string {
     .join("");
 }
 
-// ── SKELETON ──────────────────────────────────────────────────────────────────
-const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
+function getGreeting(): string {
+  const hour = new Date().getHours();
+
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+
+  return "Good Evening";
+}
+
+
+
+// ── MOCK DATA (UI ONLY) ─────────────────────────────────────────────
+
+const appraisalSteps = [
+  {
+    label: "Self Review",
+    date: "12 Jun",
+    status: "completed",
+  },
+  {
+    label: "Manager Review",
+    date: "18 Jun",
+    status: "active",
+  },
+  {
+    label: "HR Review",
+    date: "24 Jun",
+    status: "pending",
+  },
+  {
+    label: "Final Rating",
+    date: "30 Jun",
+    status: "pending",
+  },
+];
+
+const upcomingHolidays = [
+  {
+    name: "Independence Day",
+    date: "15 Aug",
+    day: "Friday",
+    countdown: "In 8 days",
+  },
+  {
+    name: "Raksha Bandhan",
+    date: "19 Aug",
+    day: "Tuesday",
+    countdown: "In 12 days",
+  },
+  {
+    name: "Janmashtami",
+    date: "26 Aug",
+    day: "Tuesday",
+    countdown: "In 19 days",
+  },
+];
+
+const upcomingBirthdays = [
+  {
+    name: "Ankit Kumar",
+    when: "Tomorrow",
+  },
+  {
+    name: "Riya Sharma",
+    when: "In 3 days",
+  },
+  {
+    name: "Neha Verma",
+    when: "In 6 days",
+  },
+];
+
+// ── SKELETON ────────────────────────────────────────────────────────
+
+const Skeleton: React.FC<{ className?: string }> = ({
+
+  className = "",
+}) => (
   <div
     className={`animate-pulse rounded-lg bg-[var(--muted)]/40 ${className}`}
   />
 );
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
+// ── MAIN COMPONENT ─────────────────────────────────────────────────
+
 const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
+
   const [loading, setLoading] = useState(true);
+
   const [dashboardData, setDashboardData] =
     useState<EmployeeDashboardData | null>(null);
 
   useEffect(() => {
     const employeeId = user?.employeeId;
+
     if (!employeeId) return;
 
     let mounted = true;
+
     const fetchDashboard = async () => {
       setLoading(true);
+
       try {
         const data = await getEmployeeDashboardSummary(employeeId);
+
         if (mounted) setDashboardData(data);
       } catch (e) {
         console.error("Error fetching employee dashboard:", e);
@@ -93,7 +195,9 @@ const EmployeeDashboard: React.FC = () => {
         if (mounted) setLoading(false);
       }
     };
+
     fetchDashboard();
+
     return () => {
       mounted = false;
     };
@@ -103,113 +207,149 @@ const EmployeeDashboard: React.FC = () => {
   const leave = dashboardData?.leaveBalance ?? null;
   const checkins = dashboardData?.checkins ?? null;
 
-  const mins = workingMinutes(checkins?.inTime ?? null, checkins?.outTime ?? null);
+  const mins = workingMinutes(
+    checkins?.inTime ?? null,
+    checkins?.outTime ?? null
+  );
+
   const leavePercent =
     leave && leave.totalAllocated > 0
-      ? Math.round((leave.totalRemaining / leave.totalAllocated) * 100)
+      ? Math.round(
+        (leave.totalRemaining / leave.totalAllocated) * 100
+      )
       : 0;
 
   return (
     <div className="h-full overflow-y-auto bg-[var(--background)]">
-      <div className="mx-auto max-w-7xl px-5 py-5 space-y-5">
+      <div className="mx-auto max-w-7xl space-y-5 px-5 py-5">
 
-        {/* ── HERO BANNER ─────────────────────────────────────────── */}
+        {/* ── HERO BANNER ───────────────────────────────────── */}
         <div
           className="
-            relative overflow-hidden rounded-2xl
+            relative overflow-hidden rounded-3xl
             bg-[var(--primary)] text-white
             px-6 py-5
           "
         >
-          {/* decorative circles */}
-          <span className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5" />
-          <span className="pointer-events-none absolute -bottom-10 right-20 h-32 w-32 rounded-full bg-white/5" />
+          <span className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/5" />
+          <span className="pointer-events-none absolute bottom-0 right-24 h-32 w-32 rounded-full bg-white/5" />
 
-          <div className="relative flex items-center gap-4">
-            {/* Avatar */}
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+
+            <div className="flex items-center gap-4">
+
+              {/* Avatar */}
+              <div
+                className="
+                  flex h-16 w-16 shrink-0 items-center justify-center
+                  rounded-2xl bg-white/15
+                  text-xl font-bold tracking-tight
+                "
+              >
+                {loading ? (
+                  <Skeleton className="h-16 w-16 rounded-2xl" />
+                ) : (
+                  initials(emp?.employeeName ?? "?")
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="min-w-0">
+                {loading ? (
+                  <>
+                    <Skeleton className="mb-2 h-5 w-40" />
+                    <Skeleton className="h-4 w-60" />
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <h2 className="truncate text-2xl font-semibold">
+                        {getGreeting()},{" "}
+                        {emp?.employeeName?.split(" ")[0] ?? "Employee"} 👋
+                      </h2>
+                    </div>
+
+                    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/75">
+                      <span className="flex items-center gap-1">
+                        <Briefcase size={13} />
+                        {emp?.designation || "Software Engineer"}
+                      </span>
+
+                      <span className="flex items-center gap-1">
+                        <Sparkles size={13} />
+                        {emp?.employeeId ?? "—"}
+                      </span>
+
+                      <span className="flex items-center gap-1">
+                        <CalendarDays size={13} />
+                        Joined{" "}
+                        {formatDate(
+                          emp?.dateOfJoining ?? null
+                        )}
+                      </span>
+                    </div>
+
+                    <div
+                      className="
+                        mt-3 inline-flex items-center gap-2
+                        rounded-full border border-white/10
+                        bg-white/10 px-3 py-1
+                        text-xs font-medium text-white/90
+                      "
+                    >
+                      <CheckCircle2 size={12} />
+                      Attendance streak: 12 days
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Today */}
             <div
               className="
-                flex h-14 w-14 shrink-0 items-center justify-center
-                rounded-2xl bg-white/15 text-xl font-bold tracking-tight
+                flex flex-col rounded-2xl
+                border border-white/10 bg-white/10
+                px-4 py-3 backdrop-blur-sm
               "
             >
-              {loading ? (
-                <Skeleton className="h-14 w-14 rounded-2xl" />
-              ) : (
-                initials(emp?.employeeName ?? "?")
-              )}
-            </div>
-
-            {/* Name + meta */}
-            <div className="flex-1 min-w-0">
-              {loading ? (
-                <>
-                  <Skeleton className="h-5 w-40 mb-2" />
-                  <Skeleton className="h-3.5 w-56" />
-                </>
-              ) : (
-                <>
-                  <h2 className="text-lg font-semibold leading-tight truncate">
-                    {emp?.employeeName ?? "—"}
-                  </h2>
-                  <p className="mt-0.5 text-sm text-white/70 flex flex-wrap gap-x-3 gap-y-0.5">
-                    <span className="flex items-center gap-1">
-                      <Briefcase size={12} />
-                      {emp?.employeeId ?? "—"}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <CalendarDays size={12} />
-                      Joined {formatDate(emp?.dateOfJoining ?? null)}
-                    </span>
-                  </p>
-                </>
-              )}
-            </div>
-
-            {/* Today's date badge */}
-            <div className="hidden sm:flex flex-col items-end shrink-0">
-              <span className="text-xs text-white/60 uppercase tracking-widest">
+              <span className="text-xs uppercase tracking-widest text-white/60">
                 Today
               </span>
-              <span className="text-sm font-medium text-white/90">
+
+              <span className="mt-1 text-sm font-semibold text-white">
                 {formatDate(checkins?.asofDate ?? null)}
+              </span>
+
+              <span className="mt-2 text-xs text-white/70">
+                Shift: 09:30 AM - 06:30 PM
               </span>
             </div>
           </div>
-
-          {/* Leave approver strip */}
-          {/* {!loading && emp?.leaveApproverName && (
-            <div className="relative mt-4 flex items-center gap-2 border-t border-white/10 pt-3 text-xs text-white/60">
-              <UserCircle2 size={13} />
-              Leave Approver —{" "}
-              <span className="text-white/85 font-medium">
-                {emp.leaveApproverName}
-              </span>
-            </div>
-          )} */}
         </div>
 
-        {/* ── MAIN GRID ───────────────────────────────────────────── */}
+        {/* ── MAIN GRID ─────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
 
-          {/* LEFT — attendance + leave stacked */}
+          {/* LEFT SIDE */}
           <div className="flex flex-col gap-5 xl:col-span-2">
 
             {/* ATTENDANCE CARD */}
             <div
               className="
-                rounded-2xl border border-[var(--border)]
-                bg-[var(--card)] p-5 space-y-4
+                rounded-3xl border border-[var(--border)]
+                bg-[var(--card)] p-4
               "
             >
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[var(--foreground)] tracking-tight">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-semibold tracking-tight text-[var(--foreground)]">
                   Today's Attendance
                 </h3>
+
                 {!loading && (
                   <span
                     className={`
-                      inline-flex items-center gap-1 rounded-full px-2.5 py-0.5
+                      inline-flex items-center gap-1 rounded-full px-3 py-1
                       text-xs font-medium
                       ${checkins?.inTime
                         ? "bg-emerald-500/10 text-emerald-600"
@@ -218,74 +358,133 @@ const EmployeeDashboard: React.FC = () => {
                     `}
                   >
                     <CheckCircle2 size={11} />
-                    {checkins?.inTime ? "Checked In" : "Not Checked In"}
+
+                    {checkins?.inTime
+                      ? "Checked In"
+                      : "Not Checked In"}
                   </span>
                 )}
               </div>
 
-              {/* Check-in / Check-out / Duration row */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {(
                   [
                     {
                       icon: LogIn,
                       label: "Check In",
-                      value: formatTime(checkins?.inTime ?? null),
+                      value: formatTime(
+                        checkins?.inTime ?? null
+                      ),
                       color: "text-emerald-600",
-                      bg: "bg-emerald-500/8 border-emerald-500/15",
+                      bg:
+                        "bg-emerald-500/5 border-emerald-500/10",
                     },
                     {
                       icon: LogOut,
                       label: "Check Out",
-                      value: formatTime(checkins?.outTime ?? null),
+                      value: formatTime(
+                        checkins?.outTime ?? null
+                      ),
                       color: "text-rose-500",
-                      bg: "bg-rose-500/8 border-rose-500/15",
+                      bg: "bg-rose-500/5 border-rose-500/10",
                     },
                     {
                       icon: Clock,
-                      label: "Duration",
+                      label: "Working Hours",
                       value: formatDuration(mins),
                       color: "text-[var(--primary)]",
-                      bg: "bg-[var(--primary)]/8 border-[var(--primary)]/15",
+                      bg:
+                        "bg-[var(--primary)]/5 border-[var(--primary)]/10",
                     },
                   ] as const
-                ).map(({ icon: Icon, label, value, color, bg }) => (
-                  <div
-                    key={label}
-                    className={`
-                      flex flex-col items-center justify-center gap-1.5
-                      rounded-xl border p-3 text-center ${bg}
-                    `}
-                  >
-                    {loading ? (
-                      <Skeleton className="h-12 w-full" />
-                    ) : (
-                      <>
-                        <Icon size={18} className={color} />
-                        <span className={`text-base font-bold ${color}`}>
-                          {value}
-                        </span>
-                        <span className="text-[11px] text-[var(--muted-foreground)]">
-                          {label}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                ))}
+                ).map(
+                  ({
+                    icon: Icon,
+                    label,
+                    value,
+                    color,
+                    bg,
+                  }) => (
+                    <div
+                      key={label}
+                      className={`
+                        rounded-2xl border p-4
+                        ${bg}
+                      `}
+                    >
+                      {loading ? (
+                        <Skeleton className="h-16 w-full" />
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <Icon size={18} className={color} />
+
+                          <div>
+                            <p
+                              className={`text-lg font-bold ${color}`}
+                            >
+                              {value}
+                            </p>
+
+                            <p className="text-xs text-[var(--muted-foreground)]">
+                              {label}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
+
+              {!loading && (
+                <div
+                  className="
+                    mt-4 flex items-center justify-between
+                    rounded-2xl border border-[var(--border)]
+                    bg-[var(--background)] px-4 py-3
+                  "
+                >
+                  <div>
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      Today's Progress
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-[var(--foreground)]">
+                      {Math.min(
+                        100,
+                        Math.round((mins / 540) * 100)
+                      )}
+                      % of shift completed
+                    </p>
+                  </div>
+
+                  <div className="w-32 overflow-hidden rounded-full bg-[var(--muted)]/30">
+                    <div
+                      className="h-2 rounded-full bg-[var(--primary)] transition-all duration-500"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.round((mins / 540) * 100)
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* LEAVE BALANCE CARD */}
+            {/* LEAVE BALANCE */}
             <div
               className="
-                rounded-2xl border border-[var(--border)]
-                bg-[var(--card)] p-5 space-y-4
+                rounded-3xl border border-[var(--border)]
+                bg-[var(--card)] p-4
               "
             >
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[var(--foreground)] tracking-tight">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-semibold tracking-tight text-[var(--foreground)]">
                   Leave Balance
                 </h3>
+
                 {!loading && leave && (
                   <span className="text-xs text-[var(--muted-foreground)]">
                     As of {formatDate(leave.asOfDate)}
@@ -301,14 +500,16 @@ const EmployeeDashboard: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* Summary row */}
+                  {/* Stats */}
                   <div className="grid grid-cols-3 gap-3">
                     {(
                       [
                         {
                           label: "Allocated",
-                          value: leave?.totalAllocated ?? 0,
-                          color: "text-[var(--primary)]",
+                          value:
+                            leave?.totalAllocated ?? 0,
+                          color:
+                            "text-[var(--primary)]",
                         },
                         {
                           label: "Used",
@@ -317,7 +518,8 @@ const EmployeeDashboard: React.FC = () => {
                         },
                         {
                           label: "Remaining",
-                          value: leave?.totalRemaining ?? 0,
+                          value:
+                            leave?.totalRemaining ?? 0,
                           color: "text-emerald-600",
                         },
                       ] as const
@@ -325,116 +527,550 @@ const EmployeeDashboard: React.FC = () => {
                       <div
                         key={label}
                         className="
-                          flex flex-col items-center justify-center gap-0.5
-                          rounded-xl border border-[var(--border)]
-                          bg-[var(--background)] p-3 text-center
+                          rounded-2xl border border-[var(--border)]
+                          bg-[var(--background)]
+                          p-3 text-center
                         "
                       >
-                        <span className={`text-2xl font-bold ${color}`}>
+                        <p
+                          className={`text-2xl font-bold ${color}`}
+                        >
                           {value}
-                        </span>
-                        <span className="text-[11px] text-[var(--muted-foreground)]">
+                        </p>
+
+                        <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
                           {label}
-                        </span>
+                        </p>
                       </div>
                     ))}
                   </div>
 
-                  {/* Progress bar */}
-                  {/* <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs text-[var(--muted-foreground)]">
-                      <span>Balance used</span>
-                      <span>{100 - leavePercent}%</span>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--muted)]/30">
-                      <div
-                        className="h-full rounded-full bg-[var(--primary)] transition-all duration-500"
-                        style={{ width: `${100 - leavePercent}%` }}
-                      />
-                    </div>
-                  </div> */}
+                  {/* Leave Types */}
+                  {leave &&
+                    leave.leaveTypes.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        {leave.leaveTypes.map((lt) => {
+                          const progress =
+                            lt.allocated > 0
+                              ? Math.min(
+                                100,
+                                Math.round(
+                                  (lt.used /
+                                    lt.allocated) *
+                                  100
+                                )
+                              )
+                              : 0;
 
-                  {/* Per-type breakdown */}
-                  {leave && leave.leaveTypes.length > 0 && (
-                    <div className="space-y-2">
-                      {leave.leaveTypes.map((lt) => (
-                        <div
-                          key={lt.leaveType}
-                          className="
-                            flex items-center justify-between
-                            rounded-xl border border-[var(--border)]
-                            bg-[var(--background)] px-4 py-2.5
-                          "
-                        >
-                          <div className="flex items-center gap-2">
-                            <Umbrella size={14} className="text-[var(--primary)]" />
-                            <span className="text-sm font-medium text-[var(--foreground)] capitalize">
-                              {lt.leaveType}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
-                            <span>Used <strong className="text-rose-500">{lt.used}</strong></span>
-                            <span className="text-[var(--border)]">|</span>
-                            <span>
-                              Left{" "}
-                              <strong className="text-emerald-600">{lt.remaining}</strong>
-                            </span>
-                            <span className="text-[var(--border)]">|</span>
-                            <span>of {lt.allocated}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                          return (
+                            <div
+                              key={lt.leaveType}
+                              className="
+                                rounded-2xl border border-[var(--border)]
+                                bg-[var(--background)]
+                                p-3
+                              "
+                            >
+                              <div className="mb-2 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Umbrella
+                                    size={14}
+                                    className="text-[var(--primary)]"
+                                  />
+
+                                  <span className="text-sm font-medium capitalize text-[var(--foreground)]">
+                                    {lt.leaveType}
+                                  </span>
+                                </div>
+
+                                <span className="text-xs text-[var(--muted-foreground)]">
+                                  {lt.used} / {lt.allocated}
+                                </span>
+                              </div>
+
+                              <div className="h-2 overflow-hidden rounded-full bg-[var(--muted)]/30">
+                                <div
+                                  className="h-full rounded-full bg-[var(--primary)] transition-all duration-500"
+                                  style={{
+                                    width: `${progress}%`,
+                                  }}
+                                />
+                              </div>
+
+                              <div className="mt-2 flex justify-end">
+                                <span className="text-xs font-medium text-emerald-600">
+                                  {lt.remaining} left
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                 </>
               )}
             </div>
+
+            {/* SALARY SUMMARY */}
+
+            <div
+              className="
+    relative overflow-hidden rounded-3xl
+    bg-[var(--primary)] text-white
+    p-4
+  "
+            >
+              {/* decorative circles */}
+              <span className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
+              <span className="pointer-events-none absolute bottom-0 right-20 h-28 w-28 rounded-full bg-white/5" />
+
+              <div className="relative">
+
+                {/* Header */}
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold tracking-tight text-white">
+                      Salary Summary
+                    </h3>
+
+                    <p className="mt-1 text-xs text-white/70">
+                      Latest payroll overview
+                    </p>
+                  </div>
+
+                  <div
+                    className="
+          flex h-10 w-10 items-center justify-center
+          rounded-2xl bg-white/10
+          text-white
+        "
+                  >
+                    <Wallet size={18} />
+                  </div>
+                </div>
+
+                {/* Salary Cards */}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+
+                  {[
+                    {
+                      icon: IndianRupee,
+                      label: "Net Salary",
+                      value: "₹82,500",
+                    },
+                    {
+                      icon: CalendarDays,
+                      label: "Last Credit",
+                      value: "28 May",
+                    },
+                    {
+                      icon: Receipt,
+                      label: "Payslips",
+                      value: "12 Available",
+                    },
+                  ].map(({ icon: Icon, label, value }) => (
+                    <div
+                      key={label}
+                      className="
+            rounded-2xl border border-white/10
+            bg-white/10 p-4
+            backdrop-blur-sm
+          "
+                    >
+                      <Icon
+                        size={18}
+                        className="text-white/90"
+                      />
+
+                      <p className="mt-3 text-lg font-bold text-white">
+                        {value}
+                      </p>
+
+                      <p className="mt-1 text-xs text-white/70">
+                        {label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA */}
+                <button
+                  onClick={() => navigate("hr/emp-financials")}
+                  className="
+        mt-4 inline-flex items-center gap-2
+        rounded-xl border border-white/10
+        bg-white/10
+        px-4 py-2
+        text-sm font-medium text-white
+        transition-all duration-200
+        hover:bg-white/15
+      "
+                >
+                  View Payslip
+                  <ArrowRight size={15} />
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* RIGHT — quick actions sidebar */}
+          {/* RIGHT SIDEBAR */}
           <div className="xl:col-span-1">
-            <div className="xl:sticky xl:top-4 space-y-5">
+            <div className="space-y-5 xl:sticky xl:top-4">
+
               <QuickActions />
 
-              {/* Approver info card */}
+              {/* REPORTING INFO */}
               {!loading && emp && (
                 <div
                   className="
-                    rounded-2xl border border-[var(--border)]
-                    bg-[var(--card)] p-4 space-y-3
+                    rounded-3xl border border-[var(--border)]
+                    bg-[var(--card)] p-4
                   "
                 >
-                  <h4 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
+                  <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
                     Reporting Info
                   </h4>
+
                   <div className="flex items-center gap-3">
                     <div
                       className="
-                        flex h-9 w-9 shrink-0 items-center justify-center
-                        rounded-xl bg-[var(--primary)]/10 text-xs font-bold
-                        text-[var(--primary)]
+                        flex h-11 w-11 shrink-0 items-center justify-center
+                        rounded-2xl bg-[var(--primary)]/10
+                        text-xs font-bold text-[var(--primary)]
                       "
                     >
                       {initials(emp.leaveApproverName)}
                     </div>
+
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-[var(--foreground)]">
                         {emp.leaveApproverName}
                       </p>
-                      <p className="truncate text-xs text-[var(--muted-foreground)]">
+
+                      <p className="text-xs text-[var(--muted-foreground)]">
                         Leave Approver
                       </p>
                     </div>
                   </div>
-                  {/* <div className="rounded-lg bg-[var(--background)] px-3 py-2 text-xs text-[var(--muted-foreground)] flex items-center gap-2">
-                    <TrendingUp size={12} />
-                    Joined {formatDate(emp.dateOfJoining)}
-                  </div> */}
                 </div>
               )}
+
+              {/* UPCOMING HOLIDAYS */}
+              <div
+                className="
+                  rounded-3xl border border-[var(--border)]
+                  bg-[var(--card)] p-4
+                "
+              >
+                <div className="mb-4 flex items-center gap-2">
+                  <Gift
+                    size={16}
+                    className="text-[var(--primary)]"
+                  />
+
+                  <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                    Upcoming Holidays
+                  </h3>
+                </div>
+
+                <div className="space-y-3">
+                  {upcomingHolidays.map((holiday) => (
+                    <div
+                      key={holiday.name}
+                      className="
+                        rounded-2xl border border-[var(--border)]
+                        bg-[var(--background)]
+                        p-3
+                      "
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-[var(--foreground)]">
+                            {holiday.name}
+                          </p>
+
+                          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                            {holiday.date} • {holiday.day}
+                          </p>
+                        </div>
+
+                        <span
+                          className="
+                            rounded-full bg-[var(--primary)]/10
+                            px-2 py-1 text-[10px]
+                            font-medium text-[var(--primary)]
+                          "
+                        >
+                          {holiday.countdown}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── APPRAISAL CYCLE ─────────────────────────────── */}
+        <div
+          className="
+            rounded-3xl border border-[var(--border)]
+            bg-[var(--card)] p-5
+          "
+        >
+          <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+
+            <div>
+              <div className="flex items-center gap-2">
+                <Trophy
+                  size={18}
+                  className="text-[var(--primary)]"
+                />
+
+                <h3 className="text-lg font-semibold text-[var(--foreground)]">
+                  Appraisal Cycle
+                </h3>
+              </div>
+
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                FY 2025-26 • Q2 Performance Review
+              </p>
+            </div>
+
+            <div
+              className="
+                inline-flex items-center gap-2
+                rounded-full bg-[var(--primary)]/10
+                px-3 py-1.5
+                text-xs font-medium text-[var(--primary)]
+              "
+            >
+              <Sparkles size={12} />
+              Manager Review In Progress
             </div>
           </div>
 
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+
+            {appraisalSteps.map((step, index) => {
+              const isCompleted =
+                step.status === "completed";
+
+              const isActive = step.status === "active";
+
+              return (
+                <div
+                  key={step.label}
+                  className="
+                    relative overflow-hidden
+                    rounded-2xl border
+                    p-4
+                  "
+                >
+                  <div
+                    className={`
+                      absolute inset-0 opacity-40
+                      ${isActive
+                        ? "bg-[var(--primary)]/5"
+                        : ""
+                      }
+                    `}
+                  />
+
+                  <div className="relative">
+                    <div className="flex items-center justify-between">
+
+                      <div
+                        className={`
+                          flex h-9 w-9 items-center justify-center
+                          rounded-full border text-sm font-bold
+                          ${isCompleted
+                            ? "border-emerald-500 bg-emerald-500 text-white"
+                            : isActive
+                              ? "border-[var(--primary)] bg-[var(--primary)] text-white"
+                              : "border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]"
+                          }
+                        `}
+                      >
+                        {isCompleted ? "✓" : index + 1}
+                      </div>
+
+                      {isActive && (
+                        <span
+                          className="
+                            rounded-full bg-[var(--primary)]/10
+                            px-2 py-1 text-[10px]
+                            font-medium text-[var(--primary)]
+                          "
+                        >
+                          ACTIVE
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-5">
+                      <p className="text-sm font-semibold text-[var(--foreground)]">
+                        {step.label}
+                      </p>
+
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                        Due on {step.date}
+                      </p>
+                    </div>
+
+                    {index !== appraisalSteps.length - 1 && (
+                      <div
+                        className="
+                          absolute right-[-28px] top-4 hidden
+                          xl:flex
+                        "
+                      >
+                        <ChevronRight
+                          size={20}
+                          className="text-[var(--border)]"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── BOTTOM GRID ─────────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+
+          {/* UPCOMING BIRTHDAYS */}
+          <div
+            className="
+              rounded-3xl border border-[var(--border)]
+              bg-[var(--card)] p-4
+            "
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <Gift
+                size={16}
+                className="text-pink-500"
+              />
+
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                Upcoming Birthdays
+              </h3>
+            </div>
+
+            <div className="space-y-3">
+              {upcomingBirthdays.map((person) => (
+                <div
+                  key={person.name}
+                  className="
+                    flex items-center justify-between
+                    rounded-2xl border border-[var(--border)]
+                    bg-[var(--background)] p-3
+                  "
+                >
+                  <div className="flex items-center gap-3">
+
+                    <div
+                      className="
+                        flex h-10 w-10 items-center justify-center
+                        rounded-2xl bg-pink-500/10
+                        text-xs font-bold text-pink-500
+                      "
+                    >
+                      {initials(person.name)}
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-[var(--foreground)]">
+                        {person.name}
+                      </p>
+
+                      <p className="text-xs text-[var(--muted-foreground)]">
+                        Birthday {person.when}
+                      </p>
+                    </div>
+                  </div>
+
+                  {person.when === "Tomorrow" && (
+                    <button
+                      className="
+                        rounded-xl bg-pink-500
+                        px-3 py-1.5
+                        text-xs font-medium text-white
+                        transition-all duration-200
+                        hover:bg-pink-600
+                      "
+                    >
+                      Wish
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* EVENTS / COMPANY UPDATES */}
+          <div
+            className="
+              rounded-3xl border border-[var(--border)]
+              bg-[var(--card)] p-4
+            "
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <Sparkles
+                size={16}
+                className="text-[var(--primary)]"
+              />
+
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                Upcoming Events
+              </h3>
+            </div>
+
+            <div className="space-y-3">
+
+              {[
+                {
+                  title: "Quarterly Townhall",
+                  subtitle: "07 Jun • 11:00 AM",
+                },
+                {
+                  title: "Team Offsite",
+                  subtitle: "14 Jun • Neemrana",
+                },
+                {
+                  title: "Learning Workshop",
+                  subtitle: "21 Jun • React Performance",
+                },
+              ].map((event) => (
+                <div
+                  key={event.title}
+                  className="
+                    flex items-center justify-between
+                    rounded-2xl border border-[var(--border)]
+                    bg-[var(--background)] p-3
+                  "
+                >
+                  <div>
+                    <p className="text-sm font-medium text-[var(--foreground)]">
+                      {event.title}
+                    </p>
+
+                    <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                      {event.subtitle}
+                    </p>
+                  </div>
+
+                  <ArrowRight
+                    size={15}
+                    className="text-[var(--muted-foreground)]"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
