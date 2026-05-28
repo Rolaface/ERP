@@ -152,7 +152,7 @@ export const PayrollDashboard: React.FC<Props> = ({
               ...(row.status === "Draft"
                 ? [
                     {
-                      label: "Verify Payroll",
+                      label: " preview Entry",
                       icon: <ShieldCheck className="w-4 h-4" />,
                       onClick: () => onVerify(row),
                     },
