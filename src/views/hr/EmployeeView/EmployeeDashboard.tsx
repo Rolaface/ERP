@@ -1,278 +1,438 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Calendar, Bell, Gift, Sun, TrendingUp,
-  Clock, CheckCircle, AlertCircle, Users,
-} from "lucide-react";
+  getEmployeeDashboardSummary,
+  EmployeeDashboardData,
+} from "../../../api/dashboard/EmployeeDashboardApi";
 import { useAuth } from "../../../context/AuthContext";
-import RoleSwitchButton from "../roleswitchbutton";
+import QuickActions from "../../../components/dashboard/domains/hr/QuickActions";
+import {
+  Clock,
+  LogIn,
+  LogOut,
+  CalendarDays,
+  UserCircle2,
+  Briefcase,
+  CheckCircle2,
+  TrendingUp,
+  Umbrella,
+} from "lucide-react";
 
-// ── Dummy data ────────────────────────────────────────────────────────────────
 
-const DUMMY_LEAVE_SUMMARY = [
-  { type: "Annual Leave",    total: 18, used: 5,  remaining: 13, color: "var(--primary)" },
-  { type: "Sick Leave",      total: 12, used: 2,  remaining: 10, color: "#22c55e" },
-  { type: "Casual Leave",    total: 6,  used: 1,  remaining: 5,  color: "#3b82f6" },
-  { type: "Emergency Leave", total: 3,  used: 0,  remaining: 3,  color: "#f59e0b" },
-];
+function formatTime(dt: string | null): string {
+  if (!dt) return "—";
+  const d = new Date(dt.replace(" ", "T"));
+  return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+}
 
-const DUMMY_ANNOUNCEMENTS = [
-  {
-    id: "1",
-    title: "Office Closed — Independence Day",
-    date: "14 Aug 2026",
-    type: "holiday",
-    priority: "high",
-  },
-  {
-    id: "2",
-    title: "Q3 Performance Reviews Start Next Week",
-    date: "10 May 2026",
-    type: "announcement",
-    priority: "medium",
-  },
-  {
-    id: "3",
-    title: "New Leave Policy Effective June 1",
-    date: "01 Jun 2026",
-    type: "policy",
-    priority: "medium",
-  },
-  {
-    id: "4",
-    title: "Team Building Event — Register by Friday",
-    date: "16 May 2026",
-    type: "event",
-    priority: "low",
-  },
-];
 
-const DUMMY_UPCOMING_HOLIDAYS = [
-  { name: "Independence Day", date: "15 Aug 2026", day: "Saturday" },
-  { name: "Gandhi Jayanti",   date: "02 Oct 2026", day: "Friday" },
-  { name: "Diwali",           date: "20 Oct 2026", day: "Tuesday" },
-  { name: "Christmas",        date: "25 Dec 2026", day: "Friday" },
-];
+function formatDate(d: string | null): string {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
 
-const DUMMY_EVENTS = [
-  { title: "Team Standup",         date: "Today, 10:00 AM",   type: "meeting" },
-  { title: "HR Policy Review",     date: "Tomorrow, 2:00 PM", type: "review" },
-  { title: "Salary Disbursement",  date: "30 May 2026",       type: "payroll" },
-  { title: "Team Building Event",  date: "16 May 2026",       type: "event" },
-];
 
-const DUMMY_QUICK_STATS = {
-  daysPresent:     18,
-  daysAbsent:      2,
-  pendingLeaves:   1,
-  pendingExpenses: 2,
-};
+function workingMinutes(inTime: string | null, outTime: string | null): number {
+  if (!inTime || !outTime) return 0;
+  const diff =
+    new Date(outTime.replace(" ", "T")).getTime() -
+    new Date(inTime.replace(" ", "T")).getTime();
+  return Math.max(0, Math.floor(diff / 60000));
+}
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatDuration(mins: number): string {
+  if (mins === 0) return "—";
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 
-const typeConfig: Record<string, { icon: React.ReactNode; bg: string; text: string }> = {
-  holiday:      { icon: <Sun size={13} />,         bg: "bg-amber-50",  text: "text-amber-700" },
-  announcement: { icon: <Bell size={13} />,         bg: "bg-blue-50",   text: "text-blue-700" },
-  policy:       { icon: <CheckCircle size={13} />,  bg: "bg-green-50",  text: "text-green-700" },
-  event:        { icon: <Calendar size={13} />,     bg: "bg-purple-50", text: "text-purple-700" },
-  meeting:      { icon: <Users size={13} />,        bg: "bg-blue-50",   text: "text-blue-700" },
-  review:       { icon: <TrendingUp size={13} />,   bg: "bg-orange-50", text: "text-orange-700" },
-  payroll:      { icon: <Gift size={13} />,         bg: "bg-green-50",  text: "text-green-700" },
-};
+/** Initials from full name */
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ── SKELETON ──────────────────────────────────────────────────────────────────
+const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div
+    className={`animate-pulse rounded-lg bg-[var(--muted)]/40 ${className}`}
+  />
+);
 
+// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] =
+    useState<EmployeeDashboardData | null>(null);
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  }, []);
+  useEffect(() => {
+    const employeeId = user?.employeeId;
+    if (!employeeId) return;
+
+    let mounted = true;
+    const fetchDashboard = async () => {
+      setLoading(true);
+      try {
+        const data = await getEmployeeDashboardSummary(employeeId);
+        if (mounted) setDashboardData(data);
+      } catch (e) {
+        console.error("Error fetching employee dashboard:", e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    fetchDashboard();
+    return () => {
+      mounted = false;
+    };
+  }, [user?.employeeId]);
+
+  const emp = dashboardData?.employeeDetails ?? null;
+  const leave = dashboardData?.leaveBalance ?? null;
+  const checkins = dashboardData?.checkins ?? null;
+
+  const mins = workingMinutes(checkins?.inTime ?? null, checkins?.outTime ?? null);
+  const leavePercent =
+    leave && leave.totalAllocated > 0
+      ? Math.round((leave.totalRemaining / leave.totalAllocated) * 100)
+      : 0;
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <div className="h-full overflow-y-auto bg-[var(--background)]">
+      <div className="mx-auto max-w-7xl px-5 py-5 space-y-5">
 
-        {/* ── Greeting ── */}
+        {/* ── HERO BANNER ─────────────────────────────────────────── */}
         <div
-          className="rounded-2xl p-6 text-white relative overflow-hidden"
-          style={{ background: "var(--gradient-primary, var(--primary))" }}
+          className="
+            relative overflow-hidden rounded-2xl
+            bg-[var(--primary)] text-white
+            px-6 py-5
+          "
         >
-          {/* <div className="absolute top-4 right-4 z-20">
-            <RoleSwitchButton />
-          </div> */}
+          {/* decorative circles */}
+          <span className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5" />
+          <span className="pointer-events-none absolute -bottom-10 right-20 h-32 w-32 rounded-full bg-white/5" />
 
-          <div className="relative z-10">
-            <p className="text-sm font-medium opacity-80 mb-1">{greeting}</p>
-            <h1 className="text-2xl font-bold">{user?.fullName ?? user?.username}</h1>
-            <p className="text-sm opacity-70 mt-1">
-              Employee ID: {user?.employeeId ?? "—"}
-            </p>
-          </div>
-
-          {/* Decorative circles */}
-          <div
-            className="absolute -right-8 -top-8 w-32 h-32 rounded-full opacity-20"
-            style={{ background: "rgba(255,255,255,0.3)" }}
-          />
-          <div
-            className="absolute -right-4 -bottom-8 w-24 h-24 rounded-full opacity-10"
-            style={{ background: "rgba(255,255,255,0.3)" }}
-          />
-        </div>
-
-        {/* ── Quick Stats ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label: "Days Present",      value: DUMMY_QUICK_STATS.daysPresent,     icon: <CheckCircle size={18} />, color: "text-green-600",  bg: "bg-green-50" },
-            { label: "Days Absent",        value: DUMMY_QUICK_STATS.daysAbsent,      icon: <AlertCircle size={18} />, color: "text-red-500",    bg: "bg-red-50" },
-            { label: "Pending Leaves",     value: DUMMY_QUICK_STATS.pendingLeaves,   icon: <Clock size={18} />,       color: "text-amber-600",  bg: "bg-amber-50" },
-            { label: "Pending Expenses",   value: DUMMY_QUICK_STATS.pendingExpenses, icon: <TrendingUp size={18} />,  color: "text-blue-600",   bg: "bg-blue-50" },
-          ].map((stat) => (
+          <div className="relative flex items-center gap-4">
+            {/* Avatar */}
             <div
-              key={stat.label}
-              className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-3"
+              className="
+                flex h-14 w-14 shrink-0 items-center justify-center
+                rounded-2xl bg-white/15 text-xl font-bold tracking-tight
+              "
             >
-              <div className={`${stat.bg} ${stat.color} p-2.5 rounded-lg shrink-0`}>
-                {stat.icon}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl font-bold text-[var(--text)]">{stat.value}</p>
-                <p className="text-xs text-[var(--muted)] leading-tight mt-0.5">{stat.label}</p>
-              </div>
+              {loading ? (
+                <Skeleton className="h-14 w-14 rounded-2xl" />
+              ) : (
+                initials(emp?.employeeName ?? "?")
+              )}
             </div>
-          ))}
-        </div>
 
-        {/* ── Main Grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* ── Leave Summary ── */}
-          <div className="lg:col-span-2 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5">
-            <h2 className="text-sm font-bold text-[var(--text)] uppercase tracking-widest mb-4">
-              Leave Balance
-            </h2>
-            <div className="space-y-3">
-              {DUMMY_LEAVE_SUMMARY.map((leave) => {
-                const pct = Math.round((leave.used / leave.total) * 100);
-                return (
-                  <div key={leave.type}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-medium text-[var(--text)]">
-                        {leave.type}
-                      </span>
-                      <span className="text-xs text-[var(--muted)]">
-                        {leave.remaining} / {leave.total} remaining
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-[var(--row-hover)] overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, background: leave.color }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Name + meta */}
+            <div className="flex-1 min-w-0">
+              {loading ? (
+                <>
+                  <Skeleton className="h-5 w-40 mb-2" />
+                  <Skeleton className="h-3.5 w-56" />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-lg font-semibold leading-tight truncate">
+                    {emp?.employeeName ?? "—"}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-white/70 flex flex-wrap gap-x-3 gap-y-0.5">
+                    <span className="flex items-center gap-1">
+                      <Briefcase size={12} />
+                      {emp?.employeeId ?? "—"}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <CalendarDays size={12} />
+                      Joined {formatDate(emp?.dateOfJoining ?? null)}
+                    </span>
+                  </p>
+                </>
+              )}
             </div>
-          </div>
 
-          {/* ── Upcoming Holidays ── */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5">
-            <h2 className="text-sm font-bold text-[var(--text)] uppercase tracking-widest mb-4">
-              Upcoming Holidays
-            </h2>
-            <div className="space-y-2.5">
-              {DUMMY_UPCOMING_HOLIDAYS.map((holiday) => (
-                <div
-                  key={holiday.name}
-                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-[var(--row-hover)] transition-colors"
-                >
-                  <div
-                    className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-white text-xs font-bold"
-                    style={{ background: "var(--primary)" }}
-                  >
-                    <Sun size={14} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-[var(--text)] truncate">
-                      {holiday.name}
-                    </p>
-                    <p className="text-xs text-[var(--muted)]">
-                      {holiday.date} · {holiday.day}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            {/* Today's date badge */}
+            <div className="hidden sm:flex flex-col items-end shrink-0">
+              <span className="text-xs text-white/60 uppercase tracking-widest">
+                Today
+              </span>
+              <span className="text-sm font-medium text-white/90">
+                {formatDate(checkins?.asofDate ?? null)}
+              </span>
             </div>
           </div>
+
+          {/* Leave approver strip */}
+          {/* {!loading && emp?.leaveApproverName && (
+            <div className="relative mt-4 flex items-center gap-2 border-t border-white/10 pt-3 text-xs text-white/60">
+              <UserCircle2 size={13} />
+              Leave Approver —{" "}
+              <span className="text-white/85 font-medium">
+                {emp.leaveApproverName}
+              </span>
+            </div>
+          )} */}
         </div>
 
-        {/* ── Announcements + Events ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ── MAIN GRID ───────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
 
-          {/* Announcements */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5">
-            <h2 className="text-sm font-bold text-[var(--text)] uppercase tracking-widest mb-4">
-              Announcements
-            </h2>
-            <div className="space-y-3">
-              {DUMMY_ANNOUNCEMENTS.map((a) => {
-                const cfg = typeConfig[a.type] ?? typeConfig["announcement"];
-                return (
-                  <div
-                    key={a.id}
-                    className="flex items-start gap-3 p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--row-hover)] transition-colors"
+          {/* LEFT — attendance + leave stacked */}
+          <div className="flex flex-col gap-5 xl:col-span-2">
+
+            {/* ATTENDANCE CARD */}
+            <div
+              className="
+                rounded-2xl border border-[var(--border)]
+                bg-[var(--card)] p-5 space-y-4
+              "
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[var(--foreground)] tracking-tight">
+                  Today's Attendance
+                </h3>
+                {!loading && (
+                  <span
+                    className={`
+                      inline-flex items-center gap-1 rounded-full px-2.5 py-0.5
+                      text-xs font-medium
+                      ${checkins?.inTime
+                        ? "bg-emerald-500/10 text-emerald-600"
+                        : "bg-amber-500/10 text-amber-600"
+                      }
+                    `}
                   >
-                    <div className={`${cfg.bg} ${cfg.text} p-2 rounded-lg shrink-0 mt-0.5`}>
-                      {cfg.icon}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[var(--text)] leading-snug">
-                        {a.title}
-                      </p>
-                      <p className="text-xs text-[var(--muted)] mt-1">{a.date}</p>
-                    </div>
-                    {a.priority === "high" && (
-                      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">
-                        URGENT
-                      </span>
+                    <CheckCircle2 size={11} />
+                    {checkins?.inTime ? "Checked In" : "Not Checked In"}
+                  </span>
+                )}
+              </div>
+
+              {/* Check-in / Check-out / Duration row */}
+              <div className="grid grid-cols-3 gap-3">
+                {(
+                  [
+                    {
+                      icon: LogIn,
+                      label: "Check In",
+                      value: formatTime(checkins?.inTime ?? null),
+                      color: "text-emerald-600",
+                      bg: "bg-emerald-500/8 border-emerald-500/15",
+                    },
+                    {
+                      icon: LogOut,
+                      label: "Check Out",
+                      value: formatTime(checkins?.outTime ?? null),
+                      color: "text-rose-500",
+                      bg: "bg-rose-500/8 border-rose-500/15",
+                    },
+                    {
+                      icon: Clock,
+                      label: "Duration",
+                      value: formatDuration(mins),
+                      color: "text-[var(--primary)]",
+                      bg: "bg-[var(--primary)]/8 border-[var(--primary)]/15",
+                    },
+                  ] as const
+                ).map(({ icon: Icon, label, value, color, bg }) => (
+                  <div
+                    key={label}
+                    className={`
+                      flex flex-col items-center justify-center gap-1.5
+                      rounded-xl border p-3 text-center ${bg}
+                    `}
+                  >
+                    {loading ? (
+                      <Skeleton className="h-12 w-full" />
+                    ) : (
+                      <>
+                        <Icon size={18} className={color} />
+                        <span className={`text-base font-bold ${color}`}>
+                          {value}
+                        </span>
+                        <span className="text-[11px] text-[var(--muted-foreground)]">
+                          {label}
+                        </span>
+                      </>
                     )}
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            </div>
+
+            {/* LEAVE BALANCE CARD */}
+            <div
+              className="
+                rounded-2xl border border-[var(--border)]
+                bg-[var(--card)] p-5 space-y-4
+              "
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-[var(--foreground)] tracking-tight">
+                  Leave Balance
+                </h3>
+                {!loading && leave && (
+                  <span className="text-xs text-[var(--muted-foreground)]">
+                    As of {formatDate(leave.asOfDate)}
+                  </span>
+                )}
+              </div>
+
+              {loading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-5 w-1/2" />
+                </div>
+              ) : (
+                <>
+                  {/* Summary row */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {(
+                      [
+                        {
+                          label: "Allocated",
+                          value: leave?.totalAllocated ?? 0,
+                          color: "text-[var(--primary)]",
+                        },
+                        {
+                          label: "Used",
+                          value: leave?.totalUsed ?? 0,
+                          color: "text-rose-500",
+                        },
+                        {
+                          label: "Remaining",
+                          value: leave?.totalRemaining ?? 0,
+                          color: "text-emerald-600",
+                        },
+                      ] as const
+                    ).map(({ label, value, color }) => (
+                      <div
+                        key={label}
+                        className="
+                          flex flex-col items-center justify-center gap-0.5
+                          rounded-xl border border-[var(--border)]
+                          bg-[var(--background)] p-3 text-center
+                        "
+                      >
+                        <span className={`text-2xl font-bold ${color}`}>
+                          {value}
+                        </span>
+                        <span className="text-[11px] text-[var(--muted-foreground)]">
+                          {label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Progress bar */}
+                  {/* <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-[var(--muted-foreground)]">
+                      <span>Balance used</span>
+                      <span>{100 - leavePercent}%</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--muted)]/30">
+                      <div
+                        className="h-full rounded-full bg-[var(--primary)] transition-all duration-500"
+                        style={{ width: `${100 - leavePercent}%` }}
+                      />
+                    </div>
+                  </div> */}
+
+                  {/* Per-type breakdown */}
+                  {leave && leave.leaveTypes.length > 0 && (
+                    <div className="space-y-2">
+                      {leave.leaveTypes.map((lt) => (
+                        <div
+                          key={lt.leaveType}
+                          className="
+                            flex items-center justify-between
+                            rounded-xl border border-[var(--border)]
+                            bg-[var(--background)] px-4 py-2.5
+                          "
+                        >
+                          <div className="flex items-center gap-2">
+                            <Umbrella size={14} className="text-[var(--primary)]" />
+                            <span className="text-sm font-medium text-[var(--foreground)] capitalize">
+                              {lt.leaveType}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
+                            <span>Used <strong className="text-rose-500">{lt.used}</strong></span>
+                            <span className="text-[var(--border)]">|</span>
+                            <span>
+                              Left{" "}
+                              <strong className="text-emerald-600">{lt.remaining}</strong>
+                            </span>
+                            <span className="text-[var(--border)]">|</span>
+                            <span>of {lt.allocated}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
-          {/* Upcoming Events */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5">
-            <h2 className="text-sm font-bold text-[var(--text)] uppercase tracking-widest mb-4">
-              Upcoming Events
-            </h2>
-            <div className="space-y-3">
-              {DUMMY_EVENTS.map((event, i) => {
-                const cfg = typeConfig[event.type] ?? typeConfig["event"];
-                return (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] hover:bg-[var(--row-hover)] transition-colors"
-                  >
-                    <div className={`${cfg.bg} ${cfg.text} p-2 rounded-lg shrink-0`}>
-                      {cfg.icon}
+          {/* RIGHT — quick actions sidebar */}
+          <div className="xl:col-span-1">
+            <div className="xl:sticky xl:top-4 space-y-5">
+              <QuickActions />
+
+              {/* Approver info card */}
+              {!loading && emp && (
+                <div
+                  className="
+                    rounded-2xl border border-[var(--border)]
+                    bg-[var(--card)] p-4 space-y-3
+                  "
+                >
+                  <h4 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
+                    Reporting Info
+                  </h4>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="
+                        flex h-9 w-9 shrink-0 items-center justify-center
+                        rounded-xl bg-[var(--primary)]/10 text-xs font-bold
+                        text-[var(--primary)]
+                      "
+                    >
+                      {initials(emp.leaveApproverName)}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[var(--text)]">{event.title}</p>
-                      <p className="text-xs text-[var(--muted)] mt-0.5">{event.date}</p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[var(--foreground)]">
+                        {emp.leaveApproverName}
+                      </p>
+                      <p className="truncate text-xs text-[var(--muted-foreground)]">
+                        Leave Approver
+                      </p>
                     </div>
                   </div>
-                );
-              })}
+                  {/* <div className="rounded-lg bg-[var(--background)] px-3 py-2 text-xs text-[var(--muted-foreground)] flex items-center gap-2">
+                    <TrendingUp size={12} />
+                    Joined {formatDate(emp.dateOfJoining)}
+                  </div> */}
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );
