@@ -338,18 +338,18 @@ const EmployeeDashboard: React.FC = () => {
                   </div>
 
                   {/* Progress bar */}
-                  <div className="space-y-1.5">
-                    {/* <div className="flex justify-between text-xs text-[var(--muted-foreground)]">
+                  {/* <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-[var(--muted-foreground)]">
                       <span>Balance used</span>
                       <span>{100 - leavePercent}%</span>
-                    </div> */}
+                    </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--muted)]/30">
                       <div
                         className="h-full rounded-full bg-[var(--primary)] transition-all duration-500"
                         style={{ width: `${100 - leavePercent}%` }}
                       />
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Per-type breakdown */}
                   {leave && leave.leaveTypes.length > 0 && (
