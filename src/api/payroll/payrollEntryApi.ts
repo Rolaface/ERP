@@ -476,7 +476,13 @@ export async function getSalarySlipPdf(
   const resp: AxiosResponse = await api.get(
     `${API.payroll.payrollentry.salaryslip_pdf}`,
     {
-      params: { name, doctype },
+      params: {
+        doctype,
+        name,
+        no_letterhead: 0,
+        _lang: "en",
+        pdf_generator: "chrome",
+      },
       responseType: "blob",
     },
   );
