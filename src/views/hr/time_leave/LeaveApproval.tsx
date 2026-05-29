@@ -90,7 +90,7 @@ export default function LeaveApproval() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
-  const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "" });
+  const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -115,15 +115,16 @@ export default function LeaveApproval() {
       }
     if (filters.status) {
         apiFilters.push(["status", "=", filters.status]);
-      } else if (showHistory) {
-        apiFilters.push([
-          "status",
-          "in",
-          ["Approved", "Rejected", "Open", "Cancelled"],
-        ]);
-      } else {
-        apiFilters.push(["status", "=", "Open"]);
-      }
+      } 
+      // else if (showHistory) {
+    //     apiFilters.push([
+    //       "status",
+    //       "in",
+    //       ["Approved", "Rejected", "Open", "Cancelled"],
+    //     ]);
+    //   } else {
+    //     apiFilters.push(["status", "=", "Open"]);
+    //   }
 
       if (filters.from_date) {
         apiFilters.push(["from_date", ">=", filters.from_date]);
@@ -328,7 +329,7 @@ if (canApproveReject && !isActionDone) {
             />
             <select
               value={filters.status}
-              disabled={!showHistory} 
+              // disabled={!showHistory} 
               onChange={(e) => {
                 setFilters((prev) => ({ ...prev, status: e.target.value }));
                 setPage(1);
@@ -341,7 +342,7 @@ if (canApproveReject && !isActionDone) {
               <option value="Rejected">Rejected</option>
               <option value="Cancelled">Cancelled</option>
             </select>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+            {/* <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
               <input
                 type="checkbox"
                 checked={showHistory}
@@ -349,7 +350,7 @@ if (canApproveReject && !isActionDone) {
                 className="cursor-pointer"
               />
               Show Leave History
-            </label>
+            </label> */}
           </>
         }
         defaultVisibleCount={8}

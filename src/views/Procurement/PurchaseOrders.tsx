@@ -608,7 +608,7 @@ const handleExportCSV = async () => {
             customActions={[
               { label: "View PDF", onClick: () => handlePreviewPDF(o) },
 
-              ...(o.status !== "Cancelled"
+              ...(["Approved", "Completed"].includes(o.status)
                 ? [{
                   label: "Compose Email",
                   onClick: async () => {

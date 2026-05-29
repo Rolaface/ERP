@@ -11,7 +11,11 @@ import WorkScheduleTab from "./WorkScheduletab";
 import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
 
-import { getAllDesignations, getEmployees } from "../../../api/utils/frappeUtilsApi";import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
+import {
+  getAllDesignations,
+  getEmployees,
+} from "../../../api/utils/frappeUtilsApi";
+import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
 import { EMPLOYEE_ROLE_CONFIG } from "../../../api/config/employeeRoleConfig";
 import { filterEmployeesByRole } from "../../../api/config/employeeRoleFilter";
 import { resolveLabel } from "../../../api/utils/labelResolver";
@@ -173,115 +177,110 @@ const AddEmployeeModal: React.FC<Props> = ({
     })();
   }, [isOpen]);
 
-useEffect(() => {
-  const loadReportingToLabel = async () => {
-    if (!formData.reports_to) {
-      return;
-    }
-
-    try {
-    const res = await getEmployees(
-  formData.reports_to,
-);
-
-      const matchedEmployee = (res || []).find(
-        (emp: any) =>
-          emp.value === formData.reports_to,
-      );
-
-      if (
-        matchedEmployee &&
-        matchedEmployee.label !==
-          formData.reportingToLabel
-      ) {
-        setFormData((prev: any) => ({
-          ...prev,
-          reportingToLabel:
-            matchedEmployee.label,
-        }));
+  useEffect(() => {
+    const loadReportingToLabel = async () => {
+      if (!formData.reports_to) {
+        return;
       }
-    } catch {
-      // silent
-    }
-  };
 
-  loadReportingToLabel();
-}, [formData.reports_to]);
-useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.department,
-      fetcher: getAllDepartments,
-    });
+      try {
+        const res = await getEmployees(formData.reports_to);
 
-    setFormData((prev: any) => ({
-      ...prev,
-      departmentLabel: label,
-    }));
-  };
+        const matchedEmployee = (res || []).find(
+          (emp: any) => emp.value === formData.reports_to,
+        );
 
-  loadLabel();
-}, [formData.department]);
-useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.leavePolicy,
-      fetcher: getAllLeavePolicies,
-    });
+        if (
+          matchedEmployee &&
+          matchedEmployee.label !== formData.reportingToLabel
+        ) {
+          setFormData((prev: any) => ({
+            ...prev,
+            reportingToLabel: matchedEmployee.label,
+          }));
+        }
+      } catch {
+        // silent
+      }
+    };
 
-    setFormData((prev: any) => ({
-      ...prev,
-      leavePolicyLabel: label,
-    }));
-  };
+    loadReportingToLabel();
+  }, [formData.reports_to]);
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({
+        value: formData.department,
+        fetcher: getAllDepartments,
+      });
 
-  loadLabel();
-}, [formData.leavePolicy]);
-useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.grade,
-      fetcher: getAllGrades,
-    });
+      setFormData((prev: any) => ({
+        ...prev,
+        departmentLabel: label,
+      }));
+    };
 
-    setFormData((prev: any) => ({
-      ...prev,
-      gradeLabel: label,
-    }));
-  };
+    loadLabel();
+  }, [formData.department]);
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({
+        value: formData.leavePolicy,
+        fetcher: getAllLeavePolicies,
+      });
 
-  loadLabel();
-}, [formData.grade]);
-useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.designation,
-      fetcher: getAllDesignations,
-    });
+      setFormData((prev: any) => ({
+        ...prev,
+        leavePolicyLabel: label,
+      }));
+    };
 
-    setFormData((prev: any) => ({
-      ...prev,
-      designationLabel: label,
-    }));
-  };
+    loadLabel();
+  }, [formData.leavePolicy]);
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({
+        value: formData.grade,
+        fetcher: getAllGrades,
+      });
 
-  loadLabel();
-}, [formData.designation]);
-useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.shift,
-      fetcher: getAllShiftTypes,
-    });
+      setFormData((prev: any) => ({
+        ...prev,
+        gradeLabel: label,
+      }));
+    };
 
-    setFormData((prev: any) => ({
-      ...prev,
-      shiftLabel: label,
-    }));
-  };
+    loadLabel();
+  }, [formData.grade]);
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({
+        value: formData.designation,
+        fetcher: getAllDesignations,
+      });
 
-  loadLabel();
-}, [formData.shift]);
+      setFormData((prev: any) => ({
+        ...prev,
+        designationLabel: label,
+      }));
+    };
+
+    loadLabel();
+  }, [formData.designation]);
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({
+        value: formData.shift,
+        fetcher: getAllShiftTypes,
+      });
+
+      setFormData((prev: any) => ({
+        ...prev,
+        shiftLabel: label,
+      }));
+    };
+
+    loadLabel();
+  }, [formData.shift]);
   // ── Helpers ─────────────────────────────────────────────────────────────
   const handleInputChange = (field: string, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -340,9 +339,11 @@ useEffect(() => {
   };
 
   const handleSave = async () => {
-    const payload = buildEmployeePayload(formData);
+   const payload = buildEmployeePayload(
+  formData,
+  mode === "edit" || !!editData,
+);
     const isEdit = mode === "edit" || !!editData;
-   
 
     // ── EDIT MODE: keep exact same simple flow as before ───────────────────────
     if (isEdit) {
@@ -358,6 +359,12 @@ useEffect(() => {
           editData?.name;
 
         if (!id) throw new Error("Cannot determine employee ID for update");
+        if (formData._salaryChanged && !formData.effectiveFrom) {
+          showValidationError(
+            "Effective date is required when salary details are changed.",
+          );
+          return;
+        }
 
         const res = await updateEmployeeById({ id: String(id), ...payload });
         const msg =
@@ -608,6 +615,7 @@ useEffect(() => {
               <CompensationTab
                 formData={formData}
                 handleInputChange={handleInputChange}
+                isEditMode={!!editData}
               />
             )}
             {activeTab === "Work Schedule" && (

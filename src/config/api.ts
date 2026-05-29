@@ -241,6 +241,7 @@ export const API = {
     employeeCheckInOut: `${ERP_BASE}/api/resource/Employee Checkin`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
+    getGender:`${ERP_BASE}/api/resource/Gender`,
   },
 
   employeeDocumnet: {
@@ -616,6 +617,10 @@ export const API = {
       salaryslip: `${ERP_BASE}/api/resource/Salary Slip`,
       salaryslip_pdf: `${ERP_BASE}/api/method/frappe.utils.print_format.download_pdf`,
       getpayrollpreview:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
+
+      SalarystructureAssignment: {
+        getAll: `${ERP_BASE}/api/resource/Salary Structure Assignment`,
+      },
     },
 
   },

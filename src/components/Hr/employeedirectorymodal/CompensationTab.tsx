@@ -26,14 +26,15 @@ import {
   type SalaryResult,
   type ComponentResult,
 } from "./salaryengine";
+import DatePickerInput from "../../calendar/DatePickerInput";
 
 export { buildCompensationPayload };
 
 type CompensationTabProps = {
   formData: any;
   handleInputChange: (field: string, value: any) => void;
+  isEditMode?: boolean;
 };
-
 const fmt = (n: number) => n.toLocaleString();
 const toNum = (v: any): number => {
   if (v === null || v === undefined) return 0;
@@ -120,6 +121,7 @@ const SummaryRow: React.FC<{
 export const CompensationTab: React.FC<CompensationTabProps> = ({
   formData,
   handleInputChange,
+  isEditMode = false,
 }) => {
   const [componentDefs, setComponentDefs] = useState<SalaryComponentDef[]>([]);
   const [isLoadingStructure, setIsLoadingStructure] = useState(false);
@@ -127,6 +129,18 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const [salaryResult, setSalaryResult] = useState<SalaryResult | null>(null);
   const [taxConfig, setTaxConfig] = useState<TaxConfig | null>(null);
   const { baseCurrency, currencySymbol } = useCompanyStore();
+
+  // ── FIX: stable ref for handleInputChange so effects don't re-fire when
+  //   the parent re-renders and produces a new function reference.
+  const handleInputChangeRef = useRef(handleInputChange);
+  useEffect(() => {
+    handleInputChangeRef.current = handleInputChange;
+  });
+  // Convenience wrapper — always calls the latest version, never triggers deps.
+  const stableHandleInputChange = useCallback(
+    (field: string, value: any) => handleInputChangeRef.current(field, value),
+    [], // no deps — intentionally stable forever
+  );
 
   // Track which field user is typing in — prevents recalc stomping active input
   const activeField = useRef<"base" | "gross" | null>(null);
@@ -137,6 +151,11 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const [grossInput, setGrossInput] = useState<number | null>(
     toNum(formData.grossSalary) || null,
   );
+  const initialSalaryRef = useRef({
+    base: toNum(formData.basicSalary),
+    gross: toNum(formData.grossSalary),
+    structure: formData.salaryStructure || "",
+  });
 
   // Derived values shown in the non-active field
   const [computedGross, setComputedGross] = useState<number | null>(null);
@@ -147,13 +166,23 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const hasComponents = componentDefs.length > 0;
   const cur = (n: number) => `${currencyPrefix} ${fmt(n)}`.trim();
 
+  // ── Seed currency once on mount ───────────────────────────────────────────
   useEffect(() => {
     if (!formData.currency && baseCurrency) {
-      handleInputChange("currency", baseCurrency);
+      stableHandleInputChange("currency", baseCurrency);
     }
-  }, [formData.currency, baseCurrency, handleInputChange]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load structure on mount if editing existing record
+  // ── Seed effectiveFrom from dateOfJoining once on mount (add mode only) ──
+  // FIX: run only once. Previously had formData.effectiveFrom + handleInputChange
+  // in deps — caused re-fires every time the parent re-rendered.
+  useEffect(() => {
+    if (!isEditMode && formData.dateOfJoining && !formData.effectiveFrom) {
+      stableHandleInputChange("effectiveFrom", formData.dateOfJoining);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Load structure + tax on mount when editing existing record ────────────
   useEffect(() => {
     if (formData.salaryStructure && !componentDefs.length) {
       loadStructure(formData.salaryStructure);
@@ -172,9 +201,9 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     const result = calculateSalary(base, componentDefs, {}, taxConfig);
     setSalaryResult(result);
     setComputedGross(result.gross);
-    handleInputChange("basicSalary", String(base));
-    handleInputChange("grossSalary", String(result.gross));
-    handleInputChange("_salaryResult", result);
+    stableHandleInputChange("basicSalary", String(base));
+    stableHandleInputChange("grossSalary", String(result.gross));
+    stableHandleInputChange("_salaryResult", result);
   }, [baseInput, componentDefs, taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Recalc when GROSS changes ─────────────────────────────────────────────
@@ -187,9 +216,9 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     const result = calculateSalary(base, componentDefs, {}, taxConfig);
     setSalaryResult(result);
     setComputedBase(base);
-    handleInputChange("basicSalary", String(base));
-    handleInputChange("grossSalary", String(gross));
-    handleInputChange("_salaryResult", result);
+    stableHandleInputChange("basicSalary", String(base));
+    stableHandleInputChange("grossSalary", String(gross));
+    stableHandleInputChange("_salaryResult", result);
   }, [grossInput, componentDefs, taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── When structure first loads, seed from existing base ──────────────────
@@ -200,21 +229,35 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     const result = calculateSalary(base, componentDefs, {}, taxConfig);
     setSalaryResult(result);
     setComputedGross(result.gross);
+    setGrossInput(result.gross);
     setComputedBase(null);
   }, [componentDefs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Re-run calc when tax config changes (tax slab selected/changed) ───────
+  // ── Re-run calc when tax config changes ──────────────────────────────────
   useEffect(() => {
     if (!componentDefs.length || taxConfig === undefined) return;
-    // Re-run from whichever input was last active
     const base = toNum(baseInput);
     if (!base) return;
     const result = calculateSalary(base, componentDefs, {}, taxConfig);
     setSalaryResult(result);
     setComputedGross(result.gross);
-    handleInputChange("_salaryResult", result);
-    handleInputChange("grossSalary", String(result.gross));
+    stableHandleInputChange("_salaryResult", result);
+    stableHandleInputChange("grossSalary", String(result.gross));
   }, [taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Propagate salaryChanged flag ──────────────────────────────────────────
+  // FIX: previously had handleInputChange in deps — fired on every parent render.
+  const salaryChanged =
+    isEditMode &&
+    (toNum(baseInput) !== initialSalaryRef.current.base ||
+      toNum(grossInput) !== initialSalaryRef.current.gross ||
+      formData.salaryStructure !== initialSalaryRef.current.structure);
+
+  useEffect(() => {
+    stableHandleInputChange("_salaryChanged", salaryChanged);
+  }, [salaryChanged]); // stableHandleInputChange is stable, salaryChanged is the only real dep
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   const loadTaxConfig = async (name: string) => {
     setIsLoadingTax(true);
@@ -263,24 +306,23 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     (val: any) => {
       const value = typeof val === "string" ? val : val?.value;
       if (!value) return;
-      handleInputChange("salaryStructure", value);
+      stableHandleInputChange("salaryStructure", value);
       loadStructure(value);
     },
-    [handleInputChange], // eslint-disable-line react-hooks/exhaustive-deps
+    [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const handleTaxSlabChange = useCallback(
     (val: any) => {
       const value = typeof val === "string" ? val : val?.value || "";
-      handleInputChange("Taxslab", value);
+      stableHandleInputChange("Taxslab", value);
       if (value) {
         loadTaxConfig(value);
       } else {
-        // Tax slab cleared — remove tax from calculation
         setTaxConfig(null);
       }
     },
-    [handleInputChange],
+    [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const fetchCurrencyOptions = async (q: string) => {
@@ -345,15 +387,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
                 </div>
               )}
             </div>
-          
-            {/* {taxConfig && !isLoadingTax && (
-              <p className="text-[10px] text-primary/70 leading-tight mt-0.5">
-                {taxConfig.slabs?.length ?? 0} slabs
-                {taxConfig.standard_tax_exemption_amount
-                  ? ` · ₹${taxConfig.standard_tax_exemption_amount.toLocaleString()} exemption`
-                  : ""}
-              </p>
-            )} */}
           </Field>
 
           <Field label="Currency">
@@ -363,7 +396,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               placeholder="Search currency…"
               fetchOptions={fetchCurrencyOptions}
               onChange={(val: any) =>
-                handleInputChange(
+                stableHandleInputChange(
                   "currency",
                   typeof val === "string" ? val : val?.value,
                 )
@@ -377,7 +410,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               name="paymentMethod"
               value={formData.paymentMethod || ""}
               onChange={(e) =>
-                handleInputChange("paymentMethod", e.target.value)
+                stableHandleInputChange("paymentMethod", e.target.value)
               }
               options={[
                 { label: "Bank", value: "Bank" },
@@ -395,12 +428,18 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
             Monthly salary
           </span>
-         
-           
-        
         </div>
 
-        <div className="grid grid-cols-2 gap-3 items-start">
+        <div className="grid grid-cols-3 gap-3 items-start">
+          <Field label="Effective from">
+            <DatePickerInput
+              name="effectiveFrom"
+              value={formData.effectiveFrom || ""}
+              required={salaryChanged}
+              disabled={!isEditMode}
+              onChange={(name, value) => stableHandleInputChange(name, value)}
+            />
+          </Field>
           <Field label="Base salary / month">
             <div
               onFocus={() => { activeField.current = "base"; }}
@@ -440,7 +479,9 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           <div className="flex items-center gap-2 mt-2">
             <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <span className="text-xs text-muted">
-              {isLoadingStructure ? "Loading components…" : "Loading tax config…"}
+              {isLoadingStructure
+                ? "Loading components…"
+                : "Loading tax config…"}
             </span>
           </div>
         )}
@@ -455,11 +496,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
                 Components
               </span>
-              {currency && (
-                <span className="text-[10px] text-muted/60 font-mono">
-                  {currency}
-                </span>
-              )}
             </div>
 
             <table className="w-full border-collapse">
@@ -526,7 +562,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
                 value={cur(salaryResult.gross * 12)}
                 variant="dimmed"
               />
-              {/* Tax breakdown when slab is applied */}
               {taxConfig && salaryResult.monthlyTax > 0 && (
                 <SummaryRow
                   label="Income tax (monthly)"

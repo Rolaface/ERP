@@ -33,6 +33,7 @@ import {
 } from "../../store/dataRefreshStore";
 import type { LeaveApplication } from "../../api/leaveApplicationApi";
 import type { LeaveType } from "../../api/leaveConfigApi";
+import { PayrollVerificationData } from "../../api/payroll/payrollEntryApi";
 
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
@@ -211,6 +212,9 @@ const NewCycleModal = lazy(
 
 const AppraisalModal = lazy(() => import("../../components/Hr/performance/AppraisalFormModal"));
 const FeedbackModal = lazy(() => import("../../components/Hr/performance/FeedbackModal"));
+const PayrollPreviewModal = lazy(
+  () => import("../../views/hr/payroll-system/PayrollPreview"), 
+);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -1084,6 +1088,19 @@ case "itemCategory":
             mode={modal.isEdit ? "edit" : "create"}
           />,
         );
+
+        //preview modal of payroll entry
+        case "payrollPreview":
+  return wrappedModal(
+    <PayrollPreviewModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      rawData={modal.initialData as PayrollVerificationData | null}
+      loading={context?.loading as boolean | undefined}
+    />,
+  );
 
     }
   };

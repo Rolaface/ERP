@@ -3,7 +3,7 @@ export const TAB_ORDER = [
   "Personal",
   "Address & Contact",
   "Employment",
- "Attendance & Leaves",
+  "Attendance & Leaves",
   "Compensation",
   "Bank",
   "Work Schedule",
@@ -37,6 +37,7 @@ export const DEFAULT_FORM: Record<string, any> = {
   nationality: "",
   maritalStatus: "",
   blood_group: "",
+
   bio: "",
   salutation: "",
   nationalidentificationnumber: "",
@@ -110,6 +111,8 @@ export const DEFAULT_FORM: Record<string, any> = {
   grossSalary: "",
   currency: "",
   paymentFrequency: "",
+  effectiveFrom: "",
+
   paymentMethod: "",
 
   // Bank
@@ -144,7 +147,6 @@ export const DEFAULT_FORM: Record<string, any> = {
   // Profile photo (existing, from edit — relative path from API)
   existingPhotoUrl: "",
 };
-
 
 export function mapEditDataToForm(data: any): Record<string, any> {
   // Parse the joined address back into parts if possible
@@ -191,7 +193,7 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     preferredContactMethod: data.prefered_contact_email || "",
     phoneNumber: data.cell_number || "",
     alternatePhone: data.alternate_phone || "",
-    employee_number:data.employee_number||"",
+    employee_number: data.employee_number || "",
 
     // ── Address (best-effort parse from joined string) ────────
     street: addressParts[0] || "",
@@ -207,15 +209,15 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     emergencyContactRelationship: data.relation || "",
 
     // ── Employment ────────────────────────────────────────────
-   department: data.department || "",
-departmentLabel: "",
+    department: data.department || "",
+    departmentLabel: "",
     designation: data.designation || "",
     grade: data.grade || "",
     employment_type: data.employment_type || "",
     employeeType: data.employee_type || "",
     employmentStatus: data.status || "Active",
     reports_to: data.reports_to || "",
-reportingToLabel: "",
+    reportingToLabel: "",
     branch: data.branch || "",
     dateOfJoining: data.date_of_joining || "",
     contractEndDate: data.contract_end_date || "",
@@ -230,7 +232,7 @@ reportingToLabel: "",
     leaveApproverLabel: data.leave_approver || "",
     expenseApprover: data.expense_approver || "",
     shiftRequestApprover: data.shift_request_approver || "",
-  
+
     // ── Compensation ──────────────────────────────────────────
     salaryStructure: data.salary_structure || "",
     // Use base_salary if present, else fall back to ctc
@@ -245,7 +247,11 @@ reportingToLabel: "",
     currency: data.salary_currency || "",
     paymentMethod: data.salary_mode || "",
     paymentFrequency: data.payment_frequency || "",
-     Taxslab:data.income_tax_slab||"",
+    Taxslab: data.income_tax_slab || "",
+   effectiveFrom:
+  data.effective_date ||
+  data.date_of_joining ||
+  "",
     // ── Bank ──────────────────────────────────────────────────
     accountNumber: data.bank_ac_no || "",
     bankName: data.bank_name || "",
@@ -277,7 +283,10 @@ reportingToLabel: "",
   };
 }
 
-export function buildEmployeePayload(formData: Record<string, any>) {
+export function buildEmployeePayload(
+  formData: Record<string, any>,
+  isEditMode = false,
+) {
   // Join address parts into the single stored string
   const fullAddress = [
     formData.street,
@@ -301,7 +310,7 @@ export function buildEmployeePayload(formData: Record<string, any>) {
 
   // Computed salary result stashed by CompensationTab
   const salaryResult: SalaryResult | null = formData._salaryResult ?? null;
-
+ 
   return {
     // ── Personal ──────────────────────────────────────────────
     first_name: formData.firstName || "",
@@ -339,7 +348,7 @@ export function buildEmployeePayload(formData: Record<string, any>) {
     department: formData.department || "",
     reports_to: formData.reports_to || "",
     employment_type: formData.employment_type || null,
-    employee_number:formData.employee_number,
+    employee_number: formData.employee_number,
     grade: formData.grade || "",
     branch: formData.branch || "",
     date_of_joining: formData.dateOfJoining || null,
@@ -360,10 +369,14 @@ export function buildEmployeePayload(formData: Record<string, any>) {
     income_tax_slab: formData.Taxslab,
     base_salary: Number(formData.basicSalary) || 0,
     gross: salaryResult?.gross ?? Number(formData.grossSalary) ?? 0,
-  ctc: (salaryResult?.gross ?? Number(formData.grossSalary) ?? 0) * 12,
+    ctc: (salaryResult?.gross ?? Number(formData.grossSalary) ?? 0) * 12,
     salary_mode: mapSalaryMode(formData.paymentMethod || ""),
     salary_currency: formData.currency || null,
-
+   ...(isEditMode &&
+  formData._salaryChanged &&
+  formData.effectiveFrom && {
+    effective_date: formData.effectiveFrom,
+  }),
     // ── Bank ──────────────────────────────────────────────────
     bank_name: formData.bankName || null,
     bank_ac_no: formData.accountNumber || null,

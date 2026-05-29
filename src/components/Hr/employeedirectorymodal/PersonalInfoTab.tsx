@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
+import { getAllGenders } from "../../../api/employeeapi";
+import { showApiError } from "../../../utils/alert";
+import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 
 
 type PersonalInfoTabProps = {
@@ -41,8 +44,30 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
   handleInputChange,
   verifiedFields,
 }) => {
+  const [genderOptions, setGenderOptions] = useState<any[]>([]);;
   const { companyCode } = useCompanySelection();
   const features = getEmployeeFeatures(companyCode);
+
+const fetchGenderOptions = async () => {
+    try {
+      const response = await getAllGenders();
+      
+      const rawData = response?.data || [];
+
+      const formattedOptions = rawData.map((item: { name: string }) => ({
+        label: item.name, 
+        value: item.name
+      }));
+
+      setGenderOptions(formattedOptions);
+    } catch (error) {
+      showApiError(parseFrappeError(error) || "Failed to fetch Gender API");
+    }
+  };
+
+  useEffect(() => {
+    fetchGenderOptions();
+  }, []);
 
   const isVerified = (field: string) => verifiedFields[field] === true;
 
@@ -150,7 +175,7 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             value={formData.gender}
             disabled={isVerified("gender")}
             onChange={(e) => handleInputChange("gender", e.target.value)}
-            options={GENDER_OPTIONS}
+            options={genderOptions || []}
             required
           />
 
