@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
-import Table from "../../../../../components/ui/Table/Table";
+import ModalTable from "../../../../../components/ui//Table/ModalTableInside";
 import ActionButton, { ActionGroup } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
 import { deleteShiftType } from "../../../../../api/shiftTypeApi";
 import { showApiError } from "../../../../../utils/alert";
 import { useShiftTypes, type ShiftType } from "../hooks/useShiftTypes";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
-import { openShiftTypeModal } from "../../../../../store/modalStore"; 
+import { openShiftTypeModal } from "../../../../../store/modalStore";
 
 export function ShiftTypeSetup() {
   const {
@@ -22,13 +22,13 @@ export function ShiftTypeSetup() {
     totalItems,
     fetchAll,
   } = useShiftTypes();
-  
+
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const handleDelete = useCallback(
     async (row: ShiftType) => {
       if (!row.name) return;
-      
+
       try {
         setActionLoadingId(row.name);
 
@@ -41,9 +41,7 @@ export function ShiftTypeSetup() {
           },
         });
 
-        if (deleted) {
-          fetchAll();
-        }
+        if (deleted) fetchAll();
       } catch (err: any) {
         showApiError(err?.message || "Failed to delete shift type");
       } finally {
@@ -59,9 +57,7 @@ export function ShiftTypeSetup() {
         key: "name",
         header: "Shift Name",
         render: (row) => (
-          <span className="font-medium text-main">
-            {row.name || "—"}
-          </span>
+          <span className="font-medium text-main">{row.name || "—"}</span>
         ),
       },
       {
@@ -78,44 +74,50 @@ export function ShiftTypeSetup() {
         key: "actions",
         header: "Actions",
         align: "center",
-        render: (row) => {
-          return (
-            <ActionGroup>
-              <ActionButton
-                type="edit"
-                iconOnly
-                onClick={() => openShiftTypeModal(row, true, { onSuccess: fetchAll })}
-                disabled={actionLoadingId === row.name}
-              />
-              <ActionButton
-                type="delete"
-                iconOnly
-                onClick={() => handleDelete(row)}
-                disabled={actionLoadingId === row.name}
-              />
-            </ActionGroup>
-          );
-        },
+        render: (row) => (
+          <ActionGroup>
+            <ActionButton
+              type="edit"
+              iconOnly
+              onClick={() => openShiftTypeModal(row, true, { onSuccess: fetchAll })}
+              disabled={actionLoadingId === row.name}
+            />
+            <ActionButton
+              type="delete"
+              iconOnly
+              onClick={() => handleDelete(row)}
+              disabled={actionLoadingId === row.name}
+            />
+          </ActionGroup>
+        ),
       },
     ],
     [actionLoadingId, handleDelete, fetchAll],
   );
 
   return (
-    <Table
+    <ModalTable
       columns={columns}
       data={rows}
       loading={loading}
       rowKey={(row) => row.name!}
+      tableId="shift-types-table"
+
+      // Toolbar
       showToolbar
+      toolbarPlaceholder="Search shift types..."
       searchValue={search}
       onSearch={(v) => {
         setSearch(v);
         setPage(1);
       }}
       enableAdd
-      addLabel="Add Shift Type"
+      addLabel="+ Add Shift Type"
       onAdd={() => openShiftTypeModal(null, false, { onSuccess: fetchAll })}
+      enableColumnSelector
+      defaultVisibleKeys={["name", "start_time", "end_time", "actions"]}
+
+      // Pagination
       currentPage={page}
       totalPages={totalPages}
       totalItems={totalItems}
@@ -126,8 +128,8 @@ export function ShiftTypeSetup() {
         setPageSize(s);
         setPage(1);
       }}
-      enableColumnSelector
-      tableId="shift-types-table"
+
+      bodyMaxHeight={400}
     />
   );
 }
