@@ -98,94 +98,95 @@ export const IncomeTax: React.FC<IncomeTaxProps> = ({
 
   // ── Columns ────────────────────────────────────────────────────────────────
 const columns: Column<SalarySlip>[] = [
-    {
-      key: "period",
-      header: "Period",
-      width: "7%", // Reduced width
-      render: (slip) => (
-        <div className="flex flex-col">
-                  <span className="text-[10px] font-semibold text-main">
-                    {getSlipPeriodLabel(slip)}
-                  </span>
-                  <span className="text-[10px] text-muted font-mono truncate">
-                    {slip.name}
-                  </span>
-                  {slip.posting_date && (
-                    <span className="text-[10px] text-muted">
-                      Posted: {formatDate(slip.posting_date)}
-                    </span>
-                  )}
-                </div>
-      ),
-    },
-     {
-      key: "current_month_income_tax",
-      header: "Current Tax", // Shortened header
-      align: "right",
-      width: "5%",
-      render: (slip) => (
-        <span className="text-[12px] font-medium text-amber-600">
-          {formatCurrency(slip.current_month_income_tax || 0, slip.currency)}
-        </span>
-      ),
-    },
-    {
-      key: "annual_taxable_amount",
-      header: "Annual Taxable",
-      align: "right",
-      width: "5%",  
-      render: (slip) => (
-        <span className="text-[12px] text-main font-medium">
-          {formatCurrency(slip.annual_taxable_amount || 0, slip.currency)}
-        </span>
-      ),
-    },
-    {
-      key: "non_taxable_earnings",
-      header: "Non-Taxable",
-      align: "right",
-      width: "5%",
-      render: (slip) => (
-        <span className="text-[12px] text-muted">
-          {formatCurrency(slip.non_taxable_earnings || 0, slip.currency)}
-        </span>
-      ),
-    },
-    {
-      key: "income_tax_deducted_till_date",
-      header: "Deducted YTD", 
-      align: "right",
-      width: "5%",
-      render: (slip) => (
-        <span className="text-[12px] font-medium text-emerald-600">
-          {formatCurrency(slip.income_tax_deducted_till_date || 0, slip.currency)}
-        </span>
-      ),
-    },
-    {
-      key: "standard_tax_exemption_amount",
-      header: "Std Exemp", // Shortened header
-      align: "right",
-      width: "5%",
-      render: (slip) => (
-        <span className="text-[12px] text-main">
-          {formatCurrency(slip.standard_tax_exemption_amount || 0, slip.currency)}
-        </span>
-      ),
-    },
-    
-    {
-      key: "total_income_tax",
-      header: "Total Tax",
-      align: "right",
-      width: "5%",
-      render: (slip) => (
-        <span className="text-[12px] font-bold text-red-600">
-          {formatCurrency(slip.total_income_tax || 0, slip.currency)}
-        </span>
-      ),
-    },
-  ];
+  {
+        key: "period",
+        header: "Period",
+        width: "220px",
+        minWidth: "220px",
+        render: (slip) => (
+          <div className="flex flex-col">
+            <span className="text-[12px] font-semibold text-main">
+              {getSlipPeriodLabel(slip)}
+            </span>
+            <span className="text-[10px] text-muted">
+              {formatDate(slip.start_date)} - {formatDate(slip.end_date)}
+            </span>
+          </div>
+        ),
+      },
+  {
+    key: "current_month_income_tax",
+    header: "Current Tax",
+    // align: "right",
+    width: "140px",
+    minWidth: "140px",
+    render: (slip) => (
+      <span className="text-[12px] font-medium text-amber-600">
+        {formatCurrency(slip.current_month_income_tax || 0, slip.currency)}
+      </span>
+    ),
+  },
+  {
+    key: "annual_taxable_amount",
+    header: "Annual Taxable",
+    // align: "right",
+    width: "150px",
+    minWidth: "150px",
+    render: (slip) => (
+      <span className="text-[12px] text-main font-medium">
+        {formatCurrency(slip.annual_taxable_amount || 0, slip.currency)}
+      </span>
+    ),
+  },
+  {
+    key: "non_taxable_earnings",
+    header: "Non-Taxable",
+    // align: "right",
+    width: "140px",
+    minWidth: "140px",
+    render: (slip) => (
+      <span className="text-[12px] text-muted">
+        {formatCurrency(slip.non_taxable_earnings || 0, slip.currency)}
+      </span>
+    ),
+  },
+  {
+    key: "income_tax_deducted_till_date",
+    header: "Deducted YTD",
+    // align: "right",
+    width: "150px",
+    minWidth: "150px",
+    render: (slip) => (
+      <span className="text-[12px] font-medium text-emerald-600">
+        {formatCurrency(slip.income_tax_deducted_till_date || 0, slip.currency)}
+      </span>
+    ),
+  },
+  {
+    key: "standard_tax_exemption_amount",
+    header: "Std Exemp",
+    // align: "right",
+    width: "140px",
+    minWidth: "140px",
+    render: (slip) => (
+      <span className="text-[12px] text-main">
+        {formatCurrency(slip.standard_tax_exemption_amount || 0, slip.currency)}
+      </span>
+    ),
+  },
+  {
+    key: "total_income_tax",
+    header: "Total Tax",
+    // align: "right",
+    width: "140px",
+    minWidth: "140px",
+    render: (slip) => (
+      <span className="text-[12px] font-bold text-red-600">
+        {formatCurrency(slip.total_income_tax || 0, slip.currency)}
+      </span>
+    ),
+  },
+];
 
   // ── Filters UI ─────────────────────────────────────────────────────────────
   const filtersNode = (

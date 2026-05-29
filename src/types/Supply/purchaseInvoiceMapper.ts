@@ -60,6 +60,7 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
       batchNo: str(it.batchNo),
       mfgDate: str(it.mfgDate),
       expDate: str(it.expDate),
+      barCode: num(it.barcodeId),
       discount: num(it.discount),
       warehouse: form.updateStock ? str(it.warehouse) : null,
     }));
@@ -186,6 +187,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
       mfgDate: str(item.mfgDate || ""),
       expDate: str(item.expDate || ""),
       discount: num(item.discount),
+      barCode: num(item.barcodeId),
       warehouse: str(item.warehouse),
       packingUnit: num(item.packingUnit),
       packingSize: num(item.packingSize),

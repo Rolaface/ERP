@@ -7,6 +7,9 @@ import DatePickerInput from "../calendar/DatePickerInput";
 import { SelectedStockItem } from "../../types/Stock/stock";
 import Tooltip from "../Tooltip";
 import { NumericInput } from "../ui/modal/modalComponent";
+import { useRef } from "react";
+import { getItemDetailsByBarcodeId } from "../../api/procurement/PurchaseInvoiceApi";
+import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 
 export interface ItemTableActions {
   handleItemChange: (
@@ -19,6 +22,7 @@ export interface ItemTableActions {
   removeItem: (index: number) => void;
   addItem: () => void;
   duplicateItem: (absoluteIndex: number) => void;
+  fetchByBarcode?: (index: number, barcode: string) => Promise<void>;
 }
 
 export interface ItemTableUI {
@@ -40,15 +44,6 @@ interface ItemTableProps {
   // ── customisation ──
   title?: string;
 
-  /**
-   * Provide BOTH to use a custom layout instead of the built-in invoice columns.
-   *
-   * columnHeaders  – the full <tr> of <th> cells
-   * renderRow(item, absoluteIndex, helpers) – returns a single <tr>
-   *
-   * `helpers` exposes handleCopyRow / handleRemoveRow so the custom row
-   * can render the copy+delete action buttons in exactly the right column.
-   */
   columnHeaders?: React.ReactNode;
   renderRow?: (
     item: any,
@@ -106,6 +101,9 @@ const InvoiceHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
       Tax Name
     </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px] whitespace-nowrap">
+      Barcode
+    </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
       Amount
     </th>
@@ -127,7 +125,27 @@ const ItemTable: React.FC<ItemTableProps> = ({
   columnHeaders,
   renderRow,
 }) => {
-  // shared helpers passed into custom renderRow
+  const barcodeRef = useRef<HTMLInputElement>(null);
+
+const fetchByBarcode=  async (index: number, barcode: string) => {
+  try {
+    const response = await getItemDetailsByBarcodeId(barcode);
+    if (response?.data) {
+      actions.updateItemDirectly?.(index, {
+        itemCode: response.data.item_code,
+        itemName: response.data.item_name,
+        price: response.data.rate,
+        batchNo: response.data.batch_no,
+        quantity: response.data.quantity,
+        mfgDate: response.data.manufacturing_date,
+        expDate: response.data.expiry_date,
+      });
+    }
+  } catch (error) {
+    showValidationError(parseFrappeError(error) ||"Item not found for this barcode.");
+  }
+}
+
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);
     const insertPage = Math.floor((absoluteIndex + 1) / ITEMS_PER_PAGE);
@@ -417,6 +435,33 @@ const ItemTable: React.FC<ItemTableProps> = ({
               value={it.vatCode}
               className="w-[45px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
               onChange={(e) => actions.handleItemChange(i, e)}
+            />
+          </Tooltip>
+        </td>
+        {/* Barcode Scanner Input */}
+        <td className="px-2 py-1">
+          <Tooltip content="Scan Barcode (Auto-fetches on Enter)">
+            <input
+              type="text"
+              name="barcode"
+              value={it.barcode || ""}
+              placeholder="Scan..."
+              className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+              onChange={(e) => {
+                // Log the value as the scanner types it
+                console.log(`Row ${i} Barcode Input:`, e.target.value); 
+                actions.handleItemChange(i, e);
+              }}
+             onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  console.log(`Scanner hit ENTER. Final Barcode for row ${i}:`, it.barcode);
+
+                  if (it.barcode) {
+                    fetchByBarcode(i, it.barcode);
+                  }
+                }
+              }}
             />
           </Tooltip>
         </td>

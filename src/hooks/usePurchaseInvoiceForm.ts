@@ -1018,6 +1018,7 @@ export const usePurchaseInvoiceForm = ({
           packingSize: Number(data.packingSize || 0),
           packing: `(${data.packingUnit || 0}) x (${data.packingSize || 0})`,
           warehouse: items[idx].warehouse || prev.warehouse || "",
+          barcodeId: Number(data.barcodeId || 0),
           requiresBatch: data.batchInfo?.has_batch_no,
         };
         return { ...prev, items };
@@ -1116,7 +1117,6 @@ export const usePurchaseInvoiceForm = ({
           return `Row ${i + 1}: Batch No required`;
         if (item.requiresBatch && !item.mfgDate)
           return `Row ${i + 1}: Mfg Date required`;
-
         if (item.requiresBatch && !item.expDate)
           return `Row ${i + 1}: Expiry Date required`;
       }

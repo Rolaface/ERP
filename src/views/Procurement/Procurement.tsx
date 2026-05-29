@@ -31,6 +31,7 @@ const SupplierManagement = lazy(() => import("./SupplierManagement"));
 const PurchaseInvoiceTable = lazy(() => import("./PurchaseInvoice"));
 const Payments = lazy(() => import("./SupplierPayment"));
 const PurchaseAnalytics = lazy(() => import("./PurchaseAnalytics"));
+const BarCode = lazy(() => import("./PurchaseInvoiceBarCode"));
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -108,6 +109,13 @@ const ALL_PROCUREMENT_TABS = [
     module: "Purchase Invoice",
     action: "report" as const, 
   },
+  {
+    id: "barCode",
+    label: "PI BarCode",
+    icon: <BarChart3 {...iconProps} />,
+    module: "Purchase Invoice",
+    action: "report" as const, 
+  },
 ];
 const DEFAULT_TAB = "procurementdashboard";
 
@@ -148,6 +156,7 @@ const Procurement: React.FC = () => {
     purchase:             <PurchaseInvoiceTable onAdd={handleAdd} />,
     payments:             <Payments />,
     purchaseAnalytics:    <PurchaseAnalytics />,
+    barCode:               <BarCode />,
     debitNotes:           <DebitNotesTable />,
   }), [handleAdd]);
 
