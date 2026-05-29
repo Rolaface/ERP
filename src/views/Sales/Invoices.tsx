@@ -707,38 +707,42 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
               customActions={[
                 // Receive Payment — needs Payment Entry create
                 ...(inv.invoiceStatus !== "Draft" &&
-                inv.invoiceStatus !== "Cancelled" &&
-                inv.outstandingAmount > 0 &&
-                can(PAYMENT_MODULE, "create")
+                  inv.invoiceStatus !== "Cancelled" &&
+                  inv.outstandingAmount > 0 &&
+                  can(PAYMENT_MODULE, "create")
                   ? [
-                      {
-                        label: "Receive Payment",
-                        onClick: () => handleReceivePayment(inv),
-                      },
-                    ]
+                    {
+                      label: "Receive Payment",
+                      onClick: () => handleReceivePayment(inv),
+                    },
+                  ]
                   : []),
-                {
-                  label: "Send Email",
-                  onClick: async () => {
-                    setEmailInvoice(inv);
-                    setEmailContactEmail(null);
-                    setEmailInvoiceAttachments([]); // clear stale attachments
-                    setEmailModalOpen(true);
-                    try {
-                      const res = await getSalesInvoiceById(inv.invoiceNumber);
-                      if (res?.message?.status_code === 200) {
-                        setEmailContactEmail(
-                          res.message.data?.contact_email ?? null,
-                        );
-                        setEmailInvoiceAttachments(
-                          res.message.data?.attachments ?? [],
-                        );
-                      }
-                    } catch {
-                      // non-critical: modal opens with empty To/attachments if fetch fails
-                    }
-                  },
-                },
+                ...(inv.invoiceStatus !== "Draft"
+                  ? [
+                    {
+                      label: "Compose Email",
+                      onClick: async () => {
+                        setEmailInvoice(inv);
+                        setEmailContactEmail(null);
+                        setEmailInvoiceAttachments([]); // clear stale attachments
+                        setEmailModalOpen(true);
+                        try {
+                          const res = await getSalesInvoiceById(inv.invoiceNumber);
+                          if (res?.message?.status_code === 200) {
+                            setEmailContactEmail(
+                              res.message.data?.contact_email ?? null,
+                            );
+                            setEmailInvoiceAttachments(
+                              res.message.data?.attachments ?? [],
+                            );
+                          }
+                        } catch {
+                          // non-critical: modal opens with empty To/attachments if fetch fails
+                        }
+                      },
+                    },
+                  ]
+                  : []),
                 {
                   label: "View PDF",
                   onClick: () => handlePreviewPDF(inv),
@@ -746,13 +750,13 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                 // Status transitions — needs write
                 ...(can(SALES_MODULE, "write")
                   ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
-                      (status) => ({
-                        label: status === "Approved" ? "Approve" : status,
-                        danger: status === "Paid",
-                        onClick: () =>
-                          handleRowStatusChange(inv.invoiceNumber, status),
-                      }),
-                    )
+                    (status) => ({
+                      label: status === "Approved" ? "Approve" : status,
+                      danger: status === "Paid",
+                      onClick: () =>
+                        handleRowStatusChange(inv.invoiceNumber, status),
+                    }),
+                  )
                   : []),
               ]}
             />

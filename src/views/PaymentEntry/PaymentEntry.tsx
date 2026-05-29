@@ -236,7 +236,7 @@ const PaymentEntry: React.FC = () => {
           <ActionMenu
             customActions={[
               {
-                label: "Send Email",
+                label: "Compose Email",
                 onClick: async () => {
                   setEmailPayment(row);
                   setEmailContactEmail(null);
