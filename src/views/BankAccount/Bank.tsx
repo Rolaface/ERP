@@ -26,6 +26,7 @@ const BankPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [search, setSearch] = useState("");
   const { can } = usePermission();
   const refreshKey = useDataRefreshStore(
     (state) => state.refreshFlags[REFRESH_KEYS.Bank],
@@ -35,7 +36,7 @@ const BankPage: React.FC = () => {
   const fetchBanks = useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await getAllBanks(page, pageSize);
+      const resp = await getAllBanks(page, pageSize, search);
       setBanks(resp.data ?? []);
       setTotalItems(resp.pagination?.total ?? 0);
     } catch (err) {
@@ -45,7 +46,7 @@ const BankPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, search]);
 
   useEffect(() => {
     fetchBanks();
@@ -173,6 +174,11 @@ const BankPage: React.FC = () => {
             setPage(1);
           }}
           onPageChange={setPage}
+          searchValue={search}
+          onSearch={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
         />
       </AppPageBody>
     </AppPage>
