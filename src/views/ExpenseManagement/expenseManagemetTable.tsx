@@ -5,7 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { Ban, CheckCircle2, XCircle } from "lucide-react";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import Table from "../../components/ui/Table/Table";
@@ -179,8 +179,51 @@ const handleApprove = async (id: string) => {
   });
   if (!result.isConfirmed) return;
   try {
-    await approveExpenseClaim(id);
+    await approveExpenseClaim(id,"Approved");
     showSuccess("Expense approved successfully");
+    fetchExpenses();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+const handleCancel = async (id: string) => {
+  const result = await fireManagedSwal({
+    icon:               "warning",
+    title:              "Cancel Expense?",
+    text:               `Cancel expense ${id}?`,
+    showCancelButton:   true,
+    confirmButtonColor: "#f59e0b",
+    cancelButtonColor:  "#6b7280",
+    confirmButtonText:  "Yes, cancel",
+    reverseButtons:     true,
+  });
+  if (!result.isConfirmed) return;
+  try {
+    await approveExpenseClaim(id, "Cancelled");
+    showSuccess("Expense cancelled successfully");
+    fetchExpenses();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+
+const handleReject = async (id: string) => {
+  const result = await fireManagedSwal({
+    icon:               "error",
+    title:              "Reject Expense?",
+    text:               `Reject expense ${id}?`,
+    showCancelButton:   true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor:  "#6b7280",
+    confirmButtonText:  "Yes, reject",
+    reverseButtons:     true,
+  });
+  if (!result.isConfirmed) return;
+  try {
+    await approveExpenseClaim(id, "Rejected");
+    showSuccess("Expense rejected successfully");
     fetchExpenses();
   } catch (err) {
     closeSwal();
@@ -338,18 +381,28 @@ const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
             </PermissionGate>
             <ActionMenu
   customActions={[
-    ...(exp.status === "Draft"
+    ...(!isEmployeeView && exp.status === "Draft"
       ? [
           {
             label: "Approve",
             icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
             onClick: () => handleApprove(exp.id),
           },
-          { divider: true, label: "", onClick: () => {} },
+          {
+            label: "Reject",
+            icon: <Ban className="w-4 h-4 text-red-500" />,
+            onClick: () => handleReject(exp.id),
+          },
         ]
       : []),
+
+      {
+            label: "Cancel",
+            icon: <XCircle className="w-4 h-4 text-amber-500" />,
+            onClick: () => handleCancel(exp.id),
+          },
   ]}
-  {...(can(EXPENSE_MODULE, "delete")
+  {...(can(EXPENSE_MODULE, "delete") && isEmployeeView && exp.status === "Draft"
     ? { onDelete: () => handleDelete(exp.id) }
     : {})}
 />

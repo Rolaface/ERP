@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ExpenseItem {
@@ -11,6 +11,16 @@ interface ExpenseItem {
   base_amount?: number;
   sanctioned_amount?: number;
   base_sanctioned_amount?: number;
+}
+
+interface ExpenseAttachment {
+  name: string;
+  file_name: string;
+  file_url: string;
+  file_size?: number;
+  file_type?: string;
+  is_private?: number;
+  creation?: string;
 }
 
 interface ExpenseClaim {
@@ -48,6 +58,7 @@ interface ExpenseClaim {
   expenses?: ExpenseItem[];
   taxes?: any[];
   advances?: any[];
+  attachments?: ExpenseAttachment[];
 }
 
 interface Props {
@@ -55,7 +66,9 @@ interface Props {
   expenseData?: ExpenseClaim | null;
   loading?: boolean;
   onClose?: () => void;
-  onBack?: () => void; // alias for onClose
+  onBack?: () => void;
+  /** ERPNext base URL, e.g. "https://yoursite.frappe.cloud". Defaults to window.location.origin */
+  baseUrl?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -84,6 +97,20 @@ const fmtDate = (d?: string | null) => {
       });
 };
 
+const fmtSize = (bytes?: number) => {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+// Converts a relative ERPNext file_url to an absolute URL
+const resolveFileUrl = (url: string, origin: string) => {
+  if (!url) return "#";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${origin}${url.startsWith("/") ? "" : "/"}${url}`;
+};
+
 const STATUS_MAP: Record<string, string> = {
   Draft: "#f59e0b",
   Approved: "#10b981",
@@ -102,7 +129,16 @@ const STATUS_BG: Record<string, string> = {
   Cancelled: "rgba(107,114,128,0.12)",
 };
 
-// Compact label + value field (mirrors InvoiceDetailModal's <F>)
+// Display label map — Draft shows as "Pending for Approval" in the UI
+const STATUS_LABEL: Record<string, string> = {
+  Draft: "Pending for Approval",
+  Approved: "Approved",
+  Rejected: "Rejected",
+  Paid: "Paid",
+  Submitted: "Submitted",
+  Cancelled: "Cancelled",
+};
+
 const F: React.FC<{ label: string; value?: string | null; mono?: boolean }> = ({
   label,
   value,
@@ -135,7 +171,6 @@ const F: React.FC<{ label: string; value?: string | null; mono?: boolean }> = ({
   </div>
 );
 
-// Section divider with inline title (mirrors InvoiceDetailModal's <S>)
 const S: React.FC<{ title: string }> = ({ title }) => (
   <div
     style={{
@@ -168,18 +203,56 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
   loading,
   onClose,
   onBack,
+  baseUrl,
 }) => {
   const handleClose = onClose ?? onBack;
 
-  // Support both controlled (open prop) and uncontrolled (always render) usage
   if (open === false) return null;
+
+  const origin = baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "");
+
+  const [loadingFile, setLoadingFile] = useState<string | null>(null);
+
+  const openAttachment = async (fileUrl: string, fileName: string) => {
+    const fullUrl = resolveFileUrl(fileUrl, origin);
+    setLoadingFile(fileName);
+    try {
+      const res = await fetch(fullUrl, { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      // For images/PDFs open in new tab; for others trigger download
+      const viewable = ["image/", "application/pdf"];
+      if (viewable.some((t) => blob.type.startsWith(t))) {
+        window.open(blobUrl, "_blank");
+      } else {
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+    } catch (err) {
+      console.error("Failed to open attachment:", err);
+      // Fallback: open directly (works for truly public files)
+      window.open(fullUrl, "_blank");
+    } finally {
+      setLoadingFile(null);
+    }
+  };
 
   const claim: ExpenseClaim = expenseData ?? {};
   const currency = claim.currency ?? "INR";
   const expenses = claim.expenses ?? [];
   const taxes = claim.taxes ?? [];
   const advances = claim.advances ?? [];
+  const attachments = claim.attachments ?? [];
   const approvalStatus = claim.approval_status ?? claim.status ?? "Draft";
+  const approvalLabel = STATUS_LABEL[approvalStatus] ?? approvalStatus;
   const statusColor = STATUS_MAP[approvalStatus] ?? STATUS_MAP["Draft"];
   const statusBg = STATUS_BG[approvalStatus] ?? STATUS_BG["Draft"];
   const docStatusLabel =
@@ -237,6 +310,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
           .ecv-btn:active { transform:translateY(0) }
           .ecv-irow { transition: background .1s }
           .ecv-irow:hover { background: var(--row-hover) }
+          .ecv-att-link:hover { border-color: var(--primary) !important; color: var(--primary) !important; }
         `}</style>
 
         {/* ── HEADER ── */}
@@ -302,7 +376,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
               </p>
             </div>
 
-            {/* Status badge */}
+            {/* Status badge — uses approvalLabel for display */}
             <span
               style={{
                 display: "inline-flex",
@@ -316,7 +390,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                 border: `1px solid ${statusColor}33`,
               }}
             >
-              {approvalStatus}
+              {approvalLabel}
             </span>
           </div>
 
@@ -398,7 +472,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   marginBottom: 2,
                 }}
               >
-                {/* Grand Total — primary highlight */}
+                {/* Grand Total */}
                 <div
                   style={{
                     padding: "9px 11px",
@@ -451,38 +525,8 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   >
                     Claimed
                   </p>
-                  <p
-                    style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}
-                  >
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
                     {fmt(claim.total_claimed_amount, currency)}
-                  </p>
-                </div>
-
-                {/* Reimbursed */}
-                <div
-                  style={{
-                    padding: "9px 11px",
-                    borderRadius: 7,
-                    background: "var(--bg)",
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 700,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "var(--muted)",
-                      marginBottom: 2,
-                    }}
-                  >
-                    Reimbursed
-                  </p>
-                  <p
-                    style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}
-                  >
-                    {fmt(claim.total_amount_reimbursed, currency)}
                   </p>
                 </div>
               </div>
@@ -507,9 +551,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   gap: 8,
                 }}
               >
-                <F label="Company" value={claim.company} />
-                <F label="Cost Center" value={claim.cost_center} />
-                <F label="Payable Account" value={claim.payable_account} />
               </div>
               <div
                 style={{
@@ -522,10 +563,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                 <F label="Posting Date" value={fmtDate(claim.posting_date)} />
                 <F label="Created" value={fmtDate(claim.creation)} />
                 <F label="Currency" value={currency} />
-                <F
-                  label="Exchange Rate"
-                  value={claim.exchange_rate != null ? String(claim.exchange_rate) : null}
-                />
               </div>
 
               {/* ── STATUS ── */}
@@ -537,8 +574,8 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   gap: 8,
                 }}
               >
-                <F label="Approval" value={claim.approval_status} />
-                <F label="Document" value={docStatusLabel} />
+                {/* Show the mapped label in status field too */}
+                <F label="Approval" value={approvalLabel} />
                 <F label="Payment" value={claim.is_paid ? "Paid" : "Unpaid"} />
                 <F
                   label="Approver"
@@ -569,13 +606,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   >
                     Remark
                   </p>
-                  <p
-                    style={{
-                      fontSize: 12,
-                      color: "var(--text)",
-                      lineHeight: 1.5,
-                    }}
-                  >
+                  <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>
                     {claim.remark}
                   </p>
                 </div>
@@ -807,7 +838,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                           style={{
                             fontSize: big ? 14 : 12,
                             fontWeight: big ? 800 : 500,
-                            color: big ? "var(--text)" : "var(--text)",
+                            color: "var(--text)",
                             fontVariantNumeric: "tabular-nums",
                           }}
                         >
@@ -842,23 +873,11 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                           alignItems: "center",
                         }}
                       >
-                        <p
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: "var(--text)",
-                          }}
-                        >
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
                           {adv.name ?? "Advance"}
                         </p>
                         {adv.allocated_amount != null && (
-                          <p
-                            style={{
-                              fontSize: 12,
-                              color: "var(--text)",
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
+                          <p style={{ fontSize: 12, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>
                             {fmt(adv.allocated_amount, currency)}
                           </p>
                         )}
@@ -891,23 +910,11 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                           alignItems: "center",
                         }}
                       >
-                        <p
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: "var(--text)",
-                          }}
-                        >
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
                           {tax.description ?? tax.name ?? "Tax"}
                         </p>
                         {tax.tax_amount != null && (
-                          <p
-                            style={{
-                              fontSize: 12,
-                              color: "var(--text)",
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
+                          <p style={{ fontSize: 12, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>
                             {fmt(tax.tax_amount, currency)}
                           </p>
                         )}
@@ -917,20 +924,183 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                 </>
               )}
 
-              {/* ── META ── */}
-              <S title="Meta" />
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3,1fr)",
-                  gap: 8,
-                }}
-              >
-                <F label="Modified By" value={claim.modified_by} />
-                <F label="Modified" value={fmtDate(claim.modified)} />
-                <F label="Naming Series" value={claim.naming_series} mono />
-              </div>
+              {/* ── ATTACHMENTS ── */}
+              {attachments.length > 0 && (
+                <>
+                  <S title={`Attachments (${attachments.length})`} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    {attachments.map((att) => (
+                      <div
+                        key={att.name}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 9,
+                          padding: "7px 10px",
+                          borderRadius: 7,
+                          border: "1px solid var(--border)",
+                          background: "var(--bg)",
+                        }}
+                      >
+                        {/* File icon */}
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 7,
+                            background: "var(--primary)",
+                            opacity: 0.85,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                          </svg>
+                        </div>
 
+                        {/* File info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "var(--text)",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {att.file_name}
+                          </p>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 6,
+                              marginTop: 3,
+                              alignItems: "center",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {att.file_type && (
+                              <span
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  color: "var(--muted)",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.06em",
+                                  background: "var(--card)",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: 4,
+                                  padding: "1px 5px",
+                                }}
+                              >
+                                {att.file_type}
+                              </span>
+                            )}
+                            {!!att.file_size && (
+                              <span style={{ fontSize: 10, color: "var(--muted)" }}>
+                                {fmtSize(att.file_size)}
+                              </span>
+                            )}
+                            {att.is_private === 1 && (
+                              <span
+                                style={{
+                                  fontSize: 9,
+                                  padding: "1px 6px",
+                                  borderRadius: 4,
+                                  background: "rgba(239,68,68,0.08)",
+                                  color: "#ef4444",
+                                  fontWeight: 700,
+                                  border: "1px solid rgba(239,68,68,0.2)",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 3,
+                                }}
+                              >
+                                <svg
+                                  width="8"
+                                  height="8"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                >
+                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                                Private
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Open file button — fetches with credentials to handle private files */}
+                        <button
+                          onClick={() => openAttachment(att.file_url, att.file_name)}
+                          disabled={loadingFile === att.file_name}
+                          className="ecv-att-link"
+                          title="Open file"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 28,
+                            height: 28,
+                            borderRadius: 6,
+                            border: "1px solid var(--border)",
+                            color: "var(--muted)",
+                            background: "transparent",
+                            flexShrink: 0,
+                            cursor: loadingFile === att.file_name ? "wait" : "pointer",
+                            transition: "border-color .12s, color .12s",
+                            opacity: loadingFile === att.file_name ? 0.6 : 1,
+                          }}
+                        >
+                          {loadingFile === att.file_name ? (
+                            <svg
+                              width="12" height="12" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" strokeWidth="2.5"
+                              style={{ animation: "ecv-spin 1s linear infinite" }}
+                            >
+                              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                            </svg>
+                          ) : (
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                              <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
               <div style={{ height: 12 }} />
             </>
           )}

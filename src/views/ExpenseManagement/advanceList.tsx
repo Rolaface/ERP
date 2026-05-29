@@ -1,15 +1,15 @@
-import React from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Pencil,
   SlidersHorizontal,
-  UserCircle2,
 } from "lucide-react";
-
-
 
 export interface EmployeeAdvance {
   id: string;
@@ -19,7 +19,7 @@ export interface EmployeeAdvance {
   advanceDate: string;
   allocatedAmount: number;
   unclaimedAmount: number;
-  status: "Pending" | "Partially Claimed" | "Fully Claimed";
+   purpose: string;
 }
 
 interface NormalizedPagination {
@@ -31,7 +31,6 @@ interface NormalizedPagination {
 }
 
 interface EmployeeAdvanceListProps {
-  /** Optional controlled list of advances; if omitted, mock data is used */
   advances?: EmployeeAdvance[];
   pagination?: NormalizedPagination;
   loading?: boolean;
@@ -39,101 +38,14 @@ interface EmployeeAdvanceListProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   onRetry?: () => void;
-  /** Called when user clicks "Modify Advance Allocation" */
   onModifyAllocation?: () => void;
-  /** Called when an allocation amount is edited */
   onAllocationChange?: (id: string, newAllocated: number) => void;
-  /** Called when internal loading state changes — parent can mirror it */
   onLoadingChange?: (loading: boolean) => void;
+  allocations?: Record<string, number>;
 }
 
-// ── Mock data ──────────────────────────────────────────────────────────────────
-
-const MOCK_ADVANCES: EmployeeAdvance[] = [
-  {
-    id: "ADV-001",
-    employeeName: "Riya Sharma",
-    employeeId: "EMP-1021",
-    department: "Engineering",
-    advanceDate: "2025-04-10",
-    allocatedAmount: 15000,
-    unclaimedAmount: 6500,
-    status: "Partially Claimed",
-  },
-  {
-    id: "ADV-002",
-    employeeName: "Arjun Mehta",
-    employeeId: "EMP-1034",
-    department: "Marketing",
-    advanceDate: "2025-03-22",
-    allocatedAmount: 8000,
-    unclaimedAmount: 8000,
-    status: "Pending",
-  },
-  {
-    id: "ADV-003",
-    employeeName: "Priya Nair",
-    employeeId: "EMP-1048",
-    department: "Finance",
-    advanceDate: "2025-04-01",
-    allocatedAmount: 12000,
-    unclaimedAmount: 0,
-    status: "Fully Claimed",
-  },
-  {
-    id: "ADV-004",
-    employeeName: "Karan Joshi",
-    employeeId: "EMP-1056",
-    department: "HR",
-    advanceDate: "2025-04-18",
-    allocatedAmount: 20000,
-    unclaimedAmount: 14000,
-    status: "Partially Claimed",
-  },
-  {
-    id: "ADV-005",
-    employeeName: "Sneha Patel",
-    employeeId: "EMP-1063",
-    department: "Sales",
-    advanceDate: "2025-05-02",
-    allocatedAmount: 5000,
-    unclaimedAmount: 5000,
-    status: "Pending",
-  },
-  {
-    id: "ADV-006",
-    employeeName: "Vikram Singh",
-    employeeId: "EMP-1071",
-    department: "Operations",
-    advanceDate: "2025-03-15",
-    allocatedAmount: 18000,
-    unclaimedAmount: 3000,
-    status: "Partially Claimed",
-  },
-];
-
-
-const StatusBadge: React.FC<{ status: EmployeeAdvance["status"] }> = ({ status }) => {
-  const cfg = {
-    "Pending":          { bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200"  },
-    "Partially Claimed":{ bg: "bg-blue-50",    text: "text-blue-700",    border: "border-blue-200"   },
-    "Fully Claimed":    { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-  }[status];
-
-  return (
-    <span
-      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border
-        ${cfg.bg} ${cfg.text} ${cfg.border}`}
-    >
-      {status}
-    </span>
-  );
-};
-
-// ── Main component ─────────────────────────────────────────────────────────────
-
 const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
-  advances: advancesProp,
+  advances = [],
   pagination,
   loading = false,
   fetchError,
@@ -141,33 +53,32 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
   onPageChange,
   onRetry,
   onModifyAllocation,
-  onAllocationChange,
   onLoadingChange,
+  allocations: allocationsProp,
 }) => {
-  const advances = advancesProp ?? MOCK_ADVANCES;
 
-
-  React.useEffect(() => {
+  useEffect(() => {
     onLoadingChange?.(loading);
   }, [loading, onLoadingChange]);
 
+  const [localAllocations, setLocalAllocations] = useState<Record<string, number>>(
+    allocationsProp ?? {}
+  );
 
-  const [editingRow, setEditingRow] = React.useState<string | null>(null);
-  const [inputValues, setInputValues] = React.useState<Record<string, string>>({});
-  const [localAllocations, setLocalAllocations] = React.useState<Record<string, number>>({});
+  useEffect(() => {
+    if (!allocationsProp) return;
+    setLocalAllocations(allocationsProp);
+  }, [allocationsProp]);
 
-  const getAllocated = (id: string, base: number) => localAllocations[id] ?? base;
-  const totalAllocated = advances.reduce((s, a) => s + getAllocated(a.id, a.allocatedAmount), 0);
+  const getAllocated = useCallback(
+    (id: string) => localAllocations[id] ?? 0,
+    [localAllocations]
+  );
+
+  const totalAllocated = advances.reduce((s, a) => s + getAllocated(a.id), 0);
   const totalUnclaimed = advances.reduce((s, a) => s + a.unclaimedAmount, 0);
 
-  const handleInputBlur = (id: string, max: number) => {
-    const raw = parseFloat(inputValues[id] ?? "");
-    const clamped = isNaN(raw) ? 0 : Math.min(Math.max(raw, 0), max);
-    setLocalAllocations((prev) => ({ ...prev, [id]: clamped }));
-    setInputValues((prev) => ({ ...prev, [id]: String(clamped) }));
-    setEditingRow(null);
-    onAllocationChange?.(id, clamped);
-  };
+  // ── Loading / error / empty states ────────────────────────────────────────
 
   if (loading) {
     return (
@@ -208,7 +119,7 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
         <div className="flex flex-col gap-0.5">
           <p className="text-sm font-semibold text-main">Employee Advance Allocation</p>
           <p className="text-[11px] text-muted">
-            Showing all employee advances. Edit any row to override the allocated amount.
+            Amounts are auto-allocated based on the expense.
           </p>
         </div>
         {onModifyAllocation && (
@@ -227,109 +138,85 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
       <div className="rounded-xl border border-[var(--border)] overflow-hidden">
 
         {/* Header */}
-        <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_32px] bg-[var(--row-hover)] border-b border-[var(--border)] px-4 py-2.5">
-          {([ "Advance Date", "Allocated Amt", "Unclaimed Amt", "Status"] as const).map((h, i) => (
+        <div className="grid grid-cols-[1.2fr_1fr_1fr_1fr] bg-[var(--row-hover)] border-b border-[var(--border)] px-4 py-2.5">
+          {[
+            { label: "Advance Date",  align: "text-left"  },
+            { label: "Allocated Amt", align: "text-center"  },
+            { label: "Unclaimed Amt", align: "text-center" },
+            { label: "Purpose",        align: "text-right"  },
+          ].map(({ label, align }) => (
             <div
-              key={h}
-              className={`text-[11px] font-semibold uppercase tracking-wide text-muted
-                ${i >= 2 && i <= 3 ? "text-right" : ""}`}
+              key={label}
+              className={`text-[11px] font-semibold uppercase tracking-wide text-muted ${align}`}
             >
-              {h}
+              {label}
             </div>
           ))}
-          <div />
         </div>
 
         {/* Rows */}
         <div className="divide-y divide-[var(--border)]">
           {advances.map((adv) => {
-            const allocated   = getAllocated(adv.id, adv.allocatedAmount);
-            const isEditing   = editingRow === adv.id;
+            const allocated    = getAllocated(adv.id);
             const hasUnclaimed = adv.unclaimedAmount > 0;
 
             return (
               <div
                 key={adv.id}
-                className={`grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr_32px] px-4 py-3 items-center
+                className={`grid grid-cols-[1.2fr_1fr_1fr_1fr] px-4 py-3 items-center
                   transition-colors hover:bg-[var(--row-hover)]
                   ${hasUnclaimed ? "bg-primary/[0.03]" : ""}`}
               >
-                {/* Advance date */}
-                <div className="text-xs text-muted">{adv.advanceDate}</div>
+                <div className="text-xs text-muted text-left">{adv.advanceDate}</div>
+                
+                  <div className={`text-xs font-mono font-semibold text-center ${allocated > 0 ? "text-primary" : "text-muted"}`}>
+                    {allocated.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+              
 
-                {/* Allocated amount — editable */}
-                <div className="flex justify-end">
-                  {isEditing ? (
-                    <input
-                      autoFocus
-                      type="text"
-                      inputMode="decimal"
-                      value={inputValues[adv.id] ?? ""}
-                      onChange={(e) =>
-                        setInputValues((prev) => ({ ...prev, [adv.id]: e.target.value }))
-                      }
-                      onBlur={() => handleInputBlur(adv.id, adv.allocatedAmount)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleInputBlur(adv.id, adv.allocatedAmount);
-                        if (e.key === "Escape") setEditingRow(null);
-                      }}
-                      placeholder="0"
-                      className="w-24 px-2 py-1.5 text-xs border border-primary rounded-lg bg-primary/5
-                        text-primary font-semibold text-right focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  ) : (
-                    <span className="text-xs font-mono font-semibold text-main">
-                      {allocated.toLocaleString()}
-                    </span>
-                  )}
-                </div>
+             
+                <div className={`text-center text-xs font-mono font-semibold
+  ${adv.unclaimedAmount > 0 ? "text-amber-600" : "text-emerald-600"}`}
+>
+  {adv.unclaimedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+</div>
 
-                {/* Unclaimed amount */}
-                <div className={`text-right text-xs font-mono font-semibold
-                  ${adv.unclaimedAmount > 0 ? "text-amber-600" : "text-emerald-600"}`}
-                >
-                  {adv.unclaimedAmount.toLocaleString()}
-                </div>
-
-                {/* Status badge */}
-                <div className="flex justify-start">
-                  <StatusBadge status={adv.status} />
-                </div>
-
-                {/* Edit pencil */}
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => {
-                      setEditingRow(adv.id);
-                      setInputValues((prev) => ({
-                        ...prev,
-                        [adv.id]: String(allocated),
-                      }));
-                    }}
-                    title="Edit allocated amount"
-                    className="w-6 h-6 flex items-center justify-center rounded
-                      text-muted hover:text-primary hover:bg-primary/10
-                      transition-colors"
-                  >
-                    <Pencil size={11} />
-                  </button>
-                </div>
+                <div className="text-xs text-muted text-right truncate" title={adv.purpose}>
+  {adv.purpose}
+</div>
               </div>
             );
           })}
         </div>
 
-        {/* Footer: totals + pagination */}
+        {/* Footer: totals */}
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)] bg-[var(--row-hover)]">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">Total Allocated</span>
-              <span className="text-xs font-bold text-primary font-mono">{totalAllocated.toLocaleString()}</span>
+              <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                Total Allocated
+              </span>
+              <span className="text-xs font-bold text-primary font-mono">
+                {totalAllocated.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
             </div>
             <div className="w-px h-3 bg-[var(--border)]" />
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">Total Unclaimed</span>
-              <span className="text-xs font-bold text-amber-600 font-mono">{totalUnclaimed.toLocaleString()}</span>
+              <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                Total Unclaimed
+              </span>
+              <span className="text-xs font-bold text-amber-600 font-mono">
+                {totalUnclaimed.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
             </div>
           </div>
 
@@ -347,7 +234,7 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
   );
 };
 
-// ── Pagination (identical pattern to reference) ────────────────────────────────
+// ── Pagination ────────────────────────────────────────────────────────────────
 
 interface PaginationBarProps {
   pagination: NormalizedPagination;
@@ -356,7 +243,12 @@ interface PaginationBarProps {
   onPageChange: (page: number) => void;
 }
 
-const PaginationBar: React.FC<PaginationBarProps> = ({ pagination, currentPage, loading, onPageChange }) => {
+const PaginationBar: React.FC<PaginationBarProps> = ({
+  pagination,
+  currentPage,
+  loading,
+  onPageChange,
+}) => {
   if (pagination.totalPages <= 1) return null;
 
   const pages = Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
@@ -374,7 +266,11 @@ const PaginationBar: React.FC<PaginationBarProps> = ({ pagination, currentPage, 
         <span className="ml-1 opacity-60">({pagination.total} total)</span>
       </span>
       <div className="flex items-center gap-1">
-        <NavButton onClick={() => onPageChange(currentPage - 1)} disabled={!pagination.hasPrev || loading} label="Previous page">
+        <NavButton
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={!pagination.hasPrev || loading}
+          label="Previous page"
+        >
           <ChevronLeft size={12} />
         </NavButton>
         {pages.map((p, i) =>
@@ -394,7 +290,11 @@ const PaginationBar: React.FC<PaginationBarProps> = ({ pagination, currentPage, 
             </button>
           )
         )}
-        <NavButton onClick={() => onPageChange(currentPage + 1)} disabled={!pagination.hasNext || loading} label="Next page">
+        <NavButton
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={!pagination.hasNext || loading}
+          label="Next page"
+        >
           <ChevronRight size={12} />
         </NavButton>
       </div>
