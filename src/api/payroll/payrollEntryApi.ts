@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "../axiosInstance";
 import { API, ERP_BASE } from "../../config/api";
+import { buildListParams } from "../utils/queryBuilder";
 
 const api = createAxiosInstance(ERP_BASE);
 
@@ -274,7 +275,7 @@ export async function getPayrollVerificationDetail(
   payrollId: string,
 ): Promise<PayrollVerificationData> {
   const resp: AxiosResponse = await api.get(
-   `${API.payroll.payrollentry.getpayrollpreview}?id=${encodeURIComponent(payrollId)}`,
+    `${API.payroll.payrollentry.getpayrollpreview}?id=${encodeURIComponent(payrollId)}`,
   );
 
   return resp.data?.message?.data;
@@ -508,13 +509,28 @@ export function downloadSalarySlipPdf(blob: Blob, filename?: string): void {
 }
 
 const SLIP_FIELDS = [
-  "name", "employee", "employee_name", "status",
-  "posting_date", "start_date", "end_date",
-  "gross_pay", "net_pay", "currency","total_income_tax","total_deduction",
-"income_from_other_sources", "non_taxable_earnings","standard_tax_exemption_amount", "tax_exemption_declaration",
-"deductions_before_tax_calculation", "annual_taxable_amount","income_tax_deducted_till_date",
-            "current_month_income_tax", "future_income_tax_deductions","total_income_tax",
-
+  "name",
+  "employee",
+  "employee_name",
+  "status",
+  "posting_date",
+  "start_date",
+  "end_date",
+  "gross_pay",
+  "net_pay",
+  "currency",
+  "total_income_tax",
+  "total_deduction",
+  "income_from_other_sources",
+  "non_taxable_earnings",
+  "standard_tax_exemption_amount",
+  "tax_exemption_declaration",
+  "deductions_before_tax_calculation",
+  "annual_taxable_amount",
+  "income_tax_deducted_till_date",
+  "current_month_income_tax",
+  "future_income_tax_deductions",
+  "total_income_tax",
 ];
 
 export async function getSalarySlipsByEmployeeOnly(
@@ -537,16 +553,85 @@ export async function getSalarySlipsByEmployeeOnly(
 
     return {
       data: resp.data?.data ?? [],
-      total:
-        resp.data?.pagination?.total_count ??
-        resp.data?.data?.length ??
-        0,
+      total: resp.data?.pagination?.total_count ?? resp.data?.data?.length ?? 0,
     };
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
         error?.message ||
         "Failed to fetch salary slips",
+    );
+  }
+}
+
+// slalary structure assignment API
+export interface SalaryStructureAssignment {
+  name: string;
+  employee: string;
+  salary_structure: string;
+  base: number;
+  from_date: string;
+  currency: string;
+}
+
+export async function getSalaryStructureAssignmentsByEmployee(
+  employeeId: string,
+  page = 1,
+  pageSize = 10,
+  search = "",
+  fromDate = "",
+  toDate = "",
+): Promise<{
+  data: SalaryStructureAssignment[];
+  total: number;
+  totalPages: number;
+}> {
+  try {
+    const start = (page - 1) * pageSize;
+
+    const params = buildListParams({
+      fields: [
+        "name",
+        "employee",
+        "salary_structure",
+        "base",
+        "from_date",
+        "currency",
+      ],
+      start,
+      pageSize,
+      search,
+      searchFields: ["salary_structure", "name"],
+    });
+
+    const filters: any[] = [["employee", "=", employeeId]];
+
+    if (fromDate) filters.push(["from_date", ">=", fromDate]);
+    if (toDate) filters.push(["from_date", "<=", toDate]);
+
+ const resp: AxiosResponse = await api.get(
+  `${API.payroll.payrollentry.SalarystructureAssignment.getAll}?${params}&filters=${encodeURIComponent(
+    JSON.stringify(filters),
+  )}`,
+);
+
+    const pagination = resp.data?.pagination ?? {};
+
+    // Server returns: pagination.total and pagination.total_pages
+    // (NOT total_count — that was the mismatch causing pagination to hide)
+    const total = pagination.total ?? resp.data?.data?.length ?? 0;
+    const totalPages = pagination.total_pages ?? Math.ceil(total / pageSize);
+
+    return {
+      data: resp.data?.data ?? [],
+      total,
+      totalPages,
+    };
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        "Failed to fetch salary structure assignments",
     );
   }
 }

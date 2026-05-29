@@ -16,7 +16,7 @@ import { fmt } from "./detailtab/Employeehelpers";
 import { EmployeeSidebar } from "./detailtab/Employeesidebar";
 import { PersonalTab } from "./detailtab/Personaltab";
 import { EmploymentTab } from "./detailtab/Employmenttab";
-import { CompensationTab } from "./detailtab/Compensationtab";
+import { SalaryStructureAssignmentsSection } from "./detailtab/Compensationtab";
 import EmployeeBankDetails from "./detailtab/EmployeeBank";
 import { DocumentsTab, DocumentUploadModal } from "./detailtab/documenttab";
 import { SalarySlipTable } from "./detailtab/Salaryslip";
@@ -138,7 +138,7 @@ const EmployeeDetailView: React.FC<Props> = ({
           {activeTab === "personal"     && <PersonalTab emp={emp} fullName={fullName} />}
           {activeTab === "statutory"    && <StatutoryTab emp={emp} />}
           {activeTab === "employment"   && <EmploymentTab emp={emp} />}
-          {activeTab === "compensation" && <CompensationTab emp={emp} currency={currency} />}
+          {activeTab === "compensation" && <SalaryStructureAssignmentsSection emp={emp} currency={currency} />}
           {activeTab === "BankAccount"  && <EmployeeBankDetails employeename={emp.employee} />}
           {activeTab === "salarySlip"   && (
             <SalarySlipTable employeeId={emp.employee} />  // ← self-fetching, no props needed

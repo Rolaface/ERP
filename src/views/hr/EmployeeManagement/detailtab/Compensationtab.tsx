@@ -1,38 +1,64 @@
-import React, { useEffect, useMemo, useState } from "react";
-
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Banknote,
-
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-
   ChevronDown,
   ChevronUp,
+  Calendar,
+  Layers,
+  Clock,
+  AlertCircle,
+  Loader2,
+  Search,
+  X,
 } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import {  fmtMoney } from "../detailtab/Employeehelpers";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+
+import { fmtMoney } from "./Employeehelpers";
+import {
+  getSalaryStructureAssignmentsByEmployee,
+  type SalaryStructureAssignment,
+} from "../../../../api/payroll/payrollEntryApi";
 import { getSalaryStructure } from "../../../../api/payrollConfigApi";
 import {
   calculateSalary,
   structureToComponents,
   type ComponentResult,
 } from "../../../../components/Hr/employeedirectorymodal/salaryengine";
+import Pagination from "../../../../components/Pagination";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 7;
 
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
   emp: any;
   currency: string;
 }
 
-const DED_COLOR = "#f87171";
-const EARN_COLOR = "#34d399";
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmtNum = (n: number, cur: string): string =>
   fmtMoney(n, cur) ??
-  `${cur} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  `${cur} ${n.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 
 function useCssVar(name: string, fallback: string): string {
   const [val, setVal] = React.useState(fallback);
@@ -45,611 +71,665 @@ function useCssVar(name: string, fallback: string): string {
   return val;
 }
 
-// ─── KPI Chip ─────────────────────────────────────────────────────────────────
+// ─── Bar Tooltip ──────────────────────────────────────────────────────────────
 
-interface KpiChipProps {
-  label: string;
-  monthly: number;
-  currency: string;
-  icon: React.ReactNode;
-  accentClass: string;
-  bgClass: string;
-  borderClass: string;
-  iconBgClass: string;
-  monoClass: string;
-}
-
-const KpiChip: React.FC<KpiChipProps> = ({
-  label,
-  monthly,
-  currency,
-  icon,
-  accentClass,
-  bgClass,
-  borderClass,
-  iconBgClass,
-  monoClass,
-}) => (
-  <div
-    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl border ${bgClass} ${borderClass} min-w-0 flex-1`}
-  >
-    <div
-      className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center ${iconBgClass}`}
-    >
-      <span className={accentClass}>{icon}</span>
-    </div>
-    <div className="min-w-0 flex-1">
-      <p className="text-[9.5px] font-bold uppercase tracking-wider text-muted truncate mb-0.5">
-        {label}
-      </p>
-      <p
-        className={`text-[14px] font-bold tabular-nums leading-none ${accentClass} truncate`}
-      >
-        {fmtNum(monthly * 12, currency)}
-        <span className="text-[9px] font-normal text-muted ml-1">p.a.</span>
-      </p>
-      <p
-        className={`text-[10px] font-mono tabular-nums mt-0.5 ${monoClass} truncate`}
-      >
-        {fmtNum(monthly, currency)}
-        <span className="opacity-60"> / month</span>
-      </p>
-    </div>
-  </div>
-);
-
-// ─── KPI Strip ────────────────────────────────────────────────────────────────
-
-const PayrollKpiStrip: React.FC<{
-  monthlyBase: number;
-  gross: number;
-  deductionsTotal: number;
-  net: number;
-  currency: string;
-  earningsCount: number;
-  deductionsCount: number;
-}> = ({
-  monthlyBase,
-  gross,
-  deductionsTotal,
-  net,
-  currency,
-  earningsCount,
-  deductionsCount,
-}) => (
-  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-    {(
-      [
-        {
-          label: "Base Salary",
-          monthly: monthlyBase,
-          icon: <Banknote className="w-3.5 h-3.5" />,
-          accentClass: "text-primary",
-          bgClass: "bg-primary/5 dark:bg-primary/8",
-          borderClass: "border-primary/15 dark:border-primary/20",
-          iconBgClass: "bg-primary/10 dark:bg-primary/15",
-          monoClass: "text-primary/50",
-        },
-        {
-          label: `Gross Earnings · ${earningsCount}`,
-          monthly: gross,
-          icon: <TrendingUp className="w-3.5 h-3.5" />,
-          accentClass: "text-emerald-600 dark:text-emerald-400",
-          bgClass: "bg-emerald-50 dark:bg-emerald-900/10",
-          borderClass: "border-emerald-200 dark:border-emerald-800",
-          iconBgClass: "bg-emerald-100 dark:bg-emerald-900/30",
-          monoClass: "text-emerald-600/50 dark:text-emerald-400/50",
-        },
-        {
-          label: `Total Deductions · ${deductionsCount}`,
-          monthly: deductionsTotal,
-          icon: <TrendingDown className="w-3.5 h-3.5" />,
-          accentClass: "text-red-600 dark:text-red-400",
-          bgClass: "bg-red-50 dark:bg-red-900/10",
-          borderClass: "border-red-200 dark:border-red-800",
-          iconBgClass: "bg-red-100 dark:bg-red-900/30",
-          monoClass: "text-red-600/50 dark:text-red-400/50",
-        },
-        {
-          label: "Net Salary",
-          monthly: net,
-          icon: <Wallet className="w-3.5 h-3.5" />,
-          accentClass: "text-violet-600 dark:text-violet-400",
-          bgClass: "bg-violet-50 dark:bg-violet-900/10",
-          borderClass: "border-violet-200 dark:border-violet-800",
-          iconBgClass: "bg-violet-100 dark:bg-violet-900/30",
-          monoClass: "text-violet-600/50 dark:text-violet-400/50",
-        },
-      ] as KpiChipProps[]
-    ).map((chip) => (
-      <KpiChip key={chip.label} {...chip} currency={currency} />
-    ))}
-  </div>
-);
-
-// ─── Composition Panel ────────────────────────────────────────────────────────
-
-const CompositionPanel: React.FC<{
-  gross: number;
-  deductionsTotal: number;
-  net: number;
-  currency: string;
-}> = ({ gross, deductionsTotal, net, currency }) => {
-  const primaryColor = useCssVar("--primary", "#6366f1");
-  const total = gross || 1;
-  const netPct = Math.round((net / total) * 100);
-  const dedPct = Math.round((deductionsTotal / total) * 100);
-
-  const pieData = [
-    { name: "Net Salary", value: net, color: primaryColor },
-    { name: "Total Deductions", value: deductionsTotal, color: DED_COLOR },
-    { name: "Gross Earnings", value: gross, color: EARN_COLOR },
-  ];
-
-  const metrics = [
-    {
-      label: "Gross Earnings",
-      val: gross,
-      annual: gross * 12,
-      pct: 100,
-      dotColor: EARN_COLOR,
-      valColor: EARN_COLOR,
-      highlight: false,
-    },
-    {
-      label: "Total Deductions",
-      val: deductionsTotal,
-      annual: deductionsTotal * 12,
-      pct: dedPct,
-      dotColor: DED_COLOR,
-      valColor: DED_COLOR,
-      highlight: false,
-    },
-    {
-      label: "Net Compensation",
-      val: net,
-      annual: net * 12,
-      pct: netPct,
-      dotColor: primaryColor,
-      valColor: primaryColor,
-      highlight: false,
-    },
-    {
-      label: "In-Hand Salary",
-      val: net,
-      annual: null,
-      pct: null,
-      dotColor: primaryColor,
-      valColor: primaryColor,
-      highlight: true,
-    },
-  ] as const;
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload?.length) return null;
-    const { name, value, color } = payload[0].payload;
-    return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] backdrop-blur-md shadow-2xl px-3 py-2 min-w-[148px]">
-        <div className="flex items-center gap-2 mb-1">
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: color }}
-          />
-          <p className="text-[10px] font-semibold text-main leading-none">
-            {name}
-          </p>
-        </div>
-        <p className="text-[26px] font-bold tabular-nums text-main leading-tight">
-          {fmtNum(value, currency)}
-        </p>
-        <div className="flex items-center justify-between mt-1">
-          <span className="text-[9px] text-muted">/ month</span>
-          <span className="text-[9px] font-mono text-muted">
-            p.a. {fmtNum(value * 12, currency)}
-          </span>
-        </div>
-      </div>
-    );
+const BarTip = ({ active, payload, currency }: any) => {
+  if (!active || !payload?.length) return null;
+  const { name, value } = payload[0];
+  const colorMap: Record<string, string> = {
+    Gross: "var(--success, #22c55e)",
+    Deductions: "var(--danger, #dc2626)",
+    Net: "var(--primary)",
   };
-
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
-      <div className="flex items-center px-4 py-3">
-        <div className="shrink-0 relative" style={{ width: 100, height: 100 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={32}
-                outerRadius={46}
-                stroke="none"
-                strokeWidth={0}
-                paddingAngle={1.5}
-                dataKey="value"
-                startAngle={90}
-                endAngle={-270}
-                isAnimationActive={false}
-              >
-                {pieData.map((entry, i) => (
-                  <Cell
-                    key={i}
-                    fill={entry.color}
-                    stroke="none"
-                    strokeWidth={0}
-                  />
-                ))}
-              </Pie>
-              <Tooltip
-                content={<CustomTooltip />}
-                cursor={false}
-                wrapperStyle={{ outline: "none", zIndex: 50 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-[8px] font-bold uppercase tracking-wider text-muted leading-none mb-0.5">
-              Net
-            </span>
-            <span
-              className="text-[16px] font-bold tabular-nums leading-none"
-              style={{ color: primaryColor }}
-            >
-              {netPct}%
-            </span>
-          </div>
-        </div>
-
-        <div className="w-px self-stretch mx-4 bg-[var(--border)]" />
-
-        <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-0">
-          {metrics.map((m) => (
-            <div
-              key={m.label}
-              className="flex items-start gap-2 py-2 border-b border-[var(--border)] last:border-0 [&:nth-last-child(2)]:border-0"
-            >
-              <span
-                className="mt-[3px] shrink-0 w-1.5 h-1.5 rounded-full"
-                style={{ background: m.dotColor }}
-              />
-              <div className="min-w-0">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-muted truncate leading-none mb-0.5">
-                  {m.label}
-                </p>
-                <p
-                  className="text-[13px] font-bold tabular-nums leading-tight"
-                  style={{ color: m.valColor }}
-                >
-                  {fmtNum(m.val, currency)}
-                  {!m.highlight && (
-                    <span className="text-[9px] font-normal text-muted ml-0.5">
-                      / month
-                    </span>
-                  )}
-                </p>
-                {m.annual != null && (
-                  <p className="text-[9px] font-mono text-muted tabular-nums leading-none mt-0.5">
-                    {fmtNum(m.annual, currency)} p.a.
-                    {m.pct != null && (
-                      <span className="ml-1 opacity-60">· {m.pct}%</span>
-                    )}
-                  </p>
-                )}
-                {m.highlight && (
-                  <p className="text-[9px] text-muted leading-none mt-0.5">
-                    take-home / month
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── Section Wrapper ──────────────────────────────────────────────────────────
-
-const Sec: React.FC<{
-  title: string;
-  icon: React.ReactNode;
-  accent?: string;
-  children: React.ReactNode;
-  collapsible?: boolean;
-}> = ({
-  title,
-  icon,
-  accent = "text-primary",
-  children,
-  collapsible = false,
-}) => {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
-      <div
-        className={`flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-app ${collapsible ? "cursor-pointer select-none" : ""}`}
-        onClick={collapsible ? () => setOpen((v) => !v) : undefined}
+    <div className="rounded-xl border border-[var(--border)] bg-card px-3 py-2 min-w-[130px]">
+      <p className="text-[9px] font-bold uppercase tracking-widest text-muted mb-1">
+        {name}
+      </p>
+      <p
+        className="text-[17px] font-extrabold tabular-nums leading-tight"
+        style={{ color: colorMap[name] ?? "var(--primary)" }}
       >
-        <div className="flex items-center gap-2">
-          <span className={accent}>{icon}</span>
-          <h3 className="text-[12px] font-bold text-main uppercase tracking-wider">
-            {title}
-          </h3>
-        </div>
-        {collapsible &&
-          (open ? (
-            <ChevronUp className="w-3.5 h-3.5 text-muted" />
-          ) : (
-            <ChevronDown className="w-3.5 h-3.5 text-muted" />
-          ))}
-      </div>
-      {open && <div className="p-4">{children}</div>}
+        {fmtNum(value, currency)}
+      </p>
+      <p className="text-[9px] text-muted mt-0.5 tabular-nums">
+        {fmtNum(value * 12, currency)} p.a.
+      </p>
     </div>
   );
 };
 
-// ─── Compensation Statement ───────────────────────────────────────────────────
+// ─── Expanded Panel ───────────────────────────────────────────────────────────
 
-const CompensationStatement: React.FC<{
-  earnings: ComponentResult[];
-  deductions: ComponentResult[];
-  gross: number;
-  deductionsTotal: number;
-  net: number;
+const ExpandedPanel: React.FC<{
+  assignment: SalaryStructureAssignment;
   currency: string;
-  hasSalaryStructure: boolean;
-}> = ({
-  earnings,
-  deductions,
-  gross,
-  deductionsTotal,
-  net,
-  currency,
-  hasSalaryStructure,
-}) => {
-  const primaryColor = useCssVar("--primary", "#6366f1");
+  colSpan: number;
+}> = ({ assignment, currency, colSpan }) => {
+  const primaryColor = useCssVar("--primary", "#c0843d");
+  const [structure, setStructure] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!hasSalaryStructure)
-    return (
-      <div className="rounded-xl border border-[var(--border)] bg-card px-4 py-6 text-center">
-        <p className="text-[12px] text-muted">
-          No salary structure assigned to this employee.
-        </p>
-      </div>
-    );
-
-  const maxLen = Math.max(earnings.length, deductions.length);
-  const earnPadded = [
-    ...earnings,
-    ...Array(Math.max(0, maxLen - earnings.length)).fill(null),
-  ];
-  const dedPadded = [
-    ...deductions,
-    ...Array(Math.max(0, maxLen - deductions.length)).fill(null),
-  ];
-
-  const footer = [
-    {
-      label: "Gross Earnings",
-      val: gross,
-      color: EARN_COLOR,
-      prefix: "",
-      borderRight: true,
-      bg: "bg-app",
-    },
-    {
-      label: "Total Deductions",
-      val: deductionsTotal,
-      color: DED_COLOR,
-      prefix: "−",
-      borderRight: true,
-      bg: "bg-app",
-    },
-    {
-      label: "Net Salary",
-      val: net,
-      color: primaryColor,
-      prefix: "",
-      borderRight: false,
-      bg: "",
-    },
-  ];
-
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
-      <div className="grid grid-cols-2 border-b border-[var(--border)] bg-app">
-        <div className="flex items-center justify-between px-3 py-2 border-r border-[var(--border)]">
-          <span
-            className="text-[9px] font-bold uppercase tracking-widest"
-            style={{ color: EARN_COLOR }}
-          >
-            Earnings
-          </span>
-          <span className="text-[9px] font-bold uppercase tracking-wider text-muted">
-            Monthly
-          </span>
-        </div>
-        <div className="flex items-center justify-between px-3 py-2">
-          <span
-            className="text-[9px] font-bold uppercase tracking-widest"
-            style={{ color: DED_COLOR }}
-          >
-            Deductions
-          </span>
-          <span className="text-[9px] font-bold uppercase tracking-wider text-muted">
-            Monthly
-          </span>
-        </div>
-      </div>
-
-      {maxLen === 0 ? (
-        <p className="px-4 py-4 text-[11px] text-muted text-center">
-          No components defined.
-        </p>
-      ) : (
-        earnPadded.map((earn, i) => {
-          const ded = dedPadded[i];
-          return (
-            <div
-              key={i}
-              className={`grid grid-cols-2 ${i < maxLen - 1 ? "border-b border-[var(--border)]" : ""}`}
-            >
-              <div className="flex items-center justify-between px-3 py-1.5 border-r border-[var(--border)] hover:bg-[var(--row-hover)] transition-colors min-w-0">
-                {earn ? (
-                  <>
-                    <span className="text-[11.5px] font-medium text-main truncate pr-2 leading-snug">
-                      {earn.name}
-                    </span>
-                    <span
-                      className="text-[11.5px] font-semibold tabular-nums shrink-0"
-                      style={{ color: EARN_COLOR }}
-                    >
-                      {fmtNum(earn.amount, currency)}
-                    </span>
-                  </>
-                ) : (
-                  <span className="opacity-0 text-[11px]">—</span>
-                )}
-              </div>
-              <div className="flex items-center justify-between px-3 py-1.5 hover:bg-[var(--row-hover)] transition-colors min-w-0">
-                {ded ? (
-                  <>
-                    <span className="text-[11.5px] font-medium text-main truncate pr-2 leading-snug">
-                      {ded.name}
-                    </span>
-                    <span
-                      className="text-[11.5px] font-semibold tabular-nums shrink-0"
-                      style={{ color: DED_COLOR }}
-                    >
-                      −{fmtNum(ded.amount, currency)}
-                    </span>
-                  </>
-                ) : (
-                  <span className="opacity-0 text-[11px]">—</span>
-                )}
-              </div>
-            </div>
-          );
-        })
-      )}
-
-      <div className="grid grid-cols-3 border-t-2 border-[var(--border)]">
-        {footer.map(({ label, val, color, prefix, borderRight, bg }) => (
-          <div
-            key={label}
-            className={`px-3 py-2.5 ${borderRight ? "border-r border-[var(--border)]" : ""} ${bg}`}
-            style={
-              !bg
-                ? {
-                    background: `color-mix(in srgb, ${primaryColor} 6%, transparent)`,
-                  }
-                : undefined
-            }
-          >
-            <p className="text-[8.5px] font-bold uppercase tracking-wider text-muted mb-0.5">
-              {label}
-            </p>
-            <p
-              className="text-[13px] font-bold tabular-nums leading-tight"
-              style={{ color }}
-            >
-              {prefix}
-              {fmtNum(val, currency)}
-            </p>
-            <p className="text-[9px] font-mono text-muted tabular-nums">
-              {prefix}
-              {fmtNum(val * 12, currency)} p.a.
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
-export const CompensationTab: React.FC<Props> = ({ emp, currency }) => {
-
-  const [salaryStructure, setSalaryStructure] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  // Animated height
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    if (contentRef.current) {
+      setHeight(contentRef.current.scrollHeight);
+    }
+  }, [structure, error]);
 
   useEffect(() => {
-    if (!emp.salary_structure) return;
-
     setLoading(true);
-    getSalaryStructure(emp.salary_structure)
-      .then(setSalaryStructure)
-      .catch((e) => console.error("Salary structure fetch failed", e))
+    setError(null);
+    getSalaryStructure(assignment.salary_structure)
+      .then(setStructure)
+      .catch(() => setError("Failed to load salary structure details."))
       .finally(() => setLoading(false));
-  }, [emp.salary_structure]);
-
-  
-
-  const monthlyBase = emp.base_salary ?? emp.ctc ?? 0;
+  }, [assignment.salary_structure]);
 
   const salaryResult = useMemo(() => {
-    if (!salaryStructure) return null;
-    return calculateSalary(monthlyBase, structureToComponents(salaryStructure));
-  }, [salaryStructure, monthlyBase]);
+    if (!structure) return null;
+    return calculateSalary(assignment.base, structureToComponents(structure));
+  }, [structure, assignment.base]);
 
-  const earnings =
-    salaryResult?.components.filter((c) => c.type === "Earning") ?? [];
-  const deductions =
-    salaryResult?.components.filter((c) => c.type === "Deduction") ?? [];
-  const gross = salaryResult?.gross ?? 0;
-  const deductionsTotal = salaryResult?.deductionsTotal ?? 0;
-  const net = salaryResult?.net ?? 0;
+  const cur = assignment.currency || currency;
 
-  if (loading)
+  const inner = (() => {
+    if (loading)
+      return (
+        <div className="px-6 py-8 flex items-center justify-center gap-2 text-muted text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading structure breakdown…
+        </div>
+      );
+
+    if (error || !salaryResult)
+      return (
+        <div className="px-6 py-6 flex items-center gap-2 text-danger text-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error ?? "No salary data available."}
+        </div>
+      );
+
+    const earnings = salaryResult.components.filter((c) => c.type === "Earning");
+    const deductions = salaryResult.components.filter((c) => c.type === "Deduction");
+    const { gross, deductionsTotal, net } = salaryResult;
+
+    const netPct = gross > 0 ? Math.round((net / gross) * 100) : 0;
+    const dedPct = gross > 0 ? Math.round((deductionsTotal / gross) * 100) : 0;
+
+    const maxLen = Math.max(earnings.length, deductions.length);
+    const earnPad: (ComponentResult | null)[] = [
+      ...earnings,
+      ...Array(Math.max(0, maxLen - earnings.length)).fill(null),
+    ];
+    const dedPad: (ComponentResult | null)[] = [
+      ...deductions,
+      ...Array(Math.max(0, maxLen - deductions.length)).fill(null),
+    ];
+
+    const barData = [
+      { name: "Gross", value: gross },
+      { name: "Deductions", value: deductionsTotal },
+      { name: "Net", value: net },
+    ];
+    const barColors = [
+      "var(--success, #22c55e)",
+      "var(--danger, #dc2626)",
+      primaryColor,
+    ];
+
     return (
-      <div className="flex flex-col gap-4 animate-pulse">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[...Array(4)].map((_, i) => (
+      <div className="px-5 py-4 flex flex-col gap-4">
+
+        {/* KPI strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          {[
+            {
+              label: "Gross earnings",
+              value: gross,
+              cls: "text-success",
+              bg: "rgba(34,197,94,0.07)",
+              bd: "rgba(34,197,94,0.18)",
+            },
+            {
+              label: "Total deductions",
+              value: deductionsTotal,
+              cls: "text-danger",
+              bg: "rgba(220,38,38,0.07)",
+              bd: "rgba(220,38,38,0.18)",
+            },
+            {
+              label: "Net salary",
+              value: net,
+              cls: "text-primary",
+              bg: `color-mix(in srgb,${primaryColor} 7%,transparent)`,
+              bd: `color-mix(in srgb,${primaryColor} 22%,transparent)`,
+            },
+          ].map((k) => (
             <div
-              key={i}
-              className="h-[68px] rounded-xl bg-gray-100 dark:bg-gray-800"
-            />
+              key={k.label}
+              className="rounded-xl px-4 py-3"
+              style={{ background: k.bg, border: `1px solid ${k.bd}` }}
+            >
+              <p className="text-[9px] font-bold uppercase tracking-widest text-muted mb-1.5">
+                {k.label}
+              </p>
+              <p className={`text-[18px] font-extrabold tabular-nums leading-none ${k.cls}`}>
+                {fmtNum(k.value, cur)}
+              </p>
+              <p className="text-[9px] text-muted tabular-nums mt-1">
+                {fmtNum(k.value * 12, cur)} p.a.
+              </p>
+            </div>
           ))}
         </div>
-        <div className="h-36 rounded-xl bg-gray-100 dark:bg-gray-800" />
-        <div className="h-52 rounded-xl bg-gray-100 dark:bg-gray-800" />
+
+        {/* Breakdown table + chart */}
+        <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 200px" }}>
+
+          {/* Earnings vs Deductions */}
+          <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
+            <div className="grid grid-cols-2 bg-app border-b border-[var(--border)]">
+              <div className="flex items-center justify-between px-3 py-2 border-r border-[var(--border)]">
+                <span className="text-[9px] font-extrabold uppercase tracking-widest text-success">Earnings</span>
+                <span className="text-[9px] text-muted">Monthly</span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-[9px] font-extrabold uppercase tracking-widest text-danger">Deductions</span>
+                <span className="text-[9px] text-muted">Monthly</span>
+              </div>
+            </div>
+
+            {maxLen === 0 ? (
+              <p className="text-center text-[11px] text-muted py-5">No components defined.</p>
+            ) : (
+              earnPad.map((e, i) => {
+                const d = dedPad[i];
+                return (
+                  <div
+                    key={i}
+                    className={`grid grid-cols-2 ${i < maxLen - 1 ? "border-b border-[var(--border)]" : ""}`}
+                  >
+                    <div className="flex items-center justify-between px-3 py-1.5 border-r border-[var(--border)] hover:bg-[var(--row-hover)] transition-colors min-w-0">
+                      {e ? (
+                        <>
+                          <span className="text-[11px] font-medium text-main truncate pr-2">{e.name}</span>
+                          <span className="text-[11px] font-semibold tabular-nums shrink-0 text-success">{fmtNum(e.amount, cur)}</span>
+                        </>
+                      ) : <span className="opacity-0">—</span>}
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-[var(--row-hover)] transition-colors min-w-0">
+                      {d ? (
+                        <>
+                          <span className="text-[11px] font-medium text-main truncate pr-2">{d.name}</span>
+                          <span className="text-[11px] font-semibold tabular-nums shrink-0 text-danger">−{fmtNum(d.amount, cur)}</span>
+                        </>
+                      ) : <span className="opacity-0">—</span>}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {/* Footer totals */}
+            <div className="grid grid-cols-3 border-t-2 border-[var(--border)]">
+              {[
+                { label: "Gross",      value: gross,           prefix: "",  cls: "text-success", bg: "bg-app" },
+                { label: "Deductions", value: deductionsTotal, prefix: "−", cls: "text-danger",  bg: "bg-app" },
+                { label: "Net salary", value: net,             prefix: "",  cls: "text-primary", bg: ""       },
+              ].map((f, i) => (
+                <div
+                  key={f.label}
+                  className={`px-3 py-2 ${i < 2 ? "border-r border-[var(--border)]" : ""} ${f.bg}`}
+                  style={!f.bg ? { background: `color-mix(in srgb,${primaryColor} 6%,transparent)` } : undefined}
+                >
+                  <p className="text-[8px] font-bold uppercase tracking-wider text-muted mb-0.5">{f.label}</p>
+                  <p className={`text-[12px] font-extrabold tabular-nums ${f.cls}`}>{f.prefix}{fmtNum(f.value, cur)}</p>
+                  <p className="text-[9px] font-mono text-muted tabular-nums">{f.prefix}{fmtNum(f.value * 12, cur)} p.a.</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bar chart */}
+          <div className="rounded-xl border border-[var(--border)] bg-card px-3 pt-4 pb-3 flex flex-col gap-3">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted">Composition</p>
+            <ResponsiveContainer width="100%" height={110}>
+              <BarChart data={barData} barSize={24} margin={{ top: 2, right: 2, bottom: 0, left: -24 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip content={<BarTip currency={cur} />} cursor={{ fill: "var(--row-hover)" }} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {barData.map((_, i) => <Cell key={i} fill={barColors[i]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="flex flex-col gap-1.5 mt-auto pt-2 border-t border-[var(--border)]">
+              {[
+                { label: "Take-home", pct: netPct, cls: "text-primary" },
+                { label: "Deductions", pct: dedPct, cls: "text-danger" },
+              ].map((b) => (
+                <div key={b.label} className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted">{b.label}</span>
+                  <span className={`text-[11px] font-bold tabular-nums ${b.cls}`}>{b.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
+  })();
 
   return (
-    <div className="flex flex-col gap-4">
-      <PayrollKpiStrip
-        monthlyBase={monthlyBase}
-        gross={gross}
-        deductionsTotal={deductionsTotal}
-        net={net}
-        currency={currency}
-        earningsCount={earnings.length}
-        deductionsCount={deductions.length}
-      />
-      {gross > 0 && (
-        <CompositionPanel
-          gross={gross}
-          deductionsTotal={deductionsTotal}
-          net={net}
-          currency={currency}
-        />
-      )}
-      <CompensationStatement
-        earnings={earnings}
-        deductions={deductions}
-        gross={gross}
-        deductionsTotal={deductionsTotal}
-        net={net}
-        currency={currency}
-        hasSalaryStructure={!!salaryStructure}
-      />
-      
-        
+    <tr>
+      <td
+        colSpan={colSpan}
+        className="p-0 border-b border-[var(--border)]"
+        style={{ borderTop: "2px solid color-mix(in srgb, var(--primary) 25%, transparent)" }}
+      >
+        {/* Animated slide-down wrapper */}
+        <div
+          style={{
+            height: loading ? "80px" : height ? `${height}px` : "auto",
+            overflow: "hidden",
+            transition: "height 220ms cubic-bezier(0.4,0,0.2,1)",
+            background: "var(--app-bg, var(--app))",
+          }}
+        >
+          <div ref={contentRef}>
+            {inner}
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
+// ─── Skeleton rows ────────────────────────────────────────────────────────────
+
+const SkeletonTr: React.FC<{ cols: number }> = ({ cols }) => (
+  <tr className="animate-pulse">
+    {Array.from({ length: cols }).map((_, i) => (
+      <td key={i} className="px-4 py-3 border-b border-[var(--border)]">
+        <div className="h-3 rounded-full bg-[var(--border)]" style={{ width: `${55 + (i * 17) % 35}%` }} />
+      </td>
+    ))}
+  </tr>
+);
+
+
+
+// ─── Column definitions ───────────────────────────────────────────────────────
+
+interface ColDef {
+  key: string;
+  label: string;
+  align?: "left" | "right" | "center";
+  /** Hide on small screens */
+  hideBelow?: "sm" | "md" | "lg";
+}
+
+const COLUMNS: ColDef[] = [
+  { key: "expand",           label: "",               align: "center"  },
+  { key: "salary_structure", label: "Structure",      align: "left"    },
+  { key: "name",             label: "Reference",      align: "left",   hideBelow: "md" },
+  { key: "from_date",        label: "Effective From", align: "left",   hideBelow: "sm" },
+  { key: "base",             label: "Base",           align: "right"   },
+];
+
+const hideCls: Record<string, string> = {
+  sm: "hidden sm:table-cell",
+  md: "hidden md:table-cell",
+  lg: "hidden lg:table-cell",
+};
+
+// ─── Main Export ──────────────────────────────────────────────────────────────
+
+export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, currency }) => {
+  const [assignments, setAssignments] = useState<SalaryStructureAssignment[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
+
+  // Filter state
+  const [search,   setSearch]   = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate,   setToDate]   = useState("");
+
+  // Pagination
+  const [page,       setPage]       = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  // Expanded row
+  const [expandedName, setExpandedName] = useState<string | null>(null);
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!emp.employee) return;
+    setLoading(true);
+    setError(null);
+
+    getSalaryStructureAssignmentsByEmployee(
+      emp.employee,
+      page,
+      PAGE_SIZE,
+      search,
+      fromDate,
+      toDate,
+    )
+      .then((result) => {
+        setAssignments(result.data);
+        // result.total comes from pagination.total_count ?? data.length.
+        // If the server returns pagination.total (not total_count), the API
+        // falls back to data.length (e.g. 5). We recalculate totalPages from
+        // whatever total we got; if it's just page size, totalPages = 1 and
+        // pagination hides — which is exactly the bug.
+        // Fix: read the raw response total_pages directly if the API exposes it,
+        // otherwise fall back to ceiling calculation.
+        const knownTotal  = result.total;           // may be data.length if API mismatch
+        const knownPages  = (result as any).totalPages
+                         ?? (result as any).total_pages
+                         ?? Math.ceil(knownTotal / PAGE_SIZE);
+        setTotalCount(knownTotal);
+        setTotalPages(knownPages);
+      })
+      .catch(() => setError("Failed to load salary structure assignments."))
+      .finally(() => setLoading(false));
+  }, [emp.employee, page, search, fromDate, toDate]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleSearch = (value: string) => { setPage(1); setSearch(value); };
+  const handleFromDate = (value: string) => { setPage(1); setFromDate(value); };
+  const handleToDate   = (value: string) => { setPage(1); setToDate(value); };
+
+  const clearFilters = () => {
+    setPage(1);
+    setSearch("");
+    setFromDate("");
+    setToDate("");
+  };
+
+  const toggleRow = (name: string) =>
+    setExpandedName((prev) => (prev === name ? null : name));
+
+  // ── Derived ───────────────────────────────────────────────────────────────
+
+  const hasFilters = !!(search || fromDate || toDate);
+  const visibleCols = COLUMNS.length;
+
+  // Active = the record with the latest from_date that is <= today.
+  // Computed from whatever assignments are currently loaded.
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const activeAssignmentName = useMemo(() => {
+    const past = assignments.filter(
+      (a) => new Date(a.from_date) <= today,
+    );
+    if (!past.length) return null;
+    past.sort(
+      (a, b) => new Date(b.from_date).getTime() - new Date(a.from_date).getTime(),
+    );
+    return past[0].name;
+  }, [assignments, today]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="flex flex-col gap-3">
+
+      {/* ── Section header ─────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Layers className="w-3.5 h-3.5 text-muted" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted">
+            Salary Structure Assignments
+          </span>
+          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+            {totalCount}
+          </span>
+        </div>
+        <span className="text-[10px] text-muted">Click any row to expand breakdown</span>
+      </div>
+
+      {/* ── Card wrapper ───────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
+
+        {/* ── Toolbar ──────────────────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-[var(--border)] bg-card">
+
+          {/* Search */}
+          <div className="relative flex-1 min-w-[160px] max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search structure or reference…"
+              className="w-full pl-8 pr-3 py-1.5 text-[12px] bg-app border border-[var(--border)] rounded-lg
+                text-main placeholder:text-muted outline-none
+                hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors"
+            />
+          </div>
+
+          <div className="w-px h-5 bg-[var(--border)] shrink-0 hidden sm:block" />
+
+          {/* From date */}
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-3 h-3 text-muted shrink-0" />
+            <span className="text-[11px] text-muted whitespace-nowrap">From</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => handleFromDate(e.target.value)}
+              className="text-[12px] bg-app border border-[var(--border)] rounded-lg px-2 py-1.5
+                text-main outline-none hover:border-[var(--primary)] focus:border-[var(--primary)]
+                transition-colors cursor-pointer"
+            />
+          </div>
+
+          {/* To date */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-muted">To</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => handleToDate(e.target.value)}
+              className="text-[12px] bg-app border border-[var(--border)] rounded-lg px-2 py-1.5
+                text-main outline-none hover:border-[var(--primary)] focus:border-[var(--primary)]
+                transition-colors cursor-pointer"
+            />
+          </div>
+
+          {/* Clear */}
+          {hasFilters && (
+            <>
+              <div className="w-px h-5 bg-[var(--border)] shrink-0" />
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-[11px] font-medium text-muted
+                  border border-[var(--border)] rounded-lg px-2.5 py-1.5
+                  hover:text-main hover:bg-[var(--row-hover)] transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Clear
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* ── Error ────────────────────────────────────────────────────────── */}
+        {error && (
+          <div className="px-5 py-6 flex items-center gap-3 text-danger text-sm">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            {error}
+          </div>
+        )}
+
+        {/* ── Table ────────────────────────────────────────────────────────── */}
+        {!error && (
+          <div className="w-full overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+
+              {/* thead — always visible */}
+              <thead>
+                <tr className="bg-[var(--border)]/10">
+                  {COLUMNS.map((col) => (
+                    <th
+                      key={col.key}
+                      className={[
+                        "px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-muted whitespace-nowrap border-b border-[var(--border)]",
+                        col.align === "right"  ? "text-right"  :
+                        col.align === "center" ? "text-center" : "text-left",
+                        col.hideBelow ? hideCls[col.hideBelow] : "",
+                      ].join(" ")}
+                    >
+                      {col.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody>
+                {/* ── Loading skeletons ─────────────────────────────────── */}
+                {loading && Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                  <SkeletonTr key={i} cols={visibleCols} />
+                ))}
+
+                {/* ── Empty state ───────────────────────────────────────── */}
+                {!loading && assignments.length === 0 && (
+                  <tr>
+                    <td colSpan={visibleCols} className="px-5 py-12 text-center">
+                      <Search className="w-6 h-6 text-muted mx-auto mb-2 opacity-40" />
+                      <p className="text-[13px] text-muted">No assignments match your filters.</p>
+                      {hasFilters && (
+                        <button
+                          onClick={clearFilters}
+                          className="mt-3 text-[11px] text-primary underline underline-offset-2"
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )}
+
+                {/* ── Data rows ─────────────────────────────────────────── */}
+                {!loading && assignments.map((a, i) => {
+                  const isOpen    = expandedName === a.name;
+                  const cur       = a.currency || currency;
+                  const globalIdx = (page - 1) * PAGE_SIZE + i + 1;
+                  const isActive  = activeAssignmentName === a.name;
+                  const isUpcoming = new Date(a.from_date) > today;
+
+                  return (
+                    <React.Fragment key={a.name}>
+                      <tr
+                        onClick={() => toggleRow(a.name)}
+                        className={[
+                          "cursor-pointer transition-colors duration-100 group",
+                          isOpen
+                            ? "bg-primary/5"
+                            : i % 2 === 0
+                              ? "bg-transparent hover:bg-[var(--row-hover)]"
+                              : "bg-[var(--row-hover)]/40 hover:bg-[var(--row-hover)]",
+                        ].join(" ")}
+                      >
+
+                        {/* Expand toggle */}
+                        <td className="px-4 py-3 text-center w-10 border-b border-[var(--border)]/40">
+                          <div className={`inline-flex w-6 h-6 rounded-md items-center justify-center transition-colors
+                            ${isOpen ? "bg-primary/10 text-primary" : "bg-[var(--row-hover)] text-muted group-hover:text-main"}`}>
+                            {isOpen
+                              ? <ChevronUp className="w-3.5 h-3.5" />
+                              : <ChevronDown className="w-3.5 h-3.5" />}
+                          </div>
+                        </td>
+
+                        {/* Structure */}
+                        <td className="px-4 py-3 border-b border-[var(--border)]/40">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-extrabold shrink-0
+                              ${isActive ? "bg-primary/10 text-primary" : "bg-[var(--border)] text-muted"}`}>
+                              {globalIdx}
+                            </span>
+                            <span className="text-[13px] font-semibold text-main leading-tight">
+                              {a.salary_structure}
+                            </span>
+                            {isActive && (
+                              <span className="text-[9px] font-bold uppercase tracking-wide bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                                Active
+                              </span>
+                            )}
+                            {isUpcoming && (
+                              <span className="text-[9px] font-bold uppercase tracking-wide bg-warning/10 text-warning px-2 py-0.5 rounded-full border border-warning/20">
+                                Upcoming
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Reference */}
+                        <td className={`px-4 py-3 border-b border-[var(--border)]/40 ${hideCls.md}`}>
+                          <span className="text-[11px] text-muted flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5 shrink-0" />
+                            {a.name}
+                          </span>
+                        </td>
+
+                        {/* Effective From */}
+                        <td className={`px-4 py-3 border-b border-[var(--border)]/40 ${hideCls.sm}`}>
+                          <span className="text-[12px] text-main flex items-center gap-1">
+                            <Calendar className="w-2.5 h-2.5 text-muted shrink-0" />
+                            {fmtDate(a.from_date)}
+                          </span>
+                        </td>
+
+                        {/* Base */}
+                        <td className="px-4 py-3 border-b border-[var(--border)]/40 text-right">
+                          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted">Base</p>
+                          <p className="text-[13px] font-bold tabular-nums text-main">{fmtNum(a.base, cur)}</p>
+                        </td>
+                      </tr>
+
+                      {/* Expanded panel row — always rendered, height-animated */}
+                      {isOpen && (
+                        <ExpandedPanel
+                          assignment={a}
+                          currency={currency}
+                          colSpan={visibleCols}
+                        />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ── Pagination footer — always visible ───────────────────────────── */}
+        {!error && (
+          <div className="px-4 py-2.5 border-t border-[var(--border)] bg-card">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              pageSize={PAGE_SIZE}
+              totalItems={totalCount}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

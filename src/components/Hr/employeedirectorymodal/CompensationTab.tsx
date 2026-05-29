@@ -498,11 +498,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
                 Components
               </span>
-              {currency && (
-                <span className="text-[10px] text-muted/60 font-mono">
-                  {currency}
-                </span>
-              )}
+              
             </div>
 
             <table className="w-full border-collapse">
