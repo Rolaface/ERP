@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import type { Column } from "./type";
-import { useLayoutEffect } from "react";
 
 interface ColumnSelectorProps {
   columns: Column<any>[];
@@ -11,7 +10,6 @@ interface ColumnSelectorProps {
   className?: string;
   buttonLabel?: string;
 }
-
 
 interface DropdownContentProps {
   isOpen: boolean;
@@ -23,6 +21,31 @@ interface DropdownContentProps {
   onApply: (keys: string[]) => void;
 }
 
+const DROPDOWN_WIDTH  = 288;
+const DROPDOWN_HEIGHT = 420; // approx max height
+const GAP             = 8;
+
+function computePosition(anchor: HTMLButtonElement): { top: number; left: number } {
+  const rect   = anchor.getBoundingClientRect();
+  const vw     = window.innerWidth;
+  const vh     = window.innerHeight;
+
+  // Try to open below; if not enough room, open above
+  const spaceBelow = vh - rect.bottom;
+  const spaceAbove = rect.top;
+  const openAbove  = spaceBelow < DROPDOWN_HEIGHT && spaceAbove > spaceBelow;
+
+  const top = openAbove
+    ? rect.top  + window.scrollY - DROPDOWN_HEIGHT - GAP
+    : rect.bottom + window.scrollY + GAP;
+
+  // Align right edge of dropdown to right edge of button, clamp to viewport
+  let left = rect.right + window.scrollX - DROPDOWN_WIDTH;
+  left = Math.max(GAP, Math.min(left, vw - DROPDOWN_WIDTH - GAP));
+
+  return { top, left };
+}
+
 function DropdownContent({
   isOpen,
   onClose,
@@ -32,127 +55,108 @@ function DropdownContent({
   allKeys,
   onApply,
 }: DropdownContentProps) {
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef              = useRef<HTMLDivElement>(null);
   const [menuSearch, setMenuSearch] = useState("");
-  const [draftKeys, setDraftKeys] = useState<string[]>(visibleKeys);
+  const [draftKeys, setDraftKeys]   = useState<string[]>(visibleKeys);
+  const [position, setPosition]     = useState<{ top: number; left: number } | null>(null);
 
-  const [position, setPosition] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
-
+  // Sync draft when opening
   useEffect(() => {
     if (isOpen) {
       setDraftKeys(visibleKeys);
       setMenuSearch("");
     }
-  }, [isOpen]); 
+  }, [isOpen]);
 
-  const toggleDraft = (key: string) => {
-    setDraftKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    );
-  };
-
+  // Compute + recompute position on open, resize, scroll
   useLayoutEffect(() => {
     if (!isOpen || !anchorRef.current) return;
 
-    const rect = anchorRef.current.getBoundingClientRect();
-    const dropdownWidth = 288;
+    const update = () => {
+      if (anchorRef.current) setPosition(computePosition(anchorRef.current));
+    };
 
-    let left = rect.right + window.scrollX - dropdownWidth;
-    if (left < 8) left = 8;
+    update();
 
-    const top = rect.bottom + window.scrollY + 8;
-
-    setPosition({ top, left });
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
   }, [isOpen]);
 
+  // Click outside + Escape
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        dropdownRef.current  && !dropdownRef.current.contains(target) &&
+        anchorRef.current    && !anchorRef.current.contains(target)
+      ) {
+        onClose();
+      }
+    };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  const toggleDraft = (key: string) =>
+    setDraftKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+
   const handleDone = () => {
-    onApply(draftKeys); 
+    onApply(draftKeys);
     onClose();
     setMenuSearch("");
   };
 
   const handleCancel = () => {
-    onClose();         
+    onClose();
     setMenuSearch("");
   };
 
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target) &&
-        anchorRef.current &&
-        !anchorRef.current.contains(target)
-      ) {
-        onClose();
-        setMenuSearch("");
-      }
-    };
-
-
-    // Handle escape key to close dropdown
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-        setMenuSearch("");
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [isOpen, onClose, anchorRef]);
-
-  // Reset search when dropdown closes
-  useEffect(() => {
-    if (!isOpen) {
-      setMenuSearch("");
-    }
-  }, [isOpen]);
-
-  // Filter columns based on search input
   const filteredColumns = columns.filter((col) =>
     col.header.toLowerCase().includes(menuSearch.trim().toLowerCase()),
   );
 
   if (!isOpen || !position) return null;
 
-  // Render dropdown via portal to avoid overflow clipping
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed w-72 bg-card border border-[var(--border)] rounded-lg shadow-2xl z-[9999] overflow-hidden"
+      className="fixed bg-card border border-[var(--border)] rounded-lg shadow-2xl overflow-hidden flex flex-col"
       style={{
-        top: position.top,
-        left: position.left,
+        top:      position.top,
+        left:     position.left,
+        width:    DROPDOWN_WIDTH,
+        maxHeight: `min(${DROPDOWN_HEIGHT}px, calc(100vh - ${position.top}px - ${GAP}px))`,
+        zIndex:   9999,
       }}
       role="dialog"
       aria-label="Column selector"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header */}
-      <div className="bg-primary px-4 py-3 flex items-center justify-between">
-        <div className="text-sm font-semibold text-white">
+      <div className="bg-primary px-4 py-3 flex items-center justify-between shrink-0">
+        <span className="text-sm font-semibold text-white">
           Columns ({draftKeys.length}/{columns.length})
-        </div>
+        </span>
         <button
-          onClick={() => {
-            onClose();
-            setMenuSearch("");
-          }}
-          className="p-1 rounded hover:bg-card/20 text-white transition-colors"
+          onClick={handleCancel}
+          className="p-1 rounded hover:bg-white/20 text-white transition-colors"
           type="button"
           aria-label="Close column selector"
         >
@@ -160,84 +164,68 @@ function DropdownContent({
         </button>
       </div>
 
-      {/* Search Input */}
-      <div className="p-3 bg-card border-b border-[var(--border)]">
+      {/* Search */}
+      <div className="p-3 bg-card border-b border-[var(--border)] shrink-0">
         <div className="relative">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            aria-hidden="true"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             type="search"
             placeholder="Search columns..."
             value={menuSearch}
             onChange={(e) => setMenuSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-[var(--border)] rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-card text-main placeholder:text-muted transition-none
-"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[var(--border)] rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-card text-main placeholder:text-muted"
           />
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="flex items-center justify-between px-4 py-2 bg-card border-b border-[var(--border)]">
+      {/* Quick actions */}
+      <div className="flex items-center justify-between px-4 py-2 bg-card border-b border-[var(--border)] shrink-0">
         <button
           onClick={() => setDraftKeys(allKeys)}
-          className="text-xs font-medium bg-primary text-white px-2 py-1 rounded hover:opacity-90 transition-opacity"
+          className="text-xs font-medium bg-primary text-white px-2 py-1 rounded hover:opacity-90"
           type="button"
         >
           ✓ Show all
         </button>
         <button
           onClick={() => setDraftKeys([])}
-          className="text-xs font-medium text-[var(--danger)] hover:text-[var(--danger-700)] px-2 py-1 rounded transition-colors"
+          className="text-xs font-medium text-[var(--danger)] px-2 py-1 rounded hover:opacity-80"
           type="button"
         >
           ✕ Hide all
         </button>
       </div>
 
-      {/* Column List */}
-      <div className="max-h-64 overflow-y-auto bg-card custom-scrollbar">
+      {/* Column list — takes remaining space, scrolls */}
+      <div className="overflow-y-auto flex-1 bg-card custom-scrollbar">
         {filteredColumns.length > 0 ? (
           <div className="p-2">
             {filteredColumns.map((col) => (
               <label
                 key={col.key}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-row-hover cursor-pointer select-none transition-colors group"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-row-hover cursor-pointer select-none transition-colors"
               >
                 <input
                   type="checkbox"
-                  checked={draftKeys.includes(col.key)}   
-                  onChange={() => toggleDraft(col.key)}    
+                  checked={draftKeys.includes(col.key)}
+                  onChange={() => toggleDraft(col.key)}
                   onClick={(e) => e.stopPropagation()}
                   className="w-4 h-4 border border-[var(--border)] rounded bg-card accent-[var(--primary)] cursor-pointer"
                 />
-
-                <div className="flex-1 text-sm text-main font-medium">
+                <span className="flex-1 text-sm text-main font-medium">
                   {col.header}
-                </div>
+                </span>
                 {draftKeys.includes(col.key) && (
-                  <svg
-                    className="w-4 h-4 text-[var(--success)]"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
+                  <svg className="w-4 h-4 text-[var(--success)] shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
+                      clipRule="evenodd" />
                   </svg>
                 )}
               </label>
@@ -245,23 +233,23 @@ function DropdownContent({
           </div>
         ) : (
           <div className="px-4 py-8 text-center text-sm text-muted">
-            No columns found matching "{menuSearch}"
+            No columns matching "{menuSearch}"
           </div>
         )}
       </div>
 
-      {/* Footer Actions */}
-      <div className="px-3 py-3 bg-card border-t border-[var(--border)] flex items-center justify-end gap-2">
+      {/* Footer */}
+      <div className="px-3 py-3 bg-card border-t border-[var(--border)] flex items-center justify-end gap-2 shrink-0">
         <button
           onClick={handleCancel}
-          className="text-sm px-4 py-1.5 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover transition-colors"
+          className="text-sm px-4 py-1.5 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover"
           type="button"
         >
           Cancel
         </button>
         <button
           onClick={handleDone}
-          className="text-sm px-4 py-1.5 rounded-md bg-primary text-white hover:opacity-90 transition-opacity"
+          className="text-sm px-4 py-1.5 rounded-md bg-primary text-white hover:opacity-90"
           type="button"
         >
           Done
@@ -272,7 +260,6 @@ function DropdownContent({
   );
 }
 
-
 export default function ColumnSelector({
   columns,
   visibleKeys,
@@ -281,54 +268,37 @@ export default function ColumnSelector({
   className,
   buttonLabel,
 }: ColumnSelectorProps) {
-  const [open, setOpen] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen]    = useState(false);
+  const buttonRef          = useRef<HTMLButtonElement>(null);
 
   return (
     <div className={`relative inline-block ${className ?? ""}`}>
-      {/* Trigger Button */}
       <button
         ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((prev) => !prev);
-        }}
-        className={`px-3 py-2 rounded-xl text-sm border transaction-none flex items-center gap-2 ${open
-          ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-          : "bg-card text-muted border-[var(--border)] hover:text-primary hover:border-primary"
-          }`}
+        onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
+        className={`px-3 py-2 rounded-xl text-sm border flex items-center gap-2 transition-colors ${
+          open
+            ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+            : "bg-card text-muted border-[var(--border)] hover:text-primary hover:border-primary"
+        }`}
         aria-haspopup="dialog"
         aria-expanded={open}
-        title="Select visible columns"
       >
-        <svg
-          className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
-          />
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round"
+            d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
         </svg>
         <span className="whitespace-nowrap text-[10px] font-black uppercase tracking-widest">
           {buttonLabel ?? `Columns (${visibleKeys.length})`}
         </span>
-        <svg className="w-5 h-5">
-          <path
-            fillRule="evenodd"
+        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd"
             d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
-            clipRule="evenodd"
-          />
+            clipRule="evenodd" />
         </svg>
       </button>
 
-      {/* Dropdown rendered via Portal */}
       <DropdownContent
         isOpen={open}
         onClose={() => setOpen(false)}
@@ -336,7 +306,7 @@ export default function ColumnSelector({
         columns={columns}
         visibleKeys={visibleKeys}
         allKeys={allKeys}
-        onApply={onApply}     
+        onApply={onApply}
       />
     </div>
   );

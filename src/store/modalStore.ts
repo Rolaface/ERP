@@ -57,7 +57,7 @@ export type ModalType =
   | "appraisal"
   | "employeeFeedback"
   |"emailTemplate"
-  |"employeeAdvance";
+  |"employeeAdvance"|"payrollPreview";
 
 export interface ModalContext {
   source?: string;
@@ -66,6 +66,7 @@ export interface ModalContext {
   onSuccess?: ModalCallback;
   onSubmit?: (data: unknown) => Promise<void> | void;
   isViewMode?: boolean;
+   loading?: boolean;
 
 }
 
@@ -906,3 +907,13 @@ export const openFeedbackModal = (
   useModalStore
     .getState()
     .openModal("feedback", initialData, isEdit, context, meta);
+
+export const openPayrollPreviewModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("payrollPreview", initialData, isEdit, context, meta);

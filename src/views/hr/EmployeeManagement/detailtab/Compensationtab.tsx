@@ -1,100 +1,106 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ChevronDown,
-  ChevronUp,
-  Calendar,
-  Layers,
-  Clock,
-  AlertCircle,
-  Loader2,
-  Search,
-  X,
+  ChevronDown, ChevronUp, Calendar, Layers,
+  Clock, AlertCircle, Loader2, Search, X,
 } from "lucide-react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, Cell,
 } from "recharts";
 
-import { fmtMoney } from "./Employeehelpers";
-import {
-  getSalaryStructureAssignmentsByEmployee,
-  type SalaryStructureAssignment,
-} from "../../../../api/payroll/payrollEntryApi";
-import { getSalaryStructure } from "../../../../api/payrollConfigApi";
-import {
-  calculateSalary,
-  structureToComponents,
-  type ComponentResult,
-} from "../../../../components/Hr/employeedirectorymodal/salaryengine";
-import Pagination from "../../../../components/Pagination";
+import { fmtMoney }                              from "./Employeehelpers";
+import { getSalaryStructureAssignmentsByEmployee, type SalaryStructureAssignment } from "../../../../api/payroll/payrollEntryApi";
+import { getSalaryStructure }                    from "../../../../api/payrollConfigApi";
+import { calculateSalary, structureToComponents, type ComponentResult } from "../../../../components/Hr/employeedirectorymodal/salaryengine";
+import Pagination                                from "../../../../components/Pagination";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 7;
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Props {
   emp: any;
   currency: string;
 }
 
+interface ColDef {
+  key: string;
+  label: string;
+  align?: "left" | "right" | "center";
+  hideBelow?: "sm" | "md" | "lg";
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const COLUMNS: ColDef[] = [
+  { key: "expand",           label: "",               align: "center"              },
+  { key: "salary_structure", label: "Structure",      align: "left"                },
+  { key: "name",             label: "Reference",      align: "left",  hideBelow: "md" },
+  { key: "from_date",        label: "Effective From", align: "left",  hideBelow: "sm" },
+  { key: "base",             label: "Base",           align: "right"               },
+];
+
+const HIDE_CLS: Record<string, string> = {
+  sm: "hidden sm:table-cell",
+  md: "hidden md:table-cell",
+  lg: "hidden lg:table-cell",
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const fmtNum = (n: number, cur: string): string =>
+const fmtNum = (n: number, cur: string) =>
   fmtMoney(n, cur) ??
-  `${cur} ${n.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  `${cur} ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
 function useCssVar(name: string, fallback: string): string {
-  const [val, setVal] = React.useState(fallback);
+  const [val, setVal] = useState(fallback);
   useEffect(() => {
-    const v = getComputedStyle(document.documentElement)
-      .getPropertyValue(name)
-      .trim();
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     if (v) setVal(v);
   }, [name]);
   return val;
 }
 
-// ─── Bar Tooltip ──────────────────────────────────────────────────────────────
+function useToday() {
+  return useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const SkeletonTr: React.FC<{ cols: number }> = ({ cols }) => (
+  <tr className="animate-pulse">
+    {Array.from({ length: cols }).map((_, i) => (
+      <td key={i} className="px-4 py-3 border-b border-[var(--border)]">
+        <div className="h-3 rounded-full bg-[var(--border)]" style={{ width: `${55 + (i * 17) % 35}%` }} />
+      </td>
+    ))}
+  </tr>
+);
 
 const BarTip = ({ active, payload, currency }: any) => {
   if (!active || !payload?.length) return null;
   const { name, value } = payload[0];
   const colorMap: Record<string, string> = {
-    Gross: "var(--success, #22c55e)",
-    Deductions: "var(--danger, #dc2626)",
-    Net: "var(--primary)",
+    Gross:      "var(--success, #22c55e)",
+    Deductions: "var(--danger,  #dc2626)",
+    Net:        "var(--primary)",
   };
   return (
     <div className="rounded-xl border border-[var(--border)] bg-card px-3 py-2 min-w-[130px]">
-      <p className="text-[9px] font-bold uppercase tracking-widest text-muted mb-1">
-        {name}
-      </p>
-      <p
-        className="text-[17px] font-extrabold tabular-nums leading-tight"
-        style={{ color: colorMap[name] ?? "var(--primary)" }}
-      >
+      <p className="text-[9px] font-bold uppercase tracking-widest text-muted mb-1">{name}</p>
+      <p className="text-[17px] font-extrabold tabular-nums leading-tight" style={{ color: colorMap[name] ?? "var(--primary)" }}>
         {fmtNum(value, currency)}
       </p>
-      <p className="text-[9px] text-muted mt-0.5 tabular-nums">
-        {fmtNum(value * 12, currency)} p.a.
-      </p>
+      <p className="text-[9px] text-muted mt-0.5 tabular-nums">{fmtNum(value * 12, currency)} p.a.</p>
     </div>
   );
 };
@@ -106,18 +112,15 @@ const ExpandedPanel: React.FC<{
   currency: string;
   colSpan: number;
 }> = ({ assignment, currency, colSpan }) => {
-  const primaryColor = useCssVar("--primary", "#c0843d");
+  const primaryColor              = useCssVar("--primary", "#c0843d");
   const [structure, setStructure] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+  const contentRef                = useRef<HTMLDivElement>(null);
+  const [height, setHeight]       = useState(0);
 
-  // Animated height
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState(0);
   useEffect(() => {
-    if (contentRef.current) {
-      setHeight(contentRef.current.scrollHeight);
-    }
+    if (contentRef.current) setHeight(contentRef.current.scrollHeight);
   }, [structure, error]);
 
   useEffect(() => {
@@ -136,7 +139,7 @@ const ExpandedPanel: React.FC<{
 
   const cur = assignment.currency || currency;
 
-  const inner = (() => {
+  const renderBody = () => {
     if (loading)
       return (
         <div className="px-6 py-8 flex items-center justify-center gap-2 text-muted text-sm">
@@ -153,33 +156,32 @@ const ExpandedPanel: React.FC<{
         </div>
       );
 
-    const earnings = salaryResult.components.filter((c) => c.type === "Earning");
-    const deductions = salaryResult.components.filter((c) => c.type === "Deduction");
     const { gross, deductionsTotal, net } = salaryResult;
+    const earnings   = salaryResult.components.filter((c) => c.type === "Earning");
+    const deductions = salaryResult.components.filter((c) => c.type === "Deduction");
+    const maxLen     = Math.max(earnings.length, deductions.length);
 
-    const netPct = gross > 0 ? Math.round((net / gross) * 100) : 0;
-    const dedPct = gross > 0 ? Math.round((deductionsTotal / gross) * 100) : 0;
-
-    const maxLen = Math.max(earnings.length, deductions.length);
-    const earnPad: (ComponentResult | null)[] = [
-      ...earnings,
-      ...Array(Math.max(0, maxLen - earnings.length)).fill(null),
-    ];
-    const dedPad: (ComponentResult | null)[] = [
-      ...deductions,
-      ...Array(Math.max(0, maxLen - deductions.length)).fill(null),
+    const pad = <T,>(arr: T[], len: number): (T | null)[] => [
+      ...arr,
+      ...Array(Math.max(0, len - arr.length)).fill(null),
     ];
 
-    const barData = [
-      { name: "Gross", value: gross },
-      { name: "Deductions", value: deductionsTotal },
-      { name: "Net", value: net },
+    const earnPad = pad<ComponentResult>(earnings,   maxLen);
+    const dedPad  = pad<ComponentResult>(deductions, maxLen);
+
+    const barData   = [
+      { name: "Gross",      value: gross           },
+      { name: "Deductions", value: deductionsTotal  },
+      { name: "Net",        value: net              },
     ];
     const barColors = [
       "var(--success, #22c55e)",
-      "var(--danger, #dc2626)",
+      "var(--danger,  #dc2626)",
       primaryColor,
     ];
+
+    const netPct = gross > 0 ? Math.round((net            / gross) * 100) : 0;
+    const dedPct = gross > 0 ? Math.round((deductionsTotal / gross) * 100) : 0;
 
     return (
       <div className="px-5 py-4 flex flex-col gap-4">
@@ -187,50 +189,22 @@ const ExpandedPanel: React.FC<{
         {/* KPI strip */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           {[
-            {
-              label: "Gross earnings",
-              value: gross,
-              cls: "text-success",
-              bg: "rgba(34,197,94,0.07)",
-              bd: "rgba(34,197,94,0.18)",
-            },
-            {
-              label: "Total deductions",
-              value: deductionsTotal,
-              cls: "text-danger",
-              bg: "rgba(220,38,38,0.07)",
-              bd: "rgba(220,38,38,0.18)",
-            },
-            {
-              label: "Net salary",
-              value: net,
-              cls: "text-primary",
-              bg: `color-mix(in srgb,${primaryColor} 7%,transparent)`,
-              bd: `color-mix(in srgb,${primaryColor} 22%,transparent)`,
-            },
+            { label: "Gross earnings",   value: gross,           cls: "text-success", bg: "rgba(34,197,94,0.07)",  bd: "rgba(34,197,94,0.18)"  },
+            { label: "Total deductions", value: deductionsTotal, cls: "text-danger",  bg: "rgba(220,38,38,0.07)",  bd: "rgba(220,38,38,0.18)"  },
+            { label: "Net salary",       value: net,             cls: "text-primary", bg: `color-mix(in srgb,${primaryColor} 7%,transparent)`, bd: `color-mix(in srgb,${primaryColor} 22%,transparent)` },
           ].map((k) => (
-            <div
-              key={k.label}
-              className="rounded-xl px-4 py-3"
-              style={{ background: k.bg, border: `1px solid ${k.bd}` }}
-            >
-              <p className="text-[9px] font-bold uppercase tracking-widest text-muted mb-1.5">
-                {k.label}
-              </p>
-              <p className={`text-[18px] font-extrabold tabular-nums leading-none ${k.cls}`}>
-                {fmtNum(k.value, cur)}
-              </p>
-              <p className="text-[9px] text-muted tabular-nums mt-1">
-                {fmtNum(k.value * 12, cur)} p.a.
-              </p>
+            <div key={k.label} className="rounded-xl px-4 py-3" style={{ background: k.bg, border: `1px solid ${k.bd}` }}>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-muted mb-1.5">{k.label}</p>
+              <p className={`text-[18px] font-extrabold tabular-nums leading-none ${k.cls}`}>{fmtNum(k.value, cur)}</p>
+              <p className="text-[9px] text-muted tabular-nums mt-1">{fmtNum(k.value * 12, cur)} p.a.</p>
             </div>
           ))}
         </div>
 
-        {/* Breakdown table + chart */}
+        {/* Breakdown + chart */}
         <div className="grid gap-3" style={{ gridTemplateColumns: "1fr 200px" }}>
 
-          {/* Earnings vs Deductions */}
+          {/* Earnings vs Deductions table */}
           <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
             <div className="grid grid-cols-2 bg-app border-b border-[var(--border)]">
               <div className="flex items-center justify-between px-3 py-2 border-r border-[var(--border)]">
@@ -249,11 +223,8 @@ const ExpandedPanel: React.FC<{
               earnPad.map((e, i) => {
                 const d = dedPad[i];
                 return (
-                  <div
-                    key={i}
-                    className={`grid grid-cols-2 ${i < maxLen - 1 ? "border-b border-[var(--border)]" : ""}`}
-                  >
-                    <div className="flex items-center justify-between px-3 py-1.5 border-r border-[var(--border)] hover:bg-[var(--row-hover)] transition-colors min-w-0">
+                  <div key={i} className={`grid grid-cols-2 ${i < maxLen - 1 ? "border-b border-[var(--border)]" : ""}`}>
+                    <div className="flex items-center justify-between px-3 py-1.5 border-r border-[var(--border)] hover:bg-[var(--row-hover)] min-w-0">
                       {e ? (
                         <>
                           <span className="text-[11px] font-medium text-main truncate pr-2">{e.name}</span>
@@ -261,7 +232,7 @@ const ExpandedPanel: React.FC<{
                         </>
                       ) : <span className="opacity-0">—</span>}
                     </div>
-                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-[var(--row-hover)] transition-colors min-w-0">
+                    <div className="flex items-center justify-between px-3 py-1.5 hover:bg-[var(--row-hover)] min-w-0">
                       {d ? (
                         <>
                           <span className="text-[11px] font-medium text-main truncate pr-2">{d.name}</span>
@@ -274,7 +245,6 @@ const ExpandedPanel: React.FC<{
               })
             )}
 
-            {/* Footer totals */}
             <div className="grid grid-cols-3 border-t-2 border-[var(--border)]">
               {[
                 { label: "Gross",      value: gross,           prefix: "",  cls: "text-success", bg: "bg-app" },
@@ -309,8 +279,8 @@ const ExpandedPanel: React.FC<{
             </ResponsiveContainer>
             <div className="flex flex-col gap-1.5 mt-auto pt-2 border-t border-[var(--border)]">
               {[
-                { label: "Take-home", pct: netPct, cls: "text-primary" },
-                { label: "Deductions", pct: dedPct, cls: "text-danger" },
+                { label: "Take-home",  pct: netPct, cls: "text-primary" },
+                { label: "Deductions", pct: dedPct, cls: "text-danger"  },
               ].map((b) => (
                 <div key={b.label} className="flex items-center justify-between">
                   <span className="text-[10px] text-muted">{b.label}</span>
@@ -322,7 +292,7 @@ const ExpandedPanel: React.FC<{
         </div>
       </div>
     );
-  })();
+  };
 
   return (
     <tr>
@@ -331,110 +301,52 @@ const ExpandedPanel: React.FC<{
         className="p-0 border-b border-[var(--border)]"
         style={{ borderTop: "2px solid color-mix(in srgb, var(--primary) 25%, transparent)" }}
       >
-        {/* Animated slide-down wrapper */}
         <div
           style={{
-            height: loading ? "80px" : height ? `${height}px` : "auto",
-            overflow: "hidden",
+            height:     loading ? "80px" : height ? `${height}px` : "auto",
+            overflow:   "hidden",
             transition: "height 220ms cubic-bezier(0.4,0,0.2,1)",
             background: "var(--app-bg, var(--app))",
           }}
         >
-          <div ref={contentRef}>
-            {inner}
-          </div>
+          <div ref={contentRef}>{renderBody()}</div>
         </div>
       </td>
     </tr>
   );
 };
 
-// ─── Skeleton rows ────────────────────────────────────────────────────────────
-
-const SkeletonTr: React.FC<{ cols: number }> = ({ cols }) => (
-  <tr className="animate-pulse">
-    {Array.from({ length: cols }).map((_, i) => (
-      <td key={i} className="px-4 py-3 border-b border-[var(--border)]">
-        <div className="h-3 rounded-full bg-[var(--border)]" style={{ width: `${55 + (i * 17) % 35}%` }} />
-      </td>
-    ))}
-  </tr>
-);
-
-
-
-// ─── Column definitions ───────────────────────────────────────────────────────
-
-interface ColDef {
-  key: string;
-  label: string;
-  align?: "left" | "right" | "center";
-  /** Hide on small screens */
-  hideBelow?: "sm" | "md" | "lg";
-}
-
-const COLUMNS: ColDef[] = [
-  { key: "expand",           label: "",               align: "center"  },
-  { key: "salary_structure", label: "Structure",      align: "left"    },
-  { key: "name",             label: "Reference",      align: "left",   hideBelow: "md" },
-  { key: "from_date",        label: "Effective From", align: "left",   hideBelow: "sm" },
-  { key: "base",             label: "Base",           align: "right"   },
-];
-
-const hideCls: Record<string, string> = {
-  sm: "hidden sm:table-cell",
-  md: "hidden md:table-cell",
-  lg: "hidden lg:table-cell",
-};
-
-// ─── Main Export ──────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, currency }) => {
-  const [assignments, setAssignments] = useState<SalaryStructureAssignment[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState<string | null>(null);
+  const today = useToday();
 
-  // Filter state
-  const [search,   setSearch]   = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate,   setToDate]   = useState("");
-
-  // Pagination
-  const [page,       setPage]       = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-
-  // Expanded row
+  const [assignments,  setAssignments]  = useState<SalaryStructureAssignment[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState<string | null>(null);
+  const [search,       setSearch]       = useState("");
+  const [fromDate,     setFromDate]     = useState("");
+  const [toDate,       setToDate]       = useState("");
+  const [page,         setPage]         = useState(1);
+  const [totalCount,   setTotalCount]   = useState(0);
+  const [totalPages,   setTotalPages]   = useState(0);
   const [expandedName, setExpandedName] = useState<string | null>(null);
+  const [autoExpanded, setAutoExpanded] = useState(false);
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
+  // ── Fetch ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!emp.employee) return;
     setLoading(true);
     setError(null);
 
-    getSalaryStructureAssignmentsByEmployee(
-      emp.employee,
-      page,
-      PAGE_SIZE,
-      search,
-      fromDate,
-      toDate,
-    )
+    getSalaryStructureAssignmentsByEmployee(emp.employee, page, PAGE_SIZE, search, fromDate, toDate)
       .then((result) => {
         setAssignments(result.data);
-        // result.total comes from pagination.total_count ?? data.length.
-        // If the server returns pagination.total (not total_count), the API
-        // falls back to data.length (e.g. 5). We recalculate totalPages from
-        // whatever total we got; if it's just page size, totalPages = 1 and
-        // pagination hides — which is exactly the bug.
-        // Fix: read the raw response total_pages directly if the API exposes it,
-        // otherwise fall back to ceiling calculation.
-        const knownTotal  = result.total;           // may be data.length if API mismatch
-        const knownPages  = (result as any).totalPages
-                         ?? (result as any).total_pages
-                         ?? Math.ceil(knownTotal / PAGE_SIZE);
+        const knownTotal = result.total;
+        const knownPages = (result as any).totalPages
+                        ?? (result as any).total_pages
+                        ?? Math.ceil(knownTotal / PAGE_SIZE);
         setTotalCount(knownTotal);
         setTotalPages(knownPages);
       })
@@ -442,11 +354,29 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
       .finally(() => setLoading(false));
   }, [emp.employee, page, search, fromDate, toDate]);
 
+  // ── Derived ────────────────────────────────────────────────────────────────
+
+  const activeAssignmentName = useMemo(() => {
+    const past = assignments.filter((a) => new Date(a.from_date) <= today);
+    if (!past.length) return null;
+    return [...past].sort(
+      (a, b) => new Date(b.from_date).getTime() - new Date(a.from_date).getTime(),
+    )[0].name;
+  }, [assignments, today]);
+
+  // Auto-expand active row once on first load
+  useEffect(() => {
+    if (!autoExpanded && activeAssignmentName) {
+      setExpandedName(activeAssignmentName);
+      setAutoExpanded(true);
+    }
+  }, [activeAssignmentName, autoExpanded]);
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleSearch = (value: string) => { setPage(1); setSearch(value); };
-  const handleFromDate = (value: string) => { setPage(1); setFromDate(value); };
-  const handleToDate   = (value: string) => { setPage(1); setToDate(value); };
+  const handleSearch   = (v: string) => { setPage(1); setSearch(v);   };
+  const handleFromDate = (v: string) => { setPage(1); setFromDate(v); };
+  const handleToDate   = (v: string) => { setPage(1); setToDate(v);   };
 
   const clearFilters = () => {
     setPage(1);
@@ -458,36 +388,15 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
   const toggleRow = (name: string) =>
     setExpandedName((prev) => (prev === name ? null : name));
 
-  // ── Derived ───────────────────────────────────────────────────────────────
-
-  const hasFilters = !!(search || fromDate || toDate);
+  const hasFilters  = !!(search || fromDate || toDate);
   const visibleCols = COLUMNS.length;
 
-  // Active = the record with the latest from_date that is <= today.
-  // Computed from whatever assignments are currently loaded.
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
-
-  const activeAssignmentName = useMemo(() => {
-    const past = assignments.filter(
-      (a) => new Date(a.from_date) <= today,
-    );
-    if (!past.length) return null;
-    past.sort(
-      (a, b) => new Date(b.from_date).getTime() - new Date(a.from_date).getTime(),
-    );
-    return past[0].name;
-  }, [assignments, today]);
-
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-3">
 
-      {/* ── Section header ─────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Layers className="w-3.5 h-3.5 text-muted" />
@@ -501,13 +410,10 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
         <span className="text-[10px] text-muted">Click any row to expand breakdown</span>
       </div>
 
-      {/* ── Card wrapper ───────────────────────────────────────────────────── */}
       <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
 
-        {/* ── Toolbar ──────────────────────────────────────────────────────── */}
+        {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-[var(--border)] bg-card">
-
-          {/* Search */}
           <div className="relative flex-1 min-w-[160px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
             <input
@@ -523,64 +429,41 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
 
           <div className="w-px h-5 bg-[var(--border)] shrink-0 hidden sm:block" />
 
-          {/* From date */}
           <div className="flex items-center gap-1.5">
             <Calendar className="w-3 h-3 text-muted shrink-0" />
             <span className="text-[11px] text-muted whitespace-nowrap">From</span>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => handleFromDate(e.target.value)}
-              className="text-[12px] bg-app border border-[var(--border)] rounded-lg px-2 py-1.5
-                text-main outline-none hover:border-[var(--primary)] focus:border-[var(--primary)]
-                transition-colors cursor-pointer"
-            />
+            <input type="date" value={fromDate} onChange={(e) => handleFromDate(e.target.value)}
+              className="text-[12px] bg-app border border-[var(--border)] rounded-lg px-2 py-1.5 text-main outline-none hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors cursor-pointer" />
           </div>
 
-          {/* To date */}
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] text-muted">To</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => handleToDate(e.target.value)}
-              className="text-[12px] bg-app border border-[var(--border)] rounded-lg px-2 py-1.5
-                text-main outline-none hover:border-[var(--primary)] focus:border-[var(--primary)]
-                transition-colors cursor-pointer"
-            />
+            <input type="date" value={toDate} onChange={(e) => handleToDate(e.target.value)}
+              className="text-[12px] bg-app border border-[var(--border)] rounded-lg px-2 py-1.5 text-main outline-none hover:border-[var(--primary)] focus:border-[var(--primary)] transition-colors cursor-pointer" />
           </div>
 
-          {/* Clear */}
           {hasFilters && (
             <>
               <div className="w-px h-5 bg-[var(--border)] shrink-0" />
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1 text-[11px] font-medium text-muted
-                  border border-[var(--border)] rounded-lg px-2.5 py-1.5
-                  hover:text-main hover:bg-[var(--row-hover)] transition-colors"
-              >
-                <X className="w-3 h-3" />
-                Clear
+              <button onClick={clearFilters}
+                className="flex items-center gap-1 text-[11px] font-medium text-muted border border-[var(--border)] rounded-lg px-2.5 py-1.5 hover:text-main hover:bg-[var(--row-hover)] transition-colors">
+                <X className="w-3 h-3" /> Clear
               </button>
             </>
           )}
         </div>
 
-        {/* ── Error ────────────────────────────────────────────────────────── */}
+        {/* Error */}
         {error && (
           <div className="px-5 py-6 flex items-center gap-3 text-danger text-sm">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            {error}
+            <AlertCircle className="w-5 h-5 shrink-0" /> {error}
           </div>
         )}
 
-        {/* ── Table ────────────────────────────────────────────────────────── */}
+        {/* Table */}
         {!error && (
           <div className="w-full overflow-x-auto">
             <table className="w-full border-collapse text-sm">
-
-              {/* thead — always visible */}
               <thead>
                 <tr className="bg-[var(--border)]/10">
                   {COLUMNS.map((col) => (
@@ -588,9 +471,8 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
                       key={col.key}
                       className={[
                         "px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-muted whitespace-nowrap border-b border-[var(--border)]",
-                        col.align === "right"  ? "text-right"  :
-                        col.align === "center" ? "text-center" : "text-left",
-                        col.hideBelow ? hideCls[col.hideBelow] : "",
+                        col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left",
+                        col.hideBelow ? HIDE_CLS[col.hideBelow] : "",
                       ].join(" ")}
                     >
                       {col.label}
@@ -600,22 +482,17 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
               </thead>
 
               <tbody>
-                {/* ── Loading skeletons ─────────────────────────────────── */}
                 {loading && Array.from({ length: PAGE_SIZE }).map((_, i) => (
                   <SkeletonTr key={i} cols={visibleCols} />
                 ))}
 
-                {/* ── Empty state ───────────────────────────────────────── */}
                 {!loading && assignments.length === 0 && (
                   <tr>
                     <td colSpan={visibleCols} className="px-5 py-12 text-center">
                       <Search className="w-6 h-6 text-muted mx-auto mb-2 opacity-40" />
                       <p className="text-[13px] text-muted">No assignments match your filters.</p>
                       {hasFilters && (
-                        <button
-                          onClick={clearFilters}
-                          className="mt-3 text-[11px] text-primary underline underline-offset-2"
-                        >
+                        <button onClick={clearFilters} className="mt-3 text-[11px] text-primary underline underline-offset-2">
                           Clear filters
                         </button>
                       )}
@@ -623,12 +500,11 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
                   </tr>
                 )}
 
-                {/* ── Data rows ─────────────────────────────────────────── */}
                 {!loading && assignments.map((a, i) => {
-                  const isOpen    = expandedName === a.name;
-                  const cur       = a.currency || currency;
-                  const globalIdx = (page - 1) * PAGE_SIZE + i + 1;
-                  const isActive  = activeAssignmentName === a.name;
+                  const isOpen     = expandedName === a.name;
+                  const cur        = a.currency || currency;
+                  const globalIdx  = (page - 1) * PAGE_SIZE + i + 1;
+                  const isActive   = activeAssignmentName === a.name;
                   const isUpcoming = new Date(a.from_date) > today;
 
                   return (
@@ -644,27 +520,20 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
                               : "bg-[var(--row-hover)]/40 hover:bg-[var(--row-hover)]",
                         ].join(" ")}
                       >
-
-                        {/* Expand toggle */}
                         <td className="px-4 py-3 text-center w-10 border-b border-[var(--border)]/40">
                           <div className={`inline-flex w-6 h-6 rounded-md items-center justify-center transition-colors
                             ${isOpen ? "bg-primary/10 text-primary" : "bg-[var(--row-hover)] text-muted group-hover:text-main"}`}>
-                            {isOpen
-                              ? <ChevronUp className="w-3.5 h-3.5" />
-                              : <ChevronDown className="w-3.5 h-3.5" />}
+                            {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                           </div>
                         </td>
 
-                        {/* Structure */}
                         <td className="px-4 py-3 border-b border-[var(--border)]/40">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-extrabold shrink-0
                               ${isActive ? "bg-primary/10 text-primary" : "bg-[var(--border)] text-muted"}`}>
                               {globalIdx}
                             </span>
-                            <span className="text-[13px] font-semibold text-main leading-tight">
-                              {a.salary_structure}
-                            </span>
+                            <span className="text-[13px] font-semibold text-main leading-tight">{a.salary_structure}</span>
                             {isActive && (
                               <span className="text-[9px] font-bold uppercase tracking-wide bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
                                 Active
@@ -678,36 +547,26 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
                           </div>
                         </td>
 
-                        {/* Reference */}
-                        <td className={`px-4 py-3 border-b border-[var(--border)]/40 ${hideCls.md}`}>
+                        <td className={`px-4 py-3 border-b border-[var(--border)]/40 ${HIDE_CLS.md}`}>
                           <span className="text-[11px] text-muted flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5 shrink-0" />
-                            {a.name}
+                            <Clock className="w-2.5 h-2.5 shrink-0" /> {a.name}
                           </span>
                         </td>
 
-                        {/* Effective From */}
-                        <td className={`px-4 py-3 border-b border-[var(--border)]/40 ${hideCls.sm}`}>
+                        <td className={`px-4 py-3 border-b border-[var(--border)]/40 ${HIDE_CLS.sm}`}>
                           <span className="text-[12px] text-main flex items-center gap-1">
-                            <Calendar className="w-2.5 h-2.5 text-muted shrink-0" />
-                            {fmtDate(a.from_date)}
+                            <Calendar className="w-2.5 h-2.5 text-muted shrink-0" /> {fmtDate(a.from_date)}
                           </span>
                         </td>
 
-                        {/* Base */}
                         <td className="px-4 py-3 border-b border-[var(--border)]/40 text-right">
                           <p className="text-[9px] font-semibold uppercase tracking-wide text-muted">Base</p>
                           <p className="text-[13px] font-bold tabular-nums text-main">{fmtNum(a.base, cur)}</p>
                         </td>
                       </tr>
 
-                      {/* Expanded panel row — always rendered, height-animated */}
                       {isOpen && (
-                        <ExpandedPanel
-                          assignment={a}
-                          currency={currency}
-                          colSpan={visibleCols}
-                        />
+                        <ExpandedPanel assignment={a} currency={currency} colSpan={visibleCols} />
                       )}
                     </React.Fragment>
                   );
@@ -717,7 +576,7 @@ export const SalaryStructureAssignmentsSection: React.FC<Props> = ({ emp, curren
           </div>
         )}
 
-        {/* ── Pagination footer — always visible ───────────────────────────── */}
+        {/* Pagination */}
         {!error && (
           <div className="px-4 py-2.5 border-t border-[var(--border)] bg-card">
             <Pagination

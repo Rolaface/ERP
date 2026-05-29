@@ -604,7 +604,10 @@ export async function getSalaryStructureAssignmentsByEmployee(
       searchFields: ["salary_structure", "name"],
     });
 
-    const filters: any[] = [["employee", "=", employeeId]];
+   const filters: any[] = [
+  ["employee", "=", employeeId],
+  ["docstatus", "=", 1],
+];
 
     if (fromDate) filters.push(["from_date", ">=", fromDate]);
     if (toDate) filters.push(["from_date", "<=", toDate]);
