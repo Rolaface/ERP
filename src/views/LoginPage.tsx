@@ -31,7 +31,7 @@ const Login = () => {
   // const [rememberMe, setRememberMe] = useState(false);
 
   return (
-    <div className="login-page relative min-h-screen overflow-hidden bg-app">
+    <div className="login-page relative min-h-screen overflow-hidden bg-slate-100">
       {/* Background polish */}
       <div className="pointer-events-none absolute inset-0 bg-radial-glow opacity-60" />
 
