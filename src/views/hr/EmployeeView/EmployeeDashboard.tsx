@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   getEmployeeDashboardSummary,
   EmployeeDashboardData,
@@ -10,20 +11,46 @@ import {
   LogIn,
   LogOut,
   CalendarDays,
-  UserCircle2,
-  Briefcase,
-  CheckCircle2,
-  TrendingUp,
   Umbrella,
+  AlertCircle,
+  Gift,
+  Cake,
+  Sparkles,
+  MapPin,
+  User,
 } from "lucide-react";
 
+// ── TYPE PATCHES ─────────────────────────────────────────────────────
+// These extend the API types locally so TS stops complaining about
+// fields that exist at runtime but aren't declared in the shared type.
+
+interface HolidayEntry {
+  date: string;
+  description: string;
+}
+
+interface BirthdayEntry {
+  employeeName: string;
+  dateOfBirth: string;
+  daysLeft: number;
+}
+
+interface SafeDashboardData extends Omit<EmployeeDashboardData, "holidays" | "birthdays"> {
+  holidays?: { upcoming: HolidayEntry[] };
+  birthdays?: { upcoming: BirthdayEntry[] };
+  employeeDetails?: EmployeeDashboardData["employeeDetails"] & {
+    expenseApproverName?: string;
+    shiftApproverName?: string;
+  };
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────
 
 function formatTime(dt: string | null): string {
   if (!dt) return "—";
   const d = new Date(dt.replace(" ", "T"));
   return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 }
-
 
 function formatDate(d: string | null): string {
   if (!d) return "—";
@@ -34,13 +61,42 @@ function formatDate(d: string | null): string {
   });
 }
 
+function formatDateShort(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+  });
+}
 
-function workingMinutes(inTime: string | null, outTime: string | null): number {
+function getDayName(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-IN", { weekday: "long" });
+}
+
+function getCountdown(dateStr: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr);
+  target.setHours(0, 0, 0, 0);
+  const diff = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  if (diff < 0) return "Passed";
+  return `${diff}d`;
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, "").trim();
+}
+
+function workingMinutes(
+  inTime: string | null,
+  outTime: string | null
+): number {
   if (!inTime || !outTime) return 0;
   const diff =
     new Date(outTime.replace(" ", "T")).getTime() -
     new Date(inTime.replace(" ", "T")).getTime();
-  return Math.max(0, Math.floor(diff / 60000));
+  return Math.max(0, Math.floor(diff / 60_000));
 }
 
 function formatDuration(mins: number): string {
@@ -50,391 +106,525 @@ function formatDuration(mins: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-/** Initials from full name */
 function initials(name?: string | null): string {
   if (!name || typeof name !== "string") return "?";
-
   return name
     .trim()
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() || "")
+    .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
 }
 
-// ── SKELETON ──────────────────────────────────────────────────────────────────
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good Morning";
+  if (h < 17) return "Good Afternoon";
+  return "Good Evening";
+}
+
+function getBirthdayLabel(daysLeft: number): string {
+  if (daysLeft === 0) return "Today! 🎂";
+  if (daysLeft === 1) return "Tomorrow";
+  return `In ${daysLeft}d`;
+}
+
+// ── ATOMS ────────────────────────────────────────────────────────────
+
 const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
-  <div
-    className={`animate-pulse rounded-lg bg-[var(--muted)]/40 ${className}`}
-  />
+  <div className={`animate-pulse rounded-xl bg-[var(--muted)]/40 ${className}`} />
 );
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
+const EmptyState: React.FC<{ message?: string }> = ({
+  message = "No data available",
+}) => (
+  <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+    <AlertCircle size={20} className="text-[var(--muted-foreground)]/30" />
+    <p className="text-xs text-[var(--muted-foreground)]">{message}</p>
+  </div>
+);
+
+const AVATAR_COLORS = [
+  "bg-violet-100 text-violet-700",
+  "bg-sky-100 text-sky-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-amber-100 text-amber-700",
+  "bg-rose-100 text-rose-700",
+  "bg-indigo-100 text-indigo-700",
+];
+
+const Avatar: React.FC<{
+  name?: string | null;
+  photo?: string | null;
+  size?: "sm" | "md" | "lg";
+  colorIndex?: number;
+}> = ({ name, photo, size = "md", colorIndex = 0 }) => {
+  const sizeMap = {
+    sm: "h-7 w-7 text-[10px]",
+    md: "h-9 w-9 text-xs",
+    lg: "h-12 w-12 text-sm",
+  };
+  const color = AVATAR_COLORS[colorIndex % AVATAR_COLORS.length];
+  return (
+    <div
+      className={`${sizeMap[size]} shrink-0 rounded-xl overflow-hidden flex items-center justify-center font-semibold ${photo ? "" : color}`}
+    >
+      {photo ? (
+        <img src={photo} alt={name ?? ""} className="h-full w-full object-cover" />
+      ) : (
+        initials(name)
+      )}
+    </div>
+  );
+};
+
+const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = "",
+}) => (
+  <div className={`rounded-2xl border border-[var(--border)] bg-[var(--card)] ${className}`}>
+    {children}
+  </div>
+);
+
+const SectionHeader: React.FC<{
+  icon: React.ElementType;
+  iconColor?: string;
+  title: string;
+  right?: React.ReactNode;
+}> = ({ icon: Icon, iconColor = "text-[var(--primary)]", title, right }) => (
+  <div className="flex items-center justify-between px-4 pt-4 pb-3">
+    <div className="flex items-center gap-2">
+      <div
+        className={`rounded-lg p-1.5 ${iconColor}`}
+        style={{ background: "color-mix(in srgb, var(--primary) 10%, transparent)" }}
+      >
+        <Icon size={13} />
+      </div>
+      <h3 className="text-sm font-semibold text-[var(--foreground)]">{title}</h3>
+    </div>
+    {right && <div>{right}</div>}
+  </div>
+);
+
+// ── MAIN COMPONENT ───────────────────────────────────────────────────
+
 const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] =
-    useState<EmployeeDashboardData | null>(null);
+  const [dashboardData, setDashboardData] = useState<SafeDashboardData | null>(null);
 
   useEffect(() => {
     const employeeId = user?.employeeId;
     if (!employeeId) return;
-
     let mounted = true;
+
     const fetchDashboard = async () => {
       setLoading(true);
       try {
         const data = await getEmployeeDashboardSummary(employeeId);
-        if (mounted) setDashboardData(data);
+        if (mounted) setDashboardData(data as SafeDashboardData);
       } catch (e) {
         console.error("Error fetching employee dashboard:", e);
       } finally {
         if (mounted) setLoading(false);
       }
     };
+
     fetchDashboard();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [user?.employeeId]);
 
   const emp = dashboardData?.employeeDetails ?? null;
   const leave = dashboardData?.leaveBalance ?? null;
   const checkins = dashboardData?.checkins ?? null;
+  const upcomingHolidays = dashboardData?.holidays?.upcoming ?? [];
+  const upcomingBirthdays = dashboardData?.birthdays?.upcoming ?? [];
 
   const mins = workingMinutes(checkins?.inTime ?? null, checkins?.outTime ?? null);
-  const leavePercent =
-    leave && leave.totalAllocated > 0
-      ? Math.round((leave.totalRemaining / leave.totalAllocated) * 100)
-      : 0;
+
+  // Approvers for Reporting Info
+  const approvers = emp
+    ? [
+      { name: emp.leaveApproverName, role: "Leave Approver" },
+      { name: emp.expenseApproverName, role: "Expense Approver" },
+      { name: emp.shiftApproverName, role: "Shift Approver" },
+    ]
+    : [];
 
   return (
-    <div className="h-full overflow-y-auto bg-[var(--background)]">
-      <div className="mx-auto max-w-7xl px-5 py-5 space-y-5">
+    <div className="w-full space-y-4 py-4">
 
-        {/* ── HERO BANNER ─────────────────────────────────────────── */}
-        <div
-          className="
-            relative overflow-hidden rounded-2xl
-            bg-[var(--primary)] text-white
-            px-6 py-5
-          "
-        >
-          {/* decorative circles */}
-          <span className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5" />
-          <span className="pointer-events-none absolute -bottom-10 right-20 h-32 w-32 rounded-full bg-white/5" />
+      {/* ── HERO BANNER ─────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl bg-[var(--primary)] px-5 py-4 text-white">
+        {/* decorative blobs */}
+        <span className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/5" />
+        <span className="pointer-events-none absolute bottom-0 right-32 h-28 w-28 rounded-full bg-white/5" />
+        <span className="pointer-events-none absolute top-3 right-60 h-14 w-14 rounded-full bg-white/5" />
 
-          <div className="relative flex items-center gap-4">
-            {/* Avatar */}
-            <div
-              className="
-                flex h-14 w-14 shrink-0 items-center justify-center
-                rounded-2xl bg-white/15 text-xl font-bold tracking-tight
-              "
-            >
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+          {/* ── LEFT: avatar + greeting ──── */}
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-white/15 flex items-center justify-center text-base font-bold">
               {loading ? (
-                <Skeleton className="h-14 w-14 rounded-2xl" />
+                <Skeleton className="h-12 w-12 rounded-2xl" />
+              ) : emp?.profilePhoto ? (
+                <img
+                  src={emp.profilePhoto}
+                  alt={emp.employeeName ?? ""}
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                initials(emp?.employeeName ?? "?")
+                initials(emp?.employeeName)
               )}
             </div>
 
-            {/* Name + meta */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0">
               {loading ? (
                 <>
-                  <Skeleton className="h-5 w-40 mb-2" />
-                  <Skeleton className="h-3.5 w-56" />
+                  <Skeleton className="mb-1.5 h-5 w-40 bg-white/20" />
+                  <Skeleton className="h-3 w-52 bg-white/15" />
                 </>
               ) : (
                 <>
-                  <h2 className="text-lg font-semibold leading-tight truncate">
-                    {emp?.employeeName ?? "—"}
-                  </h2>
-                  <p className="mt-0.5 text-sm text-white/70 flex flex-wrap gap-x-3 gap-y-0.5">
+                  <h1 className="text-lg font-semibold truncate leading-tight">
+                    {getGreeting()}, {emp?.employeeName?.split(" ")[0] ?? "Employee"} 👋
+                  </h1>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-white/60">
                     <span className="flex items-center gap-1">
-                      <Briefcase size={12} />
+                      <Sparkles size={10} />
                       {emp?.employeeId ?? "—"}
                     </span>
                     <span className="flex items-center gap-1">
-                      <CalendarDays size={12} />
+                      <CalendarDays size={10} />
                       Joined {formatDate(emp?.dateOfJoining ?? null)}
                     </span>
-                  </p>
+                  </div>
                 </>
               )}
             </div>
-
-            {/* Today's date badge */}
-            <div className="hidden sm:flex flex-col items-end shrink-0">
-              <span className="text-xs text-white/60 uppercase tracking-widest">
-                Today
-              </span>
-              <span className="text-sm font-medium text-white/90">
-                {formatDate(checkins?.asofDate ?? null)}
-              </span>
-            </div>
           </div>
 
-          {/* Leave approver strip */}
-          {/* {!loading && emp?.leaveApproverName && (
-            <div className="relative mt-4 flex items-center gap-2 border-t border-white/10 pt-3 text-xs text-white/60">
-              <UserCircle2 size={13} />
-              Leave Approver —{" "}
-              <span className="text-white/85 font-medium">
-                {emp.leaveApproverName}
+          {/* ── CENTRE: Reporting Info chips (inline in header) ── */}
+          {!loading && approvers.some((a) => a.name) && (
+            <div className="hidden lg:flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-widest text-white/100 mr-1">
+                Reports to
               </span>
-            </div>
-          )} */}
-        </div>
-
-        {/* ── MAIN GRID ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-
-          {/* LEFT — attendance + leave stacked */}
-          <div className="flex flex-col gap-5 xl:col-span-2">
-
-            {/* ATTENDANCE CARD */}
-            <div
-              className="
-                rounded-2xl border border-[var(--border)]
-                bg-[var(--card)] p-5 space-y-4
-              "
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[var(--foreground)] tracking-tight">
-                  Today's Attendance
-                </h3>
-                {!loading && (
-                  <span
-                    className={`
-                      inline-flex items-center gap-1 rounded-full px-2.5 py-0.5
-                      text-xs font-medium
-                      ${checkins?.inTime
-                        ? "bg-emerald-500/10 text-emerald-600"
-                        : "bg-amber-500/10 text-amber-600"
-                      }
-                    `}
-                  >
-                    <CheckCircle2 size={11} />
-                    {checkins?.inTime ? "Checked In" : "Not Checked In"}
-                  </span>
-                )}
-              </div>
-
-              {/* Check-in / Check-out / Duration row */}
-              <div className="grid grid-cols-3 gap-3">
-                {(
-                  [
-                    {
-                      icon: LogIn,
-                      label: "Check In",
-                      value: formatTime(checkins?.inTime ?? null),
-                      color: "text-emerald-600",
-                      bg: "bg-emerald-500/8 border-emerald-500/15",
-                    },
-                    {
-                      icon: LogOut,
-                      label: "Check Out",
-                      value: formatTime(checkins?.outTime ?? null),
-                      color: "text-rose-500",
-                      bg: "bg-rose-500/8 border-rose-500/15",
-                    },
-                    {
-                      icon: Clock,
-                      label: "Duration",
-                      value: formatDuration(mins),
-                      color: "text-[var(--primary)]",
-                      bg: "bg-[var(--primary)]/8 border-[var(--primary)]/15",
-                    },
-                  ] as const
-                ).map(({ icon: Icon, label, value, color, bg }) => (
+              {approvers.map(({ name, role }) =>
+                name ? (
                   <div
-                    key={label}
-                    className={`
-                      flex flex-col items-center justify-center gap-1.5
-                      rounded-xl border p-3 text-center ${bg}
-                    `}
+                    key={role}
+                    className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-2.5 py-1.5 backdrop-blur-sm"
+                    title={role}
                   >
-                    {loading ? (
-                      <Skeleton className="h-12 w-full" />
-                    ) : (
-                      <>
-                        <Icon size={18} className={color} />
-                        <span className={`text-base font-bold ${color}`}>
-                          {value}
-                        </span>
-                        <span className="text-[11px] text-[var(--muted-foreground)]">
-                          {label}
-                        </span>
-                      </>
-                    )}
+                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-white/20 text-[9px] font-bold shrink-0">
+                      {initials(name)}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium text-white leading-tight">
+                        {name}
+                      </p>
+                      <p className="text-[9px] text-white/50 leading-tight">{role}</p>
+                    </div>
                   </div>
-                ))}
-              </div>
+                ) : null
+              )}
             </div>
+          )}
 
-            {/* LEAVE BALANCE CARD */}
-            <div
-              className="
-                rounded-2xl border border-[var(--border)]
-                bg-[var(--card)] p-5 space-y-4
-              "
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[var(--foreground)] tracking-tight">
-                  Leave Balance
-                </h3>
-                {!loading && leave && (
-                  <span className="text-xs text-[var(--muted-foreground)]">
+          {/* ── RIGHT: date pill ─────────────────────────────── */}
+          <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-sm self-start sm:self-auto shrink-0">
+            <p className="text-[9px] uppercase tracking-widest text-white/45 mb-0.5">Today</p>
+            <p className="text-sm font-semibold text-white whitespace-nowrap">
+              {formatDate(checkins?.asofDate ?? null)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── ATTENDANCE STAT STRIP ─────────────────────────────── */}
+      {/* Narrower — max ~680px, left-aligned, not full width */}
+      <div className="grid grid-cols-3 gap-3 max-w-2xl">
+        {(
+          [
+            {
+              icon: LogIn,
+              label: "Check In",
+              value: formatTime(checkins?.inTime ?? null),
+              accent: "text-emerald-600",
+              bg: "bg-emerald-500/6 border-emerald-500/15",
+            },
+            {
+              icon: LogOut,
+              label: "Check Out",
+              value: formatTime(checkins?.outTime ?? null),
+              accent: "text-rose-500",
+              bg: "bg-rose-500/6 border-rose-500/15",
+            },
+            {
+              icon: Clock,
+              label: "Hours Worked",
+              value: formatDuration(mins),
+              accent: "text-[var(--primary)]",
+              bg: "bg-[var(--primary)]/6 border-[var(--primary)]/15",
+            },
+          ] as const
+        ).map(({ icon: Icon, label, value, accent, bg }) => (
+          <div key={label} className={`rounded-2xl border p-3 ${bg}`}>
+            {loading ? (
+              <Skeleton className="h-14 w-full" />
+            ) : (
+              <div className="flex flex-col gap-1">
+                <Icon size={14} className={accent} />
+                <p className={`text-lg font-bold leading-tight ${accent}`}>{value}</p>
+                <p className="text-[10px] text-[var(--muted-foreground)]">{label}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── MAIN GRID ─────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+
+        {/* LEFT 2 COLS */}
+        <div className="flex flex-col gap-4 xl:col-span-2">
+
+          {/* LEAVE BALANCE */}
+          <Card>
+            <SectionHeader
+              icon={Umbrella}
+              title="Leave Balance"
+              right={
+                !loading && leave ? (
+                  <span className="text-[10px] text-[var(--muted-foreground)]">
                     As of {formatDate(leave.asOfDate)}
                   </span>
-                )}
-              </div>
-
+                ) : null
+              }
+            />
+            <div className="px-4 pb-4">
               {loading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-5 w-full" />
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-5 w-1/2" />
+                <div className="space-y-2.5">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-3/4" />
                 </div>
+              ) : !leave ? (
+                <EmptyState message="Leave balance unavailable" />
               ) : (
                 <>
-                  {/* Summary row */}
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2.5 mb-3">
                     {(
                       [
-                        {
-                          label: "Allocated",
-                          value: leave?.totalAllocated ?? 0,
-                          color: "text-[var(--primary)]",
-                        },
-                        {
-                          label: "Used",
-                          value: leave?.totalUsed ?? 0,
-                          color: "text-rose-500",
-                        },
-                        {
-                          label: "Remaining",
-                          value: leave?.totalRemaining ?? 0,
-                          color: "text-emerald-600",
-                        },
+                        { label: "Allocated", value: leave.totalAllocated, color: "text-[var(--primary)]" },
+                        { label: "Used", value: leave.totalUsed, color: "text-rose-500" },
+                        { label: "Remaining", value: leave.totalRemaining, color: "text-emerald-600" },
                       ] as const
                     ).map(({ label, value, color }) => (
                       <div
                         key={label}
-                        className="
-                          flex flex-col items-center justify-center gap-0.5
-                          rounded-xl border border-[var(--border)]
-                          bg-[var(--background)] p-3 text-center
-                        "
+                        className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-center"
                       >
-                        <span className={`text-2xl font-bold ${color}`}>
-                          {value}
-                        </span>
-                        <span className="text-[11px] text-[var(--muted-foreground)]">
+                        <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                        <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
                           {label}
-                        </span>
+                        </p>
                       </div>
                     ))}
                   </div>
 
-                  {/* Progress bar */}
-                  {/* <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs text-[var(--muted-foreground)]">
-                      <span>Balance used</span>
-                      <span>{100 - leavePercent}%</span>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--muted)]/30">
-                      <div
-                        className="h-full rounded-full bg-[var(--primary)] transition-all duration-500"
-                        style={{ width: `${100 - leavePercent}%` }}
-                      />
-                    </div>
-                  </div> */}
-
-                  {/* Per-type breakdown */}
-                  {leave && leave.leaveTypes.length > 0 && (
+                  {leave.leaveTypes.length > 0 && (
                     <div className="space-y-2">
-                      {leave.leaveTypes.map((lt) => (
-                        <div
-                          key={lt.leaveType}
-                          className="
-                            flex items-center justify-between
-                            rounded-xl border border-[var(--border)]
-                            bg-[var(--background)] px-4 py-2.5
-                          "
-                        >
-                          <div className="flex items-center gap-2">
-                            <Umbrella size={14} className="text-[var(--primary)]" />
-                            <span className="text-sm font-medium text-[var(--foreground)] capitalize">
-                              {lt.leaveType}
-                            </span>
+                      {leave.leaveTypes.map((lt) => {
+                        const pct =
+                          lt.allocated > 0
+                            ? Math.min(100, Math.round((lt.used / lt.allocated) * 100))
+                            : 0;
+                        return (
+                          <div
+                            key={lt.leaveType}
+                            className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2.5"
+                          >
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs font-medium capitalize text-[var(--foreground)]">
+                                {lt.leaveType}
+                              </span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[10px] text-[var(--muted-foreground)]">
+                                  {lt.used} / {lt.allocated}
+                                </span>
+                                <span className="text-[10px] font-semibold text-emerald-600">
+                                  {lt.remaining} left
+                                </span>
+                              </div>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-[var(--muted)]/25 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-[var(--primary)] transition-all duration-500"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-[var(--muted-foreground)]">
-                            <span>Used <strong className="text-rose-500">{lt.used}</strong></span>
-                            <span className="text-[var(--border)]">|</span>
-                            <span>
-                              Left{" "}
-                              <strong className="text-emerald-600">{lt.remaining}</strong>
-                            </span>
-                            <span className="text-[var(--border)]">|</span>
-                            <span>of {lt.allocated}</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </>
               )}
             </div>
-          </div>
+          </Card>
 
-          {/* RIGHT — quick actions sidebar */}
-          <div className="xl:col-span-1">
-            <div className="xl:sticky xl:top-4 space-y-5">
-              <QuickActions />
-
-              {/* Approver info card */}
-              {!loading && emp && (
-                <div
-                  className="
-                    rounded-2xl border border-[var(--border)]
-                    bg-[var(--card)] p-4 space-y-3
-                  "
-                >
-                  <h4 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
-                    Reporting Info
-                  </h4>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="
-                        flex h-9 w-9 shrink-0 items-center justify-center
-                        rounded-xl bg-[var(--primary)]/10 text-xs font-bold
-                        text-[var(--primary)]
-                      "
-                    >
-                      {initials(emp.leaveApproverName)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-[var(--foreground)]">
-                        {emp.leaveApproverName}
-                      </p>
-                      <p className="truncate text-xs text-[var(--muted-foreground)]">
-                        Leave Approver
-                      </p>
-                    </div>
-                  </div>
-                  {/* <div className="rounded-lg bg-[var(--background)] px-3 py-2 text-xs text-[var(--muted-foreground)] flex items-center gap-2">
-                    <TrendingUp size={12} />
-                    Joined {formatDate(emp.dateOfJoining)}
-                  </div> */}
+          {/* UPCOMING BIRTHDAYS */}
+          <Card>
+            <SectionHeader
+              icon={Cake}
+              iconColor="text-pink-500"
+              title="Upcoming Birthdays"
+            />
+            <div className="px-4 pb-4">
+              {loading ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                </div>
+              ) : upcomingBirthdays.length === 0 ? (
+                <EmptyState message="No upcoming birthdays" />
+              ) : (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {upcomingBirthdays.map((b, i) => {
+                    const isToday = b.daysLeft === 0;
+                    return (
+                      <div
+                        key={`${b.employeeName}-${i}`}
+                        className={`
+                              flex items-center gap-2.5 rounded-xl border px-3 py-2.5
+                              ${isToday
+                            ? "border-pink-200 bg-pink-50/60"
+                            : "border-[var(--border)] bg-[var(--background)]"}
+                            `}
+                      >
+                        <Avatar name={b.employeeName} colorIndex={i} size="md" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-[var(--foreground)] capitalize truncate">
+                            {b.employeeName}
+                          </p>
+                          <p className="text-[10px] text-[var(--muted-foreground)]">
+                            {new Date(b.dateOfBirth).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "long",
+                            })}
+                          </p>
+                        </div>
+                        <span
+                          className={`
+                                shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap
+                                ${isToday
+                              ? "bg-pink-500 text-white"
+                              : "bg-[var(--primary)]/10 text-[var(--primary)]"}
+                              `}
+                        >
+                          {getBirthdayLabel(b.daysLeft)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          </div>
+          </Card>
+        </div>
 
+        {/* RIGHT SIDEBAR */}
+        <div className="xl:col-span-1">
+          <div className="space-y-4 xl:sticky xl:top-4">
+
+            {/* Quick Actions — slightly nudged up via negative margin */}
+            <div className="-mt-0">
+              <QuickActions />
+            </div>
+
+            {/* Reporting Info (mobile fallback — hidden on lg where it's in header) */}
+            {!loading && emp && (
+              <Card className="lg:hidden">
+                <SectionHeader icon={User} title="Reporting Info" />
+                <div className="px-4 pb-4 space-y-2.5">
+                  {approvers.map(({ name, role }, i) => (
+                    <div key={role} className="flex items-center gap-2.5">
+                      <Avatar name={name} colorIndex={i + 2} size="sm" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-[var(--foreground)] truncate">
+                          {name ?? "Not assigned"}
+                        </p>
+                        <p className="text-[10px] text-[var(--muted-foreground)]">{role}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Upcoming Holidays */}
+            <Card>
+              <SectionHeader icon={Gift} title="Upcoming Holidays" />
+              <div className="px-4 pb-4">
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-14 w-full" />
+                    <Skeleton className="h-14 w-full" />
+                  </div>
+                ) : upcomingHolidays.length === 0 ? (
+                  <EmptyState message="No upcoming holidays" />
+                ) : (
+                  <div className="space-y-2">
+                    {upcomingHolidays.map((holiday: HolidayEntry) => {
+                      const countdown = getCountdown(holiday.date);
+                      if (countdown === "Passed") return null;
+                      const isNext =
+                        countdown === "Tomorrow" || countdown === "Today";
+                      return (
+                        <div
+                          key={holiday.date}
+                          className={`
+                                flex items-start justify-between gap-2.5 rounded-xl border p-2.5
+                                ${isNext
+                              ? "border-[var(--primary)]/20 bg-[var(--primary)]/5"
+                              : "border-[var(--border)] bg-[var(--background)]"}
+                              `}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-[var(--foreground)] truncate">
+                              {stripHtml(holiday.description) || "Holiday"}
+                            </p>
+                            <p className="mt-0.5 text-[10px] text-[var(--muted-foreground)]">
+                              {formatDateShort(holiday.date)} · {getDayName(holiday.date)}
+                            </p>
+                          </div>
+                          <span
+                            className={`
+                                  shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold
+                                  ${isNext
+                                ? "bg-[var(--primary)] text-white"
+                                : "bg-[var(--muted)]/40 text-[var(--muted-foreground)]"}
+                                `}
+                          >
+                            {countdown}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
