@@ -615,7 +615,7 @@ export const API = {
       getPayrollEntryList: `${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entries`,
       runpayroll: `${ERP_BASE}/api/method/custom_hrms.api.payroll.api.run_payroll`,
       salaryslip: `${ERP_BASE}/api/resource/Salary Slip`,
-      salaryslip_pdf: `${ERP_BASE}/api/method/custom_hrms.api.pdf.api.get_document_pdf`,
+      salaryslip_pdf: `${ERP_BASE}/api/method/frappe.utils.print_format.download_pdf`,
       getpayrollpreview:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
     },
 

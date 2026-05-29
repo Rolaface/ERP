@@ -34,21 +34,15 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-app relative overflow-hidden">
-
-      {/* Global ambient light */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 left-1/3 w-[500px] h-[500px] bg-radial-glow opacity-40 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-radial-glow opacity-30 blur-[100px]" />
-      </div>
-
-      {/* ================= LEFT ================= */}
-      <section className="relative flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 bg-app">
-
+    // <div className="min-h-screen bg-app overflow-hidden">
+<div className="min-h-screen bg-slate-50 overflow-hidden flex items-center"> 
+      {/* <section className="relative flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 bg-app"> */}
+<section className="relative flex flex-col justify-center w-full px-8 md:px-16 lg:px-24 py-12">
         {/* Soft gradient fade */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/5" />
 
-        <div className="max-w-md w-full mx-auto relative z-10 backdrop-blur-[2px]">
+        {/* <div className="max-w-md w-full mx-auto relative z-10 backdrop-blur-[2px]"> */}
+        <div className="max-w-md w-full mx-auto relative z-10 bg-white p-8 sm:p-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200">
 
           {/* Logo */}
           <div className="mb-10 flex items-center gap-3 animate-fade-up delay-1">
@@ -156,7 +150,7 @@ focus:scale-[1.01]"
 
 
                 {isSubmitting && (
-                  <span className="absolute inset-0 bg-white/10 animate-pulse z-10" />
+                  <span className="absolute inset-0 animate-pulse z-10" />
                 )}
 
                 {/* Content */}
@@ -185,95 +179,7 @@ focus:scale-[1.01]"
       </section>
 
       {/* ================= RIGHT ================= */}
-      <section className="hidden md:flex relative items-center justify-center overflow-hidden bg-sidebar">
-
-        {/* Background glow (refined & softer) */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-radial-glow opacity-60 blur-[120px]" />
-          <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-radial-glow opacity-50 blur-[140px]" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 w-full max-w-md px-8 space-y-6 animate-float-slow">
-
-          <div className="text-sm text-muted mb-2 px-1">
-            Your business at a glance
-          </div>
-
-          {/* Card 1 */}
-          <div className="card card-hover relative overflow-hidden
-      before:absolute before:inset-0
-      before:bg-gradient-to-br before:from-white/5 before:to-transparent
-      before:opacity-0 hover:before:opacity-100
-      before:transition-opacity">
-
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <BarChart3 className="text-primary" />
-              </div>
-              <span className="text-xs text-success bg-success/10 px-2 py-1 rounded-full">
-                +12.4%
-              </span>
-            </div>
-
-            <p className="text-sm text-muted">Monthly Revenue</p>
-            <h3 className="text-2xl font-bold text-main">₹2,48,290</h3>
-
-            <div className="mt-4 h-1.5 w-full bg-muted/20 rounded-full overflow-hidden">
-              <div className="h-full bg-primary w-[78%]" />
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="card card-hover relative overflow-hidden
-      before:absolute before:inset-0
-      before:bg-gradient-to-br before:from-white/5 before:to-transparent
-      before:opacity-0 hover:before:opacity-100
-      before:transition-opacity">
-
-            <div className="flex items-center gap-4">
-              <Users className="text-primary" />
-              <div>
-                <p className="text-sm text-muted">Active Users</p>
-                <p className="text-lg font-bold text-main">1,240</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="card card-hover relative overflow-hidden
-      before:absolute before:inset-0
-      before:bg-gradient-to-br before:from-white/5 before:to-transparent
-      before:opacity-0 hover:before:opacity-100
-      before:transition-opacity">
-
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Package className="text-primary" />
-                <span className="text-sm font-semibold text-main">
-                  Stock Audit
-                </span>
-              </div>
-              <span className="text-xs text-muted">Batch #PX-992</span>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-muted">
-                <span>Progress</span>
-                <span>92%</span>
-              </div>
-              <div className="h-2 w-full bg-muted/20 rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-[92%]" />
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Grid texture (enhanced blending) */}
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-grid-subtle mix-blend-overlay" />
-
-      </section>
+      
       {forgotOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
