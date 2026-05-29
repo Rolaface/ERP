@@ -1,13 +1,10 @@
-import { useState } from "react";
 import {
   Eye,
   EyeOff,
   ArrowRight,
-  ShieldCheck,
   BarChart3,
-  Users,
-  Package,
 } from "lucide-react";
+
 import { useLogin } from "../hooks/useloginhooks";
 
 const Login = () => {
@@ -31,201 +28,374 @@ const Login = () => {
     closeForgotModal,
   } = useLogin();
 
-  const [rememberMe, setRememberMe] = useState(false);
+  // const [rememberMe, setRememberMe] = useState(false);
 
   return (
-    // <div className="min-h-screen bg-app overflow-hidden">
-<div className="min-h-screen bg-slate-50 overflow-hidden flex items-center"> 
-      {/* <section className="relative flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 bg-app"> */}
-<section className="relative flex flex-col justify-center w-full px-8 md:px-16 lg:px-24 py-12">
-        {/* Soft gradient fade */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/5" />
+    <div className="login-page relative min-h-screen overflow-hidden bg-slate-100">
+      {/* Background polish */}
+      <div className="pointer-events-none absolute inset-0 bg-radial-glow opacity-60" />
 
-        {/* <div className="max-w-md w-full mx-auto relative z-10 backdrop-blur-[2px]"> */}
-        <div className="max-w-md w-full mx-auto relative z-10 bg-white p-8 sm:p-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200">
-
-          {/* Logo */}
-          <div className="mb-10 flex items-center gap-3 animate-fade-up delay-1">
-            <div className="w-10 h-10 bg-primary flex items-center justify-center rounded-xl text-white">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <span className="heading-lg font-bold tracking-tight">
-              ERP
-            </span>
-          </div>
-
-          {/* Headline */}
-          <div className="mb-12 animate-fade-up delay-2">
-            <h1 className="heading-xl mb-4 tracking-tight leading-[1.1] text-main">
-              Regain Operational Clarity
-            </h1>
-
-            <p className="text-muted text-sm leading-relaxed max-w-sm">
-              All-in-one ERP to manage finance, inventory & teams with precision.
-            </p>
-          </div>
-
-          {/* Error */}
-          <div className="mb-6 min-h-[44px]">
-            {error && (
-              <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 motion-fade-in">
-                <p className="text-danger text-sm">{error}</p>
-              </div>
-            )}
-          </div>
-
-          {/* ================= FORM ================= */}
-          <form onSubmit={handleSubmit} className="form-section space-y-6 animate-fade-up delay-3">
-
-            {/* Email */}
-            <div className="form-group space-y-2">
-              <label className="form-label">Email or Username</label>
-              <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-base 
-transition-all duration-[120ms] ease-out
-focus:ring-2 focus:ring-primary/30 focus:border-primary 
-hover:shadow-sm focus:shadow-md
-focus:scale-[1.01]"
-                placeholder="name@company.com"
-                required
-              />
-            </div>
-
-            {/* Password */}
-            <div className="form-group space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="form-label">Password</label>
-                <button
-                  type="button"
-                  onClick={() => setForgotOpen(true)}
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </button>
-              </div>
-
-              <div className="input-wrapper">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-base pr-10 transition-all duration-200 ease-out 
-            focus:ring-2 focus:ring-primary/30 focus:border-primary 
-            hover:shadow-sm focus:shadow-md"
-                  placeholder="••••••••"
-                  required
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 
-            text-muted hover:text-main 
-            transition-colors duration-200"
-                >
-                  {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-                </button>
-              </div>
-
-            </div>
-
-            {/* Button */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="btn btn-primary group w-full h-12 flex items-center justify-center gap-2
-  relative overflow-hidden
-  transition-all duration-[120ms] ease-out
-  hover:shadow-lg hover:-translate-y-[1px]
-  active:scale-[0.97] active:shadow-md
-  disabled:opacity-70 disabled:cursor-not-allowed"
+      {/* Main */}
+      <main className="relative z-10 flex min-h-screen items-center justify-center px-6 py-10">
+        <div className="w-full max-w-md motion-fade-up">
+          {/* Card */}
+          <div
+            className="
+              form-card form-card--sm
+              card-premium
+              border-theme
+              bg-card
+              min-h-0
+              gap-8
+              px-6 py-7
+              sm:px-8 sm:py-8
+            "
+          >
+            {/* =========================================================
+                BRAND
+            ========================================================= */}
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                  flex h-11 w-11 items-center justify-center
+                  rounded-2xl
+                  bg-primary
+                  shadow-sm
+                "
               >
+                <BarChart3 className="h-5 w-5 text-white" />
+              </div>
 
-                {/* Gradient overlay */}
-                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-300" />
-
-
-                {isSubmitting && (
-                  <span className="absolute inset-0 animate-pulse z-10" />
-                )}
-
-                {/* Content */}
-                <span className="relative flex items-center gap-2 z-20">
-                  {isSubmitting ? "Checking..." : "Sign In"}
-                  <ArrowRight
-                    size={18}
-                    className="transition-transform duration-200 group-hover:translate-x-1"
-                  />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold tracking-wide text-main">
+                  RolaERP
                 </span>
 
-              </button>
+                <span className="text-xs text-muted">
+                  Enterprise Resource Platform
+                </span>
+              </div>
             </div>
 
-          </form>
+            {/* =========================================================
+                HEADER
+            ========================================================= */}
+            <div className="form-header gap-3">
+              <h1
+                className="
+                  text-[30px]
+                  leading-[1.05]
+                  font-semibold
+                  tracking-tight
+                  text-main
+                "
+              >
+                Welcome back
+              </h1>
 
-          {/* Footer */}
-          <div className="mt-10 pt-8 border-t border-theme animate-fade-in delay-4">
-            <div className="flex items-center gap-2 text-muted text-[11px] tracking-wider uppercase">
-              <ShieldCheck size={16} />
-              Secured with enterprise-grade encryption
+              <p
+                className="
+                  max-w-sm
+                  text-sm
+                  leading-relaxed
+                  text-muted
+                "
+              >
+                Sign in using your company credentials to continue.
+              </p>
+            </div>
+
+            {/* =========================================================
+                ERROR
+            ========================================================= */}
+            {error && (
+              <div
+                className="
+                  rounded-2xl
+                  border border-danger/20
+                  bg-danger/10
+                  px-4 py-3
+                  motion-fade-in
+                "
+              >
+                <p className="text-sm text-danger">{error}</p>
+              </div>
+            )}
+
+            {/* =========================================================
+                FORM
+            ========================================================= */}
+            <form
+              onSubmit={handleSubmit}
+              className="form-section gap-5"
+            >
+              {/* EMAIL */}
+              <div className="form-field">
+                <label
+                  htmlFor="email"
+                  className="form-label mb-2"
+                >
+                  Email or Employee ID
+                </label>
+
+                <input
+                  id="email"
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  autoComplete="username"
+                  required
+                  className="
+                    input-base
+                    h-12
+                  "
+                />
+              </div>
+
+              {/* PASSWORD */}
+              <div className="form-field">
+                <div className="mb-2 flex items-center justify-between">
+                  <label
+                    htmlFor="password"
+                    className="form-label"
+                  >
+                    Password
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setForgotOpen(true)}
+                    className="
+                      text-xs
+                      font-medium
+                      text-primary
+                      transition-opacity
+                      hover:opacity-80
+                    "
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
+                <div className="input-wrapper">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    required
+                    className="
+                      input-base
+                      h-12
+                      pr-12
+                    "
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={
+                      showPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                    className="
+absolute inset-y-0 right-0
+flex items-center justify-center
+w-12
+text-muted
+transition-colors
+hover:text-main
+"
+                  >
+                    {showPassword ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* REMEMBER */}
+
+              {/* <div className="flex items-center justify-between">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="
+                      h-4 w-4
+                      rounded
+                      border-theme
+                    "
+                  />
+
+                  <span className="text-sm text-muted">
+                    Remember me
+                  </span>
+                </label>
+              </div> */}
+
+              {/* BUTTON */}
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="
+                    btn btn-primary btn-premium
+                    h-12 w-full
+                    rounded-xl
+                    text-sm font-semibold
+                    disabled:cursor-not-allowed
+                    disabled:opacity-70
+                  "
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    {isSubmitting ? "Signing in..." : "Sign In"}
+
+                    {!isSubmitting && (
+                      <ArrowRight className="h-4 w-4" />
+                    )}
+                  </span>
+                </button>
+              </div>
+            </form>
+
+            {/* =========================================================
+                FOOTER
+            ========================================================= */}
+            <div
+              className="
+                flex items-center gap-2
+                border-t border-theme
+                pt-5
+              "
+            >
+
             </div>
           </div>
-
         </div>
-      </section>
+      </main>
 
-      {/* ================= RIGHT ================= */}
-      
+      {/* =============================================================
+          FORGOT PASSWORD MODAL
+      ============================================================= */}
       {forgotOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) closeForgotModal(); }}
+          className="
+            fixed inset-0 z-50
+            flex items-center justify-center
+            bg-black/40
+            p-4
+            backdrop-blur-sm
+          "
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeForgotModal();
+            }
+          }}
         >
-          <div className="card relative w-full max-w-sm mx-4 p-8 animate-fade-up">
-
+          <div
+            className="
+              card-premium
+              bg-card
+              relative
+              w-full
+              max-w-md
+              rounded-3xl
+              border border-theme
+              p-6
+              motion-scale-in
+            "
+          >
             {/* Close */}
             <button
               type="button"
               onClick={closeForgotModal}
-              className="absolute top-4 right-4 text-muted hover:text-main transition-colors"
-              aria-label="Close"
+              aria-label="Close modal"
+              className="
+                absolute right-4 top-4
+                text-muted
+                transition-colors
+                hover:text-main
+              "
             >
               ✕
             </button>
 
-            <h2 className="heading-lg font-bold text-main mb-2">Reset password</h2>
-            <p className="text-muted text-sm mb-6">
-              Enter your email and we'll send a reset link.
-            </p>
+            {/* Header */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold text-main">
+                Reset password
+              </h2>
 
-            {/* Status messages */}
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Enter your email address and we’ll send you a
+                password reset link.
+              </p>
+            </div>
+
+            {/* Status */}
             {forgotStatus === "success" && (
-              <div className="mb-4 p-3 rounded-lg bg-success/10 border border-success/20">
-                <p className="text-success text-sm">{forgotMessage}</p>
-              </div>
-            )}
-            {forgotStatus === "error" && (
-              <div className="mb-4 p-3 rounded-lg bg-danger/10 border border-danger/20">
-                <p className="text-danger text-sm">{forgotMessage}</p>
+              <div
+                className="
+                  mb-5 rounded-2xl
+                  border border-success/20
+                  bg-success/10
+                  px-4 py-3
+                "
+              >
+                <p className="text-sm text-success">
+                  {forgotMessage}
+                </p>
               </div>
             )}
 
+            {forgotStatus === "error" && (
+              <div
+                className="
+                  mb-5 rounded-2xl
+                  border border-danger/20
+                  bg-danger/10
+                  px-4 py-3
+                "
+              >
+                <p className="text-sm text-danger">
+                  {forgotMessage}
+                </p>
+              </div>
+            )}
+
+            {/* Form */}
             {forgotStatus !== "success" && (
               <>
-                <div className="space-y-2 mb-6">
-                  <label className="form-label">Email address</label>
+                <div className="form-field mb-6">
+                  <label
+                    htmlFor="forgot-email"
+                    className="form-label mb-2"
+                  >
+                    Email address
+                  </label>
+
                   <input
+                    id="forgot-email"
                     type="email"
                     value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleForgotPassword()}
-                    className="input-base focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    onChange={(e) =>
+                      setForgotEmail(e.target.value)
+                    }
+                    onKeyDown={(e) =>
+                      e.key === "Enter" &&
+                      handleForgotPassword()
+                    }
                     placeholder="name@company.com"
                     autoFocus
+                    className="input-base h-12"
                   />
                 </div>
 
@@ -233,20 +403,34 @@ focus:scale-[1.01]"
                   type="button"
                   onClick={handleForgotPassword}
                   disabled={forgotStatus === "loading"}
-                  className="btn btn-primary w-full h-12 flex items-center justify-center gap-2
-              transition-all duration-[120ms] hover:shadow-lg hover:-translate-y-[1px]
-              active:scale-[0.97] disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="
+                    btn btn-primary btn-premium
+                    h-12 w-full
+                    rounded-xl
+                    text-sm font-semibold
+                    disabled:cursor-not-allowed
+                    disabled:opacity-70
+                  "
                 >
-                  {forgotStatus === "loading" ? "Sending..." : "Send reset link"}
+                  {forgotStatus === "loading"
+                    ? "Sending..."
+                    : "Send reset link"}
                 </button>
               </>
             )}
 
+            {/* Success CTA */}
             {forgotStatus === "success" && (
               <button
                 type="button"
                 onClick={closeForgotModal}
-                className="btn btn-primary w-full h-12 flex items-center justify-center mt-2"
+                className="
+                  btn btn-primary btn-premium
+                  mt-2
+                  h-12 w-full
+                  rounded-xl
+                  text-sm font-semibold
+                "
               >
                 Back to login
               </button>

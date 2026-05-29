@@ -617,6 +617,10 @@ export const API = {
       salaryslip: `${ERP_BASE}/api/resource/Salary Slip`,
       salaryslip_pdf: `${ERP_BASE}/api/method/frappe.utils.print_format.download_pdf`,
       getpayrollpreview:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
+
+      SalarystructureAssignment: {
+        getAll: `${ERP_BASE}/api/resource/Salary Structure Assignment`,
+      },
     },
 
   },

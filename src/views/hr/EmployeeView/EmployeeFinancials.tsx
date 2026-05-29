@@ -10,7 +10,7 @@ import AppSkeleton                  from "../../../components/ui/AppSkeleton";
 import { AppSubTabs }               from "../../../components/ui/app-shell";
 import { useCompanyStore }          from "../../../store/companyStore";
 import { fmt }                      from "../EmployeeManagement/detailtab/Employeehelpers";
-import { CompensationTab }  from "../EmployeeManagement/detailtab/Compensationtab";
+import { SalaryStructureAssignmentsSection }  from "../EmployeeManagement/detailtab/Compensationtab";
 import { SalarySlipTable }  from "../EmployeeManagement/detailtab/Salaryslip";
 import type { SalarySlip }  from "../EmployeeManagement/detailtab/salarytypes";
 import IncomeTax from "./Incometaxtab";
@@ -477,7 +477,7 @@ const EmployeeFinancials: React.FC = () => {
       <div className="flex-1 overflow-y-auto mt-5">
 
         {activeTab === "compensation" && (
-          <CompensationTab emp={empForComp} currency={currency} />
+          <SalaryStructureAssignmentsSection emp={empForComp} currency={currency} />
         )}
 
         {activeTab === "insurance" && <InsuranceTab />}
