@@ -9,48 +9,48 @@ import { useColumnStore } from "../../../store/useColumnStore";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SortState {
-  sortBy: string;
+  sortBy:    string;
   sortOrder: "asc" | "desc";
 }
 
 interface ModalTableProps<T> {
-  columns: Column<T>[];
-  data: T[];
-  tableId?: string;
-  rowKey?: (row: T) => string;
-  loading?: boolean;
-  isFetching?: boolean;
+  columns:       Column<T>[];
+  data:          T[];
+  tableId?:      string;
+  rowKey?:       (row: T) => string;
+  loading?:      boolean;
+  isFetching?:   boolean;
   emptyMessage?: string;
-  onRowClick?: (item: T) => void;
+  onRowClick?:   (item: T) => void;
 
   // Toolbar
-  showToolbar?: boolean;
-  extraFilters?: React.ReactNode;
-  toolbarPlaceholder?: string;
-  searchValue?: string;
-  onSearch?: (q: string) => void;
-  enableAdd?: boolean;
-  addLabel?: string;
-  onAdd?: () => void;
-  enableExport?: boolean;
-  onExport?: () => void;
+  showToolbar?:          boolean;
+  extraFilters?:         React.ReactNode;
+  toolbarPlaceholder?:   string;
+  searchValue?:          string;
+  onSearch?:             (q: string) => void;
+  enableAdd?:            boolean;
+  addLabel?:             string;
+  onAdd?:                () => void;
+  enableExport?:         boolean;
+  onExport?:             () => void;
   enableColumnSelector?: boolean;
-  defaultVisibleKeys?: string[];
+  defaultVisibleKeys?:   string[];
 
   // Sorting
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortBy?:       string;
+  sortOrder?:    "asc" | "desc";
   onSortChange?: (sort: SortState) => void;
 
   // Pagination
-  currentPage?: number;
-  totalPages?: number;
-  pageSize?: number;
-  totalItems?: number;
-  pageSizeOptions?: number[];
-  onPageChange?: (page: number) => void;
+  currentPage?:      number;
+  totalPages?:       number;
+  pageSize?:         number;
+  totalItems?:       number;
+  pageSizeOptions?:  number[];
+  onPageChange?:     (page: number) => void;
   onPageSizeChange?: (size: number) => void;
-  bodyMaxHeight?: number | string;
+  bodyMaxHeight?:    number | string;
 }
 
 // ─── Skeleton Row ─────────────────────────────────────────────────────────────
@@ -63,10 +63,7 @@ const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({
   return (
     <tr>
       {Array.from({ length: columnsCount }).map((_, idx) => (
-        <td
-          key={idx}
-          className="border-b border-[var(--border)]/20 px-3 py-[7px]"
-        >
+        <td key={idx} className="border-b border-[var(--border)]/20 px-3 py-[9px]">
           <div
             className={`h-3 rounded-full relative overflow-hidden ${widths[(rowIdx + idx) % widths.length]}`}
             style={{ backgroundColor: "rgba(0,0,0,0.07)" }}
@@ -74,9 +71,8 @@ const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({
             <div
               className="absolute inset-0"
               style={{
-                background:
-                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)",
-                animation: "shimmer 1.5s ease-in-out infinite",
+                background:     "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)",
+                animation:      "shimmer 1.5s ease-in-out infinite",
                 animationDelay: `${rowIdx * 60}ms`,
               }}
             />
@@ -90,24 +86,24 @@ const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({
 // ─── ModalTable Inner ─────────────────────────────────────────────────────────
 
 const ModalTableInner = <T extends Record<string, any>>({
-  columns = [],
-  data = [],
+  columns  = [],
+  data     = [],
   tableId,
   rowKey,
-  loading = false,
-  isFetching = false,
+  loading      = false,
+  isFetching   = false,
   emptyMessage = "No records found",
   onRowClick,
 
-  showToolbar = false,
+  showToolbar          = false,
   extraFilters,
-  toolbarPlaceholder = "Search...",
-  searchValue = "",
+  toolbarPlaceholder   = "Search...",
+  searchValue          = "",
   onSearch,
-  enableAdd = false,
-  addLabel = "+ Add",
+  enableAdd            = false,
+  addLabel             = "+ Add",
   onAdd,
-  enableExport = false,
+  enableExport         = false,
   onExport,
   enableColumnSelector = false,
   defaultVisibleKeys,
@@ -116,43 +112,40 @@ const ModalTableInner = <T extends Record<string, any>>({
   sortOrder: sortOrderProp,
   onSortChange,
 
-  currentPage = 1,
-  totalPages = 1,
-  pageSize = 10,
-  totalItems = 0,
+  currentPage     = 1,
+  totalPages      = 1,
+  pageSize        = 10,
+  totalItems      = 0,
   pageSizeOptions = [10, 25, 50],
   onPageChange,
   onPageSizeChange,
-  bodyMaxHeight = 300,
+  bodyMaxHeight   = 300,
 }: ModalTableProps<T>) => {
-  const allKeys = useMemo(() => columns.map((col) => col.key), [columns]);
-  const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
 
+  // ── Visible columns ──────────────────────────────────────────────────────
+  const allKeys = useMemo(() => columns.map((c) => c.key), [columns]);
+  const { setVisibleKeys: saveVisibleKeys } = useColumnStore();
 
-const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
-  if (tableId) {
-    const persisted = useColumnStore.getState().columnPrefs[tableId];
-    if (persisted && persisted.length > 0) {
-      const filtered = persisted.filter((k) => allKeys.includes(k));
-     
-      if (allKeys.includes("actions") && !filtered.includes("actions")) {
-        filtered.push("actions");
+  const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
+    if (tableId) {
+      const persisted = useColumnStore.getState().columnPrefs[tableId];
+      if (persisted?.length) {
+        const filtered = persisted.filter((k) => allKeys.includes(k));
+        if (allKeys.includes("actions") && !filtered.includes("actions"))
+          filtered.push("actions");
+        return filtered;
       }
+    }
+    if (defaultVisibleKeys?.length) {
+      const filtered = defaultVisibleKeys.filter((k) => allKeys.includes(k));
+      if (allKeys.includes("actions") && !filtered.includes("actions"))
+        filtered.push("actions");
       return filtered;
     }
-  }
- 
-  const nonActionKeys = allKeys.filter((k) => k !== "actions");
-  if (defaultVisibleKeys?.length) {
-    const filtered = defaultVisibleKeys.filter((k) => allKeys.includes(k));
-    if (allKeys.includes("actions") && !filtered.includes("actions")) {
-      filtered.push("actions");
-    }
-    return filtered;
-  }
-  const first5 = nonActionKeys.slice(0, 5);
-  return allKeys.includes("actions") ? [...first5, "actions"] : allKeys.slice(0, 6);
-});
+    const nonAction = allKeys.filter((k) => k !== "actions");
+    const first5    = nonAction.slice(0, 5);
+    return allKeys.includes("actions") ? [...first5, "actions"] : allKeys.slice(0, 6);
+  });
 
   const handleApplyColumns = (keys: string[]) => {
     setVisibleKeys(keys);
@@ -167,57 +160,26 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
   // ── Sorting ──────────────────────────────────────────────────────────────
   const handleColumnSort = (colKey: string) => {
     if (!onSortChange) return;
-    const isSameColumn = sortBy === colKey;
     const newOrder: "asc" | "desc" =
-      isSameColumn && sortOrderProp === "asc" ? "desc" : "asc";
+      sortBy === colKey && sortOrderProp === "asc" ? "desc" : "asc";
     onSortChange({ sortBy: colKey, sortOrder: newOrder });
   };
 
-  // ── Alignment helper ─────────────────────────────────────────────────────
-  const getAlignment = (align?: "left" | "center" | "right"): string => {
-    switch (align) {
-      case "center": return "text-center";
-      case "right":  return "text-right";
-      default:       return "text-left";
-    }
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const getAlignment = (align?: "left" | "center" | "right") => {
+    if (align === "center") return "text-center";
+    if (align === "right")  return "text-right";
+    return "text-left";
   };
 
-  const getColumnWidth = (col: Column<T>) =>
-    col.minWidth ?? col.width ?? col.maxWidth ?? "120px";
-
-  const getColumnWidthPx = (value: string) => {
-    const pxMatch = value.match(/^(\d+(?:\.\d+)?)px$/);
-    if (pxMatch) return Number(pxMatch[1]);
-
-    const numeric = Number.parseFloat(value);
-    return Number.isFinite(numeric) ? numeric : 120;
-  };
-
-  const tableMinWidth = useMemo(
-    () =>
-      Math.max(
-        visibleColumns.reduce(
-          (total, col) => total + getColumnWidthPx(getColumnWidth(col)),
-          0,
-        ),
-        320,
-      ),
-    [visibleColumns],
-  );
-
-  // ── Shared colgroup ──────────────────────────────────────────────────────
-  const Colgroup = () => (
+  // ── Colgroup ──────────────────────────────────────────────────────────────
+  const colgroup = useMemo(() => (
     <colgroup>
       {visibleColumns.map((col) => (
-        <col
-          key={col.key}
-          style={{
-            width: getColumnWidth(col),
-          }}
-        />
+        <col key={col.key} style={{ width: col.width ?? col.minWidth ?? "auto" }} />
       ))}
     </colgroup>
-  );
+  ), [visibleColumns]);
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -226,7 +188,6 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
       {/* ── Toolbar ──────────────────────────────────────────────────────── */}
       {showToolbar && (
         <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--border)] bg-card px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-          {/* Search */}
           <div className="group relative w-full max-w-xs">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted transition-colors group-focus-within:text-primary" />
             <input
@@ -237,12 +198,10 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
             />
           </div>
 
-          {/* Extra filters */}
           {extraFilters && (
             <div className="flex shrink-0 items-center gap-3">{extraFilters}</div>
           )}
 
-          {/* Right-side actions */}
           <div className="flex shrink-0 items-center gap-2">
             {enableColumnSelector && (
               <ColumnSelector
@@ -272,13 +231,21 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
         </div>
       )}
 
-      <div className="min-w-0 overflow-x-auto">
-        <div style={{ minWidth: `${tableMinWidth}px` }}>
-      {/* ── Sticky Header ────────────────────────────────────────────────── */}
-      <div className="shrink-0 border-b-2 border-[var(--border)] bg-card w-full">
-        <table className="w-full table-fixed border-separate border-spacing-0">
-          <Colgroup />
-          <thead>
+      {/* ── Scrollable table region ───────────────────────────────────────── */}
+      <div
+       className="min-w-0 overflow-auto custom-scrollbar pb-2"
+        style={{
+          maxHeight:
+            typeof bodyMaxHeight === "number"
+              ? `${bodyMaxHeight}px`
+              : bodyMaxHeight ?? "none",
+        }}
+      >
+        <table className="w-full table-auto border-separate border-spacing-0">
+          {colgroup}
+
+          {/* Sticky header — bg-card is opaque so rows don't bleed through on scroll */}
+          <thead className="sticky top-0 z-10">
             <tr>
               {visibleColumns.map((column) => {
                 const isSortable = !!column.sortable && !!onSortChange;
@@ -291,10 +258,11 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
                     key={column.key}
                     onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
                     className={[
-                      "bg-[var(--border)]/10 px-3 py-2 text-xs font-bold text-muted uppercase tracking-wide whitespace-nowrap",
+                      "border-b-2 border-[var(--border)] bg-card",  // ← fixed: was bg-[var(--border)]/10 (semi-transparent)
+                      "px-3 py-2 text-xs font-bold text-muted uppercase tracking-wide whitespace-nowrap",
                       getAlignment(column.align),
                       isSortable ? "cursor-pointer select-none transition-colors hover:text-primary" : "",
-                      isActive ? "text-primary" : "",
+                      isActive   ? "text-primary" : "",
                     ].join(" ")}
                   >
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap leading-none">
@@ -312,22 +280,9 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
               })}
             </tr>
           </thead>
-        </table>
-      </div>
 
-      {/* ── Scrollable Body — keeps ModalTable's compact max-h ───────────── */}
-      <div
-        className="custom-scrollbar overflow-y-auto"
-        style={{
-          maxHeight:
-            typeof bodyMaxHeight === "number"
-              ? `${bodyMaxHeight}px`
-              : bodyMaxHeight,
-        }}
-      >
-        <table className="w-full table-fixed border-separate border-spacing-0">
-          <Colgroup />
-          <tbody className="relative z-10">
+          {/* Body */}
+          <tbody className="relative z-0">
             {loading ? (
               Array.from({ length: pageSize > 5 ? 5 : pageSize }).map((_, idx) => (
                 <SkeletonRow key={idx} columnsCount={visibleColumns.length} rowIdx={idx} />
@@ -336,24 +291,22 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
               <tr>
                 <td colSpan={visibleColumns.length} className="p-0">
                   <div className="flex items-center justify-center h-[120px] w-full">
-                    <p className="text-sm font-medium text-muted opacity-60">
-                      {emptyMessage}
-                    </p>
+                    <p className="text-sm font-medium text-muted opacity-60">{emptyMessage}</p>
                   </div>
                 </td>
               </tr>
             ) : (
               <>
-                {/* Subtle fetching overlay */}
                 {isFetching && data.length > 0 && (
-                  <tr className="absolute top-0 left-0 right-0 z-20 h-full bg-white/30">
-                    <td colSpan={visibleColumns.length}>
+                  <tr>
+                    <td colSpan={visibleColumns.length} className="p-0">
                       <div className="flex items-center justify-center py-1">
                         <div className="h-1 w-16 rounded-full bg-primary/30 animate-pulse" />
                       </div>
                     </td>
                   </tr>
                 )}
+
                 {data.map((item, idx) => {
                   const itemKey = rowKey ? rowKey(item) : `row-${idx}`;
                   return (
@@ -368,7 +321,7 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
                       ].join(" ")}
                     >
                       {visibleColumns.map((column) => {
-                        const rawValue    = item[column.key];
+                        const rawValue     = item[column.key];
                         const fallbackText =
                           rawValue === null || rawValue === undefined
                             ? "-"
@@ -376,26 +329,17 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
 
                         const needsTruncation =
                           column.truncate === true || column.maxWidth !== undefined;
-                        const cellStyle = column.maxWidth
-                          ? { maxWidth: column.maxWidth }
-                          : {};
 
                         const getCellContent = () =>
                           column.render ? (
                             column.render(item)
                           ) : (
-                            <span className="block truncate opacity-90">
-                              {fallbackText}
-                            </span>
+                            <span className="block truncate opacity-90">{fallbackText}</span>
                           );
 
                         const cellContent = (
                           <div
-                            style={
-                              needsTruncation
-                                ? { maxWidth: column.maxWidth || "200px" }
-                                : undefined
-                            }
+                            style={needsTruncation ? { maxWidth: column.maxWidth || "200px" } : undefined}
                             className={
                               needsTruncation
                                 ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap"
@@ -408,23 +352,25 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
 
                         const tooltipText = column.tooltip
                           ? column.tooltip(item)
-                          : needsTruncation
-                            ? fallbackText
-                            : undefined;
+                          : needsTruncation ? fallbackText : undefined;
 
-                        const tdClass = `border-b border-[var(--border)]/20 px-3 py-1.5 text-sm font-medium text-main ${getAlignment(column.align)}`;
-
-                        if (tooltipText) {
-                          return (
-                            <td key={column.key} style={cellStyle} className={tdClass}>
-                              <Tooltip content={tooltipText}>{cellContent}</Tooltip>
-                            </td>
-                          );
-                        }
+                        const tdClass = [
+                          "border-b border-[var(--border)]/20 px-3 py-2",
+                          "text-sm font-medium text-main",
+                          getAlignment(column.align),
+                        ].join(" ");
 
                         return (
-                          <td key={column.key} style={cellStyle} className={tdClass}>
-                            {cellContent}
+                          <td
+                            key={column.key}
+                            style={column.maxWidth ? { maxWidth: column.maxWidth } : undefined}
+                            className={tdClass}
+                          >
+                            {tooltipText ? (
+                              <Tooltip content={tooltipText}>{cellContent}</Tooltip>
+                            ) : (
+                              cellContent
+                            )}
                           </td>
                         );
                       })}
@@ -437,11 +383,8 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
         </table>
       </div>
 
-        </div>
-      </div>
-
-      {/* ── Footer: total + page-size + pagination ────────────────────────── */}
-      <div className="flex shrink-0 flex-col items-center justify-between gap-1 border-t border-[var(--border)] bg-card px-3 py-1 text-xs sm:flex-row sm:px-3">
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <div className="flex shrink-0 flex-col items-center justify-between gap-1 border-t border-[var(--border)] bg-card px-3 py-1.5 text-xs sm:flex-row">
         <div className="text-xs font-medium text-muted">Total: {totalItems}</div>
 
         {onPageSizeChange && (
