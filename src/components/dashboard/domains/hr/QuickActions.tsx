@@ -1,15 +1,8 @@
 import React from "react";
 
-import {
-  CalendarPlus,
-  CreditCard,
-  Clock3,
-  ArrowRight,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
-
-import { openLeaveApplyModal } from "../../../../store/modalStore";
 
 interface QuickActionItem {
   id: string;
@@ -17,8 +10,6 @@ interface QuickActionItem {
   label: string;
 
   description: string;
-
-  icon: React.ElementType;
 
   tone:
     | "primary"
@@ -44,16 +35,10 @@ const QuickActions: React.FC = () => {
       description:
         "Request leave instantly",
 
-      icon: CalendarPlus,
-
       tone: "primary",
 
       action: () =>
-        openLeaveApplyModal(
-          null,
-          false,
-          {}
-        ),
+        navigate("/hr/emp-leave"),
     },
 
     {
@@ -63,8 +48,6 @@ const QuickActions: React.FC = () => {
 
       description:
         "Submit reimbursements",
-
-      icon: CreditCard,
 
       tone: "warning",
 
@@ -80,13 +63,27 @@ const QuickActions: React.FC = () => {
       description:
         "View logs & sessions",
 
-      icon: Clock3,
-
       tone: "success",
 
       action: () =>
         navigate(
           "/hr/emp-timesheet"
+        ),
+    },
+
+    {
+      id: "payslip",
+
+      label: "Payslip",
+
+      description:
+        "View salary & payroll",
+
+      tone: "neutral",
+
+      action: () =>
+        navigate(
+          "/hr/emp-financials"
         ),
     },
   ];
@@ -140,8 +137,6 @@ const QuickActions: React.FC = () => {
       {/* Vertical Actions */}
       <div className="space-y-2">
         {quickActions.map((item) => {
-          const Icon = item.icon;
-
           return (
             <button
               key={item.id}
@@ -184,27 +179,6 @@ const QuickActions: React.FC = () => {
                   group-hover:opacity-100
                 "
               />
-
-              {/* Icon */}
-              <div
-                className="
-                  relative
-                  z-10
-                  flex
-                  h-10
-                  w-10
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-xl
-                  border
-                  border-current/10
-                  bg-white/40
-                  backdrop-blur-sm
-                "
-              >
-                <Icon className="h-5 w-5" />
-              </div>
 
               {/* Content */}
               <div className="relative z-10 min-w-0 flex-1">
