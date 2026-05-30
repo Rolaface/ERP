@@ -89,6 +89,7 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
     try {
       if (!form.name.trim()) throw new Error("Mode of Payment name is required");
       if (!form.type) throw new Error("Type is required");
+      if (!form.defaultAccount) throw new Error("Default account is required");
 
       setLoading(true);
 
