@@ -29,7 +29,7 @@ import {
   REFRESH_KEYS,
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
-import { Copy } from "lucide-react";
+import { getAllTaxCategories } from "../../api/taxCategoryApi";
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -66,6 +66,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [totalItems, setTotalItems] = useState(0);
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
+  const [taxCategoryOptions, setTaxCategoryOptions] = useState<{ label: string; value: string }[]>([]);
 
   const fetchCustomers = async () => {
     try {
@@ -104,6 +105,23 @@ useEffect(() => {
     });
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchCustomers]);
+
+  const fetchTaxCategories = async () => {
+  try {
+    const response = await getAllTaxCategories(1, 100, undefined, 0);
+    const options = (response?.data ?? []).map((cat: { name: string; title: string }) => ({
+      label: cat.title,
+      value: cat.name,
+    }));
+    setTaxCategoryOptions(options);
+  } catch (error) {
+    console.error("Failed to fetch tax categories:", error);
+  }
+};
+
+useEffect(() => {
+  fetchTaxCategories();
+}, []);
 
   const fetchAllCustomers = async () => {
     try {
@@ -430,10 +448,7 @@ useEffect(() => {
                   setPage(1);
                   setTaxCategory(e.target.value);
                 }}
-                options={[
-                  { label: "Non-Export", value: "Non-Export" },
-                  { label: "Export", value: "Export" },
-                ]}
+               options={taxCategoryOptions}
               />
             </div>
           }
