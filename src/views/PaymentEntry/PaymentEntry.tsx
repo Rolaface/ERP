@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Table from "../../components/ui/Table/Table";
-import { Receipt } from "lucide-react";
 import type { Column } from "../../components/ui/Table/type";
 import {
   AppPage,
@@ -112,7 +111,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
 
     try {
       const response = await getAllPayments(
-        undefined,
+        defaultPartyType as "Customer" | "Supplier" | undefined,
         page,
         pageSize,
         searchTerm,
@@ -146,7 +145,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, defaultPartyType]);
 
   // Initial fetch
   useEffect(() => {
