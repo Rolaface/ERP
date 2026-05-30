@@ -10,6 +10,8 @@ import { NumericInput } from "../ui/modal/modalComponent";
 import { useRef } from "react";
 import { getItemDetailsByBarcodeId } from "../../api/procurement/PurchaseInvoiceApi";
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
+import { useBarcodeScanner } from "../../api/utils/BarCodeScanner";
+import { getStockReport } from "../../api/stockApi";
 
 export interface ItemTableActions {
   handleItemChange: (
@@ -101,9 +103,9 @@ const InvoiceHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
       Tax Name
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px] whitespace-nowrap">
+    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px] whitespace-nowrap">
       Barcode
-    </th>
+    </th> */}
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
       Amount
     </th>
@@ -127,24 +129,129 @@ const ItemTable: React.FC<ItemTableProps> = ({
 }) => {
   const barcodeRef = useRef<HTMLInputElement>(null);
 
-const fetchByBarcode=  async (index: number, barcode: string) => {
-  try {
-    const response = await getItemDetailsByBarcodeId(barcode);
-    if (response?.data) {
-      actions.updateItemDirectly?.(index, {
-        itemCode: response.data.item_code,
-        itemName: response.data.item_name,
-        price: response.data.rate,
-        batchNo: response.data.batch_no,
-        quantity: response.data.quantity,
-        mfgDate: response.data.manufacturing_date,
-        expDate: response.data.expiry_date,
+// const fetchByBarcode = async (index: number, barcode: string) => {
+//   try {
+//     const response = await getItemDetailsByBarcodeId(barcode);
+//     const itemData = response?.message || response?.data?.message;
+//     if (itemData) {
+//       actions.updateItemDirectly?.(index, {
+//         itemCode: itemData.item_code,
+//         itemName: itemData.item_name,
+//         price: itemData.rate || 0,
+//         batchNo: itemData.batch_no || "",
+//         quantity: itemData.quantity > 0 ? itemData.quantity : 1, 
+//         mfgDate: itemData.manufacturing_date || "",
+//         expDate: itemData.expiry_date || "",
+//         description: itemData.item_name || "",
+//         packingSize: "",
+//         packingUnit: "",
+//         availableQty: itemData.quantity || 0,
+//         warehouse: "", // The user will still need to manually select a warehouse if the API doesn't return one
+//         isServiceItem: false,
+//         vatRate: 0,
+//         vatCode: "",
+//         taxTypes: [],
+//       });
+//     }
+//   } catch (error) {
+//     showValidationError(parseFrappeError(error) || "Item not found for this barcode.");
+//   }
+// }
+
+useBarcodeScanner(async (barcode) => {
+    try {
+      const response = await getItemDetailsByBarcodeId(barcode);
+      const itemData = response?.message || response?.data?.message;
+
+      if (!itemData) return;
+
+      let matchedWarehouse = "";
+      let matchedPackingSize = "";
+      let matchedPackingUnit = "";
+      let matchedTaxName = "";
+      try {
+        const stockRes = await getStockReport(1, 1000, itemData.item_code, "");
+        const stockItems = stockRes?.message?.data || [];
+        console.log("Fetched stock items for barcode scan:", stockItems);
+
+        const stockItem = stockItems.find(
+          (it: any) => it.item_code === itemData.item_code
+        );
+        if (stockItem) {
+          // Extract Packing details
+          matchedPackingSize = stockItem.packingSize || "";
+          matchedPackingUnit = stockItem.packingUnit || "";
+          console.log("Matched packing details from stock report:", 
+            matchedPackingUnit,
+            matchedPackingSize,
+          );
+        }
+          
+          if (stockItem.taxInfo && stockItem.taxInfo.length > 0) {
+            matchedTaxName = stockItem.taxInfo[0].taxName || "";
+            console.log("Matched tax name from stock report:", matchedTaxName);
+          }
+
+        if (stockItem && stockItem.batches) {
+          const matchingBatch = stockItem.batches.find(
+            (b: any) => b.batch_no === itemData.batch_no
+          );
+          if (matchingBatch) {
+            matchedWarehouse = matchingBatch.warehouse;
+            console.log("Matched warehouse from stock report:", matchedWarehouse);
+          }
+        }
+      } catch (stockError) {
+        console.error("Could not fetch warehouse for scanned item:", stockError);
+      }
+
+      const existingIndex = formData.items.findIndex(
+        (it) => it.itemCode === itemData.item_code && it.batchNo === itemData.batch_no
+      );
+
+      if (existingIndex >= 0) {
+        const currentQty = Number(formData.items[existingIndex].quantity || 0);
+        actions.handleItemChange(existingIndex, {
+          target: { name: "quantity", value: currentQty + 1 }
+        } as any);
+        return;
+      }
+
+      // 4. If new, find an empty row or add one
+      let targetIndex = formData.items.findIndex((it) => !it.itemCode);
+      
+      if (targetIndex === -1) {
+        actions.addItem(); 
+        targetIndex = formData.items.length; 
+      }
+
+      // 5. Update the row with data from BOTH APIs
+      actions.updateItemDirectly?.(targetIndex, {
+        itemCode: itemData.item_code,
+        itemName: itemData.item_name,
+        price: itemData.rate || 0,
+        batchNo: itemData.batch_no || "",
+        
+        quantity: 1, 
+        availableQty: Number(itemData.quantity || 0), 
+
+        mfgDate: itemData.manufacturing_date || "",
+        expDate: itemData.expiry_date || "",
+        description: itemData.item_name || "",
+        packingSize: matchedPackingSize,
+        packingUnit: matchedPackingUnit,
+        warehouse: matchedWarehouse, 
+        isServiceItem: false,
+        vatRate: 0,
+        vatCode: "",
+        vatCd: matchedTaxName,
+        taxTypes: [],
       });
+
+    } catch (error) {
+      showValidationError(parseFrappeError(error) || "Item not found for this barcode.");
     }
-  } catch (error) {
-    showValidationError(parseFrappeError(error) ||"Item not found for this barcode.");
-  }
-}
+});
 
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);
@@ -439,7 +546,7 @@ const fetchByBarcode=  async (index: number, barcode: string) => {
           </Tooltip>
         </td>
         {/* Barcode Scanner Input */}
-        <td className="px-2 py-1">
+        {/* <td className="px-2 py-1">
           <Tooltip content="Scan Barcode (Auto-fetches on Enter)">
             <input
               type="text"
@@ -464,7 +571,7 @@ const fetchByBarcode=  async (index: number, barcode: string) => {
               }}
             />
           </Tooltip>
-        </td>
+        </td> */}
 
         {/* Amount */}
         <td className="px-0.5 py-1">

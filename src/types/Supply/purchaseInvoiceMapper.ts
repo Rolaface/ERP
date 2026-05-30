@@ -11,7 +11,6 @@ const num = (v: any) => Number(v || 0);
 
 const str = (v: any) => (v ? String(v).trim() : "");
 
-
 const resolveAddressId = (flat: any, nested: any): string =>
   str(flat) || str(nested?.id) || "";
 

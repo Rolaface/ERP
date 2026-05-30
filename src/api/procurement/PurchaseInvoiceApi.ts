@@ -63,7 +63,7 @@ export async function getItemDetailsByBarcodeId(
   barcode: string | number
 ) {
   const resp = await api.get(
-    `${purchaseinvoiceapi.getItemByBarCode}?id=${barcode}`
+    `${purchaseinvoiceapi.getItemByBarCode}?barcode=${barcode}`
   );
 
   return resp.data;
