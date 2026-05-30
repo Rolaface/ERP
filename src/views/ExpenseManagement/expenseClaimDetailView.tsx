@@ -799,8 +799,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   </div>
                 </div>
               )}
-
-              {/* ── ADVANCES ── */}
               {advances.length > 0 && (
                 <>
                   <S title="Advances" />
@@ -812,39 +810,50 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                     }}
                   >
                     {advances.map((adv: any, i: number) => (
-                      <div
-                        key={adv.name ?? i}
-                        className="ecv-irow"
-                        style={{
-                          padding: "7px 10px",
-                          borderTop: i > 0 ? "1px solid var(--border)" : "none",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <p
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: "var(--text)",
-                          }}
-                        >
-                          {adv.name ?? "Advance"}
-                        </p>
-                        {adv.allocated_amount != null && (
-                          <p
-                            style={{
-                              fontSize: 12,
-                              color: "var(--text)",
-                              fontVariantNumeric: "tabular-nums",
-                            }}
-                          >
-                            {fmt(adv.allocated_amount, currency)}
-                          </p>
-                        )}
-                      </div>
-                    ))}
+  <div
+    key={adv.name ?? i}
+    className="ecv-irow"
+    style={{
+      padding: "7px 10px",
+      borderTop: i > 0 ? "1px solid var(--border)" : "none",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    }}
+  >
+    <p
+      style={{
+        fontSize: 12,
+        fontWeight: 600,
+        color: "var(--text)",
+      }}
+    >
+      {adv.employee_advance ?? "Advance"}
+    </p>
+    {adv.allocated_amount != null && (
+      <p
+        style={{
+          fontSize: 12,
+          color: "var(--text)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {fmt(adv.allocated_amount, currency)}
+      </p>
+    )}
+    {adv.purpose && (
+      <p
+        style={{
+          fontSize: 11,
+          color: "var(--muted)",
+          fontStyle: "italic",
+        }}
+      >
+        {adv.purpose}
+      </p>
+    )}
+  </div>
+))}
                   </div>
                 </>
               )}
