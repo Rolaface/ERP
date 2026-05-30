@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getEmployeeDashboardSummary,
@@ -7,9 +7,10 @@ import {
 } from "../../../api/dashboard/EmployeeDashboardApi";
 import { postEmployeeAttendance } from "../../../api/employeeAttendanceApi";
 import { useAuth } from "../../../context/AuthContext";
-import { openLeaveApplyModal } from "../../../store/modalStore";
+import { openLeaveApplyModal, openExpenseModal, MODAL_LAYER } from "../../../store/modalStore";
 import { showApiError } from "../../../utils/alert";
 import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
+import NewCycleModal from "../../../components/Hr/performance/Newcyclemodal";
 import {
   LogIn,
   LogOut,
@@ -27,6 +28,7 @@ import {
   Megaphone,
   FileText,
   Timer,
+  ChevronDown,
 } from "lucide-react";
 
 // ── TYPE PATCHES ──────────────────────────────────────────────────────────────
@@ -224,6 +226,17 @@ const SectionHeader: React.FC<{
 );
 
 // ── CLOCK IN/OUT SECTION ──────────────────────────────────────────────────────
+// TIMER LOGIC:
+// The API only returns the LAST inTime/outTime for the day.
+// To accumulate time across multiple checkin/checkout sessions we keep a
+// persistent `accumulatedRef` that is NEVER reset between API refreshes —
+// it only grows.  On each API response we do:
+//   • If currently checked OUT  → compute session seconds (outTime - inTime)
+//     and add to accumulated IF it's greater than what we already have stored
+//     (guards against double-counting on re-renders).
+//   • If currently checked IN   → start live ticker from inTime; display is
+//     accumulated + live seconds.
+// This way checking out pauses the display (stops ticking) but doesn't zero it.
 
 interface AttendanceRowProps {
   inTime: string | null;
@@ -243,7 +256,16 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
   const { user } = useAuth();
   const [actionLoading, setActionLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Accumulated seconds from all COMPLETED sessions today.
+  // Lives in a ref so it persists across re-renders / API refreshes.
+  const accumulatedRef = useRef(0);
+
+  // The inTime value of the session we already accounted for in accumulatedRef.
+  // Prevents double-counting the same completed session on re-render.
+  const lastAccountedInRef = useRef<string | null>(null);
 
   const isClockedIn = !!inTime && !outTime;
 
@@ -256,17 +278,43 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
 
-    if (inTime && !outTime) {
-      const start = new Date(inTime.replace(" ", "T")).getTime();
-      const tick = () => setElapsed(Math.max(0, Math.floor((Date.now() - start) / 1000)));
-      tick();
-      timerRef.current = setInterval(tick, 1000);
-    } else if (inTime && outTime) {
-      const start = new Date(inTime.replace(" ", "T")).getTime();
-      const end = new Date(outTime.replace(" ", "T")).getTime();
-      setElapsed(Math.max(0, Math.floor((end - start) / 1000)));
-    } else {
+    if (!inTime) {
+      // No checkin at all today — reset everything
+      accumulatedRef.current = 0;
+      lastAccountedInRef.current = null;
       setElapsed(0);
+      setIsRunning(false);
+      return;
+    }
+
+    if (inTime && outTime) {
+      // ── CHECKED OUT ──────────────────────────────────────────────────────
+      // Add this completed session to accumulated, but only once per unique inTime.
+      if (lastAccountedInRef.current !== inTime) {
+        const sessionSecs = Math.max(
+          0,
+          Math.floor(
+            (new Date(outTime.replace(" ", "T")).getTime() -
+              new Date(inTime.replace(" ", "T")).getTime()) /
+              1000
+          )
+        );
+        accumulatedRef.current += sessionSecs;
+        lastAccountedInRef.current = inTime;
+      }
+      // Show the frozen accumulated total — timer is paused
+      setElapsed(accumulatedRef.current);
+      setIsRunning(false);
+    } else {
+      // ── CHECKED IN (live) ─────────────────────────────────────────────────
+      const sessionStart = new Date(inTime.replace(" ", "T")).getTime();
+      const tick = () => {
+        const liveSecs = Math.max(0, Math.floor((Date.now() - sessionStart) / 1000));
+        setElapsed(accumulatedRef.current + liveSecs);
+      };
+      tick();
+      setIsRunning(true);
+      timerRef.current = setInterval(tick, 1000);
     }
 
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -294,14 +342,7 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
     }
   };
 
-  const elapsedDisplay = elapsed > 0 ? formatElapsed(elapsed) : "—";
-  const mins = inTime && outTime ? workingMinutes(inTime, outTime) : 0;
-
-  const hoursDisplay = isClockedIn
-    ? elapsedDisplay
-    : elapsed > 0
-      ? formatElapsed(elapsed)
-      : formatDuration(mins);
+  const hoursDisplay = elapsed > 0 ? formatElapsed(elapsed) : formatDuration(workingMinutes(inTime, outTime));
 
   return (
     <div className="flex gap-3 items-stretch">
@@ -314,10 +355,11 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
           <button
             disabled={actionLoading}
             onClick={handleClockAction}
-            className={`flex items-center justify-center gap-1.5 w-full rounded-xl px-2 py-1.5 text-white text-[11px] font-bold transition-all active:scale-95 disabled:opacity-60 ${isClockedIn
+            className={`flex items-center justify-center gap-1.5 w-full rounded-xl px-2 py-1.5 text-white text-[11px] font-bold transition-all active:scale-95 disabled:opacity-60 ${
+              isClockedIn
                 ? "bg-rose-500 hover:bg-rose-600"
                 : "bg-emerald-500 hover:bg-emerald-600"
-              }`}
+            }`}
           >
             {isClockedIn ? <LogOut size={12} /> : <LogIn size={12} />}
             {actionLoading ? "…" : isClockedIn ? "Check Out" : "Check In"}
@@ -326,7 +368,7 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
       </div>
 
       {/* ── Check In time card */}
-      <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/6 p-3 text-left flex-1 min-w-0">
+      <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/6 p-3 text-left flex-1 min-w-0 h-[75px]">
         {loading ? (
           <Skeleton className="h-full w-full min-h-[60px]" />
         ) : (
@@ -341,7 +383,7 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
       </div>
 
       {/* ── Check Out time card */}
-      <div className="rounded-2xl border border-rose-500/15 bg-rose-500/6 p-3 text-left flex-1 min-w-0">
+      <div className="rounded-2xl border border-rose-500/15 bg-rose-500/6 p-3 text-left flex-1 min-w-0 h-[75px]">
         {loading ? (
           <Skeleton className="h-full w-full min-h-[60px]" />
         ) : (
@@ -356,14 +398,14 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
       </div>
 
       {/* ── Hours Worked card ── */}
-      <div className="rounded-2xl border border-[var(--primary)]/15 bg-[var(--primary)]/6 p-3 text-left flex-1 min-w-0">
+      <div className="rounded-2xl border border-[var(--primary)]/15 bg-[var(--primary)]/6 p-3 text-left flex-1 min-w-0 h-[75px]">
         {loading ? (
           <Skeleton className="h-full w-full min-h-[60px]" />
         ) : (
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1">
               <Timer size={13} className="text-[var(--primary)]" />
-              {isClockedIn && (
+              {isRunning && (
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               )}
             </div>
@@ -484,11 +526,14 @@ const LeaveBalanceSection: React.FC<{
 };
 
 // ── EXPENSE CLAIM CARD ────────────────────────────────────────────────────────
+// FIX: "+ Add Expense" button now opens the ExpenseModal via openExpenseModal()
+// instead of navigating to the expenses page.
 
 const ExpenseClaimCard: React.FC<{
   claims: ExpenseClaim[];
   onNavigate: () => void;
-}> = ({ claims, onNavigate }) => {
+  onAddExpense: (e: React.MouseEvent) => void;
+}> = ({ claims, onNavigate, onAddExpense }) => {
   const pendingCount = claims.filter(
     (c) => c.approval_status === "Draft" || c.approval_status === "Pending For Approval"
   ).length;
@@ -498,7 +543,7 @@ const ExpenseClaimCard: React.FC<{
       className="flex-1 rounded-2xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:shadow-sm transition-shadow"
       onClick={onNavigate}
     >
-      <div className="px-4 pt-3 pb-3 h-full flex flex-col gap-2.5">
+      <div className="px-4 pt-2 pb-3 h-[110px] flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div
@@ -514,13 +559,20 @@ const ExpenseClaimCard: React.FC<{
               {pendingCount} pending
             </span>
           )}
+          {/* FIX: calls openExpenseModal instead of navigating */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddExpense(e); }}
+            className="flex items-center gap-1 shrink-0 rounded-lg border border-[var(--primary)]/20 bg-[var(--primary)]/6 px-2.5 py-1 text-[11px] font-semibold text-[var(--primary)] hover:bg-[var(--primary)]/12 transition-colors"
+          >
+            + Add Expense
+          </button>
         </div>
 
         <div className="space-y-1.5 flex-1">
           {claims.length === 0 ? (
             <EmptyState message="No expense claims" />
           ) : (
-            claims.slice(0, 2).map((claim) => (
+            claims.slice(0, 1).map((claim) => (
               <div
                 key={claim.name}
                 className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2"
@@ -533,10 +585,11 @@ const ExpenseClaimCard: React.FC<{
                     ₹{claim.grand_total.toLocaleString("en-IN")}
                   </span>
                   <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${claim.approval_status === "Approved"
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                      claim.approval_status === "Approved"
                         ? "bg-emerald-100 text-emerald-700"
                         : "bg-amber-100 text-amber-700"
-                      }`}
+                    }`}
                   >
                     {claim.approval_status === "Draft"
                       ? "Pending For Approval"
@@ -562,14 +615,12 @@ const SalarySummaryCard: React.FC<{
   onViewPayslip: (e: React.MouseEvent) => void;
   onNavigate: () => void;
 }> = ({ onViewPayslip, onNavigate }) => {
-
-
   return (
     <div
       className="flex-1 rounded-2xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:shadow-sm transition-shadow"
       onClick={onNavigate}
     >
-      <div className="px-4 pt-3 pb-3 h-full flex flex-col gap-2.5">
+      <div className="px-4 pt-2 pb-3 h-[110px] flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div
@@ -578,7 +629,7 @@ const SalarySummaryCard: React.FC<{
             >
               <Banknote size={13} />
             </div>
-            <h3 className="text-sm font-semibold text-[var(--foreground)]">Salary Slip</h3>
+            <h3 className="text-sm font-semibold text-[var(--foreground)]">Compensation</h3>
           </div>
         </div>
 
@@ -595,63 +646,123 @@ const SalarySummaryCard: React.FC<{
 };
 
 // ── APPRAISALS SECTION ────────────────────────────────────────────────────────
+// "Fill Form" opens NewCycleModal in view mode.
+// X button  → closes modal, stays on dashboard.
+// Backdrop click → closes modal AND navigates to /hr/emp-appraisals.
+// We achieve this by rendering our own backdrop <div> that handles the
+// navigate-on-click, while passing a plain close handler to onClose so the
+// X button doesn't navigate.
 
-const AppraisalSection: React.FC<{
-  onFillForm: (e: React.MouseEvent) => void;
+interface AppraisalSectionProps {
   onNavigate: () => void;
-}> = ({ onFillForm, onNavigate }) => {
-  return (
-    <div
-      className="rounded-2xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:shadow-sm transition-shadow"
-      onClick={onNavigate}
-    >
-      <div className="px-4 pt-3 pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div
-              className="rounded-lg p-1.5 text-amber-500"
-              style={{ background: "color-mix(in srgb, #f59e0b 12%, transparent)" }}
-            >
-              <Star size={13} />
-            </div>
-            <h3 className="text-sm font-semibold text-[var(--foreground)]">Appraisals</h3>
-          </div>
-          <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Live
-          </span>
-        </div>
+}
 
-        <div className="mt-2.5 flex items-center justify-between rounded-xl border border-amber-200/60 bg-amber-50/50 px-3 py-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600 shrink-0">
-              <ClipboardList size={14} />
+const AppraisalSection: React.FC<AppraisalSectionProps> = ({ onNavigate }) => {
+  const [cycleModalOpen, setCycleModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleFillForm = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCycleModalOpen(true);
+  };
+
+  // X button: just close, don't navigate
+  const handleModalClose = useCallback(() => {
+    setCycleModalOpen(false);
+  }, []);
+
+  // Backdrop click: close AND navigate
+  const handleBackdropClick = useCallback(() => {
+    setCycleModalOpen(false);
+    navigate("/hr/emp-appraisals");
+  }, [navigate]);
+
+  return (
+    <>
+      <div
+        className="rounded-2xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:shadow-sm transition-shadow"
+        onClick={onNavigate}
+      >
+        <div className="px-4 pt-3 pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div
+                className="rounded-lg p-1.5 text-amber-500"
+                style={{ background: "color-mix(in srgb, #f59e0b 12%, transparent)" }}
+              >
+                <Star size={13} />
+              </div>
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">Appraisals</h3>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-[var(--foreground)]">
-                Performance Review Cycle
-              </p>
-              <p className="text-[10px] text-[var(--muted-foreground)]">
-                Self-assessment form is open · Fill before deadline
-              </p>
-            </div>
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live
+            </span>
           </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); onFillForm(e); }}
-            className="flex items-center gap-1 shrink-0 rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-amber-600 transition-colors ml-3"
-          >
-            Fill Form
-            <ChevronRight size={11} />
-          </button>
+
+          <div className="mt-2.5 flex items-center justify-between rounded-xl border border-amber-200/60 bg-amber-50/50 px-3 py-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600 shrink-0">
+                <ClipboardList size={14} />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-[var(--foreground)]">
+                  Performance Review Cycle
+                </p>
+                <p className="text-[10px] text-[var(--muted-foreground)]">
+                  Self-assessment form is open · Fill before deadline
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleFillForm}
+              className="flex items-center gap-1 shrink-0 rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-amber-600 transition-colors ml-3"
+            >
+              Fill Form
+              <ChevronRight size={11} />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/*
+        When the modal is open we render our own invisible backdrop that sits
+        BELOW the MinimizableModal's panel but ABOVE the rest of the page.
+        Clicking it triggers navigation.  The modal's own X button calls
+        handleModalClose which just closes without navigating.
+        z-index 999 sits just below MinimizableModal's default backdrop (~1000).
+      */}
+      {cycleModalOpen && (
+        <>
+          {/* Our navigate-on-click backdrop layer.
+              z-index = modalBackdropBase: same level as MinimizableModal's own backdrop div,
+              so it catches clicks on the dark overlay area.
+              The modal panel itself is at backdropBase + modalPanelOffset (higher), so
+              clicks inside the modal still reach the modal normally. */}
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: MODAL_LAYER.modalBackdropBase, cursor: "pointer" }}
+            onClick={handleBackdropClick}
+          />
+          <NewCycleModal
+            isOpen={cycleModalOpen}
+            onClose={handleModalClose}
+            onSave={() => {}}
+            modalId="dashboard-appraisal-cycle"
+            isViewMode
+          />
+        </>
+      )}
+    </>
   );
 };
 
 // ── ANNOUNCEMENTS SECTION ─────────────────────────────────────────────────────
+// FIX: Shows only the first announcement by default.
+// A "Show more / Show less" toggle reveals the rest.
 
 const AnnouncementsSection: React.FC = () => {
+  const [expanded, setExpanded] = useState(false);
+
   const announcements = [
     {
       id: "1",
@@ -712,6 +823,9 @@ const AnnouncementsSection: React.FC = () => {
   ];
 
   const urgentCount = announcements.filter((a) => a.urgent).length;
+  // Always show the first item; show the rest only when expanded
+  const visibleAnnouncements = expanded ? announcements : announcements.slice(0, 1);
+  const hiddenCount = announcements.length - 1;
 
   return (
     <Card>
@@ -734,7 +848,7 @@ const AnnouncementsSection: React.FC = () => {
         </div>
 
         <div className="space-y-1.5">
-          {announcements.map((item) => {
+          {visibleAnnouncements.map((item) => {
             const Icon = item.icon;
             return (
               <div
@@ -766,6 +880,21 @@ const AnnouncementsSection: React.FC = () => {
             );
           })}
         </div>
+
+        {/* Toggle button — only shown when there are more than 1 announcement */}
+        {announcements.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-[var(--primary)] hover:opacity-80 transition-opacity"
+          >
+            <ChevronDown
+              size={13}
+              className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+            />
+            {expanded ? "Show less" : `Show ${hiddenCount} more`}
+          </button>
+        )}
       </div>
     </Card>
   );
@@ -804,6 +933,23 @@ const EmployeeDashboard: React.FC = () => {
   const upcomingHolidays = dashboardData?.holidays?.upcoming ?? [];
   const upcomingBirthdays = dashboardData?.birthdays?.upcoming ?? [];
   const expenseClaims = dashboardData?.expenseClaim ?? [];
+
+  // ── Expense modal handler ─────────────────────────────────────────────────
+  // FIX: Opens the ExpenseModal with employee pre-filled (employee view)
+  const handleAddExpense = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const seedData = user?.employeeId
+      ? {
+          employee: user.employeeId,
+          employee_name: user.fullName ?? user.username ?? "",
+        }
+      : null;
+    openExpenseModal(seedData, false, {
+      onSuccess: () => {
+        fetchDashboard();
+      },
+    });
+  }, [user]);
 
   return (
     <div className="w-full space-y-3 py-4">
@@ -890,14 +1036,16 @@ const EmployeeDashboard: React.FC = () => {
                 onSuccess: fetchDashboard,
               });
             }}
-            onNavigate={() => navigate("/hr/emp-timesheet")}
+            onNavigate={() => navigate("/hr/emp-leave")}
           />
 
           {/* ── ROW 3: Expense Claim + Salary Summary ─────────────── */}
+          {/* FIX: Removed the duplicate LeaveBalanceSection that was here */}
           <div className="flex gap-3">
             <ExpenseClaimCard
               claims={expenseClaims}
               onNavigate={() => navigate("/hr/emp-expenses")}
+              onAddExpense={handleAddExpense}
             />
             <SalarySummaryCard
               onViewPayslip={(e) => {
@@ -910,10 +1058,6 @@ const EmployeeDashboard: React.FC = () => {
 
           {/* ── ROW 4: Appraisals ─────────────────────────────────── */}
           <AppraisalSection
-            onFillForm={(e) => {
-              e.stopPropagation();
-              navigate("/hr/emp-appraisals");
-            }}
             onNavigate={() => navigate("/hr/emp-appraisals")}
           />
 
@@ -946,10 +1090,11 @@ const EmployeeDashboard: React.FC = () => {
                       return (
                         <div
                           key={holiday.date}
-                          className={`flex items-start justify-between gap-2 rounded-xl border p-2.5 ${isNext
+                          className={`flex items-start justify-between gap-2 rounded-xl border p-2.5 ${
+                            isNext
                               ? "border-[var(--primary)]/20 bg-[var(--primary)]/5"
                               : "border-[var(--border)] bg-[var(--background)]"
-                            }`}
+                          }`}
                         >
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-[var(--foreground)] truncate">
@@ -960,10 +1105,11 @@ const EmployeeDashboard: React.FC = () => {
                             </p>
                           </div>
                           <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${isNext
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              isNext
                                 ? "bg-[var(--primary)] text-white"
                                 : "bg-[var(--muted)]/40 text-[var(--muted-foreground)]"
-                              }`}
+                            }`}
                           >
                             {countdown}
                           </span>
@@ -997,10 +1143,11 @@ const EmployeeDashboard: React.FC = () => {
                       return (
                         <div
                           key={`${b.employeeName}-${i}`}
-                          className={`flex items-center gap-2 rounded-xl px-2.5 py-2 ${isToday
+                          className={`flex items-center gap-2 rounded-xl px-2.5 py-2 ${
+                            isToday
                               ? "bg-pink-50 border border-pink-200/60"
                               : "border border-[var(--border)] bg-[var(--background)]"
-                            }`}
+                          }`}
                         >
                           <Avatar name={b.employeeName} colorIndex={i} size="xs" />
                           <div className="min-w-0 flex-1">
@@ -1015,8 +1162,9 @@ const EmployeeDashboard: React.FC = () => {
                             </p>
                           </div>
                           <span
-                            className={`shrink-0 text-[10px] font-semibold whitespace-nowrap ${isToday ? "text-pink-500" : "text-[var(--muted-foreground)]"
-                              }`}
+                            className={`shrink-0 text-[10px] font-semibold whitespace-nowrap ${
+                              isToday ? "text-pink-500" : "text-[var(--muted-foreground)]"
+                            }`}
                           >
                             {getBirthdayLabel(b.daysLeft)}
                           </span>
