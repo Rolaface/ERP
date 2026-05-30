@@ -112,6 +112,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
                 );
               }}
               loading={accLoading}
+              required
               placeholder="Select default account"
             />
 
