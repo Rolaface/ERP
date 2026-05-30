@@ -225,18 +225,34 @@ const SectionHeader: React.FC<{
   </div>
 );
 
-// ── CLOCK IN/OUT SECTION ──────────────────────────────────────────────────────
-// TIMER LOGIC:
-// The API only returns the LAST inTime/outTime for the day.
-// To accumulate time across multiple checkin/checkout sessions we keep a
-// persistent `accumulatedRef` that is NEVER reset between API refreshes —
-// it only grows.  On each API response we do:
-//   • If currently checked OUT  → compute session seconds (outTime - inTime)
-//     and add to accumulated IF it's greater than what we already have stored
-//     (guards against double-counting on re-renders).
-//   • If currently checked IN   → start live ticker from inTime; display is
-//     accumulated + live seconds.
-// This way checking out pauses the display (stops ticking) but doesn't zero it.
+interface StoredAcc {
+  accSecs: number;
+  lastInTime: string | null;
+}
+
+function accKey(employeeId: string, date: string): string {
+  return `att_acc_${employeeId}_${date}`;
+}
+
+function loadAcc(employeeId: string, date: string): StoredAcc {
+  try {
+    const raw = sessionStorage.getItem(accKey(employeeId, date));
+    if (!raw) return { accSecs: 0, lastInTime: null };
+    return JSON.parse(raw) as StoredAcc;
+  } catch {
+    return { accSecs: 0, lastInTime: null };
+  }
+}
+
+function saveAcc(employeeId: string, date: string, value: StoredAcc): void {
+  try {
+    sessionStorage.setItem(accKey(employeeId, date), JSON.stringify(value));
+  } catch {
+    // sessionStorage write failure is non-fatal
+  }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 interface AttendanceRowProps {
   inTime: string | null;
@@ -259,15 +275,15 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
   const [isRunning, setIsRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Accumulated seconds from all COMPLETED sessions today.
-  // Lives in a ref so it persists across re-renders / API refreshes.
-  const accumulatedRef = useRef(0);
-
-  // The inTime value of the session we already accounted for in accumulatedRef.
-  // Prevents double-counting the same completed session on re-render.
-  const lastAccountedInRef = useRef<string | null>(null);
-
   const isClockedIn = !!inTime && !outTime;
+
+  const todayStr = (() => {
+    const base = inTime ? new Date(inTime.replace(" ", "T")) : new Date();
+    const y = base.getFullYear();
+    const m = String(base.getMonth() + 1).padStart(2, "0");
+    const d = String(base.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  })();
 
   const getCurrentFormattedTime = () => {
     const now = new Date();
@@ -278,39 +294,45 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
 
+    if (!employeeId) return;
+
     if (!inTime) {
-      // No checkin at all today — reset everything
-      accumulatedRef.current = 0;
-      lastAccountedInRef.current = null;
+      // No attendance today — clear any stale storage and reset display
+      sessionStorage.removeItem(accKey(employeeId, todayStr));
       setElapsed(0);
       setIsRunning(false);
       return;
     }
 
     if (inTime && outTime) {
-      // ── CHECKED OUT ──────────────────────────────────────────────────────
-      // Add this completed session to accumulated, but only once per unique inTime.
-      if (lastAccountedInRef.current !== inTime) {
-        const sessionSecs = Math.max(
-          0,
-          Math.floor(
-            (new Date(outTime.replace(" ", "T")).getTime() -
-              new Date(inTime.replace(" ", "T")).getTime()) /
-              1000
-          )
-        );
-        accumulatedRef.current += sessionSecs;
-        lastAccountedInRef.current = inTime;
+      const thisSessionSecs = Math.max(
+        0,
+        Math.floor(
+          (new Date(outTime.replace(" ", "T")).getTime() -
+            new Date(inTime.replace(" ", "T")).getTime()) /
+            1000
+        )
+      );
+
+      const stored = loadAcc(employeeId, todayStr);
+
+      let totalSecs: number;
+      if (stored.lastInTime === inTime) {
+        totalSecs = Math.max(stored.accSecs, thisSessionSecs);
+      } else {
+        totalSecs = stored.accSecs + thisSessionSecs;
       }
-      // Show the frozen accumulated total — timer is paused
-      setElapsed(accumulatedRef.current);
+      saveAcc(employeeId, todayStr, { accSecs: totalSecs, lastInTime: inTime });
+      setElapsed(totalSecs);
       setIsRunning(false);
+
     } else {
-      // ── CHECKED IN (live) ─────────────────────────────────────────────────
+      const { accSecs: prevAcc } = loadAcc(employeeId, todayStr);
       const sessionStart = new Date(inTime.replace(" ", "T")).getTime();
+
       const tick = () => {
         const liveSecs = Math.max(0, Math.floor((Date.now() - sessionStart) / 1000));
-        setElapsed(accumulatedRef.current + liveSecs);
+        setElapsed(prevAcc + liveSecs);
       };
       tick();
       setIsRunning(true);
@@ -318,7 +340,7 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
     }
 
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [inTime, outTime]);
+  }, [inTime, outTime, employeeId]);
 
   const handleClockAction = async () => {
     if (!user || !employeeId) return;
@@ -525,10 +547,6 @@ const LeaveBalanceSection: React.FC<{
   );
 };
 
-// ── EXPENSE CLAIM CARD ────────────────────────────────────────────────────────
-// FIX: "+ Add Expense" button now opens the ExpenseModal via openExpenseModal()
-// instead of navigating to the expenses page.
-
 const ExpenseClaimCard: React.FC<{
   claims: ExpenseClaim[];
   onNavigate: () => void;
@@ -645,13 +663,7 @@ const SalarySummaryCard: React.FC<{
   );
 };
 
-// ── APPRAISALS SECTION ────────────────────────────────────────────────────────
-// "Fill Form" opens NewCycleModal in view mode.
-// X button  → closes modal, stays on dashboard.
-// Backdrop click → closes modal AND navigates to /hr/emp-appraisals.
-// We achieve this by rendering our own backdrop <div> that handles the
-// navigate-on-click, while passing a plain close handler to onClose so the
-// X button doesn't navigate.
+
 
 interface AppraisalSectionProps {
   onNavigate: () => void;
@@ -725,20 +737,9 @@ const AppraisalSection: React.FC<AppraisalSectionProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/*
-        When the modal is open we render our own invisible backdrop that sits
-        BELOW the MinimizableModal's panel but ABOVE the rest of the page.
-        Clicking it triggers navigation.  The modal's own X button calls
-        handleModalClose which just closes without navigating.
-        z-index 999 sits just below MinimizableModal's default backdrop (~1000).
-      */}
+
       {cycleModalOpen && (
         <>
-          {/* Our navigate-on-click backdrop layer.
-              z-index = modalBackdropBase: same level as MinimizableModal's own backdrop div,
-              so it catches clicks on the dark overlay area.
-              The modal panel itself is at backdropBase + modalPanelOffset (higher), so
-              clicks inside the modal still reach the modal normally. */}
           <div
             style={{ position: "fixed", inset: 0, zIndex: MODAL_LAYER.modalBackdropBase, cursor: "pointer" }}
             onClick={handleBackdropClick}
@@ -755,10 +756,6 @@ const AppraisalSection: React.FC<AppraisalSectionProps> = ({ onNavigate }) => {
     </>
   );
 };
-
-// ── ANNOUNCEMENTS SECTION ─────────────────────────────────────────────────────
-// FIX: Shows only the first announcement by default.
-// A "Show more / Show less" toggle reveals the rest.
 
 const AnnouncementsSection: React.FC = () => {
   const [expanded, setExpanded] = useState(false);
@@ -823,7 +820,6 @@ const AnnouncementsSection: React.FC = () => {
   ];
 
   const urgentCount = announcements.filter((a) => a.urgent).length;
-  // Always show the first item; show the rest only when expanded
   const visibleAnnouncements = expanded ? announcements : announcements.slice(0, 1);
   const hiddenCount = announcements.length - 1;
 
@@ -934,8 +930,7 @@ const EmployeeDashboard: React.FC = () => {
   const upcomingBirthdays = dashboardData?.birthdays?.upcoming ?? [];
   const expenseClaims = dashboardData?.expenseClaim ?? [];
 
-  // ── Expense modal handler ─────────────────────────────────────────────────
-  // FIX: Opens the ExpenseModal with employee pre-filled (employee view)
+
   const handleAddExpense = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     const seedData = user?.employeeId
