@@ -99,6 +99,7 @@ export const EMPLOYEE_HR_TABS: EmployeeTabItem[] = [
   {
     id: "emp-compliance",
     label: "Compliance",
+
     icon: <ShieldCheck size={16} strokeWidth={1.75} />,
   },
   {
@@ -212,34 +213,34 @@ const settingsItems: SettingsItem[] = [
     modules: ["Bank", "Bank Account"],
     hideInEmployeeView: true,
   },
-  {
-    to: "/mode-of-payment-setup",
-    label: "Mode of Payment",
-    icon: <Wallet {...iconProps} />,
-    modules: ["Mode of Payment"],
-    hideInEmployeeView: true,
-  },
-  {
-    to: "/payment-entry",
-    label: "Payment Entry",
-    icon: <Receipt {...iconProps} />,
-    modules: ["Payment Entry"],
-    hideInEmployeeView: true,
-  },
-  {
-    to: "/currency-conversion",
-    label: "Currency Exchange",
-    icon: <Repeat {...iconProps} />,
-    modules: ["Currency Exchange"],
-    hideInEmployeeView: true,
-  },
-  {
-    to: "/customer-group",
-    label: "Customer Group",
-    icon: <Users {...iconProps} />,
-    modules: ["Customer Group"],
-    hideInEmployeeView: true,
-  },
+  // {
+  //   to: "/mode-of-payment-setup",
+  //   label: "Mode of Payment",
+  //   icon: <Wallet {...iconProps} />,
+  //   modules: ["Mode of Payment"],
+  //   hideInEmployeeView: true,
+  // },
+  // {
+  //   to: "/payment-entry",
+  //   label: "Payment Entry",
+  //   icon: <Receipt {...iconProps} />,
+  //   modules: ["Payment Entry"],
+  //   hideInEmployeeView: true,
+  // },
+  // {
+  //   to: "/currency-conversion",
+  //   label: "Currency Exchange",
+  //   icon: <Repeat {...iconProps} />,
+  //   modules: ["Currency Exchange"],
+  //   hideInEmployeeView: true,
+  // },
+  // {
+  //   to: "/customer-group",
+  //   label: "Customer Group",
+  //   icon: <Users {...iconProps} />,
+  //   modules: ["Customer Group"],
+  //   hideInEmployeeView: true,
+  // },
   {
     to: "/Tax-Maintenance",
     label: "Tax Maintenance",
@@ -267,8 +268,8 @@ const settingsItems: SettingsItem[] = [
   },
   {
     to: "/settings",
-    label: "General Settings",
-    icon: <Settings {...iconProps} />,
+    label: "User Preferences",
+    icon: <UserCog {...iconProps} />,
     modules: [],
     hideInEmployeeView: true, // ← hidden in employee view
   },
