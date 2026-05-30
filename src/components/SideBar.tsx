@@ -112,11 +112,6 @@ export const EMPLOYEE_HR_TABS: EmployeeTabItem[] = [
     icon: <Star size={16} strokeWidth={1.75} />,
   },
   {
-    id: "emp-performance-growth",
-    label: "Performance & Growth",
-    icon: <BarChart2 size={16} strokeWidth={1.75} />,
-  },
-  {
     id: "emp-documents",
     label: "Documents",
     icon: <FileText size={16} strokeWidth={1.75} />,
@@ -186,13 +181,13 @@ const menuItems: MenuItem[] = [
     modules: ["Asset Category", "Asset", "Asset Movement"],
     hideInEmployeeView: true,
   },
-  {
-    name: "Performance",
-    to: "/performance",
-    icon: <BarChart2 {...iconProps} />,
-    modules: ["Performance"],
-    hideInEmployeeView: false, 
-  },
+  // {
+  //   name: "Performance",
+  //   to: "/performance",
+  //   icon: <BarChart2 {...iconProps} />,
+  //   modules: ["Performance"],
+  //   hideInEmployeeView: false, 
+  // },
 ];
 
 const settingsItems: SettingsItem[] = [

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Banknote, Shield, FileText, TrendingDown, CreditCard,
 } from "lucide-react";
@@ -99,230 +100,8 @@ const InsuranceTab: React.FC = () => (
   </div>
 );
 
-// ─── Income Tax — Slab Data ───────────────────────────────────────────────────
-
-/*
-const NEW_REGIME_SLABS = [
-  { range: "Up to ₹ 3,00,000",           rate: "NIL", from: 0,       to: 300000   },
-  { range: "₹ 3,00,001 – ₹ 7,00,000",   rate: "5%",  from: 300001,  to: 700000   },
-  { range: "₹ 7,00,001 – ₹ 10,00,000",  rate: "10%", from: 700001,  to: 1000000  },
-  { range: "₹ 10,00,001 – ₹ 12,00,000", rate: "15%", from: 1000001, to: 1200000  },
-  { range: "₹ 12,00,001 – ₹ 15,00,000", rate: "20%", from: 1200001, to: 1500000  },
-  { range: "Above ₹ 15,00,000",          rate: "30%", from: 1500001, to: Infinity },
-];
-
-const OLD_REGIME_SLABS = [
-  { range: "Up to ₹ 2,50,000",          rate: "NIL", from: 0,       to: 250000   },
-  { range: "₹ 2,50,001 – ₹ 5,00,000",  rate: "5%",  from: 250001,  to: 500000   },
-  { range: "₹ 5,00,001 – ₹ 10,00,000", rate: "20%", from: 500001,  to: 1000000  },
-  { range: "Above ₹ 10,00,000",         rate: "30%", from: 1000001, to: Infinity },
-];
-
-const RATE_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
-  "NIL": { bg: "bg-green-50",  text: "text-green-700",  bar: "bg-green-400"  },
-  "5%":  { bg: "bg-blue-50",   text: "text-blue-700",   bar: "bg-blue-400"   },
-  "10%": { bg: "bg-yellow-50", text: "text-yellow-700", bar: "bg-yellow-400" },
-  "15%": { bg: "bg-orange-50", text: "text-orange-600", bar: "bg-orange-400" },
-  "20%": { bg: "bg-red-50",    text: "text-red-600",    bar: "bg-red-400"    },
-  "30%": { bg: "bg-rose-100",  text: "text-rose-700",   bar: "bg-rose-500"   },
-};
-
-const TaxSlabTab: React.FC<{ taxableIncome: number; regime: "new" | "old" }> = ({
-  taxableIncome,
-  regime,
-}) => {
-  const slabs = regime === "new" ? NEW_REGIME_SLABS : OLD_REGIME_SLABS;
-  const maxIncome = regime === "new" ? 1500000 : 1000000;
-
-  const activeSlab = slabs.findIndex(
-    (s) => taxableIncome >= s.from && taxableIncome <= s.to
-  );
-
-  const barWidth = (slab: (typeof slabs)[0]) => {
-    if (slab.to === Infinity) return 100;
-    return Math.min(Math.round((slab.to / maxIncome) * 100), 100);
-  };
-
-  return (
-    <div className="space-y-3">
-      <div
-        className="flex items-start gap-2 rounded-xl px-4 py-3 text-xs"
-        style={{
-          background: "color-mix(in srgb, var(--primary) 8%, transparent)",
-          color: "var(--primary)",
-        }}
-      >
-        <Info size={14} className="mt-0.5 shrink-0" />
-        <span>
-          Tax slabs for <strong>FY 2025-26</strong> under the{" "}
-          <strong>{regime === "new" ? "New" : "Old"} Tax Regime</strong>.
-          Your taxable income of{" "}
-          <strong>₹ {taxableIncome.toLocaleString("en-IN")}</strong> falls in
-          the highlighted slab.
-        </span>
-      </div>
-
-      {slabs.map((slab, idx) => {
-        const colors = RATE_COLORS[slab.rate] ?? RATE_COLORS["30%"];
-        const isActive = idx === activeSlab;
-
-        return (
-          <div
-            key={slab.range}
-            className={`rounded-xl border transition-all bg-[var(--card)] overflow-hidden ${
-              isActive
-                ? "border-[var(--primary)] shadow-sm"
-                : "border-[var(--border)]"
-            }`}
-          >
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-2.5">
-                {isActive && (
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: "var(--primary)" }}
-                  />
-                )}
-                <p
-                  className={`text-sm font-semibold ${
-                    isActive ? "text-[var(--text)]" : "text-[var(--muted)]"
-                  }`}
-                >
-                  {slab.range}
-                </p>
-              </div>
-              <span
-                className={`text-xs font-bold px-3 py-1 rounded-full ${colors.bg} ${colors.text}`}
-              >
-                {slab.rate}
-              </span>
-            </div>
-            <div className="px-4 pb-3">
-              <div className="h-1.5 rounded-full bg-[var(--row-hover)]">
-                <div
-                  className={`h-full rounded-full ${colors.bar} transition-all`}
-                  style={{ width: `${barWidth(slab)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-// ─── Income Tax Tab ───────────────────────────────────────────────────────────
-
-const IncomeTaxTab: React.FC = () => {
-  const [subtab, setSubtab] = useState<"overview" | "slabs" | "form16" | "report">("overview");
-  const d = DUMMY_TAX;
-  const fmtInr = (n: number) => `₹ ${n.toLocaleString("en-IN")}`;
-  const regime: "new" | "old" = d.regime === "New Regime" ? "new" : "old";
-
-  return (
-    <div className="p-4 space-y-4">
-      <div className="flex gap-2 flex-wrap">
-        {[
-          { id: "overview" as const, label: "Overview"   },
-          { id: "slabs"    as const, label: "Tax Slabs"  },
-          { id: "form16"   as const, label: "Form 16"    },
-          { id: "report"   as const, label: "Tax Report" },
-        ].map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setSubtab(s.id)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              subtab === s.id
-                ? "text-white"
-                : "bg-[var(--card)] border border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]"
-            }`}
-            style={subtab === s.id ? { background: "var(--primary)" } : {}}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      {subtab === "overview" && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {[
-            { label: "PAN",            value: d.pan                   },
-            { label: "Tax Regime",     value: d.regime                },
-            { label: "Total Income",   value: fmtInr(d.totalIncome)   },
-            { label: "Taxable Income", value: fmtInr(d.taxableIncome) },
-            { label: "Tax Liability",  value: fmtInr(d.taxLiability)  },
-            { label: "TDS Paid",       value: fmtInr(d.tdsPaid)       },
-          ].map((f) => (
-            <div
-              key={f.label}
-              className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4"
-            >
-              <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-1">
-                {f.label}
-              </p>
-              <p className="text-sm font-bold text-[var(--text)]">{f.value}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {subtab === "slabs" && (
-        <TaxSlabTab taxableIncome={d.taxableIncome} regime={regime} />
-      )}
-
-      {subtab === "form16" && (
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 text-center space-y-3">
-          <div
-            className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center"
-            style={{
-              background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-              color: "var(--primary)",
-            }}
-          >
-            <FileText size={24} />
-          </div>
-          <p className="text-sm font-semibold text-[var(--text)]">Form 16 — FY 2025-26</p>
-          <p className="text-xs text-[var(--muted)]">
-            Your Form 16 will be available after TDS filing by the employer.
-          </p>
-          <button
-            className="mt-2 px-5 py-2 rounded-lg text-sm font-semibold text-white"
-            style={{ background: "var(--primary)" }}
-          >
-            Download Form 16
-          </button>
-        </div>
-      )}
-
-      {subtab === "report" && (
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-8 text-center space-y-3">
-          <div
-            className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center"
-            style={{
-              background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-              color: "var(--primary)",
-            }}
-          >
-            <TrendingDown size={24} />
-          </div>
-          <p className="text-sm font-semibold text-[var(--text)]">Tax Computation Report</p>
-          <p className="text-xs text-[var(--muted)]">Detailed tax computation for FY 2025-26</p>
-          <button
-            className="mt-2 px-5 py-2 rounded-lg text-sm font-semibold text-white"
-            style={{ background: "var(--primary)" }}
-          >
-            Download Report
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
 // ─── Loan & Advance Tab ───────────────────────────────────────────────────────
 
-*/
 const LoanAdvanceTab: React.FC = () => (
   <div className="p-4 space-y-4">
     {DUMMY_LOANS.map((loan) => (
@@ -401,6 +180,8 @@ const FINANCIALS_TABS = [
   { id: "loan",         label: "Loan & Advance", icon: <CreditCard size={14} /> },
 ];
 
+const VALID_TABS = FINANCIALS_TABS.map((t) => t.id);
+
 const unwrap = (res: any): any =>
   res?.message?.data ?? res?.data ?? res;
 
@@ -408,8 +189,17 @@ const unwrap = (res: any): any =>
 
 const EmployeeFinancials: React.FC = () => {
   const { user }     = useAuth();
+  const location     = useLocation();
   const baseCurrency = useCompanyStore((s) => s.baseCurrency);
-  const [activeTab, setActiveTab] = useState("compensation");
+
+  // If navigated here with state.tab (e.g. from dashboard Payslip button),
+  // open that tab directly; otherwise default to "compensation".
+  const initialTab = (() => {
+    const t = (location.state as { tab?: string } | null)?.tab;
+    return t && VALID_TABS.includes(t) ? t : "compensation";
+  })();
+
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const [emp,          setEmp]          = useState<any>(null);
   const [empLoading,   setEmpLoading]   = useState(true);
@@ -487,7 +277,6 @@ const EmployeeFinancials: React.FC = () => {
         )}
 
         {activeTab === "income-tax" && <IncomeTax />}
-
 
         {activeTab === "loan" && <LoanAdvanceTab />}
 

@@ -30,6 +30,7 @@
     currency: string;
     exchange_rate: number;
     expenses: ExpenseItem[];
+    advances?: ExpenseClaimAdvanceItem[];
     remark: string;
   }
   export async function createExpenseClaim(
@@ -168,10 +169,10 @@ export async function deleteExpenseClaimType(name: string): Promise<any> {
   const resp: AxiosResponse = await api.delete(url);
   return resp.data || null;
 }
-export async function approveExpenseClaim(id: string): Promise<any> {
+export async function approveExpenseClaim(id: string, status: "Approved" | "Cancelled" | "Rejected"): Promise<any> {
   const resp: AxiosResponse = await api.put(ExpenseClaimAPI.approveClaim, {
     claim_id: id,
-    status: "Approved",
+    status,
   });
   return resp.data || null;
 }
@@ -254,7 +255,7 @@ export async function attachDocumentToExpenseClaim(
   formData.append("file", file, file.name);
   formData.append("doctype", "Expense Claim");
   formData.append("docname", claimId);
-  formData.append("is_private", "1");
+  formData.append("is_private", "0");
   formData.append("folder", "Home/Attachments");
 
   const resp: AxiosResponse = await api.post(
@@ -267,4 +268,14 @@ export async function attachDocumentToExpenseClaim(
     }
   );
   return resp.data || null;
+}
+
+export interface ExpenseClaimAdvanceItem {
+  employee_advance: string;
+  allocated_amount: number;
+  base_allocated_amount: number;
+  unclaimed_amount: number; 
+  parentfield: "advances";
+  parenttype: "Expense Claim";
+  doctype: "Expense Claim Advance";
 }

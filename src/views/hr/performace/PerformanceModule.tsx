@@ -50,11 +50,6 @@ const PerformanceModule = () => {
 
   return (
     <AppPage>
-      <AppPageHeader
-        title="Performance"
-        icon={<FaChartLine />}
-        description="Manage appraisal cycles, goals, and performance reviews"
-      />
       <HrPrimaryTabs
         tabs={[...TABS]}
         activeTab={tab}

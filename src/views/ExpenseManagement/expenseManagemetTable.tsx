@@ -5,7 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { Ban, CheckCircle2, XCircle } from "lucide-react";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import Table from "../../components/ui/Table/Table";
@@ -19,9 +19,9 @@ import { fireManagedSwal } from "../../utils/swalManager";
 import { openExpenseModal } from "../../store/modalStore";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { getExpenseClaims, getExpenseClaimById, deleteExpenseClaim, approveExpenseClaim } from "../../api/expenseClaimApi";
+import { getExpenseClaims,getExpenseClaimById,deleteExpenseClaim,approveExpenseClaim} from "../../api/expenseClaimApi";
 import ExpenseClaimDetailView from "../../views/ExpenseManagement/expenseClaimDetailView";
-import { useAuth } from "../../context/AuthContext";
+import {useAuth} from "../../context/AuthContext";
 import { useHRView } from "../../hooks/permission/useHRView";
 
 const EXPENSE_MODULE = "Expense Claim";
@@ -60,9 +60,9 @@ const ExpenseHistory: React.FC = () => {
 
   const [expenses, setExpenses] = useState<ExpenseSummary[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
-  const [detailClaim, setDetailClaim] = useState<any | null>(null);
-  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [isFetching,    setIsFetching]    = useState(false);
+  const [detailClaim,      setDetailClaim]      = useState<any | null>(null);
+const [isDetailLoading,  setIsDetailLoading]  = useState(false);
 
   const [filters, setFilters] = useState<{
     status?: string;
@@ -112,7 +112,7 @@ const ExpenseHistory: React.FC = () => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
+}, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
 
 
   useEffect(() => {
@@ -124,20 +124,12 @@ const ExpenseHistory: React.FC = () => {
   useEffect(() => {
     if (isInitialLoad) return;
     fetchExpenses();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
+}, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
 
 
 
   const handleOpenAdd = () => {
-    const seedData =
-      isEmployeeView && user?.employeeId
-        ? {
-          employee: user.employeeId,
-          employee_name: user.fullName ?? user.username ?? "",
-        }
-        : null;
-
-    openExpenseModal(seedData, false, {
+    openExpenseModal(null, false, {
       onSuccess: async () => {
         showSuccess("Expense submitted successfully");
         fetchExpenses();
@@ -145,71 +137,113 @@ const ExpenseHistory: React.FC = () => {
     });
   };
 
-
   const handleOpenEdit = async (exp: ExpenseSummary) => {
-    try {
-      const claim = await getExpenseClaimById(exp.id);
-      closeSwal();
-      const formData = {
-        id: claim.name,
-        claim_title: claim.expenses?.[0]?.description ?? "",
-        category: claim.expenses?.[0]?.expense_type ?? "",
-        date_incurred: claim.expenses?.[0]?.expense_date ?? claim.posting_date,
-        amount: claim.total_claimed_amount,
-        currency: claim.currency,
-        employee_name: claim.employee_name,
-        employee: claim.employee,
-        expense_approver: claim.expense_approver,
-        receipts: [],
-        existingAttachments: claim.attachments ?? [],
-        remarks: claim.remark ?? "",
-      };
-      openExpenseModal(formData, true, {
-        onSuccess: async () => {
-          showSuccess("Expense updated successfully");
-          fetchExpenses();
-        },
-      });
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-  const handleApprove = async (id: string) => {
-    const result = await fireManagedSwal({
-      icon: "question",
-      title: "Approve Expense?",
-      text: `Approve expense ${id}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#10b981",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, approve",
-      reverseButtons: true,
+  try {
+  const claim = await getExpenseClaimById(exp.id);
+closeSwal();
+    const formData = {
+      id:                  claim.name,
+      claim_title:         claim.expenses?.[0]?.description ?? "",
+      category:            claim.expenses?.[0]?.expense_type ?? "",
+      date_incurred:       claim.expenses?.[0]?.expense_date ?? claim.posting_date,
+      amount:              claim.total_claimed_amount,
+      currency:            claim.currency,
+      employee_name:       claim.employee_name,
+      employee:            claim.employee,
+      expense_approver:    claim.expense_approver,
+      receipts:            [],
+      existingAttachments: claim.attachments ?? [],
+      remarks:             claim.remark ?? "",
+    };
+    openExpenseModal(formData, true, {
+      onSuccess: async () => {
+        showSuccess("Expense updated successfully");
+        fetchExpenses();
+      },
     });
-    if (!result.isConfirmed) return;
-    try {
-      await approveExpenseClaim(id);
-      showSuccess("Expense approved successfully");
-      fetchExpenses();
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-  const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsDetailLoading(true);
-    setDetailClaim({});
-    try {
-      const res = await getExpenseClaimById(exp.id);
-      setDetailClaim(res);
-    } catch (err) {
-      showApiError(err);
-      setDetailClaim(null);
-    } finally {
-      setIsDetailLoading(false);
-    }
-  };
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+const handleApprove = async (id: string) => {
+  const result = await fireManagedSwal({
+    icon:               "question",
+    title:              "Approve Expense?",
+    text:               `Approve expense ${id}?`,
+    showCancelButton:   true,
+    confirmButtonColor: "#10b981",
+    cancelButtonColor:  "#6b7280",
+    confirmButtonText:  "Yes, approve",
+    reverseButtons:     true,
+  });
+  if (!result.isConfirmed) return;
+  try {
+    await approveExpenseClaim(id,"Approved");
+    showSuccess("Expense approved successfully");
+    fetchExpenses();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+const handleCancel = async (id: string) => {
+  const result = await fireManagedSwal({
+    icon:               "warning",
+    title:              "Cancel Expense?",
+    text:               `Cancel expense ${id}?`,
+    showCancelButton:   true,
+    confirmButtonColor: "#f59e0b",
+    cancelButtonColor:  "#6b7280",
+    confirmButtonText:  "Yes, cancel",
+    reverseButtons:     true,
+  });
+  if (!result.isConfirmed) return;
+  try {
+    await approveExpenseClaim(id, "Cancelled");
+    showSuccess("Expense cancelled successfully");
+    fetchExpenses();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+
+const handleReject = async (id: string) => {
+  const result = await fireManagedSwal({
+    icon:               "error",
+    title:              "Reject Expense?",
+    text:               `Reject expense ${id}?`,
+    showCancelButton:   true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor:  "#6b7280",
+    confirmButtonText:  "Yes, reject",
+    reverseButtons:     true,
+  });
+  if (!result.isConfirmed) return;
+  try {
+    await approveExpenseClaim(id, "Rejected");
+    showSuccess("Expense rejected successfully");
+    fetchExpenses();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
+  e.stopPropagation();
+  setIsDetailLoading(true);
+  setDetailClaim({}); 
+  try {
+    const res = await getExpenseClaimById(exp.id);
+    setDetailClaim(res);         
+  } catch (err) {
+    showApiError(err);
+    setDetailClaim(null);        
+  } finally {
+    setIsDetailLoading(false);
+  }
+};
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -314,17 +348,17 @@ const ExpenseHistory: React.FC = () => {
         tooltip: (exp) => `Category: ${exp.category}`,
       },
       {
-        key: "status",
-        header: "Status",
-        align: "center",
-        render: (exp) => (
-          <div className="py-1.5">
-            <StatusBadge
-              status={exp.status === "Draft" ? "Pending for Approval" : exp.status}
-            />
-          </div>
-        ),
-      },
+  key:    "status",
+  header: "Status",
+  align:  "center",
+  render: (exp) => (
+    <div className="py-1.5">
+      <StatusBadge
+        status={exp.status === "Draft" ? "Pending for Approval" : exp.status}
+      />
+    </div>
+  ),
+},
       {
         key: "actions",
         header: "Actions",
@@ -346,22 +380,32 @@ const ExpenseHistory: React.FC = () => {
               />
             </PermissionGate>
             <ActionMenu
-              customActions={[
-                ...(!isEmployeeView && exp.status === "Draft"
-                  ? [
-                    {
-                      label: "Approve",
-                      icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-                      onClick: () => handleApprove(exp.id),
-                    },
-                    { divider: true, label: "", onClick: () => { } },
-                  ]
-                  : []),
-              ]}
-              {...(can(EXPENSE_MODULE, "delete")
-                ? { onDelete: () => handleDelete(exp.id) }
-                : {})}
-            />
+  customActions={[
+    ...(!isEmployeeView && exp.status === "Draft"
+      ? [
+          {
+            label: "Approve",
+            icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
+            onClick: () => handleApprove(exp.id),
+          },
+          {
+            label: "Reject",
+            icon: <Ban className="w-4 h-4 text-red-500" />,
+            onClick: () => handleReject(exp.id),
+          },
+        ]
+      : []),
+
+      {
+            label: "Cancel",
+            icon: <XCircle className="w-4 h-4 text-amber-500" />,
+            onClick: () => handleCancel(exp.id),
+          },
+  ]}
+  {...(can(EXPENSE_MODULE, "delete") && isEmployeeView && exp.status === "Draft"
+    ? { onDelete: () => handleDelete(exp.id) }
+    : {})}
+/>
           </div>
         ),
       },
@@ -417,14 +461,14 @@ const ExpenseHistory: React.FC = () => {
         }
       />
       {detailClaim !== null && (
-        <ExpenseClaimDetailView
-          open={true}
-          expenseData={detailClaim}
-          loading={isDetailLoading}
-          onClose={() => setDetailClaim(null)}
-          onBack={() => setDetailClaim(null)}
-        />
-      )}
+  <ExpenseClaimDetailView
+    open={true}
+    expenseData={detailClaim}
+    loading={isDetailLoading}
+    onClose={() => setDetailClaim(null)}
+    onBack={() => setDetailClaim(null)}
+  />
+)}
     </div>
   );
 };

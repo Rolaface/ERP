@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getEmployeeDashboardSummary,
   EmployeeDashboardData,
+  ExpenseClaim,
 } from "../../../api/dashboard/EmployeeDashboardApi";
+import { postEmployeeAttendance } from "../../../api/employeeAttendanceApi";
 import { useAuth } from "../../../context/AuthContext";
-import QuickActions from "../../../components/dashboard/domains/hr/QuickActions";
+import { openLeaveApplyModal, openExpenseModal, MODAL_LAYER } from "../../../store/modalStore";
+import { showApiError } from "../../../utils/alert";
+import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
+import NewCycleModal from "../../../components/Hr/performance/Newcyclemodal";
 import {
-  Clock,
   LogIn,
   LogOut,
   CalendarDays,
@@ -16,13 +20,18 @@ import {
   Gift,
   Cake,
   Sparkles,
-  MapPin,
-  User,
+  Star,
+  ChevronRight,
+  ClipboardList,
+  CreditCard,
+  Banknote,
+  Megaphone,
+  FileText,
+  Timer,
+  ChevronDown,
 } from "lucide-react";
 
-// ── TYPE PATCHES ─────────────────────────────────────────────────────
-// These extend the API types locally so TS stops complaining about
-// fields that exist at runtime but aren't declared in the shared type.
+// ── TYPE PATCHES ──────────────────────────────────────────────────────────────
 
 interface HolidayEntry {
   date: string;
@@ -38,13 +47,14 @@ interface BirthdayEntry {
 interface SafeDashboardData extends Omit<EmployeeDashboardData, "holidays" | "birthdays"> {
   holidays?: { upcoming: HolidayEntry[] };
   birthdays?: { upcoming: BirthdayEntry[] };
+  expenseClaim?: ExpenseClaim[];
   employeeDetails?: EmployeeDashboardData["employeeDetails"] & {
     expenseApproverName?: string;
     shiftApproverName?: string;
   };
 }
 
-// ── HELPERS ───────────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────────────────────
 
 function formatTime(dt: string | null): string {
   if (!dt) return "—";
@@ -88,10 +98,7 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").trim();
 }
 
-function workingMinutes(
-  inTime: string | null,
-  outTime: string | null
-): number {
+function workingMinutes(inTime: string | null, outTime: string | null): number {
   if (!inTime || !outTime) return 0;
   const diff =
     new Date(outTime.replace(" ", "T")).getTime() -
@@ -104,6 +111,15 @@ function formatDuration(mins: number): string {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function formatElapsed(secs: number): string {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  const mm = String(m).padStart(2, "0");
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 function initials(name?: string | null): string {
@@ -125,12 +141,12 @@ function getGreeting(): string {
 }
 
 function getBirthdayLabel(daysLeft: number): string {
-  if (daysLeft === 0) return "Today! 🎂";
+  if (daysLeft === 0) return "🎂 Today";
   if (daysLeft === 1) return "Tomorrow";
-  return `In ${daysLeft}d`;
+  return `${daysLeft}d`;
 }
 
-// ── ATOMS ────────────────────────────────────────────────────────────
+// ── ATOMS ─────────────────────────────────────────────────────────────────────
 
 const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`animate-pulse rounded-xl bg-[var(--muted)]/40 ${className}`} />
@@ -139,8 +155,8 @@ const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
 const EmptyState: React.FC<{ message?: string }> = ({
   message = "No data available",
 }) => (
-  <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-    <AlertCircle size={20} className="text-[var(--muted-foreground)]/30" />
+  <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+    <AlertCircle size={18} className="text-[var(--muted-foreground)]/30" />
     <p className="text-xs text-[var(--muted-foreground)]">{message}</p>
   </div>
 );
@@ -157,10 +173,11 @@ const AVATAR_COLORS = [
 const Avatar: React.FC<{
   name?: string | null;
   photo?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   colorIndex?: number;
 }> = ({ name, photo, size = "md", colorIndex = 0 }) => {
   const sizeMap = {
+    xs: "h-6 w-6 text-[9px]",
     sm: "h-7 w-7 text-[10px]",
     md: "h-9 w-9 text-xs",
     lg: "h-12 w-12 text-sm",
@@ -194,11 +211,11 @@ const SectionHeader: React.FC<{
   title: string;
   right?: React.ReactNode;
 }> = ({ icon: Icon, iconColor = "text-[var(--primary)]", title, right }) => (
-  <div className="flex items-center justify-between px-4 pt-4 pb-3">
+  <div className="flex items-center justify-between px-4 pt-3 pb-2.5">
     <div className="flex items-center gap-2">
       <div
         className={`rounded-lg p-1.5 ${iconColor}`}
-        style={{ background: "color-mix(in srgb, var(--primary) 10%, transparent)" }}
+        style={{ background: "color-mix(in srgb, currentColor 12%, transparent)" }}
       >
         <Icon size={13} />
       </div>
@@ -208,7 +225,678 @@ const SectionHeader: React.FC<{
   </div>
 );
 
-// ── MAIN COMPONENT ───────────────────────────────────────────────────
+interface StoredAcc {
+  accSecs: number;
+  lastInTime: string | null;
+}
+
+function accKey(employeeId: string, date: string): string {
+  return `att_acc_${employeeId}_${date}`;
+}
+
+function loadAcc(employeeId: string, date: string): StoredAcc {
+  try {
+    const raw = sessionStorage.getItem(accKey(employeeId, date));
+    if (!raw) return { accSecs: 0, lastInTime: null };
+    return JSON.parse(raw) as StoredAcc;
+  } catch {
+    return { accSecs: 0, lastInTime: null };
+  }
+}
+
+function saveAcc(employeeId: string, date: string, value: StoredAcc): void {
+  try {
+    sessionStorage.setItem(accKey(employeeId, date), JSON.stringify(value));
+  } catch {
+    // sessionStorage write failure is non-fatal
+  }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+interface AttendanceRowProps {
+  inTime: string | null;
+  outTime: string | null;
+  loading: boolean;
+  employeeId: string;
+  onAttendanceUpdate: () => void;
+}
+
+const AttendanceRow: React.FC<AttendanceRowProps> = ({
+  inTime,
+  outTime,
+  loading,
+  employeeId,
+  onAttendanceUpdate,
+}) => {
+  const { user } = useAuth();
+  const [actionLoading, setActionLoading] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const isClockedIn = !!inTime && !outTime;
+
+  const todayStr = (() => {
+    const base = inTime ? new Date(inTime.replace(" ", "T")) : new Date();
+    const y = base.getFullYear();
+    const m = String(base.getMonth() + 1).padStart(2, "0");
+    const d = String(base.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  })();
+
+  const getCurrentFormattedTime = () => {
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  };
+
+  useEffect(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    if (!employeeId) return;
+
+    if (!inTime) {
+      // No attendance today — clear any stale storage and reset display
+      sessionStorage.removeItem(accKey(employeeId, todayStr));
+      setElapsed(0);
+      setIsRunning(false);
+      return;
+    }
+
+    if (inTime && outTime) {
+      const thisSessionSecs = Math.max(
+        0,
+        Math.floor(
+          (new Date(outTime.replace(" ", "T")).getTime() -
+            new Date(inTime.replace(" ", "T")).getTime()) /
+            1000
+        )
+      );
+
+      const stored = loadAcc(employeeId, todayStr);
+
+      let totalSecs: number;
+      if (stored.lastInTime === inTime) {
+        totalSecs = Math.max(stored.accSecs, thisSessionSecs);
+      } else {
+        totalSecs = stored.accSecs + thisSessionSecs;
+      }
+      saveAcc(employeeId, todayStr, { accSecs: totalSecs, lastInTime: inTime });
+      setElapsed(totalSecs);
+      setIsRunning(false);
+
+    } else {
+      const { accSecs: prevAcc } = loadAcc(employeeId, todayStr);
+      const sessionStart = new Date(inTime.replace(" ", "T")).getTime();
+
+      const tick = () => {
+        const liveSecs = Math.max(0, Math.floor((Date.now() - sessionStart) / 1000));
+        setElapsed(prevAcc + liveSecs);
+      };
+      tick();
+      setIsRunning(true);
+      timerRef.current = setInterval(tick, 1000);
+    }
+
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [inTime, outTime, employeeId]);
+
+  const handleClockAction = async () => {
+    if (!user || !employeeId) return;
+    setActionLoading(true);
+    try {
+      const payload = {
+        docstatus: 0,
+        doctype: "Employee Checkin",
+        owner: user.email,
+        log_type: isClockedIn ? "OUT" : "IN",
+        time: getCurrentFormattedTime(),
+        employee_name: user.fullName,
+        employee: employeeId,
+      };
+      await postEmployeeAttendance(payload);
+      onAttendanceUpdate();
+    } catch (error) {
+      showApiError(parseFrappeError(error) || "Failed to log attendance. Please try again.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const hoursDisplay = elapsed > 0 ? formatElapsed(elapsed) : formatDuration(workingMinutes(inTime, outTime));
+
+  return (
+    <div className="flex gap-3 items-stretch">
+      {/* ── Clock In / Out ACTION card ── */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 flex flex-col gap-1.5 w-[130px] shrink-0 justify-between">
+        <p className="text-[10px] text-[var(--muted-foreground)] font-medium">Attendance</p>
+        {loading ? (
+          <Skeleton className="h-8 w-full" />
+        ) : (
+          <button
+            disabled={actionLoading}
+            onClick={handleClockAction}
+            className={`flex items-center justify-center gap-1.5 w-full rounded-xl px-2 py-1.5 text-white text-[11px] font-bold transition-all active:scale-95 disabled:opacity-60 ${
+              isClockedIn
+                ? "bg-rose-500 hover:bg-rose-600"
+                : "bg-emerald-500 hover:bg-emerald-600"
+            }`}
+          >
+            {isClockedIn ? <LogOut size={12} /> : <LogIn size={12} />}
+            {actionLoading ? "…" : isClockedIn ? "Check Out" : "Check In"}
+          </button>
+        )}
+      </div>
+
+      {/* ── Check In time card */}
+      <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/6 p-3 text-left flex-1 min-w-0 h-[75px]">
+        {loading ? (
+          <Skeleton className="h-full w-full min-h-[60px]" />
+        ) : (
+          <div className="flex flex-col gap-1">
+            <LogIn size={14} className="text-emerald-600" />
+            <p className="text-base font-bold leading-tight text-emerald-600">
+              {formatTime(inTime)}
+            </p>
+            <p className="text-[10px] text-[var(--muted-foreground)]">Check In</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Check Out time card */}
+      <div className="rounded-2xl border border-rose-500/15 bg-rose-500/6 p-3 text-left flex-1 min-w-0 h-[75px]">
+        {loading ? (
+          <Skeleton className="h-full w-full min-h-[60px]" />
+        ) : (
+          <div className="flex flex-col gap-1">
+            <LogOut size={14} className="text-rose-500" />
+            <p className="text-base font-bold leading-tight text-rose-500">
+              {formatTime(outTime)}
+            </p>
+            <p className="text-[10px] text-[var(--muted-foreground)]">Check Out</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Hours Worked card ── */}
+      <div className="rounded-2xl border border-[var(--primary)]/15 bg-[var(--primary)]/6 p-3 text-left flex-1 min-w-0 h-[75px]">
+        {loading ? (
+          <Skeleton className="h-full w-full min-h-[60px]" />
+        ) : (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1">
+              <Timer size={13} className="text-[var(--primary)]" />
+              {isRunning && (
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </div>
+            <p className="text-base font-bold leading-tight text-[var(--primary)] font-mono tracking-tight">
+              {hoursDisplay}
+            </p>
+            <p className="text-[10px] text-[var(--muted-foreground)]">Hours Worked</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── LEAVE BALANCE ─────────────────────────────────────────────────────────────
+
+const LeaveBalanceSection: React.FC<{
+  leave: SafeDashboardData["leaveBalance"] | null;
+  loading: boolean;
+  onApplyLeave: (e: React.MouseEvent) => void;
+  onNavigate: () => void;
+}> = ({ leave, loading, onApplyLeave, onNavigate }) => {
+  return (
+    <div
+      className="rounded-2xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:shadow-sm transition-shadow"
+      onClick={onNavigate}
+    >
+      <div className="px-4 pt-3 pb-3">
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-3 gap-3">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <div
+              className="rounded-lg p-1.5 text-[var(--primary)] shrink-0"
+              style={{ background: "color-mix(in srgb, var(--primary) 12%, transparent)" }}
+            >
+              <Umbrella size={13} />
+            </div>
+            <h3 className="text-sm font-semibold text-[var(--foreground)] shrink-0">
+              Leave Balance
+            </h3>
+            {!loading && leave && (
+              <div className="flex items-center gap-2 ml-1">
+                <span className="text-[11px] text-[var(--muted-foreground)]">
+                  Total{" "}
+                  <span className="font-bold text-[var(--foreground)]">
+                    {leave.totalAllocated}
+                  </span>
+                </span>
+                <span className="h-3 w-px bg-[var(--border)]" />
+                <span className="text-[11px] text-[var(--muted-foreground)]">
+                  Used{" "}
+                  <span className="font-bold text-rose-500">{leave.totalUsed}</span>
+                </span>
+                <span className="h-3 w-px bg-[var(--border)]" />
+                <span className="text-[11px] text-[var(--muted-foreground)]">
+                  Left{" "}
+                  <span className="font-bold text-emerald-600">
+                    {leave.totalRemaining}
+                  </span>
+                </span>
+              </div>
+            )}
+            {loading && <Skeleton className="h-4 w-36 ml-1" />}
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onApplyLeave(e); }}
+            className="flex items-center gap-1 shrink-0 rounded-lg border border-[var(--primary)]/20 bg-[var(--primary)]/6 px-2.5 py-1 text-[11px] font-semibold text-[var(--primary)] hover:bg-[var(--primary)]/12 transition-colors"
+          >
+            + Apply Leave
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-32" />
+          </div>
+        ) : !leave ? (
+          <EmptyState message="Leave balance unavailable" />
+        ) : (
+          leave.leaveTypes.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {leave.leaveTypes.map((lt) => {
+                const pct =
+                  lt.allocated > 0
+                    ? Math.min(100, Math.round((lt.used / lt.allocated) * 100))
+                    : 0;
+                return (
+                  <div
+                    key={lt.leaveType}
+                    className="flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-1.5"
+                  >
+                    <span className="text-[11px] font-medium capitalize text-[var(--foreground)]">
+                      {lt.leaveType}
+                    </span>
+                    <span className="text-[11px] font-bold text-[var(--primary)]">
+                      {lt.remaining}
+                    </span>
+                    <span className="text-[10px] text-[var(--muted-foreground)]">
+                      /{lt.allocated}
+                    </span>
+                    <div className="w-12 h-1 rounded-full bg-[var(--muted)]/30 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[var(--primary)] transition-all duration-500"
+                        style={{ width: `${100 - pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ExpenseClaimCard: React.FC<{
+  claims: ExpenseClaim[];
+  onNavigate: () => void;
+  onAddExpense: (e: React.MouseEvent) => void;
+}> = ({ claims, onNavigate, onAddExpense }) => {
+  const pendingCount = claims.filter(
+    (c) => c.approval_status === "Draft" || c.approval_status === "Pending For Approval"
+  ).length;
+
+  return (
+    <div
+      className="flex-1 rounded-2xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:shadow-sm transition-shadow"
+      onClick={onNavigate}
+    >
+      <div className="px-4 pt-2 pb-3 h-[110px] flex flex-col gap-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div
+              className="rounded-lg p-1.5 text-amber-500 shrink-0"
+              style={{ background: "color-mix(in srgb, #f59e0b 12%, transparent)" }}
+            >
+              <CreditCard size={13} />
+            </div>
+            <h3 className="text-sm font-semibold text-[var(--foreground)]">Expense Claims</h3>
+          </div>
+          {pendingCount > 0 && (
+            <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+              {pendingCount} pending
+            </span>
+          )}
+          {/* FIX: calls openExpenseModal instead of navigating */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddExpense(e); }}
+            className="flex items-center gap-1 shrink-0 rounded-lg border border-[var(--primary)]/20 bg-[var(--primary)]/6 px-2.5 py-1 text-[11px] font-semibold text-[var(--primary)] hover:bg-[var(--primary)]/12 transition-colors"
+          >
+            + Add Expense
+          </button>
+        </div>
+
+        <div className="space-y-1.5 flex-1">
+          {claims.length === 0 ? (
+            <EmptyState message="No expense claims" />
+          ) : (
+            claims.slice(0, 1).map((claim) => (
+              <div
+                key={claim.name}
+                className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2"
+              >
+                <span className="text-[11px] font-medium text-[var(--foreground)] truncate">
+                  {claim.description || claim.name}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-semibold text-[var(--foreground)]">
+                    ₹{claim.grand_total.toLocaleString("en-IN")}
+                  </span>
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                      claim.approval_status === "Approved"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {claim.approval_status === "Draft"
+                      ? "Pending For Approval"
+                      : claim.approval_status}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 text-[11px] font-semibold text-[var(--primary)]">
+          View all claims <ChevronRight size={11} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── SALARY SUMMARY CARD ───────────────────────────────────────────────────────
+
+const SalarySummaryCard: React.FC<{
+  onViewPayslip: (e: React.MouseEvent) => void;
+  onNavigate: () => void;
+}> = ({ onViewPayslip, onNavigate }) => {
+  return (
+    <div
+      className="flex-1 rounded-2xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:shadow-sm transition-shadow"
+      onClick={onNavigate}
+    >
+      <div className="px-4 pt-2 pb-3 h-[110px] flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div
+              className="rounded-lg p-1.5 text-emerald-600 shrink-0"
+              style={{ background: "color-mix(in srgb, #10b981 12%, transparent)" }}
+            >
+              <Banknote size={13} />
+            </div>
+            <h3 className="text-sm font-semibold text-[var(--foreground)]">Compensation</h3>
+          </div>
+        </div>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onViewPayslip(e); }}
+          className="flex items-center justify-center gap-1.5 w-full rounded-xl border border-[var(--primary)]/20 bg-[var(--primary)]/6 px-3 py-2 text-[11px] font-semibold text-[var(--primary)] hover:bg-[var(--primary)]/12 transition-colors"
+        >
+          <FileText size={12} />
+          View Latest Payslip
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+
+interface AppraisalSectionProps {
+  onNavigate: () => void;
+}
+
+const AppraisalSection: React.FC<AppraisalSectionProps> = ({ onNavigate }) => {
+  const [cycleModalOpen, setCycleModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleFillForm = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCycleModalOpen(true);
+  };
+
+  // X button: just close, don't navigate
+  const handleModalClose = useCallback(() => {
+    setCycleModalOpen(false);
+  }, []);
+
+  // Backdrop click: close AND navigate
+  const handleBackdropClick = useCallback(() => {
+    setCycleModalOpen(false);
+    navigate("/hr/emp-appraisals");
+  }, [navigate]);
+
+  return (
+    <>
+      <div
+        className="rounded-2xl border border-[var(--border)] bg-[var(--card)] cursor-pointer hover:shadow-sm transition-shadow"
+        onClick={onNavigate}
+      >
+        <div className="px-4 pt-3 pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div
+                className="rounded-lg p-1.5 text-amber-500"
+                style={{ background: "color-mix(in srgb, #f59e0b 12%, transparent)" }}
+              >
+                <Star size={13} />
+              </div>
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">Appraisals</h3>
+            </div>
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live
+            </span>
+          </div>
+
+          <div className="mt-2.5 flex items-center justify-between rounded-xl border border-amber-200/60 bg-amber-50/50 px-3 py-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600 shrink-0">
+                <ClipboardList size={14} />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-[var(--foreground)]">
+                  Performance Review Cycle
+                </p>
+                <p className="text-[10px] text-[var(--muted-foreground)]">
+                  Self-assessment form is open · Fill before deadline
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleFillForm}
+              className="flex items-center gap-1 shrink-0 rounded-lg bg-amber-500 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-amber-600 transition-colors ml-3"
+            >
+              Fill Form
+              <ChevronRight size={11} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      {cycleModalOpen && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: MODAL_LAYER.modalBackdropBase, cursor: "pointer" }}
+            onClick={handleBackdropClick}
+          />
+          <NewCycleModal
+            isOpen={cycleModalOpen}
+            onClose={handleModalClose}
+            onSave={() => {}}
+            modalId="dashboard-appraisal-cycle"
+            isViewMode
+          />
+        </>
+      )}
+    </>
+  );
+};
+
+const AnnouncementsSection: React.FC = () => {
+  const [expanded, setExpanded] = useState(false);
+
+  const announcements = [
+    {
+      id: "1",
+      type: "compliance",
+      title: "PF Nomination Form",
+      body: "Complete and submit your PF nomination to HR.",
+      due: "Due 15 Jun",
+      urgent: true,
+      icon: AlertCircle,
+      iconColor: "text-rose-500",
+      iconBg: "color-mix(in srgb, #f43f5e 12%, transparent)",
+      badgeClass: "bg-rose-500/10 border-rose-500/20 text-rose-600",
+      dotClass: "bg-rose-500",
+      cardClass: "border-rose-200/60 bg-rose-50/50",
+    },
+    {
+      id: "2",
+      type: "compliance",
+      title: "ESI Declaration",
+      body: "Submit your ESI declaration form for FY 2026-27.",
+      due: "Due 30 Jun",
+      urgent: false,
+      icon: AlertCircle,
+      iconColor: "text-amber-500",
+      iconBg: "color-mix(in srgb, #f59e0b 12%, transparent)",
+      badgeClass: "bg-amber-500/10 border-amber-500/20 text-amber-600",
+      dotClass: "bg-amber-400",
+      cardClass: "border-[var(--border)] bg-[var(--background)]",
+    },
+    {
+      id: "3",
+      type: "announcement",
+      title: "Office Closed — 30 May",
+      body: "The office will be closed tomorrow for the local holiday. WFH approved.",
+      due: "Tomorrow",
+      urgent: false,
+      icon: Megaphone,
+      iconColor: "text-[var(--primary)]",
+      iconBg: "color-mix(in srgb, var(--primary) 12%, transparent)",
+      badgeClass: "bg-[var(--primary)]/10 border-[var(--primary)]/20 text-[var(--primary)]",
+      dotClass: "bg-[var(--primary)]",
+      cardClass: "border-[var(--border)] bg-[var(--background)]",
+    },
+    {
+      id: "4",
+      type: "announcement",
+      title: "Team All-Hands — 5 Jun",
+      body: "Quarterly all-hands meeting at 3 PM. Attendance mandatory.",
+      due: "7d",
+      urgent: false,
+      icon: Megaphone,
+      iconColor: "text-indigo-500",
+      iconBg: "color-mix(in srgb, #6366f1 12%, transparent)",
+      badgeClass: "bg-indigo-500/10 border-indigo-500/20 text-indigo-600",
+      dotClass: "bg-indigo-400",
+      cardClass: "border-[var(--border)] bg-[var(--background)]",
+    },
+  ];
+
+  const urgentCount = announcements.filter((a) => a.urgent).length;
+  const visibleAnnouncements = expanded ? announcements : announcements.slice(0, 1);
+  const hiddenCount = announcements.length - 1;
+
+  return (
+    <Card>
+      <div className="px-4 pt-3 pb-3">
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            <div
+              className="rounded-lg p-1.5 text-[var(--primary)]"
+              style={{ background: "color-mix(in srgb, var(--primary) 12%, transparent)" }}
+            >
+              <Megaphone size={13} />
+            </div>
+            <h3 className="text-sm font-semibold text-[var(--foreground)]">Announcements</h3>
+          </div>
+          {urgentCount > 0 && (
+            <span className="rounded-full bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 text-[10px] font-semibold text-rose-600">
+              {urgentCount} action needed
+            </span>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          {visibleAnnouncements.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.id}
+                className={`flex items-start justify-between gap-2 rounded-xl border px-3 py-2.5 ${item.cardClass}`}
+              >
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div
+                    className={`rounded-lg p-1 shrink-0 mt-0.5 ${item.iconColor}`}
+                    style={{ background: item.iconBg }}
+                  >
+                    <Icon size={11} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-[var(--foreground)] leading-tight">
+                      {item.title}
+                    </p>
+                    <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5 leading-relaxed">
+                      {item.body}
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${item.badgeClass}`}
+                >
+                  {item.due}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Toggle button — only shown when there are more than 1 announcement */}
+        {announcements.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-[var(--primary)] hover:opacity-80 transition-opacity"
+          >
+            <ChevronDown
+              size={13}
+              className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+            />
+            {expanded ? "Show less" : `Show ${hiddenCount} more`}
+          </button>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 
 const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -217,25 +905,22 @@ const EmployeeDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<SafeDashboardData | null>(null);
 
-  useEffect(() => {
+  const fetchDashboard = async () => {
     const employeeId = user?.employeeId;
     if (!employeeId) return;
-    let mounted = true;
+    setLoading(true);
+    try {
+      const data = await getEmployeeDashboardSummary(employeeId);
+      setDashboardData(data as SafeDashboardData);
+    } catch (e) {
+      console.error("Error fetching employee dashboard:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const fetchDashboard = async () => {
-      setLoading(true);
-      try {
-        const data = await getEmployeeDashboardSummary(employeeId);
-        if (mounted) setDashboardData(data as SafeDashboardData);
-      } catch (e) {
-        console.error("Error fetching employee dashboard:", e);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchDashboard();
-    return () => { mounted = false; };
   }, [user?.employeeId]);
 
   const emp = dashboardData?.employeeDetails ?? null;
@@ -243,31 +928,35 @@ const EmployeeDashboard: React.FC = () => {
   const checkins = dashboardData?.checkins ?? null;
   const upcomingHolidays = dashboardData?.holidays?.upcoming ?? [];
   const upcomingBirthdays = dashboardData?.birthdays?.upcoming ?? [];
+  const expenseClaims = dashboardData?.expenseClaim ?? [];
 
-  const mins = workingMinutes(checkins?.inTime ?? null, checkins?.outTime ?? null);
 
-  // Approvers for Reporting Info
-  const approvers = emp
-    ? [
-      { name: emp.leaveApproverName, role: "Leave Approver" },
-      { name: emp.expenseApproverName, role: "Expense Approver" },
-      { name: emp.shiftApproverName, role: "Shift Approver" },
-    ]
-    : [];
+  const handleAddExpense = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const seedData = user?.employeeId
+      ? {
+          employee: user.employeeId,
+          employee_name: user.fullName ?? user.username ?? "",
+        }
+      : null;
+    openExpenseModal(seedData, false, {
+      onSuccess: () => {
+        fetchDashboard();
+      },
+    });
+  }, [user]);
 
   return (
-    <div className="w-full space-y-4 py-4">
+    <div className="w-full space-y-3 py-4">
 
-      {/* ── HERO BANNER ─────────────────────────────────────────── */}
+      {/* ── HERO BANNER ───────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl bg-[var(--primary)] px-5 py-4 text-white">
-        {/* decorative blobs */}
         <span className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/5" />
         <span className="pointer-events-none absolute bottom-0 right-32 h-28 w-28 rounded-full bg-white/5" />
         <span className="pointer-events-none absolute top-3 right-60 h-14 w-14 rounded-full bg-white/5" />
 
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-          {/* ── LEFT: avatar + greeting ──── */}
+          {/* LEFT: avatar + greeting */}
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-white/15 flex items-center justify-center text-base font-bold">
               {loading ? (
@@ -282,7 +971,6 @@ const EmployeeDashboard: React.FC = () => {
                 initials(emp?.employeeName)
               )}
             </div>
-
             <div className="min-w-0">
               {loading ? (
                 <>
@@ -309,35 +997,7 @@ const EmployeeDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* ── CENTRE: Reporting Info chips (inline in header) ── */}
-          {!loading && approvers.some((a) => a.name) && (
-            <div className="hidden lg:flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-widest text-white/100 mr-1">
-                Reports to
-              </span>
-              {approvers.map(({ name, role }) =>
-                name ? (
-                  <div
-                    key={role}
-                    className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-2.5 py-1.5 backdrop-blur-sm"
-                    title={role}
-                  >
-                    <div className="flex h-5 w-5 items-center justify-center rounded-md bg-white/20 text-[9px] font-bold shrink-0">
-                      {initials(name)}
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-medium text-white leading-tight">
-                        {name}
-                      </p>
-                      <p className="text-[9px] text-white/50 leading-tight">{role}</p>
-                    </div>
-                  </div>
-                ) : null
-              )}
-            </div>
-          )}
-
-          {/* ── RIGHT: date pill ─────────────────────────────── */}
+          {/* RIGHT: date pill */}
           <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-sm self-start sm:self-auto shrink-0">
             <p className="text-[9px] uppercase tracking-widest text-white/45 mb-0.5">Today</p>
             <p className="text-sm font-semibold text-white whitespace-nowrap">
@@ -347,257 +1007,89 @@ const EmployeeDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* ── ATTENDANCE STAT STRIP ─────────────────────────────── */}
-      {/* Narrower — max ~680px, left-aligned, not full width */}
-      <div className="grid grid-cols-3 gap-3 max-w-2xl">
-        {(
-          [
-            {
-              icon: LogIn,
-              label: "Check In",
-              value: formatTime(checkins?.inTime ?? null),
-              accent: "text-emerald-600",
-              bg: "bg-emerald-500/6 border-emerald-500/15",
-            },
-            {
-              icon: LogOut,
-              label: "Check Out",
-              value: formatTime(checkins?.outTime ?? null),
-              accent: "text-rose-500",
-              bg: "bg-rose-500/6 border-rose-500/15",
-            },
-            {
-              icon: Clock,
-              label: "Hours Worked",
-              value: formatDuration(mins),
-              accent: "text-[var(--primary)]",
-              bg: "bg-[var(--primary)]/6 border-[var(--primary)]/15",
-            },
-          ] as const
-        ).map(({ icon: Icon, label, value, accent, bg }) => (
-          <div key={label} className={`rounded-2xl border p-3 ${bg}`}>
-            {loading ? (
-              <Skeleton className="h-14 w-full" />
-            ) : (
-              <div className="flex flex-col gap-1">
-                <Icon size={14} className={accent} />
-                <p className={`text-lg font-bold leading-tight ${accent}`}>{value}</p>
-                <p className="text-[10px] text-[var(--muted-foreground)]">{label}</p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* ── MAIN GRID ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+      {/* ── MAIN GRID ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
 
         {/* LEFT 2 COLS */}
-        <div className="flex flex-col gap-4 xl:col-span-2">
+        <div className="flex flex-col gap-3 xl:col-span-2">
 
-          {/* LEAVE BALANCE */}
-          <Card>
-            <SectionHeader
-              icon={Umbrella}
-              title="Leave Balance"
-              right={
-                !loading && leave ? (
-                  <span className="text-[10px] text-[var(--muted-foreground)]">
-                    As of {formatDate(leave.asOfDate)}
-                  </span>
-                ) : null
-              }
+          {/* ── ROW 1: Attendance ────────────────────────────────────── */}
+          <AttendanceRow
+            inTime={checkins?.inTime ?? null}
+            outTime={checkins?.outTime ?? null}
+            loading={loading}
+            employeeId={user?.employeeId ?? ""}
+            onAttendanceUpdate={fetchDashboard}
+          />
+
+          {/* ── ROW 2: Leave Balance ───────────────────────────────── */}
+          <LeaveBalanceSection
+            leave={leave}
+            loading={loading}
+            onApplyLeave={(e) => {
+              openLeaveApplyModal(null, false, {
+                onSuccess: fetchDashboard,
+              });
+            }}
+            onNavigate={() => navigate("/hr/emp-leave")}
+          />
+
+          {/* ── ROW 3: Expense Claim + Salary Summary ─────────────── */}
+          {/* FIX: Removed the duplicate LeaveBalanceSection that was here */}
+          <div className="flex gap-3">
+            <ExpenseClaimCard
+              claims={expenseClaims}
+              onNavigate={() => navigate("/hr/emp-expenses")}
+              onAddExpense={handleAddExpense}
             />
-            <div className="px-4 pb-4">
-              {loading ? (
-                <div className="space-y-2.5">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-3/4" />
-                </div>
-              ) : !leave ? (
-                <EmptyState message="Leave balance unavailable" />
-              ) : (
-                <>
-                  <div className="grid grid-cols-3 gap-2.5 mb-3">
-                    {(
-                      [
-                        { label: "Allocated", value: leave.totalAllocated, color: "text-[var(--primary)]" },
-                        { label: "Used", value: leave.totalUsed, color: "text-rose-500" },
-                        { label: "Remaining", value: leave.totalRemaining, color: "text-emerald-600" },
-                      ] as const
-                    ).map(({ label, value, color }) => (
-                      <div
-                        key={label}
-                        className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-center"
-                      >
-                        <p className={`text-2xl font-bold ${color}`}>{value}</p>
-                        <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
-                          {label}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {leave.leaveTypes.length > 0 && (
-                    <div className="space-y-2">
-                      {leave.leaveTypes.map((lt) => {
-                        const pct =
-                          lt.allocated > 0
-                            ? Math.min(100, Math.round((lt.used / lt.allocated) * 100))
-                            : 0;
-                        return (
-                          <div
-                            key={lt.leaveType}
-                            className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2.5"
-                          >
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-xs font-medium capitalize text-[var(--foreground)]">
-                                {lt.leaveType}
-                              </span>
-                              <div className="flex items-center gap-3">
-                                <span className="text-[10px] text-[var(--muted-foreground)]">
-                                  {lt.used} / {lt.allocated}
-                                </span>
-                                <span className="text-[10px] font-semibold text-emerald-600">
-                                  {lt.remaining} left
-                                </span>
-                              </div>
-                            </div>
-                            <div className="h-1.5 rounded-full bg-[var(--muted)]/25 overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-[var(--primary)] transition-all duration-500"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </Card>
-
-          {/* UPCOMING BIRTHDAYS */}
-          <Card>
-            <SectionHeader
-              icon={Cake}
-              iconColor="text-pink-500"
-              title="Upcoming Birthdays"
+            <SalarySummaryCard
+              onViewPayslip={(e) => {
+                e.stopPropagation();
+                navigate("/hr/emp-financials", { state: { tab: "salary-slip" } });
+              }}
+              onNavigate={() => navigate("/hr/emp-financials")}
             />
-            <div className="px-4 pb-4">
-              {loading ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <Skeleton className="h-14 w-full" />
-                  <Skeleton className="h-14 w-full" />
-                  <Skeleton className="h-14 w-full" />
-                  <Skeleton className="h-14 w-full" />
-                </div>
-              ) : upcomingBirthdays.length === 0 ? (
-                <EmptyState message="No upcoming birthdays" />
-              ) : (
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {upcomingBirthdays.map((b, i) => {
-                    const isToday = b.daysLeft === 0;
-                    return (
-                      <div
-                        key={`${b.employeeName}-${i}`}
-                        className={`
-                              flex items-center gap-2.5 rounded-xl border px-3 py-2.5
-                              ${isToday
-                            ? "border-pink-200 bg-pink-50/60"
-                            : "border-[var(--border)] bg-[var(--background)]"}
-                            `}
-                      >
-                        <Avatar name={b.employeeName} colorIndex={i} size="md" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-[var(--foreground)] capitalize truncate">
-                            {b.employeeName}
-                          </p>
-                          <p className="text-[10px] text-[var(--muted-foreground)]">
-                            {new Date(b.dateOfBirth).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "long",
-                            })}
-                          </p>
-                        </div>
-                        <span
-                          className={`
-                                shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap
-                                ${isToday
-                              ? "bg-pink-500 text-white"
-                              : "bg-[var(--primary)]/10 text-[var(--primary)]"}
-                              `}
-                        >
-                          {getBirthdayLabel(b.daysLeft)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </Card>
+          </div>
+
+          {/* ── ROW 4: Appraisals ─────────────────────────────────── */}
+          <AppraisalSection
+            onNavigate={() => navigate("/hr/emp-appraisals")}
+          />
+
+          {/* ── ROW 5: Announcements ──────────────────────────────── */}
+          <AnnouncementsSection />
+
         </div>
 
         {/* RIGHT SIDEBAR */}
         <div className="xl:col-span-1">
-          <div className="space-y-4 xl:sticky xl:top-4">
-
-            {/* Quick Actions — slightly nudged up via negative margin */}
-            <div className="-mt-0">
-              <QuickActions />
-            </div>
-
-            {/* Reporting Info (mobile fallback — hidden on lg where it's in header) */}
-            {!loading && emp && (
-              <Card className="lg:hidden">
-                <SectionHeader icon={User} title="Reporting Info" />
-                <div className="px-4 pb-4 space-y-2.5">
-                  {approvers.map(({ name, role }, i) => (
-                    <div key={role} className="flex items-center gap-2.5">
-                      <Avatar name={name} colorIndex={i + 2} size="sm" />
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-[var(--foreground)] truncate">
-                          {name ?? "Not assigned"}
-                        </p>
-                        <p className="text-[10px] text-[var(--muted-foreground)]">{role}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
+          <div className="space-y-3 xl:sticky xl:top-4">
 
             {/* Upcoming Holidays */}
             <Card>
               <SectionHeader icon={Gift} title="Upcoming Holidays" />
-              <div className="px-4 pb-4">
+              <div className="px-4 pb-3">
                 {loading ? (
                   <div className="space-y-2">
-                    <Skeleton className="h-14 w-full" />
-                    <Skeleton className="h-14 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
                   </div>
                 ) : upcomingHolidays.length === 0 ? (
                   <EmptyState message="No upcoming holidays" />
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {upcomingHolidays.map((holiday: HolidayEntry) => {
                       const countdown = getCountdown(holiday.date);
                       if (countdown === "Passed") return null;
-                      const isNext =
-                        countdown === "Tomorrow" || countdown === "Today";
+                      const isNext = countdown === "Tomorrow" || countdown === "Today";
                       return (
                         <div
                           key={holiday.date}
-                          className={`
-                                flex items-start justify-between gap-2.5 rounded-xl border p-2.5
-                                ${isNext
+                          className={`flex items-start justify-between gap-2 rounded-xl border p-2.5 ${
+                            isNext
                               ? "border-[var(--primary)]/20 bg-[var(--primary)]/5"
-                              : "border-[var(--border)] bg-[var(--background)]"}
-                              `}
+                              : "border-[var(--border)] bg-[var(--background)]"
+                          }`}
                         >
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-[var(--foreground)] truncate">
@@ -608,12 +1100,11 @@ const EmployeeDashboard: React.FC = () => {
                             </p>
                           </div>
                           <span
-                            className={`
-                                  shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold
-                                  ${isNext
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              isNext
                                 ? "bg-[var(--primary)] text-white"
-                                : "bg-[var(--muted)]/40 text-[var(--muted-foreground)]"}
-                                `}
+                                : "bg-[var(--muted)]/40 text-[var(--muted-foreground)]"
+                            }`}
                           >
                             {countdown}
                           </span>
@@ -624,6 +1115,62 @@ const EmployeeDashboard: React.FC = () => {
                 )}
               </div>
             </Card>
+
+            {/* Upcoming Birthdays */}
+            <Card>
+              <SectionHeader
+                icon={Cake}
+                iconColor="text-pink-500"
+                title="Upcoming Birthdays"
+              />
+              <div className="px-4 pb-3">
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                ) : upcomingBirthdays.length === 0 ? (
+                  <EmptyState message="No upcoming birthdays" />
+                ) : (
+                  <div className="space-y-1.5">
+                    {upcomingBirthdays.map((b, i) => {
+                      const isToday = b.daysLeft === 0;
+                      return (
+                        <div
+                          key={`${b.employeeName}-${i}`}
+                          className={`flex items-center gap-2 rounded-xl px-2.5 py-2 ${
+                            isToday
+                              ? "bg-pink-50 border border-pink-200/60"
+                              : "border border-[var(--border)] bg-[var(--background)]"
+                          }`}
+                        >
+                          <Avatar name={b.employeeName} colorIndex={i} size="xs" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-semibold text-[var(--foreground)] capitalize truncate leading-tight">
+                              {b.employeeName}
+                            </p>
+                            <p className="text-[9px] text-[var(--muted-foreground)]">
+                              {new Date(b.dateOfBirth).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                              })}
+                            </p>
+                          </div>
+                          <span
+                            className={`shrink-0 text-[10px] font-semibold whitespace-nowrap ${
+                              isToday ? "text-pink-500" : "text-[var(--muted-foreground)]"
+                            }`}
+                          >
+                            {getBirthdayLabel(b.daysLeft)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </Card>
+
           </div>
         </div>
       </div>
