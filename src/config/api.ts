@@ -478,7 +478,7 @@ export const API = {
   //purchase invoice
   purchaseInvoice: {
     getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get`,
-
+    getItemByBarCode: `${ERP_BASE}/api/method/custom_api.utils.barcode_utils.get_item_from_batch_barcode`,
     getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
     update: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update`,
