@@ -278,5 +278,7 @@ export interface ExpenseClaimAdvanceItem {
   parentfield: "advances";
   parenttype: "Expense Claim";
   exchange_rate: 1;
+  advance_amount: number;   
+  posting_date: string; 
   doctype: "Expense Claim Advance";
 }
