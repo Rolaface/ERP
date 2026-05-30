@@ -11,6 +11,7 @@ import { openLeaveApplyModal, openExpenseModal, MODAL_LAYER } from "../../../sto
 import { showApiError } from "../../../utils/alert";
 import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
 import NewCycleModal from "../../../components/Hr/performance/Newcyclemodal";
+import AttendanceTimer from "./AttendanceTimer"; // ← extracted component
 import {
   LogIn,
   LogOut,
@@ -27,7 +28,6 @@ import {
   Banknote,
   Megaphone,
   FileText,
-  Timer,
   ChevronDown,
 } from "lucide-react";
 
@@ -96,30 +96,6 @@ function getCountdown(dateStr: string): string {
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").trim();
-}
-
-function workingMinutes(inTime: string | null, outTime: string | null): number {
-  if (!inTime || !outTime) return 0;
-  const diff =
-    new Date(outTime.replace(" ", "T")).getTime() -
-    new Date(inTime.replace(" ", "T")).getTime();
-  return Math.max(0, Math.floor(diff / 60_000));
-}
-
-function formatDuration(mins: number): string {
-  if (mins === 0) return "—";
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
-
-function formatElapsed(secs: number): string {
-  const h = Math.floor(secs / 3600);
-  const m = Math.floor((secs % 3600) / 60);
-  const s = secs % 60;
-  const mm = String(m).padStart(2, "0");
-  const ss = String(s).padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 function initials(name?: string | null): string {
@@ -225,34 +201,8 @@ const SectionHeader: React.FC<{
   </div>
 );
 
-interface StoredAcc {
-  accSecs: number;
-  lastInTime: string | null;
-}
-
-function accKey(employeeId: string, date: string): string {
-  return `att_acc_${employeeId}_${date}`;
-}
-
-function loadAcc(employeeId: string, date: string): StoredAcc {
-  try {
-    const raw = sessionStorage.getItem(accKey(employeeId, date));
-    if (!raw) return { accSecs: 0, lastInTime: null };
-    return JSON.parse(raw) as StoredAcc;
-  } catch {
-    return { accSecs: 0, lastInTime: null };
-  }
-}
-
-function saveAcc(employeeId: string, date: string, value: StoredAcc): void {
-  try {
-    sessionStorage.setItem(accKey(employeeId, date), JSON.stringify(value));
-  } catch {
-    // sessionStorage write failure is non-fatal
-  }
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── ATTENDANCE ROW ────────────────────────────────────────────────────────────
+// Timer logic removed — now handled by <AttendanceTimer />.
 
 interface AttendanceRowProps {
   inTime: string | null;
@@ -271,76 +221,14 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
 }) => {
   const { user } = useAuth();
   const [actionLoading, setActionLoading] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isClockedIn = !!inTime && !outTime;
-
-  const todayStr = (() => {
-    const base = inTime ? new Date(inTime.replace(" ", "T")) : new Date();
-    const y = base.getFullYear();
-    const m = String(base.getMonth() + 1).padStart(2, "0");
-    const d = String(base.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  })();
 
   const getCurrentFormattedTime = () => {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, "0");
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   };
-
-  useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    if (!employeeId) return;
-
-    if (!inTime) {
-      // No attendance today — clear any stale storage and reset display
-      sessionStorage.removeItem(accKey(employeeId, todayStr));
-      setElapsed(0);
-      setIsRunning(false);
-      return;
-    }
-
-    if (inTime && outTime) {
-      const thisSessionSecs = Math.max(
-        0,
-        Math.floor(
-          (new Date(outTime.replace(" ", "T")).getTime() -
-            new Date(inTime.replace(" ", "T")).getTime()) /
-            1000
-        )
-      );
-
-      const stored = loadAcc(employeeId, todayStr);
-
-      let totalSecs: number;
-      if (stored.lastInTime === inTime) {
-        totalSecs = Math.max(stored.accSecs, thisSessionSecs);
-      } else {
-        totalSecs = stored.accSecs + thisSessionSecs;
-      }
-      saveAcc(employeeId, todayStr, { accSecs: totalSecs, lastInTime: inTime });
-      setElapsed(totalSecs);
-      setIsRunning(false);
-
-    } else {
-      const { accSecs: prevAcc } = loadAcc(employeeId, todayStr);
-      const sessionStart = new Date(inTime.replace(" ", "T")).getTime();
-
-      const tick = () => {
-        const liveSecs = Math.max(0, Math.floor((Date.now() - sessionStart) / 1000));
-        setElapsed(prevAcc + liveSecs);
-      };
-      tick();
-      setIsRunning(true);
-      timerRef.current = setInterval(tick, 1000);
-    }
-
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [inTime, outTime, employeeId]);
 
   const handleClockAction = async () => {
     if (!user || !employeeId) return;
@@ -363,8 +251,6 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
       setActionLoading(false);
     }
   };
-
-  const hoursDisplay = elapsed > 0 ? formatElapsed(elapsed) : formatDuration(workingMinutes(inTime, outTime));
 
   return (
     <div className="flex gap-3 items-stretch">
@@ -389,7 +275,7 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
         )}
       </div>
 
-      {/* ── Check In time card */}
+      {/* ── Check In time card ── */}
       <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/6 p-3 text-left flex-1 min-w-0 h-[75px]">
         {loading ? (
           <Skeleton className="h-full w-full min-h-[60px]" />
@@ -404,7 +290,7 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
         )}
       </div>
 
-      {/* ── Check Out time card */}
+      {/* ── Check Out time card ── */}
       <div className="rounded-2xl border border-rose-500/15 bg-rose-500/6 p-3 text-left flex-1 min-w-0 h-[75px]">
         {loading ? (
           <Skeleton className="h-full w-full min-h-[60px]" />
@@ -419,25 +305,13 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
         )}
       </div>
 
-      {/* ── Hours Worked card ── */}
-      <div className="rounded-2xl border border-[var(--primary)]/15 bg-[var(--primary)]/6 p-3 text-left flex-1 min-w-0 h-[75px]">
-        {loading ? (
-          <Skeleton className="h-full w-full min-h-[60px]" />
-        ) : (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1">
-              <Timer size={13} className="text-[var(--primary)]" />
-              {isRunning && (
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              )}
-            </div>
-            <p className="text-base font-bold leading-tight text-[var(--primary)] font-mono tracking-tight">
-              {hoursDisplay}
-            </p>
-            <p className="text-[10px] text-[var(--muted-foreground)]">Hours Worked</p>
-          </div>
-        )}
-      </div>
+      {/* ── Hours Worked — extracted timer component ── */}
+      <AttendanceTimer
+        inTime={inTime}
+        outTime={outTime}
+        loading={loading}
+        employeeId={employeeId}
+      />
     </div>
   );
 };
@@ -577,7 +451,6 @@ const ExpenseClaimCard: React.FC<{
               {pendingCount} pending
             </span>
           )}
-          {/* FIX: calls openExpenseModal instead of navigating */}
           <button
             onClick={(e) => { e.stopPropagation(); onAddExpense(e); }}
             className="flex items-center gap-1 shrink-0 rounded-lg border border-[var(--primary)]/20 bg-[var(--primary)]/6 px-2.5 py-1 text-[11px] font-semibold text-[var(--primary)] hover:bg-[var(--primary)]/12 transition-colors"
@@ -663,7 +536,7 @@ const SalarySummaryCard: React.FC<{
   );
 };
 
-
+// ── APPRAISAL SECTION ─────────────────────────────────────────────────────────
 
 interface AppraisalSectionProps {
   onNavigate: () => void;
@@ -678,12 +551,10 @@ const AppraisalSection: React.FC<AppraisalSectionProps> = ({ onNavigate }) => {
     setCycleModalOpen(true);
   };
 
-  // X button: just close, don't navigate
   const handleModalClose = useCallback(() => {
     setCycleModalOpen(false);
   }, []);
 
-  // Backdrop click: close AND navigate
   const handleBackdropClick = useCallback(() => {
     setCycleModalOpen(false);
     navigate("/hr/emp-appraisals");
@@ -737,7 +608,6 @@ const AppraisalSection: React.FC<AppraisalSectionProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-
       {cycleModalOpen && (
         <>
           <div
@@ -756,6 +626,8 @@ const AppraisalSection: React.FC<AppraisalSectionProps> = ({ onNavigate }) => {
     </>
   );
 };
+
+// ── ANNOUNCEMENTS ─────────────────────────────────────────────────────────────
 
 const AnnouncementsSection: React.FC = () => {
   const [expanded, setExpanded] = useState(false);
@@ -877,7 +749,6 @@ const AnnouncementsSection: React.FC = () => {
           })}
         </div>
 
-        {/* Toggle button — only shown when there are more than 1 announcement */}
         {announcements.length > 1 && (
           <button
             type="button"
@@ -930,7 +801,6 @@ const EmployeeDashboard: React.FC = () => {
   const upcomingBirthdays = dashboardData?.birthdays?.upcoming ?? [];
   const expenseClaims = dashboardData?.expenseClaim ?? [];
 
-
   const handleAddExpense = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     const seedData = user?.employeeId
@@ -956,7 +826,6 @@ const EmployeeDashboard: React.FC = () => {
         <span className="pointer-events-none absolute top-3 right-60 h-14 w-14 rounded-full bg-white/5" />
 
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          {/* LEFT: avatar + greeting */}
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-white/15 flex items-center justify-center text-base font-bold">
               {loading ? (
@@ -997,7 +866,6 @@ const EmployeeDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* RIGHT: date pill */}
           <div className="rounded-xl border border-white/10 bg-white/10 px-3 py-2 backdrop-blur-sm self-start sm:self-auto shrink-0">
             <p className="text-[9px] uppercase tracking-widest text-white/45 mb-0.5">Today</p>
             <p className="text-sm font-semibold text-white whitespace-nowrap">
@@ -1013,7 +881,7 @@ const EmployeeDashboard: React.FC = () => {
         {/* LEFT 2 COLS */}
         <div className="flex flex-col gap-3 xl:col-span-2">
 
-          {/* ── ROW 1: Attendance ────────────────────────────────────── */}
+          {/* ── ROW 1: Attendance ── */}
           <AttendanceRow
             inTime={checkins?.inTime ?? null}
             outTime={checkins?.outTime ?? null}
@@ -1022,7 +890,7 @@ const EmployeeDashboard: React.FC = () => {
             onAttendanceUpdate={fetchDashboard}
           />
 
-          {/* ── ROW 2: Leave Balance ───────────────────────────────── */}
+          {/* ── ROW 2: Leave Balance ── */}
           <LeaveBalanceSection
             leave={leave}
             loading={loading}
@@ -1034,8 +902,7 @@ const EmployeeDashboard: React.FC = () => {
             onNavigate={() => navigate("/hr/emp-leave")}
           />
 
-          {/* ── ROW 3: Expense Claim + Salary Summary ─────────────── */}
-          {/* FIX: Removed the duplicate LeaveBalanceSection that was here */}
+          {/* ── ROW 3: Expense Claim + Salary Summary ── */}
           <div className="flex gap-3">
             <ExpenseClaimCard
               claims={expenseClaims}
@@ -1051,12 +918,12 @@ const EmployeeDashboard: React.FC = () => {
             />
           </div>
 
-          {/* ── ROW 4: Appraisals ─────────────────────────────────── */}
+          {/* ── ROW 4: Appraisals ── */}
           <AppraisalSection
             onNavigate={() => navigate("/hr/emp-appraisals")}
           />
 
-          {/* ── ROW 5: Announcements ──────────────────────────────── */}
+          {/* ── ROW 5: Announcements ── */}
           <AnnouncementsSection />
 
         </div>
