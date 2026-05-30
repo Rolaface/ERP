@@ -29,7 +29,7 @@ const ApprovalsSection = lazy(() => import("./Approvals"));
 const Dashboard = lazy(() => import("./ProcurementDashboard"));
 const SupplierManagement = lazy(() => import("./SupplierManagement"));
 const PurchaseInvoiceTable = lazy(() => import("./PurchaseInvoice"));
-const Payments = lazy(() => import("./SupplierPayment"));
+const Payments = lazy(() => import("../PaymentEntry/PaymentEntry"));
 const PurchaseAnalytics = lazy(() => import("./PurchaseAnalytics"));
 
 type OutletContextType = {
@@ -64,61 +64,61 @@ const ALL_PROCUREMENT_TABS = [
     label: "Supplier Management",
     icon: <Users {...iconProps} />,
     module: "Supplier",
-    action: "read" as const, 
+    action: "read" as const,
   },
   {
     id: "payments",
-    label: "Payments",
+    label: "Payment Entry",
     icon: <CreditCard {...iconProps} />,
     module: "Payment Entry",
-    action: "read" as const, 
+    action: "read" as const,
   },
   {
     id: "rfqs",
     label: "RFQs",
     icon: <FileText {...iconProps} />,
     module: "Request For Quotation",
-    action: "read" as const, 
+    action: "read" as const,
   },
   {
     id: "orders",
     label: "Purchase Orders",
     icon: <ClipboardList {...iconProps} />,
     module: "Purchase Order",
-    action: "read" as const, 
+    action: "read" as const,
   },
   {
     id: "purchase",
     label: "Purchase Invoice",
     icon: <Receipt {...iconProps} />,
     module: "Purchase Invoice",
-    action: "read" as const, 
+    action: "read" as const,
   },
   {
     id: "debitNotes",
     label: "Debit Notes",
     icon: <FileMinus {...iconProps} />,
     module: "Debit Note",
-    action: "read" as const, 
+    action: "read" as const,
   },
   {
     id: "purchaseAnalytics",
     label: "Purchase Analytics",
     icon: <BarChart3 {...iconProps} />,
     module: "Purchase Invoice",
-    action: "report" as const, 
+    action: "report" as const,
   },
 ];
 const DEFAULT_TAB = "procurementdashboard";
 
 const Procurement: React.FC = () => {
-  const { can } = usePermission();                          
+  const { can } = usePermission();
 
   // Filter tabs based on permissions
   const procurementTabs = useMemo(
     () => ALL_PROCUREMENT_TABS.filter((t) => !t.module || can(t.module, t.action)),
     [can]
-  );                                                        
+  );
 
   const fallbackTab = procurementTabs[0]?.id ?? DEFAULT_TAB;
   const [resolvedTab, handleTabChange] = useUrlTab({
@@ -126,8 +126,8 @@ const Procurement: React.FC = () => {
     defaultTab: fallbackTab,
     basePath: "/procurement",
   });
-          
-  
+
+
   const isDashboardTab = resolvedTab === "procurementdashboard";
   const { openSupplierCreate, openPOCreate } = useOutletContext<OutletContextType>();
 
@@ -141,14 +141,14 @@ const Procurement: React.FC = () => {
 
   const tabComponents = useMemo(() => ({
     procurementdashboard: <Dashboard />,
-    supplier:             <SupplierManagement onAdd={handleAdd} />,
-    rfqs:                 <RFQsTable onAdd={handleAdd} />,
-    orders:               <PurchaseOrdersTable onAdd={handleAdd} />,
-    approvals:            <ApprovalsSection onAdd={handleAdd} />,
-    purchase:             <PurchaseInvoiceTable onAdd={handleAdd} />,
-    payments:             <Payments />,
-    purchaseAnalytics:    <PurchaseAnalytics />,
-    debitNotes:           <DebitNotesTable />,
+    supplier: <SupplierManagement onAdd={handleAdd} />,
+    rfqs: <RFQsTable onAdd={handleAdd} />,
+    orders: <PurchaseOrdersTable onAdd={handleAdd} />,
+    approvals: <ApprovalsSection onAdd={handleAdd} />,
+    purchase: <PurchaseInvoiceTable onAdd={handleAdd} />,
+    payments: <Payments defaultPartyType="Supplier" />,
+    purchaseAnalytics: <PurchaseAnalytics />,
+    debitNotes: <DebitNotesTable />,
   }), [handleAdd]);
 
   const currentTabComponent =

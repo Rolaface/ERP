@@ -21,7 +21,6 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
-import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
@@ -29,7 +28,7 @@ import {
   REFRESH_KEYS,
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
-import { getAllTaxCategories } from "../../api/taxCategoryApi";
+
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -90,14 +89,14 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       setInitialLoad(false);
     }
   };
-useEffect(() => {
-  fetchCustomers();
-}, [page, pageSize, taxCategory, searchTerm]);
+  useEffect(() => {
+    fetchCustomers();
+  }, [page, pageSize, taxCategory, searchTerm]);
 
-useEffect(() => {
-  setPage(1);
-}, [searchTerm]);
-  
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
 
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CUSTOMER_LIST, () => {
@@ -106,22 +105,6 @@ useEffect(() => {
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchCustomers]);
 
-  const fetchTaxCategories = async () => {
-  try {
-    const response = await getAllTaxCategories(1, 100, undefined, 0);
-    const options = (response?.data ?? []).map((cat: { name: string; title: string }) => ({
-      label: cat.title,
-      value: cat.name,
-    }));
-    setTaxCategoryOptions(options);
-  } catch (error) {
-    console.error("Failed to fetch tax categories:", error);
-  }
-};
-
-useEffect(() => {
-  fetchTaxCategories();
-}, []);
 
   const fetchAllCustomers = async () => {
     try {
@@ -351,11 +334,10 @@ useEffect(() => {
       render: (customer) => (
         <div className="py-1.5">
           <span
-            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
-              customer.status === "Active"
+            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
                 ? "bg-green-100 text-green-700"
                 : "bg-gray-100 text-gray-600"
-            }`}
+              }`}
           >
             {customer.status}
           </span>
@@ -401,11 +383,11 @@ useEffect(() => {
               // Receive Payment only if user has Payment Entry create
               ...(can(PAYMENT_MODULE, "create")
                 ? [
-                    {
-                      label: "Receive Payment",
-                      onClick: () => handleMakePayment(customer),
-                    },
-                  ]
+                  {
+                    label: "Receive Payment",
+                    onClick: () => handleMakePayment(customer),
+                  },
+                ]
                 : []),
             ]}
           />
@@ -427,9 +409,9 @@ useEffect(() => {
           pageSizeOptions={[10, 25, 50, 100]}
           searchValue={searchTerm}
           onSearch={(q) => {
-  setSearchTerm(q);
-  setPage(1);
-}}
+            setSearchTerm(q);
+            setPage(1);
+          }}
           enableAdd={can(CUSTOMER_MODULE, "create")}
           addLabel="Add Customer"
           onAdd={handleAddCustomer}
@@ -440,18 +422,18 @@ useEffect(() => {
           pageSize={pageSize}
           totalItems={totalItems}
           onPageChange={setPage}
-          // extraFilters={
-          //   <div>
-          //     <FilterSelect
-          //       value={taxCategory}
-          //       onChange={(e) => {
-          //         setPage(1);
-          //         setTaxCategory(e.target.value);
-          //       }}
-          //      options={taxCategoryOptions}
-          //     />
-          //   </div>
-          // }
+        // extraFilters={
+        //   <div>
+        //     <FilterSelect
+        //       value={taxCategory}
+        //       onChange={(e) => {
+        //         setPage(1);
+        //         setTaxCategory(e.target.value);
+        //       }}
+        //      options={taxCategoryOptions}
+        //     />
+        //   </div>
+        // }
         />
       ) : selectedCustomer ? (
         <CustomerDetailView

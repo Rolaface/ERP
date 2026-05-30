@@ -65,9 +65,11 @@ const formatAmount = (amount?: number): string => {
   return `₹ ${amount.toLocaleString("en-IN")}`;
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+interface PaymentEntryProps {
+  defaultPartyType?: string;
+}
 
-const PaymentEntry: React.FC = () => {
+const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   const mountedRef = useRef(true);
   const { can } = usePermission();
 
@@ -269,11 +271,11 @@ const PaymentEntry: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   return (
     <AppPage>
-      <AppPageHeader
+      {/* <AppPageHeader
         title="Payment Entry"
         description="Manage customer and supplier payment transactions."
         icon={<Receipt />}
-      />
+      /> */}
 
       <AppPageBody>
         <Table
@@ -296,9 +298,11 @@ const PaymentEntry: React.FC = () => {
           onAdd={
             can(PAYMENT_ENTRY_MODULE, "create")
               ? () =>
-                openPaymentEntryModal(null, false, {
-                  onSuccess: () => fetchPayments(),
-                })
+                openPaymentEntryModal(
+                  { partyType: defaultPartyType ?? "Supplier" },
+                  false,
+                  { onSuccess: () => fetchPayments() }
+                )
               : undefined
           }
           // Fix: sorting now wired up
