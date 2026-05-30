@@ -1,6 +1,6 @@
 import React, { useState } from "react";
+import { ERP_BASE } from "../../config/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface ExpenseItem {
   name: string;
   expense_date?: string;
@@ -67,8 +67,6 @@ interface Props {
   loading?: boolean;
   onClose?: () => void;
   onBack?: () => void;
-  /** ERPNext base URL, e.g. "https://yoursite.frappe.cloud". Defaults to window.location.origin */
-  baseUrl?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -104,11 +102,10 @@ const fmtSize = (bytes?: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-// Converts a relative ERPNext file_url to an absolute URL
-const resolveFileUrl = (url: string, origin: string) => {
+const resolveFileUrl = (url: string) => {
   if (!url) return "#";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${origin}${url.startsWith("/") ? "" : "/"}${url}`;
+  return `${ERP_BASE}${url.startsWith("/") ? "" : "/"}${url}`;
 };
 
 const STATUS_MAP: Record<string, string> = {
@@ -129,7 +126,6 @@ const STATUS_BG: Record<string, string> = {
   Cancelled: "rgba(107,114,128,0.12)",
 };
 
-// Display label map — Draft shows as "Pending for Approval" in the UI
 const STATUS_LABEL: Record<string, string> = {
   Draft: "Pending for Approval",
   Approved: "Approved",
@@ -203,46 +199,20 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
   loading,
   onClose,
   onBack,
-  baseUrl,
 }) => {
   const handleClose = onClose ?? onBack;
 
   if (open === false) return null;
 
-  const origin = baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "");
-
-  const [loadingFile, setLoadingFile] = useState<string | null>(null);
-
-  const openAttachment = async (fileUrl: string, fileName: string) => {
-    const fullUrl = resolveFileUrl(fileUrl, origin);
-    setLoadingFile(fileName);
-    try {
-      const res = await fetch(fullUrl, { credentials: "include" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      // For images/PDFs open in new tab; for others trigger download
-      const viewable = ["image/", "application/pdf"];
-      if (viewable.some((t) => blob.type.startsWith(t))) {
-        window.open(blobUrl, "_blank");
-      } else {
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-    } catch (err) {
-      console.error("Failed to open attachment:", err);
-      // Fallback: open directly (works for truly public files)
-      window.open(fullUrl, "_blank");
-    } finally {
-      setLoadingFile(null);
-    }
+  const downloadFile = (fileName: string, fileUrl: string) => {
+    const a = document.createElement("a");
+    a.href = resolveFileUrl(fileUrl);
+    a.download = fileName;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const claim: ExpenseClaim = expenseData ?? {};
@@ -255,14 +225,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
   const approvalLabel = STATUS_LABEL[approvalStatus] ?? approvalStatus;
   const statusColor = STATUS_MAP[approvalStatus] ?? STATUS_MAP["Draft"];
   const statusBg = STATUS_BG[approvalStatus] ?? STATUS_BG["Draft"];
-  const docStatusLabel =
-    claim.docstatus === 0
-      ? "Draft"
-      : claim.docstatus === 1
-      ? "Submitted"
-      : claim.docstatus === 2
-      ? "Cancelled"
-      : String(claim.docstatus ?? "—");
 
   return (
     <>
@@ -310,7 +272,8 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
           .ecv-btn:active { transform:translateY(0) }
           .ecv-irow { transition: background .1s }
           .ecv-irow:hover { background: var(--row-hover) }
-          .ecv-att-link:hover { border-color: var(--primary) !important; color: var(--primary) !important; }
+          .ecv-att-row { cursor:pointer; transition: background .1s }
+          .ecv-att-row:hover { background: var(--row-hover) }
         `}</style>
 
         {/* ── HEADER ── */}
@@ -326,7 +289,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* Icon */}
             <div
               style={{
                 width: 30,
@@ -357,7 +319,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
               </svg>
             </div>
 
-            {/* Title */}
             <div style={{ lineHeight: 1 }}>
               <p
                 style={{
@@ -371,12 +332,13 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
               >
                 Expense Claim
               </p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}>
+              <p
+                style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}
+              >
                 {claim.name ?? "—"}
               </p>
             </div>
 
-            {/* Status badge — uses approvalLabel for display */}
             <span
               style={{
                 display: "inline-flex",
@@ -394,7 +356,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
             </span>
           </div>
 
-          {/* Close button */}
           <button
             onClick={handleClose}
             style={{
@@ -434,7 +395,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
             position: "relative",
           }}
         >
-          {/* Loading state */}
           {loading && (
             <div
               style={{
@@ -472,7 +432,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   marginBottom: 2,
                 }}
               >
-                {/* Grand Total */}
                 <div
                   style={{
                     padding: "9px 11px",
@@ -504,7 +463,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   </p>
                 </div>
 
-                {/* Total Claimed */}
                 <div
                   style={{
                     padding: "9px 11px",
@@ -525,7 +483,13 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   >
                     Claimed
                   </p>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "var(--text)",
+                    }}
+                  >
                     {fmt(claim.total_claimed_amount, currency)}
                   </p>
                 </div>
@@ -543,14 +507,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
               >
                 <F label="Employee Name" value={claim.employee_name} />
                 <F label="Employee ID" value={claim.employee} mono />
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3,1fr)",
-                  gap: 8,
-                }}
-              >
               </div>
               <div
                 style={{
@@ -574,7 +530,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   gap: 8,
                 }}
               >
-                {/* Show the mapped label in status field too */}
                 <F label="Approval" value={approvalLabel} />
                 <F label="Payment" value={claim.is_paid ? "Paid" : "Unpaid"} />
                 <F
@@ -583,7 +538,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                 />
               </div>
 
-              {/* Remark */}
               {claim.remark && (
                 <div
                   style={{
@@ -606,7 +560,13 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   >
                     Remark
                   </p>
-                  <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text)",
+                      lineHeight: 1.5,
+                    }}
+                  >
                     {claim.remark}
                   </p>
                 </div>
@@ -652,7 +612,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                     border: "1px solid var(--border)",
                   }}
                 >
-                  {/* Table header */}
                   <div
                     style={{
                       display: "grid",
@@ -686,7 +645,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                         alignItems: "start",
                       }}
                     >
-                      {/* Item cell */}
                       <div style={{ minWidth: 0 }}>
                         <p
                           style={{
@@ -733,7 +691,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                         )}
                       </div>
 
-                      {/* Date */}
                       <p
                         style={{
                           fontSize: 11,
@@ -745,7 +702,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                         {fmtDate(item.expense_date)}
                       </p>
 
-                      {/* Claimed amount */}
                       <p
                         style={{
                           fontSize: 12,
@@ -758,7 +714,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                         {fmt(item.amount, currency)}
                       </p>
 
-                      {/* Sanctioned amount */}
                       <p
                         style={{
                           fontSize: 12,
@@ -777,7 +732,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                     </div>
                   ))}
 
-                  {/* Totals footer */}
                   <div
                     style={{
                       background: "var(--bg)",
@@ -792,22 +746,18 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                       {
                         label: "Total Claimed",
                         val: fmt(claim.total_claimed_amount, currency),
-                        big: false,
                       },
                       {
                         label: "Total Sanctioned",
                         val: fmt(claim.total_sanctioned_amount, currency),
-                        big: false,
                       },
                       {
                         label: "Advance Amount",
                         val: fmt(claim.total_advance_amount, currency),
-                        big: false,
                       },
                       {
                         label: "Taxes & Charges",
                         val: fmt(claim.total_taxes_and_charges, currency),
-                        big: false,
                       },
                       {
                         label: "Grand Total",
@@ -873,11 +823,23 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                           alignItems: "center",
                         }}
                       >
-                        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
+                        <p
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "var(--text)",
+                          }}
+                        >
                           {adv.name ?? "Advance"}
                         </p>
                         {adv.allocated_amount != null && (
-                          <p style={{ fontSize: 12, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>
+                          <p
+                            style={{
+                              fontSize: 12,
+                              color: "var(--text)",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
                             {fmt(adv.allocated_amount, currency)}
                           </p>
                         )}
@@ -910,11 +872,23 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                           alignItems: "center",
                         }}
                       >
-                        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
+                        <p
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "var(--text)",
+                          }}
+                        >
                           {tax.description ?? tax.name ?? "Tax"}
                         </p>
                         {tax.tax_amount != null && (
-                          <p style={{ fontSize: 12, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>
+                          <p
+                            style={{
+                              fontSize: 12,
+                              color: "var(--text)",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
                             {fmt(tax.tax_amount, currency)}
                           </p>
                         )}
@@ -928,10 +902,16 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
               {attachments.length > 0 && (
                 <>
                   <S title={`Attachments (${attachments.length})`} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 5 }}
+                  >
                     {attachments.map((att) => (
                       <div
                         key={att.name}
+                        className="ecv-att-row"
+                        onClick={() =>
+                          downloadFile(att.file_name, att.file_url)
+                        }
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -942,7 +922,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                           background: "var(--bg)",
                         }}
                       >
-                        {/* File icon */}
                         <div
                           style={{
                             width: 32,
@@ -971,7 +950,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                           </svg>
                         </div>
 
-                        {/* File info */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p
                             style={{
@@ -1012,7 +990,9 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                               </span>
                             )}
                             {!!att.file_size && (
-                              <span style={{ fontSize: 10, color: "var(--muted)" }}>
+                              <span
+                                style={{ fontSize: 10, color: "var(--muted)" }}
+                              >
                                 {fmtSize(att.file_size)}
                               </span>
                             )}
@@ -1040,7 +1020,14 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                                   strokeWidth="2.5"
                                   strokeLinecap="round"
                                 >
-                                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                  <rect
+                                    x="3"
+                                    y="11"
+                                    width="18"
+                                    height="11"
+                                    rx="2"
+                                    ry="2"
+                                  />
                                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                                 </svg>
                                 Private
@@ -1049,58 +1036,28 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                           </div>
                         </div>
 
-                        {/* Open file button — fetches with credentials to handle private files */}
-                        <button
-                          onClick={() => openAttachment(att.file_url, att.file_name)}
-                          disabled={loadingFile === att.file_name}
-                          className="ecv-att-link"
-                          title="Open file"
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            width: 28,
-                            height: 28,
-                            borderRadius: 6,
-                            border: "1px solid var(--border)",
-                            color: "var(--muted)",
-                            background: "transparent",
-                            flexShrink: 0,
-                            cursor: loadingFile === att.file_name ? "wait" : "pointer",
-                            transition: "border-color .12s, color .12s",
-                            opacity: loadingFile === att.file_name ? 0.6 : 1,
-                          }}
+                        {/* Download icon (visual hint only — whole row is clickable) */}
+                        <svg
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="var(--muted)"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ flexShrink: 0 }}
                         >
-                          {loadingFile === att.file_name ? (
-                            <svg
-                              width="12" height="12" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" strokeWidth="2.5"
-                              style={{ animation: "ecv-spin 1s linear infinite" }}
-                            >
-                              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                            </svg>
-                          ) : (
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                              <polyline points="15 3 21 3 21 9" />
-                              <line x1="10" y1="14" x2="21" y2="3" />
-                            </svg>
-                          )}
-                        </button>
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
                       </div>
                     ))}
                   </div>
                 </>
               )}
+
               <div style={{ height: 12 }} />
             </>
           )}

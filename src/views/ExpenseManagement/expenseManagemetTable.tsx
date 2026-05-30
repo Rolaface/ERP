@@ -9,7 +9,9 @@ import { Ban, CheckCircle2, XCircle } from "lucide-react";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import Table from "../../components/ui/Table/Table";
-import ActionButton, { ActionMenu } from "../../components/ui/Table/ActionButton";
+import ActionButton, {
+  ActionMenu,
+} from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { usePermission } from "../../hooks/permission/usePermission";
@@ -19,9 +21,14 @@ import { fireManagedSwal } from "../../utils/swalManager";
 import { openExpenseModal } from "../../store/modalStore";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { getExpenseClaims,getExpenseClaimById,deleteExpenseClaim,approveExpenseClaim} from "../../api/expenseClaimApi";
+import {
+  getExpenseClaims,
+  getExpenseClaimById,
+  deleteExpenseClaim,
+  approveExpenseClaim,
+} from "../../api/expenseClaimApi";
 import ExpenseClaimDetailView from "../../views/ExpenseManagement/expenseClaimDetailView";
-import {useAuth} from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { useHRView } from "../../hooks/permission/useHRView";
 
 const EXPENSE_MODULE = "Expense Claim";
@@ -46,7 +53,20 @@ const statusOptions = [
 ];
 const formatDate = (date: string) => {
   if (!date) return "";
-  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  const months = [
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+  ];
   const [year, month, day] = date.split("T")[0].split("-").map(Number);
   return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
 };
@@ -60,9 +80,9 @@ const ExpenseHistory: React.FC = () => {
 
   const [expenses, setExpenses] = useState<ExpenseSummary[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching,    setIsFetching]    = useState(false);
-  const [detailClaim,      setDetailClaim]      = useState<any | null>(null);
-const [isDetailLoading,  setIsDetailLoading]  = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [detailClaim, setDetailClaim] = useState<any | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   const [filters, setFilters] = useState<{
     status?: string;
@@ -79,26 +99,33 @@ const [isDetailLoading,  setIsDetailLoading]  = useState(false);
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  useEffect(() => { setPage(1); }, [searchTerm, filters]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filters]);
 
   const fetchExpenses = useCallback(async () => {
     if (!mountedRef.current) return;
     setIsFetching(true);
     try {
-      const res = await getExpenseClaims(searchTerm, page, pageSize,
+      const res = await getExpenseClaims(
+        searchTerm,
+        page,
+        pageSize,
         isEmployeeView ? (user?.employeeId ?? undefined) : undefined,
       );
       if (!mountedRef.current) return;
-      setExpenses(res.data.map((claim: any) => ({
-        id: claim.name,
-        approver: claim.expense_approver_name ?? "",
-        name: claim.employee_name,
-        date: claim.posting_date,
-        category: claim.expense_type ?? "",
-        amount: claim.total_claimed_amount ?? 0,
-        currency: claim.currency ?? "",
-        status: claim.approval_status,
-      })));
+      setExpenses(
+        res.data.map((claim: any) => ({
+          id: claim.name,
+          approver: claim.expense_approver_name ?? "",
+          name: claim.employee_name,
+          date: claim.posting_date,
+          category: claim.expense_type ?? "",
+          amount: claim.total_claimed_amount ?? 0,
+          currency: claim.currency ?? "",
+          status: claim.approval_status,
+        })),
+      );
       setTotalPages(res.pagination.total_pages);
       setTotalItems(res.pagination.total);
     } catch (err) {
@@ -112,21 +139,38 @@ const [isDetailLoading,  setIsDetailLoading]  = useState(false);
         setIsInitialLoad(false);
       }
     }
-}, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
-
+  }, [
+    page,
+    pageSize,
+    sortBy,
+    sortOrder,
+    searchTerm,
+    filters,
+    isEmployeeView,
+    user?.employeeId,
+  ]);
 
   useEffect(() => {
     mountedRef.current = true;
     fetchExpenses();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
     if (isInitialLoad) return;
     fetchExpenses();
-}, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
-
-
+  }, [
+    page,
+    pageSize,
+    sortBy,
+    sortOrder,
+    searchTerm,
+    filters,
+    isEmployeeView,
+    user?.employeeId,
+  ]);
 
   const handleOpenAdd = () => {
     openExpenseModal(null, false, {
@@ -138,112 +182,113 @@ const [isDetailLoading,  setIsDetailLoading]  = useState(false);
   };
 
   const handleOpenEdit = async (exp: ExpenseSummary) => {
-  try {
-  const claim = await getExpenseClaimById(exp.id);
-closeSwal();
-    const formData = {
-      id:                  claim.name,
-      claim_title:         claim.expenses?.[0]?.description ?? "",
-      category:            claim.expenses?.[0]?.expense_type ?? "",
-      date_incurred:       claim.expenses?.[0]?.expense_date ?? claim.posting_date,
-      amount:              claim.total_claimed_amount,
-      currency:            claim.currency,
-      employee_name:       claim.employee_name,
-      employee:            claim.employee,
-      expense_approver:    claim.expense_approver,
-      receipts:            [],
-      existingAttachments: claim.attachments ?? [],
-      remarks:             claim.remark ?? "",
-    };
-    openExpenseModal(formData, true, {
-      onSuccess: async () => {
-        showSuccess("Expense updated successfully");
-        fetchExpenses();
-      },
+    try {
+      const claim = await getExpenseClaimById(exp.id);
+      closeSwal();
+      const formData = {
+        id: claim.name,
+        claim_title: claim.expenses?.[0]?.description ?? "",
+        category: claim.expenses?.[0]?.expense_type ?? "",
+        date_incurred: claim.expenses?.[0]?.expense_date ?? claim.posting_date,
+        amount: claim.total_claimed_amount,
+        currency: claim.currency,
+        employee_name: claim.employee_name,
+        employee: claim.employee,
+        expense_approver: claim.expense_approver,
+        receipts: [],
+        existingAttachments: claim.attachments ?? [],
+        remarks: claim.remark ?? "",
+        advances: claim.advances ?? [],
+      };
+      openExpenseModal(formData, true, {
+        onSuccess: async () => {
+          showSuccess("Expense updated successfully");
+          fetchExpenses();
+        },
+      });
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
+  const handleApprove = async (id: string) => {
+    const result = await fireManagedSwal({
+      icon: "question",
+      title: "Approve Expense?",
+      text: `Approve expense ${id}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, approve",
+      reverseButtons: true,
     });
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
-const handleApprove = async (id: string) => {
-  const result = await fireManagedSwal({
-    icon:               "question",
-    title:              "Approve Expense?",
-    text:               `Approve expense ${id}?`,
-    showCancelButton:   true,
-    confirmButtonColor: "#10b981",
-    cancelButtonColor:  "#6b7280",
-    confirmButtonText:  "Yes, approve",
-    reverseButtons:     true,
-  });
-  if (!result.isConfirmed) return;
-  try {
-    await approveExpenseClaim(id,"Approved");
-    showSuccess("Expense approved successfully");
-    fetchExpenses();
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
-const handleCancel = async (id: string) => {
-  const result = await fireManagedSwal({
-    icon:               "warning",
-    title:              "Cancel Expense?",
-    text:               `Cancel expense ${id}?`,
-    showCancelButton:   true,
-    confirmButtonColor: "#f59e0b",
-    cancelButtonColor:  "#6b7280",
-    confirmButtonText:  "Yes, cancel",
-    reverseButtons:     true,
-  });
-  if (!result.isConfirmed) return;
-  try {
-    await approveExpenseClaim(id, "Cancelled");
-    showSuccess("Expense cancelled successfully");
-    fetchExpenses();
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+    if (!result.isConfirmed) return;
+    try {
+      await approveExpenseClaim(id, "Approved");
+      showSuccess("Expense approved successfully");
+      fetchExpenses();
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
+  const handleCancel = async (id: string) => {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Cancel Expense?",
+      text: `Cancel expense ${id}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#f59e0b",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, cancel",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await approveExpenseClaim(id, "Cancelled");
+      showSuccess("Expense cancelled successfully");
+      fetchExpenses();
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
-const handleReject = async (id: string) => {
-  const result = await fireManagedSwal({
-    icon:               "error",
-    title:              "Reject Expense?",
-    text:               `Reject expense ${id}?`,
-    showCancelButton:   true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor:  "#6b7280",
-    confirmButtonText:  "Yes, reject",
-    reverseButtons:     true,
-  });
-  if (!result.isConfirmed) return;
-  try {
-    await approveExpenseClaim(id, "Rejected");
-    showSuccess("Expense rejected successfully");
-    fetchExpenses();
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
-const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
-  e.stopPropagation();
-  setIsDetailLoading(true);
-  setDetailClaim({}); 
-  try {
-    const res = await getExpenseClaimById(exp.id);
-    setDetailClaim(res);         
-  } catch (err) {
-    showApiError(err);
-    setDetailClaim(null);        
-  } finally {
-    setIsDetailLoading(false);
-  }
-};
+  const handleReject = async (id: string) => {
+    const result = await fireManagedSwal({
+      icon: "error",
+      title: "Reject Expense?",
+      text: `Reject expense ${id}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, reject",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await approveExpenseClaim(id, "Rejected");
+      showSuccess("Expense rejected successfully");
+      fetchExpenses();
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
+  const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDetailLoading(true);
+    setDetailClaim({});
+    try {
+      const res = await getExpenseClaimById(exp.id);
+      setDetailClaim(res);
+    } catch (err) {
+      showApiError(err);
+      setDetailClaim(null);
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -278,13 +323,13 @@ const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
       }
       const worksheet = XLSX.utils.json_to_sheet(
         expenses.map((exp) => ({
-          "Approver": exp.approver,
-          "Date": formatDate(exp.date),
-          "Category": exp.category,
-          "Amount": exp.amount,
-          "Currency": exp.currency,
-          "Status": exp.status,
-        }))
+          Approver: exp.approver,
+          Date: formatDate(exp.date),
+          Category: exp.category,
+          Amount: exp.amount,
+          Currency: exp.currency,
+          Status: exp.status,
+        })),
       );
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Expense History");
@@ -292,7 +337,7 @@ const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
         new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
-        "Expense_History.xlsx"
+        "Expense_History.xlsx",
       );
       closeSwal();
       showSuccess("Expenses exported successfully");
@@ -348,17 +393,19 @@ const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
         tooltip: (exp) => `Category: ${exp.category}`,
       },
       {
-  key:    "status",
-  header: "Status",
-  align:  "center",
-  render: (exp) => (
-    <div className="py-1.5">
-      <StatusBadge
-        status={exp.status === "Draft" ? "Pending for Approval" : exp.status}
-      />
-    </div>
-  ),
-},
+        key: "status",
+        header: "Status",
+        align: "center",
+        render: (exp) => (
+          <div className="py-1.5">
+            <StatusBadge
+              status={
+                exp.status === "Draft" ? "Pending for Approval" : exp.status
+              }
+            />
+          </div>
+        ),
+      },
       {
         key: "actions",
         header: "Actions",
@@ -373,44 +420,54 @@ const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
             <PermissionGate module={EXPENSE_MODULE} action="write">
               <ActionButton
                 type="edit"
-                onClick={() => { handleOpenEdit(exp); }}
+                onClick={() => {
+                  handleOpenEdit(exp);
+                }}
                 iconOnly
                 disabled={exp.status !== "Draft"}
-                title={exp.status !== "Draft" ? "Only Draft expenses can be edited" : "Edit Expense"}
+                title={
+                  exp.status !== "Draft"
+                    ? "Only Draft expenses can be edited"
+                    : "Edit Expense"
+                }
               />
             </PermissionGate>
             <ActionMenu
-  customActions={[
-    ...(!isEmployeeView && exp.status === "Draft"
-      ? [
-          {
-            label: "Approve",
-            icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-            onClick: () => handleApprove(exp.id),
-          },
-          {
-            label: "Reject",
-            icon: <Ban className="w-4 h-4 text-red-500" />,
-            onClick: () => handleReject(exp.id),
-          },
-        ]
-      : []),
+              customActions={[
+                ...(!isEmployeeView && exp.status === "Draft"
+                  ? [
+                      {
+                        label: "Approve",
+                        icon: (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        ),
+                        onClick: () => handleApprove(exp.id),
+                      },
+                      {
+                        label: "Reject",
+                        icon: <Ban className="w-4 h-4 text-red-500" />,
+                        onClick: () => handleReject(exp.id),
+                      },
+                    ]
+                  : []),
 
-      {
-            label: "Cancel",
-            icon: <XCircle className="w-4 h-4 text-amber-500" />,
-            onClick: () => handleCancel(exp.id),
-          },
-  ]}
-  {...(can(EXPENSE_MODULE, "delete") && isEmployeeView && exp.status === "Draft"
-    ? { onDelete: () => handleDelete(exp.id) }
-    : {})}
-/>
+                {
+                  label: "Cancel",
+                  icon: <XCircle className="w-4 h-4 text-amber-500" />,
+                  onClick: () => handleCancel(exp.id),
+                },
+              ]}
+              {...(can(EXPENSE_MODULE, "delete") &&
+              isEmployeeView &&
+              exp.status === "Draft"
+                ? { onDelete: () => handleDelete(exp.id) }
+                : {})}
+            />
           </div>
         ),
       },
     ],
-    [handleDelete, handleOpenEdit, can]
+    [handleDelete, handleOpenEdit, can],
   );
 
   return (
@@ -424,7 +481,10 @@ const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
         isFetching={isFetching}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableAdd={can(EXPENSE_MODULE, "create")}
         addLabel="Add Expense"
         onAdd={handleOpenAdd}
@@ -436,7 +496,10 @@ const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
@@ -450,25 +513,32 @@ const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
             <FilterSelect
               value={filters.status ?? ""}
               options={statusOptions}
-              onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value || undefined }))}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  status: e.target.value || undefined,
+                }))
+              }
             />
             <DateRangeFilter
               from={filters.from_date}
               to={filters.to_date}
-              onChange={(range) => setFilters((prev) => ({ ...prev, ...range }))}
+              onChange={(range) =>
+                setFilters((prev) => ({ ...prev, ...range }))
+              }
             />
           </>
         }
       />
       {detailClaim !== null && (
-  <ExpenseClaimDetailView
-    open={true}
-    expenseData={detailClaim}
-    loading={isDetailLoading}
-    onClose={() => setDetailClaim(null)}
-    onBack={() => setDetailClaim(null)}
-  />
-)}
+        <ExpenseClaimDetailView
+          open={true}
+          expenseData={detailClaim}
+          loading={isDetailLoading}
+          onClose={() => setDetailClaim(null)}
+          onBack={() => setDetailClaim(null)}
+        />
+      )}
     </div>
   );
 };

@@ -1,8 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   AlertTriangle,
   ChevronLeft,
@@ -19,6 +15,7 @@ export interface EmployeeAdvance {
   advanceDate: string;
   allocatedAmount: number;
   unclaimedAmount: number;
+  exchange_Rate: number;
   purpose: string;
 }
 
@@ -42,7 +39,6 @@ interface EmployeeAdvanceListProps {
   onAllocationChange?: (id: string, newAllocated: number) => void;
   onLoadingChange?: (loading: boolean) => void;
   allocations?: Record<string, number>;
-  /** The total expense amount entered on the Expense tab */
   expenseAmount?: number;
 }
 
@@ -64,19 +60,28 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
     onLoadingChange?.(loading);
   }, [loading, onLoadingChange]);
 
-  // Which rows are checked (opted-in to allocation)
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
-
-  // Local allocations — only populated for checked rows
-  const [localAllocations, setLocalAllocations] = useState<Record<string, number>>(
-    allocationsProp ?? {}
-  );
-
-  // When the parent clears allocations (e.g. employee change), clear checked state too
   useEffect(() => {
     if (!allocationsProp) return;
 
-    // If parent zeroed everything out, clear checked set as well
+    const checked = new Set<string>();
+
+    Object.entries(allocationsProp).forEach(([id, amount]) => {
+      if (amount > 0) {
+        checked.add(id);
+      }
+    });
+
+    setCheckedIds(checked);
+  }, [allocationsProp]);
+
+  const [localAllocations, setLocalAllocations] = useState<
+    Record<string, number>
+  >(allocationsProp ?? {});
+
+  useEffect(() => {
+    if (!allocationsProp) return;
+
     const allZero = Object.values(allocationsProp).every((v) => v === 0);
     if (allZero) {
       setCheckedIds(new Set());
@@ -85,25 +90,18 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
     setLocalAllocations(allocationsProp);
   }, [allocationsProp]);
 
-  /**
-   * Greedy allocator: given the set of checked advance IDs and the current
-   * expense amount, distribute the expense amount across checked advances
-   * (oldest-first) up to each advance's unclaimed amount.
-   */
   const computeAllocations = useCallback(
     (checked: Set<string>, amount: number): Record<string, number> => {
       const result: Record<string, number> = {};
       let remaining = amount;
-
-      // Fill zeroes for unchecked rows
       advances.forEach((adv) => {
         result[adv.id] = 0;
       });
-
-      // Sort checked advances oldest-first
       const checkedAdvances = advances
         .filter((adv) => checked.has(adv.id))
-        .sort((a, b) => (a.advanceDate ?? "").localeCompare(b.advanceDate ?? ""));
+        .sort((a, b) =>
+          (a.advanceDate ?? "").localeCompare(b.advanceDate ?? ""),
+        );
 
       for (const adv of checkedAdvances) {
         if (remaining <= 0) break;
@@ -115,7 +113,7 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
 
       return result;
     },
-    [advances]
+    [advances],
   );
 
   const handleCheckboxToggle = (id: string) => {
@@ -126,15 +124,12 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
       } else {
         next.add(id);
       }
-      // Re-compute allocations with updated checked set
-      // Parent is notified via the localAllocations useEffect below
       const newAllocations = computeAllocations(next, expenseAmount);
       setLocalAllocations(newAllocations);
       return next;
     });
   };
 
-  // Propagate allocation changes to parent whenever localAllocations changes
   const prevAllocationsRef = React.useRef<Record<string, number>>({});
   useEffect(() => {
     const prev = prevAllocationsRef.current;
@@ -146,22 +141,19 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
     prevAllocationsRef.current = { ...localAllocations };
   }, [localAllocations, onAllocationChange]);
 
-  // Re-compute allocations when expenseAmount changes (for already-checked rows)
   useEffect(() => {
     if (checkedIds.size === 0) return;
     const newAllocations = computeAllocations(checkedIds, expenseAmount);
     setLocalAllocations(newAllocations);
-  }, [expenseAmount]); // intentionally omit checkedIds / computeAllocations to avoid loop
+  }, [expenseAmount]);
 
   const getAllocated = useCallback(
     (id: string) => localAllocations[id] ?? 0,
-    [localAllocations]
+    [localAllocations],
   );
 
   const totalAllocated = advances.reduce((s, a) => s + getAllocated(a.id), 0);
   const totalUnclaimed = advances.reduce((s, a) => s + a.unclaimedAmount, 0);
-
-  // ── Loading / error / empty states ────────────────────────────────────────
 
   if (loading) {
     return (
@@ -178,7 +170,10 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
         <AlertTriangle size={15} />
         <span className="text-sm">{fetchError}</span>
         {onRetry && (
-          <button onClick={onRetry} className="text-xs text-primary underline hover:opacity-80">
+          <button
+            onClick={onRetry}
+            className="text-xs text-primary underline hover:opacity-80"
+          >
             Retry
           </button>
         )}
@@ -196,11 +191,12 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
 
   return (
     <div className="flex flex-col gap-3">
-
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <p className="text-sm font-semibold text-main">Employee Advance Allocation</p>
+          <p className="text-sm font-semibold text-main">
+            Employee Advance Allocation
+          </p>
           <p className="text-[11px] text-muted">
             Check an advance row to allocate against the expense amount.
           </p>
@@ -216,13 +212,8 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
           </button>
         )}
       </div>
-
-      {/* ── Table ── */}
       <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-
-        {/* Header */}
         <div className="grid grid-cols-[32px_1.2fr_1fr_1fr_1fr] bg-[var(--row-hover)] border-b border-[var(--border)] px-4 py-2.5">
-          {/* empty col for checkbox */}
           <div />
           {[
             { label: "Advance Date", align: "text-left" },
@@ -239,7 +230,6 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
           ))}
         </div>
 
-        {/* Rows */}
         <div className="divide-y divide-[var(--border)]">
           {advances.map((adv) => {
             const allocated = getAllocated(adv.id);
@@ -253,7 +243,6 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
                   transition-colors hover:bg-[var(--row-hover)]
                   ${isChecked ? "bg-primary/[0.04]" : hasUnclaimed ? "" : ""}`}
               >
-                {/* Checkbox */}
                 <div className="flex items-center justify-center">
                   <button
                     type="button"
@@ -269,8 +258,8 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
                         adv.unclaimedAmount <= 0
                           ? "var(--border-color, #d1d5db)"
                           : isChecked
-                          ? "var(--color-primary, #4f46e5)"
-                          : "var(--border-color, #d1d5db)"
+                            ? "var(--color-primary, #4f46e5)"
+                            : "var(--border-color, #d1d5db)"
                       }`,
                       background: isChecked
                         ? "var(--color-primary, #4f46e5)"
@@ -279,7 +268,8 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      cursor: adv.unclaimedAmount <= 0 ? "not-allowed" : "pointer",
+                      cursor:
+                        adv.unclaimedAmount <= 0 ? "not-allowed" : "pointer",
                       transition: "all 0.15s",
                       opacity: adv.unclaimedAmount <= 0 ? 0.4 : 1,
                     }}
@@ -298,7 +288,9 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
                   </button>
                 </div>
 
-                <div className="text-xs text-muted text-left">{adv.advanceDate}</div>
+                <div className="text-xs text-muted text-left">
+                  {adv.advanceDate}
+                </div>
 
                 <div
                   className={`text-xs font-mono font-semibold text-center ${
@@ -313,7 +305,9 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
 
                 <div
                   className={`text-center text-xs font-mono font-semibold ${
-                    adv.unclaimedAmount > 0 ? "text-amber-600" : "text-emerald-600"
+                    adv.unclaimedAmount > 0
+                      ? "text-amber-600"
+                      : "text-emerald-600"
                   }`}
                 >
                   {adv.unclaimedAmount.toLocaleString(undefined, {
@@ -393,7 +387,12 @@ const PaginationBar: React.FC<PaginationBarProps> = ({
   if (pagination.totalPages <= 1) return null;
 
   const pages = Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-    .filter((p) => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+    .filter(
+      (p) =>
+        p === 1 ||
+        p === pagination.totalPages ||
+        Math.abs(p - currentPage) <= 1,
+    )
     .reduce<(number | "…")[]>((acc, p, i, arr) => {
       if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
       acc.push(p);
@@ -416,20 +415,24 @@ const PaginationBar: React.FC<PaginationBarProps> = ({
         </NavButton>
         {pages.map((p, i) =>
           p === "…" ? (
-            <span key={`ellipsis-${i}`} className="text-[11px] text-muted px-1">…</span>
+            <span key={`ellipsis-${i}`} className="text-[11px] text-muted px-1">
+              …
+            </span>
           ) : (
             <button
               key={p}
               onClick={() => onPageChange(p as number)}
               disabled={loading}
               className={`w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium border transition-colors
-                ${currentPage === p
-                  ? "bg-primary text-white border-primary"
-                  : "border-[var(--border)] text-muted hover:text-main hover:bg-card"}`}
+                ${
+                  currentPage === p
+                    ? "bg-primary text-white border-primary"
+                    : "border-[var(--border)] text-muted hover:text-main hover:bg-card"
+                }`}
             >
               {p}
             </button>
-          )
+          ),
         )}
         <NavButton
           onClick={() => onPageChange(currentPage + 1)}

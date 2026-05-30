@@ -237,7 +237,7 @@ export async function getAdvancesByEmployee(
 
 export interface AttachDocumentPayload {
   filename: string;
-  filedata: string; // base64
+  filedata: string; 
   doctype: string;
   docname: string;
   is_private: number;
@@ -277,5 +277,6 @@ export interface ExpenseClaimAdvanceItem {
   unclaimed_amount: number; 
   parentfield: "advances";
   parenttype: "Expense Claim";
+  exchange_rate: 1;
   doctype: "Expense Claim Advance";
 }
