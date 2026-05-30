@@ -15,7 +15,7 @@ export interface LeaveType {
 }
 
 export interface LeaveBalance {
-  asOfDate: string;          // "YYYY-MM-DD"
+  asOfDate: string;
   totalAllocated: number;
   totalUsed: number;
   totalRemaining: number;
@@ -23,9 +23,9 @@ export interface LeaveBalance {
 }
 
 export interface Checkins {
-  asofDate: string;          // "YYYY-MM-DD"
-  inTime: string | null;     // "YYYY-MM-DD HH:mm:ss"
-  outTime: string | null;    // "YYYY-MM-DD HH:mm:ss"
+  asofDate: string;
+  inTime: string | null;
+  outTime: string | null;
 }
 
 export interface EmployeeDetails {
@@ -36,16 +36,24 @@ export interface EmployeeDetails {
   lastName: string;
   employeeName: string;
   profilePhoto: string | null;
-  dateOfJoining: string;     // "YYYY-MM-DD"
+  dateOfJoining: string;
   leaveApproverId: string;
   leaveApproverName: string;
   holidayList: string | null;
+}
+
+export interface ExpenseClaim {
+  name: string;
+  grand_total: number;
+  approval_status: string;
+  description: string;
 }
 
 export interface EmployeeDashboardData {
   employeeDetails: EmployeeDetails;
   leaveBalance: LeaveBalance;
   checkins: Checkins;
+  expenseClaim?: ExpenseClaim[];
 }
 
 interface EmployeeDashboardResponse {
