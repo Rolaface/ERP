@@ -440,18 +440,18 @@ useEffect(() => {
           pageSize={pageSize}
           totalItems={totalItems}
           onPageChange={setPage}
-          extraFilters={
-            <div>
-              <FilterSelect
-                value={taxCategory}
-                onChange={(e) => {
-                  setPage(1);
-                  setTaxCategory(e.target.value);
-                }}
-               options={taxCategoryOptions}
-              />
-            </div>
-          }
+          // extraFilters={
+          //   <div>
+          //     <FilterSelect
+          //       value={taxCategory}
+          //       onChange={(e) => {
+          //         setPage(1);
+          //         setTaxCategory(e.target.value);
+          //       }}
+          //      options={taxCategoryOptions}
+          //     />
+          //   </div>
+          // }
         />
       ) : selectedCustomer ? (
         <CustomerDetailView
