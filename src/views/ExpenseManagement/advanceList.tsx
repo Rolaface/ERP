@@ -19,7 +19,7 @@ export interface EmployeeAdvance {
   advanceDate: string;
   allocatedAmount: number;
   unclaimedAmount: number;
-   purpose: string;
+  purpose: string;
 }
 
 interface NormalizedPagination {
@@ -42,6 +42,8 @@ interface EmployeeAdvanceListProps {
   onAllocationChange?: (id: string, newAllocated: number) => void;
   onLoadingChange?: (loading: boolean) => void;
   allocations?: Record<string, number>;
+  /** The total expense amount entered on the Expense tab */
+  expenseAmount?: number;
 }
 
 const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
@@ -53,22 +55,103 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
   onPageChange,
   onRetry,
   onModifyAllocation,
+  onAllocationChange,
   onLoadingChange,
   allocations: allocationsProp,
+  expenseAmount = 0,
 }) => {
-
   useEffect(() => {
     onLoadingChange?.(loading);
   }, [loading, onLoadingChange]);
 
+  // Which rows are checked (opted-in to allocation)
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+
+  // Local allocations — only populated for checked rows
   const [localAllocations, setLocalAllocations] = useState<Record<string, number>>(
     allocationsProp ?? {}
   );
 
+  // When the parent clears allocations (e.g. employee change), clear checked state too
   useEffect(() => {
     if (!allocationsProp) return;
+
+    // If parent zeroed everything out, clear checked set as well
+    const allZero = Object.values(allocationsProp).every((v) => v === 0);
+    if (allZero) {
+      setCheckedIds(new Set());
+    }
+
     setLocalAllocations(allocationsProp);
   }, [allocationsProp]);
+
+  /**
+   * Greedy allocator: given the set of checked advance IDs and the current
+   * expense amount, distribute the expense amount across checked advances
+   * (oldest-first) up to each advance's unclaimed amount.
+   */
+  const computeAllocations = useCallback(
+    (checked: Set<string>, amount: number): Record<string, number> => {
+      const result: Record<string, number> = {};
+      let remaining = amount;
+
+      // Fill zeroes for unchecked rows
+      advances.forEach((adv) => {
+        result[adv.id] = 0;
+      });
+
+      // Sort checked advances oldest-first
+      const checkedAdvances = advances
+        .filter((adv) => checked.has(adv.id))
+        .sort((a, b) => (a.advanceDate ?? "").localeCompare(b.advanceDate ?? ""));
+
+      for (const adv of checkedAdvances) {
+        if (remaining <= 0) break;
+        const available = adv.unclaimedAmount ?? 0;
+        const allocated = Math.min(available, remaining);
+        result[adv.id] = allocated;
+        remaining -= allocated;
+      }
+
+      return result;
+    },
+    [advances]
+  );
+
+  const handleCheckboxToggle = (id: string) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      // Re-compute allocations with updated checked set
+      // Parent is notified via the localAllocations useEffect below
+      const newAllocations = computeAllocations(next, expenseAmount);
+      setLocalAllocations(newAllocations);
+      return next;
+    });
+  };
+
+  // Propagate allocation changes to parent whenever localAllocations changes
+  const prevAllocationsRef = React.useRef<Record<string, number>>({});
+  useEffect(() => {
+    const prev = prevAllocationsRef.current;
+    Object.entries(localAllocations).forEach(([id, amt]) => {
+      if (prev[id] !== amt) {
+        onAllocationChange?.(id, amt);
+      }
+    });
+    prevAllocationsRef.current = { ...localAllocations };
+  }, [localAllocations, onAllocationChange]);
+
+  // Re-compute allocations when expenseAmount changes (for already-checked rows)
+  useEffect(() => {
+    if (checkedIds.size === 0) return;
+    const newAllocations = computeAllocations(checkedIds, expenseAmount);
+    setLocalAllocations(newAllocations);
+  }, [expenseAmount]); // intentionally omit checkedIds / computeAllocations to avoid loop
 
   const getAllocated = useCallback(
     (id: string) => localAllocations[id] ?? 0,
@@ -119,7 +202,7 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
         <div className="flex flex-col gap-0.5">
           <p className="text-sm font-semibold text-main">Employee Advance Allocation</p>
           <p className="text-[11px] text-muted">
-            Amounts are auto-allocated based on the expense.
+            Check an advance row to allocate against the expense amount.
           </p>
         </div>
         {onModifyAllocation && (
@@ -138,12 +221,14 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
       <div className="rounded-xl border border-[var(--border)] overflow-hidden">
 
         {/* Header */}
-        <div className="grid grid-cols-[1.2fr_1fr_1fr_1fr] bg-[var(--row-hover)] border-b border-[var(--border)] px-4 py-2.5">
+        <div className="grid grid-cols-[32px_1.2fr_1fr_1fr_1fr] bg-[var(--row-hover)] border-b border-[var(--border)] px-4 py-2.5">
+          {/* empty col for checkbox */}
+          <div />
           {[
-            { label: "Advance Date",  align: "text-left"  },
-            { label: "Allocated Amt", align: "text-center"  },
+            { label: "Advance Date", align: "text-left" },
+            { label: "Allocated Amt", align: "text-center" },
             { label: "Unclaimed Amt", align: "text-center" },
-            { label: "Purpose",        align: "text-right"  },
+            { label: "Purpose", align: "text-right" },
           ].map(({ label, align }) => (
             <div
               key={label}
@@ -157,36 +242,92 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
         {/* Rows */}
         <div className="divide-y divide-[var(--border)]">
           {advances.map((adv) => {
-            const allocated    = getAllocated(adv.id);
+            const allocated = getAllocated(adv.id);
+            const isChecked = checkedIds.has(adv.id);
             const hasUnclaimed = adv.unclaimedAmount > 0;
 
             return (
               <div
                 key={adv.id}
-                className={`grid grid-cols-[1.2fr_1fr_1fr_1fr] px-4 py-3 items-center
+                className={`grid grid-cols-[32px_1.2fr_1fr_1fr_1fr] px-4 py-3 items-center
                   transition-colors hover:bg-[var(--row-hover)]
-                  ${hasUnclaimed ? "bg-primary/[0.03]" : ""}`}
+                  ${isChecked ? "bg-primary/[0.04]" : hasUnclaimed ? "" : ""}`}
               >
+                {/* Checkbox */}
+                <div className="flex items-center justify-center">
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={isChecked}
+                    disabled={adv.unclaimedAmount <= 0}
+                    onClick={() => handleCheckboxToggle(adv.id)}
+                    style={{
+                      width: "15px",
+                      height: "15px",
+                      borderRadius: "3px",
+                      border: `1.5px solid ${
+                        adv.unclaimedAmount <= 0
+                          ? "var(--border-color, #d1d5db)"
+                          : isChecked
+                          ? "var(--color-primary, #4f46e5)"
+                          : "var(--border-color, #d1d5db)"
+                      }`,
+                      background: isChecked
+                        ? "var(--color-primary, #4f46e5)"
+                        : "transparent",
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: adv.unclaimedAmount <= 0 ? "not-allowed" : "pointer",
+                      transition: "all 0.15s",
+                      opacity: adv.unclaimedAmount <= 0 ? 0.4 : 1,
+                    }}
+                  >
+                    {isChecked && (
+                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                        <path
+                          d="M1 3L3 5.5L7 1"
+                          stroke="white"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+
                 <div className="text-xs text-muted text-left">{adv.advanceDate}</div>
-                
-                  <div className={`text-xs font-mono font-semibold text-center ${allocated > 0 ? "text-primary" : "text-muted"}`}>
-                    {allocated.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </div>
-              
 
-             
-                <div className={`text-center text-xs font-mono font-semibold
-  ${adv.unclaimedAmount > 0 ? "text-amber-600" : "text-emerald-600"}`}
->
-  {adv.unclaimedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-</div>
+                <div
+                  className={`text-xs font-mono font-semibold text-center ${
+                    allocated > 0 ? "text-primary" : "text-muted"
+                  }`}
+                >
+                  {allocated.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
 
-                <div className="text-xs text-muted text-right truncate" title={adv.purpose}>
-  {adv.purpose}
-</div>
+                <div
+                  className={`text-center text-xs font-mono font-semibold ${
+                    adv.unclaimedAmount > 0 ? "text-amber-600" : "text-emerald-600"
+                  }`}
+                >
+                  {adv.unclaimedAmount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+
+                <div
+                  className="text-xs text-muted text-right truncate"
+                  title={adv.purpose}
+                >
+                  {adv.purpose || "—"}
+                </div>
               </div>
             );
           })}
