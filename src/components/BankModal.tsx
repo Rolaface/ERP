@@ -7,7 +7,6 @@ import type { Bank, BankPayload } from "../api/BankApi";
 import { useDataRefreshStore, REFRESH_KEYS } from "../store/dataRefreshStore";
 import { showApiError, showSuccess } from "../utils/alert";
 import { ModalInput } from "./ui/modal/modalComponent";
-import { useModalStore } from "../store/modalStore";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -65,19 +64,9 @@ const BankModal: React.FC<BankModalProps> = ({
   modalId,
 }) => {
   const resolvedModalId = useRef(modalId).current;
-
-  // 👇 Read modal instance from Zustand store
-  const modal = useModalStore((s) =>
-    s.getModalById(resolvedModalId),
-  );
-
-  // 👇 Detect whether modal is opened in view mode
-  const isViewMode = modal?.context?.isViewMode ?? false;
-
   const triggerRefresh = useDataRefreshStore((s) => s.triggerRefresh);
 
-  const { markDirty, resetDirty, handleCloseWithConfirm } =
-    useUnsavedChanges();
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const [form, setForm] = useState<BankFormData>(() =>
     buildDefaultForm(initialData),
@@ -111,18 +100,13 @@ const BankModal: React.FC<BankModalProps> = ({
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
-    // Prevent submission in readonly mode
-    if (isViewMode) return;
-
     const validationErrors = validate(form);
-
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const payload: BankPayload = {
         bank_name: form.bank_name.trim(),
@@ -130,7 +114,6 @@ const BankModal: React.FC<BankModalProps> = ({
       };
 
       let result: Bank;
-
       if (isEditMode && initialData?.name) {
         result = await updateBank(initialData.name, payload);
         showSuccess("Bank updated successfully.");
@@ -140,27 +123,15 @@ const BankModal: React.FC<BankModalProps> = ({
       }
 
       triggerRefresh(REFRESH_KEYS.Bank);
-
       await onSubmit(result);
-
       resetDirty();
-
       onClose();
     } catch (err: any) {
       showApiError(err);
     } finally {
       setIsSubmitting(false);
     }
-  }, [
-    form,
-    isEditMode,
-    isViewMode,
-    initialData,
-    onSubmit,
-    onClose,
-    triggerRefresh,
-    resetDirty,
-  ]);
+  }, [form, isEditMode, initialData, onSubmit, onClose, triggerRefresh, resetDirty]);
 
   // ── Reset ──────────────────────────────────────────────────────────────────
   const handleReset = useCallback(() => {
@@ -170,67 +141,29 @@ const BankModal: React.FC<BankModalProps> = ({
   }, [initialData, resetDirty]);
 
   // ── Footer ─────────────────────────────────────────────────────────────────
-  // ── Footer ─────────────────────────────────────────────────────────────────
-  const footer = isViewMode ? (
-    <div className="flex justify-end w-full">
-      <button
-        type="button"
-        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-        className="
-        px-4 py-2 text-sm font-medium
-        text-main border border-[var(--border)]
-        rounded-lg hover:bg-[var(--row-hover)]
-        transition-colors
-      "
-      >
-        Close
-      </button>
-    </div>
-  ) : (
+  const footer = (
     <div className="flex items-center justify-between w-full">
       <button
         type="button"
         onClick={handleReset}
-        className="
-        px-4 py-2 text-sm font-medium
-        text-muted border border-[var(--border)]
-        rounded-lg hover:bg-[var(--row-hover)]
-        transition-colors
-      "
+        className="px-4 py-2 text-sm font-medium text-muted border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
       >
         Reset
       </button>
-
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={() =>
-            handleCloseWithConfirm(onClose, resolvedModalId)
-          }
-          className="
-          px-4 py-2 text-sm font-medium
-          text-main border border-[var(--border)]
-          rounded-lg hover:bg-[var(--row-hover)]
-          transition-colors
-        "
+          onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+          className="px-4 py-2 text-sm font-medium text-main border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
         >
           Cancel
         </button>
-
         <button
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className={`
-          px-6 py-2 text-sm font-semibold
-          text-white bg-primary rounded-lg
-          shadow-sm shadow-primary/20
-          hover:opacity-90 transition-all
-          ${isSubmitting
-              ? "opacity-60 cursor-not-allowed"
-              : ""
-            }
-        `}
+          className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""
+            }`}
         >
           {isSubmitting
             ? "Saving..."
@@ -247,13 +180,7 @@ const BankModal: React.FC<BankModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={
-        isViewMode
-          ? "View Bank"
-          : isEditMode
-            ? "Edit Bank"
-            : "Create New Bank"
-      }
+      title={isEditMode ? "Edit Bank" : "Create New Bank"}
       subtitle="Provide bank name and SWIFT/BIC number"
       icon={Landmark}
       footer={footer}
@@ -268,9 +195,9 @@ const BankModal: React.FC<BankModalProps> = ({
             required
             value={form.bank_name}
             onChange={(e) => handleChange("bank_name", e.target.value)}
-            disabled={isEditMode || isViewMode}
+            disabled={isEditMode}
             error={errors.bank_name}
-            autoFocus={!isEditMode && !isViewMode}
+            autoFocus={!isEditMode}
           />
         </div>
 
@@ -283,7 +210,6 @@ const BankModal: React.FC<BankModalProps> = ({
           }
           error={errors.swift_number}
           maxLength={11}
-          disabled={isViewMode}
         />
       </div>
     </MinimizableModal>
