@@ -478,7 +478,7 @@ export const API = {
   //purchase invoice
   purchaseInvoice: {
     getAll: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get`,
-
+    getItemByBarCode: `${ERP_BASE}/api/method/custom_api.utils.barcode_utils.get_item_from_batch_barcode`,
     getById: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.get_by_id`,
     create: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.create`,
     update: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update`,
@@ -619,7 +619,7 @@ export const API = {
       getpayrollpreview:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
 
       SalarystructureAssignment: {
-        getAll: `${ERP_BASE}/api/resource/Salary Structure Assignment`,
+        getAll: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.get_salary_structure_assignment_list`,
       },
     },
 
@@ -709,6 +709,10 @@ export const API = {
 
 
   },
+  salaryPreviewAPI: {
+    getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
+  },  
+
 
 
 

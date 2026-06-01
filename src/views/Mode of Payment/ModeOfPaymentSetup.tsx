@@ -51,12 +51,12 @@ const ModeOfPaymentSetup: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-const handleEdit = (name: string, e?: React.MouseEvent) => {
-  e?.stopPropagation();
-  openModeOfPaymentModal({ name }, true, {  
-    onSuccess: () => fetchData(),
-  });
-};
+  const handleEdit = (name: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    openModeOfPaymentModal({ name }, true, {
+      onSuccess: () => fetchData(),
+    });
+  };
   const handleToggle = async (row: any) => {
     const previous = row.enabled;
     try {
@@ -88,40 +88,35 @@ const handleEdit = (name: string, e?: React.MouseEvent) => {
           <span className="text-red-500 font-semibold">Disabled</span>
         ),
     },
-   {
-  key: "actions",
-  header: "Actions",
-  align: "center",
-  render: (row: any) => (
-    <div className="flex items-center justify-center gap-2">
-      
-<ActionButton
-  type="edit"
-  onClick={(e) => handleEdit(row.id, e)}  
-  iconOnly
-  title="Edit Mode of Payment"
-/>
-      <ActionMenu
-        customActions={[
-          {
-            label: row.enabled ? "Disable" : "Enable",
-            onClick: () => handleToggle(row),
-            disabled: actionLoadingId === String(row.id),
-          },
-        ]}
-      />
-    </div>
-  ),
-},
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (row: any) => (
+        <div className="flex items-center justify-center gap-2">
+
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEdit(row.id, e)}
+            iconOnly
+            title="Edit Mode of Payment"
+          />
+          <ActionMenu
+            customActions={[
+              {
+                label: row.enabled ? "Disable" : "Enable",
+                onClick: () => handleToggle(row),
+                disabled: actionLoadingId === String(row.id),
+              },
+            ]}
+          />
+        </div>
+      ),
+    },
   ];
 
   return (
     <AppPage>
-      <AppPageHeader
-        title="Mode of Payment"
-        description="Manage payment modes and their default accounts."
-        icon={<Wallet />}
-      />
       <AppPageBody>
         <Table
           columns={columns}

@@ -26,6 +26,10 @@ export const validatePI = (form: PurchaseInvoiceFormData) => {
       if (!item.expDate) {
         errors.push(`Row ${i + 1}: Expiry Date required`);
       }
+      if(item.barcodeId && item.barcodeId.toString().length !== 9)
+        errors.push(`Row ${i + 1}: Barcode Id must be 9 characters long`);
+      if(!item.barcodeId)
+        errors.push(`Row ${i + 1}: Barcode Id is required`);
     }
   });
 

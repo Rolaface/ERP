@@ -572,13 +572,14 @@ export interface SalaryStructureAssignment {
   base: number;
   from_date: string;
   currency: string;
+  status: "Active" | "Upcoming" | "Inactive";
 }
 
 export async function getSalaryStructureAssignmentsByEmployee(
   employeeId: string,
   page = 1,
   pageSize = 10,
-  search = "",
+  
   fromDate = "",
   toDate = "",
 ): Promise<{
@@ -587,49 +588,32 @@ export async function getSalaryStructureAssignmentsByEmployee(
   totalPages: number;
 }> {
   try {
-    const start = (page - 1) * pageSize;
+const queryParams = new URLSearchParams({
+  employee: employeeId,
+  page: String(page),
+  page_size: String(pageSize),
+});
 
-    const params = buildListParams({
-      fields: [
-        "name",
-        "employee",
-        "salary_structure",
-        "base",
-        "from_date",
-        "currency",
-      ],
-      start,
-      pageSize,
-      search,
-      searchFields: ["salary_structure", "name"],
-    });
 
-   const filters: any[] = [
-  ["employee", "=", employeeId],
-  ["docstatus", "=", 1],
-];
+if (fromDate) {
+  queryParams.append("from_date", fromDate);
+}
 
-    if (fromDate) filters.push(["from_date", ">=", fromDate]);
-    if (toDate) filters.push(["from_date", "<=", toDate]);
+if (toDate) {
+  queryParams.append("to_date", toDate);
+}
 
- const resp: AxiosResponse = await api.get(
-  `${API.payroll.payrollentry.SalarystructureAssignment.getAll}?${params}&filters=${encodeURIComponent(
-    JSON.stringify(filters),
-  )}`,
+const resp: AxiosResponse = await api.get(
+  `${API.payroll.payrollentry.SalarystructureAssignment.getAll}?${queryParams.toString()}`
 );
 
-    const pagination = resp.data?.pagination ?? {};
+const pagination = resp.data?.pagination ?? {};
 
-    // Server returns: pagination.total and pagination.total_pages
-    // (NOT total_count — that was the mismatch causing pagination to hide)
-    const total = pagination.total ?? resp.data?.data?.length ?? 0;
-    const totalPages = pagination.total_pages ?? Math.ceil(total / pageSize);
-
-    return {
-      data: resp.data?.data ?? [],
-      total,
-      totalPages,
-    };
+return {
+  data: resp.data?.data ?? [],
+  total: pagination.total ?? 0,
+  totalPages: pagination.total_pages ?? 1,
+};
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||

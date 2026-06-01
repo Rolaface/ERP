@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useMemo } from "react";
 import {
-  Landmark,
+  Landmark, Wallet , ArrowLeftRight 
 } from "lucide-react";
 import {
   AppPage,
@@ -14,6 +14,9 @@ import { useUrlTab } from "../../hooks/useUrlTab";
 
 const BankPage = lazy(() => import("./Bank"));
 const BankAccountSetup = lazy(() => import("./BankAccountSetup"));
+const ModeOfPayment = lazy(() => import("../../views/Mode of Payment/ModeOfPaymentSetup"))
+const CurrencyConversion = lazy(() => import("../../views/CurrencyConversion/currencyConversion"))
+
 
 const ALL_BANK_TABS = [
   {
@@ -30,6 +33,20 @@ const ALL_BANK_TABS = [
     module: "Bank Account",
     action: "read" as const,
   },
+  {
+    id: "ModeOfPayment",
+    label: "Mode of Payment",
+    icon: <Wallet size={16} strokeWidth={1.75} />,
+    module: "Mode of Payment",
+    action: "read" as const
+  },
+  {
+    id:"CurrencyConversion",
+    label:"Currency Exchange",
+    icon: <ArrowLeftRight  size={16} strokeWidth={1.75} />,
+    module : "Currency Exchange",
+    action: "read" as const
+  }
 ];
 
 const DEFAULT_TAB = "bank";
@@ -59,6 +76,12 @@ const BankModule: React.FC = () => {
 
       case "bankAccount":
         return <BankAccountSetup />;
+
+      case "ModeOfPayment":
+        return <ModeOfPayment />
+
+      case "CurrencyConversion":
+        return <CurrencyConversion />
 
       default:
         return <BankPage />;

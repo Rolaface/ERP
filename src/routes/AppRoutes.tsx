@@ -104,7 +104,7 @@ const AppRoutes: React.FC = () => {
             <Route
               path="/crm"
               element={
-                <PermissionRoute modules={["Customer", "Payment Entry"]}>
+                <PermissionRoute modules={["Customer", "Payment Entry","Customer Group"]}>
                   <CrmModule />
                 </PermissionRoute>
               }
@@ -202,7 +202,7 @@ const AppRoutes: React.FC = () => {
               path="/bank-management"
               element={
                 <PermissionRoute
-                  modules={["Bank", "Bank Account"]}
+                  modules={["Bank", "Bank Account" , "Mode of Payment","Currency Exchange"]}
                 >
                   <BankModule />
                 </PermissionRoute>
