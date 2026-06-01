@@ -22,7 +22,6 @@ import type {
   TaxRow,
 } from "../../types/tax/taxTemplate";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
 
 
 interface OutletContextType {

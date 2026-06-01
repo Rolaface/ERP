@@ -189,11 +189,6 @@ const CurrencyConversion: React.FC = () => {
 
   return (
     <AppPage>
-      <AppPageHeader
-        title="Currency Exchange"
-        description="Manage currency exchange rates and conversions."
-        icon={<Repeat />}
-      />
       <AppPageBody>
         <Table
           columns={columns}

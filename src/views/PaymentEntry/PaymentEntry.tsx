@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Table from "../../components/ui/Table/Table";
-import { Receipt } from "lucide-react";
 import type { Column } from "../../components/ui/Table/type";
 import {
   AppPage,
@@ -65,9 +64,11 @@ const formatAmount = (amount?: number): string => {
   return `₹ ${amount.toLocaleString("en-IN")}`;
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+interface PaymentEntryProps {
+  defaultPartyType?: string;
+}
 
-const PaymentEntry: React.FC = () => {
+const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   const mountedRef = useRef(true);
   const { can } = usePermission();
 
@@ -110,7 +111,7 @@ const PaymentEntry: React.FC = () => {
 
     try {
       const response = await getAllPayments(
-        undefined,
+        defaultPartyType as "Customer" | "Supplier" | undefined,
         page,
         pageSize,
         searchTerm,
@@ -144,7 +145,7 @@ const PaymentEntry: React.FC = () => {
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, searchTerm, defaultPartyType]);
 
   // Initial fetch
   useEffect(() => {
@@ -236,7 +237,7 @@ const PaymentEntry: React.FC = () => {
           <ActionMenu
             customActions={[
               {
-                label: "Send Email",
+                label: "Compose Email",
                 onClick: async () => {
                   setEmailPayment(row);
                   setEmailContactEmail(null);
@@ -269,11 +270,11 @@ const PaymentEntry: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   return (
     <AppPage>
-      <AppPageHeader
+      {/* <AppPageHeader
         title="Payment Entry"
         description="Manage customer and supplier payment transactions."
         icon={<Receipt />}
-      />
+      /> */}
 
       <AppPageBody>
         <Table
@@ -296,9 +297,11 @@ const PaymentEntry: React.FC = () => {
           onAdd={
             can(PAYMENT_ENTRY_MODULE, "create")
               ? () =>
-                openPaymentEntryModal(null, false, {
-                  onSuccess: () => fetchPayments(),
-                })
+                openPaymentEntryModal(
+                  { partyType: defaultPartyType ?? "Supplier" },
+                  false,
+                  { onSuccess: () => fetchPayments() }
+                )
               : undefined
           }
           // Fix: sorting now wired up

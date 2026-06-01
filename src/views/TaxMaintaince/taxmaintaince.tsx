@@ -17,21 +17,6 @@ import {
 } from "../../components/ui/app-shell";
 
 const ALL_TAX_TABS = [
-  {
-    id: "taxTemplate",
-    label: "Tax Templates",
-    icon: <ReceiptText size={16} strokeWidth={1.75} />,
-    module: "Item Tax Template",
-    action: "read" as const,
-  },
-
-  {
-    id: "salesTaxTemplate",
-    label: "Sales Tax Template",
-    icon: <FileSpreadsheet size={16} strokeWidth={1.75} />,
-    module: "Sales Taxes and Charges Template",
-    action: "read" as const,
-  },
 
   {
     id: "taxCategory",
@@ -40,10 +25,28 @@ const ALL_TAX_TABS = [
     module: "Tax Category",
     action: "read" as const,
   },
+
+  {
+    id: "taxTemplate",
+    label: "Item Tax Templates",
+    icon: <ReceiptText size={16} strokeWidth={1.75} />,
+    module: "Item Tax Template",
+    action: "read" as const,
+  },
+
+  {
+    id: "salesTaxTemplate",
+    label: "Sales Tax Templates",
+    icon: <FileSpreadsheet size={16} strokeWidth={1.75} />,
+    module: "Sales Taxes and Charges Template",
+    action: "read" as const,
+  },
+
+
 ];
 
 const Inventory: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("taxTemplate");
+  const [activeTab, setActiveTab] = useState("taxCategory");
 
   const { can } = usePermission();
 
@@ -59,7 +62,7 @@ const Inventory: React.FC = () => {
     taxTabs.find((t) => t.id === activeTab)?.id ??
     taxTabs[0]?.id ??
     "taxTemplate";
-  const isDashboardTab = resolvedTab === "taxTemplate";
+  const isDashboardTab = resolvedTab === "taxCategory";
 
 
 

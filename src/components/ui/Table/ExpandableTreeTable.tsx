@@ -436,6 +436,12 @@ function ExpandableTreeTable<T extends Record<string, any>>({
           {/* Right side */}
           <div className="flex items-center gap-2 ml-auto shrink-0">
 
+            {extraFilters && (
+              <div className="flex items-center gap-2 shrink-0">
+                {extraFilters}
+              </div>
+            )}
+
             {showExpandControls && (
               <>
                 <button
@@ -464,11 +470,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
               </button>
             )}
 
-            {extraFilters && (
-              <div className="flex items-center gap-2 shrink-0">
-                {extraFilters}
-              </div>
-            )}
+            
           </div>
         </div>
       )}

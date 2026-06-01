@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {  Plus, Trash2 , ReceiptText } from "lucide-react";
+import { Plus, Trash2, ReceiptText } from "lucide-react";
 
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -235,7 +235,9 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
             <table className="w-full text-sm">
               <thead className="bg-[var(--border)]/20">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted">Tax Type</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-muted">
+                    Tax Type <span className="text-danger">*</span>
+                  </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted">Rate (%)</th>
                   <th className="px-3 py-2 w-10"></th>
                 </tr>
@@ -301,8 +303,8 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                   type="button"
                   onClick={() => setPage(i)}
                   className={`w-6 h-6 rounded text-xs ${page === i
-                      ? "bg-primary text-white"
-                      : "bg-[var(--border)] text-muted hover:bg-primary/20"
+                    ? "bg-primary text-white"
+                    : "bg-[var(--border)] text-muted hover:bg-primary/20"
                     }`}
                 >
                   {i + 1}

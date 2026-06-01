@@ -56,8 +56,8 @@ export type ModalType =
   | "feedback"
   | "appraisal"
   | "employeeFeedback"
-  |"emailTemplate"
-  |"employeeAdvance"|"payrollPreview";
+  |"employeeAdvance"
+  |"payrollPreview";
 
 export interface ModalContext {
   source?: string;

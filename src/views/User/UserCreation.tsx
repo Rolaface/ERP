@@ -7,7 +7,7 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import { openUserModal } from "../../store/modalStore";
 import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 import { showConfirm, showSuccess, showApiError } from "../../utils/alert";
-import { getUsers, updateUser, deleteUser } from "../../api/RoleManagement/CreateUserApi";
+import { getUsers, updateUser, deleteUser ,createUser } from "../../api/RoleManagement/CreateUserApi";
 import type { UserRow } from "../../api/RoleManagement/CreateUserApi";
 import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
 
@@ -57,10 +57,13 @@ const CreateUserPage: React.FC = () => {
   }, [subscribeToRefresh]);
 
   const handleAdd = () => {
-    openUserModal(null, false, {
-      onSuccess: () => fetchUsers(searchQuery, page, pageSize),
-    });
-  };
+  openUserModal(null, false, {
+    onSuccess: () => fetchUsers(searchQuery, page, pageSize),
+    onSubmit: async (data: unknown) => {
+      await createUser(data as CreateUserFormData);
+    },
+  });
+};
 
   const handleEdit = (row: UserRow, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -139,7 +142,7 @@ const CreateUserPage: React.FC = () => {
             />
           </PermissionGate>
 
-
+{/* 
           <ActionMenu
             customActions={[
               // Delete — only if user has `delete`
@@ -152,7 +155,7 @@ const CreateUserPage: React.FC = () => {
                   ]
                 : []),
             ]}
-          />
+          /> */}
         </ActionGroup>
       ),
     },

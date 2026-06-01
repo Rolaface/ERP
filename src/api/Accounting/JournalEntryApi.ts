@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "../axiosInstance";
 import { API, ERP_BASE } from "../../config/api";
+import { buildListParams } from "../utils/queryBuilder";
 
 const api = createAxiosInstance(ERP_BASE);
 export const JournalEntryAPI = API.journalEntry;
@@ -38,21 +39,29 @@ export async function createJournalEntry(
   return resp.data;
 }
 
+
 export async function getJournalEntries(
   fields?: string[],
   filters?: any[][],
   limitStart: number = 0,
-  limitPageLength: number = 20
+  limitPageLength: number = 20,
+  search?: string,
 ): Promise<any> {
-  const params: any = {
-    limit_start: limitStart,
-    limit_page_length: limitPageLength,
-  };
+  const queryString = buildListParams({
+    fields: fields ?? [],
+    start: limitStart,
+    pageSize: limitPageLength,
+    search,
+    searchFields: search ? ["name", "user_remark"] : undefined,
+  });
 
-  if (fields) params.fields = JSON.stringify(fields);
+  const params: any = {};
   if (filters) params.filters = JSON.stringify(filters);
 
-  const resp: AxiosResponse = await api.get(JournalEntryAPI.getAll, { params });
+  const resp: AxiosResponse = await api.get(
+    `${JournalEntryAPI.getAll}?${queryString}`,
+    { params }
+  );
   return resp.data;
 }
 

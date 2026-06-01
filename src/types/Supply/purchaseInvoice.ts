@@ -19,6 +19,7 @@ export interface ItemRow {
   packingSize?: number;
   requiresBatch?: boolean;
   warehouse?: string;
+  barcodeId?: number;
 }
 
 export interface TaxRow {

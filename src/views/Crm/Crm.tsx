@@ -20,7 +20,8 @@ const CRMDashboard = lazy(() => import("./CRMDashboard"));
 const CRMReports = lazy(() => import("./Reports"));
 const Leads = lazy(() => import("./Leads"));
 const SupportTickets = lazy(() => import("./Support-tickets"));
-const Payments = lazy(() => import("./CustomerPayments"));
+const Payments = lazy(() => import("../PaymentEntry/PaymentEntry"));
+const CustomerGroup = lazy(() => import("../Customergroup/CustomerGroup"))
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -53,22 +54,29 @@ const ALL_TABS = [
     id: "customer-managment",
     label: "Customer Management",
     icon: <Users {...iconProps} />,
-    module: "Customer",    
-    action: "read" as const, 
+    module: "Customer",
+    action: "read" as const,
   },
   {
     id: "payments",
-    label: "Payments",
+    label: "Payment Entry",
     icon: <CreditCard {...iconProps} />,
-    module: "Payment Entry", 
-    action: "read" as const, 
+    module: "Payment Entry",
+    action: "read" as const,
+  },
+  {
+    id: "CustomerGroup",
+    label: "Customer Group",
+    icon: <Users {...iconProps} />,
+    module: "Customer Group",
+    action: "read" as const,
   },
   {
     id: "reports",
     label: "Reports",
     icon: <BarChart3 {...iconProps} />,
-    module: "Customer", 
-    action: "report" as const,     
+    module: "Customer",
+    action: "report" as const,
   },
 ];
 
@@ -76,13 +84,13 @@ const ALL_TABS = [
 const DEFAULT_TAB = "dashboard";
 
 const CRM: React.FC = () => {
-  const { can } = usePermission();                      
+  const { can } = usePermission();
 
   // Filter tabs based on permissions
-   const crmTabs = useMemo(
+  const crmTabs = useMemo(
     () => ALL_TABS.filter((t) => !t.module || can(t.module, t.action)),
     [can]
-  );                                                      
+  );
 
   const fallbackTab = crmTabs[0]?.id ?? DEFAULT_TAB;
   const [resolvedTab, handleTabChange] = useUrlTab({
@@ -95,10 +103,11 @@ const CRM: React.FC = () => {
   const handleAddCustomer = useCallback(() => openCustomerCreate(), [openCustomerCreate]);
 
   const tabComponents = useMemo(() => ({
-    dashboard:            <CRMDashboard />,
+    dashboard: <CRMDashboard />,
     "customer-managment": <CustomerManagement onAdd={handleAddCustomer} />,
-    payments:             <Payments />,
-    reports:              <CRMReports />,
+    payments: <Payments defaultPartyType="Customer" />,
+    CustomerGroup: <CustomerGroup />,
+    reports: <CRMReports />,
   }), [handleAddCustomer]);
 
   const currentTabComponent =

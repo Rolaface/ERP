@@ -41,6 +41,18 @@ const extractErrorMessage = (error: any): string => {
   return "Something went wrong. Please try again.";
 };
 
+const extractFieldErrors = (error: any): string | null => {
+  const data = error?.response?.data;
+  const fieldErrors =
+    data?.errors ??
+    (typeof data?.message === "object" ? data?.message?.errors : null);
+
+  if (!fieldErrors || typeof fieldErrors !== "object") return null;
+
+  const messages = Object.values(fieldErrors).filter(Boolean).join("\n");
+  return messages || null;
+};
+
 const toUserFriendlyMessage = (message: string): string => {
   const m = (message ?? "").trim();
   if (!m) return "Something went wrong. Please try again.";
@@ -70,9 +82,7 @@ export const showValidationError = (message: string) => {
 };
 
 export const showApiError = (error: any) => {
-  const rawMessage = extractErrorMessage(error);
-
-  // Strip HTML tags (clean version)
+  const rawMessage = extractFieldErrors(error) ?? extractErrorMessage(error);
   const cleanMessage = String(rawMessage).replace(/<[^>]+>/g, "");
   const userMessage = toUserFriendlyMessage(cleanMessage);
 
