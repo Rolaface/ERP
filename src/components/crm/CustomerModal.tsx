@@ -113,7 +113,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       icon={isEditMode ? Building2 : Users}
       footer={footer}
       maxWidth="6xl"
-      height="81vh"
+      height="90vh"
     >
       <form
         id="customerForm"
