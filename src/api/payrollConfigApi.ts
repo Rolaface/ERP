@@ -23,9 +23,10 @@ export interface SalaryComponent {
   type: SalaryComponentType;
   depends_on_payment_days?: 0 | 1;
   amount_based_on_formula?: 0 | 1;
-  formula?: string;
+  remove_if_zero_valued?: 0 | 1;
+  formula?: null | string;
   is_tax_applicable?: 0 | 1;
-  amount?: number;
+  amount?: number| null;
   accounts?: SalaryComponentAccount[];
   description?: string;
   // flexible benefit fields
