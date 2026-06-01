@@ -30,12 +30,18 @@ import DatePickerInput from "../../calendar/DatePickerInput";
 
 export { buildCompensationPayload };
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 type CompensationTabProps = {
   formData: any;
   handleInputChange: (field: string, value: any) => void;
   isEditMode?: boolean;
 };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const fmt = (n: number) => n.toLocaleString();
+
 const toNum = (v: any): number => {
   if (v === null || v === undefined) return 0;
   const n = typeof v === "number" ? v : parseFloat(v);
@@ -48,7 +54,7 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({
   label,
   children,
 }) => (
-  <div className="flex flex-col gap-1 min-w-0">
+  <div className="flex flex-col gap-1 min-w-0 w-full">
     <label className="text-[11px] font-medium text-muted leading-none truncate">
       {label}
     </label>
@@ -57,29 +63,66 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({
 );
 
 // ─── Component row ────────────────────────────────────────────────────────────
+// Uses flex instead of table so truncation works naturally without max-w-0 hacks.
 
-const CompRow: React.FC<{ comp: ComponentResult }> = ({ comp }) => (
-  <tr className="border-b border-theme/30 last:border-0 hover:bg-app/40 transition-colors">
-    <td className="py-1.5 pl-2 pr-1 w-[55%]">
-      <p className="text-xs text-main leading-tight truncate">{comp.name}</p>
-      {comp.isFormula && comp.formula && (
-        <p className="text-[10px] text-muted/70 font-mono leading-none mt-0.5 truncate">
-          = {comp.formula}
+const CompRow: React.FC<{ comp: ComponentResult }> = ({ comp }) => {
+  const [expanded, setExpanded] = useState(false);
+  const hasLongFormula =
+    comp.isFormula && comp.formula && comp.formula.length > 40;
+
+  return (
+    <div className="flex items-start gap-2 border-b border-theme/30 last:border-0 hover:bg-app/40 transition-colors py-1.5 min-w-0">
+      {/* Left: name + formula */}
+      <div className="flex-1 min-w-0 pl-2 pr-1">
+        <p className="text-xs text-main leading-tight truncate" title={comp.name}>
+          {comp.name}
         </p>
-      )}
-    </td>
-    <td className="py-1.5 pr-2 pl-1 w-[45%]">
-      <NumericInput
-        name={comp.key}
-        value={comp.amount}
-        onChange={() => {}}
-        disabled
-        decimalScale={2}
-        className="w-full h-8 !text-xs !px-2.5"
-      />
-    </td>
-  </tr>
-);
+        {comp.isFormula && comp.formula && (
+          <div className="mt-0.5">
+            {hasLongFormula ? (
+              <>
+                <p
+                  className={`text-[10px] text-muted/70 font-mono leading-snug break-all ${
+                    expanded ? "" : "line-clamp-1"
+                  }`}
+                  title={comp.formula}
+                >
+                  = {comp.formula}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setExpanded((p) => !p)}
+                  className="text-[9px] text-primary/70 hover:text-primary mt-0.5 leading-none focus:outline-none"
+                >
+                  {expanded ? "show less" : "show more"}
+                </button>
+              </>
+            ) : (
+              <p
+                className="text-[10px] text-muted/70 font-mono leading-none truncate"
+                title={comp.formula}
+              >
+                = {comp.formula}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Right: amount input — fixed width so it never shrinks */}
+      <div className="w-28 shrink-0 pr-2">
+        <NumericInput
+          name={comp.key}
+          value={comp.amount}
+          onChange={() => {}}
+          disabled
+          decimalScale={2}
+          className="w-full h-8 !text-xs !px-2.5"
+        />
+      </div>
+    </div>
+  );
+};
 
 // ─── Summary row ─────────────────────────────────────────────────────────────
 
@@ -91,17 +134,19 @@ const SummaryRow: React.FC<{
 }> = ({ label, value, variant = "default", topBorder }) => (
   <div
     className={[
-      "flex justify-between items-center py-1 px-1.5 rounded-md",
+      "flex justify-between items-center gap-2 py-1 px-1.5 rounded-md min-w-0",
       topBorder ? "border-t border-theme mt-1 pt-2" : "",
     ].join(" ")}
   >
     <span
-      className={`text-xs leading-tight ${variant === "dimmed" ? "text-muted" : "text-main"}`}
+      className={`text-xs leading-tight shrink-0 ${
+        variant === "dimmed" ? "text-muted" : "text-main"
+      }`}
     >
       {label}
     </span>
     <span
-      className={`text-xs font-medium tabular-nums ${
+      className={`text-xs font-medium tabular-nums text-right min-w-0 truncate ${
         variant === "accent"
           ? "text-primary font-semibold"
           : variant === "negative"
@@ -112,6 +157,25 @@ const SummaryRow: React.FC<{
       }`}
     >
       {value}
+    </span>
+  </div>
+);
+
+// ─── Section label ────────────────────────────────────────────────────────────
+
+const SectionLabel: React.FC<{
+  children: React.ReactNode;
+  color: "emerald" | "red";
+}> = ({ children, color }) => (
+  <div className="pt-2 pb-0.5 pl-2">
+    <span
+      className={`text-[10px] font-semibold uppercase tracking-widest ${
+        color === "emerald"
+          ? "text-emerald-600 dark:text-emerald-400"
+          : "text-red-500 dark:text-red-400"
+      }`}
+    >
+      {children}
     </span>
   </div>
 );
@@ -130,19 +194,17 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const [taxConfig, setTaxConfig] = useState<TaxConfig | null>(null);
   const { baseCurrency, currencySymbol } = useCompanyStore();
 
-  // ── FIX: stable ref for handleInputChange so effects don't re-fire when
-  //   the parent re-renders and produces a new function reference.
+  // Stable ref for handleInputChange — prevents effect re-fires on parent re-render
   const handleInputChangeRef = useRef(handleInputChange);
   useEffect(() => {
     handleInputChangeRef.current = handleInputChange;
   });
-  // Convenience wrapper — always calls the latest version, never triggers deps.
   const stableHandleInputChange = useCallback(
     (field: string, value: any) => handleInputChangeRef.current(field, value),
-    [], // no deps — intentionally stable forever
+    [],
   );
 
-  // Track which field user is typing in — prevents recalc stomping active input
+  // Track which field the user is actively typing in
   const activeField = useRef<"base" | "gross" | null>(null);
 
   const [baseInput, setBaseInput] = useState<number | null>(
@@ -157,7 +219,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     structure: formData.salaryStructure || "",
   });
 
-  // Derived values shown in the non-active field
   const [computedGross, setComputedGross] = useState<number | null>(null);
   const [computedBase, setComputedBase] = useState<number | null>(null);
 
@@ -174,8 +235,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Seed effectiveFrom from dateOfJoining once on mount (add mode only) ──
-  // FIX: run only once. Previously had formData.effectiveFrom + handleInputChange
-  // in deps — caused re-fires every time the parent re-rendered.
   useEffect(() => {
     if (!isEditMode && formData.dateOfJoining && !formData.effectiveFrom) {
       stableHandleInputChange("effectiveFrom", formData.dateOfJoining);
@@ -196,7 +255,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   useEffect(() => {
     if (!componentDefs.length) return;
     if (activeField.current === "gross") return;
-
     const base = toNum(baseInput);
     const result = calculateSalary(base, componentDefs, {}, taxConfig);
     setSalaryResult(result);
@@ -210,7 +268,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   useEffect(() => {
     if (!componentDefs.length) return;
     if (activeField.current === "base") return;
-
     const gross = toNum(grossInput);
     const base = solveBaseFromGross(gross, componentDefs, 0.01, 60, taxConfig);
     const result = calculateSalary(base, componentDefs, {}, taxConfig);
@@ -246,7 +303,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   }, [taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Propagate salaryChanged flag ──────────────────────────────────────────
-  // FIX: previously had handleInputChange in deps — fired on every parent render.
   const salaryChanged =
     isEditMode &&
     (toNum(baseInput) !== initialSalaryRef.current.base ||
@@ -255,7 +311,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
 
   useEffect(() => {
     stableHandleInputChange("_salaryChanged", salaryChanged);
-  }, [salaryChanged]); // stableHandleInputChange is stable, salaryChanged is the only real dep
+  }, [salaryChanged]);
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -352,10 +408,17 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full flex flex-col gap-2">
-      {/* ── Row 1: settings bar ── */}
+    <div className="w-full flex flex-col gap-2 min-w-0">
+
+      {/* ── Row 1: Settings bar ────────────────────────────────────────────── */}
+      {/* 
+        Responsive grid:
+        - xs (<640px):  2 columns (structure + tax on row1, currency + payment on row2)
+        - sm (≥640px):  2 columns
+        - lg (≥1024px): 4 columns all in one row
+      */}
       <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
-        <div className="grid grid-cols-4 gap-3 items-end">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <Field label="Salary structure">
             <SearchSelect2
               label=""
@@ -367,7 +430,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           </Field>
 
           <Field label="Tax slab">
-            <div className="relative">
+            <div className="relative min-w-0">
               <SearchSelect2
                 label=""
                 value={formData.Taxslab}
@@ -382,7 +445,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
                 onChange={handleTaxSlabChange}
               />
               {isLoadingTax && (
-                <div className="absolute right-7 top-1/2 -translate-y-1/2">
+                <div className="absolute right-7 top-1/2 -translate-y-1/2 pointer-events-none">
                   <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
@@ -422,7 +485,12 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         </div>
       </div>
 
-      {/* ── Row 2: Dual salary inputs ── */}
+      {/* ── Row 2: Salary inputs ───────────────────────────────────────────── */}
+      {/*
+        Responsive grid:
+        - xs (<640px):  1 column stacked
+        - sm (≥640px):  3 columns
+      */}
       <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
@@ -430,7 +498,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
           <Field label="Effective from">
             <DatePickerInput
               name="effectiveFrom"
@@ -440,6 +508,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               onChange={(name, value) => stableHandleInputChange(name, value)}
             />
           </Field>
+
           <Field label="Base salary / month">
             <div
               onFocus={() => { activeField.current = "base"; }}
@@ -487,68 +556,67 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         )}
       </div>
 
-      {/* ── Row 3: Components + Summary ── */}
+      {/* ── Row 3: Components + Summary ───────────────────────────────────── */}
+      {/*
+        Responsive grid:
+        - xs (<768px):  1 column — components above, summary below
+        - md (≥768px):  2 columns side by side
+        Both panels are overflow-safe with min-w-0.
+      */}
       {!isLoading && hasComponents && salaryResult && (
-        <div className="grid grid-cols-2 gap-2">
-          {/* Components panel */}
-          <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 min-w-0">
+
+          {/* ── Components panel ── */}
+          <div className="bg-card rounded-lg border border-theme px-3 py-2.5 min-w-0 overflow-hidden">
+            {/* Panel header */}
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
                 Components
               </span>
             </div>
 
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-theme">
-                  <th className="text-left text-[10px] font-medium text-muted uppercase tracking-wider pb-1.5 pl-2 w-[55%]">
-                    Component
-                  </th>
-                  <th className="text-left text-[10px] font-medium text-muted uppercase tracking-wider pb-1.5 pr-2 w-[45%]">
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {earningRows.length > 0 && (
-                  <>
-                    <tr>
-                      <td colSpan={2} className="pt-2 pb-0.5 pl-2">
-                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
-                          Earnings
-                        </span>
-                      </td>
-                    </tr>
-                    {earningRows.map((c) => (
-                      <CompRow key={c.key} comp={c} />
-                    ))}
-                  </>
-                )}
-                {deductionRows.length > 0 && (
-                  <>
-                    <tr>
-                      <td colSpan={2} className="pt-2 pb-0.5 pl-2">
-                        <span className="text-[10px] font-semibold text-red-500 dark:text-red-400 uppercase tracking-widest">
-                          Deductions
-                        </span>
-                      </td>
-                    </tr>
-                    {deductionRows.map((c) => (
-                      <CompRow key={c.key} comp={c} />
-                    ))}
-                  </>
-                )}
-              </tbody>
-            </table>
+            {/* Column headers — flex mirrors CompRow layout */}
+            <div className="flex items-center gap-2 border-b border-theme pb-1.5">
+              <div className="flex-1 min-w-0 pl-2">
+                <span className="text-[10px] font-medium text-muted uppercase tracking-wider">
+                  Component
+                </span>
+              </div>
+              <div className="w-28 shrink-0 pr-2">
+                <span className="text-[10px] font-medium text-muted uppercase tracking-wider">
+                  Amount
+                </span>
+              </div>
+            </div>
+
+            {/* Earnings section */}
+            {earningRows.length > 0 && (
+              <div>
+                <SectionLabel color="emerald">Earnings</SectionLabel>
+                {earningRows.map((c) => (
+                  <CompRow key={c.key} comp={c} />
+                ))}
+              </div>
+            )}
+
+            {/* Deductions section */}
+            {deductionRows.length > 0 && (
+              <div>
+                <SectionLabel color="red">Deductions</SectionLabel>
+                {deductionRows.map((c) => (
+                  <CompRow key={c.key} comp={c} />
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Summary panel */}
-          <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
+          {/* ── Summary panel ── */}
+          <div className="bg-card rounded-lg border border-theme px-3 py-2.5 min-w-0 overflow-hidden">
             <span className="text-[11px] font-medium text-muted uppercase tracking-wide block mb-2">
               Summary
             </span>
 
-            <div>
+            <div className="min-w-0">
               <SummaryRow
                 label="Monthly base"
                 value={cur(salaryResult.resolvedBase)}
@@ -596,20 +664,21 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               />
             </div>
 
+            {/* Gross / Net highlight tiles */}
             <div className="grid grid-cols-2 gap-2 mt-3">
-              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-md p-2 text-center">
-                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-md p-2 text-center min-w-0">
+                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5 truncate">
                   Gross / month
                 </p>
-                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums truncate">
                   {fmt(salaryResult.gross)}
                 </p>
               </div>
-              <div className="bg-primary/5 rounded-md p-2 text-center">
-                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">
+              <div className="bg-primary/5 rounded-md p-2 text-center min-w-0">
+                <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5 truncate">
                   Net / month
                 </p>
-                <p className="text-sm font-bold text-primary tabular-nums">
+                <p className="text-sm font-bold text-primary tabular-nums truncate">
                   {fmt(salaryResult.net)}
                 </p>
               </div>
@@ -618,7 +687,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         </div>
       )}
 
-      {/* ── Empty states ── */}
+      {/* ── Empty states ─────────────────────────────────────────────────── */}
       {!isLoading && !hasComponents && !formData.salaryStructure && (
         <div className="bg-card rounded-lg border border-dashed border-theme p-6 text-center">
           <p className="text-xs text-muted">

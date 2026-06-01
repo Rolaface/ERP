@@ -9,6 +9,19 @@
  *  - to_amount = 0 in a slab means "no upper bound" (last/highest slab).
  *  - Formula evaluation is sandboxed; any error returns 0 silently.
  *  - All functions are pure — no mutations, no side effects.
+ *
+ * Formula syntax — ERPNext stores formulas as Python expressions.
+ *  This engine transparently converts Python → JavaScript before evaluation,
+ *  so formulas work identically in the ERP and in the browser.
+ *
+ *  Conversions applied automatically:
+ *   "x if cond else y"  →  "(cond ? x : y)"   (Python ternary)
+ *   and                 →  &&
+ *   or                  →  ||
+ *   not                 →  !
+ *
+ *  JS-style helpers are also injected for any legacy JS-style formulas:
+ *   IF(cond, a, b) / AND(...) / OR(...)
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -38,9 +51,9 @@ export type CalcContext = Record<string, number>;
 
 export interface ComponentResult {
   name:      string;
-  key:       string;       // snake_case of salary_component
+  key:       string;        // snake_case of salary_component
   abbrKey:   string | null; // lowercase abbr, e.g. "bs", "hra"
-  amount:    number;       // always rounded to 2dp
+  amount:    number;        // always rounded to 2dp
   formula:   string;
   isFormula: boolean;
   type:      ComponentType;
@@ -60,20 +73,20 @@ export interface SalaryResult {
 // ─── Tax config (mirrors the ERP Income Tax Slab doctype) ─────────────────────
 
 export interface TaxSlabRow {
-  from_amount?:      number;
-  to_amount?:        number; // 0 = no upper limit
+  from_amount?:       number;
+  to_amount?:         number; // 0 = no upper limit
   percent_deduction?: number;
 }
 
 export interface TaxChargeRow {
-  description:         string;
-  percent?:            number;
-  min_taxable_income?: number;
-  max_taxable_income?: number; // 0 = no upper limit
+  description:          string;
+  percent?:             number;
+  min_taxable_income?:  number;
+  max_taxable_income?:  number; // 0 = no upper limit
 }
 
 export interface TaxConfig {
-  name:                          string;
+  name:                           string;
   /** Flat rupee deduction from gross before applying slabs (e.g. ₹75,000) */
   standard_tax_exemption_amount?: number;
   allow_tax_exemption?:           0 | 1;
@@ -83,31 +96,31 @@ export interface TaxConfig {
    * This is NOT subtracted from tax; it is an income ceiling.
    */
   tax_relief_limit?:              number;
-  slabs:                         TaxSlabRow[];
-  other_taxes_and_charges?:      TaxChargeRow[];
+  slabs:                          TaxSlabRow[];
+  other_taxes_and_charges?:       TaxChargeRow[];
 }
 
 // ─── Payload sent to the API after save ───────────────────────────────────────
 
 export interface CompensationPayload {
-  salary_structure: string | null;
-  base_salary:      number;
+  salary_structure:  string | null;
+  base_salary:       number;
   components: Array<{
-    name:     string;
-    key:      string;
-    abbrKey:  string | null;
-    amount:   number;
-    type:     ComponentType;
+    name:    string;
+    key:     string;
+    abbrKey: string | null;
+    amount:  number;
+    type:    ComponentType;
   }>;
-  gross:           number;
+  gross:            number;
   deductions_total: number;
-  net:             number;
-  salary_mode:     string | null;
-  salary_currency: string | null;
-  bank_name:       string | null;
-  bank_ac_no:      string | null;
-  account_type:    string | null;
-  branch_code:     string | null;
+  net:              number;
+  salary_mode:      string | null;
+  salary_currency:  string | null;
+  bank_name:        string | null;
+  bank_ac_no:       string | null;
+  account_type:     string | null;
+  branch_code:      string | null;
 }
 
 // ─── Internal helpers (not exported) ─────────────────────────────────────────
@@ -139,7 +152,7 @@ const writeCtx = (
 ): void => {
   ctx[nameKey] = value;
   if (abbrKey) {
-    ctx[abbrKey]              = value;
+    ctx[abbrKey]               = value;
     ctx[abbrKey.toUpperCase()] = value;
   }
 };
@@ -149,11 +162,65 @@ const isTaxComponent = (comp: SalaryComponentDef): boolean =>
   comp.variable_based_on_taxable_salary === 1 ||
   comp.is_income_tax_component           === 1;
 
+// ─── Python → JavaScript transpiler ─────────────────────────────────────────
+//
+// ERPNext stores salary formulas as Python expressions. Before we can run
+// them inside new Function() we need to convert Python syntax to JavaScript.
+//
+// Rules applied (in order, so nested expressions resolve correctly):
+//  1. Python ternary:  "x if cond else y"  →  "(cond ? x : y)"
+//     Handled iteratively until no more matches remain (handles nesting).
+//  2. Logical keywords: and → &&,  or → ||,  not → !
+//     Word-boundary matched so variable names like "standard" are untouched.
+
+function pythonToJS(formula: string): string {
+  let result = formula;
+
+  // ── Step 1: Python ternary — iterate until fully unwound ──────────────────
+  // Pattern: <trueExpr> if <condition> else <falseExpr>
+  // We match lazily so the innermost ternary is resolved first on each pass.
+  // Up to 20 passes handles deeply nested chains without infinite loops.
+  const ternaryRe = /(.+?)\s+if\s+(.+?)\s+else\s+(.+)/;
+  for (let i = 0; i < 20; i++) {
+    const next = result.replace(ternaryRe, "($2 ? $1 : $3)");
+    if (next === result) break;
+    result = next;
+  }
+
+  // ── Step 2: logical keywords → JS operators ───────────────────────────────
+  result = result
+    .replace(/\band\b/g, "&&")
+    .replace(/\bor\b/g,  "||")
+    .replace(/\bnot\b/g, "!");
+
+  return result;
+}
+
+// ─── Formula helpers injected into every evaluation context ──────────────────
+//
+// JS-style helpers kept for any legacy formulas that still use IF(...) syntax.
+// AND / OR return 1 or 0 so they compose with IF:
+//   IF(AND(base >= 50000, base <= 100000), base * 0.15, 0)
+
+const FORMULA_HELPERS = {
+  /** IF(condition, trueValue, falseValue) */
+  IF: (cond: unknown, a: number, b: number): number => (cond ? a : b),
+
+  /** AND(a, b, …) → 1 if every argument is truthy, else 0 */
+  AND: (...args: unknown[]): number => (args.every(Boolean) ? 1 : 0),
+
+  /** OR(a, b, …) → 1 if any argument is truthy, else 0 */
+  OR: (...args: unknown[]): number => (args.some(Boolean) ? 1 : 0),
+} as const;
+
 // ─── Formula evaluator ────────────────────────────────────────────────────────
 
 /**
  * Evaluates a formula string against a context of named variables.
  * Returns 0 on any error — never throws.
+ *
+ * Accepts both Python syntax (as stored in ERPNext) and plain JS expressions.
+ * Python is transparently converted via pythonToJS() before evaluation.
  *
  * Security note: new Function() is intentional here (same approach as ERPNext).
  * The context keys are alphanumeric identifiers; the formula comes from your
@@ -162,12 +229,20 @@ const isTaxComponent = (comp: SalaryComponentDef): boolean =>
 export function evaluateFormula(formula: string, ctx: CalcContext): number {
   if (!formula?.trim()) return 0;
   try {
+    // Convert Python syntax → JS (no-op if formula is already JS)
+    const jsFormula = pythonToJS(formula);
+
+    // Merge helpers + context — helpers come first so context values
+    // can shadow them if a component name collides with a helper name.
+    const allKeys   = [...Object.keys(FORMULA_HELPERS),   ...Object.keys(ctx)];
+    const allValues = [...Object.values(FORMULA_HELPERS), ...Object.values(ctx)];
+
     // eslint-disable-next-line no-new-func
     const fn = new Function(
-      ...Object.keys(ctx),
-      `"use strict"; return +(${formula});`,
+      ...allKeys,
+      `"use strict"; return +(${jsFormula});`,
     );
-    const result = fn(...Object.values(ctx));
+    const result = fn(...allValues);
     const n = Number(result);
     return isFinite(n) ? n : 0;
   } catch {
@@ -199,7 +274,7 @@ export function calculateAnnualTax(
   if (!taxConfig?.slabs?.length) return 0;
 
   // Step 1: standard exemption
-  const exemption    = taxConfig.standard_tax_exemption_amount ?? 0;
+  const exemption     = taxConfig.standard_tax_exemption_amount ?? 0;
   const taxableIncome = Math.max(0, annualGross - exemption);
 
   if (taxableIncome <= 0) return 0;
@@ -217,8 +292,8 @@ export function calculateAnnualTax(
     const to   = (slab.to_amount && slab.to_amount > 0) ? slab.to_amount : Infinity;
     const rate = (slab.percent_deduction ?? 0) / 100;
 
-    if (rate === 0)              continue; // skip zero-rate slabs (no contribution)
-    if (taxableIncome <= from)   continue; // income hasn't reached this slab
+    if (rate === 0)            continue; // skip zero-rate slabs
+    if (taxableIncome <= from) continue; // income hasn't reached this slab
 
     const slabIncome = Math.min(taxableIncome, to) - from;
     tax += slabIncome * rate;
@@ -415,11 +490,11 @@ export function calculateSalary(
  * Returns 0 if no formula-based earnings exist (base doesn't affect gross).
  */
 export function solveBaseFromGross(
-  targetGross:   number,
-  components:    SalaryComponentDef[],
-  tolerance      = 0.01,
-  maxIterations  = 60,
-  taxConfig?:    TaxConfig | null,
+  targetGross:  number,
+  components:   SalaryComponentDef[],
+  tolerance     = 0.01,
+  maxIterations = 60,
+  taxConfig?:   TaxConfig | null,
 ): number {
   if (targetGross <= 0) return 0;
 
@@ -496,7 +571,7 @@ export function buildCompensationPayload(
   );
 
   return {
-    salary_structure:  (formData.salaryStructure as string)  ?? null,
+    salary_structure:  (formData.salaryStructure as string) ?? null,
     base_salary:       basicComp?.amount ?? result.gross,
     components:        result.components.map(({ name, key, abbrKey, amount, type }) => ({
       name, key, abbrKey, amount, type,
@@ -505,10 +580,10 @@ export function buildCompensationPayload(
     deductions_total:  result.deductionsTotal,
     net:               result.net,
     salary_mode:       mapPaymentMode(formData.paymentMethod),
-    salary_currency:   (formData.currency     as string) ?? null,
-    bank_name:         (formData.bankName      as string) ?? null,
-    bank_ac_no:        (formData.accountNumber as string) ?? null,
-    account_type:      (formData.accountType   as string) ?? null,
-    branch_code:       (formData.branchCode    as string) ?? null,
+    salary_currency:   (formData.currency      as string) ??  null,
+    bank_name:         (formData.bankName       as string) ?? null,
+    bank_ac_no:        (formData.accountNumber  as string) ?? null,
+    account_type:      (formData.accountType    as string) ?? null,
+    branch_code:       (formData.branchCode     as string) ?? null,
   };
 }
