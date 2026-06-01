@@ -8,6 +8,9 @@ import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import { getAllEmployees } from "../../api/employeeapi";
 import { showApiError } from "../../utils/alert";
 import DatePickerInput from "../calendar/DatePickerInput";
+import { getAllModeOfPayment } from "../../api/BankAccountApi";
+import { getAdvanceGLAccounts,createEmployeeAdvance,updateEmployeeAdvance,
+  type CreateEmployeeAdvancePayload,} from "../../api/expenseClaimApi";
 
 export interface EmployeeAdvanceFormData {
   id?: string;
@@ -32,11 +35,7 @@ const defaultForm: EmployeeAdvanceFormData = {
   repay_unclaimed_from_salary: false,
 };
 
-const PAYMENT_MODE_OPTIONS = [
-  { value: "Bank", label: "Bank" },
-  { value: "Cash", label: "Cash" },
-  { value: "Cheque", label: "Cheque" },
-];
+
 
 interface EmployeeAdvanceModalProps {
   modalId: string;
@@ -100,20 +99,31 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
       return [];
     }
   }, []);
+  const fetchPaymentModes = useCallback(async (search: string) => {
+  try {
+    const res = await getAllModeOfPayment(1, 50, search || undefined, 1); // enabled=1 only
+    return res.data.map((mode) => ({
+      value: mode.name,
+      label: mode.name,
+    }));
+  } catch (err) {
+    showApiError(err);
+    return [];
+  }
+}, []);
 
-  const fetchAdvanceAccounts = useCallback(async (search: string) => {
-    try {
-      const res = await getAdvanceAccounts(search || undefined);
-      const data: { name: string; account_name?: string }[] = res?.data ?? [];
-      return data.map((acc) => ({
-        value: acc.name,
-        label: acc.account_name ?? acc.name,
-      }));
-    } catch (err) {
-      showApiError(err);
-      return [];
-    }
-  }, []);
+const fetchAdvanceAccounts = useCallback(async (search: string) => {
+  try {
+    const res = await getAdvanceGLAccounts("", search || undefined);
+    return res.map((acc) => ({
+      value: acc.value,
+      label: acc.label,
+    }));
+  } catch (err) {
+    showApiError(err);
+    return [];
+  }
+}, []);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -129,40 +139,37 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      const payload: CreateEmployeeAdvancePayload = {
-        posting_date: form.posting_date,
-        employee: form.employee,
-        purpose: form.purpose,
-        advance_amount: Number(form.amount),
-        advance_account: form.advance_account,
-        mode_of_payment: form.payment_mode,
-        repay_unclaimed_amount_from_salary: form.repay_unclaimed_from_salary,
-      };
+  if (!validate()) return;
+  setLoading(true);
+  try {
+    const payload: CreateEmployeeAdvancePayload = {
+      posting_date: form.posting_date,
+      employee: form.employee,
+      employee_name: form.employee_name ?? employeeDisplayName, // ← add this field
+      purpose: form.purpose,
+      advance_amount: Number(form.amount),
+      advance_account: form.advance_account,
+      mode_of_payment: form.payment_mode,
+      repay_unclaimed_amount_from_salary: form.repay_unclaimed_from_salary ? 1 : 0, 
+    };
 
-      if (isEditMode) {
-        await updateEmployeeAdvance(form.id!, payload);
-      } else {
-        await createEmployeeAdvance(payload);
-      }
-
-   if (modal?.context?.onSuccess) {
-  await modal.context.onSuccess(payload);
-}
-if (modal?.context?.callback) {
-  await modal.context.callback(payload);
-}
-      onSubmit?.({ ...form });
-      reset();
-      onClose();
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setLoading(false);
+    if (isEditMode) {
+      await updateEmployeeAdvance(form.id!, payload);
+    } else {
+      await createEmployeeAdvance(payload);
     }
-  };
+
+    if (modal?.context?.onSuccess) await modal.context.onSuccess(payload);
+    if (modal?.context?.callback) await modal.context.callback(payload);
+    onSubmit?.({ ...form });
+    reset();
+    onClose();
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const footer = (
     <>
@@ -276,22 +283,18 @@ if (modal?.context?.callback) {
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-6">
               <SearchSelect2
-                label="Payment Mode"
-                required
-                value={form.payment_mode}
-                onChange={(val) => {
-                  setForm((prev) => ({ ...prev, payment_mode: val || "" }));
-                  if (errors.payment_mode)
-                    setErrors((prev) => ({ ...prev, payment_mode: "" }));
-                }}
-                fetchOptions={async (search) =>
-                  PAYMENT_MODE_OPTIONS.filter((o) =>
-                    o.label.toLowerCase().includes(search.toLowerCase())
-                  )
-                }
-                placeholder="Select payment mode"
-                error={errors.payment_mode}
-              />
+  label="Payment Mode"
+  required
+  value={form.payment_mode}
+  onChange={(val) => {
+    setForm((prev) => ({ ...prev, payment_mode: val || "" }));
+    if (errors.payment_mode)
+      setErrors((prev) => ({ ...prev, payment_mode: "" }));
+  }}
+  fetchOptions={fetchPaymentModes}  
+  placeholder="Select payment mode"
+  error={errors.payment_mode}
+/>
             </div>
           </div>
 
