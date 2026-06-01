@@ -619,7 +619,7 @@ export const API = {
       getpayrollpreview:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
 
       SalarystructureAssignment: {
-        getAll: `${ERP_BASE}/api/resource/Salary Structure Assignment`,
+        getAll: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.get_salary_structure_assignment_list`,
       },
     },
 
@@ -709,6 +709,10 @@ export const API = {
 
 
   },
+  salaryPreviewAPI: {
+    getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
+  },  
+
 
 
 

@@ -2,14 +2,15 @@ import React, { useEffect, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import type { Column } from "../../components/ui/Table/type";
-import { getAllBankAccounts, updateBankAccountStatus } from "../../api/BankAccountApi";
+import PassView from "../../components/ui/Table/PassView";
+import ActionButton from "../../components/ui/Table/ActionButton";
+
+import {
+  getAllBankAccounts,
+  updateBankAccountStatus,
+} from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
 
-const mask = (val?: string) => {
-  if (!val) return "—";
-  if (val.length <= 4) return "*".repeat(val.length);
-  return "*".repeat(val.length - 4) + val.slice(-4);
-};
 
 interface Props {
   customerName?: string;
@@ -17,7 +18,11 @@ interface Props {
   onEdit?: (row: BankAccount) => void;
 }
 
-const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) => {
+const CustomerBankDetails: React.FC<Props> = ({
+  customerName,
+  onAdd,
+  onEdit,
+}) => {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,6 +31,19 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+
+  const mask = (val?: string | number | null) => {
+  if (!val) return "—";
+
+  const str = String(val);
+
+  if (str.length <= 4) {
+    return "*".repeat(str.length);
+  }
+
+  return "*".repeat(str.length - 4) + str.slice(-4);
+};
 
   const fetchAccounts = useCallback(async () => {
     if (!customerName) return;
@@ -96,6 +114,14 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
     },
     [fetchAccounts],
   );
+  const [visibleRows, setVisibleRows] = useState<Record<string, boolean>>({});
+
+const toggleRowVisibility = (id: string) => {
+  setVisibleRows((prev) => ({
+    ...prev,
+    [id]: !prev[id],
+  }));
+};
 
   const columns: Column<BankAccount>[] = [
     {
@@ -114,47 +140,64 @@ const CustomerBankDetails: React.FC<Props> = ({ customerName, onAdd, onEdit }) =
       key: "bankName",
       header: "Bank",
       render: (row) => (
-        <span className="font-semibold">{row.bankName || "—"}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-semibold">{row.bankName || "—"}</span>
+
+          {row.isDefault && (
+            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+              Default
+            </span>
+          )}
+        </div>
       ),
     },
-    {
-      key: "accountNo",
-      header: "Acc No",
-      render: (row) => (
-        <span title={row.accountNo ? String(row.accountNo) : ""} className="cursor-pointer">
-          {mask(row.accountNo)}
-        </span>
-      ),
-    },
-    {
-      key: "accountHolderName",
-      header: "Acc Holder",
-      render: (row) => <span>{row.accountHolderName || "—"}</span>,
-    },
-    {
-      key: "sortCode",
-      header: "IFSC/Sort",
-      render: (row) => (
-        <span title={row.sortCode ? String(row.sortCode) : ""} className="cursor-pointer">
-          {mask(row.sortCode)}
-        </span>
-      ),
-    },
+   {
+  key: "accountNo",
+  header: "Acc No",
+  render: (row) =>
+    visibleRows[row.id]
+      ? row.accountNo
+      : mask(row.accountNo),
+},
+{
+  key: "sortCode",
+  header: "IFSC/Sort",
+  render: (row) =>
+    visibleRows[row.id]
+      ? row.sortCode
+      : mask(row.sortCode),
+},
+{
+  key: "actions",
+  header: "Actions",
+  render: (row) => (
+    <ActionButton
+      type="view"
+      iconOnly
+      title={
+        visibleRows[row.id]
+          ? "Hide Details"
+          : "Show Details"
+      }
+      onClick={() => toggleRowVisibility(String(row.id))}
+    />
+  ),
+},
     // {
     //   key: "currency",
     //   header: "Currency",
     //   render: (row) => <span>{row.currency || "—"}</span>,
     // },
-    {
-      key: "isDefault",
-      header: "Default",
-      render: (row) =>
-        row.isDefault ? (
-          <span className="text-green-600 font-semibold">Yes</span>
-        ) : (
-          "—"
-        ),
-    },
+    // {
+    //   key: "isDefault",
+    //   header: "Default",
+    //   render: (row) =>
+    //     row.isDefault ? (
+    //       <span className="text-green-600 font-semibold">Yes</span>
+    //     ) : (
+    //       "—"
+    //     ),
+    // },
     {
       key: "isDisabled",
       header: "Status",
