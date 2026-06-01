@@ -37,15 +37,15 @@ const ALL_BANK_TABS = [
     id: "ModeOfPayment",
     label: "Mode of Payment",
     icon: <Wallet size={16} strokeWidth={1.75} />,
-    module: "Mode Of Payment",
-    action: "read as const"
+    module: "Mode of Payment",
+    action: "read" as const
   },
   {
     id:"CurrencyConversion",
     label:"Currency Exchange",
     icon: <ArrowLeftRight  size={16} strokeWidth={1.75} />,
     module : "Currency Exchange",
-    action: "read as const"
+    action: "read" as const
   }
 ];
 
