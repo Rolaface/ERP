@@ -284,7 +284,7 @@ export const runPayrollValidation = (
       issue({ id: "SAL-001", employeeId: r.employeeId, employeeName: r.employeeName, department: r.department,
         category: "salary", severity: "error", code: "SAL-001",
         title: "Negative / Zero Net Pay",
-        description: `Net pay for ${r.employeeName} is ₹${r.netPay.toLocaleString()}. Deductions exceed gross.`,
+        description: `Net pay for ${r.employeeName} is ${r.netPay.toLocaleString()}. Deductions exceed gross.`,
         suggestedAction: "Review loan/advance deductions for this month.",
         canProceed: false });
     }

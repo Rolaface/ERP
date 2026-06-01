@@ -140,7 +140,7 @@ const PurchaseOrderView: React.FC<PurchaseOrderViewProps> = ({
     switch (currency) {
       case "ZMW": return "ZMW";
       case "USD": return "$";
-      case "INR": return "₹";
+      case "INR": return "";
       default: return currency;
     }
   };

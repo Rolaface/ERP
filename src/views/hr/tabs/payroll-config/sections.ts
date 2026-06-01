@@ -3,6 +3,18 @@ import type { AppSetupSection } from "../../../../components/ui/app-shell";
 
 export const SETUP_SECTIONS: AppSetupSection[] = [
   {
+    key: "payroll_period",
+    label: "Payroll Periods",
+    icon: Calendar,
+    description: "Period start & end dates",
+  },
+   {
+    key: "tax",
+    label: "Tax Configurations",
+    icon: LayoutList,
+    description: "Tax rules and settings",
+  },
+  {
     key: "component",
     label: "Salary Components",
     icon: Layers,
@@ -14,16 +26,6 @@ export const SETUP_SECTIONS: AppSetupSection[] = [
     icon: LayoutList,
     description: "Component groupings",
   },
-  {
-    key: "tax",
-    label: "Tax Configurations",
-    icon: LayoutList,
-    description: "Tax rules and settings",
-  },
-  {
-    key: "payroll_period",
-    label: "Payroll Periods",
-    icon: Calendar,
-    description: "Period start & end dates",
-  },
+ 
+  
 ];

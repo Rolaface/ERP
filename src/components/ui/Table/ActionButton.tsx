@@ -1,12 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { Eye, Edit, Trash2, Download, MoreVertical, Play } from "lucide-react";
+import { Ban } from "lucide-react";
+import { CheckCircle } from "lucide-react";
+
 
 /* ======================================================
    ACTION BUTTON
 ====================================================== */
 
-// 1. Extend the union type
 type ActionType =
   | "view"
   | "edit"
@@ -122,6 +124,7 @@ interface ActionMenuProps {
   onDelete?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
   onDownload?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
   onDisable?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
+  onEnable?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
 
   editLabel?: string;
   deleteLabel?: string;
@@ -140,11 +143,16 @@ interface ActionMenuProps {
   }[];
 }
 
+// ── Shared class for EVERY menu row — one source of truth ──
+const MENU_ITEM_BASE =
+  "w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-row-hover transition-colors";
+
 export const ActionMenu: React.FC<ActionMenuProps> = ({
   onEdit,
   onDelete,
   onDownload,
   onDisable,
+  onEnable,
   editLabel,
   deleteLabel,
   downloadLabel,
@@ -157,7 +165,6 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   const triggerRef = React.useRef<HTMLButtonElement | null>(null);
   const menuRef = React.useRef<HTMLDivElement | null>(null);
 
-  // ── Step 1: Open and render off-screen first ──
   const openMenu = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (!triggerRef.current) return;
@@ -166,7 +173,6 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     setOpen((v) => !v);
   };
 
-  // ── Step 2: After render, measure actual height and reposition correctly ──
   React.useLayoutEffect(() => {
     if (!open || !menuRef.current || !triggerRef.current) return;
     const triggerRect = triggerRef.current.getBoundingClientRect();
@@ -174,16 +180,14 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     const spaceBelow = window.innerHeight - triggerRect.bottom;
     const top =
       spaceBelow >= menuH + 8
-        ? triggerRect.bottom + 6 // open downward
-        : triggerRect.top - menuH - 6; // flip upward — real height used
+        ? triggerRect.bottom + 6
+        : triggerRect.top - menuH - 6;
     const left = Math.max(8, triggerRect.right - 192);
     setCoords({ top, left });
   }, [open]);
 
-  // ── Close on outside click / Escape ──
   React.useEffect(() => {
     if (!open) return;
-
     const onDoc = (e: MouseEvent) => {
       if (
         menuRef.current?.contains(e.target as Node) ||
@@ -196,10 +200,9 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
       if (e.key === "Escape") setOpen(false);
     };
     const onScroll = () => setOpen(false);
-
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", onScroll, true); // capture scroll anywhere
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
@@ -207,7 +210,6 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     };
   }, [open]);
 
-  // ── Portal dropdown ──
   const dropdown = open
     ? ReactDOM.createPortal(
         <div
@@ -216,9 +218,9 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
           aria-label="Actions"
           onClick={(e) => e.stopPropagation()}
           style={{ top: coords.top, left: coords.left }}
-          className="fixed w-48 bg-card border border-[var(--border)] rounded-lg shadow-2xl z-[9999] py-2"
+          className="fixed w-48 bg-card border border-[var(--border)] rounded-lg shadow-2xl z-[9999] py-1"
         >
-          {/* Custom actions */}
+          {/* ── Custom actions ── */}
           {customActions?.map((action, index) => {
             if (action.divider) {
               return (
@@ -228,7 +230,6 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                 />
               );
             }
-
             return (
               <button
                 key={action.label}
@@ -239,93 +240,103 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                   setOpen(false);
                   action.onClick?.();
                 }}
-                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2
-    ${action.danger ? "text-red-500" : "text-main"}
-    ${action.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-row-hover"}
-  `}
+                className={`${MENU_ITEM_BASE} ${
+                  action.danger ? "text-red-500" : "text-main"
+                } ${action.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 role="menuitem"
               >
-                {action.icon && <span className="w-4 h-4">{action.icon}</span>}
-                {action.label}
+                {/* Icon: fixed 16×16 box so text always starts at the same x */}
+                <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-muted">
+                  {action.icon}
+                </span>
+                <span>{action.label}</span>
               </button>
             );
           })}
 
+          {/* Divider between custom and built-in actions */}
           {customActions &&
             customActions.length > 0 &&
             (onEdit ||
               onDisable ||
+              onEnable ||
               onDelete ||
               (showDownload && onDownload)) && (
               <div className="my-1 border-t border-[var(--border)]" />
             )}
 
-          {/* Edit */}
+          {/* ── Edit ── */}
           {onEdit && (
             <button
               type="button"
-              onClick={(e) => {
-                setOpen(false);
-                onEdit(e);
-              }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 text-main"
+              onClick={(e) => { setOpen(false); onEdit(e); }}
+              className={`${MENU_ITEM_BASE} text-main`}
               role="menuitem"
             >
-              <Edit className="w-4 h-4 text-muted" />
+              <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-muted">
+                <Edit className="w-4 h-4" />
+              </span>
               <span>{editLabel ?? "Edit"}</span>
             </button>
           )}
+
+          {/* ── Disable ── */}
           {onDisable && (
             <button
               type="button"
-              onClick={(e) => {
-                setOpen(false);
-                onDisable(e);
-              }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 text-amber-600"
+              onClick={(e) => { setOpen(false); onDisable(e); }}
+              className={`${MENU_ITEM_BASE} text-amber-600`}
               role="menuitem"
             >
-              <span className="w-4 h-4 flex items-center justify-center">
-                ⛔
+              <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">
+                <Ban className="w-4 h-4" />
               </span>
-
               <span>Disable</span>
             </button>
           )}
 
-          {/* Download */}
+          {/* ── Enable ── */}
+          {onEnable && (
+            <button
+              type="button"
+              onClick={(e) => { setOpen(false); onEnable(e); }}
+              className={`${MENU_ITEM_BASE} text-green-600`}
+              role="menuitem"
+            >
+              <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">
+                <CheckCircle className="w-4 h-4" />
+              </span>
+              <span>Enable</span>
+            </button>
+          )}
+
+          {/* ── Download ── */}
           {showDownload && onDownload && (
             <button
               type="button"
-              onClick={(e) => {
-                setOpen(false);
-                onDownload(e);
-              }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2 text-main"
+              onClick={(e) => { setOpen(false); onDownload(e); }}
+              className={`${MENU_ITEM_BASE} text-main`}
               role="menuitem"
             >
-              <Download className="w-4 h-4 text-muted" />
+              <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-muted">
+                <Download className="w-4 h-4" />
+              </span>
               <span>{downloadLabel ?? "Download"}</span>
             </button>
           )}
 
-          {/* Delete */}
+          {/* ── Delete ── */}
           {onDelete && (
             <button
               type="button"
-              onClick={(e) => {
-                setOpen(false);
-                onDelete(e);
-              }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-row-hover flex items-center gap-2"
+              onClick={(e) => { setOpen(false); onDelete(e); }}
+              className={`${MENU_ITEM_BASE}`}
               role="menuitem"
             >
-              <Trash2 className="w-4 h-4 text-red-500" />
-              <span
-                className={
-                  deleteVariant === "danger" ? "text-red-500" : "text-main"
-                }
-              >
+              <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">
+                <Trash2 className="w-4 h-4 text-red-500" />
+              </span>
+              <span className={deleteVariant === "danger" ? "text-red-500" : "text-main"}>
                 {deleteLabel ?? "Delete"}
               </span>
             </button>
@@ -347,7 +358,6 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
       >
         <MoreVertical className="w-4 h-4" />
       </button>
-
       {dropdown}
     </>
   );

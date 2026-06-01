@@ -1,28 +1,4 @@
-/**
- * salaryEngine.ts
- * ───────────────
- * Pure, side-effect-free salary calculation engine.
- *
- * Design principles:
- *  - Every number that leaves this module is rounded to 2 decimal places.
- *  - Tax relief (Section 87A) is an INCOME THRESHOLD, not a rupee deduction.
- *  - to_amount = 0 in a slab means "no upper bound" (last/highest slab).
- *  - Formula evaluation is sandboxed; any error returns 0 silently.
- *  - All functions are pure — no mutations, no side effects.
- *
- * Formula syntax — ERPNext stores formulas as Python expressions.
- *  This engine transparently converts Python → JavaScript before evaluation,
- *  so formulas work identically in the ERP and in the browser.
- *
- *  Conversions applied automatically:
- *   "x if cond else y"  →  "(cond ? x : y)"   (Python ternary)
- *   and                 →  &&
- *   or                  →  ||
- *   not                 →  !
- *
- *  JS-style helpers are also injected for any legacy JS-style formulas:
- *   IF(cond, a, b) / AND(...) / OR(...)
- */
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,11 +66,7 @@ export interface TaxConfig {
   /** Flat rupee deduction from gross before applying slabs (e.g. ₹75,000) */
   standard_tax_exemption_amount?: number;
   allow_tax_exemption?:           0 | 1;
-  /**
-   * Section 87A rebate threshold.
-   * If taxable income ≤ this value → full tax rebate (tax = 0).
-   * This is NOT subtracted from tax; it is an income ceiling.
-   */
+ 
   tax_relief_limit?:              number;
   slabs:                          TaxSlabRow[];
   other_taxes_and_charges?:       TaxChargeRow[];
@@ -250,23 +222,7 @@ export function evaluateFormula(formula: string, ctx: CalcContext): number {
   }
 }
 
-// ─── Tax calculator ───────────────────────────────────────────────────────────
 
-/**
- * Computes annual income tax given the full-year gross and a TaxConfig.
- *
- * Algorithm (India new tax regime, FY 2026-27):
- *
- *  1. taxableIncome = max(0, annualGross − standard_tax_exemption_amount)
- *  2. If taxableIncome ≤ tax_relief_limit → tax = 0  (Section 87A full rebate)
- *  3. Otherwise, apply progressive slabs to taxableIncome
- *  4. Add surcharges / cess from other_taxes_and_charges (% of base tax)
- *
- * Key invariants:
- *  - to_amount = 0  →  slab has no upper bound (treat as Infinity)
- *  - tax_relief_limit is an INCOME THRESHOLD, not a rupee deduction from tax
- *  - All arithmetic is done in full precision; result is rounded at the end
- */
 export function calculateAnnualTax(
   annualGross: number,
   taxConfig:   TaxConfig,
@@ -320,24 +276,7 @@ export function calculateAnnualTax(
   return r2(Math.max(0, tax));
 }
 
-// ─── Core salary calculator ───────────────────────────────────────────────────
 
-/**
- * Calculates a full salary breakdown for a given base and component list.
- *
- * Evaluation order:
- *  Pass 1 — fixed (non-formula) non-tax components → seed context
- *  Pass 2 — formula components, iterated until stable (max 10 rounds)
- *  Pass 3 — compute pre-tax gross from earnings
- *  Pass 4 — calculate annual + monthly tax via slab engine
- *  Pass 5 — inject tax into tax-variable components (formula or direct)
- *  Pass 6 — collect final results, round everything
- *
- * @param monthlyBase   The "base" variable available in all formulas
- * @param components    Full list of earnings + deductions from the structure
- * @param overrides     Optional map of nameKey/abbrKey → amount (for manual edits)
- * @param taxConfig     Tax slab config; if null/undefined, income tax = 0
- */
 export function calculateSalary(
   monthlyBase: number,
   components:  SalaryComponentDef[],
@@ -481,14 +420,7 @@ export function calculateSalary(
   };
 }
 
-// ─── Gross → Base back-solver (binary search) ─────────────────────────────────
 
-/**
- * Given a desired gross monthly salary, finds the base that produces it.
- * Uses binary search — converges in ≤ 60 iterations to within ±0.01.
- *
- * Returns 0 if no formula-based earnings exist (base doesn't affect gross).
- */
 export function solveBaseFromGross(
   targetGross:  number,
   components:   SalaryComponentDef[],
@@ -506,7 +438,6 @@ export function solveBaseFromGross(
   const calcGross = (base: number) =>
     calculateSalary(base, components, {}, taxConfig).gross;
 
-  // Expand upper bound until it overshoots the target
   let lo = 0;
   let hi = targetGross * 3;
   for (let i = 0; i < 25 && calcGross(hi) < targetGross; i++) hi *= 2;
@@ -524,12 +455,7 @@ export function solveBaseFromGross(
   return r2((lo + hi) / 2);
 }
 
-// ─── API adapter — structure response → component defs ────────────────────────
 
-/**
- * Converts a raw salary structure API response into the canonical
- * SalaryComponentDef[] format the engine consumes.
- */
 export function structureToComponents(
   structureData: Record<string, unknown>,
 ): SalaryComponentDef[] {

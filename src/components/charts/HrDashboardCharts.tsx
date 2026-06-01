@@ -89,7 +89,7 @@ export const DepartmentPayrollChart: React.FC<DepartmentPayrollProps> = ({ data,
   const option = {
     tooltip: {
       trigger: "item",
-      formatter: "{a} <br/>{b} : ₹{c} ({d}%)",
+      formatter: "{a} <br/>{b} : {c} ({d}%)",
     },
     legend: {
       bottom: 0,

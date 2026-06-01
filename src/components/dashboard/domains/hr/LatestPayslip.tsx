@@ -267,7 +267,7 @@ const LatestPayslip: React.FC = () => {
                     text-[var(--foreground)]
                   "
                 >
-                  ₹85,000
+                  85,000
                 </p>
               </div>
 
@@ -302,7 +302,7 @@ const LatestPayslip: React.FC = () => {
                     text-[var(--foreground)]
                   "
                 >
-                  ₹8,500
+                  8,500
                 </p>
               </div>
 
@@ -337,7 +337,7 @@ const LatestPayslip: React.FC = () => {
                     text-emerald-700
                   "
                 >
-                  ₹76,500
+                  76,500
                 </p>
               </div>
             </div>

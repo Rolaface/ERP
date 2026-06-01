@@ -18,7 +18,7 @@ const SummaryItem: React.FC<{ label: string; value: number; danger?: boolean; su
     <p className={`tabular-nums font-mono ${large ? "text-xl font-extrabold" : "text-base font-bold"} ${
       danger ? "text-danger" : success ? "text-success" : "text-main"
     }`}>
-      ₹{fmtINR(value)}
+      {fmtINR(value)}
     </p>
   </div>
 );
@@ -36,7 +36,7 @@ const MoneyRow: React.FC<{ label: string; value: number; danger?: boolean; highl
   <div className={`flex items-center justify-between ${highlight ? "bg-warning/10 px-2 py-1 rounded-lg" : ""}`}>
     <span className="text-xs text-muted">{label}</span>
     <span className={`text-xs font-bold tabular-nums font-mono ${danger ? "text-danger" : "text-main"}`}>
-      ₹{fmtINR(value)}
+      {fmtINR(value)}
     </span>
   </div>
 );

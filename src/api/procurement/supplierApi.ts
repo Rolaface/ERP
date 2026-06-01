@@ -68,3 +68,12 @@ export async function createSupplierPayment(payload: any): Promise<any> {
   );
   return resp.data;
 }
+export const updateSupplierStatus = (
+  id: string,
+  status: "active" | "inactive",
+) => {
+  return api.patch(
+    `${API.supplier.updateStatus}?id=${id}`,
+    { status },
+  );
+};

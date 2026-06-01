@@ -395,7 +395,7 @@ const AddBankAccountModal: React.FC<Props> = ({
             />
 
             {/* Branch Address */}
-            <div className="col-span-2 w-full">
+            {/* <div className="col-span-2 w-full">
               <ModalInput
                 label="Branch Address"
                 disabled={isViewMode}
@@ -403,7 +403,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                 value={form.address}
                 onChange={handleChange}
               />
-            </div>
+            </div> */}
 
             {/* Reporting Account — Company only */}
             {isCompany && (

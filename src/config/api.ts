@@ -503,6 +503,7 @@ export const API = {
     delete: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.delete_supplier`,
     getStatement: `${ERP_BASE}/api/method/custom_api.api.reports.supplier_statement.get_supplier_statement`,
     CreatePayment: `${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
+     updateStatus: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.update_supplier_status`,
   },
 
   places: {

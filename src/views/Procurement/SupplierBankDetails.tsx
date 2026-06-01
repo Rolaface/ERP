@@ -1,18 +1,13 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import type { Column } from "../../components/ui/Table/type";
-import {
-  getAllBankAccounts,
-  updateBankAccountStatus,
-} from "../../api/BankAccountApi";
+import ActionButton, { ActionMenu, ActionGroup } from "../../components/ui/Table/ActionButton";
+import { getAllBankAccounts } from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
-
-const mask = (val?: string) => {
-  if (!val) return "—";
-  if (val.length <= 4) return "*".repeat(val.length);
-  return "*".repeat(val.length - 4) + val.slice(-4);
-};
+import { useMaskedRows } from "../../utils/Usemaskedrows";
+import { useBankAccountActions } from "../../utils/useBankAccountActions";
+import { DefaultBadge, StatusBadge } from "../../components/UI_Utils/BankAccountBadges";
 
 interface Props {
   supplierName?: string;
@@ -20,20 +15,18 @@ interface Props {
   onEdit?: (row: BankAccount) => void;
 }
 
-const SupplierBankDetails: React.FC<Props> = ({
-  supplierName,
-  onAdd,
-  onEdit,
-}) => {
+const SupplierBankDetails: React.FC<Props> = ({ supplierName, onAdd }) => {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const [search, setSearch]             = useState("");
+  const [loading, setLoading]           = useState(false);
+  const [page, setPage]                 = useState(1);
+  const [pageSize, setPageSize]         = useState(10);
+  const [totalPages, setTotalPages]     = useState(1);
+  const [totalItems, setTotalItems]     = useState(0);
 
+  const { isVisible, toggle, reveal } = useMaskedRows();
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchAccounts = useCallback(async () => {
     if (!supplierName) return;
     try {
@@ -47,92 +40,44 @@ const SupplierBankDetails: React.FC<Props> = ({
       setBankAccounts(res.data || []);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);
-      setBankAccounts(res.data);
     } catch (err: any) {
       showApiError(err);
     } finally {
       setLoading(false);
     }
-  }, [supplierName]);
+  }, [supplierName, page, pageSize]);
 
-  const refresh = useCallback(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+  const refresh = useCallback(() => fetchAccounts(), [fetchAccounts]);
+  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
+  useEffect(() => { if (onAdd) onAdd(refresh); }, [onAdd, refresh]);
 
-  useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+  // ── Actions hook ──────────────────────────────────────────────────────────
+  const { getMenuActions } = useBankAccountActions(fetchAccounts);
 
-  useEffect(() => {
-    if (onAdd) onAdd(refresh);
-  }, [onAdd, refresh]);
-
-  const handleSetDefault = useCallback(
-    async (row: BankAccount) => {
-      if (row.isDisabled) {
-        showApiError("Disabled account cannot be default");
-        return;
-      }
-      try {
-        setActionLoadingId(String(row.id));
-        await updateBankAccountStatus({
-          bankAccountId: String(row.id),
-          isDefault: 1,
-          isDisabled: 0,
-        });
-        await fetchAccounts();
-      } catch (err: any) {
-        showApiError(err?.message);
-      } finally {
-        setActionLoadingId(null);
-      }
-    },
-    [fetchAccounts],
-  );
-
-  const handleToggleDisable = useCallback(
-    async (row: BankAccount) => {
-      try {
-        setActionLoadingId(String(row.id));
-        await updateBankAccountStatus({
-          bankAccountId: String(row.id),
-          isDisabled: row.isDisabled ? 0 : 1,
-          isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
-        });
-        await fetchAccounts();
-      } catch (err: any) {
-        showApiError(err?.message);
-      } finally {
-        setActionLoadingId(null);
-      }
-    },
-    [fetchAccounts],
-  );
-
+  // ── Columns ───────────────────────────────────────────────────────────────
   const columns: Column<BankAccount>[] = [
     {
       key: "dateAdded",
       header: "Date",
       render: (row) =>
         row.dateAdded
-          ? new Date(row.dateAdded).toLocaleDateString("en-GB")
+          ? new Date(row.dateAdded).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
           : "—",
     },
     {
       key: "bankName",
       header: "Bank",
       render: (row) => (
-        <span className="font-semibold">{row.bankName || "—"}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-semibold">{row.bankName || "—"}</span>
+          <DefaultBadge isDefault={row.isDefault} />
+        </div>
       ),
     },
     {
       key: "accountNo",
       header: "Acc No",
-      render: (row) => (
-        <span title={row.accountNo ? String(row.accountNo) : ""} className="cursor-pointer">
-          {mask(row.accountNo)}
-        </span>
-      ),
+      render: (row) => reveal(row.id, row.accountNo),
     },
     {
       key: "accountHolderName",
@@ -142,39 +87,32 @@ const SupplierBankDetails: React.FC<Props> = ({
     {
       key: "sortCode",
       header: "IFSC/Sort",
-      render: (row) => (
-        <span title={row.sortCode ? String(row.sortCode) : ""} className="cursor-pointer">
-          {mask(row.sortCode)}
-        </span>
-      ),
-    },
-    // {
-    //   key: "currency",
-    //   header: "Currency",
-    //   render: (row) => <span>{row.currency || "—"}</span>,
-    // },
-    {
-      key: "isDefault",
-      header: "Default",
-      render: (row) =>
-        row.isDefault ? (
-          <span className="text-green-600 font-semibold">Yes</span>
-        ) : (
-          "—"
-        ),
+      render: (row) => reveal(row.id, row.sortCode),
     },
     {
       key: "isDisabled",
       header: "Status",
-      render: (row) =>
-        row.isDisabled ? (
-          <span className="text-red-500 font-semibold">Disabled</span>
-        ) : (
-          <span className="text-green-600">Active</span>
-        ),
+      render: (row) => <StatusBadge isDisabled={row.isDisabled} />,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (row) => (
+        <ActionGroup>
+          <ActionButton
+            type="view"
+            iconOnly
+            title={isVisible(row.id) ? "Hide Details" : "Show Details"}
+            onClick={() => toggle(row.id)}
+          />
+          <ActionMenu customActions={getMenuActions(row)} />
+        </ActionGroup>
+      ),
     },
   ];
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
@@ -192,10 +130,7 @@ const SupplierBankDetails: React.FC<Props> = ({
           totalItems={totalItems}
           pageSizeOptions={[10, 25, 50, 100]}
           onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
           emptyMessage="No bank accounts found"
         />
       </div>

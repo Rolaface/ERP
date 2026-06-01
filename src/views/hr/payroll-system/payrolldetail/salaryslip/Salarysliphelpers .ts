@@ -24,7 +24,7 @@ export const STATUS_COLORS: Record<string, { bg: string; text: string; dot: stri
 };
 
 export function fmtINR(amount: number): string {
-  return `₹${Number(amount).toLocaleString("en-IN")}`;
+  return `${Number(amount).toLocaleString("en-IN")}`;
 }
 
 export function fmtCurrency(currency: string, amount: number): string {
