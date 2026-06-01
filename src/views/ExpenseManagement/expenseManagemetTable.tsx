@@ -16,9 +16,9 @@ import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-import { showApiError, showSuccess, closeSwal } from "../../utils/alert";
+import { showApiError, showSuccess, closeSwal, showLoading } from "../../utils/alert"; // ++ showLoading
 import { fireManagedSwal } from "../../utils/swalManager";
-import { openExpenseModal } from "../../store/modalStore";
+import { openExpenseModal, openPaymentEntryModal } from "../../store/modalStore"; // ++ openPaymentEntryModal
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import {
@@ -32,6 +32,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useHRView } from "../../hooks/permission/useHRView";
 
 const EXPENSE_MODULE = "Expense Claim";
+const PAYMENT_MODULE = "Payment Entry";  // ++
 
 interface ExpenseSummary {
   id: string;
@@ -43,6 +44,7 @@ interface ExpenseSummary {
   status: string;
   description?: string;
   name: string;
+  employeeId?: string;   // ++ needed for payment partyId
 }
 
 const statusOptions = [
@@ -51,22 +53,10 @@ const statusOptions = [
   { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
 ];
+
 const formatDate = (date: string) => {
   if (!date) return "";
-  const months = [
-    "JAN",
-    "FEB",
-    "MAR",
-    "APR",
-    "MAY",
-    "JUN",
-    "JUL",
-    "AUG",
-    "SEP",
-    "OCT",
-    "NOV",
-    "DEC",
-  ];
+  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
   const [year, month, day] = date.split("T")[0].split("-").map(Number);
   return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
 };
@@ -77,6 +67,12 @@ const ExpenseHistory: React.FC = () => {
   const { user } = useAuth();
   const { viewMode } = useHRView();
   const isEmployeeView = viewMode === "employee";
+
+  // ── Derive admin flag from user roles (adjust role key/value to match your auth shape)
+  const isAdmin = useMemo(
+    () => user?.roles?.includes("Administrator") ?? false,
+    [user],
+  );
 
   const [expenses, setExpenses] = useState<ExpenseSummary[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -119,6 +115,7 @@ const ExpenseHistory: React.FC = () => {
           id: claim.name,
           approver: claim.expense_approver_name ?? "",
           name: claim.employee_name,
+          employeeId: claim.employee ?? "",   // ++ map employee id
           date: claim.posting_date,
           category: claim.expense_type ?? "",
           amount: claim.total_claimed_amount ?? 0,
@@ -139,38 +136,61 @@ const ExpenseHistory: React.FC = () => {
         setIsInitialLoad(false);
       }
     }
-  }, [
-    page,
-    pageSize,
-    sortBy,
-    sortOrder,
-    searchTerm,
-    filters,
-    isEmployeeView,
-    user?.employeeId,
-  ]);
+  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
 
   useEffect(() => {
     mountedRef.current = true;
     fetchExpenses();
-    return () => {
-      mountedRef.current = false;
-    };
+    return () => { mountedRef.current = false; };
   }, []);
 
   useEffect(() => {
     if (isInitialLoad) return;
     fetchExpenses();
-  }, [
-    page,
-    pageSize,
-    sortBy,
-    sortOrder,
-    searchTerm,
-    filters,
-    isEmployeeView,
-    user?.employeeId,
-  ]);
+  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
+
+  // ── Payment handler (mirrors PI pattern exactly) ──────────────────────────
+  const handleMakePayment = useCallback(
+    async (exp: ExpenseSummary) => {
+      try {
+        showLoading("Opening payment...");
+        const claim = await getExpenseClaimById(exp.id);
+        closeSwal();
+
+        openPaymentEntryModal(
+          {
+            paymentType: "Pay",
+            partyType: "Employee",
+            partyName: claim.employee_name,
+            partyId: claim.employee ?? exp.id,
+            amount: claim.total_claimed_amount,
+            referenceName: claim.name,
+            referenceType: "Expense Claim",
+          },
+          false,
+          {
+            onSuccess: (result) => {
+              fetchExpenses();
+              const paymentId =
+                typeof result === "string"
+                  ? result
+                  : ((result as any)?.paymentId ?? (result as any)?.id ?? "");
+              showSuccess(
+                paymentId
+                  ? `Payment ${paymentId} created`
+                  : "Payment created successfully",
+              );
+            },
+          },
+        );
+      } catch (err) {
+        closeSwal();
+        showApiError(err);
+      }
+    },
+    [fetchExpenses],
+  );
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleOpenAdd = () => {
     openExpenseModal(null, false, {
@@ -211,6 +231,7 @@ const ExpenseHistory: React.FC = () => {
       showApiError(err);
     }
   };
+
   const handleApprove = async (id: string) => {
     const result = await fireManagedSwal({
       icon: "question",
@@ -232,6 +253,7 @@ const ExpenseHistory: React.FC = () => {
       showApiError(err);
     }
   };
+
   const handleCancel = async (id: string) => {
     const result = await fireManagedSwal({
       icon: "warning",
@@ -275,6 +297,7 @@ const ExpenseHistory: React.FC = () => {
       showApiError(err);
     }
   };
+
   const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
     e.stopPropagation();
     setIsDetailLoading(true);
@@ -399,9 +422,7 @@ const ExpenseHistory: React.FC = () => {
         render: (exp) => (
           <div className="py-1.5">
             <StatusBadge
-              status={
-                exp.status === "Draft" ? "Pending for Approval" : exp.status
-              }
+              status={exp.status === "Draft" ? "Pending for Approval" : exp.status}
             />
           </div>
         ),
@@ -420,9 +441,7 @@ const ExpenseHistory: React.FC = () => {
             <PermissionGate module={EXPENSE_MODULE} action="write">
               <ActionButton
                 type="edit"
-                onClick={() => {
-                  handleOpenEdit(exp);
-                }}
+                onClick={() => handleOpenEdit(exp)}
                 iconOnly
                 disabled={exp.status !== "Draft"}
                 title={
@@ -434,13 +453,12 @@ const ExpenseHistory: React.FC = () => {
             </PermissionGate>
             <ActionMenu
               customActions={[
+                // ── Approve / Reject (HR view, Draft only) ─────────────────
                 ...(!isEmployeeView && exp.status === "Draft"
                   ? [
                       {
                         label: "Approve",
-                        icon: (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        ),
+                        icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
                         onClick: () => handleApprove(exp.id),
                       },
                       {
@@ -451,11 +469,24 @@ const ExpenseHistory: React.FC = () => {
                     ]
                   : []),
 
+                // ── Cancel ─────────────────────────────────────────────────
                 {
                   label: "Cancel",
                   icon: <XCircle className="w-4 h-4 text-amber-500" />,
                   onClick: () => handleCancel(exp.id),
                 },
+
+                // ++ Make Payment — admin + Approved only ───────────────────
+                ...(isAdmin &&
+                can(PAYMENT_MODULE, "create") &&
+                exp.status === "Approved"
+                  ? [
+                      {
+                        label: "Make Payment",
+                        onClick: () => handleMakePayment(exp),
+                      },
+                    ]
+                  : []),
               ]}
               {...(can(EXPENSE_MODULE, "delete") &&
               isEmployeeView &&
@@ -467,7 +498,7 @@ const ExpenseHistory: React.FC = () => {
         ),
       },
     ],
-    [handleDelete, handleOpenEdit, can],
+    [handleDelete, handleOpenEdit, handleMakePayment, isAdmin, isEmployeeView, can],
   );
 
   return (

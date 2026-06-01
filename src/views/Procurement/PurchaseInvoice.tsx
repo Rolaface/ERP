@@ -40,7 +40,6 @@ import { fireManagedSwal } from "../../utils/swalManager";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 
-
 interface Purchaseinvoice {
   pId: string;
   supplier: string;
@@ -121,7 +120,9 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
 
   // ── Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerData, setDrawerData] = useState<PurchaseInvoiceDetail | null>(null);
+  const [drawerData, setDrawerData] = useState<PurchaseInvoiceDetail | null>(
+    null,
+  );
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
@@ -142,9 +143,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       .catch((err) => showApiError(err));
   }, []);
 
-  // ── Fetch invoices ──────────────────────────
-  // IMPORTANT: fetchInvoice must be defined BEFORE handleMakePayment
-  // so the onSuccess callback can close over the latest reference.
   const fetchInvoice = useCallback(async () => {
     try {
       setLoading(true);
@@ -172,7 +170,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         registrationType: pi.registrationType,
         grandTotalWithTax: pi.grandTotalWithTax,
         outstanding_amount: pi.outstanding_amount,
-        currency: pi.currency
+        currency: pi.currency,
       }));
 
       setOrders(mappedInvoice);
@@ -200,59 +198,58 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchInvoice]);
 
-  // ── Make Payment ────────────────────────────
-  // Defined AFTER fetchInvoice so the onSuccess callback can call it directly.
-  // We also trigger via the store key as a belt-and-suspenders approach.
-  const handleMakePayment = useCallback(async (pId: string) => {
-    try {
-      showLoading("Opening payment...");
-      const res = await getPurchaseInvoiceById(pId);
-      closeSwal();
+  const handleMakePayment = useCallback(
+    async (pId: string) => {
+      try {
+        showLoading("Opening payment...");
+        const res = await getPurchaseInvoiceById(pId);
+        closeSwal();
 
-      if (!res || res.status !== "success") {
-        showApiError("Failed to load invoice");
-        return;
-      }
+        if (!res || res.status !== "success") {
+          showApiError("Failed to load invoice");
+          return;
+        }
 
-      const data = res.data ?? {};
+        const data = res.data ?? {};
 
-      openPaymentEntryModal(
-        {
-          paymentType: "Pay",
-          partyType: "Supplier",
-          partyName: data.supplierName,
-          partyId: data.supplierId ?? data.pId,
-          amount: data.grandTotal,
-          referenceName: data.pId,
-          referenceType: "Purchase Invoice",
-        },
-        false,
-        {
-          // onSuccess is called by GlobalModalHandler's handleSubmit
-          // when PaymentEntryModal calls its onSubmit prop successfully.
-          onSuccess: (result) => {
-            // 1. Directly call fetchInvoice (most reliable — no subscription lag)
-            fetchInvoice();
-            // 2. Also trigger the store key so any other subscribers update too
-            useDataRefreshStore
-              .getState()
-              .triggerRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST);
-
-            const paymentId =
-              typeof result === "string"
-                ? result
-                : (result as any)?.paymentId ?? (result as any)?.id ?? "";
-            showSuccess(paymentId ? `Payment ${paymentId} created` : "Payment created successfully");
+        openPaymentEntryModal(
+          {
+            paymentType: "Pay",
+            partyType: "Supplier",
+            partyName: data.supplierName,
+            partyId: data.supplierId ?? data.pId,
+            amount: data.grandTotal,
+            referenceName: data.pId,
+            referenceType: "Purchase Invoice",
           },
-        },
-      );
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  }, [fetchInvoice]);
+          false,
+          {
+            onSuccess: (result) => {
+              fetchInvoice();
+              useDataRefreshStore
+                .getState()
+                .triggerRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST);
 
-  // ── Drawer: open + fetch ────────────────────
+              const paymentId =
+                typeof result === "string"
+                  ? result
+                  : ((result as any)?.paymentId ?? (result as any)?.id ?? "");
+              showSuccess(
+                paymentId
+                  ? `Payment ${paymentId} created`
+                  : "Payment created successfully",
+              );
+            },
+          },
+        );
+      } catch (err) {
+        closeSwal();
+        showApiError(err);
+      }
+    },
+    [fetchInvoice],
+  );
+
   const handleViewClick = async (pId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setDrawerOpen(true);
@@ -272,7 +269,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     }
   };
 
-  // ── Drawer: generate PDF ────────────────────
   const handleDrawerPdf = async (pId: string) => {
     setDrawerPdfLoading(true);
     setDrawerPdfUrl(null);
@@ -286,7 +282,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         showApiError(res);
         return;
       }
-      const blobUrl = await generatePurchaseInvoicePDF(res.data, company, "bloburl");
+      const blobUrl = await generatePurchaseInvoicePDF(
+        res.data,
+        company,
+        "bloburl",
+      );
       setDrawerPdfUrl(blobUrl);
     } catch (err) {
       showApiError(err);
@@ -295,8 +295,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     }
   };
 
-  // ── PDF preview modal (table row "View PDF" action) ─────────
-  const handleOpenPDF = async (invoice: Purchaseinvoice, e?: React.MouseEvent) => {
+  const handleOpenPDF = async (
+    invoice: Purchaseinvoice,
+    e?: React.MouseEvent,
+  ) => {
     e?.stopPropagation();
     try {
       showLoading("Generating PDF...");
@@ -314,7 +316,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         return;
       }
 
-      const blobUrl = await generatePurchaseInvoicePDF(res.data, company, "bloburl");
+      const blobUrl = await generatePurchaseInvoicePDF(
+        res.data,
+        company,
+        "bloburl",
+      );
       closeSwal();
       setSelectedInvoice(res.data);
       setPdfUrl(blobUrl);
@@ -325,7 +331,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     }
   };
 
-  // ── Modal handlers ──────────────────────────
   const handleAddClick = () => {
     setSelectedInvoice(null);
     openPICreate();
@@ -343,7 +348,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     openPIEdit(invoice.pId);
   };
 
-  const handleDelete = async (invoice: Purchaseinvoice, e: React.MouseEvent) => {
+  const handleDelete = async (
+    invoice: Purchaseinvoice,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
     const confirm = await fireManagedSwal({
       icon: "warning",
@@ -377,7 +385,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     }
   };
 
-  // ── Export ──────────────────────────────────
   const fetchAllPIForExport = async () => {
     try {
       let allData: Purchaseinvoice[] = [];
@@ -480,17 +487,28 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
 
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
       return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
     }
 
-    // Date object — use local methods
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
-
 
   const columns: Column<Purchaseinvoice>[] = [
     {
@@ -499,9 +517,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       align: "left",
       render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.pId || "—"}
-          </span>
+          <span className="block">{o.pId || "—"}</span>
         </div>
       ),
       tooltip: (o) => o.pId || "—",
@@ -512,9 +528,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       align: "center",
       render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.supplier || "—"}
-          </span>
+          <span className="block">{o.supplier || "—"}</span>
         </div>
       ),
       tooltip: (o) => o.supplier || "—",
@@ -525,9 +539,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       align: "center",
       render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.podate ? formatDate(o.podate) : "—"}
-          </span>
+          <span className="block">{o.podate ? formatDate(o.podate) : "—"}</span>
         </div>
       ),
       tooltip: (o) => o.podate || "—",
@@ -551,11 +563,9 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       align: "center",
       render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.currency || "-"}
-          </span>
+          <span className="block">{o.currency || "-"}</span>
         </div>
-      )
+      ),
     },
     {
       key: "amount",
@@ -614,26 +624,27 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       align: "center",
       render: (o) => (
         <ActionGroup>
-
           <ActionButton
             type="view"
             onClick={(e) => handleViewClick(o.pId, e)}
             iconOnly
           />
 
-          {/* Edit — needs write + Draft status */}
           <PermissionGate module={PI_MODULE} action="write">
             <ActionButton
               type="edit"
               onClick={(e) => handleEdit(o, e)}
               iconOnly
               disabled={o.status !== "Draft"}
-              title={o.status !== "Draft" ? "Only Draft invoices can be edited" : "Edit Purchase Invoice"}
+              title={
+                o.status !== "Draft"
+                  ? "Only Draft invoices can be edited"
+                  : "Edit Purchase Invoice"
+              }
             />
           </PermissionGate>
 
           <ActionMenu
-            // Delete — needs delete
             {...(can(PI_MODULE, "delete")
               ? { onDelete: (e) => handleDelete(o, e as any) }
               : {})}
@@ -644,19 +655,32 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
                 onClick: () => openScanPIModal(o.pId),
               },
 
-              // Make Payment — needs Payment Entry create + outstanding > 0
-              ...(can(PAYMENT_MODULE, "create") && Number(o.outstanding_amount || 0) > 0
-                ? [{ label: "Make Payment", onClick: () => handleMakePayment(o.pId) }]
+              ...(can(PAYMENT_MODULE, "create") &&
+              Number(o.outstanding_amount || 0) > 0
+                ? [
+                    {
+                      label: "Make Payment",
+                      onClick: () => handleMakePayment(o.pId),
+                    },
+                  ]
                 : []),
 
-              // Status transitions — needs write
               ...(can(PI_MODULE, "write")
-                ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map((status) => ({
-                  label: status === "Submitted" ? "Approve" : status === "Cancelled" ? "Cancel" : status,
+                ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
+                    (status) => ({
+                      label:
+                        status === "Submitted"
+                          ? "Approve"
+                          : status === "Cancelled"
+                            ? "Cancel"
+                            : status,
 
-                  danger: status === "Cancelled" || status === "Debit Note Issued",
-                  onClick: () => handleStatusChange(o.pId, status),
-                }))
+                      danger:
+                        status === "Cancelled" ||
+                        status === "Debit Note Issued",
+                      onClick: () => handleStatusChange(o.pId, status),
+                    }),
+                  )
                 : []),
             ]}
           />
@@ -713,7 +737,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         }
       />
 
-      {/* ── Drawer modal ── */}
       <PurchaseInvoiceDetailModal
         open={drawerOpen}
         data={drawerData}
@@ -732,12 +755,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
           generatePurchaseInvoicePDF(drawerData, company, "save")
         }
         onClosePdf={() => {
-          if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl);
+          if (drawerPdfUrl?.startsWith("blob:"))
+            URL.revokeObjectURL(drawerPdfUrl);
           setDrawerPdfUrl(null);
         }}
       />
 
-      {/* ── PDF Preview modal ── */}
       <PdfPreviewModal
         open={pdfOpen}
         title="Purchase Invoice Preview"
@@ -754,7 +777,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         }}
       />
 
-      {/* ── View modal ── */}
       {viewModalOpen && selectedInvoice && (
         <PurchaseInvoiceView
           piData={selectedInvoice}

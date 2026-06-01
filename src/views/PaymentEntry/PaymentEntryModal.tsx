@@ -70,12 +70,16 @@ function buildPayload(
     if (form?.referenceType === "Purchase Order") return "Purchase Order";
     if (form?.referenceType === "Purchase Invoice") return "Purchase Invoice";
     if (form?.referenceType === "Sales Invoice") return "Sales Invoice";
+     if (form?.referenceType === "Expense Claim") return "Expense Claim";
 
     switch (partyType) {
       case "Supplier":
         return "Purchase Invoice";
       case "Customer":
         return "Sales Invoice";
+      case "Employee":
+      return "Expense Claim";
+        
       default:
         return "Journal Entry";
     }
