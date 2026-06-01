@@ -105,7 +105,7 @@ const InvoiceDefaultTemplate = forwardRef<
   const getSymbol = () => {
     switch (data.currency) {
       case "INR":
-        return "₹";
+        return "";
       case "USD":
         return "$";
       default:

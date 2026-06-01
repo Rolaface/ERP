@@ -1091,7 +1091,7 @@ export const usePurchaseInvoiceForm = ({
       ZMW: "K",
       USD: "$",
       EUR: "€",
-      INR: "₹",
+      INR: "",
     };
     return map[form.currency] ?? "";
   };

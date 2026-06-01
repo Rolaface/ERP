@@ -791,7 +791,7 @@ export const usePurchaseOrderForm = ({
   const getCurrencySymbol = () => {
     switch (form.currency) {
       case "INR":
-        return "₹";
+        return "";
       case "USD":
         return "$";
       case "EUR":

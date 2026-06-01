@@ -175,7 +175,7 @@ const getInitials = (name: string) =>
     .toUpperCase() || "??";
 
 const fmtCurrency = (v: number) =>
-  v > 0 ? `₹${v.toLocaleString("en-IN")}` : "—";
+  v > 0 ? `${v.toLocaleString("en-IN")}` : "—";
 
 const fmtDate = (d: string) => {
   if (!d) return "—";
@@ -195,7 +195,7 @@ const exportXLSX = (employees: RichEmployee[], selectedIds: string[]) => {
 
   const wsData = [
     ["Employee ID","Name","Department","Designation","Grade","Employment Type",
-     "Salary Structure","CTC (₹)","Salary Mode","Date of Joining","Holiday List",
+     "Salary Structure","CTC ()","Salary Mode","Date of Joining","Holiday List",
      "Cost Center","Status","Email","Branch"],
     ...rows.map((e) => [
       e.id, e.name, e.department, e.designation, e.grade, e.employmentType,

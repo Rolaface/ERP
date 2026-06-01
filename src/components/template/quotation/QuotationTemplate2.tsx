@@ -53,11 +53,11 @@ const QuotationTemplate2 = forwardRef<HTMLDivElement, QuotationTemplate2Props>(
         case "ZMW":
           return "ZK";
         case "INR":
-          return "₹";
+          return "";
         case "USD":
           return "$";
         default:
-          return "₹";
+          return "";
       }
     };
 

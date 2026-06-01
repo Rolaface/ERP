@@ -70,11 +70,11 @@ const QuotationTemplate3 = forwardRef<HTMLDivElement, QuotationTemplate3Props>(
         case "ZMW":
           return "ZK";
         case "INR":
-          return "₹";
+          return "";
         case "USD":
           return "$";
         default:
-          return "₹";
+          return "";
       }
     };
 

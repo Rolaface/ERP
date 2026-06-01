@@ -82,8 +82,8 @@ const InsuranceTab: React.FC = () => (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Policy No",  value: ins.policyNo },
-            { label: "Coverage",   value: `₹ ${ins.coverage.toLocaleString("en-IN")}` },
-            { label: "Premium/yr", value: `₹ ${ins.premium.toLocaleString("en-IN")}` },
+            { label: "Coverage",   value: ` ${ins.coverage.toLocaleString("en-IN")}` },
+            { label: "Premium/yr", value: ` ${ins.premium.toLocaleString("en-IN")}` },
             { label: "Valid Till", value: ins.validTill },
           ].map((f) => (
             <div key={f.label}>
@@ -103,19 +103,19 @@ const InsuranceTab: React.FC = () => (
 
 /*
 const NEW_REGIME_SLABS = [
-  { range: "Up to ₹ 3,00,000",           rate: "NIL", from: 0,       to: 300000   },
-  { range: "₹ 3,00,001 – ₹ 7,00,000",   rate: "5%",  from: 300001,  to: 700000   },
-  { range: "₹ 7,00,001 – ₹ 10,00,000",  rate: "10%", from: 700001,  to: 1000000  },
-  { range: "₹ 10,00,001 – ₹ 12,00,000", rate: "15%", from: 1000001, to: 1200000  },
-  { range: "₹ 12,00,001 – ₹ 15,00,000", rate: "20%", from: 1200001, to: 1500000  },
-  { range: "Above ₹ 15,00,000",          rate: "30%", from: 1500001, to: Infinity },
+  { range: "Up to  3,00,000",           rate: "NIL", from: 0,       to: 300000   },
+  { range: " 3,00,001 –  7,00,000",   rate: "5%",  from: 300001,  to: 700000   },
+  { range: " 7,00,001 –  10,00,000",  rate: "10%", from: 700001,  to: 1000000  },
+  { range: " 10,00,001 –  12,00,000", rate: "15%", from: 1000001, to: 1200000  },
+  { range: " 12,00,001 –  15,00,000", rate: "20%", from: 1200001, to: 1500000  },
+  { range: "Above  15,00,000",          rate: "30%", from: 1500001, to: Infinity },
 ];
 
 const OLD_REGIME_SLABS = [
-  { range: "Up to ₹ 2,50,000",          rate: "NIL", from: 0,       to: 250000   },
-  { range: "₹ 2,50,001 – ₹ 5,00,000",  rate: "5%",  from: 250001,  to: 500000   },
-  { range: "₹ 5,00,001 – ₹ 10,00,000", rate: "20%", from: 500001,  to: 1000000  },
-  { range: "Above ₹ 10,00,000",         rate: "30%", from: 1000001, to: Infinity },
+  { range: "Up to  2,50,000",          rate: "NIL", from: 0,       to: 250000   },
+  { range: " 2,50,001 –  5,00,000",  rate: "5%",  from: 250001,  to: 500000   },
+  { range: " 5,00,001 –  10,00,000", rate: "20%", from: 500001,  to: 1000000  },
+  { range: "Above  10,00,000",         rate: "30%", from: 1000001, to: Infinity },
 ];
 
 const RATE_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
@@ -157,7 +157,7 @@ const TaxSlabTab: React.FC<{ taxableIncome: number; regime: "new" | "old" }> = (
           Tax slabs for <strong>FY 2025-26</strong> under the{" "}
           <strong>{regime === "new" ? "New" : "Old"} Tax Regime</strong>.
           Your taxable income of{" "}
-          <strong>₹ {taxableIncome.toLocaleString("en-IN")}</strong> falls in
+          <strong> {taxableIncome.toLocaleString("en-IN")}</strong> falls in
           the highlighted slab.
         </span>
       </div>
@@ -217,7 +217,7 @@ const TaxSlabTab: React.FC<{ taxableIncome: number; regime: "new" | "old" }> = (
 const IncomeTaxTab: React.FC = () => {
   const [subtab, setSubtab] = useState<"overview" | "slabs" | "form16" | "report">("overview");
   const d = DUMMY_TAX;
-  const fmtInr = (n: number) => `₹ ${n.toLocaleString("en-IN")}`;
+  const fmtInr = (n: number) => ` ${n.toLocaleString("en-IN")}`;
   const regime: "new" | "old" = d.regime === "New Regime" ? "new" : "old";
 
   return (
@@ -352,9 +352,9 @@ const LoanAdvanceTab: React.FC = () => (
         </div>
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Total Amount", value: `₹ ${loan.amount.toLocaleString("en-IN")}` },
-            { label: "Outstanding",  value: `₹ ${loan.outstanding.toLocaleString("en-IN")}` },
-            { label: "Monthly EMI",  value: `₹ ${loan.emi.toLocaleString("en-IN")}` },
+            { label: "Total Amount", value: ` ${loan.amount.toLocaleString("en-IN")}` },
+            { label: "Outstanding",  value: ` ${loan.outstanding.toLocaleString("en-IN")}` },
+            { label: "Monthly EMI",  value: ` ${loan.emi.toLocaleString("en-IN")}` },
           ].map((f) => (
             <div key={f.label}>
               <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-0.5">
