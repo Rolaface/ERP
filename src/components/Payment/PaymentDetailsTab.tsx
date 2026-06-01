@@ -220,7 +220,12 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     const partyKey = form.partyId;
     if (
       !partyKey ||
-      (form.partyType !== "Customer" && form.partyType !== "Supplier")
+      (
+        form.partyType !== "Customer" &&
+        form.partyType !== "Supplier" &&
+        form.partyType !== "Employee" &&
+        form.partyType !== "Shareholder"
+      )
     )
       return;
 
@@ -284,7 +289,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     };
 
     run();
-  }, [form.partyId, form.partyType, form.paymentType]); 
+  }, [form.partyId, form.partyType, form.paymentType]);
 
   // ── Handlers 
   const handlePartyTypeChange = (
@@ -319,7 +324,12 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       onFormChange({ partyId: option.value, partyName: option.label });
 
 
-      if (partyType !== "Supplier" && partyType !== "Customer") return;
+      if (
+        partyType !== "Supplier" &&
+        partyType !== "Customer" &&
+        partyType !== "Employee" &&
+        partyType !== "Shareholder"
+      ) return;
 
       const [details] = await Promise.all([
         fetchPartyDetails(option.value, partyType),
@@ -416,7 +426,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       amountTo: String(+(from * rate).toFixed(4)),
       amount: String(+(from * rate).toFixed(4)),
     });
-  }, [form.exchangeRate]); 
+  }, [form.exchangeRate]);
 
   const canAllocate =
     Number(form?.amountTo || 0) > 0 &&
