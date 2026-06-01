@@ -22,7 +22,6 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
-import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
@@ -67,6 +66,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [totalItems, setTotalItems] = useState(0);
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
   const [taxCategory, setTaxCategory] = useState<string>("");
+ 
 
   const fetchCustomers = async () => {
     try {
@@ -98,12 +98,14 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setPage(1);
   }, [searchTerm]);
 
+
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CUSTOMER_LIST, () => {
       fetchCustomers();
     });
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchCustomers]);
+
 
   const fetchAllCustomers = async () => {
     try {
@@ -333,11 +335,10 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       render: (customer) => (
         <div className="py-1.5">
           <span
-            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
-              customer.status === "Active"
+            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
                 ? "bg-green-100 text-green-700"
                 : "bg-gray-100 text-gray-600"
-            }`}
+              }`}
           >
             {customer.status}
           </span>
@@ -429,21 +430,18 @@ onEnable={
           pageSize={pageSize}
           totalItems={totalItems}
           onPageChange={setPage}
-          extraFilters={
-            <div>
-              <FilterSelect
-                value={taxCategory}
-                onChange={(e) => {
-                  setPage(1);
-                  setTaxCategory(e.target.value);
-                }}
-                options={[
-                  { label: "Non-Export", value: "Non-Export" },
-                  { label: "Export", value: "Export" },
-                ]}
-              />
-            </div>
-          }
+        // extraFilters={
+        //   <div>
+        //     <FilterSelect
+        //       value={taxCategory}
+        //       onChange={(e) => {
+        //         setPage(1);
+        //         setTaxCategory(e.target.value);
+        //       }}
+        //      options={taxCategoryOptions}
+        //     />
+        //   </div>
+        // }
         />
       ) : selectedCustomer ? (
         <CustomerDetailView

@@ -19,10 +19,10 @@ import {
 import { JournalEntriesModal } from "../../store/modalStore";
 import Table from "../../components/ui/Table/Table";
 import { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
-import { 
-  getJournalEntries, 
-  deleteJournalEntryById, 
-  updateJournalEntryStatus 
+import {
+  getJournalEntries,
+  deleteJournalEntryById,
+  updateJournalEntryStatus
 } from "../../api/Accounting/JournalEntryApi";
 import { showApiError, showSuccess, showConfirm } from "../../utils/alert";
 import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
@@ -33,7 +33,7 @@ export interface JETabProps {
 }
 
 export interface JournalEntry {
-  name: string; 
+  name: string;
   posting_date?: string;
   total_debit?: number;
   total_credit?: number;
@@ -97,11 +97,13 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
 // ─── Main Component ────────────────────────────────────────────────────────
 const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [jeData, setJeData] = useState<JournalEntry[]>([]);
-  const [pageSize, setPageSize] = useState(10); 
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchJE = useCallback(async () => {
     setLoading(true);
@@ -118,27 +120,42 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
 
       const limitStart = (currentPage - 1) * pageSize;
 
-      const res = await getJournalEntries(fields, undefined, limitStart, pageSize);
+      const res = await getJournalEntries(fields, undefined, limitStart, pageSize, searchTerm || undefined);
       const entriesData = res?.data || res?.message?.data;
+      const pagination = res?.pagination || res?.message?.pagination;
 
       if (Array.isArray(entriesData)) {
         setJeData(entriesData);
-        setHasMore(entriesData.length === pageSize);
+        if (pagination) {
+          setHasMore(pagination.has_next);
+          setTotalItems(pagination.total);
+          setTotalPages(pagination.total_pages);
+        } else {
+          setHasMore(entriesData.length === pageSize);
+          setTotalItems((currentPage - 1) * pageSize + entriesData.length);
+          setTotalPages(hasMore ? currentPage + 1 : currentPage);
+        }
       } else {
         setError("Failed to load journal entries.");
         setJeData([]);
         setHasMore(false);
+        setTotalItems(0);
+        setTotalPages(1);
       }
     } catch (err: any) {
       setError(err?.message || "An error occurred while fetching journal entries.");
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [currentPage, pageSize, searchTerm]);
 
   useEffect(() => {
     fetchJE();
   }, [fetchJE]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handleSubmitEntry = async (id: string) => {
     try {
@@ -153,12 +170,12 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   };
 
   const handleCancelEntry = async (id: string) => {
-   const isConfirmed = await showConfirm(
+    const isConfirmed = await showConfirm(
       `Are you sure you want to cancel entry ${id}?`,
-      { 
-        title: "Cancel Entry", 
-        confirmButtonText: "Yes, Cancel", 
-        confirmButtonColor: "#ef4444" 
+      {
+        title: "Cancel Entry",
+        confirmButtonText: "Yes, Cancel",
+        confirmButtonColor: "#ef4444"
       }
     );
     if (!isConfirmed) return;
@@ -224,20 +241,20 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       </div>
     );
   }
-const formatDate = (date?: string | Date) => {
-  if (!date) return "";
+  const formatDate = (date?: string | Date) => {
+    if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
 
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
-const handleAdd = () => {
+  const handleAdd = () => {
     JournalEntriesModal(null, false, { onSuccess: fetchJE });
   };
 
@@ -268,7 +285,7 @@ const handleAdd = () => {
       render: (row: JournalEntry) => {
         let badge = "bg-draft text-gray-400";
         let label = "Draft";
-        
+
         if (row.docstatus === 1) {
           badge = "bg-success text-success";
           label = "Submitted";
@@ -348,7 +365,7 @@ const handleAdd = () => {
             label: "Delete",
             icon: <Trash2 size={14} />,
             danger: true,
-            dividerBefore: isDraft, 
+            dividerBefore: isDraft,
             onClick: () => handleDeleteEntry(row.name),
           });
         }
@@ -387,7 +404,7 @@ const handleAdd = () => {
 
   return (
     <div className="flex flex-col gap-4">
-     <Table
+      <Table
         columns={jeColumns}
         data={jeData}
         rowKey={(row) => row.name}
@@ -403,8 +420,8 @@ const handleAdd = () => {
         enableColumnSelector
         currentPage={currentPage}
         pageSize={pageSize}
-        totalItems={(currentPage - 1) * pageSize + jeData.length}
-        totalPages={hasMore ? currentPage + 1 : currentPage}
+        totalItems={totalItems}
+        totalPages={totalPages}
         pageSizeOptions={[10, 20, 50]}
         onPageSizeChange={(size) => {
           setPageSize(size);
@@ -413,29 +430,7 @@ const handleAdd = () => {
         onPageChange={setCurrentPage}
       />
 
-      {/* Pagination Controls */}
-      <div className="flex items-center justify-between px-2">
-        <span className="text-xs text-muted">
-          Showing page <span className="font-semibold text-main">{currentPage}</span>
-        </span>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1 || loading}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-main hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-          >
-            <ChevronLeft size={14} /> Previous
-          </button>
-          <button
-            onClick={() => setCurrentPage(p => p + 1)}
-            disabled={!hasMore || loading}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-main hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-          >
-            Next <ChevronRight size={14} />
-          </button>
-        </div>
-      </div>
-      
+
     </div>
   );
 };

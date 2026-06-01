@@ -59,6 +59,16 @@ export async function getPurchaseInvoiceById(
 }
 
 
+export async function getItemDetailsByBarcodeId(
+  barcode: string | number
+) {
+  const resp = await api.get(
+    `${purchaseinvoiceapi.getItemByBarCode}?barcode=${barcode}`
+  );
+
+  return resp.data;
+}
+
 // UPDATE STATUS
 export async function updatePurchaseinvoiceStatus(
   id: string | number,

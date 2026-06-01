@@ -22,7 +22,6 @@ import type {
   TaxRow,
 } from "../../types/tax/taxTemplate";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
 
 
 interface OutletContextType {
@@ -92,9 +91,15 @@ const TaxTemplate: React.FC<Props> = () => {
   };
 
   const openEdit = (row: TaxTemplateSummary) => {
+    const separatorIdx = row.title.indexOf(" | ");
+    const parsedCode = separatorIdx !== -1 ? row.title.slice(0, separatorIdx) : row.title;
+    const parsedDesc = separatorIdx !== -1 ? row.title.slice(separatorIdx + 3) : "";
+
     const formData: TaxCategoryFormData = {
       name: row.name,
       title: row.title,
+      title_code: parsedCode,
+      title_desc: parsedDesc,
       disabled: row.disabled === 1,
       taxes: row.taxes.map((t) => ({
         tax_type: t.tax_type,
@@ -227,17 +232,37 @@ const TaxTemplate: React.FC<Props> = () => {
     },
     {
       key: "title",
-      header: "Title",
+      header: "Code",
       align: "left",
-      render: (tc) => (
-        <Tooltip content={tc.title}>
+      render: (tc) => {
+        const separatorIdx = tc.title.indexOf(" | ");
+        const code = separatorIdx !== -1 ? tc.title.slice(0, separatorIdx) : tc.title;
+        return (
+          <Tooltip content={tc.title}>
+            <div className="py-1.5">
+              <span className="cursor-pointer font-medium text-main text-xs">
+                {code || "-"}
+              </span>
+            </div>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      key: "title" as any,
+      header: "Description",
+      align: "left",
+      render: (tc) => {
+        const separatorIdx = tc.title.indexOf(" | ");
+        const desc = separatorIdx !== -1 ? tc.title.slice(separatorIdx + 3) : "";
+        return (
           <div className="py-1.5">
-            <span className="cursor-pointer font-medium text-main text-xs">
-              {tc.title}
+            <span className="text-xs text-muted break-words whitespace-normal">
+              {desc || "-"}
             </span>
           </div>
-        </Tooltip>
-      ),
+        );
+      },
     },
     {
       key: "taxes",

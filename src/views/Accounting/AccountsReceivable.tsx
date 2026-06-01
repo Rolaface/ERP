@@ -176,7 +176,6 @@ const AccountsReceivable = () => {
           getCustomerList(),
           getCompanyRecievableAccounts(),
         ]);
-
         setCostCenterOptions(cc.map((c: any) => c.value));
         setCustomerOptions(cust.map((c: any) => c.value));
         setReceivableAccountOptions(acc.map((a: any) => a.value));
@@ -323,8 +322,8 @@ const AccountsReceivable = () => {
       setDrawerData(null);
       try {
         const res = await getSalesInvoiceById(row.id);
-        if (res?.status_code === 200 || res?.status === "success") {
-          setDrawerData(res.data as InvoiceDetail);
+        if (res?.message?.status_code === 200 || res?.message?.status === "success") {
+          setDrawerData(res?.message?.data as InvoiceDetail);
         }
       } catch (err) {
         showApiError(err);
@@ -356,7 +355,7 @@ const AccountsReceivable = () => {
     try {
       if (!company) return;
       const res = await getSalesInvoiceById(invoiceNumber);
-      if (!res || res.status_code !== 200) return;
+      if (!res || res.message?.status_code !== 200) return;
       const blobUrl = await generateInvoicePDF(
         res.data as any,
         company,

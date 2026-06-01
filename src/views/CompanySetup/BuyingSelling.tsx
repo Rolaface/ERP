@@ -11,12 +11,14 @@ import {
 } from "../../utils/alert";
 import { updateCompanyById } from "../../api/companySetupApi";
 import { fireManagedSwal } from "../../utils/swalManager";
+
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 interface BuyingSellingProps {
   terms?: Terms | null;
   onSaveSuccess?: () => void;
 }
+
 const normalizeSection = (section?: TermSection): TermSection => ({
   general: section?.general ?? "",
   delivery: section?.delivery ?? "",
@@ -55,20 +57,19 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
     buying: emptySection(),
     selling: emptySection(),
   });
+
   const hasChanges = React.useMemo(() => {
     if (!terms) return false;
-
     const original = JSON.stringify({
       buying: normalizeSection(terms.buying),
       selling: normalizeSection(terms.selling),
     });
     const current = JSON.stringify(formData);
-
     return original !== current;
   }, [formData, terms]);
+
   useEffect(() => {
     if (!terms) return;
-
     setFormData({
       buying: normalizeSection(terms.buying),
       selling: normalizeSection(terms.selling),
@@ -77,21 +78,22 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
 
   const handleReset = () => {
     if (!terms) return;
-
     setFormData({
       buying: normalizeSection(terms.buying),
       selling: normalizeSection(terms.selling),
     });
   };
+
   const handleSubmit = async () => {
     if (!hasChanges) {
       fireManagedSwal({
         icon: "info",
         title: "No Changes",
-        text: "Please apply changes before saving.",
+        text: "No changes to save.",
       });
       return;
     }
+
     const confirm = await fireManagedSwal({
       title: "Save Terms?",
       text: "Do you want to update company terms and conditions?",
@@ -111,9 +113,7 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
 
     try {
       showLoading("Saving Terms...");
-
       await updateCompanyById(payload);
-
       closeSwal();
       onSaveSuccess && onSaveSuccess();
       showSuccess("Terms saved successfully!");
@@ -122,51 +122,48 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
       showApiError(err);
     }
   };
+
   return (
-    <div className=" bg-app">
-      {/* SUCCESS TOAST */}
+    <div className="bg-app">
+      {/* Responsive: stacks on mobile, side-by-side on lg+ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <TermsAndCondition
+          title="Buying Terms & Conditions"
+          terms={formData.buying}
+          setTerms={(updated) =>
+            setFormData((prev) => ({ ...prev, buying: updated }))
+          }
+        />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-xl border border-theme shadow-sm p-4">
-          <TermsAndCondition
-            title="Buying Terms & Conditions"
-            terms={formData.buying}
-            setTerms={(updated) =>
-              setFormData((prev) => ({ ...prev, buying: updated }))
-            }
-          />
-        </div>
-
-        <div className="bg-card rounded-xl border border-theme shadow-sm p-4">
-          <TermsAndCondition
-            title="Selling Terms & Conditions"
-            terms={formData.selling}
-            setTerms={(updated) =>
-              setFormData((prev) => ({ ...prev, selling: updated }))
-            }
-          />
-        </div>
+        <TermsAndCondition
+          title="Selling Terms & Conditions"
+          terms={formData.selling}
+          setTerms={(updated) =>
+            setFormData((prev) => ({ ...prev, selling: updated }))
+          }
+        />
       </div>
 
-      {/* ACTION BUTTONS */}
-      <div className="flex justify-end gap-3 mt-6">
+      {/* Action buttons */}
+      <div className="flex flex-wrap justify-end gap-3 mt-4 sm:mt-6">
         <button
+          type="button"
           onClick={handleReset}
-          className="px-4 py-2 border border-theme rounded bg-card"
+          className="flex items-center gap-2 px-4 py-2 border border-theme rounded-lg bg-card text-muted text-sm hover:opacity-80 transition-opacity"
         >
-          <RotateCcw className="inline-block mr-2" />
+          <RotateCcw size={14} />
           Reset
         </button>
 
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={!hasChanges}
-          title={!hasChanges ? "Apply changes before saving" : ""}
-          className={`px-5 py-2 rounded text-white flex items-center gap-2
-    ${hasChanges ? "bg-primary hover:opacity-90" : "bg-gray-300 cursor-not-allowed"}
-  `}
+          title={!hasChanges ? "No changes to save" : ""}
+          className={`flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium transition-opacity
+            ${hasChanges ? "bg-primary hover:opacity-90" : "bg-gray-300 cursor-not-allowed opacity-60"}`}
         >
-          <Save className="inline-block mr-2" />
+          <Save size={14} />
           Save Terms
         </button>
       </div>

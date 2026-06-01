@@ -5,26 +5,34 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { Ban, CheckCircle2, XCircle } from "lucide-react";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import Table from "../../components/ui/Table/Table";
-import ActionButton, { ActionMenu } from "../../components/ui/Table/ActionButton";
+import ActionButton, {
+  ActionMenu,
+} from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-import { showApiError, showSuccess, closeSwal } from "../../utils/alert";
+import { showApiError, showSuccess, closeSwal, showLoading } from "../../utils/alert"; // ++ showLoading
 import { fireManagedSwal } from "../../utils/swalManager";
-import { openExpenseModal } from "../../store/modalStore";
+import { openExpenseModal, openPaymentEntryModal } from "../../store/modalStore"; // ++ openPaymentEntryModal
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { getExpenseClaims, getExpenseClaimById, deleteExpenseClaim, approveExpenseClaim } from "../../api/expenseClaimApi";
+import {
+  getExpenseClaims,
+  getExpenseClaimById,
+  deleteExpenseClaim,
+  approveExpenseClaim,
+} from "../../api/expenseClaimApi";
 import ExpenseClaimDetailView from "../../views/ExpenseManagement/expenseClaimDetailView";
 import { useAuth } from "../../context/AuthContext";
 import { useHRView } from "../../hooks/permission/useHRView";
 
 const EXPENSE_MODULE = "Expense Claim";
+const PAYMENT_MODULE = "Payment Entry";  // ++
 
 interface ExpenseSummary {
   id: string;
@@ -36,6 +44,7 @@ interface ExpenseSummary {
   status: string;
   description?: string;
   name: string;
+  employeeId?: string;   // ++ needed for payment partyId
 }
 
 const statusOptions = [
@@ -44,6 +53,7 @@ const statusOptions = [
   { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
 ];
+
 const formatDate = (date: string) => {
   if (!date) return "";
   const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -57,6 +67,12 @@ const ExpenseHistory: React.FC = () => {
   const { user } = useAuth();
   const { viewMode } = useHRView();
   const isEmployeeView = viewMode === "employee";
+
+  // ── Derive admin flag from user roles (adjust role key/value to match your auth shape)
+  const isAdmin = useMemo(
+    () => user?.roles?.includes("Administrator") ?? false,
+    [user],
+  );
 
   const [expenses, setExpenses] = useState<ExpenseSummary[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -79,26 +95,34 @@ const ExpenseHistory: React.FC = () => {
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  useEffect(() => { setPage(1); }, [searchTerm, filters]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filters]);
 
   const fetchExpenses = useCallback(async () => {
     if (!mountedRef.current) return;
     setIsFetching(true);
     try {
-      const res = await getExpenseClaims(searchTerm, page, pageSize,
+      const res = await getExpenseClaims(
+        searchTerm,
+        page,
+        pageSize,
         isEmployeeView ? (user?.employeeId ?? undefined) : undefined,
       );
       if (!mountedRef.current) return;
-      setExpenses(res.data.map((claim: any) => ({
-        id: claim.name,
-        approver: claim.expense_approver_name ?? "",
-        name: claim.employee_name,
-        date: claim.posting_date,
-        category: claim.expense_type ?? "",
-        amount: claim.total_claimed_amount ?? 0,
-        currency: claim.currency ?? "",
-        status: claim.approval_status,
-      })));
+      setExpenses(
+        res.data.map((claim: any) => ({
+          id: claim.name,
+          approver: claim.expense_approver_name ?? "",
+          name: claim.employee_name,
+          employeeId: claim.employee ?? "",   // ++ map employee id
+          date: claim.posting_date,
+          category: claim.expense_type ?? "",
+          amount: claim.total_claimed_amount ?? 0,
+          currency: claim.currency ?? "",
+          status: claim.approval_status,
+        })),
+      );
       setTotalPages(res.pagination.total_pages);
       setTotalItems(res.pagination.total);
     } catch (err) {
@@ -114,7 +138,6 @@ const ExpenseHistory: React.FC = () => {
     }
   }, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
 
-
   useEffect(() => {
     mountedRef.current = true;
     fetchExpenses();
@@ -126,25 +149,57 @@ const ExpenseHistory: React.FC = () => {
     fetchExpenses();
   }, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
 
+  // ── Payment handler (mirrors PI pattern exactly) ──────────────────────────
+  const handleMakePayment = useCallback(
+    async (exp: ExpenseSummary) => {
+      try {
+        showLoading("Opening payment...");
+        const claim = await getExpenseClaimById(exp.id);
+        closeSwal();
 
+        openPaymentEntryModal(
+          {
+            paymentType: "Pay",
+            partyType: "Employee",
+            partyName: claim.employee_name,
+            partyId: claim.employee ?? exp.id,
+            amount: claim.total_claimed_amount,
+            referenceName: claim.name,
+            referenceType: "Expense Claim",
+          },
+          false,
+          {
+            onSuccess: (result) => {
+              fetchExpenses();
+              const paymentId =
+                typeof result === "string"
+                  ? result
+                  : ((result as any)?.paymentId ?? (result as any)?.id ?? "");
+              showSuccess(
+                paymentId
+                  ? `Payment ${paymentId} created`
+                  : "Payment created successfully",
+              );
+            },
+          },
+        );
+      } catch (err) {
+        closeSwal();
+        showApiError(err);
+      }
+    },
+    [fetchExpenses],
+  );
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleOpenAdd = () => {
-    const seedData =
-      isEmployeeView && user?.employeeId
-        ? {
-          employee: user.employeeId,
-          employee_name: user.fullName ?? user.username ?? "",
-        }
-        : null;
-
-    openExpenseModal(seedData, false, {
+    openExpenseModal(null, false, {
       onSuccess: async () => {
         showSuccess("Expense submitted successfully");
         fetchExpenses();
       },
     });
   };
-
 
   const handleOpenEdit = async (exp: ExpenseSummary) => {
     try {
@@ -163,6 +218,7 @@ const ExpenseHistory: React.FC = () => {
         receipts: [],
         existingAttachments: claim.attachments ?? [],
         remarks: claim.remark ?? "",
+        advances: claim.advances ?? [],
       };
       openExpenseModal(formData, true, {
         onSuccess: async () => {
@@ -175,6 +231,7 @@ const ExpenseHistory: React.FC = () => {
       showApiError(err);
     }
   };
+
   const handleApprove = async (id: string) => {
     const result = await fireManagedSwal({
       icon: "question",
@@ -188,7 +245,7 @@ const ExpenseHistory: React.FC = () => {
     });
     if (!result.isConfirmed) return;
     try {
-      await approveExpenseClaim(id);
+      await approveExpenseClaim(id, "Approved");
       showSuccess("Expense approved successfully");
       fetchExpenses();
     } catch (err) {
@@ -196,6 +253,51 @@ const ExpenseHistory: React.FC = () => {
       showApiError(err);
     }
   };
+
+  const handleCancel = async (id: string) => {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Cancel Expense?",
+      text: `Cancel expense ${id}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#f59e0b",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, cancel",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await approveExpenseClaim(id, "Cancelled");
+      showSuccess("Expense cancelled successfully");
+      fetchExpenses();
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const result = await fireManagedSwal({
+      icon: "error",
+      title: "Reject Expense?",
+      text: `Reject expense ${id}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, reject",
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await approveExpenseClaim(id, "Rejected");
+      showSuccess("Expense rejected successfully");
+      fetchExpenses();
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
+
   const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
     e.stopPropagation();
     setIsDetailLoading(true);
@@ -244,13 +346,13 @@ const ExpenseHistory: React.FC = () => {
       }
       const worksheet = XLSX.utils.json_to_sheet(
         expenses.map((exp) => ({
-          "Approver": exp.approver,
-          "Date": formatDate(exp.date),
-          "Category": exp.category,
-          "Amount": exp.amount,
-          "Currency": exp.currency,
-          "Status": exp.status,
-        }))
+          Approver: exp.approver,
+          Date: formatDate(exp.date),
+          Category: exp.category,
+          Amount: exp.amount,
+          Currency: exp.currency,
+          Status: exp.status,
+        })),
       );
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Expense History");
@@ -258,7 +360,7 @@ const ExpenseHistory: React.FC = () => {
         new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
-        "Expense_History.xlsx"
+        "Expense_History.xlsx",
       );
       closeSwal();
       showSuccess("Expenses exported successfully");
@@ -339,14 +441,19 @@ const ExpenseHistory: React.FC = () => {
             <PermissionGate module={EXPENSE_MODULE} action="write">
               <ActionButton
                 type="edit"
-                onClick={() => { handleOpenEdit(exp); }}
+                onClick={() => handleOpenEdit(exp)}
                 iconOnly
                 disabled={exp.status !== "Draft"}
-                title={exp.status !== "Draft" ? "Only Draft expenses can be edited" : "Edit Expense"}
+                title={
+                  exp.status !== "Draft"
+                    ? "Only Draft expenses can be edited"
+                    : "Edit Expense"
+                }
               />
             </PermissionGate>
             <ActionMenu
               customActions={[
+                // ── Approve / Reject (HR view, Draft only) ─────────────────
                 ...(!isEmployeeView && exp.status === "Draft"
                   ? [
                     {
@@ -354,11 +461,35 @@ const ExpenseHistory: React.FC = () => {
                       icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
                       onClick: () => handleApprove(exp.id),
                     },
-                    { divider: true, label: "", onClick: () => { } },
+                    {
+                      label: "Reject",
+                      icon: <Ban className="w-4 h-4 text-red-500" />,
+                      onClick: () => handleReject(exp.id),
+                    },
+                  ]
+                  : []),
+
+                // ── Cancel ─────────────────────────────────────────────────
+                {
+                  label: "Cancel",
+                  icon: <XCircle className="w-4 h-4 text-amber-500" />,
+                  onClick: () => handleCancel(exp.id),
+                },
+
+
+                ...(can(PAYMENT_MODULE, "create") &&
+                  exp.status === "Approved"
+                  ? [
+                    {
+                      label: "Make Payment",
+                      onClick: () => handleMakePayment(exp),
+                    },
                   ]
                   : []),
               ]}
-              {...(can(EXPENSE_MODULE, "delete")
+              {...(can(EXPENSE_MODULE, "delete") &&
+                isEmployeeView &&
+                exp.status === "Draft"
                 ? { onDelete: () => handleDelete(exp.id) }
                 : {})}
             />
@@ -366,7 +497,7 @@ const ExpenseHistory: React.FC = () => {
         ),
       },
     ],
-    [handleDelete, handleOpenEdit, can]
+    [handleDelete, handleOpenEdit, handleMakePayment, isAdmin, isEmployeeView, can],
   );
 
   return (
@@ -380,7 +511,10 @@ const ExpenseHistory: React.FC = () => {
         isFetching={isFetching}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableAdd={can(EXPENSE_MODULE, "create")}
         addLabel="Add Expense"
         onAdd={handleOpenAdd}
@@ -392,7 +526,10 @@ const ExpenseHistory: React.FC = () => {
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
@@ -406,12 +543,19 @@ const ExpenseHistory: React.FC = () => {
             <FilterSelect
               value={filters.status ?? ""}
               options={statusOptions}
-              onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value || undefined }))}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  status: e.target.value || undefined,
+                }))
+              }
             />
             <DateRangeFilter
               from={filters.from_date}
               to={filters.to_date}
-              onChange={(range) => setFilters((prev) => ({ ...prev, ...range }))}
+              onChange={(range) =>
+                setFilters((prev) => ({ ...prev, ...range }))
+              }
             />
           </>
         }
