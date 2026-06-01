@@ -38,20 +38,33 @@ export const GradeModal: React.FC<Props> = ({
 }) => {
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<EmployeeGrade>(EMPTY);
+  const [code, setCode] = useState("");
+  const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
+  const [codeError, setCodeError] = useState("");
+  const [descError, setDescError] = useState("");
 
 
   useEffect(() => {
     if (isOpen) {
-      setForm(
-        initialData
-          ? {
-            name: initialData.name ?? "",
-            default_salary_structure:
-              initialData.default_salary_structure ?? "",
-          }
-          : { ...EMPTY },
-      );
+      setCodeError("");
+      setDescError("");
+      if (initialData) {
+        const raw = initialData.name ?? "";
+        const separatorIdx = raw.indexOf(" | ");
+        const parsedCode = separatorIdx !== -1 ? raw.slice(0, separatorIdx) : raw;
+        const parsedDesc = separatorIdx !== -1 ? raw.slice(separatorIdx + 3) : "";
+        setCode(parsedCode);
+        setDesc(parsedDesc);
+        setForm({
+          name: raw,
+          default_salary_structure: initialData.default_salary_structure ?? "",
+        });
+      } else {
+        setCode("");
+        setDesc("");
+        setForm({ ...EMPTY });
+      }
     }
   }, [isOpen, initialData]);
 
@@ -70,18 +83,24 @@ export const GradeModal: React.FC<Props> = ({
     }));
   };
   const handleSave = async () => {
-    if (!form.name.trim()) {
+    if (!code.trim()) {
       showValidationError("Grade name is required");
       return;
     }
+    if (codeError || descError) return;
+
+    const combinedName = desc.trim()
+      ? `${code.trim()} | ${desc.trim()}`
+      : code.trim();
+    const formToSubmit = { ...form, name: combinedName };
     try {
       setSaving(true);
       if (isEdit && initialData?.name) {
-        const { name: _name, ...payload } = form;
+        const { name: _name, ...payload } = formToSubmit;
         await updateEmployeeGrade(initialData.name, payload);
         showSuccess("Grade updated");
       } else {
-        await createEmployeeGrade(form);
+        await createEmployeeGrade(formToSubmit);
         showSuccess("Grade created");
       }
       onSuccess?.();
@@ -123,30 +142,51 @@ export const GradeModal: React.FC<Props> = ({
       title={isEdit ? "Edit Grade" : "New Grade"}
       subtitle="Configure employee bands and default salary structure"
       icon={Layers}
-      maxWidth="xl"
-      height="auto"
+      customWidth="60vw"
+      height="40vh"
       footer={footer}
     >
-      <div className="flex items-end gap-3 flex-nowrap overflow-x-auto">
-        <ModalInput
-          label="Grade Name"
-          value={form.name}
-          disabled={isEdit}
-          onChange={(e) => set("name", e.target.value)}
-          required
-        />
-        
-
-        <div className="[30px]">
-        <SearchSelect2
-          label="Default Salary Structure"
-          value={form.default_salary_structure}
-          fetchOptions={fetchSalaryStructureOptions}
-          onChange={(val) => set("default_salary_structure", val)}
-          placeholder="Search salary structure..."
-        />
+      <div className="flex items-start gap-3">
+        <div className="flex-1 flex flex-col">
+          <ModalInput
+            label="Name"
+            value={code}
+            disabled={isEdit}
+            onChange={(e) => {
+              setCode(e.target.value);
+              setCodeError(e.target.value.length > 20 ? "Name cannot exceed 20 characters" : "");
+            }}
+            required
+            placeholder="e.g. GRD01"
+            error={codeError}
+          />
+          <div className="min-h-[20px]" />
+        </div>
+        <div className="flex-[2] flex flex-col">
+          <ModalInput
+            label="Description"
+            value={desc}
+            disabled={isEdit}
+            onChange={(e) => {
+              setDesc(e.target.value);
+              setDescError(e.target.value.length > 50 ? "Description cannot exceed 50 characters" : "");
+            }}
+            placeholder="Grade description (optional)"
+            error={descError}
+          />
+          <div className="min-h-[20px]" />
+        </div>
+        <div className="flex-[2] flex flex-col">
+          <SearchSelect2
+            label="Default Salary Structure"
+            value={form.default_salary_structure}
+            fetchOptions={fetchSalaryStructureOptions}
+            onChange={(val) => set("default_salary_structure", val)}
+            placeholder="Search salary structure..."
+          />
+          <div className="min-h-[20px]" />
         </div>
       </div>
-    </MinimizableModal>
+    </MinimizableModal >
   );
 };
