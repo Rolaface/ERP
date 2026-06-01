@@ -35,8 +35,20 @@ const skeletonAddress = (
 });
 
 
-// UI → API  (Create / Update payload)
+const PRIME = 1;
+const OFFSET = 100000000; 
+const MOD = 1_000_000_000;
 
+const encodeCounter = (counter: number): number => {
+  return ((counter * PRIME) + OFFSET) % MOD;
+};
+
+let dbCounter = 1;
+
+const generate9DigitBarcode = (): string => {
+  const barcode = encodeCounter(dbCounter++);
+  return barcode.toString().padStart(9, '0');
+};
 
 export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
   const items = form.items
@@ -59,7 +71,7 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
       batchNo: str(it.batchNo),
       mfgDate: str(it.mfgDate),
       expDate: str(it.expDate),
-      barCode: num(it.barcodeId),
+      barCode: generate9DigitBarcode(),
       discount: num(it.discount),
       warehouse: form.updateStock ? str(it.warehouse) : null,
     }));

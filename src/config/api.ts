@@ -366,10 +366,11 @@ export const API = {
    * PROFORMA
    * ========================= */
   proforma: {
-    getAll: `${ERP_BASE}/api/method/erpnext.proforma.api.get_proforma_api`,
-    getById: `${ERP_BASE}/api/method/erpnext.proforma.api.get_proforma_by_id`,
-    create: `${ERP_BASE}/api/method/erpnext.proforma.api.create_proforma_api`,
-    updateStatus: `${ERP_BASE}/api/method/erpnext.proforma.api.update_proforma_status`,
+    getAll: `${ERP_BASE}api/method/custom_api.api.selling.quotation.api.get_quotations`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.get_quotation_by_id`,
+    create: `${ERP_BASE}api/method/custom_api.api.selling.quotation.api.create_quotation`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation_status`,
+    edit: `$(ERP_BASE)/api/method/custom_api.api.selling.quotation.api.update_quotation`,
     delete: `${ERP_BASE}/api/method/erpnext.proforma.api.delete_proforma`,
   },
 
@@ -484,6 +485,8 @@ export const API = {
     update: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update_status`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
+    getBarcodeByItemCode:`${ERP_BASE}/api/method/custom_api.utils.barcode_utils.get_item_batches`,
+    getSearchItems:`${ERP_BASE}/api/method/custom_api.utils.barcode_utils.search_item_batches`,
   },
 
   rfq: {

@@ -34,7 +34,6 @@ export interface ItemTableUI {
 }
 
 interface ItemTableProps {
-  // ── data ──
   paginatedItems: any[];
   formData: { items: any[] };
   ui: ItemTableUI;
@@ -42,8 +41,7 @@ interface ItemTableProps {
   symbol: string;
   ITEMS_PER_PAGE: number;
   taxCategory?: string;
-
-  // ── customisation ──
+  isSalesInvoice?:boolean;
   title?: string;
 
   columnHeaders?: React.ReactNode;
@@ -57,9 +55,13 @@ interface ItemTableProps {
   ) => React.ReactNode;
 }
 
-// ─── Default (Invoice) column headers ────────────────────────────────────────
+interface InvoiceHeadersProps {
+  isSalesInvoice: boolean;
+}
 
-const InvoiceHeaders: React.FC = () => (
+const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
+  isSalesInvoice,
+}) => (
   <tr className="border-b border-theme">
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">
       #
@@ -76,9 +78,11 @@ const InvoiceHeaders: React.FC = () => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
       Box
     </th>
+    {isSalesInvoice && (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[250px] whitespace-nowrap">
       Batch No
     </th>
+    )}
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
       Qty
     </th>
@@ -126,37 +130,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
   title = "Items",
   columnHeaders,
   renderRow,
+  isSalesInvoice = false,
 }) => {
-  const barcodeRef = useRef<HTMLInputElement>(null);
-
-// const fetchByBarcode = async (index: number, barcode: string) => {
-//   try {
-//     const response = await getItemDetailsByBarcodeId(barcode);
-//     const itemData = response?.message || response?.data?.message;
-//     if (itemData) {
-//       actions.updateItemDirectly?.(index, {
-//         itemCode: itemData.item_code,
-//         itemName: itemData.item_name,
-//         price: itemData.rate || 0,
-//         batchNo: itemData.batch_no || "",
-//         quantity: itemData.quantity > 0 ? itemData.quantity : 1, 
-//         mfgDate: itemData.manufacturing_date || "",
-//         expDate: itemData.expiry_date || "",
-//         description: itemData.item_name || "",
-//         packingSize: "",
-//         packingUnit: "",
-//         availableQty: itemData.quantity || 0,
-//         warehouse: "", // The user will still need to manually select a warehouse if the API doesn't return one
-//         isServiceItem: false,
-//         vatRate: 0,
-//         vatCode: "",
-//         taxTypes: [],
-//       });
-//     }
-//   } catch (error) {
-//     showValidationError(parseFrappeError(error) || "Item not found for this barcode.");
-//   }
-// }
 
 useBarcodeScanner(async (barcode) => {
     try {
@@ -209,13 +184,31 @@ useBarcodeScanner(async (barcode) => {
         (it) => it.itemCode === itemData.item_code && it.batchNo === itemData.batch_no
       );
 
+      // if (existingIndex >= 0) {
+      //   const currentQty = Number(formData.items[existingIndex].quantity || 0);
+      //   actions.handleItemChange(existingIndex, {
+      //     target: { name: "quantity", value: currentQty + 1 }
+      //   } as any);
+      //   return;
+      // }
       if (existingIndex >= 0) {
-        const currentQty = Number(formData.items[existingIndex].quantity || 0);
-        actions.handleItemChange(existingIndex, {
-          target: { name: "quantity", value: currentQty + 1 }
-        } as any);
-        return;
-      }
+  const currentQty = Number(formData.items[existingIndex].quantity || 0);
+  
+  // 1. Update the quantity
+  actions.handleItemChange(existingIndex, {
+    target: { name: "quantity", value: currentQty + 1 }
+  } as any);
+
+  const existingItem = formData.items[existingIndex];
+  if (!existingItem.mfgDate || !existingItem.expDate) {
+    actions.updateItemDirectly?.(existingIndex, {
+      ...existingItem,
+      mfgDate: existingItem.mfgDate || itemData.manufacturing_date || "",
+      expDate: existingItem.expDate || itemData.expiry_date || "",
+    });
+  }
+  return;
+}
 
       // 4. If new, find an empty row or add one
       let targetIndex = formData.items.findIndex((it) => !it.itemCode);
@@ -235,8 +228,9 @@ useBarcodeScanner(async (barcode) => {
         quantity: 1, 
         availableQty: Number(itemData.quantity || 0), 
 
-        mfgDate: itemData.manufacturing_date || "",
-        expDate: itemData.expiry_date || "",
+        // Inside StockItemSelect onChange
+        mfgDate: itemData.manufacturing_date || itemData.mfgDate || "",
+        expDate: itemData.expiry_date || itemData.expiryDate || "",
         description: itemData.item_name || "",
         packingSize: matchedPackingSize,
         packingUnit: matchedPackingUnit,
@@ -390,6 +384,7 @@ useBarcodeScanner(async (barcode) => {
         </td>
 
         {/* Batch No */}
+        {isSalesInvoice && (
         <td className="px-0.5 py-1 min-w-[100px]">
           <Tooltip content={`Batch No: ${it.batchNo}`}>
             <input
@@ -402,6 +397,7 @@ useBarcodeScanner(async (barcode) => {
             />
           </Tooltip>
         </td>
+        )}
 
         {/* Qty */}
         <td className="px-0.5 py-1">
@@ -617,7 +613,11 @@ useBarcodeScanner(async (barcode) => {
 
       <div className="mt-2 overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-[10px] leading-tight">
-          <thead>{columnHeaders ?? <InvoiceHeaders />}</thead>
+          <thead>
+  {columnHeaders || (
+    <InvoiceHeaders isSalesInvoice={isSalesInvoice} />
+  )}
+</thead>
           <tbody>
             {paginatedItems.map((it, idx) => {
               const i = ui.page * ITEMS_PER_PAGE + idx;

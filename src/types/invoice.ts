@@ -23,7 +23,7 @@ export interface Invoice {
   exchangeRt: string;
   dateOfInvoice: string;
   dueDate: string;
-  
+  validTill?: string;
   taxCategory: string;
   destnCountryCd?: string;
   lpoNumber?: string;

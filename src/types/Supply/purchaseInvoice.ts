@@ -18,6 +18,7 @@ export interface ItemRow {
   packingUnit?: number;
   packingSize?: number;
   requiresBatch?: boolean;
+  requiresBarcode?: boolean;
   warehouse?: string;
   barcodeId?: number;
 }
@@ -66,7 +67,7 @@ export interface PurchaseInvoiceFormData {
   supplierEmail?: string;
   supplierPhone?: string;
   updateStock?: boolean;
-
+  trackInventoryByBarCode?: boolean;
   supplierCode: string;
   taxCategory: string;
   supplierContact: string;
@@ -144,6 +145,7 @@ export const emptyItem: ItemRow = {
   discount: 0,
   warehouse: "",
   requiresBatch: false,
+  requiresBarcode: false,
 };
 
 export const emptyTaxRow: TaxRow = {

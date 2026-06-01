@@ -394,6 +394,7 @@ const handleModeFetchOptions = async (q: string) => {
                   formData={formData}
                   symbol={symbol}
                   ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                  isSalesInvoice={true}
                   taxCategory={formData.taxCategory || customerDetails?.customerTaxCategory}
                 />
 
