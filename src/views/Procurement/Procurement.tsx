@@ -11,7 +11,8 @@ import {
   Receipt,
   FileMinus,
   BarChart3,
-  ShoppingBag
+  ShoppingBag,
+  Barcode
 } from "lucide-react";
 import {
   AppPage,
@@ -112,7 +113,7 @@ const ALL_PROCUREMENT_TABS = [
   {
     id: "barCode",
     label: "PI BarCode",
-    icon: <BarChart3 {...iconProps} />,
+    icon: <Barcode {...iconProps} />,
     module: "Purchase Invoice",
     action: "report" as const, 
   },

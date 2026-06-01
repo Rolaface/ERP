@@ -12,7 +12,7 @@ import PaymentInfoBlock from "./PaymentInfoBlock";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { getAllCustomers } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";
-import { createProformaInvoice } from "../../api/proformaInvoiceApi";
+import { createProformaInvoice, editProformaInvoice } from "../../api/proformaInvoiceApi";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import DatePickerInput from "../calendar/DatePickerInput";
@@ -25,7 +25,8 @@ import {
 import type { ModalSubmitHandler } from "../../types/modal";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
-
+// Add these to your existing imports
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 interface ProformaInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -98,47 +99,57 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     }
   };
 
-  const handleSave = async () => {
+ const handleSave = async () => {
     if (!validateDetailsOrFocus()) return;
 
     try {
       const payload = await actions.handleSubmit({
         preventDefault: () => {},
       } as React.FormEvent);
+      
       if (!payload) return;
-
-      let res;
+      
+      const finalPayload = {
+        ...payload,
+        documentType: "Proforma Invoice",
+      };
+      
+      let response;
 
       if (mode === "edit") {
-        if (!initialData?.proformaId) {
+        const invoiceNumber = formData.invoiceNumber ?? initialData?.id ?? initialData?.proformaId;
+        
+        if (!invoiceNumber) {
           showValidationError("Invalid invoice reference");
           return;
         }
 
-        // future API
-        // res = await updateProformaInvoice(initialData.proformaId, payload)
-
-        res = {
-          status_code: 200,
-          message: "Proforma invoice updated successfully",
-        };
+        // Use your actual edit API function
+        response = await editProformaInvoice(invoiceNumber, finalPayload);
       } else {
-        res = await createProformaInvoice(payload);
+        response = await createProformaInvoice(finalPayload);
       }
 
+      // Safely unwrap the backend response (handles both wrapped "message" and direct data)
+      const res = response?.message || response;
+
       if (!res || ![200, 201].includes(res.status_code)) {
-        showApiError(res);
+        showApiError(res?.message || res || "Failed to save proforma invoice");
         return;
       }
 
-      showSuccess(res.message);
+      showSuccess(res.message || "Proforma invoice saved successfully");
 
       const canClose = await onSubmit?.(res);
       if (canClose === false) return;
 
       resetDirty();
-      actions.handleReset();
+      // actions.handleReset();
       onClose();
+      
+      // Refresh the table data in the background
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
+      
     } catch (error: any) {
       showApiError(error);
     }
@@ -273,9 +284,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
                   <div>
                     <DatePickerInput
-                      label="Due Date"
+                      label="Valid Till"
                       name="dueDate"
-                      value={formData.dueDate}
+                      value={formData.validTill}
                       required
                       onChange={(name, value) =>
                         actions.handleInputChange({
@@ -352,6 +363,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   formData={formData}
                   symbol={symbol}
                   ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                  isSalesInvoice={false}
                   taxCategory={formData.taxCategory || customerDetails?.customerTaxCategory}
                 />
 

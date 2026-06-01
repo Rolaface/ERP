@@ -69,6 +69,24 @@ export async function getItemDetailsByBarcodeId(
   return resp.data;
 }
 
+export async function getAllBarCodeByItemCode(
+  item_code: string
+) {
+  const resp = await api.get(
+    `${purchaseinvoiceapi.getBarcodeByItemCode}?item_code=${item_code}`
+  );
+
+  return resp.data;
+}
+
+export async function getItemCodeBySearch(params: any) {
+  const resp = await api.get(
+    `${purchaseinvoiceapi.getSearchItems}?${new URLSearchParams(params)}`
+  );
+
+  return resp.data;
+}
+
 // UPDATE STATUS
 export async function updatePurchaseinvoiceStatus(
   id: string | number,
