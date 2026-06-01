@@ -56,7 +56,7 @@ const statusOptions = [
 
 const formatDate = (date: string) => {
   if (!date) return "";
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
   const [year, month, day] = date.split("T")[0].split("-").map(Number);
   return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
 };
@@ -456,17 +456,17 @@ const ExpenseHistory: React.FC = () => {
                 // ── Approve / Reject (HR view, Draft only) ─────────────────
                 ...(!isEmployeeView && exp.status === "Draft"
                   ? [
-                      {
-                        label: "Approve",
-                        icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-                        onClick: () => handleApprove(exp.id),
-                      },
-                      {
-                        label: "Reject",
-                        icon: <Ban className="w-4 h-4 text-red-500" />,
-                        onClick: () => handleReject(exp.id),
-                      },
-                    ]
+                    {
+                      label: "Approve",
+                      icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
+                      onClick: () => handleApprove(exp.id),
+                    },
+                    {
+                      label: "Reject",
+                      icon: <Ban className="w-4 h-4 text-red-500" />,
+                      onClick: () => handleReject(exp.id),
+                    },
+                  ]
                   : []),
 
                 // ── Cancel ─────────────────────────────────────────────────
@@ -476,21 +476,20 @@ const ExpenseHistory: React.FC = () => {
                   onClick: () => handleCancel(exp.id),
                 },
 
-                // ++ Make Payment — admin + Approved only ───────────────────
-                ...(isAdmin &&
-                can(PAYMENT_MODULE, "create") &&
-                exp.status === "Approved"
+
+                ...(can(PAYMENT_MODULE, "create") &&
+                  exp.status === "Approved"
                   ? [
-                      {
-                        label: "Make Payment",
-                        onClick: () => handleMakePayment(exp),
-                      },
-                    ]
+                    {
+                      label: "Make Payment",
+                      onClick: () => handleMakePayment(exp),
+                    },
+                  ]
                   : []),
               ]}
               {...(can(EXPENSE_MODULE, "delete") &&
-              isEmployeeView &&
-              exp.status === "Draft"
+                isEmployeeView &&
+                exp.status === "Draft"
                 ? { onDelete: () => handleDelete(exp.id) }
                 : {})}
             />
