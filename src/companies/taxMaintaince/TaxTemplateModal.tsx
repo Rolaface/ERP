@@ -60,13 +60,25 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
     setErrors({});
     setPage(0);
   };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    // inline length errors
+    if (name === "title_code") {
+      setErrors((prev) => ({
+        ...prev,
+        title_code: value.length > 20 ? "Name cannot exceed 20 characters" : "",
+      }));
+    }
+    if (name === "title_desc") {
+      setErrors((prev) => ({
+        ...prev,
+        title_desc: value.length > 50 ? "Description cannot exceed 50 characters" : "",
+      }));
+    }
   };
 
   const handleRowChange = (
@@ -123,7 +135,9 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!form.title.trim()) newErrors.title = "Title is required";
+    if (!form.title_code.trim()) newErrors.title_code = "Name is required";
+    if (form.title_code.length > 20) newErrors.title_code = "Name max 20 characters";
+    if (form.title_desc.length > 50) newErrors.title_desc = "Description max 50 characters";
     form.taxes.forEach((row, i) => {
       if (!row.tax_type.trim()) newErrors[`tax_type_${i}`] = "Tax is required";
       if (row.tax_rate < 0) newErrors[`tax_rate_${i}`] = "Invalid rate";
@@ -136,8 +150,13 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
     if (!validate()) return;
     setLoading(true);
     try {
+      const combinedTitle = form.title_desc.trim()
+        ? `${form.title_code.trim()} | ${form.title_desc.trim()}`
+        : form.title_code.trim();
+
       const payload = {
         ...form,
+        title: combinedTitle,
         taxes: form.taxes.map((row) => ({
           tax_type: row.tax_type.trim(),
           tax_rate: Number(row.tax_rate),
@@ -196,17 +215,29 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
       >
         <div className="p-4 flex flex-col gap-4">
 
-          <div className="grid grid-cols-12 gap-4 items-end">
-            <div className="col-span-6">
+          <div className="grid grid-cols-12 gap-4 items-start">
+            <div className="col-span-4 flex flex-col">
               <ModalInput
-                label="Title"
-                name="title"
-                value={form.title}
+                label="Name"
+                name="title_code"
+                value={form.title_code}
                 onChange={handleChange}
-                error={errors.title}
+                error={errors.title_code}
                 required
-                placeholder="Template title"
+                placeholder="e.g. TAX01"
               />
+              <div className="min-h-[20px]" />
+            </div>
+            <div className="col-span-8 flex flex-col">
+              <ModalInput
+                label="Description"
+                name="title_desc"
+                value={form.title_desc}
+                onChange={handleChange}
+                error={errors.title_desc}
+                placeholder="Template description (optional)"
+              />
+              <div className="min-h-[20px]" />
             </div>
             <div className="col-span-6 flex items-center gap-2">
               <input
