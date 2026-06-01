@@ -252,7 +252,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-main">Tax Rows</span>
+            <span className="text-sm font-medium text-main"></span>
             <button
               type="button"
               onClick={addRow}
