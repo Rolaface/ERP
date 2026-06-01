@@ -213,7 +213,7 @@ const NewCycleModal = lazy(
 const AppraisalModal = lazy(() => import("../../components/Hr/performance/AppraisalFormModal"));
 const FeedbackModal = lazy(() => import("../../components/Hr/performance/FeedbackModal"));
 const PayrollPreviewModal = lazy(
-  () => import("../../views/hr/payroll-system/PayrollPreview"), 
+  () => import("../../views/hr/payroll-system/PayrollPreview"),
 );
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -420,7 +420,7 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
           />,
         );
-        case "employeeAdvance":
+      case "employeeAdvance":
         return wrappedModal(
           <EmployeeAdvanceModal
             key={modal.id}
@@ -453,19 +453,19 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-case "itemCategory":
-  return wrappedModal(
-    <ItemsCategoryModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-      initialData={getRecordInitialData(modal.initialData)}
-      isEditMode={modal.isEdit}
-      isViewMode={context?.isViewMode ?? false}
-    />,
-  );
+      case "itemCategory":
+        return wrappedModal(
+          <ItemsCategoryModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getRecordInitialData(modal.initialData)}
+            isEditMode={modal.isEdit}
+            isViewMode={context?.isViewMode ?? false}
+          />,
+        );
 
       case "taxTemplate":
         return wrappedModal(
@@ -694,6 +694,7 @@ case "itemCategory":
           />,
         );
 
+
       case "User":
         return wrappedModal(
           <CreateUserModal
@@ -716,17 +717,16 @@ case "itemCategory":
                 }
                 : async (data: CreateUserFormData) => {
                   const response = await createUser(data);
-                  if (response.message.status === "success") {
-                    showSuccess("User created successfully");
-                    useDataRefreshStore
-                      .getState()
-                      .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
-                    if (context?.onSuccess)
-                      await context.onSuccess(response.message.data);
-                    handleClose();
-                  } else {
-                    throw new Error("User creation failed");
+                  if (response.message.status !== "success") {
+                    throw new Error(response.message.data  || "User creation failed");
                   }
+                  showSuccess("User created successfully");
+                  useDataRefreshStore
+                    .getState()
+                    .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
+                  if (context?.onSuccess)
+                    await context.onSuccess(response.message.data);
+                  handleClose();
                 }
             }
           />,
@@ -1090,18 +1090,18 @@ case "itemCategory":
           />,
         );
 
-        //preview modal of payroll entry
-        case "payrollPreview":
-  return wrappedModal(
-    <PayrollPreviewModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      rawData={modal.initialData as PayrollVerificationData | null}
-      loading={context?.loading as boolean | undefined}
-    />,
-  );
+      //preview modal of payroll entry
+      case "payrollPreview":
+        return wrappedModal(
+          <PayrollPreviewModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            rawData={modal.initialData as PayrollVerificationData | null}
+            loading={context?.loading as boolean | undefined}
+          />,
+        );
 
     }
   };

@@ -1,5 +1,19 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Upload, X, FileText, CreditCard, AlertTriangle, CheckCircle2, Wallet } from "lucide-react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import {
+  Upload,
+  X,
+  FileText,
+  CreditCard,
+  AlertTriangle,
+  CheckCircle2,
+  Wallet,
+} from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
@@ -30,37 +44,6 @@ const getCurrencyFromStorage = (): string => {
   } catch {
     return "";
   }
-};
-
-/**
- * Greedy oldest-first allocator.
- * Drains `expenseAmount` across advances sorted by date ascending,
- * allocating as much as each advance's unclaimed amount allows.
- */
-const autoAllocate = (
-  advances: MappedEmployeeAdvance[],
-  expenseAmount: number
-): Record<string, number> => {
-  const result: Record<string, number> = {};
-  let remaining = expenseAmount;
-
-  // Sort oldest-first using advanceDate (mapped from posting_date)
-  const sorted = [...advances].sort((a, b) =>
-    (a.advanceDate ?? "").localeCompare(b.advanceDate ?? "")
-  );
-
-  for (const adv of sorted) {
-    if (remaining <= 0) {
-      result[adv.id] = 0;
-      continue;
-    }
-    const available = adv.unclaimedAmount ?? 0;
-    const allocated = Math.min(available, remaining);
-    result[adv.id] = allocated;
-    remaining -= allocated;
-  }
-
-  return result;
 };
 
 // ─── types ───────────────────────────────────────────────────────────────────
@@ -129,17 +112,24 @@ interface ExpenseModalProps {
 interface TabStripProps {
   active: ActiveTab;
   onChange: (tab: ActiveTab) => void;
-  advanceBadge?: number; // non-zero = show dot on Advance tab
+  advanceBadge?: number;
 }
 
-const TabStrip: React.FC<TabStripProps> = ({ active, onChange, advanceBadge }) => {
+const TabStrip: React.FC<TabStripProps> = ({
+  active,
+  onChange,
+  advanceBadge,
+}) => {
   const tabs: { key: ActiveTab; label: string }[] = [
     { key: "expense", label: "Expense" },
     { key: "advance", label: "Advance" },
   ];
 
   return (
-    <div className="flex border-b border-[var(--border)]" style={{ marginBottom: 0 }}>
+    <div
+      className="flex border-b border-[var(--border)]"
+      style={{ marginBottom: 0 }}
+    >
       {tabs.map((tab) => {
         const isActive = active === tab.key;
         return (
@@ -151,7 +141,9 @@ const TabStrip: React.FC<TabStripProps> = ({ active, onChange, advanceBadge }) =
               padding: "10px 20px",
               fontSize: "13px",
               fontWeight: isActive ? 600 : 400,
-              color: isActive ? "var(--color-primary, #4f46e5)" : "var(--color-muted)",
+              color: isActive
+                ? "var(--color-primary, #4f46e5)"
+                : "var(--color-muted)",
               borderBottom: isActive
                 ? "2px solid var(--color-primary, #4f46e5)"
                 : "2px solid transparent",
@@ -168,26 +160,28 @@ const TabStrip: React.FC<TabStripProps> = ({ active, onChange, advanceBadge }) =
             }}
           >
             {tab.label}
-            {tab.key === "advance" && advanceBadge !== undefined && advanceBadge > 0 && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minWidth: "18px",
-                  height: "18px",
-                  padding: "0 4px",
-                  borderRadius: "9px",
-                  background: "var(--color-primary, #4f46e5)",
-                  color: "#fff",
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  lineHeight: 1,
-                }}
-              >
-                {advanceBadge}
-              </span>
-            )}
+            {tab.key === "advance" &&
+              advanceBadge !== undefined &&
+              advanceBadge > 0 && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minWidth: "18px",
+                    height: "18px",
+                    padding: "0 4px",
+                    borderRadius: "9px",
+                    background: "var(--color-primary, #4f46e5)",
+                    color: "#fff",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                    lineHeight: 1,
+                  }}
+                >
+                  {advanceBadge}
+                </span>
+              )}
           </button>
         );
       })}
@@ -214,11 +208,14 @@ const AdvanceSummaryBanner: React.FC<AdvanceSummaryBannerProps> = ({
   onViewAdvances,
 }) => {
   const shortfall = expenseAmount - totalAllocated;
-  const isFullyCovered = shortfall <= 0;
+  const isFullyCovered = shortfall <= 0 && totalAllocated > 0;
   const fmt = (n: number) =>
-    n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    n.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
-  if (totalAvailable === 0) return null;
+  if (totalAvailable === 0 || totalAllocated === 0) return null;
 
   return (
     <div
@@ -234,7 +231,6 @@ const AdvanceSummaryBanner: React.FC<AdvanceSummaryBannerProps> = ({
         gap: "10px",
       }}
     >
-      {/* Icon */}
       <div style={{ marginTop: "1px", flexShrink: 0 }}>
         {isFullyCovered ? (
           <CheckCircle2
@@ -248,8 +244,6 @@ const AdvanceSummaryBanner: React.FC<AdvanceSummaryBannerProps> = ({
           />
         )}
       </div>
-
-      {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p
           style={{
@@ -273,12 +267,10 @@ const AdvanceSummaryBanner: React.FC<AdvanceSummaryBannerProps> = ({
           }}
         >
           {currency} {fmt(totalAllocated)} allocated from {advanceCount} advance
-          {advanceCount !== 1 ? "s" : ""} · {currency} {fmt(totalAvailable)} total
-          available
+          {advanceCount !== 1 ? "s" : ""} · {currency} {fmt(totalAvailable)}{" "}
+          total available
         </p>
       </div>
-
-      {/* Link */}
       <button
         type="button"
         onClick={onViewAdvances}
@@ -309,7 +301,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   onSubmit,
 }) => {
   const modals = useModalStore((state) => state.modals);
-  const modal = useMemo(() => modals.find((m) => m.id === modalId), [modals, modalId]);
+  const modal = useMemo(
+    () => modals.find((m) => m.id === modalId),
+    [modals, modalId],
+  );
   const isEditMode = modal?.isEdit ?? false;
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("expense");
@@ -318,17 +313,24 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [form, setForm] = useState<ExpenseFormData>(defaultExpenseForm);
-  const [advanceForm, setAdvanceForm] = useState<AdvanceFormData>(defaultAdvanceForm);
+  const [advanceForm, setAdvanceForm] =
+    useState<AdvanceFormData>(defaultAdvanceForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [advanceListLoading, setAdvanceListLoading] = useState(false);
   const [employeeDisplayName, setEmployeeDisplayName] = useState("");
 
   // ── advance list state ────────────────────────────────────────────────────
-  const [employeeAdvances, setEmployeeAdvances] = useState<MappedEmployeeAdvance[]>([]);
+  const [employeeAdvances, setEmployeeAdvances] = useState<
+    MappedEmployeeAdvance[]
+  >([]);
   const [advancesFetchLoading, setAdvancesFetchLoading] = useState(false);
-  const [advancesFetchError, setAdvancesFetchError] = useState<string | undefined>();
-  const [advanceAllocations, setAdvanceAllocations] = useState<Record<string, number>>({});
+  const [advancesFetchError, setAdvancesFetchError] = useState<
+    string | undefined
+  >();
+  const [advanceAllocations, setAdvanceAllocations] = useState<
+    Record<string, number>
+  >({});
 
   // ── derived: advance summary ──────────────────────────────────────────────
   const currency = getCurrencyFromStorage();
@@ -336,49 +338,52 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const advanceSummary = useMemo(() => {
     const totalAvailable = employeeAdvances.reduce(
       (sum, adv) => sum + (adv.unclaimedAmount ?? 0),
-      0
+      0,
     );
     const totalAllocated = Object.values(advanceAllocations).reduce(
       (sum, v) => sum + v,
-      0
+      0,
     );
     const expenseAmount = form.amount === "" ? 0 : Number(form.amount);
-    const activeAdvanceCount = Object.values(advanceAllocations).filter((v) => v > 0).length;
-    return { totalAvailable, totalAllocated, expenseAmount, activeAdvanceCount };
+    const activeAdvanceCount = Object.values(advanceAllocations).filter(
+      (v) => v > 0,
+    ).length;
+    return {
+      totalAvailable,
+      totalAllocated,
+      expenseAmount,
+      activeAdvanceCount,
+    };
   }, [employeeAdvances, advanceAllocations, form.amount]);
-
-  // ── AUTO-ALLOCATE when amount or advances change ──────────────────────────
-  useEffect(() => {
-    const amount = form.amount === "" ? 0 : Number(form.amount);
-
-    // Only auto-allocate when we have a positive amount and loaded advances
-    if (amount > 0 && employeeAdvances.length > 0) {
-      const allocated = autoAllocate(employeeAdvances, amount);
-      setAdvanceAllocations(allocated);
-    } else if (amount <= 0) {
-      // Clear allocations when amount is cleared/zero
-      const cleared: Record<string, number> = {};
-      employeeAdvances.forEach((adv) => {
-        cleared[adv.name] = 0;
-      });
-      setAdvanceAllocations(cleared);
-    }
-    // When advances are empty (no employee selected), don't touch allocations
-  }, [form.amount, employeeAdvances]);
-
   useEffect(() => {
     if (isOpen) {
-      const data = modal?.initialData as ExpenseFormData | undefined;
+      const data = modal?.initialData as any;
+
       setForm(data ?? defaultExpenseForm);
       setAdvanceForm(defaultAdvanceForm);
       setErrors({});
       setSelectedEmployee(null);
       setEmployeeDisplayName(data?.employee_name ?? data?.employee ?? "");
       setActiveTab("expense");
-      setUseAdvance(false);
-      setAdvanceAllocations({});
+
       setEmployeeAdvances([]);
       setAdvancesFetchError(undefined);
+      if (data?.advances?.length) {
+        const allocations: Record<string, number> = {};
+
+        data.advances.forEach((adv: any) => {
+          allocations[adv.employee_advance] = adv.allocated_amount || 0;
+        });
+
+        setAdvanceAllocations(allocations);
+        setUseAdvance(true);
+      } else {
+        setAdvanceAllocations({});
+        setUseAdvance(false);
+      }
+      if (data?.employee) {
+        fetchAdvancesForEmployee(data.employee);
+      }
     }
   }, [isOpen]);
 
@@ -395,7 +400,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     setAdvancesFetchError(undefined);
   };
 
-  // ── fetch advances for an employee ───────────────────────────────────────
   const fetchAdvancesForEmployee = useCallback(async (employeeId: string) => {
     setAdvancesFetchLoading(true);
     setAdvancesFetchError(undefined);
@@ -411,7 +415,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   }, []);
 
   // ── expense field handlers ────────────────────────────────────────────────
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const target = e.target as HTMLInputElement;
     const { name, value, type } = target;
     setForm((prev) => ({
@@ -426,7 +432,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     const valid: File[] = [];
     Array.from(files).forEach((file) => {
       if (file.size > 10 * 1024 * 1024) {
-        setErrors((prev) => ({ ...prev, receipt: `"${file.name}" exceeds 10 MB limit` }));
+        setErrors((prev) => ({
+          ...prev,
+          receipt: `"${file.name}" exceeds 10 MB limit`,
+        }));
       } else {
         valid.push(file);
       }
@@ -453,7 +462,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const removeExistingAttachment = (name: string) => {
     setForm((prev) => ({
       ...prev,
-      existingAttachments: prev.existingAttachments.filter((a) => a.name !== name),
+      existingAttachments: prev.existingAttachments.filter(
+        (a) => a.name !== name,
+      ),
     }));
   };
 
@@ -499,32 +510,31 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  // ── submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (activeTab === "expense") {
-      await handleExpenseSubmit();
-    } else {
-      await handleAdvanceSubmit();
-    }
+    await handleExpenseSubmit();
   };
 
   const handleExpenseSubmit = async () => {
     if (!validateExpense()) return;
     setLoading(true);
     try {
-      // Build advances array only for entries with a non-zero allocation
       const activeAdvances = Object.entries(advanceAllocations)
         .filter(([, allocated]) => allocated > 0)
         .map(([employee_advance, allocated_amount]) => {
-          const advRow = employeeAdvances.find((a) => a.id === employee_advance);
+          const advRow = employeeAdvances.find(
+            (a) => a.id === employee_advance,
+          );
           return {
             employee_advance,
             allocated_amount,
             base_allocated_amount: allocated_amount,
-            unclaimed_amount: advRow?.unclaimedAmount ?? allocated_amount,
+            unclaimed_amount: advRow?.unclaimedAmount ,
+            advance_paid: advRow?.allocatedAmount ?? allocated_amount,
+            posting_date: advRow?.advanceDate ?? "",   
             parentfield: "advances",
             parenttype: "Expense Claim",
             doctype: "Expense Claim Advance",
+            exchange_rate: 1,
           };
         });
 
@@ -543,7 +553,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             sanctioned_amount: Number(form.amount),
           },
         ],
-        ...(useAdvance && activeAdvances.length > 0 && { advances: activeAdvances }),
+        ...(useAdvance &&
+          activeAdvances.length > 0 && { advances: activeAdvances }),
         remark: form.remarks,
       };
 
@@ -554,9 +565,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         claimId = form.id!;
       } else {
         const createRes = await createExpenseClaim(payload);
-        console.log("createRes full:", JSON.stringify(createRes));
         const rawId = createRes?.name ?? createRes?.data?.name;
-        console.log("rawId extracted:", rawId);
         if (!rawId) throw new Error("Could not determine new expense claim ID");
         const fetched = await getExpenseClaimById(rawId);
         claimId = fetched?.name ?? rawId;
@@ -565,10 +574,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       if (form.receipts.length > 0) {
         await Promise.allSettled(
           form.receipts.map((file) =>
-            attachDocumentToExpenseClaim(claimId, file).catch((err) =>
-              console.warn(`Failed to attach "${file.name}":`, err)
-            )
-          )
+            attachDocumentToExpenseClaim(claimId, file).catch((err) => {
+              // Handle attachment error silently or log it
+            }),
+          ),
         );
       }
 
@@ -584,37 +593,13 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       setLoading(false);
     }
   };
-
-  const handleAdvanceSubmit = async () => {
-    setLoading(true);
-    try {
-      console.log("Advance allocations payload:", advanceAllocations);
-      reset();
-      onClose();
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── footer ────────────────────────────────────────────────────────────────
   const footer = (
     <>
       <Button variant="secondary" onClick={onClose}>
         Cancel
       </Button>
-      <Button
-        variant="primary"
-        onClick={handleSubmit}
-        loading={loading || (activeTab === "advance" && advanceListLoading)}
-        disabled={activeTab === "advance" && advanceListLoading}
-      >
-        {activeTab === "advance"
-          ? "Save Allocations"
-          : isEditMode
-          ? "Update"
-          : "Submit"}
+      <Button variant="primary" onClick={handleSubmit} loading={loading}>
+        {isEditMode ? "Update" : "Submit"}
       </Button>
     </>
   );
@@ -627,14 +612,18 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEditMode ? "Edit Expense Claim" : "Expense Claim"}
-      subtitle={isEditMode ? "Update expense claim" : "Submit a new expense claim"}
+      subtitle={
+        isEditMode ? "Update expense claim" : "Submit a new expense claim"
+      }
       icon={CreditCard}
       footer={footer}
       customWidth="46vw"
       height="620px"
     >
-      <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col">
-
+      <form
+        onSubmit={(e) => e.preventDefault()}
+        className="h-full flex flex-col"
+      >
         {/* ── tab strip ── */}
         <div className="px-4 pt-3">
           <TabStrip
@@ -646,7 +635,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
         {/* ── expense tab ──────────────────────────────────────────────────── */}
         {activeTab === "expense" && (
-           <div className="p-4 flex flex-col gap-4 overflow-y-auto" style={{ height: "420px" }}>
+          <div
+            className="p-4 flex flex-col gap-4 overflow-y-auto"
+            style={{ height: "420px" }}
+          >
             <ModalInput
               label="Claim title"
               name="claim_title"
@@ -665,7 +657,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   value={form.category}
                   onChange={(val) => {
                     setForm((prev) => ({ ...prev, category: val || "" }));
-                    if (errors.category) setErrors((prev) => ({ ...prev, category: "" }));
+                    if (errors.category)
+                      setErrors((prev) => ({ ...prev, category: "" }));
                   }}
                   fetchOptions={fetchCategories}
                   placeholder="Select a category"
@@ -685,7 +678,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     }}
                   />
                   {errors.date_incurred && (
-                    <span className="text-danger text-[10px]">{errors.date_incurred}</span>
+                    <span className="text-danger text-[10px]">
+                      {errors.date_incurred}
+                    </span>
                   )}
                 </div>
               </div>
@@ -751,6 +746,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 />
               </div>
             </div>
+
             {form.employee && employeeAdvances.length > 0 && (
               <div className="flex items-center gap-2">
                 <button
@@ -761,8 +757,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     const next = !useAdvance;
                     setUseAdvance(next);
                     if (!next) {
+                      // When toggling off, zero all allocations
                       const cleared: Record<string, number> = {};
-                      employeeAdvances.forEach((a) => { cleared[a.id] = 0; });
+                      employeeAdvances.forEach((a) => {
+                        cleared[a.id] = 0;
+                      });
                       setAdvanceAllocations(cleared);
                     }
                   }}
@@ -771,7 +770,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     height: "16px",
                     borderRadius: "4px",
                     border: `2px solid ${useAdvance ? "var(--color-primary, #4f46e5)" : "var(--border-color, #d1d5db)"}`,
-                    background: useAdvance ? "var(--color-primary, #4f46e5)" : "transparent",
+                    background: useAdvance
+                      ? "var(--color-primary, #4f46e5)"
+                      : "transparent",
                     flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
@@ -782,7 +783,13 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 >
                   {useAdvance && (
                     <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                      <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path
+                        d="M1 3.5L3.5 6L8 1"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   )}
                 </button>
@@ -793,7 +800,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     setUseAdvance(next);
                     if (!next) {
                       const cleared: Record<string, number> = {};
-                      employeeAdvances.forEach((a) => { cleared[a.id] = 0; });
+                      employeeAdvances.forEach((a) => {
+                        cleared[a.id] = 0;
+                      });
                       setAdvanceAllocations(cleared);
                     }
                   }}
@@ -801,16 +810,19 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   Settle Against Advance
                 </label>
                 {advancesFetchLoading && (
-                  <span className="text-[11px] text-muted ml-1">Loading advances…</span>
+                  <span className="text-[11px] text-muted ml-1">
+                    Loading advances…
+                  </span>
                 )}
               </div>
             )}
 
-            {/* ── advance summary banner (only when toggled on) ── */}
+            {/* ── advance summary banner (only when toggled on and allocations exist) ── */}
             {useAdvance &&
               form.employee &&
               !advancesFetchLoading &&
               advanceSummary.totalAvailable > 0 &&
+              advanceSummary.totalAllocated > 0 &&
               form.amount !== "" &&
               Number(form.amount) > 0 && (
                 <AdvanceSummaryBanner
@@ -829,7 +841,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 Upload Receipt
               </label>
 
-              {/* existing attachments (edit mode) */}
               {form.existingAttachments.length > 0 && (
                 <div className="flex flex-col gap-2 mb-2">
                   {form.existingAttachments.map((att) => (
@@ -864,7 +875,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 </div>
               )}
 
-              {/* new files queued */}
               {form.receipts.length > 0 && (
                 <div className="flex flex-col gap-2 mb-2">
                   {form.receipts.map((file, index) => (
@@ -891,7 +901,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 </div>
               )}
 
-              {/* drop zone always visible */}
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -911,7 +920,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 <Upload size={22} className="text-muted" />
                 <p className="text-sm text-muted">
                   Drag and drop files, or{" "}
-                  <span className="text-primary font-medium cursor-pointer">Browse</span>
+                  <span className="text-primary font-medium cursor-pointer">
+                    Browse
+                  </span>
                 </p>
                 <p className="text-xs text-muted">Max 10MB per file</p>
               </div>
@@ -947,7 +958,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         )}
 
         {activeTab === "advance" && (
-           <div className="p-4 overflow-y-auto" style={{ height: "420px" }}>
+          <div className="p-4 overflow-y-auto" style={{ height: "420px" }}>
             {!form.employee ? (
               <div className="flex items-center justify-center h-full text-muted">
                 <span className="text-sm">
@@ -962,8 +973,8 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 onRetry={() => fetchAdvancesForEmployee(form.employee)}
                 onAllocationChange={handleAdvanceAllocationChange}
                 onLoadingChange={setAdvanceListLoading}
-                // Pass current allocations so the list reflects the auto-computed values
                 allocations={advanceAllocations}
+                expenseAmount={form.amount === "" ? 0 : Number(form.amount)}
               />
             )}
           </div>

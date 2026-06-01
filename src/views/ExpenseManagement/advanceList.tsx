@@ -1,8 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   AlertTriangle,
   ChevronLeft,
@@ -19,7 +15,8 @@ export interface EmployeeAdvance {
   advanceDate: string;
   allocatedAmount: number;
   unclaimedAmount: number;
-   purpose: string;
+  exchange_Rate: number;
+  purpose: string;
 }
 
 interface NormalizedPagination {
@@ -42,6 +39,7 @@ interface EmployeeAdvanceListProps {
   onAllocationChange?: (id: string, newAllocated: number) => void;
   onLoadingChange?: (loading: boolean) => void;
   allocations?: Record<string, number>;
+  expenseAmount?: number;
 }
 
 const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
@@ -53,32 +51,109 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
   onPageChange,
   onRetry,
   onModifyAllocation,
+  onAllocationChange,
   onLoadingChange,
   allocations: allocationsProp,
+  expenseAmount = 0,
 }) => {
-
   useEffect(() => {
     onLoadingChange?.(loading);
   }, [loading, onLoadingChange]);
 
-  const [localAllocations, setLocalAllocations] = useState<Record<string, number>>(
-    allocationsProp ?? {}
-  );
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!allocationsProp) return;
+
+    const checked = new Set<string>();
+
+    Object.entries(allocationsProp).forEach(([id, amount]) => {
+      if (amount > 0) {
+        checked.add(id);
+      }
+    });
+
+    setCheckedIds(checked);
+  }, [allocationsProp]);
+
+  const [localAllocations, setLocalAllocations] = useState<
+    Record<string, number>
+  >(allocationsProp ?? {});
 
   useEffect(() => {
     if (!allocationsProp) return;
+
+    const allZero = Object.values(allocationsProp).every((v) => v === 0);
+    if (allZero) {
+      setCheckedIds(new Set());
+    }
+
     setLocalAllocations(allocationsProp);
   }, [allocationsProp]);
 
+  const computeAllocations = useCallback(
+    (checked: Set<string>, amount: number): Record<string, number> => {
+      const result: Record<string, number> = {};
+      let remaining = amount;
+      advances.forEach((adv) => {
+        result[adv.id] = 0;
+      });
+      const checkedAdvances = advances
+        .filter((adv) => checked.has(adv.id))
+        .sort((a, b) =>
+          (a.advanceDate ?? "").localeCompare(b.advanceDate ?? ""),
+        );
+
+      for (const adv of checkedAdvances) {
+        if (remaining <= 0) break;
+        const available = adv.unclaimedAmount ?? 0;
+        const allocated = Math.min(available, remaining);
+        result[adv.id] = allocated;
+        remaining -= allocated;
+      }
+
+      return result;
+    },
+    [advances],
+  );
+
+  const handleCheckboxToggle = (id: string) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      const newAllocations = computeAllocations(next, expenseAmount);
+      setLocalAllocations(newAllocations);
+      return next;
+    });
+  };
+
+  const prevAllocationsRef = React.useRef<Record<string, number>>({});
+  useEffect(() => {
+    const prev = prevAllocationsRef.current;
+    Object.entries(localAllocations).forEach(([id, amt]) => {
+      if (prev[id] !== amt) {
+        onAllocationChange?.(id, amt);
+      }
+    });
+    prevAllocationsRef.current = { ...localAllocations };
+  }, [localAllocations, onAllocationChange]);
+
+  useEffect(() => {
+    if (checkedIds.size === 0) return;
+    const newAllocations = computeAllocations(checkedIds, expenseAmount);
+    setLocalAllocations(newAllocations);
+  }, [expenseAmount]);
+
   const getAllocated = useCallback(
     (id: string) => localAllocations[id] ?? 0,
-    [localAllocations]
+    [localAllocations],
   );
 
   const totalAllocated = advances.reduce((s, a) => s + getAllocated(a.id), 0);
   const totalUnclaimed = advances.reduce((s, a) => s + a.unclaimedAmount, 0);
-
-  // ── Loading / error / empty states ────────────────────────────────────────
 
   if (loading) {
     return (
@@ -95,7 +170,10 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
         <AlertTriangle size={15} />
         <span className="text-sm">{fetchError}</span>
         {onRetry && (
-          <button onClick={onRetry} className="text-xs text-primary underline hover:opacity-80">
+          <button
+            onClick={onRetry}
+            className="text-xs text-primary underline hover:opacity-80"
+          >
             Retry
           </button>
         )}
@@ -113,13 +191,14 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
 
   return (
     <div className="flex flex-col gap-3">
-
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <p className="text-sm font-semibold text-main">Employee Advance Allocation</p>
+          <p className="text-sm font-semibold text-main">
+            Employee Advance Allocation
+          </p>
           <p className="text-[11px] text-muted">
-            Amounts are auto-allocated based on the expense.
+            Check an advance row to allocate against the expense amount.
           </p>
         </div>
         {onModifyAllocation && (
@@ -133,17 +212,14 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
           </button>
         )}
       </div>
-
-      {/* ── Table ── */}
       <div className="rounded-xl border border-[var(--border)] overflow-hidden">
-
-        {/* Header */}
-        <div className="grid grid-cols-[1.2fr_1fr_1fr_1fr] bg-[var(--row-hover)] border-b border-[var(--border)] px-4 py-2.5">
+        <div className="grid grid-cols-[32px_1.2fr_1fr_1fr_1fr] bg-[var(--row-hover)] border-b border-[var(--border)] px-4 py-2.5">
+          <div />
           {[
-            { label: "Advance Date",  align: "text-left"  },
-            { label: "Allocated Amt", align: "text-center"  },
+            { label: "Advance Date", align: "text-left" },
+            { label: "Allocated Amt", align: "text-center" },
             { label: "Unclaimed Amt", align: "text-center" },
-            { label: "Purpose",        align: "text-right"  },
+            { label: "Purpose", align: "text-right" },
           ].map(({ label, align }) => (
             <div
               key={label}
@@ -154,39 +230,98 @@ const EmployeeAdvanceList: React.FC<EmployeeAdvanceListProps> = ({
           ))}
         </div>
 
-        {/* Rows */}
         <div className="divide-y divide-[var(--border)]">
           {advances.map((adv) => {
-            const allocated    = getAllocated(adv.id);
+            const allocated = getAllocated(adv.id);
+            const isChecked = checkedIds.has(adv.id);
             const hasUnclaimed = adv.unclaimedAmount > 0;
 
             return (
               <div
                 key={adv.id}
-                className={`grid grid-cols-[1.2fr_1fr_1fr_1fr] px-4 py-3 items-center
+                className={`grid grid-cols-[32px_1.2fr_1fr_1fr_1fr] px-4 py-3 items-center
                   transition-colors hover:bg-[var(--row-hover)]
-                  ${hasUnclaimed ? "bg-primary/[0.03]" : ""}`}
+                  ${isChecked ? "bg-primary/[0.04]" : hasUnclaimed ? "" : ""}`}
               >
-                <div className="text-xs text-muted text-left">{adv.advanceDate}</div>
-                
-                  <div className={`text-xs font-mono font-semibold text-center ${allocated > 0 ? "text-primary" : "text-muted"}`}>
-                    {allocated.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </div>
-              
+                <div className="flex items-center justify-center">
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={isChecked}
+                    disabled={adv.unclaimedAmount <= 0}
+                    onClick={() => handleCheckboxToggle(adv.id)}
+                    style={{
+                      width: "15px",
+                      height: "15px",
+                      borderRadius: "3px",
+                      border: `1.5px solid ${
+                        adv.unclaimedAmount <= 0
+                          ? "var(--border-color, #d1d5db)"
+                          : isChecked
+                            ? "var(--color-primary, #4f46e5)"
+                            : "var(--border-color, #d1d5db)"
+                      }`,
+                      background: isChecked
+                        ? "var(--color-primary, #4f46e5)"
+                        : "transparent",
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor:
+                        adv.unclaimedAmount <= 0 ? "not-allowed" : "pointer",
+                      transition: "all 0.15s",
+                      opacity: adv.unclaimedAmount <= 0 ? 0.4 : 1,
+                    }}
+                  >
+                    {isChecked && (
+                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                        <path
+                          d="M1 3L3 5.5L7 1"
+                          stroke="white"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
 
-             
-                <div className={`text-center text-xs font-mono font-semibold
-  ${adv.unclaimedAmount > 0 ? "text-amber-600" : "text-emerald-600"}`}
->
-  {adv.unclaimedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-</div>
+                <div className="text-xs text-muted text-left">
+                  {adv.advanceDate}
+                </div>
 
-                <div className="text-xs text-muted text-right truncate" title={adv.purpose}>
-  {adv.purpose}
-</div>
+                <div
+                  className={`text-xs font-mono font-semibold text-center ${
+                    allocated > 0 ? "text-primary" : "text-muted"
+                  }`}
+                >
+                  {allocated.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+
+                <div
+                  className={`text-center text-xs font-mono font-semibold ${
+                    adv.unclaimedAmount > 0
+                      ? "text-amber-600"
+                      : "text-emerald-600"
+                  }`}
+                >
+                  {adv.unclaimedAmount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+
+                <div
+                  className="text-xs text-muted text-right truncate"
+                  title={adv.purpose}
+                >
+                  {adv.purpose || "—"}
+                </div>
               </div>
             );
           })}
@@ -252,7 +387,12 @@ const PaginationBar: React.FC<PaginationBarProps> = ({
   if (pagination.totalPages <= 1) return null;
 
   const pages = Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-    .filter((p) => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+    .filter(
+      (p) =>
+        p === 1 ||
+        p === pagination.totalPages ||
+        Math.abs(p - currentPage) <= 1,
+    )
     .reduce<(number | "…")[]>((acc, p, i, arr) => {
       if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
       acc.push(p);
@@ -275,20 +415,24 @@ const PaginationBar: React.FC<PaginationBarProps> = ({
         </NavButton>
         {pages.map((p, i) =>
           p === "…" ? (
-            <span key={`ellipsis-${i}`} className="text-[11px] text-muted px-1">…</span>
+            <span key={`ellipsis-${i}`} className="text-[11px] text-muted px-1">
+              …
+            </span>
           ) : (
             <button
               key={p}
               onClick={() => onPageChange(p as number)}
               disabled={loading}
               className={`w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium border transition-colors
-                ${currentPage === p
-                  ? "bg-primary text-white border-primary"
-                  : "border-[var(--border)] text-muted hover:text-main hover:bg-card"}`}
+                ${
+                  currentPage === p
+                    ? "bg-primary text-white border-primary"
+                    : "border-[var(--border)] text-muted hover:text-main hover:bg-card"
+                }`}
             >
               {p}
             </button>
-          )
+          ),
         )}
         <NavButton
           onClick={() => onPageChange(currentPage + 1)}

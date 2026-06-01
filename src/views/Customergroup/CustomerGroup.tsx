@@ -243,11 +243,11 @@ const CustomerGroup: React.FC = () => {
 
   return (
     <AppPage>
-      <AppPageHeader
+      {/* <AppPageHeader
         title="Customer Groups"
         description="Manage customer group hierarchy and structure."
         icon={<Users />}
-      />
+      /> */}
       <AppPageBody>
         <ExpandableTreeTable
           ref={tableRef}

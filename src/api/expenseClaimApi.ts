@@ -133,7 +133,7 @@ export async function getExpenseClaimTypes(
 }
 
   export async function getExpenseClaimById(id: string): Promise<any> {
-    const url = `${ExpenseClaimAPI.getExpenseClaimbyId}/?id=${encodeURIComponent(id)}`;
+    const url = `${ExpenseClaimAPI.getExpenseClaimbyId}?id=${encodeURIComponent(id)}`;
     const resp: AxiosResponse = await api.get(url);
       return resp.data?.message?.data || null;
   }
@@ -200,6 +200,7 @@ export interface MappedEmployeeAdvance {
   allocatedAmount: number;  
   unclaimedAmount: number; 
   claimedAmount: number;
+  purpose: string; 
   status: "Pending" | "Partially Claimed" | "Fully Claimed";
 }
 function deriveStatus(raw: EmployeeAdvanceRaw): MappedEmployeeAdvance["status"] {
@@ -231,13 +232,14 @@ export async function getAdvancesByEmployee(
     allocatedAmount: item.advance_amount,
     unclaimedAmount: Math.max(0, item.advance_amount - item.claimed_amount),
     claimedAmount:   item.claimed_amount,
+    purpose:        item.purpose,
     status:          deriveStatus(item),
   }));
 }
 
 export interface AttachDocumentPayload {
   filename: string;
-  filedata: string; // base64
+  filedata: string; 
   doctype: string;
   docname: string;
   is_private: number;
@@ -277,5 +279,8 @@ export interface ExpenseClaimAdvanceItem {
   unclaimed_amount: number; 
   parentfield: "advances";
   parenttype: "Expense Claim";
+  exchange_rate: 1;
+  advance_amount: number;   
+  posting_date: string; 
   doctype: "Expense Claim Advance";
 }

@@ -550,21 +550,21 @@ const Items: React.FC = () => {
               setPage(1);
             }}
             onPageChange={setPage}
-            extraFilters={
-              <div className="w-44">
-                <FilterSelect
-                  value={filters.taxCategory || ""}
-                  onChange={(e) => {
-                    setFilters((prev) => ({
-                      ...prev,
-                      taxCategory: e.target.value || undefined,
-                    }));
-                    setPage(1);
-                  }}
-                  options={taxCategories}
-                />
-              </div>
-            }
+            // extraFilters={
+            //   <div className="w-44">
+            //     <FilterSelect
+            //       value={filters.taxCategory || ""}
+            //       onChange={(e) => {
+            //         setFilters((prev) => ({
+            //           ...prev,
+            //           taxCategory: e.target.value || undefined,
+            //         }));
+            //         setPage(1);
+            //       }}
+            //       options={taxCategories}
+            //     />
+            //   </div>
+            // }
           />
         </div>
       ) : (

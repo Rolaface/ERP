@@ -74,11 +74,10 @@ const GeneralLedger: React.FC<Props> = ({
           <button
             key={tab.id}
             onClick={() => setGlSubTab(tab.id)}
-            className={`flex items-center gap-2 pb-3 border-b-2 text-sm font-medium transition-colors ${
-              glSubTab === tab.id
+            className={`flex items-center gap-2 pb-3 border-b-2 text-sm font-medium transition-colors ${glSubTab === tab.id
                 ? "text-primary border-current"
                 : "text-muted hover:text-main border-transparent"
-            }`}
+              }`}
           >
             {tab.icon}
             <span>{tab.label}</span>
@@ -88,7 +87,7 @@ const GeneralLedger: React.FC<Props> = ({
 
       {/* Content */}
       {glSubTab === "journal" ? (
-        <JETab journalEntries={journalEntries} />
+        <JETab searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       ) : (
         <COATab
           searchTerm={searchTerm}

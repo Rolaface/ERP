@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import type { CreateUserFormData } from "../types/RoleManagement/CreateUser";
 import { getUserRoles } from "../api/RoleManagement/UserRoleApi";
 import { getLanguages } from "../api/RoleManagement/CreateUserApi";
+import { showApiError } from "../utils/alert";
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 type FormErrors = Partial<Record<keyof CreateUserFormData, string>>;
@@ -139,20 +140,21 @@ export function useCreateUser({ onSubmit, initialData }: UseCreateUserOptions) {
     }, []);
 
 
-    const handleSubmit = useCallback(async () => {
-        const validationErrors = validateForm(form);
-        if (Object.keys(validationErrors).length > 0) {
-            setErrors(validationErrors);
-            return;
-        }
-        setIsSubmitting(true);
-        try {
-            await onSubmit(form);
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [form, onSubmit]);
-
+const handleSubmit = useCallback(async () => {
+    const validationErrors = validateForm(form);
+    if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        return;
+    }
+    setIsSubmitting(true);
+    try {
+        await onSubmit(form);
+    } catch (error) {
+        showApiError(error);
+    } finally {
+        setIsSubmitting(false);
+    }
+}, [form, onSubmit]);
 
     const handleReset = useCallback(() => {
         setForm(
