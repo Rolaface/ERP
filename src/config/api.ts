@@ -31,8 +31,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -503,6 +503,7 @@ export const API = {
     delete: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.delete_supplier`,
     getStatement: `${ERP_BASE}/api/method/custom_api.api.reports.supplier_statement.get_supplier_statement`,
     CreatePayment: `${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
+     updateStatus: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.update_supplier_status`,
   },
 
   places: {
