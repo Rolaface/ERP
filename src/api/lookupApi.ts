@@ -65,37 +65,36 @@ interface SearchApiParams {
 
 export async function getCompanyPayableAccounts(params: SearchApiParams = {}): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getCompanyPayableAccounts, { params });
-  return resp.data.message?.data || [];
+  return resp.data.message?.data || resp.data?.data || [];
 }
 
 export async function getCompanyRecievableAccounts(params: SearchApiParams = {}): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getCompanyRecievableAccounts, { params });
-  return resp.data.message?.data || [];
+  return resp.data.message?.data || resp.data?.data || [];
 }
 
 export async function getCompanyCostCenters(params: SearchApiParams = {}): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getCompanyCostCenter, { params });
-  return resp.data.message?.data || [];
+  return resp.data.message?.data || resp.data?.data || [];
 }
 
 export async function getCustomerList(params: SearchApiParams = {}): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getCustomer, { params });
-  return resp.data.message?.data || [];
+  return resp.data.message?.data || resp.data?.data || [];
 }
 
 export async function getCustomerListJe(params: SearchApiParams = {}): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getCustomer, { params });
-    return resp.data?.data || [];
+  return resp.data?.data || [];
 }
 
 export async function getSupplierList(params: SearchApiParams = {}): Promise<any[]> {
   const resp: AxiosResponse = await api.get(RolaLookupAPI.getSupplier, { params });
-  return resp.data?.message?.data || resp.data || [];
+  return resp.data.message?.data || resp.data?.data || [];
 }
 
 export async function getCurrencyList(params: SearchApiParams = {}): Promise<any[]> {
   const resp = await api.get(RolaLookupAPI.getCurrency, { params });
-
   return resp.data?.data || [];
 }
 
