@@ -145,7 +145,7 @@ const menuItems: MenuItem[] = [
     name: "Customer",
     to: "/crm",
     icon: <Users {...iconProps} />,
-    modules: ["Customer", "Payment Entry"],
+    modules: ["Customer", "Payment Entry","Customer Group"],
     hideInEmployeeView: true,
   },
   {
@@ -210,7 +210,7 @@ const settingsItems: SettingsItem[] = [
     to: "/bank-management",
     label: "Bank Management",
     icon: <Landmark {...iconProps} />,
-    modules: ["Bank", "Bank Account"],
+    modules: ["Bank", "Bank Account" , "Mode of Payment","Currency Exchange"],
     hideInEmployeeView: true,
   },
   // {

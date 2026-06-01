@@ -25,7 +25,6 @@ const ItemsCategory = lazy(() => import("./ItemsCategory"));
 const WarehouseView = lazy(() => import("./Warehouse"));
 const Stock = lazy(() => import("./Stock"));
 const Import = lazy(() => import("./Import"));
-const TaxTemplate = lazy(() => import("./TaxTemplate"));
 const InventoryDashboard = lazy(() => import("./InventoryDashboard"));
 const TaxCategory = lazy(() => import("./TaxCategory"));
 
@@ -45,13 +44,6 @@ const ALL_INVENTORY_TAB = [
     label: "Dashboard",
     icon: <LayoutDashboard {...iconProps} />,
      module: null,
-  },
-  {
-    id: "taxTemplates",
-    label: "Tax Templates",
-    icon: <ReceiptText  {...iconProps} />, 
-     module: "Item Tax Template",
-    action: "read" as const,
   },
   {
     id: "items",
@@ -118,7 +110,6 @@ const Inventory: React.FC = () => {
     warehouse: <WarehouseView openWarehouseCreate={openWarehouseCreate} openWarehouseEdit={openWarehouseEdit} />,
     stock: <Stock />,
     import: <Import />,
-    taxTemplates: <TaxTemplate />,
   }), [openWarehouseCreate, openWarehouseEdit]);
 
   const currentTabComponent = tabComponents[resolvedTab as keyof typeof tabComponents] || <InventoryDashboard />;
