@@ -425,7 +425,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                             )
                           }
                           className="w-full"
-                          placeholder="e.g. Shipping flat ₹200"
+                          placeholder="e.g. Shipping flat 200"
                         />
                       </td>
 

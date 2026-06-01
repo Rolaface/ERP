@@ -94,7 +94,7 @@ const SocialProof: React.FC = () => {
           {/* Metric 2 */}
           <div className="card-premium text-center py-8">
             <p className="text-[40px] font-semibold text-gradient">
-              ₹{revenue}Cr+
+              {revenue}Cr+
             </p>
             <p className="text-[12px] text-muted mt-2">
               Transactions yearly

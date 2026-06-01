@@ -35,13 +35,13 @@ type TabId =
   | "documents";
 
 const TABS = [
-  { id: "personal",     label: "Personal",     icon: <User      size={14} /> },
-  { id: "statutory",    label: "Statutory",    icon: <ShieldCheck size={14} /> },
-  { id: "employment",   label: "Employment",   icon: <Briefcase size={14} /> },
-  { id: "compensation", label: "Compensation", icon: <Banknote  size={14} /> },
-  { id: "BankAccount",  label: "Bank Account", icon: <Landmark  size={14} /> },
-  { id: "salarySlip",   label: "Salary Slip",  icon: <FileText  size={14} /> },
-  { id: "documents",    label: "Documents",    icon: <FileText  size={14} /> },
+  { id: "personal", label: "Personal", icon: <User size={14} /> },
+  { id: "statutory", label: "Statutory", icon: <ShieldCheck size={14} /> },
+  { id: "employment", label: "Employment", icon: <Briefcase size={14} /> },
+  { id: "compensation", label: "Compensation", icon: <Banknote size={14} /> },
+  { id: "BankAccount", label: "Bank Account", icon: <Landmark size={14} /> },
+  { id: "salarySlip", label: "Salary Slip", icon: <FileText size={14} /> },
+  { id: "documents", label: "Documents", icon: <FileText size={14} /> },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -61,12 +61,13 @@ const EmployeeDetailView: React.FC<Props> = ({
   onDocumentUploaded,
   hideFinancialTabs = false,
 }) => {
-  const [activeTab,       setActiveTab]       = useState<TabId>("personal");
+  const [activeTab, setActiveTab] = useState<TabId>("personal");
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [documents,       setDocuments]       = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
 
   const fullName = [emp.first_name, emp.middle_name, emp.last_name]
-    .filter(Boolean).join(" ");
+    .filter(Boolean)
+    .join(" ");
   const currency = fmt(emp.salary_currency) || "";
 
   const visibleTabs = hideFinancialTabs
@@ -135,15 +136,21 @@ const EmployeeDetailView: React.FC<Props> = ({
         />
 
         <div className="flex-1 overflow-y-auto p-5">
-          {activeTab === "personal"     && <PersonalTab emp={emp} fullName={fullName} />}
-          {activeTab === "statutory"    && <StatutoryTab emp={emp} />}
-          {activeTab === "employment"   && <EmploymentTab emp={emp} />}
-          {activeTab === "compensation" && <SalaryStructureAssignmentsSection emp={emp} currency={currency} />}
-          {activeTab === "BankAccount"  && <EmployeeBankDetails employeename={emp.employee} />}
-          {activeTab === "salarySlip"   && (
-            <SalarySlipTable employeeId={emp.employee} />  // ← self-fetching, no props needed
+          {activeTab === "personal" && (
+            <PersonalTab emp={emp} fullName={fullName} />
           )}
-          {activeTab === "documents"    && (
+          {activeTab === "statutory" && <StatutoryTab emp={emp} />}
+          {activeTab === "employment" && <EmploymentTab emp={emp} />}
+          {activeTab === "compensation" && (
+            <SalaryStructureAssignmentsSection emp={emp} currency={currency} />
+          )}
+          {activeTab === "BankAccount" && (
+            <EmployeeBankDetails employeename={emp.employee} emp={emp} />
+          )}
+          {activeTab === "salarySlip" && (
+            <SalarySlipTable employeeId={emp.employee} /> // ← self-fetching, no props needed
+          )}
+          {activeTab === "documents" && (
             <DocumentsTab
               documents={documents}
               onOpenUploadModal={() => setShowUploadModal(true)}

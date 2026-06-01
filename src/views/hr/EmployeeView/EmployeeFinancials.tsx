@@ -83,8 +83,8 @@ const InsuranceTab: React.FC = () => (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Policy No",  value: ins.policyNo },
-            { label: "Coverage",   value: `₹ ${ins.coverage.toLocaleString("en-IN")}` },
-            { label: "Premium/yr", value: `₹ ${ins.premium.toLocaleString("en-IN")}` },
+            { label: "Coverage",   value: ` ${ins.coverage.toLocaleString("en-IN")}` },
+            { label: "Premium/yr", value: ` ${ins.premium.toLocaleString("en-IN")}` },
             { label: "Valid Till", value: ins.validTill },
           ].map((f) => (
             <div key={f.label}>
@@ -131,9 +131,9 @@ const LoanAdvanceTab: React.FC = () => (
         </div>
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Total Amount", value: `₹ ${loan.amount.toLocaleString("en-IN")}` },
-            { label: "Outstanding",  value: `₹ ${loan.outstanding.toLocaleString("en-IN")}` },
-            { label: "Monthly EMI",  value: `₹ ${loan.emi.toLocaleString("en-IN")}` },
+            { label: "Total Amount", value: ` ${loan.amount.toLocaleString("en-IN")}` },
+            { label: "Outstanding",  value: ` ${loan.outstanding.toLocaleString("en-IN")}` },
+            { label: "Monthly EMI",  value: ` ${loan.emi.toLocaleString("en-IN")}` },
           ].map((f) => (
             <div key={f.label}>
               <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-0.5">

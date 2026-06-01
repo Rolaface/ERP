@@ -87,7 +87,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
 
       <Chip
         label="Payout"
-        value={`₹${(totalPayout / 1000).toFixed(0)}K`}
+        value={`${(totalPayout / 1000).toFixed(0)}K`}
         icon={<Banknote className="w-3.5 h-3.5" />}
         accent="primary"
       />
