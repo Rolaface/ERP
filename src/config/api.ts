@@ -31,8 +31,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -366,11 +366,11 @@ export const API = {
    * PROFORMA
    * ========================= */
   proforma: {
-    getAll: `${ERP_BASE}api/method/custom_api.api.selling.quotation.api.get_quotations`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.get_quotations`,
     getById: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.get_quotation_by_id`,
-    create: `${ERP_BASE}api/method/custom_api.api.selling.quotation.api.create_quotation`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.create_quotation`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation_status`,
-    edit: `$(ERP_BASE)/api/method/custom_api.api.selling.quotation.api.update_quotation`,
+    edit: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation`,
     delete: `${ERP_BASE}/api/method/erpnext.proforma.api.delete_proforma`,
   },
 
