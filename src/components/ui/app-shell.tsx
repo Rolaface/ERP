@@ -233,10 +233,11 @@ interface AppSubTabsProps {
   activeTab: string;
   onChange: (tabId: string) => void;
   trailing?: React.ReactNode;
+  leading?: React.ReactNode; 
 }
 
 export const AppSubTabs: React.FC<AppSubTabsProps> = memo(
-  ({ tabs, activeTab, onChange, trailing }) => {
+  ({ tabs, activeTab, onChange, leading, trailing }) => {   
     const handleClick = useCallback(
       (tabId: string) => onChange(tabId),
       [onChange],
@@ -244,6 +245,11 @@ export const AppSubTabs: React.FC<AppSubTabsProps> = memo(
 
     return (
       <div className="flex w-full items-center justify-between border-b border-[var(--border)] bg-card">
+        {leading && (
+          <div className="flex shrink-0 items-center pl-3">
+            {leading}
+          </div>
+        )}
         <div className="flex min-w-0 flex-1 overflow-x-auto scrollbar-hide">
           <div className="flex items-end gap-0 min-w-max px-1">
             {tabs.map((tab) => {
