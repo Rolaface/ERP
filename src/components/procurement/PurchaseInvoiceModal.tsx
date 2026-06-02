@@ -222,6 +222,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               setForm((p) => ({ ...p, terms: { buying } }))
             }
             type="buying"
+            compact={true}
           />
         </div>
       </>

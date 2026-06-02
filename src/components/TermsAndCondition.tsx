@@ -15,6 +15,7 @@ interface Props {
   setTerms: (updated: TermSection) => void;
   type?: "buying" | "selling";
   isViewMode?: boolean;
+  compact?: boolean; // ← pass true inside modals/invoices
 }
 
 type LocalPhase = TermPhase & { id?: string; isDelete?: number };
@@ -257,11 +258,11 @@ const TermsAndCondition: React.FC<Props> = ({
   setTerms,
   type,
   isViewMode = false,
+  compact = false,
 }) => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
-  // Always use live terms from parent — no draft/editing state
   const currentTerms: TermSection = terms ?? emptyTerms;
   const activeKey = TABS[activeTab].key;
 
@@ -287,21 +288,17 @@ const TermsAndCondition: React.FC<Props> = ({
     return today.toLocaleDateString("en-GB");
   };
 
-  // Auto-update dueDates whenever credit_days change
   useEffect(() => {
     const total = currentPaymentPhases.reduce(
       (sum, p) => sum + Number(p.credit_days || 0),
       0,
     );
-    // Only update if value would actually change to avoid infinite loop
     const current = ensurePayment(currentTerms).dueDates;
     const next = total ? `Payment due within ${total} days` : "";
     if (current !== next) {
       updatePayment({ dueDates: next });
     }
   }, [currentPaymentPhases]);
-
-  // ── Direct-to-parent update helpers ────────────────────────────────────────
 
   const updateTopField = (key: keyof TermSection, value: string) =>
     setTerms({ ...currentTerms, [key]: value });
@@ -336,33 +333,37 @@ const TermsAndCondition: React.FC<Props> = ({
     0,
   );
 
+  // ── Cell padding — tighter in compact mode ──────────────────────────────────
+  const cellPy = compact ? "py-1" : "py-2.5";
+
   // ── Render helpers ──────────────────────────────────────────────────────────
 
   const renderPaymentTable = () => {
     const payment = ensurePayment(currentTerms);
     const rawPhases = payment.phases as LocalPhase[];
+    const visiblePhases = rawPhases.filter((p) => p.isDelete !== 1);
 
     return (
-      <div className="space-y-4">
-        {/* Responsive table wrapper */}
+      <div className={compact ? "space-y-2" : "space-y-4"}>
+        {/* Table */}
         <div className="border border-theme rounded-lg overflow-x-auto">
           <table className="w-full text-sm min-w-[480px]">
             <colgroup>
-              <col style={{ width: 32 }} />
-              <col style={{ width: "25%" }} />
-              <col style={{ width: 72 }} />
+              <col style={{ width: 28 }} />
+              <col style={{ width: "22%" }} />
+              <col style={{ width: 64 }} />
               <col />
-              <col style={{ width: 100 }} />
-              {!isViewMode && <col style={{ width: 36 }} />}
+              <col style={{ width: 90 }} />
+              {!isViewMode && <col style={{ width: 32 }} />}
             </colgroup>
             <thead>
               <tr className="table-head">
-                <th className="px-3 py-2 text-left text-xs font-medium">#</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Phase</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">%</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Description</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Credit Days</th>
-                {!isViewMode && <th />}
+                <th className="px-2 py-1.5 text-left text-xs font-medium">#</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">Phase</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">%</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">Description</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">Credit Days</th>
+                {!isViewMode && <th style={{ width: 32 }} />}
               </tr>
             </thead>
             <tbody>
@@ -373,16 +374,16 @@ const TermsAndCondition: React.FC<Props> = ({
                     key={idx}
                     className="border-t border-theme row-hover align-middle"
                   >
-                    <td className="px-3 py-2.5 text-xs text-muted">{idx + 1}</td>
+                    <td className={`px-2 ${cellPy} text-xs text-muted`}>{idx + 1}</td>
 
-                    <td className="px-3 py-2.5 overflow-hidden">
+                    <td className={`px-2 ${cellPy} overflow-hidden`}>
                       {isViewMode ? (
-                        <span className="block truncate text-sm" title={p.name}>
+                        <span className="block truncate text-xs" title={p.name}>
                           {p.name || "—"}
                         </span>
                       ) : (
                         <input
-                          className="w-full bg-transparent text-muted outline-none text-sm"
+                          className="w-full bg-transparent text-muted outline-none text-xs"
                           value={p.name}
                           placeholder="Phase name..."
                           onChange={(e) =>
@@ -392,9 +393,9 @@ const TermsAndCondition: React.FC<Props> = ({
                       )}
                     </td>
 
-                    <td className="px-3 py-2.5 overflow-hidden">
+                    <td className={`px-2 ${cellPy} overflow-hidden`}>
                       {isViewMode ? (
-                        <span className="text-sm">{p.percentage || "—"}</span>
+                        <span className="text-xs">{p.percentage || "—"}</span>
                       ) : (
                         <NumericInput
                           name="percentage"
@@ -405,22 +406,19 @@ const TermsAndCondition: React.FC<Props> = ({
                               percentage: value == null ? "" : String(value),
                             })
                           }
-                          className={`w-full ${isOverLimit ? "text-danger" : "text-muted"}`}
+                          className={`w-full text-xs ${isOverLimit ? "text-danger" : "text-muted"}`}
                         />
                       )}
                     </td>
 
-                    <td className="px-3 py-2.5 overflow-hidden">
+                    <td className={`px-2 ${cellPy} overflow-hidden`}>
                       {isViewMode ? (
-                        <span
-                          className="block truncate text-sm"
-                          title={p.condition}
-                        >
+                        <span className="block truncate text-xs" title={p.condition}>
                           {p.condition || "—"}
                         </span>
                       ) : (
                         <input
-                          className="w-full bg-transparent text-muted outline-none text-sm"
+                          className="w-full bg-transparent text-muted outline-none text-xs"
                           value={p.condition}
                           placeholder="Enter description..."
                           onChange={(e) =>
@@ -430,9 +428,9 @@ const TermsAndCondition: React.FC<Props> = ({
                       )}
                     </td>
 
-                    <td className="px-3 py-2.5 overflow-hidden">
+                    <td className={`px-2 ${cellPy} overflow-hidden`}>
                       {isViewMode ? (
-                        <span className="text-sm font-medium block text-center">
+                        <span className="text-xs font-medium block text-center">
                           {p.credit_days || "—"}
                         </span>
                       ) : (
@@ -445,19 +443,19 @@ const TermsAndCondition: React.FC<Props> = ({
                               credit_days: value == null ? "" : String(value),
                             })
                           }
-                          className="w-full text-center"
+                          className="w-full text-center text-xs"
                         />
                       )}
                     </td>
 
                     {!isViewMode && (
-                      <td className="px-3 py-2.5 text-center align-middle">
+                      <td className={`px-2 ${cellPy} text-center align-middle`}>
                         <button
                           type="button"
                           onClick={() => removePhase(idx)}
                           className="flex items-center justify-center text-danger opacity-60 hover:opacity-100 transition-opacity"
                         >
-                          <FaTrash size={11} />
+                          <FaTrash size={10} />
                         </button>
                       </td>
                     )}
@@ -465,13 +463,15 @@ const TermsAndCondition: React.FC<Props> = ({
                 );
               })}
 
-              {rawPhases.filter((p) => p.isDelete !== 1).length === 0 && (
+              {visiblePhases.length === 0 && (
                 <tr>
                   <td
                     colSpan={isViewMode ? 5 : 6}
-                    className="px-3 py-4 text-center text-xs text-muted"
+                    className="px-3 py-3 text-center text-xs text-muted"
                   >
-                    {isViewMode ? "No phases defined." : "No phases yet. Click \"Add Phase\" to begin."}
+                    {isViewMode
+                      ? "No phases defined."
+                      : 'No phases yet. Click "+ Add Phase" below to begin.'}
                   </td>
                 </tr>
               )}
@@ -480,32 +480,41 @@ const TermsAndCondition: React.FC<Props> = ({
         </div>
 
         {/* Over-limit warning */}
-        <div style={{ minHeight: 16 }} className="flex items-center">
-          {!isViewMode && isOverLimit && (
-            <span className="text-danger text-xs">
-              Total percentage cannot exceed 100% (currently {totalPercentage}%)
-            </span>
-          )}
-        </div>
+        {!isViewMode && isOverLimit && (
+          <span className="block text-danger text-xs">
+            Total percentage cannot exceed 100% (currently {totalPercentage}%)
+          </span>
+        )}
 
-        {/* Add Phase button */}
+        {/* "Add Phase" button — always below the table, size adapts to compact */}
         {!isViewMode && (
           <div className="flex justify-end">
             <button
               type="button"
               onClick={addPhase}
-              className="px-4 py-1.5 bg-primary text-white rounded-lg text-sm flex items-center gap-1.5"
+              className={`bg-primary text-white rounded-lg flex items-center gap-1.5 ${
+                compact
+                  ? "px-3 py-1 text-xs"
+                  : "px-4 py-1.5 text-sm"
+              }`}
             >
-              <FaPlus size={11} /> Add Phase
+              <FaPlus size={compact ? 9 : 11} /> Add Phase
             </button>
           </div>
         )}
 
         {/* Payment meta fields */}
-        <div className="space-y-2 text-sm pt-1">
-          {/* Due Dates — always read-only, derived from credit_days sum */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-h-[28px]">
-            <span className="w-44 flex-shrink-0 text-muted font-medium text-xs sm:text-sm">
+        {/* compact → 2-col grid; default → stacked */}
+        <div
+          className={
+            compact
+              ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 pt-2 border-t border-theme text-sm"
+              : "space-y-2 text-sm pt-1"
+          }
+        >
+          {/* Due Dates — always read-only */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[24px]">
+            <span className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}>
               Due Dates:
             </span>
             <TemplateField
@@ -520,8 +529,8 @@ const TermsAndCondition: React.FC<Props> = ({
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-h-[28px]">
-            <span className="w-44 flex-shrink-0 text-muted font-medium text-xs sm:text-sm">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[24px]">
+            <span className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}>
               Late Payment Charges:
             </span>
             <TemplateField
@@ -539,12 +548,14 @@ const TermsAndCondition: React.FC<Props> = ({
             value={payment.taxes ?? ""}
             disabled={isViewMode}
             onChange={(v) => updatePayment({ taxes: v })}
+            compact={compact}
           />
           <LabeledRow
             label="Notes:"
             value={payment.notes ?? ""}
             disabled={isViewMode}
             onChange={(v) => updatePayment({ notes: v })}
+            compact={compact}
           />
         </div>
       </div>
@@ -557,7 +568,9 @@ const TermsAndCondition: React.FC<Props> = ({
       value={(currentTerms[key] as string) ?? ""}
       onChange={(e) => updateTopField(key, e.target.value)}
       placeholder={`Enter ${label.toLowerCase()}...`}
-      className="w-full h-48 bg-card border border-theme rounded-lg px-4 py-3 text-sm text-main focus:ring-2 outline-none resize-none disabled:opacity-60 disabled:cursor-not-allowed"
+      className={`w-full bg-card border border-theme rounded-lg px-4 py-3 text-sm text-main focus:ring-2 outline-none resize-none disabled:opacity-60 disabled:cursor-not-allowed ${
+        compact ? "h-32" : "h-48"
+      }`}
     />
   );
 
@@ -575,7 +588,7 @@ const TermsAndCondition: React.FC<Props> = ({
       <div className="bg-card rounded-xl border border-theme shadow-sm overflow-hidden w-full">
         {/* Header */}
         <div
-          className="px-3 sm:px-4 py-2.5 flex items-center gap-2"
+          className="px-3 py-2 flex items-center gap-2"
           style={{ background: "var(--primary-600)" }}
         >
           <h2 className="font-semibold text-white text-xs sm:text-sm truncate flex-1 min-w-0">
@@ -584,38 +597,35 @@ const TermsAndCondition: React.FC<Props> = ({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="flex-shrink-0 flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-lg text-xs font-medium text-white border border-white/30 hover:bg-white/15 transition-colors whitespace-nowrap"
+            className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-white border border-white/30 hover:bg-white/15 transition-colors whitespace-nowrap"
           >
             <FaFileAlt size={10} />
-            <span className="hidden sm:inline">Preview All</span>
-            <span className="sm:hidden">Preview</span>
+            <span>Preview</span>
           </button>
         </div>
 
-        {/* Tab pills — scrollable on small screens */}
-        <div className="flex items-center gap-1 px-2 sm:px-4 py-2 border-b border-theme bg-card overflow-x-auto scrollbar-none">
+        {/* Tab pills — always scrollable */}
+        <div className="flex items-center gap-1 px-2 py-1.5 border-b border-theme bg-card overflow-x-auto scrollbar-none">
           {TABS.map((tab, i) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(i)}
-              className={`flex-shrink-0 px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap
+              className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
                 ${i === activeTab ? "text-white shadow-sm" : "text-muted hover:bg-theme"}`}
               style={i === activeTab ? { background: "var(--primary-600)" } : {}}
             >
-              {/* Show short label on all sizes — it's already abbreviated */}
               {tab.short}
             </button>
           ))}
         </div>
 
         {/* Content */}
-        <div className="p-3 sm:p-5 bg-card min-h-[120px]">
+        <div className={`bg-card ${compact ? "p-2 sm:p-3" : "p-3 sm:p-5"} min-h-[80px]`}>
           {activeKey === "payment"
             ? renderPaymentTable()
             : renderTextSection(activeKey, TABS[activeTab].label)}
         </div>
-        {/* No footer action bar — parent owns Save/Reset */}
       </div>
     </>
   );
@@ -629,14 +639,16 @@ const LabeledRow = ({
   value,
   disabled,
   onChange,
+  compact = false,
 }: {
   label: string;
   value: string;
   disabled: boolean;
   onChange: (v: string) => void;
+  compact?: boolean;
 }) => (
-  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-h-[28px]">
-    <span className="w-44 flex-shrink-0 text-muted font-medium text-xs sm:text-sm">
+  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[24px]">
+    <span className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}>
       {label}
     </span>
     <input
@@ -644,7 +656,7 @@ const LabeledRow = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={disabled ? "" : "Enter value..."}
-      className="flex-1 min-w-0 bg-transparent text-muted outline-none text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+      className="flex-1 min-w-0 bg-transparent text-muted outline-none text-xs disabled:opacity-60 disabled:cursor-not-allowed"
     />
   </div>
 );

@@ -523,6 +523,7 @@ const handleModeFetchOptions = async (q: string) => {
                 terms={formData.terms?.selling}
                 setTerms={actions.setTerms}
                 type="selling"
+                compact={true} 
               />
             </div>
           )}
