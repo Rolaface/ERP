@@ -49,6 +49,7 @@ export interface PurchaseOrderDetail {
   supplierId?: string;
   supplierName: string;
   poDate: string;
+  dueDate: string;
   deliveryDate?: string;
   currency: string;
 

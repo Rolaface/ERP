@@ -372,7 +372,7 @@ accounting: {
     create: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.create_quotation`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation_status`,
     edit: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation`,
-    delete: `${ERP_BASE}/api/method/erpnext.proforma.api.delete_proforma`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.delete_quotation`,
   },
 
   /* =========================
