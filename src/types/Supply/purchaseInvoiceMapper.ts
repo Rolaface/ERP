@@ -34,20 +34,12 @@ const skeletonAddress = (
   email: str(source?.email),
 });
 
-
-const PRIME = 1;
-const OFFSET = 100000000; 
-const MOD = 1_000_000_000;
-
-const encodeCounter = (counter: number): number => {
-  return ((counter * PRIME) + OFFSET) % MOD;
-};
-
-let dbCounter = 1;
-
 const generate9DigitBarcode = (): string => {
-  const barcode = encodeCounter(dbCounter++);
-  return barcode.toString().padStart(9, '0');
+  const array = new Uint32Array(1);
+  window.crypto.getRandomValues(array);
+  
+  const randomNum = array[0] % 1_000_000_000;
+  return randomNum.toString().padStart(9, '0');
 };
 
 export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {

@@ -47,6 +47,7 @@ packingSize: number | null;
   sku: string;
   taxPreference: string;
   preferredVendor: string;
+  preferredVendorName?: string;
   salesAccount: string;
   purchaseAccount: string;
   countryCode: string;

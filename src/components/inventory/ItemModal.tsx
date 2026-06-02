@@ -112,8 +112,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
     getValidationErrorForTab,
     itemGroups,
     loadingItemGroups,
-    suppliers,
-    loadingSuppliers,
+   
   } = useItemForm({ isOpen, isEditMode, initialData, onSubmit, onClose });
 
   const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([EMPTY_TAX_ROW]);
@@ -326,6 +325,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
         sku: "",
         taxPreference: "",
         preferredVendor: "",
+        preferredVendorName: "",
         salesAccount: "",
         purchaseAccount: "",
         countryCode: "",
@@ -491,6 +491,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
                 form={form}
                 itemGroups={itemGroups}
                 loadingItemGroups={loadingItemGroups}
+                 isServiceItem={isServiceItem} 
                 onFormChange={handleFormChange}
                 setField={setField}
                 errors={fieldErrors}
@@ -508,8 +509,8 @@ const ItemModal: React.FC<ItemModalProps> = ({
               {/* Row 3: Sales & Purchase */}
               <PricingSection
                 form={form}
-                suppliers={suppliers}
-                loadingSuppliers={loadingSuppliers}
+               
+                
                 onFormChange={handleFormChange}
               />
             </div>
