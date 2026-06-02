@@ -20,6 +20,8 @@ import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import { getAllEmployees, getEmployeeById } from "../../api/employeeapi";
 import EmployeeAdvanceList from "../../views/ExpenseManagement/advanceList";
+import { useHRView } from "../../hooks/permission/useHRView";
+import { useAuth } from "../../context/AuthContext";
 import {
   createExpenseClaim,
   CreateExpenseClaimPayload,
@@ -304,6 +306,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     [modals, modalId],
   );
   const isEditMode = modal?.isEdit ?? false;
+  const { viewMode } = useHRView();
+  const { user } = useAuth();
+  const isEmployeeView = viewMode === "employee";
+
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("expense");
   const [useAdvance, setUseAdvance] = useState(false);
@@ -358,11 +364,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       const data = modal?.initialData as any;
 
       setForm(data ? {
-  ...defaultExpenseForm,
-  ...data,
-  receipts: data.receipts ?? [],
-  existingAttachments: data.existingAttachments ?? [],
-} : defaultExpenseForm);
+        ...defaultExpenseForm,
+        ...data,
+        receipts: data.receipts ?? [],
+        existingAttachments: data.existingAttachments ?? [],
+      } : defaultExpenseForm);
       setAdvanceForm(defaultAdvanceForm);
       setErrors({});
       setSelectedEmployee(null);
@@ -386,6 +392,20 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       }
       if (data?.employee) {
         fetchAdvancesForEmployee(data.employee);
+
+        if (isEmployeeView) {
+          getEmployeeById(data.employee)
+            .then((employee) => {
+              setSelectedEmployee(employee);
+
+              setForm((prev) => ({
+                ...prev,
+                expense_approver:
+                  employee?.message?.data?.expense_approver ?? "",
+              }));
+            })
+            .catch(() => { });
+        }
       }
     }
   }, [isOpen]);
@@ -531,9 +551,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             employee_advance,
             allocated_amount,
             base_allocated_amount: allocated_amount,
-            unclaimed_amount: advRow?.unclaimedAmount ,
+            unclaimed_amount: advRow?.unclaimedAmount,
             advance_paid: advRow?.allocatedAmount ?? allocated_amount,
-            posting_date: advRow?.advanceDate ?? "",   
+            posting_date: advRow?.advanceDate ?? "",
             parentfield: "advances",
             parenttype: "Expense Claim",
             doctype: "Expense Claim Advance",
@@ -557,7 +577,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           },
         ],
         ...(useAdvance &&
-          activeAdvances.length > 0 && { advances: activeAdvances  as any[] }),
+          activeAdvances.length > 0 && { advances: activeAdvances as any[] }),
         remark: form.remarks,
       };
 
@@ -690,47 +710,63 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
             <div className="grid grid-cols-12 gap-4 items-start">
               <div className="col-span-6">
-                <SearchSelect2
-                  label="Employee"
-                  required
-                  value={employeeDisplayName}
-                  onChange={async (val, option) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      employee: val || "",
-                      expense_approver: "",
-                    }));
-                    setEmployeeDisplayName(option?.label || "");
-                    if (errors.employee)
-                      setErrors((prev) => ({ ...prev, employee: "" }));
-                    setEmployeeAdvances([]);
-                    setAdvanceAllocations({});
-                    setAdvancesFetchError(undefined);
+                {isEmployeeView ? (
+                  <ModalInput
+                    label="Employee"
+                    value={employeeDisplayName}
+                    disabled
+                  />
+                ) : (
+                  <SearchSelect2
+                    label="Employee"
+                    required
+                    value={employeeDisplayName}
+                    onChange={async (val, option) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        employee: val || "",
+                        expense_approver: "",
+                      }));
 
-                    if (val) {
-                      try {
-                        const [employee] = await Promise.all([
-                          getEmployeeById(val),
-                          fetchAdvancesForEmployee(val),
-                        ]);
-                        setSelectedEmployee(employee);
-                        setForm((prev) => ({
+                      setEmployeeDisplayName(option?.label || "");
+
+                      if (errors.employee)
+                        setErrors((prev) => ({
                           ...prev,
-                          expense_approver:
-                            employee?.message?.data?.expense_approver ?? "",
+                          employee: "",
                         }));
-                      } catch (err) {
-                        showApiError(err);
+
+                      setEmployeeAdvances([]);
+                      setAdvanceAllocations({});
+                      setAdvancesFetchError(undefined);
+
+                      if (val) {
+                        try {
+                          const [employee] = await Promise.all([
+                            getEmployeeById(val),
+                            fetchAdvancesForEmployee(val),
+                          ]);
+
+                          setSelectedEmployee(employee);
+
+                          setForm((prev) => ({
+                            ...prev,
+                            expense_approver:
+                              employee?.message?.data?.expense_approver ?? "",
+                          }));
+                        } catch (err) {
+                          showApiError(err);
+                          setSelectedEmployee(null);
+                        }
+                      } else {
                         setSelectedEmployee(null);
                       }
-                    } else {
-                      setSelectedEmployee(null);
-                    }
-                  }}
-                  fetchOptions={fetchEmployees}
-                  placeholder="Select the employee"
-                  error={errors.employee}
-                />
+                    }}
+                    fetchOptions={fetchEmployees}
+                    placeholder="Select the employee"
+                    error={errors.employee}
+                  />
+                )}
               </div>
               <div className="col-span-6">
                 <ModalInput
@@ -911,10 +947,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 onClick={() => fileInputRef.current?.click()}
                 className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed
                   py-6 cursor-pointer transition-colors
-                  ${
-                    isDragOver
-                      ? "border-primary bg-primary/5"
-                      : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"
+                  ${isDragOver
+                    ? "border-primary bg-primary/5"
+                    : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"
                   }`}
               >
                 <Upload size={22} className="text-muted" />

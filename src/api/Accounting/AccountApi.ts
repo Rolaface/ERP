@@ -20,10 +20,41 @@ export interface CreateCOAPayload {
   is_root: "false";
 }
 
+export interface DeleteCOAPayload {
+  doctype: "Account";
+  name: string;
+}
+
 export async function createChartOfAccount(
   payload: CreateCOAPayload,
 ): Promise<any> {
   const resp: AxiosResponse = await api.post(AccountingAPI.createCOA, payload);
+  return resp.data;
+}
+
+export async function deleteChartOfAccount(
+  accountName: string,
+): Promise<any> {
+  const payload: DeleteCOAPayload = {
+    doctype: "Account",
+    name: accountName,
+  };
+
+  const formData = new FormData();
+
+  formData.append("doctype", payload.doctype);
+  formData.append("name", payload.name);
+
+  const resp: AxiosResponse = await api.post(
+    AccountingAPI.deleteCOA,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
+  );
+
   return resp.data;
 }
 
