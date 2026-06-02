@@ -26,7 +26,10 @@ export interface Checkins {
   asofDate: string;
   inTime: string | null;
   outTime: string | null;
+  totalWorkedSeconds: number;
+  isActive: boolean;
 }
+
 
 export interface EmployeeDetails {
   employeeId: string;

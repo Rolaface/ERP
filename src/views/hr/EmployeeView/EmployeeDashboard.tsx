@@ -11,7 +11,7 @@ import { openLeaveApplyModal, openExpenseModal, MODAL_LAYER } from "../../../sto
 import { showApiError } from "../../../utils/alert";
 import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
 import NewCycleModal from "../../../components/Hr/performance/Newcyclemodal";
-import AttendanceTimer from "./AttendanceTimer"; // ← extracted component
+import AttendanceTimer from "./AttendanceTimer";
 import {
   LogIn,
   LogOut,
@@ -202,11 +202,12 @@ const SectionHeader: React.FC<{
 );
 
 // ── ATTENDANCE ROW ────────────────────────────────────────────────────────────
-// Timer logic removed — now handled by <AttendanceTimer />.
 
 interface AttendanceRowProps {
   inTime: string | null;
   outTime: string | null;
+  totalWorkedSeconds: number;
+  isActive: boolean;
   loading: boolean;
   employeeId: string;
   onAttendanceUpdate: () => void;
@@ -215,6 +216,8 @@ interface AttendanceRowProps {
 const AttendanceRow: React.FC<AttendanceRowProps> = ({
   inTime,
   outTime,
+  totalWorkedSeconds,
+  isActive,
   loading,
   employeeId,
   onAttendanceUpdate,
@@ -222,7 +225,7 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
   const { user } = useAuth();
   const [actionLoading, setActionLoading] = useState(false);
 
-  const isClockedIn = !!inTime && !outTime;
+  const isClockedIn = isActive;
 
   const getCurrentFormattedTime = () => {
     const now = new Date();
@@ -263,11 +266,10 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
           <button
             disabled={actionLoading}
             onClick={handleClockAction}
-            className={`flex items-center justify-center gap-1.5 w-full rounded-xl px-2 py-1.5 text-white text-[11px] font-bold transition-all active:scale-95 disabled:opacity-60 ${
-              isClockedIn
-                ? "bg-rose-500 hover:bg-rose-600"
-                : "bg-emerald-500 hover:bg-emerald-600"
-            }`}
+            className={`flex items-center justify-center gap-1.5 w-full rounded-xl px-2 py-1.5 text-white text-[11px] font-bold transition-all active:scale-95 disabled:opacity-60 ${isClockedIn
+              ? "bg-rose-500 hover:bg-rose-600"
+              : "bg-emerald-500 hover:bg-emerald-600"
+              }`}
           >
             {isClockedIn ? <LogOut size={12} /> : <LogIn size={12} />}
             {actionLoading ? "…" : isClockedIn ? "Check Out" : "Check In"}
@@ -308,9 +310,9 @@ const AttendanceRow: React.FC<AttendanceRowProps> = ({
       {/* ── Hours Worked — extracted timer component ── */}
       <AttendanceTimer
         inTime={inTime}
-        outTime={outTime}
+        totalWorkedSeconds={totalWorkedSeconds}
+        isActive={isActive}
         loading={loading}
-        employeeId={employeeId}
       />
     </div>
   );
@@ -476,11 +478,10 @@ const ExpenseClaimCard: React.FC<{
                     ₹{claim.grand_total.toLocaleString("en-IN")}
                   </span>
                   <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                      claim.approval_status === "Approved"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${claim.approval_status === "Approved"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-amber-100 text-amber-700"
+                      }`}
                   >
                     {claim.approval_status === "Draft"
                       ? "Pending For Approval"
@@ -617,7 +618,7 @@ const AppraisalSection: React.FC<AppraisalSectionProps> = ({ onNavigate }) => {
           <NewCycleModal
             isOpen={cycleModalOpen}
             onClose={handleModalClose}
-            onSave={() => {}}
+            onSave={() => { }}
             modalId="dashboard-appraisal-cycle"
             isViewMode
           />
@@ -805,9 +806,9 @@ const EmployeeDashboard: React.FC = () => {
     e.stopPropagation();
     const seedData = user?.employeeId
       ? {
-          employee: user.employeeId,
-          employee_name: user.fullName ?? user.username ?? "",
-        }
+        employee: user.employeeId,
+        employee_name: user.fullName ?? user.username ?? "",
+      }
       : null;
     openExpenseModal(seedData, false, {
       onSuccess: () => {
@@ -885,6 +886,8 @@ const EmployeeDashboard: React.FC = () => {
           <AttendanceRow
             inTime={checkins?.inTime ?? null}
             outTime={checkins?.outTime ?? null}
+            totalWorkedSeconds={checkins?.totalWorkedSeconds ?? 0}
+            isActive={checkins?.isActive ?? false}
             loading={loading}
             employeeId={user?.employeeId ?? ""}
             onAttendanceUpdate={fetchDashboard}
@@ -952,11 +955,10 @@ const EmployeeDashboard: React.FC = () => {
                       return (
                         <div
                           key={holiday.date}
-                          className={`flex items-start justify-between gap-2 rounded-xl border p-2.5 ${
-                            isNext
-                              ? "border-[var(--primary)]/20 bg-[var(--primary)]/5"
-                              : "border-[var(--border)] bg-[var(--background)]"
-                          }`}
+                          className={`flex items-start justify-between gap-2 rounded-xl border p-2.5 ${isNext
+                            ? "border-[var(--primary)]/20 bg-[var(--primary)]/5"
+                            : "border-[var(--border)] bg-[var(--background)]"
+                            }`}
                         >
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-[var(--foreground)] truncate">
@@ -967,11 +969,10 @@ const EmployeeDashboard: React.FC = () => {
                             </p>
                           </div>
                           <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                              isNext
-                                ? "bg-[var(--primary)] text-white"
-                                : "bg-[var(--muted)]/40 text-[var(--muted-foreground)]"
-                            }`}
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${isNext
+                              ? "bg-[var(--primary)] text-white"
+                              : "bg-[var(--muted)]/40 text-[var(--muted-foreground)]"
+                              }`}
                           >
                             {countdown}
                           </span>
@@ -1005,11 +1006,10 @@ const EmployeeDashboard: React.FC = () => {
                       return (
                         <div
                           key={`${b.employeeName}-${i}`}
-                          className={`flex items-center gap-2 rounded-xl px-2.5 py-2 ${
-                            isToday
-                              ? "bg-pink-50 border border-pink-200/60"
-                              : "border border-[var(--border)] bg-[var(--background)]"
-                          }`}
+                          className={`flex items-center gap-2 rounded-xl px-2.5 py-2 ${isToday
+                            ? "bg-pink-50 border border-pink-200/60"
+                            : "border border-[var(--border)] bg-[var(--background)]"
+                            }`}
                         >
                           <Avatar name={b.employeeName} colorIndex={i} size="xs" />
                           <div className="min-w-0 flex-1">
@@ -1024,9 +1024,8 @@ const EmployeeDashboard: React.FC = () => {
                             </p>
                           </div>
                           <span
-                            className={`shrink-0 text-[10px] font-semibold whitespace-nowrap ${
-                              isToday ? "text-pink-500" : "text-[var(--muted-foreground)]"
-                            }`}
+                            className={`shrink-0 text-[10px] font-semibold whitespace-nowrap ${isToday ? "text-pink-500" : "text-[var(--muted-foreground)]"
+                              }`}
                           >
                             {getBirthdayLabel(b.daysLeft)}
                           </span>
