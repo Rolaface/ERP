@@ -73,14 +73,18 @@ function SummaryStrip({
   kpis: SalesKPIs;
   isQuantity: boolean;
 }) {
-    const currencySymbol = useCompanyStore((s) => s.currencySymbol);
+  const currencySymbol = useCompanyStore((s) => s.currencySymbol);
   if (!kpis) return null;
   const topPerformer = kpis.top_performers?.[0] ?? null;
 
   const cards = [
     {
       label: isQuantity ? "Total Sales Quantity" : "Total Sales Value",
-      value: nf(kpis.total_sales_value, !isQuantity),
+      value: nf(
+        kpis.total_sales_value,
+        !isQuantity,
+        !isQuantity ? currencySymbol : ""
+      ),
       color: "text-emerald-500",
     },
     {
@@ -90,7 +94,11 @@ function SummaryStrip({
     },
     {
       label: isQuantity ? "Avg Quantity / Entity" : "Avg Value / Entity",
-      value: nf(kpis.average_value_per_entity, !isQuantity),
+      value: nf(
+        kpis.average_value_per_entity,
+        !isQuantity,
+        !isQuantity ? currencySymbol : ""
+      ),
       color: "text-violet-500",
     },
     {
@@ -231,7 +239,7 @@ function FilterBar({ filters, setFilters }: FilterBarProps) {
 /*  ── Main Component ── */
 
 const SalesAnalytics: React.FC = () => {
-    const currencySymbol = useCompanyStore((s) => s.currencySymbol); 
+  const currencySymbol = useCompanyStore((s) => s.currencySymbol);
   const [filters, setFilters] = useState<SalesAnalyticsFilters>({
     tree_type: "Customer",
     doc_type: "Sales Invoice",
@@ -301,7 +309,7 @@ const SalesAnalytics: React.FC = () => {
         },
       };
     });
-}, [data, filters.value_quantity, currencySymbol]);
+  }, [data, filters.value_quantity, currencySymbol]);
 
   /* ── Error state ── */
   if (error && !data) {
