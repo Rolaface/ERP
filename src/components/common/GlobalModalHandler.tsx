@@ -362,6 +362,7 @@ const GlobalModalHandler: React.FC = () => {
             onClose={handleClose}
             onSubmit={handleSubmit}
             initialData={modal.initialData}
+            mode={modal.isEdit ? "edit" : "create"}
           />,
         );
 

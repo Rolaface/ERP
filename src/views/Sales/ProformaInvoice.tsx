@@ -10,8 +10,8 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
-import type { ProformaInvoiceSummary } from "../../types/proformaInvoice";
-import { generateProformaInvoicePDF } from "../../components/template/proformatemplete/ProformaInvoiceTemplate";
+import type { ProformaInvoiceSummary, ProformaInvoice} from "../../types/proformaInvoice";
+import { getPdf } from "../../api/PDF/pdfUtilApi";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import ActionButton, {
@@ -26,6 +26,7 @@ import {
   closeSwal,
 } from "../../utils/alert";
 import Swal from "sweetalert2";
+import { generateProformaInvoicePDF } from "../../components/template/proformatemplete/ProformaInvoiceTemplate";
 import { closeManagedSwal, fireManagedSwal } from "../../utils/swalManager";
 import PdfPreviewModal from "./PdfPreviewModal";
 import ProformaDetailModal, {
@@ -39,17 +40,17 @@ type OutletContextType = {
 
 // Constants
 
-type InvoiceStatus = "Draft" | "Rejected" | "Paid" | "Cancelled" | "Approved";
+type ProformaInvoiceStatus = "Draft" | "Rejected" | "Paid" | "Cancelled" | "Approved";
 
-const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
-  Draft: ["Rejected", "Approved"],
-  Rejected: ["Draft", "Approved"],
+const STATUS_TRANSITIONS: Record<ProformaInvoiceStatus, ProformaInvoiceStatus[]> = {
+  Draft: ["Approved"],
+  // Rejected: ["Draft", "Approved"],
   Paid: [],
   Cancelled: ["Draft"],
   Approved: ["Paid", "Cancelled"],
 };
 
-const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
+const CRITICAL_STATUSES: ProformaInvoiceStatus[] = ["Paid"];
 
 // Column key → backend field mapping
 // All keys are identical here so the map is 1:1,
@@ -96,12 +97,13 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
 
   const [sortBy, setSortBy] = useState("proformaId");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
-  // ── Modal
+   const [selectedProformaInvoice, setSelectedProformaInvoice] = useState<ProformaInvoice | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<ProformaDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
-  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+  // const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+    const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+    const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
   // ── Reset page when search changes
@@ -135,15 +137,26 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
 
       if (!res || res.status_code !== 200) return;
 
-      const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
-  proformaId: inv.id,
+//       const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
+//   proformaId: inv.id,
+//   customerName: inv.customerName,
+//   currency: inv.currency,
+//   exchangeRate: inv.exchangeRate || 1,
+//   validTill: inv.validTill,
+//   totalAmount: Number(inv.baseGrandTotal || inv.total || 0), // Mapped from baseGrandTotal/total
+//   status: inv.status as ProformaInvoiceStatus,
+//   // Safely parse postingDate instead of createdAt
+//   createdAt: inv.postingDate ? new Date(inv.postingDate) : new Date(),
+// }));
+const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
+  proformaId: inv.name || inv.proformaId || inv.id,
   customerName: inv.customerName,
   currency: inv.currency,
   exchangeRate: inv.exchangeRate || 1,
   validTill: inv.validTill,
-  totalAmount: Number(inv.baseGrandTotal || inv.total || 0), // Mapped from baseGrandTotal/total
-  status: inv.status as InvoiceStatus,
-  // Safely parse postingDate instead of createdAt
+  totalAmount: Number(inv.baseGrandTotal || inv.total || 0),
+  status: inv.status as ProformaInvoiceStatus,
+  proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, // <-- Populates the ActionMenu
   createdAt: inv.postingDate ? new Date(inv.postingDate) : new Date(),
 }));
 
@@ -167,6 +180,8 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
       showLoading("Loading proforma invoice...");
 
       const res = await getProformaInvoiceById(proformaId);
+      console.log("Proforma invoice details response:", res);
+      console.log("Proforma Id", proformaId);
       const statusCode = res?.message?.status_code || res?.status_code;
       const data = res?.message?.data || res?.data;
 
@@ -185,38 +200,37 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
     }
   };
 
-  const handlePreviewProformaPDF = async (proformaId: string) => {
-    try {
-      showLoading("Preparing proforma invoice preview...");
+  // const handlePreviewProformaPDF = async (proformaId: string) => {
+  //   try {
+  //     showLoading("Preparing proforma invoice preview...");
 
-      if (!company) {
-        closeSwal();
-        showApiError("Company data not loaded");
-        return;
-      }
+  //     if (!company) {
+  //       closeSwal();
+  //       showApiError("Company data not loaded");
+  //       return;
+  //     }
 
-      const res = await getProformaInvoiceById(proformaId);
-      const statusCode = res?.message?.status_code || res?.status_code;
-      const data = res?.message?.data || res?.data;
+  //     const res = await getProformaInvoiceById(proformaId);
+  //     const statusCode = res?.message?.status_code || res?.status_code;
+  //     const data = res?.message?.data || res?.data;
 
-      if (statusCode !== 200 || !data) {
-        closeSwal();
-        showApiError("Failed to load proforma invoice");
-        return;
-      }
+  //     if (statusCode !== 200 || !data) {
+  //       closeSwal();
+  //       showApiError("Failed to load proforma invoice");
+  //       return;
+  //     }
 
-      const blobUrl = await generateProformaInvoicePDF(data, company, "bloburl");
+  //     const blobUrl = await getPdf(proformaId, "Proforma Invoice");
+  //     closeSwal();
 
-      closeSwal();
-
-      setPdfUrl(blobUrl);
-      setSelectedProforma(data);
-      setPdfOpen(true);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
+  //     setPdfUrl(blobUrl);
+  //     setSelectedProforma(data);
+  //     setPdfOpen(true);
+  //   } catch (err) {
+  //     closeSwal();
+  //     showApiError(err);
+  //   }
+  // };
 
   const handleView = async (proformaId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -236,55 +250,98 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
     }
   };
 
-  const handleDownload = async (proformaId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Preparing proforma invoice download...");
-
-      if (!company) {
-        closeSwal();
-        console.error("Company data not loaded");
-        return;
+  const handleDrawerPdf = async (proformId: string) => {
+      setDrawerPdfLoading(true);
+      setDrawerPdfUrl(null);
+  
+      try {
+        const blob = await getPdf(proformId, "Proforma Invoice");
+        console.log("PDF blob response for drawer:", blob);
+        console.log("Proforma Id", proformId);
+        setDrawerPdfBlob(blob);
+        const blobUrl = URL.createObjectURL(blob);
+        setDrawerPdfUrl(blobUrl);
+      } catch (err) {
+        showApiError(err);
+      } finally {
+        setDrawerPdfLoading(false);
       }
-
-      const res = await getProformaInvoiceById(proformaId);
-      const statusCode = res?.message?.status_code || res?.status_code;
-      const data = res?.message?.data || res?.data;
-
-      if (statusCode !== 200 || !data) {
+    };
+  
+    // ── PDF preview modal (table row action — kept, do not remove)
+    const handlePreviewPDF = async (
+      inv: ProformaInvoiceSummary,
+      e?: React.MouseEvent,
+    ) => {
+      e?.stopPropagation();
+      try {
+        showLoading("Preparing invoice preview...");
+        const blob = await getPdf(inv.proformaId, "Proforma Invoice");
+        console.log("PDF blob response for drawer handlePreviewPDF:", blob);
+        console.log("Proforma Id handlePreviewPDF", inv.proformaId);
+        const blobUrl = URL.createObjectURL(blob);
         closeSwal();
-        showApiError("Failed to load invoice");
-        return;
+        setPdfUrl(blobUrl);
+        setSelectedProformaInvoice(null); 
+        setPdfOpen(true);
+      } catch (err: any) {
+        closeSwal();
+        showApiError(err);
       }
+    };
 
-      await generateProformaInvoicePDF(data, company, "save");
-      closeSwal();
-      showSuccess("Proforma invoice downloaded");
-    } catch (err: any) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
 
-  const handleDrawerPdf = async (proformaId: string) => {
-    setDrawerPdfLoading(true);
-    setDrawerPdfUrl(null);
-    try {
-      if (!company) return;
-      const res = await getProformaInvoiceById(proformaId);
-      const statusCode = res?.message?.status_code || res?.status_code;
-      const data = res?.message?.data || res?.data;
+  // const handleDownload = async (proformaId: string, e?: React.MouseEvent) => {
+  //   e?.stopPropagation();
+  //   try {
+  //     showLoading("Preparing proforma invoice download...");
 
-      if (statusCode !== 200 || !data) return;
+  //     if (!company) {
+  //       closeSwal();
+  //       console.error("Company data not loaded");
+  //       return;
+  //     }
+
+  //     const res = await getProformaInvoiceById(proformaId);
+  //     const statusCode = res?.message?.status_code || res?.status_code;
+  //     const data = res?.message?.data || res?.data;
+
+  //     if (statusCode !== 200 || !data) {
+  //       closeSwal();
+  //       showApiError("Failed to load invoice");
+  //       return;
+  //     }
+
+  //     await generateProformaInvoicePDF(data, company, "save");
+  //     closeSwal();
+  //     showSuccess("Proforma invoice downloaded");
+  //   } catch (err: any) {
+  //     closeSwal();
+  //     showApiError(err);
+  //   }
+  // };
+
+  // const handleDrawerPdf = async (proformaId: string) => {
+  //   setDrawerPdfLoading(true);
+  //   setDrawerPdfUrl(null);
+  //   try {
+  //     if (!company) return;
+  //     const res = await getProformaInvoiceById(proformaId);
+  //     console.log("Proforma invoice details for PDF response:", res);
+  //     console.log("Prodforma Id", proformaId);
+  //     const statusCode = res?.message?.status_code || res?.status_code;
+  //     const data = res?.message?.data || res?.data;
+
+  //     if (statusCode !== 200 || !data) return;
       
-      const blobUrl = await generateProformaInvoicePDF(data, company, "bloburl");
-      setDrawerPdfUrl(blobUrl);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setDrawerPdfLoading(false);
-    }
-  };
+  //     const blobUrl = await generateProformaInvoicePDF(data, company, "bloburl");
+  //     setDrawerPdfUrl(blobUrl);
+  //   } catch (err) {
+  //     showApiError(err);
+  //   } finally {
+  //     setDrawerPdfLoading(false);
+  //   }
+  // };
 
   // ── Sort handler — store column key, translate at API call site ───────────
   const handleSortChange = ({
@@ -318,17 +375,27 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
         );
 
         if (res?.status_code === 200) {
+          // const mapped = res.data.map((inv: any) => ({
+          //   proformaId: inv.proformaId,
+          //   customerName: inv.customerName,
+          //   currency: inv.currency,
+          //   exchangeRate: inv.exchangeRate,
+          //   dueDate: inv.dueDate,
+          //   totalAmount: Number(inv.totalAmount),
+          //   status: inv.status as ProformaInvoiceStatus,
+          //   createdAt: new Date(inv.createdAt.replace(" ", "T")),
+          // }));
           const mapped = res.data.map((inv: any) => ({
-            proformaId: inv.proformaId,
-            customerName: inv.customerName,
-            currency: inv.currency,
-            exchangeRate: inv.exchangeRate,
-            dueDate: inv.dueDate,
-            totalAmount: Number(inv.totalAmount),
-            status: inv.status as InvoiceStatus,
-            createdAt: new Date(inv.createdAt.replace(" ", "T")),
-          }));
-
+  proformaId: inv.name || inv.proformaId || inv.id,
+  customerName: inv.customerName,
+  currency: inv.currency,
+  exchangeRate: inv.exchangeRate,
+  dueDate: inv.dueDate,
+  totalAmount: Number(inv.totalAmount),
+  status: inv.status as ProformaInvoiceStatus,
+  proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, // <-- Added here too
+  createdAt: new Date(inv.createdAt.replace(" ", "T")),
+}));
           allData = [...allData, ...mapped];
           total = res.pagination?.total_pages || 1;
         }
@@ -360,8 +427,8 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
           "Proforma No": inv.proformaId,
           Customer: inv.customerName,
           Date: inv.createdAt.toLocaleDateString(),
-          "Due Date": inv.dueDate
-            ? new Date(inv.dueDate).toLocaleDateString()
+          "Due Date": inv.validTill
+            ? new Date(inv.validTill).toLocaleDateString()
             : "",
           Amount: inv.totalAmount,
           Currency: inv.currency,
@@ -389,7 +456,7 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
 
   const handleRowStatusChange = async (
     invoiceNumber: string,
-    status: InvoiceStatus,
+    status: ProformaInvoiceStatus,
   ) => {
     if (CRITICAL_STATUSES.includes(status)) {
       const result = await fireManagedSwal({
@@ -514,13 +581,13 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
       ),
     },
     {
-      key: "dueDate",
-      header: "Due Date",
+      key: "validTill",
+      header: "Valid Till",
       align: "left",
       sortable: true,
       render: (inv) => (
         <span className="text-xs text-muted">
-          {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}
+          {inv.validTill}
         </span>
       ),
     },
@@ -567,16 +634,16 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
             customActions={[    
               {
                 label: "View PDF",
-                onClick: () => handlePreviewProformaPDF(inv.proformaId),
+                onClick: () => handlePreviewPDF(inv),
               },
-              ...(STATUS_TRANSITIONS[inv.status] ?? []).map((status) => ({
+              ...(STATUS_TRANSITIONS[inv.proformaInvoiceStatus as keyof typeof STATUS_TRANSITIONS] ?? []).map((status) => ({
                 label: `Mark as ${status}`,
                 danger: status === "Paid",
                 onClick: () => handleRowStatusChange(inv.proformaId, status),
               })),
             ]}
             showDownload
-            onDownload={(e) => handleDownload(inv.proformaId, e)}
+            onDownload={(e) => handleDrawerPdf(inv.proformaId)}
             onDelete={(e) => handleDelete(inv.proformaId, e)}
           />
         </ActionGroup>
@@ -633,7 +700,8 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
         }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
-        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.proformaId)}
+        // onViewPdf={() => drawerData && handleDrawerPdf(drawerData.proformaId)}
+        onViewPdf={() => drawerData?.id && handleDrawerPdf(drawerData.id)}
         onDownload={() =>
           drawerData &&
           company &&
