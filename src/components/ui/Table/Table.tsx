@@ -157,7 +157,17 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
   const nonActionKeys = allKeys.filter((k) => k !== "actions");
   const limit = allKeys.includes("actions") ? defaultVisibleCount - 1 : defaultVisibleCount;
   const initialKeys = nonActionKeys.slice(0, limit);
-  
+ const statusColumn = columns.find(
+  (c) => c.header?.toLowerCase() === "status"
+);
+
+if (
+  statusColumn &&
+  !initialKeys.includes(statusColumn.key)
+) {
+  initialKeys.pop();
+  initialKeys.push(statusColumn.key);
+}
   return allKeys.includes("actions") ? [...initialKeys, "actions"] : initialKeys;
 });
 

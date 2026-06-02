@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ReceiptText, CreditCard} from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { usePermission } from "../../hooks/permission/usePermission";
 import {
   AppPage,

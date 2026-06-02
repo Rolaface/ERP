@@ -70,7 +70,8 @@ function buildPayload(
     if (form?.referenceType === "Purchase Order") return "Purchase Order";
     if (form?.referenceType === "Purchase Invoice") return "Purchase Invoice";
     if (form?.referenceType === "Sales Invoice") return "Sales Invoice";
-     if (form?.referenceType === "Expense Claim") return "Expense Claim";
+    if (form?.referenceType === "Expense Claim") return "Expense Claim";
+    if (form?.referenceType === "Employee Advance") return "Employee Advance";
 
     switch (partyType) {
       case "Supplier":

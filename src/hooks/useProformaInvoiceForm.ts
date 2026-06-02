@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { getCustomerByCustomerCode } from "../api/customerApi";
 import { getCompanyById } from "../api/companySetupApi";
 import type { TermSection } from "../types/termsAndCondition";
-import type { Invoice, InvoiceItem } from "../types/invoice";
+// import type { ProformaInvoice, InvoiceItem } from "../types/invoice";
+import { ProformaInvoice, InvoiceItem} from "../types/proformaInvoice";
 import { getRolaCountryList } from "../api/lookupApi";
 
 import { getExchangeRate } from "../api/currencyExchangeApi";
@@ -12,7 +13,7 @@ import {
   DEFAULT_INVOICE_FORM,
   EMPTY_ITEM,
   EMPTY_TERMS,
-} from "../constants/invoice.constants";
+} from "../constants/profromaInvoiceConstants";
 import dayjs from "dayjs";
 
 // ─── Constants
@@ -57,7 +58,7 @@ const NUM_FIELDS = [
 // Maps internal formData → new API payload shape
 
 export function buildInvoicePayload(
-  formData: Invoice,
+  formData: ProformaInvoice,
   totals: { subTotal: number; totalTax: number; grandTotal: number },
 ) {
   const items = formData.items
@@ -90,7 +91,7 @@ export function buildInvoicePayload(
     currency: formData.currencyCode,
     exchangeRate: formData.exchangeRt ?? "1",
     postingDate: formData.dateOfInvoice,
-    dueDate: formData.dueDate,
+    validTill: formData.validTill,
     tax_category: formData.taxCategory,
     updateStock: formData.updateStock ?? true,
     paymentMode: formData.mode,
@@ -119,16 +120,15 @@ export function buildInvoicePayload(
   };
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export const useInvoiceForm = (
+export const useProformaInvoiceForm = (
   isOpen: boolean,
   _onClose: () => void,
   _onSubmit?: (data: any) => void,
   mode?: "invoice" | "proforma" | "edit",
   initialData?: any,
 ) => {
-  const [formData, setFormData] = useState<Invoice>({
+  const [formData, setFormData] = useState<ProformaInvoice>({
     ...DEFAULT_INVOICE_FORM,
     terms: { ...EMPTY_TERMS },
     invoiceCharges: [],
@@ -147,7 +147,7 @@ export const useInvoiceForm = (
     }));
   }, [isOpen]);
 
-  // Auto-calculate due date from payment terms
+  
 useEffect(() => {
   const terms =
     formData.terms?.selling?.payment?.dueDates ||
@@ -205,9 +205,16 @@ useEffect(() => {
     }
   };
   // Load edit data
+//   useEffect(() => {
+//     if (!isOpen) return;
+//     if (mode === "edit" && initialData?.id) {
+//       setFormDataFromInvoice(initialData);
+//     }
+//   }, [isOpen, initialData, mode]);
+ 
   useEffect(() => {
     if (!isOpen) return;
-    if (mode === "edit" && initialData?.id) {
+    if (mode === "edit" && (initialData?.id || initialData?.proformaId)) {
       setFormDataFromInvoice(initialData);
     }
   }, [isOpen, initialData, mode]);
@@ -317,8 +324,8 @@ useEffect(() => {
     if (!formData.dateOfInvoice) {
       throw new Error("Please select date of invoice");
     }
-    if (!formData.dueDate) {
-      throw new Error("Please select due date");
+    if (!formData.validTill) {
+      throw new Error("Please select valid till date");
     }
     if (!formData.items.length) {
       throw new Error("Please add at least one item");
@@ -423,11 +430,8 @@ useEffect(() => {
     id: string;
   }) => {
     setCustomerNameDisplay(name);
-    setFormData((p) => ({ ...p, customerId: id }));setFormData((p) => ({
-  ...p,
-  customerId: id,
-  terms: { selling: EMPTY_TERMS.selling },
-}));
+    setFormData((p) => ({ ...p, customerId: id }));
+
     try {
       const [customerRes, companyRes] = await Promise.all([
         getCustomerByCustomerCode(id),
@@ -747,7 +751,16 @@ const maxAllowed = Math.max(0, available - usedByOthers);
       invoiceNumber: invoice.id ?? invoice.invoiceNumber,
       customerId: invoice.customerId ?? prev.customerId,
       invoiceType: invoice.invoiceType ?? "",
-      taxCategory: invoice.tax_category ?? prev.taxCategory,
+      
+      // FIX 1: API returns `taxCategory` (camelCase), hook was checking `tax_category`
+      taxCategory: invoice.taxCategory ?? invoice.tax_category ?? prev.taxCategory,
+      
+      // FIX 2: Map API `status` to `invoiceStatus` used by modal
+      invoiceStatus: invoice.status ?? prev.invoiceStatus,
+      
+      // FIX 3: Map API `validTill` used by modal
+      validTill: invoice.validTill,
+      
       mode: invoice.paymentMode ?? prev.mode ?? "",
       currencyCode: invoice.currency,
       dateOfInvoice: invoice.postingDate,
@@ -755,7 +768,6 @@ const maxAllowed = Math.max(0, available - usedByOthers);
         invoice.exchangeRate && Number(invoice.exchangeRate) > 0
           ? String(invoice.exchangeRate)
           : "1",
-      dueDate: invoice.dueDate,
       destnCountryCd: invoice.destnCountryCd ?? "",
       updateStock: invoice.updateStock ?? true,
       warehouse: invoice.warehouse ?? prev.warehouse ?? "",
@@ -873,7 +885,7 @@ const maxAllowed = Math.max(0, available - usedByOthers);
           invoiceCharges: [],
           salesTaxTemplate: "",
           dateOfInvoice: today,
-          dueDate,
+          validTill:"",
           exchangeRt: "1",
           warehouse: "",
           updateStock: true,

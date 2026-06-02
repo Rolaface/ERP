@@ -25,23 +25,29 @@ export interface BankPagination {
   has_next: boolean;
   has_prev: boolean;
 }
- 
 
 export interface BankListResponse {
   data: Bank[];
   pagination?: BankPagination;
 }
- 
+
 export async function getAllBanks(
   page = 1,
   pageSize = 10,
+  search = "",
 ): Promise<BankListResponse> {
   const start = (page - 1) * pageSize;
- 
+
+  const encodedSearch = encodeURIComponent(search);
+
+  const searchFilters = search
+    ? `&or_filters=[["bank_name","like","%${encodedSearch}%"],["swift_number","like","%${encodedSearch}%"]]`
+    : "";
+
   const resp: AxiosResponse = await api.get(
-    `${BANK_URL}?fields=["name","bank_name","swift_number"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}`,
+    `${BANK_URL}?fields=["name","bank_name","swift_number"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}${searchFilters}`,
   );
- 
+
   return {
     data: resp.data?.data ?? [],
     pagination: resp.data?.pagination,

@@ -284,6 +284,7 @@ const handleModeFetchOptions = async (q: string) => {
                     name="dueDate"
                     value={formData.dueDate}
                     required
+                   disabled
                     onChange={(name, value) =>
                       actions.handleInputChange({
                         target: { name, value },

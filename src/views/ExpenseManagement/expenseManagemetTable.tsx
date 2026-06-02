@@ -16,9 +16,9 @@ import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-import { showApiError, showSuccess, closeSwal, showLoading } from "../../utils/alert"; // ++ showLoading
+import { showApiError, showSuccess, closeSwal, showLoading } from "../../utils/alert"; 
 import { fireManagedSwal } from "../../utils/swalManager";
-import { openExpenseModal, openPaymentEntryModal } from "../../store/modalStore"; // ++ openPaymentEntryModal
+import { openExpenseModal, openPaymentEntryModal } from "../../store/modalStore"; 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import {
@@ -41,10 +41,10 @@ interface ExpenseSummary {
   category: string;
   amount: number;
   currency: string;
-  status: string;
+  approvalStatus: string;
   description?: string;
   name: string;
-  employeeId?: string;   // ++ needed for payment partyId
+  employeeId?: string;  
 }
 
 const statusOptions = [
@@ -67,12 +67,6 @@ const ExpenseHistory: React.FC = () => {
   const { user } = useAuth();
   const { viewMode } = useHRView();
   const isEmployeeView = viewMode === "employee";
-
-  // ── Derive admin flag from user roles (adjust role key/value to match your auth shape)
-  const isAdmin = useMemo(
-    () => user?.roles?.includes("Administrator") ?? false,
-    [user],
-  );
 
   const [expenses, setExpenses] = useState<ExpenseSummary[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -115,12 +109,12 @@ const ExpenseHistory: React.FC = () => {
           id: claim.name,
           approver: claim.expense_approver_name ?? "",
           name: claim.employee_name,
-          employeeId: claim.employee ?? "",   // ++ map employee id
+          employeeId: claim.employee ?? "",   
           date: claim.posting_date,
           category: claim.expense_type ?? "",
           amount: claim.total_claimed_amount ?? 0,
           currency: claim.currency ?? "",
-          status: claim.approval_status,
+          approvalStatus: claim.approval_status ?? "",
         })),
       );
       setTotalPages(res.pagination.total_pages);
@@ -148,8 +142,6 @@ const ExpenseHistory: React.FC = () => {
     if (isInitialLoad) return;
     fetchExpenses();
   }, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
-
-  // ── Payment handler (mirrors PI pattern exactly) ──────────────────────────
   const handleMakePayment = useCallback(
     async (exp: ExpenseSummary) => {
       try {
@@ -163,7 +155,7 @@ const ExpenseHistory: React.FC = () => {
             partyType: "Employee",
             partyName: claim.employee_name,
             partyId: claim.employee ?? exp.id,
-            amount: claim.total_claimed_amount,
+            amount: claim.grand_total,
             referenceName: claim.name,
             referenceType: "Expense Claim",
           },
@@ -351,7 +343,7 @@ const ExpenseHistory: React.FC = () => {
           Category: exp.category,
           Amount: exp.amount,
           Currency: exp.currency,
-          Status: exp.status,
+          Status: exp.approvalStatus,
         })),
       );
       const workbook = XLSX.utils.book_new();
@@ -422,7 +414,11 @@ const ExpenseHistory: React.FC = () => {
         render: (exp) => (
           <div className="py-1.5">
             <StatusBadge
-              status={exp.status === "Draft" ? "Pending for Approval" : exp.status}
+              status={
+  exp.approvalStatus === "Draft"
+    ? "Pending for Approval"
+    : exp.approvalStatus
+}
             />
           </div>
         ),
@@ -443,61 +439,59 @@ const ExpenseHistory: React.FC = () => {
                 type="edit"
                 onClick={() => handleOpenEdit(exp)}
                 iconOnly
-                disabled={exp.status !== "Draft"}
+                disabled={exp.approvalStatus !== "Draft"}
                 title={
-                  exp.status !== "Draft"
+                  exp.approvalStatus !== "Draft"
                     ? "Only Draft expenses can be edited"
                     : "Edit Expense"
                 }
               />
             </PermissionGate>
+
             <ActionMenu
-              customActions={[
-                // ── Approve / Reject (HR view, Draft only) ─────────────────
-                ...(!isEmployeeView && exp.status === "Draft"
-                  ? [
-                    {
-                      label: "Approve",
-                      icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-                      onClick: () => handleApprove(exp.id),
-                    },
-                    {
-                      label: "Reject",
-                      icon: <Ban className="w-4 h-4 text-red-500" />,
-                      onClick: () => handleReject(exp.id),
-                    },
-                  ]
-                  : []),
+customActions={
+  ["Paid", "Cancelled", "Rejected"].includes(exp.approvalStatus)
+    ? []
+    : [
+        ...(!isEmployeeView && exp.approvalStatus === "Draft"
+          ? [
+              {
+                label: "Approve",
+                onClick: () => handleApprove(exp.id),
+              },
+              {
+                label: "Reject",
+                onClick: () => handleReject(exp.id),
+              },
+            ]
+          : []),
 
-                // ── Cancel ─────────────────────────────────────────────────
-                {
-                  label: "Cancel",
-                  icon: <XCircle className="w-4 h-4 text-amber-500" />,
-                  onClick: () => handleCancel(exp.id),
-                },
+        ...(exp.approvalStatus === "Unpaid"
+          ? [
+              {
+                label: "Cancel",
+                onClick: () => handleCancel(exp.id),
+              },
+            ]
+          : []),
 
-
-                ...(can(PAYMENT_MODULE, "create") &&
-                  exp.status === "Approved"
-                  ? [
-                    {
-                      label: "Make Payment",
-                      onClick: () => handleMakePayment(exp),
-                    },
-                  ]
-                  : []),
-              ]}
-              {...(can(EXPENSE_MODULE, "delete") &&
-                isEmployeeView &&
-                exp.status === "Draft"
-                ? { onDelete: () => handleDelete(exp.id) }
-                : {})}
+        ...(can(PAYMENT_MODULE, "create") &&
+        exp.approvalStatus === "Unpaid"
+          ? [
+              {
+                label: "Make Payment",
+                onClick: () => handleMakePayment(exp),
+              },
+            ]
+          : []),
+      ]
+}
             />
           </div>
         ),
       },
     ],
-    [handleDelete, handleOpenEdit, handleMakePayment, isAdmin, isEmployeeView, can],
+    [handleDelete, handleOpenEdit, handleMakePayment, isEmployeeView,can],
   );
 
   return (
