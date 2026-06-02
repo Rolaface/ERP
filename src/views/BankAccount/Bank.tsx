@@ -26,6 +26,7 @@ const BankPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [search, setSearch] = useState("");
   const { can } = usePermission();
   const refreshKey = useDataRefreshStore(
     (state) => state.refreshFlags[REFRESH_KEYS.Bank],
@@ -35,7 +36,7 @@ const BankPage: React.FC = () => {
   const fetchBanks = useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await getAllBanks(page, pageSize);
+      const resp = await getAllBanks(page, pageSize, search);
       setBanks(resp.data ?? []);
       setTotalItems(resp.pagination?.total ?? 0);
     } catch (err) {
@@ -45,7 +46,7 @@ const BankPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, search]);
 
   useEffect(() => {
     fetchBanks();
@@ -54,8 +55,16 @@ const BankPage: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleView = (row: Bank) => {
-    openBankModal({ ...row }, true);
+  const handleView = (row: Bank, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    openBankModal(
+      { ...row },
+      false,
+      {
+        isViewMode: true,
+      },
+    );
   };
 
   const handleEdit = (row: Bank, e: React.MouseEvent) => {
@@ -110,6 +119,13 @@ const BankPage: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
+          <ActionButton
+            type="view"
+            onClick={(e) => handleView(row, e as React.MouseEvent)}
+            iconOnly
+            title="View Bank"
+          />
+
           <PermissionGate module={BANK_MODULE} action="write">
             <ActionButton
               type="edit"
@@ -118,6 +134,7 @@ const BankPage: React.FC = () => {
               title="Edit Bank"
             />
           </PermissionGate>
+
           {can(BANK_MODULE, "delete") && (
             <ActionMenu
               onDelete={(e) =>
@@ -157,6 +174,11 @@ const BankPage: React.FC = () => {
             setPage(1);
           }}
           onPageChange={setPage}
+          searchValue={search}
+          onSearch={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
         />
       </AppPageBody>
     </AppPage>

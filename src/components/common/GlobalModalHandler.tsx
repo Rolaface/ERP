@@ -690,6 +690,7 @@ const GlobalModalHandler: React.FC = () => {
               name?: string;
             }>(modal.initialData)}
             isEditMode={modal.isEdit}
+            isViewMode={context?.isViewMode ?? false}
           />,
         );
 
