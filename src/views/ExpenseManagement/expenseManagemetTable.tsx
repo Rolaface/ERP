@@ -142,8 +142,6 @@ const ExpenseHistory: React.FC = () => {
     if (isInitialLoad) return;
     fetchExpenses();
   }, [page, pageSize, sortBy, sortOrder, searchTerm, filters, isEmployeeView, user?.employeeId]);
-
-  // ── Payment handler (mirrors PI pattern exactly) ──────────────────────────
   const handleMakePayment = useCallback(
     async (exp: ExpenseSummary) => {
       try {
@@ -157,7 +155,7 @@ const ExpenseHistory: React.FC = () => {
             partyType: "Employee",
             partyName: claim.employee_name,
             partyId: claim.employee ?? exp.id,
-            amount: claim.total_claimed_amount,
+            amount: claim.grand_total,
             referenceName: claim.name,
             referenceType: "Expense Claim",
           },
