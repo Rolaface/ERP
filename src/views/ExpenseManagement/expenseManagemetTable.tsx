@@ -40,6 +40,7 @@ interface ExpenseSummary {
   date: string;
   category: string;
   amount: number;
+  grandTotal?: number;
   currency: string;
   approvalStatus: string;
   description?: string;
@@ -113,6 +114,7 @@ const ExpenseHistory: React.FC = () => {
           date: claim.posting_date,
           category: claim.expense_type ?? "",
           amount: claim.total_claimed_amount ?? 0,
+          grandTotal: claim.grand_total ?? 0,
           currency: claim.currency ?? "",
           approvalStatus: claim.approval_status ?? "",
         })),
@@ -155,7 +157,7 @@ const ExpenseHistory: React.FC = () => {
             partyType: "Employee",
             partyName: claim.employee_name,
             partyId: claim.employee ?? exp.id,
-            amount: claim.grand_total,
+            amount: claim.grandTotal,
             referenceName: claim.name,
             referenceType: "Expense Claim",
           },
@@ -182,7 +184,7 @@ const ExpenseHistory: React.FC = () => {
     },
     [fetchExpenses],
   );
-  // ─────────────────────────────────────────────────────────────────────────
+ 
 
   const handleOpenAdd = () => {
     const seedData =
@@ -376,6 +378,16 @@ const ExpenseHistory: React.FC = () => {
   const columns: Column<ExpenseSummary>[] = useMemo(
     () => [
       {
+        key: "date",
+        header: "Date",
+        align: "center",
+        render: (exp) => (
+          <div className="py-1.5">
+            <span className="block">{formatDate(exp.date)}</span>
+          </div>
+        ),
+      },
+      {
         key: "approver",
         header: "Approver",
         align: "left",
@@ -397,16 +409,7 @@ const ExpenseHistory: React.FC = () => {
         ),
         tooltip: (exp) => `Employee Name: ${exp.name}`,
       },
-      {
-        key: "date",
-        header: "Date",
-        align: "center",
-        render: (exp) => (
-          <div className="py-1.5">
-            <span className="block">{formatDate(exp.date)}</span>
-          </div>
-        ),
-      },
+      
       {
         key: "category",
         header: "Category",
@@ -418,6 +421,18 @@ const ExpenseHistory: React.FC = () => {
         ),
         tooltip: (exp) => `Category: ${exp.category}`,
       },
+      {
+        key: "amount",
+        header: "Amount",
+        align: "right",
+        render: (exp) => (
+          <div className="py-1.5">
+            <span className="block">{exp.amount}</span>
+          </div>
+        ),
+        tooltip: (exp) => `Amount: ${exp.amount}`,
+      },
+      
       {
         key: "status",
         header: "Status",
@@ -461,7 +476,7 @@ const ExpenseHistory: React.FC = () => {
 
             <ActionMenu
               customActions={
-                ["Paid", "Cancelled", "Rejected"].includes(exp.approvalStatus)
+                ["Paid", "Cancelled", "Rejected","Approved"].includes(exp.approvalStatus)
                   ? []
                   : [
                     ...(!isEmployeeView && exp.approvalStatus === "Draft"
@@ -477,7 +492,15 @@ const ExpenseHistory: React.FC = () => {
                       ]
                       : []),
 
-                    ...(exp.approvalStatus === "Unpaid"
+                    ...(exp.approvalStatus === "Draft"
+                      ? [
+                        {
+                          label: "Delete",
+                          onClick: () => handleDelete(exp.id),
+                        },
+                      ]
+                      : []),
+                    ...(exp.approvalStatus === "Draft"
                       ? [
                         {
                           label: "Cancel",
@@ -485,6 +508,7 @@ const ExpenseHistory: React.FC = () => {
                         },
                       ]
                       : []),
+
 
                     ...(!isEmployeeView &&
                       can(PAYMENT_MODULE, "create") &&
