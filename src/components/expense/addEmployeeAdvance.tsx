@@ -102,7 +102,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
   const fetchPaymentModes = useCallback(async (search: string) => {
   try {
     const res = await getAllModeOfPayment(1, 50, search || undefined, 1); // enabled=1 only
-    return res.data.map((mode) => ({
+    return res.data.map((mode: { name: string }) => ({
       value: mode.name,
       label: mode.name,
     }));
@@ -114,7 +114,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
 
 const fetchAdvanceAccounts = useCallback(async (search: string) => {
   try {
-    const res = await getAdvanceGLAccounts("", search || undefined);
+    const res = await getAdvanceGLAccounts(search || undefined);
     return res.map((acc) => ({
       value: acc.value,
       label: acc.label,
@@ -145,7 +145,7 @@ const fetchAdvanceAccounts = useCallback(async (search: string) => {
     const payload: CreateEmployeeAdvancePayload = {
       posting_date: form.posting_date,
       employee: form.employee,
-      employee_name: form.employee_name ?? employeeDisplayName, // ← add this field
+      employee_name: form.employee_name ?? employeeDisplayName, 
       purpose: form.purpose,
       advance_amount: Number(form.amount),
       advance_account: form.advance_account,

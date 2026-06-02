@@ -189,7 +189,7 @@ const handleExportExcel = async () => {
           <div className="flex items-center justify-center gap-2">
             <ActionButton
               type="view"
-              onClick={(e) => { e.stopPropagation(); }}
+              onClick={(e) => { e?.stopPropagation(); }}
               iconOnly
             />
             <PermissionGate module={EXPENSE_TYPE_MODULE} action="write">

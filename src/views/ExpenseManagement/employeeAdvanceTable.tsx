@@ -9,7 +9,6 @@ import Table from "../../components/ui/Table/Table";
 import ActionButton, { ActionMenu } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
 import { openPaymentEntryModal } from "../../store/modalStore";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
 import { fireManagedSwal } from "../../utils/swalManager";
@@ -17,7 +16,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { openEmployeeAdvanceModal } from "../../store/modalStore";  
 import {getAllAdvances,getAdvanceById,deleteEmployeeAdvance, updateAdvanceStatus} from "../../api/expenseClaimApi";
-import { Check } from "lucide-react";
+import EmployeeAdvanceDetailModal, { EmployeeAdvanceDetail } from "../../views/ExpenseManagement/advanceDetailView";
 
 const EMPLOYEE_ADVANCE_MODULE = "Employee Advance";
 
@@ -30,9 +29,29 @@ interface EmployeeAdvance {
   status: string;
 }
 
+
+
 const EmployeeAdvanceTable: React.FC = () => {
   const mountedRef = useRef(true);
   const { can } = usePermission();
+  const [drawerOpen,    setDrawerOpen]    = useState(false);
+const [drawerData,    setDrawerData]    = useState<EmployeeAdvanceDetail | null>(null);
+const [drawerLoading, setDrawerLoading] = useState(false);
+const handleViewClick = async (ea: EmployeeAdvance, e?: React.MouseEvent<HTMLButtonElement>) => {
+  if (!e) return;
+  e.stopPropagation();
+  setDrawerOpen(true);
+  setDrawerLoading(true);
+  setDrawerData(null);
+  try {
+    const advance = await getAdvanceById(ea.id);
+    setDrawerData(advance);
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setDrawerLoading(false);
+  }
+};
 
   const [employeeAdvances, setEmployeeAdvances] = useState<EmployeeAdvance[]>([]);
   const [isInitialLoad,    setIsInitialLoad]    = useState(true);
@@ -348,10 +367,10 @@ const handleOpenEdit = async (ea: EmployeeAdvance) => {
     return (
       <div className="flex items-center justify-center gap-2">
         <ActionButton
-          type="view"
-          onClick={(e) => { e.stopPropagation(); }}
-          iconOnly
-        />
+  type="view"
+  onClick={(e) => handleViewClick(ea, e)}
+  iconOnly
+/>
         <ActionButton
           type="edit"
           onClick={() => { handleOpenEdit(ea); }}
@@ -365,6 +384,7 @@ const handleOpenEdit = async (ea: EmployeeAdvance) => {
     {
       label: "Approve",
       onClick: () => handleStatusChange(ea.id, "submit"),
+      disabled: !isDraft,
      
     },
     {
@@ -385,7 +405,7 @@ const handleOpenEdit = async (ea: EmployeeAdvance) => {
   },
 },
     ],
-    [handleDelete, can]
+    [handleDelete, handleOpenEdit, handleViewClick, handleMakePayment, can]
   );
 
   return (
@@ -428,6 +448,12 @@ const handleOpenEdit = async (ea: EmployeeAdvance) => {
           setPage(1);
         }}
       />
+    <EmployeeAdvanceDetailModal
+  open={drawerOpen}
+  data={drawerData} 
+  loading={drawerLoading}
+  onClose={() => { setDrawerOpen(false); setDrawerData(null); }}
+/>
     </div>
   );
 };

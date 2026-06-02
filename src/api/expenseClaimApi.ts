@@ -191,6 +191,8 @@ export interface EmployeeAdvanceRaw {
   purpose: string;
   currency: string;
   status: string;
+  exchange_rate?: number;
+  
 }
 export interface MappedEmployeeAdvance {
   id: string;              
@@ -198,10 +200,12 @@ export interface MappedEmployeeAdvance {
   employeeId: string;       
   advanceDate: string; 
   allocatedAmount: number;  
-  unclaimedAmount: number; 
+  unclaimedAmount: number;
+   
   claimedAmount: number;
   purpose: string; 
   status: "Pending" | "Partially Claimed" | "Fully Claimed";
+  exchange_rate: number; 
 }
 function deriveStatus(raw: EmployeeAdvanceRaw): MappedEmployeeAdvance["status"] {
   if (raw.claimed_amount <= 0) return "Pending";
@@ -230,10 +234,11 @@ export async function getAdvancesByEmployee(
     employeeId:      item.employee,
     advanceDate:     item.posting_date,
     allocatedAmount: item.advance_amount,
-    unclaimedAmount: Math.max(0, item.advance_amount - item.claimed_amount),
+    unclaimedAmount: Math.max(0, (item.advance_amount ?? 0) - (item.claimed_amount ?? 0)),
     claimedAmount:   item.claimed_amount,
     purpose:        item.purpose,
     status:          deriveStatus(item),
+     exchange_rate:   item.exchange_rate ?? 1,  
   }));
 }
 
