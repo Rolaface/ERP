@@ -15,7 +15,7 @@ export interface EmployeeAdvance {
   advanceDate: string;
   allocatedAmount: number;
   unclaimedAmount: number;
-  exchange_Rate: number;
+  exchange_rate: number;
   purpose: string;
 }
 

@@ -12,7 +12,6 @@ import {
   CreditCard,
   AlertTriangle,
   CheckCircle2,
-  Wallet,
 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -34,7 +33,6 @@ import {
 import { showApiError } from "../../utils/alert";
 import DatePickerInput from "../calendar/DatePickerInput";
 
-// ─── helpers ────────────────────────────────────────────────────────────────
 const getCurrencyFromStorage = (): string => {
   try {
     const raw = localStorage.getItem("company-info");
@@ -46,7 +44,7 @@ const getCurrencyFromStorage = (): string => {
   }
 };
 
-// ─── types ───────────────────────────────────────────────────────────────────
+
 export interface ExpenseFormData {
   claim_title: string;
   id?: string;
@@ -332,7 +330,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     Record<string, number>
   >({});
 
-  // ── derived: advance summary ──────────────────────────────────────────────
+
   const currency = getCurrencyFromStorage();
 
   const advanceSummary = useMemo(() => {
@@ -359,7 +357,12 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     if (isOpen) {
       const data = modal?.initialData as any;
 
-      setForm(data ?? defaultExpenseForm);
+      setForm(data ? {
+  ...defaultExpenseForm,
+  ...data,
+  receipts: data.receipts ?? [],
+  existingAttachments: data.existingAttachments ?? [],
+} : defaultExpenseForm);
       setAdvanceForm(defaultAdvanceForm);
       setErrors({});
       setSelectedEmployee(null);
@@ -554,7 +557,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           },
         ],
         ...(useAdvance &&
-          activeAdvances.length > 0 && { advances: activeAdvances }),
+          activeAdvances.length > 0 && { advances: activeAdvances  as any[] }),
         remark: form.remarks,
       };
 
@@ -575,7 +578,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         await Promise.allSettled(
           form.receipts.map((file) =>
             attachDocumentToExpenseClaim(claimId, file).catch((err) => {
-              // Handle attachment error silently or log it
+
             }),
           ),
         );
@@ -633,7 +636,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           />
         </div>
 
-        {/* ── expense tab ──────────────────────────────────────────────────── */}
         {activeTab === "expense" && (
           <div
             className="p-4 flex flex-col gap-4 overflow-y-auto"
@@ -701,8 +703,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     setEmployeeDisplayName(option?.label || "");
                     if (errors.employee)
                       setErrors((prev) => ({ ...prev, employee: "" }));
-
-                    // Clear previous advances & allocations
                     setEmployeeAdvances([]);
                     setAdvanceAllocations({});
                     setAdvancesFetchError(undefined);
