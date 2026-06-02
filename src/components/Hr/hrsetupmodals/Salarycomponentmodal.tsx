@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Layers, Save, X, Plus, Trash2 } from "lucide-react";
+import { Layers, Save, X,  } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
 import { useAccountSearch } from "../../../api/apiHooks";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
@@ -13,13 +13,14 @@ import {
 import {
   ModalInput,
   ModalSelect,
-  ModalTextarea,
+  
 } from "../../../components/ui/modal/modalComponent";
 import {
   showApiError,
   showSuccess,
   showValidationError,
 } from "../../../utils/alert";
+import { NumericInput } from "../../../components/ui/modal/modalComponent";
 
 const STYLES = `
 @keyframes sc-fadein {
@@ -39,13 +40,13 @@ const STYLES = `
   display: grid;
   grid-template-columns: 7fr 3fr;
   gap: 20px;
-  align-items: stretch;   /* right col stretches to left col's full height */
+  align-items: stretch;
 }
 
 /* LEFT column stacks Amount + Ledger vertically */
 .sc-left { display: flex; flex-direction: column; gap: 20px; }
 
-/* ── Amount Configuration section — gray bg, matching HTML ── */
+/* ── Amount Configuration section — gray bg ── */
 .sc-amount-section {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
@@ -81,7 +82,7 @@ const STYLES = `
   flex-shrink: 0;
 }
 .sc-toggle-pill button {
-  padding: 7px 16px;
+  padding: 4px 11px;
   border-radius: 6px;
   border: none;
   font-size: 13px;
@@ -155,12 +156,12 @@ const STYLES = `
 /* ── RIGHT column — Attributes section (blue-tinted, h-full) ── */
 .sc-right { display: flex; flex-direction: column; }
 .sc-attrs-section {
-  background: #eff6ff;           /* blue-50 */
-  border: 1px solid #dbeafe;     /* blue-100 */
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
   border-radius: 12px;
   padding: 18px 20px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  flex: 1;                       /* stretches to full left column height */
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -169,7 +170,7 @@ const STYLES = `
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #1e3a8a;                /* blue-900 */
+  color: #1e3a8a;
   margin: 0 0 14px 0;
 }
 
@@ -178,10 +179,9 @@ const STYLES = `
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  min-height: 28px;              /* slot always occupies space */
+  min-height: 28px;
   padding: 4px 0;
 }
-/* spacer: invisible placeholder to lock height when slot is empty */
 .sc-attr-spacer { min-height: 28px; padding: 4px 0; }
 
 .sc-attr-row input[type="checkbox"] {
@@ -290,9 +290,10 @@ const EMPTY: Omit<SalaryComponent, "name"> = {
   type: "Earning",
   depends_on_payment_days: 1,
   is_tax_applicable: 1,
+  remove_if_zero_valued: 1,
   amount_based_on_formula: 0,
   formula: "",
-  amount: "" as any,
+  amount: null as any,
   description: "",
   accounts: [{ account: "" }],
   is_flexible_benefit: 0,
@@ -351,7 +352,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<Omit<SalaryComponent, "name">>(EMPTY);
   const [saving, setSaving] = useState(false);
-  const [loadingData, setLoadingData] = useState(false);
+  const [, setLoadingData] = useState(false);
   const { fetchAccounts } = useAccountSearch();
 
   /* inject styles once */
@@ -383,8 +384,9 @@ export const SalaryComponentModal: React.FC<Props> = ({
         depends_on_payment_days: data.depends_on_payment_days ?? 1,
         is_tax_applicable: data.is_tax_applicable ?? 0,
         amount_based_on_formula: data.amount_based_on_formula ?? 0,
+        remove_if_zero_valued: data.remove_if_zero_valued ?? 0,
         formula: data.formula ?? "",
-        amount: data.amount ?? 0,
+        amount: data.amount ?? null,
         description: data.description ?? "",
         accounts:
           (data.accounts ?? []).length > 0
@@ -424,6 +426,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
       depends_on_payment_days: 1,
       is_tax_applicable: newType === "Earning" ? 1 : 0,
       is_flexible_benefit: 0,
+      remove_if_zero_valued: 1,
       pay_against_benefit_claim: 0,
       max_benefit_amount: 0,
       only_tax_impact: 0,
@@ -433,22 +436,14 @@ export const SalaryComponentModal: React.FC<Props> = ({
       is_income_tax_component: 0,
     }));
 
-  const addAccount = () =>
-    setForm((prev) => ({
-      ...prev,
-      accounts: [...(prev.accounts ?? []), { account: "" }],
-    }));
+
   const updateAccount = (idx: number, value: string) =>
     setForm((prev) => {
       const accounts = [...(prev.accounts ?? [])];
       accounts[idx] = { account: value };
       return { ...prev, accounts };
     });
-  const removeAccount = (idx: number) =>
-    setForm((prev) => ({
-      ...prev,
-      accounts: (prev.accounts ?? []).filter((_, i) => i !== idx),
-    }));
+
 
   const handleSave = async () => {
     if (!form.salary_component.trim())
@@ -477,7 +472,8 @@ export const SalaryComponentModal: React.FC<Props> = ({
         depends_on_payment_days: form.depends_on_payment_days,
         amount_based_on_formula: form.amount_based_on_formula,
         formula: form.amount_based_on_formula ? form.formula : "",
-        amount: form.amount_based_on_formula ? 0 : form.amount,
+        remove_if_zero_valued: form.remove_if_zero_valued,
+        amount: form.amount_based_on_formula ? 0 : (form.amount ?? 0),
         description: form.description,
         accounts: form.accounts?.filter((a) => a.account.trim()) ?? [],
         ...(isEarning && {
@@ -560,11 +556,11 @@ export const SalaryComponentModal: React.FC<Props> = ({
         className="sc-body space-y-5 pb-2 px-1"
         style={{ maxHeight: "calc(80vh - 160px)" }}
       >
-        {/* ══ ROW 1: Type | Component Name | Abbreviation ══ */}
+        {/* ══ ROW 1: Type | Component Name | Abbreviation | Description ══ */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.2fr 5.8fr 3fr",
+            gridTemplateColumns: "1.2fr 4fr 1.8fr 4fr",
             gap: 16,
             alignItems: "end",
           }}
@@ -589,13 +585,19 @@ export const SalaryComponentModal: React.FC<Props> = ({
           />
           <ModalInput
             label="Abbreviation"
-            placeholder="eg..BS"
-            maxLength={5}
+            placeholder="e.g. BS"
+            maxLength={8}
             value={form.salary_component_abbr}
             required
             onChange={(e) =>
               set("salary_component_abbr", e.target.value.toUpperCase())
             }
+          />
+          <ModalInput
+            label="Description"
+            placeholder="Optional description…"
+            value={form.description ?? ""}
+            onChange={(e) => set("description", e.target.value)}
           />
         </div>
 
@@ -607,7 +609,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
             <div className="sc-amount-section">
               <h3>Amount Configuration</h3>
               <div className="sc-toggle-row">
-                {/* Fixed Amount / Formula pill toggle */}
                 <div className="sc-toggle-pill">
                   <button
                     type="button"
@@ -624,16 +625,11 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     Formula
                   </button>
                 </div>
-                {/* Input expands to fill row */}
                 {!isFormulaBased ? (
-                  <input
-                    type="number"
-                    className="sc-toggle-input no-spinner"
-                    placeholder="0"
-                    value={form.amount ?? 0}
-                    onChange={(e) =>
-                      set("amount", parseFloat(e.target.value) || 0)
-                    }
+                  <NumericInput
+                    value={form.amount as number | null}
+                    onChange={(value) => set("amount", value as any)}
+                    className="sc-toggle-input"
                   />
                 ) : (
                   <input
@@ -678,15 +674,19 @@ export const SalaryComponentModal: React.FC<Props> = ({
             <div className="sc-attrs-section">
               <h3>Attributes</h3>
 
-              {/* Slot 1 — always: Depends on Payment Days */}
               <Attr
                 id="attr-pay-days"
                 label="Depends on Payment Days"
                 checked={Boolean(form.depends_on_payment_days)}
                 onChange={tog("depends_on_payment_days")}
               />
+              <Attr
+                id="attr-variable-amt"
+                label="Remove If Zero Valued"
+                checked={Boolean(form.remove_if_zero_valued)}
+                onChange={tog("remove_if_zero_valued")}
+              />
 
-              {/* Slot 2 — swaps label by type, same slot */}
               {isEarning ? (
                 <Attr
                   id="attr-tax"
@@ -703,16 +703,22 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 />
               )}
 
-              {/* Slot 3 — Earning: Flexible Benefit | Deduction: Income Tax Component
-                  Always occupies same vertical space → zero layout shift            */}
-            {isDeduction ? (
-  <Attr
-    id="attr-income-tax"
-    label="Income Tax Component"
-    checked={Boolean(form.is_income_tax_component)}
-    onChange={tog("is_income_tax_component")}
-  />
-) : null}
+              {isDeduction ? (
+                <Attr
+                  id="attr-income-tax"
+                  label="Income Tax Component"
+                  checked={Boolean(form.is_income_tax_component)}
+                  onChange={(checked) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      is_income_tax_component: checked ? 1 : 0,
+                      variable_based_on_taxable_salary: checked
+                        ? 1
+                        : prev.variable_based_on_taxable_salary,
+                    }))
+                  }
+                />
+              ) : null}
             </div>
           </div>
         </div>
@@ -781,15 +787,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
             />
           </div>
         )}
-
-        {/* ══ Description — full width ══ */}
-        <ModalTextarea
-          label="Description"
-          rows={3}
-          placeholder="Optional description…"
-          value={form.description ?? ""}
-          onChange={(e) => set("description", e.target.value)}
-        />
       </div>
     </MinimizableModal>
   );

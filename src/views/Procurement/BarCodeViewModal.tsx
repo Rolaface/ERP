@@ -1,6 +1,7 @@
 // components/BarcodeViewModal.tsx
 import React from "react";
 
+// Fallback SVG barcode generator (used only when barcode_image_url is absent)
 export const buildBars = (val: string): string => {
   const W = 180, H = 48;
   const seed = String(val).split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 7), 0);
@@ -20,21 +21,16 @@ export const buildBars = (val: string): string => {
     style="width:100%;max-width:180px;height:${H}px">${rects}</svg>`;
 };
 
- export interface BatchRow {
-   batchNumber: string;
-   barcodeId: string;
-   quantity: number;
-   manufactureDate: string;
-   expiryDate: string;
-   postDate: string;
-   supplierName: string;
- }
- 
- export interface ItemSearchResult {
-   itemCode: string;
-   itemName: string;
-   batches: BatchRow[];
- }
+export interface BatchRow {
+  batchNumber: string;
+  barcodeId: string;
+  quantity: number;
+  manufactureDate: string;
+  expiryDate: string;
+  postDate: string;
+  supplierName: string;
+  barcodeImageUrl?: string;
+}
 
 interface Props {
   open: boolean;
@@ -47,7 +43,13 @@ interface Props {
 const fmtDate = (d?: string) =>
   d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-const buildSinglePrintHTML = (batch: BatchRow, itemName: string, itemCode: string): string => `
+
+const buildSinglePrintHTML = (batch: BatchRow, itemName: string, itemCode: string): string => {
+  const barcodeBlock = batch.barcodeImageUrl
+    ? `<img src="${batch.barcodeImageUrl}" alt="barcode" style="max-width:180px;height:48px;object-fit:contain;display:block;margin:0 auto"/>`
+    : buildBars(batch.barcodeId);
+
+  return `
 <!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Barcode — ${batch.batchNumber}</title>
 <style>
@@ -65,7 +67,7 @@ const buildSinglePrintHTML = (batch: BatchRow, itemName: string, itemCode: strin
   <p style="font-size:15px;font-weight:700;color:#111;text-align:center">${itemName}</p>
   <p style="font-size:11px;color:#666;font-family:monospace">${itemCode}</p>
   <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;color:#111">
-    ${buildBars(batch.barcodeId)}
+    ${barcodeBlock}
     <p style="font-size:12px;font-family:monospace;letter-spacing:.14em;color:#111">${batch.barcodeId}</p>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
@@ -75,11 +77,14 @@ const buildSinglePrintHTML = (batch: BatchRow, itemName: string, itemCode: strin
   <div class="meta">
     <div class="meta-cell"><div class="label">Mfg Date</div><div class="value" style="font-size:12px">${fmtDate(batch.manufactureDate)}</div></div>
     <div class="meta-cell"><div class="label">Exp Date</div><div class="value" style="font-size:12px">${fmtDate(batch.expiryDate)}</div></div>
-    <div class="meta-cell"><div class="label">Post Date</div><div class="value" style="font-size:12px">${fmtDate(batch.postDate)}</div></div>
-    <div class="meta-cell"><div class="label">Supplier</div><div class="value" style="font-size:12px">${batch.supplierName}</div></div>
+    ${batch.postDate ? `<div class="meta-cell"><div class="label">Post Date</div><div class="value" style="font-size:12px">${fmtDate(batch.postDate)}</div></div>` : ""}
+    ${batch.supplierName ? `<div class="meta-cell"><div class="label">Supplier</div><div class="value" style="font-size:12px">${batch.supplierName}</div></div>` : ""}
   </div>
 </div>
 </body></html>`;
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 const BarcodeViewModal: React.FC<Props> = ({ open, onClose, batch, itemName, itemCode }) => {
   if (!open || !batch) return null;
@@ -100,6 +105,27 @@ const BarcodeViewModal: React.FC<Props> = ({ open, onClose, batch, itemName, ite
     a.click();
     URL.revokeObjectURL(a.href);
   };
+
+  const BarcodeDisplay = () =>
+    batch.barcodeImageUrl ? (
+      <img
+        src={batch.barcodeImageUrl}
+        alt="barcode"
+        style={{ maxWidth:180, height:48, objectFit:"contain", display:"block" }}
+      />
+    ) : (
+      <div
+        style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", color:"var(--text,#111)" }}
+        dangerouslySetInnerHTML={{ __html: buildBars(batch.barcodeId) }}
+      />
+    );
+
+  const metaFields = [
+    { label:"Mfg Date",  value: fmtDate(batch.manufactureDate) },
+    { label:"Exp Date",  value: fmtDate(batch.expiryDate)      },
+    ...(batch.postDate    ? [{ label:"Post Date", value: fmtDate(batch.postDate)  }] : []),
+    ...(batch.supplierName ? [{ label:"Supplier",  value: batch.supplierName      }] : []),
+  ];
 
   return (
     <>
@@ -141,32 +167,30 @@ const BarcodeViewModal: React.FC<Props> = ({ open, onClose, batch, itemName, ite
         <div style={{ padding:"18px 20px",display:"flex",flexDirection:"column",alignItems:"center",gap:10 }}>
           <p style={{ fontSize:11,color:"var(--muted,#888)",fontFamily:"monospace",margin:0 }}>{itemCode}</p>
 
-          {/* Barcode */}
-          <div style={{ width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"8px 0",color:"var(--text,#111)" }}
-            dangerouslySetInnerHTML={{ __html: buildBars(batch.barcodeId) }} />
-          <p style={{ fontSize:13,fontFamily:"monospace",letterSpacing:".14em",margin:0 }}>{batch.barcodeId}</p>
+          {/* Barcode image or SVG */}
+          <div style={{ width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"8px 0" }}>
+            <BarcodeDisplay />
+            <p style={{ fontSize:13,fontFamily:"monospace",letterSpacing:".14em",margin:0 }}>{batch.barcodeId}</p>
+          </div>
 
           {/* Badges */}
           <div style={{ display:"flex",gap:5,flexWrap:"wrap",justifyContent:"center" }}>
-            {[`Batch: ${batch.batchNumber}`,`Qty: ${batch.quantity}`].map(l => (
+            {[`Batch: ${batch.batchNumber}`, `Qty: ${batch.quantity}`].map(l => (
               <span key={l} style={{ fontSize:10,padding:"2px 8px",borderRadius:4,background:"var(--bg,#f3f4f6)",border:"0.5px solid var(--border,#e5e7eb)",color:"var(--muted,#666)",fontFamily:"monospace" }}>{l}</span>
             ))}
           </div>
 
           {/* Meta grid */}
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,width:"100%",marginTop:4 }}>
-            {[
-              { label:"Mfg Date",  value: fmtDate(batch.manufactureDate) },
-              { label:"Exp Date",  value: fmtDate(batch.expiryDate)      },
-              { label:"Post Date", value: fmtDate(batch.postDate)         },
-              { label:"Supplier",  value: batch.supplierName              },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ background:"var(--bg,#f8f9fa)",borderRadius:6,padding:"7px 9px" }}>
-                <p style={{ fontSize:9,color:"var(--muted,#888)",textTransform:"uppercase",letterSpacing:".06em",margin:"0 0 2px" }}>{label}</p>
-                <p style={{ fontSize:12,fontWeight:500,margin:0 }}>{value}</p>
-              </div>
-            ))}
-          </div>
+          {metaFields.length > 0 && (
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,width:"100%",marginTop:4 }}>
+              {metaFields.map(({ label, value }) => (
+                <div key={label} style={{ background:"var(--bg,#f8f9fa)",borderRadius:6,padding:"7px 9px" }}>
+                  <p style={{ fontSize:9,color:"var(--muted,#888)",textTransform:"uppercase",letterSpacing:".06em",margin:"0 0 2px" }}>{label}</p>
+                  <p style={{ fontSize:12,fontWeight:500,margin:0 }}>{value}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </>

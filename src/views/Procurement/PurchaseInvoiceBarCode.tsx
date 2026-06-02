@@ -1,19 +1,21 @@
-// pages/BarcodeSearchPage.tsx
-import React, { useState } from "react";
+// pages/PurchaseInvoiceBarCode.tsx
+import React, { useState, useEffect, useRef } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import ActionButton, { ActionGroup } from "../../components/ui/Table/ActionButton";
 import BarcodeViewModal from "./BarCodeViewModal";
 import BarcodeViewAllModal from "./BarCodeViewAllModal";
+import { getAllBarCodeByItemCode, getItemCodeBySearch } from "../../api/procurement/PurchaseInvoiceApi";
 
 export interface BatchRow {
-  batchNumber: string;
-  barcodeId: string;
+  batchNumber: string;   // batch_no
+  barcodeId: string;     // barcode_value
   quantity: number;
   manufactureDate: string;
   expiryDate: string;
-  postDate: string;
-  supplierName: string;
+  postDate: string;      
+  supplierName: string;   
+  barcodeImageUrl?: string;
 }
 
 export interface ItemSearchResult {
@@ -22,53 +24,65 @@ export interface ItemSearchResult {
   batches: BatchRow[];
 }
 
-export const DUMMY_ITEMS: ItemSearchResult[] = [
-  {
-    itemCode: "STO-ITEM-2026-00003",
-    itemName: "Langda Aam",
-    batches: [
-      { batchNumber: "BATCH-2026-00001", barcodeId: "123456789", quantity: 50,  manufactureDate: "2026-04-01", expiryDate: "2026-08-01", postDate: "2026-05-01", supplierName: "Bicchu Pandey" },
-      { batchNumber: "BATCH-2026-00002", barcodeId: "987654321", quantity: 30,  manufactureDate: "2026-04-10", expiryDate: "2026-08-10", postDate: "2026-05-05", supplierName: "Bicchu Pandey" },
-      { batchNumber: "BATCH-2026-00003", barcodeId: "112233445", quantity: 20,  manufactureDate: "2026-04-20", expiryDate: "2026-08-20", postDate: "2026-05-10", supplierName: "Ravi Traders"  },
-    ],
-  },
-  {
-    itemCode: "STO-ITEM-2026-00010",
-    itemName: "Basmati Rice 5kg",
-    batches: [
-      { batchNumber: "BATCH-2026-00010", barcodeId: "556677889", quantity: 100, manufactureDate: "2026-03-01", expiryDate: "2027-03-01", postDate: "2026-04-01", supplierName: "Negi & Sons"   },
-      { batchNumber: "BATCH-2026-00011", barcodeId: "443322110", quantity: 80,  manufactureDate: "2026-03-15", expiryDate: "2027-03-15", postDate: "2026-04-15", supplierName: "Negi & Sons"   },
-    ],
-  },
-  {
-    itemCode: "STO-ITEM-2026-00020",
-    itemName: "Turmeric Powder",
-    batches: [
-      { batchNumber: "BATCH-2026-00020", barcodeId: "100200300", quantity: 200, manufactureDate: "2026-02-01", expiryDate: "2027-02-01", postDate: "2026-03-01", supplierName: "Delhi Supplies" },
-      { batchNumber: "BATCH-2026-00021", barcodeId: "400500600", quantity: 150, manufactureDate: "2026-02-15", expiryDate: "2027-02-15", postDate: "2026-03-10", supplierName: "Delhi Supplies" },
-      { batchNumber: "BATCH-2026-00022", barcodeId: "700800900", quantity: 120, manufactureDate: "2026-03-01", expiryDate: "2027-03-01", postDate: "2026-03-20", supplierName: "Sharma Ent."    },
-      { batchNumber: "BATCH-2026-00023", barcodeId: "111222333", quantity: 90,  manufactureDate: "2026-03-10", expiryDate: "2027-03-10", postDate: "2026-03-25", supplierName: "Sharma Ent."    },
-    ],
-  },
-  {
-    itemCode: "STO-ITEM-2026-00030",
-    itemName: "Mustard Oil 1L",
-    batches: [
-      { batchNumber: "BATCH-2026-00030", barcodeId: "999888777", quantity: 60,  manufactureDate: "2026-01-10", expiryDate: "2027-01-10", postDate: "2026-02-01", supplierName: "Sharma Ent."    },
-    ],
-  },
-];
+// ── API response shapes ───────────────────────────────────────────────────────
+
+interface SearchBatch {
+  batch_no: string;
+  manufacturing_date: string;
+  expiry_date: string;
+  quantity: number;
+}
+
+interface SearchResultItem {
+  item_code: string;
+  item_name: string;
+  uom: string;
+  item_group: string;
+  description: string;
+  total_batches: number;
+  batches: SearchBatch[];
+}
+
+interface BarcodeBatch {
+  item_code: string;
+  item_name: string;
+  batch_no: string;
+  manufacturing_date: string;
+  expiry_date: string;
+  quantity: number;
+  barcode_value: string;
+  barcode_image_url: string;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const formatDate = (d: string) => {
   if (!d) return "—";
   const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
   const [year, month, day] = d.split("T")[0].split("-").map(Number);
-  return `${String(day).padStart(2,"0")}-${months[month-1]}-${year}`;
+  return `${String(day).padStart(2,"0")}-${months[month - 1]}-${year}`;
 };
 
-const BarcodeSearchPage: React.FC = () => {
-  const [searchTerm, setSearchTerm]           = useState("");
-  const [selectedItem, setSelectedItem]       = useState<ItemSearchResult | null>(null);
+const mapBarcodeBatchToRow = (b: BarcodeBatch): BatchRow => ({
+  batchNumber:     b.batch_no,
+  barcodeId:       b.barcode_value,
+  quantity:        b.quantity,
+  manufactureDate: b.manufacturing_date,
+  expiryDate:      b.expiry_date,
+  postDate:        "",
+  supplierName:    "",
+  barcodeImageUrl: b.barcode_image_url,
+});
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+const PurchaseInvoiceBarCode: React.FC = () => {
+  const [searchTerm, setSearchTerm]         = useState("");
+  const [suggestions, setSuggestions]       = useState<SearchResultItem[]>([]);
+  const [selectedItem, setSelectedItem]     = useState<ItemSearchResult | null>(null);
+  const [loadingSearch, setLoadingSearch]   = useState(false);
+  const [loadingBatches, setLoadingBatches] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   // Single barcode modal
   const [singleModal, setSingleModal] = useState<{ open: boolean; batch: BatchRow | null }>
@@ -77,15 +91,61 @@ const BarcodeSearchPage: React.FC = () => {
   // View all modal
   const [allModal, setAllModal] = useState(false);
 
-  // ── Item search results ──────────────────────────────────────────────────
-  const itemResults = searchTerm.trim().length > 0
-    ? DUMMY_ITEMS.filter(i =>
-        i.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        i.itemCode.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : [];
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Batch table columns ──────────────────────────────────────────────────
+  useEffect(() => {
+    const term = searchTerm.trim();
+
+    // if (!term || selectedItem) {
+    if (selectedItem) {
+      setSuggestions([]);
+      return;
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(async () => {
+      setLoadingSearch(true);
+      try {
+        const data = await getItemCodeBySearch({ search_term: term });
+        setSuggestions(data?.message?.results ?? []);
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setLoadingSearch(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchTerm, selectedItem]);
+
+  // ── Select item → fetch barcodes ─────────────────────────────────────────
+  const handleSelectItem = async (item: SearchResultItem) => {
+    setSearchTerm(item.item_name);
+    setSuggestions([]);
+    setLoadingBatches(true);
+    setSelectedItem(null);
+
+    try {
+      const data = await getAllBarCodeByItemCode(item.item_code);
+      const batches: BatchRow[] = (data?.message?.batches ?? []).map(mapBarcodeBatchToRow);
+      setSelectedItem({ itemCode: item.item_code, itemName: item.item_name, batches });
+    } catch {
+      setSelectedItem({ itemCode: item.item_code, itemName: item.item_name, batches: [] });
+    } finally {
+      setLoadingBatches(false);
+    }
+  };
+
+  const handleClear = () => {
+    setSelectedItem(null);
+    setSearchTerm("");
+    setSuggestions([]);
+  };
+
+  // ── Batch table columns ───────────────────────────────────────────────────
   const batchColumns: Column<BatchRow>[] = [
     {
       key: "batchNumber",
@@ -101,7 +161,7 @@ const BarcodeSearchPage: React.FC = () => {
       header: "Barcode ID",
       render: (r) => (
         <div className="py-1.5">
-          <code className="block font-mono text-sm">{r.barcodeId}</code>
+          <code className="block font-mono text-sm">{r.barcodeId || "—"}</code>
         </div>
       ),
     },
@@ -134,24 +194,6 @@ const BarcodeSearchPage: React.FC = () => {
       ),
     },
     {
-      key: "postDate",
-      header: "Post Date",
-      render: (r) => (
-        <div className="py-1.5">
-          <span className="block">{formatDate(r.postDate)}</span>
-        </div>
-      ),
-    },
-    {
-      key: "supplierName",
-      header: "Supplier Name",
-      render: (r) => (
-        <div className="py-1.5">
-          <span className="block">{r.supplierName}</span>
-        </div>
-      ),
-    },
-    {
       key: "actions",
       header: "Actions",
       align: "center",
@@ -162,51 +204,74 @@ const BarcodeSearchPage: React.FC = () => {
             iconOnly
             title="View Barcode"
             onClick={() => setSingleModal({ open: true, batch: r })}
+            disabled={!r.barcodeId}
           />
         </ActionGroup>
       ),
     },
   ];
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="h-full min-h-0 flex flex-col gap-4 p-4">
 
-      {/* ── Search bar + View All ─────────────────────────────────────────── */}
+      {/* Search bar + View All */}
       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
         <div style={{ position:"relative", flex:1, maxWidth:420 }}>
-          <svg style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"var(--muted,#888)" }}
-            width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
+          {/* Search icon */}
+          {loadingSearch ? (
+            <svg style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#178ee0",animation:"spin 1s linear infinite" }}
+              width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" strokeOpacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round"/>
+            </svg>
+          ) : (
+            <svg style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"var(--muted,#888)" }}
+              width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          )}
+
+          {/* <input
             type="text"
             placeholder="Search item name or code…"
             value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setSelectedItem(null);
-            }}
+            onChange={(e) => { setSearchTerm(e.target.value); setSelectedItem(null); }}
             style={{ width:"100%",padding:"8px 12px 8px 32px",borderRadius:7,border:"0.5px solid var(--border,#e5e7eb)",background:"var(--card,#fff)",color:"var(--text,#111)",fontSize:13,outline:"none" }}
-          />
+          /> */}
+          <input
+    type="text"
+    placeholder="Search item name or code…"
+    value={searchTerm}
+    onChange={(e) => { setSearchTerm(e.target.value); setSelectedItem(null); }}
+    // Add these two lines:
+    onFocus={() => setIsFocused(true)}
+    onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+    style={{ width:"100%",padding:"8px 12px 8px 32px",borderRadius:7,border:"0.5px solid var(--border,#e5e7eb)",background:"var(--card,#fff)",color:"var(--text,#111)",fontSize:13,outline:"none" }}
+  />
+
           {/* Dropdown suggestions */}
-          {itemResults.length > 0 && !selectedItem && (
+          {/* {suggestions.length > 0 && !selectedItem && ( */}
+          {isFocused && suggestions.length > 0 && !selectedItem && (
             <div style={{ position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"var(--card,#fff)",border:"0.5px solid var(--border,#e5e7eb)",borderRadius:7,zIndex:50,overflow:"hidden",boxShadow:"0 4px 16px rgba(0,0,0,0.1)" }}>
-              {itemResults.map((item) => (
-                <div key={item.itemCode}
-                  onClick={() => { setSelectedItem(item); setSearchTerm(item.itemName); }}
+              {suggestions.map((item) => (
+                <div
+                  key={item.item_code}
+                  onClick={() => handleSelectItem(item)}
                   style={{ padding:"9px 12px",cursor:"pointer",borderBottom:"0.5px solid var(--border,#e5e7eb)",fontSize:13 }}
                   onMouseEnter={e => (e.currentTarget.style.background="var(--bg,#f8f9fa)")}
                   onMouseLeave={e => (e.currentTarget.style.background="transparent")}
                 >
-                  <p style={{ margin:0,fontWeight:500 }}>{item.itemName}</p>
-                  <p style={{ margin:0,fontSize:11,color:"var(--muted,#888)",fontFamily:"monospace" }}>{item.itemCode} · {item.batches.length} batch{item.batches.length !== 1 ? "es" : ""}</p>
+                  <p style={{ margin:0,fontWeight:500 }}>{item.item_name}</p>
+                  <p style={{ margin:0,fontSize:11,color:"var(--muted,#888)",fontFamily:"monospace" }}>
+                    {item.item_code} · {item.total_batches} batch{item.total_batches !== 1 ? "es" : ""}
+                  </p>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* View All button — only when an item is selected with 2+ batches */}
+        {/* View All — only when item selected with 2+ batches */}
         {selectedItem && selectedItem.batches.length > 1 && (
           <button
             onClick={() => setAllModal(true)}
@@ -220,7 +285,7 @@ const BarcodeSearchPage: React.FC = () => {
         )}
       </div>
 
-      {/* ── Selected item header ──────────────────────────────────────────── */}
+      {/* Selected item header */}
       {selectedItem && (
         <div style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"var(--bg,#f8f9fa)",borderRadius:7,border:"0.5px solid var(--border,#e5e7eb)" }}>
           <div style={{ width:8,height:8,borderRadius:"50%",background:"#178ee0",flexShrink:0 }} />
@@ -229,14 +294,23 @@ const BarcodeSearchPage: React.FC = () => {
             <p style={{ margin:0,fontSize:11,color:"var(--muted,#888)",fontFamily:"monospace" }}>{selectedItem.itemCode}</p>
           </div>
           <button
-            onClick={() => { setSelectedItem(null); setSearchTerm(""); }}
+            onClick={handleClear}
             style={{ marginLeft:"auto",width:24,height:24,borderRadius:5,border:"0.5px solid var(--border,#e5e7eb)",background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--muted,#888)",fontSize:13 }}
           >✕</button>
         </div>
       )}
 
-      {/* ── Batch table ───────────────────────────────────────────────────── */}
-      {selectedItem ? (
+      {/* Batch table / loading / empty state */}
+      {loadingBatches ? (
+        <div style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:1,gap:8,color:"var(--muted,#888)",paddingTop:40 }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#178ee0" strokeWidth="2"
+            style={{ animation:"spin 1s linear infinite" }}>
+            <circle cx="12" cy="12" r="10" strokeOpacity=".25"/>
+            <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round"/>
+          </svg>
+          <p style={{ fontSize:13,margin:0 }}>Loading barcodes…</p>
+        </div>
+      ) : selectedItem ? (
         <Table
           columns={batchColumns}
           data={selectedItem.batches}
@@ -244,7 +318,7 @@ const BarcodeSearchPage: React.FC = () => {
           rowKey={(r) => r.batchNumber}
           loading={false}
           showToolbar={false}
-          emptyMessage="No batches found"
+          emptyMessage="No barcodes found for this item"
           currentPage={1}
           totalPages={1}
           pageSize={selectedItem.batches.length}
@@ -257,11 +331,11 @@ const BarcodeSearchPage: React.FC = () => {
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <p style={{ fontSize:13,margin:0 }}>Search for an item to view its batches</p>
+          <p style={{ fontSize:13,margin:0 }}>Search for an item to view its barcodes</p>
         </div>
       )}
 
-      {/* ── Modals ────────────────────────────────────────────────────────── */}
+      {/* Modals */}
       <BarcodeViewModal
         open={singleModal.open}
         onClose={() => setSingleModal({ open: false, batch: null })}
@@ -277,8 +351,10 @@ const BarcodeSearchPage: React.FC = () => {
         itemCode={selectedItem?.itemCode ?? ""}
         batches={selectedItem?.batches ?? []}
       />
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
 
-export default BarcodeSearchPage;
+export default PurchaseInvoiceBarCode;

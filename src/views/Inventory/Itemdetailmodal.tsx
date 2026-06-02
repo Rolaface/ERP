@@ -10,24 +10,25 @@ import {
   ShoppingCart,
   Receipt,
   Building2,
-  BarChart3,
-  RefreshCw,
-  Layers,
-  Ruler,
-  Boxes,
-  BookOpen,
-  Hash,
-  Globe,
-  Edit,
-  Trash2,
   Plus,
   Percent,
-  Tag,
   ChevronDown,
   ChevronUp,
-  Fingerprint,
   FlaskConical,
+  Hash,
+  Layers,
+  Boxes,
+  Ruler,
+  BookOpen,
 } from "lucide-react";
+
+// Import your app shell components
+import {
+  AppPage,
+  AppPageBody,
+  AppSubTabs,
+} from "../../components/ui/app-shell";
+
 import type { Item, ItemSummary, TaxInfo } from "../../types/item";
 
 // ─── PUBLIC TYPES ─────────────────────────────────────────────────────────────
@@ -135,7 +136,7 @@ const EmptyRows = ({ colSpan, label }: { colSpan: number; label: string }) => (
   <tr>
     <td colSpan={colSpan}>
       <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-        <div className="w-12 h-12 rounded-2xl border-2 border-dashed border-theme flex items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl border-2 border-dashed border-[var(--border)] flex items-center justify-center">
           <Package size={18} className="text-muted opacity-25" />
         </div>
         <p className="text-sm text-muted">{label}</p>
@@ -177,7 +178,7 @@ const DetailField = ({
       ? String(value)
       : null;
   return (
-    <div className="flex items-start justify-between py-2.5 border-b border-theme last:border-0 gap-4">
+    <div className="flex items-start justify-between py-2.5 border-b border-[var(--border)] last:border-0 gap-4">
       <span className="text-[10px] font-black uppercase tracking-widest text-muted shrink-0 mt-0.5">
         {label}
       </span>
@@ -197,7 +198,7 @@ const CardLabel = ({
   icon: React.ReactNode;
   label: string;
 }) => (
-  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-theme">
+  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--border)]">
     <span className="text-primary">{icon}</span>
     <p className="text-[10px] font-black uppercase tracking-widest text-muted">
       {label}
@@ -230,7 +231,7 @@ const DatePicker = ({
           value={isoToDisplay(value)}
           onClick={() => ref.current?.showPicker?.()}
           placeholder="DD-MMM-YYYY"
-          className="pl-3 pr-9 py-2 text-xs border border-theme rounded-xl bg-card text-main focus:outline-none cursor-pointer w-36 font-mono"
+          className="pl-3 pr-9 py-2 text-xs border border-[var(--border)] rounded-xl bg-card text-main focus:outline-none cursor-pointer w-36 font-mono"
         />
         <button
           type="button"
@@ -253,16 +254,15 @@ const DatePicker = ({
   );
 };
 
-// ─── TAX CARD — collapsible per-tax-config ────────────────────────────────────
+// ─── TAX CARD ─────────────────────────────────────────────────────────────────
 
 const TaxCard = ({ tax, index }: { tax: TaxInfo; index: number }) => {
   const [open, setOpen] = useState(true);
-
   const rates = tax?.taxRates ?? [];
   const totalRate = rates.reduce((sum, r) => sum + (r?.tax_rate ?? 0), 0);
 
   return (
-    <div className="border border-theme rounded-xl overflow-hidden">
+    <div className="border border-[var(--border)] rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
@@ -295,7 +295,7 @@ const TaxCard = ({ tax, index }: { tax: TaxInfo; index: number }) => {
       </button>
 
       {open && rates.length > 0 && (
-        <div className="divide-y divide-theme">
+        <div className="divide-y divide-[var(--border)]">
           {rates.map((rate, ri) => (
             <div
               key={ri}
@@ -324,14 +324,6 @@ const TaxCard = ({ tax, index }: { tax: TaxInfo; index: number }) => {
 // ─── TAB DEFINITIONS ─────────────────────────────────────────────────────────
 
 type Tab = "overview" | "tax" | "sales" | "purchase" | "stock";
-
-const TABS: { key: Tab; label: string }[] = [
-  { key: "overview", label: "Overview" },
-  { key: "tax", label: "Tax Config" },
-  { key: "sales", label: "Sales Invoices" },
-  { key: "purchase", label: "Purchase Invoices" },
-  { key: "stock", label: "Stock Summary" },
-];
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
@@ -365,17 +357,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     () => new Date().toISOString().split("T")[0],
   );
 
-  // ── Derived values — read from NESTED API shape ──────────────────────────
-  // After flattenItemDetail in Items.tsx, item still has vendorInfo /
-  // inventoryInfo / taxInfo / batchInfo as nested objects, so these all work.
-  const preferredVendor =
-    item?.vendorInfo?.preferredVendor ??
-    (item as any)?.preferredVendor ??
-    "";
-
   const inventory = item?.inventoryInfo;
 
-  // taxInfo is always an array from the API; guard for edge-cases.
   const taxInfoList: TaxInfo[] = Array.isArray(item?.taxInfo)
     ? item!.taxInfo.map((t) => ({ ...t, taxRates: t.taxRates ?? [] }))
     : [];
@@ -394,7 +377,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const dimensionDisplay = (val?: number | string, unit?: string) =>
     val && Number(val) !== 0 ? `${val}${unit ? ` ${unit}` : ""}` : undefined;
 
-  /* Reset tab + search whenever selected item changes */
   useEffect(() => {
     setActiveTab("overview");
     setInvoiceSearch("");
@@ -421,20 +403,39 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       .includes(invoiceSearch.toLowerCase()),
   );
 
+  // Build tabs for AppSubTabs — dynamically include tax count badge via label
+  const TABS: { id: Tab; label: string; icon?: React.ReactNode }[] = [
+    { id: "overview", label: "Overview" },
+    {
+      id: "tax",
+      label: "Tax Config",
+      icon:
+        taxInfoList.length > 0 ? (
+          <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-black leading-none">
+            {taxInfoList.length}
+          </span>
+        ) : undefined,
+    },
+    { id: "sales", label: "Sales Invoices" },
+    { id: "purchase", label: "Purchase Invoices" },
+    { id: "stock", label: "Stock Summary" },
+  ];
+
   return (
     <div
-      className="flex bg-app overflow-hidden rounded-2xl border border-theme"
+      className="flex bg-app overflow-hidden rounded-2xl border border-[var(--border)]"
       style={{ height: "calc(100vh - 8rem)" }}
     >
       {/* ══════════════════════════════════════════════
-          LEFT SIDEBAR
+          LEFT SIDEBAR — item list
       ══════════════════════════════════════════════ */}
-      <aside className="w-64 xl:w-72 shrink-0 flex flex-col border-r border-theme bg-card overflow-hidden min-h-0">
-        <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-theme shrink-0">
+      <aside className="w-64 xl:w-72 shrink-0 flex flex-col border-r border-[var(--border)] bg-card overflow-hidden min-h-0">
+        {/* Sidebar header */}
+        <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-[var(--border)] shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-lg border border-theme flex items-center justify-center text-muted hover:text-main hover:bg-row-hover transition-all shrink-0"
+            className="w-7 h-7 rounded-lg border border-[var(--border)] flex items-center justify-center text-muted hover:text-main hover:bg-row-hover transition-all shrink-0"
           >
             <X size={13} />
           </button>
@@ -448,6 +449,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
           </div>
         </div>
 
+        {/* Sidebar search */}
         <div className="px-3 py-3 shrink-0">
           <div className="relative">
             <Search
@@ -459,11 +461,12 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
               placeholder="Quick find..."
               value={sidebarSearch}
               onChange={(e) => setSidebarSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-xs border border-theme rounded-xl bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full pl-8 pr-3 py-2 text-xs border border-[var(--border)] rounded-xl bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
         </div>
 
+        {/* Sidebar item list */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {filteredSidebar.length === 0 ? (
             <div className="flex items-center justify-center py-10">
@@ -510,86 +513,62 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       </aside>
 
       {/* ══════════════════════════════════════════════
-          RIGHT PANEL
+          RIGHT PANEL — uses AppPage shell
       ══════════════════════════════════════════════ */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0 min-h-0">
-        {/* ── Top bar ── */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-theme bg-card shrink-0 gap-4">
-          <div className="min-w-0">
-            {item ? (
-              <>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-base font-black text-main leading-tight truncate">
-                    {item.itemName}
-                  </h2>
-                  <span className="text-[10px] font-mono text-muted bg-row-hover px-2 py-0.5 rounded-md">
-                    {item.id}
-                  </span>
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted mt-0.5">
-                  ITEM INSIGHT CENTER
-                </p>
-              </>
-            ) : (
-              <p className="text-sm text-muted">Select an item</p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-           
+      <AppPage viewportLocked>
+        {/*
+          Single compact bar:
+            [ item name (truncated)  |  Overview  Tax Config  ...  ]   [ + New Item ]
+          Uses AppSubTabs (underline style) with trailing — no separate title row.
+        */}
+        <AppSubTabs
+          tabs={TABS.map((t) => ({ id: t.id, label: t.label, icon: t.icon }))}
+          activeTab={activeTab}
+          onChange={(id) => {
+            setActiveTab(id as Tab);
+            setInvoiceSearch("");
+          }}
+          leading={
+            item ? (
+              <div className="flex items-center gap-2 pl-1 shrink-0 max-w-[200px]">
+                <span className="truncate text-sm font-semibold text-main leading-none">
+                  {item.itemName}
+                </span>
+                <span className="h-4 w-px bg-[var(--border)] shrink-0" />
+              </div>
+            ) : null
+          }
+          trailing={
             <button
               type="button"
               onClick={onAddItem}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 active:scale-[0.98] transition-all shadow-sm whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:opacity-90 active:scale-[0.98] transition-all whitespace-nowrap"
             >
-              <Plus size={13} />
+              <Plus size={12} />
               <span className="hidden sm:inline">New Item</span>
             </button>
-          </div>
-        </div>
+          }
+        />
 
-        {/* ── Tab bar ── */}
-        <div className="flex items-center border-b border-theme bg-card shrink-0 overflow-x-auto px-4 sm:px-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => {
-                setActiveTab(tab.key);
-                setInvoiceSearch("");
-              }}
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-3.5 text-[10px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap border-b-2 transition-all ${
-                activeTab === tab.key
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted hover:text-main"
-              }`}
-            >
-              {tab.label}
-              {tab.key === "tax" && taxInfoList.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-black leading-none">
-                  {taxInfoList.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Tab content ── */}
-        <div className="flex-1 overflow-y-auto bg-app">
+        {/* ── AppPageBody: scrollable tab content ── */}
+        <AppPageBody viewportLocked className="gap-4">
+          {/* Loading skeleton */}
           {loadingDetail && (
-            <div className="p-4 sm:p-6 space-y-4">
+            <div className="space-y-4 pt-2">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-28 rounded-2xl bg-card border border-theme animate-pulse"
+                  className="h-28 rounded-2xl bg-card border border-[var(--border)] animate-pulse"
                   style={{ animationDelay: `${i * 100}ms` }}
                 />
               ))}
             </div>
           )}
 
+          {/* Empty state */}
           {!loadingDetail && !item && (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-6">
-              <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-theme flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+              <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-[var(--border)] flex items-center justify-center">
                 <Package size={24} className="text-muted opacity-20" />
               </div>
               <p className="text-sm text-muted">
@@ -598,14 +577,15 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
             </div>
           )}
 
+          {/* Tab content */}
           {!loadingDetail && item && (
-            <div className="p-4 sm:p-6 space-y-4">
+            <>
               {/* ════ OVERVIEW ════════════════════════════════════════════ */}
               {activeTab === "overview" && (
                 <>
                   {/* KPI cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-card border border-theme rounded-2xl p-4 flex items-center gap-3">
+                    <div className="bg-card border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                         <Layers size={16} />
                       </div>
@@ -618,7 +598,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         </p>
                       </div>
                     </div>
-                    <div className="bg-card border border-theme rounded-2xl p-4 flex items-center gap-3">
+                    <div className="bg-card border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                         <Wallet size={16} />
                       </div>
@@ -631,7 +611,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         </p>
                       </div>
                     </div>
-                    <div className="bg-card border border-theme rounded-2xl p-4 flex items-center gap-3">
+                    <div className="bg-card border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                         <ShoppingCart size={16} />
                       </div>
@@ -648,7 +628,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {/* Identification */}
-                    <div className="bg-card border border-theme rounded-2xl p-5">
+                    <div className="bg-card border border-[var(--border)] rounded-2xl p-5">
                       <CardLabel
                         icon={<Hash size={13} />}
                         label="Identification"
@@ -673,12 +653,11 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
 
                     {/* Vendor & Accounts */}
-                    <div className="bg-card border border-theme rounded-2xl p-5">
+                    <div className="bg-card border border-[var(--border)] rounded-2xl p-5">
                       <CardLabel
                         icon={<Building2 size={13} />}
                         label="Vendor & Accounts"
                       />
-                      {/* ✅ FIX: reads from vendorInfo (nested) with flat fallback */}
                       <DetailField
                         label="Preferred Vendor"
                         value={
@@ -693,9 +672,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
 
                     {/* Inventory */}
-                    <div className="bg-card border border-theme rounded-2xl p-5">
+                    <div className="bg-card border border-[var(--border)] rounded-2xl p-5">
                       <CardLabel icon={<Boxes size={13} />} label="Inventory" />
-                      {/* ✅ FIX: reads from inventoryInfo (nested) */}
                       <DetailField
                         label="Valuation Method"
                         value={
@@ -733,7 +711,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
 
                     {/* Physical Attributes */}
-                    <div className="bg-card border border-theme rounded-2xl p-5">
+                    <div className="bg-card border border-[var(--border)] rounded-2xl p-5">
                       <CardLabel
                         icon={<Ruler size={13} />}
                         label="Physical Attributes"
@@ -763,7 +741,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
                     {/* Batch Info */}
                     {batchInfo && (
-                      <div className="bg-card border border-theme rounded-2xl p-5">
+                      <div className="bg-card border border-[var(--border)] rounded-2xl p-5">
                         <CardLabel
                           icon={<FlaskConical size={13} />}
                           label="Batch & Expiry"
@@ -782,7 +760,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
                   {/* Description */}
                   {item.description?.trim() && (
-                    <div className="bg-card border border-theme rounded-2xl p-5">
+                    <div className="bg-card border border-[var(--border)] rounded-2xl p-5">
                       <CardLabel
                         icon={<BookOpen size={13} />}
                         label="Description"
@@ -798,7 +776,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
               {/* ════ TAX CONFIG ══════════════════════════════════════════ */}
               {activeTab === "tax" && (
                 <div className="space-y-4">
-                  <div className="bg-card border border-theme rounded-2xl p-4 flex items-center gap-4">
+                  <div className="bg-card border border-[var(--border)] rounded-2xl p-4 flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <Percent size={18} />
                     </div>
@@ -827,7 +805,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
                   {taxInfoList.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 gap-3">
-                      <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-theme flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-[var(--border)] flex items-center justify-center">
                         <Receipt size={20} className="text-muted opacity-20" />
                       </div>
                       <p className="text-sm text-muted">
@@ -846,8 +824,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
               {/* ════ SALES INVOICES ══════════════════════════════════════ */}
               {activeTab === "sales" && (
-                <div className="bg-card border border-theme rounded-2xl overflow-hidden">
-                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-theme flex-wrap gap-3">
+                <div className="bg-card border border-[var(--border)] rounded-2xl overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)] flex-wrap gap-3">
                     <p className="text-xs font-black uppercase tracking-widest text-main">
                       Sales Invoices
                     </p>
@@ -861,7 +839,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         placeholder="Search..."
                         value={invoiceSearch}
                         onChange={(e) => setInvoiceSearch(e.target.value)}
-                        className="pl-8 pr-3 py-1.5 text-xs border border-theme rounded-lg bg-card text-main focus:outline-none w-40 sm:w-48"
+                        className="pl-8 pr-3 py-1.5 text-xs border border-[var(--border)] rounded-lg bg-card text-main focus:outline-none w-40 sm:w-48"
                       />
                     </div>
                   </div>
@@ -905,7 +883,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                           filteredSales.map((row, i) => (
                             <tr
                               key={i}
-                              className="border-t border-theme hover:bg-row-hover transition-colors"
+                              className="border-t border-[var(--border)] hover:bg-row-hover transition-colors"
                             >
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
@@ -946,8 +924,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
               {/* ════ PURCHASE INVOICES ═══════════════════════════════════ */}
               {activeTab === "purchase" && (
-                <div className="bg-card border border-theme rounded-2xl overflow-hidden">
-                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-theme flex-wrap gap-3">
+                <div className="bg-card border border-[var(--border)] rounded-2xl overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)] flex-wrap gap-3">
                     <p className="text-xs font-black uppercase tracking-widest text-main">
                       Purchase Invoices
                     </p>
@@ -961,7 +939,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         placeholder="Search..."
                         value={invoiceSearch}
                         onChange={(e) => setInvoiceSearch(e.target.value)}
-                        className="pl-8 pr-3 py-1.5 text-xs border border-theme rounded-lg bg-card text-main focus:outline-none w-40 sm:w-48"
+                        className="pl-8 pr-3 py-1.5 text-xs border border-[var(--border)] rounded-lg bg-card text-main focus:outline-none w-40 sm:w-48"
                       />
                     </div>
                   </div>
@@ -1005,7 +983,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                           filteredPurchase.map((row, i) => (
                             <tr
                               key={i}
-                              className="border-t border-theme hover:bg-row-hover transition-colors"
+                              className="border-t border-[var(--border)] hover:bg-row-hover transition-colors"
                             >
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
@@ -1046,8 +1024,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
               {/* ════ STOCK SUMMARY ═══════════════════════════════════════ */}
               {activeTab === "stock" && (
-                <div className="bg-card border border-theme rounded-2xl overflow-hidden">
-                  <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b border-theme bg-row-hover/40">
+                <div className="bg-card border border-[var(--border)] rounded-2xl overflow-hidden">
+                  <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b border-[var(--border)] bg-row-hover/40">
                     <DatePicker
                       label="Start Date"
                       value={stockFrom}
@@ -1074,42 +1052,42 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         <tr className="bg-row-hover">
                           <th
                             rowSpan={2}
-                            className="px-4 py-2 text-left text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-theme whitespace-nowrap"
+                            className="px-4 py-2 text-left text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-[var(--border)] whitespace-nowrap"
                           >
                             Date
                           </th>
                           <th
                             rowSpan={2}
-                            className="px-4 py-2 text-left text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-theme whitespace-nowrap"
+                            className="px-4 py-2 text-left text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-[var(--border)] whitespace-nowrap"
                           >
                             Voucher Type
                           </th>
                           <th
                             rowSpan={2}
-                            className="px-4 py-2 text-left text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-theme whitespace-nowrap"
+                            className="px-4 py-2 text-left text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-[var(--border)] whitespace-nowrap"
                           >
                             Voucher No
                           </th>
                           <th
                             colSpan={3}
-                            className="px-4 py-2 text-center text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-theme bg-muted"
+                            className="px-4 py-2 text-center text-[10px] font-black text-muted uppercase tracking-widest border-b border-r border-[var(--border)] bg-muted"
                           >
                             Inwards
                           </th>
                           <th
                             colSpan={3}
-                            className="px-4 py-2 text-center text-[10px] font-black text-white uppercase tracking-widest border-b border-r border-theme bg-primary"
+                            className="px-4 py-2 text-center text-[10px] font-black text-white uppercase tracking-widest border-b border-r border-[var(--border)] bg-primary"
                           >
                             Outwards
                           </th>
                           <th
                             colSpan={3}
-                            className="px-4 py-2 text-center text-[10px] font-black text-white uppercase tracking-widest border-b border-theme bg-primary/50"
+                            className="px-4 py-2 text-center text-[10px] font-black text-white uppercase tracking-widest border-b border-[var(--border)] bg-primary/50"
                           >
                             Closing
                           </th>
                         </tr>
-                        <tr className="bg-row-hover border-b border-theme">
+                        <tr className="bg-row-hover border-b border-[var(--border)]">
                           {[
                             { l: "Qty", br: false },
                             { l: "Value/Unit", br: false },
@@ -1123,7 +1101,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                           ].map(({ l, br }, i) => (
                             <th
                               key={i}
-                              className={`px-3 py-2 text-right text-[10px] font-bold text-muted uppercase tracking-wider whitespace-nowrap ${br ? "border-r border-theme" : ""}`}
+                              className={`px-3 py-2 text-right text-[10px] font-bold text-muted uppercase tracking-wider whitespace-nowrap ${br ? "border-r border-[var(--border)]" : ""}`}
                             >
                               {l}
                             </th>
@@ -1142,15 +1120,15 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                           stockRows.map((row, i) => (
                             <tr
                               key={i}
-                              className="border-t border-theme hover:bg-row-hover transition-colors"
+                              className="border-t border-[var(--border)] hover:bg-row-hover transition-colors"
                             >
-                              <td className="px-4 py-2.5 text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap border-r border-theme">
+                              <td className="px-4 py-2.5 text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap border-r border-[var(--border)]">
                                 {fmtDate(row.date)}
                               </td>
-                              <td className="px-4 py-2.5 text-xs text-main border-r border-theme">
+                              <td className="px-4 py-2.5 text-xs text-main border-r border-[var(--border)]">
                                 {row.voucherType || "—"}
                               </td>
-                              <td className="px-4 py-2.5 text-xs font-mono text-primary font-bold border-r border-theme">
+                              <td className="px-4 py-2.5 text-xs font-mono text-primary font-bold border-r border-[var(--border)]">
                                 {row.voucherNo || "—"}
                               </td>
                               <td className="px-3 py-2.5 text-right text-xs text-main">
@@ -1161,7 +1139,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                                   ? fmtRupee(row.inValuePerUnit)
                                   : "—"}
                               </td>
-                              <td className="px-3 py-2.5 text-right text-xs font-bold text-success border-r border-theme">
+                              <td className="px-3 py-2.5 text-right text-xs font-bold text-success border-r border-[var(--border)]">
                                 {row.inTotal ? fmtRupee(row.inTotal) : "—"}
                               </td>
                               <td className="px-3 py-2.5 text-right text-xs text-main">
@@ -1172,7 +1150,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                                   ? fmtRupee(row.outValuePerUnit)
                                   : "—"}
                               </td>
-                              <td className="px-3 py-2.5 text-right text-xs font-bold text-warning border-r border-theme">
+                              <td className="px-3 py-2.5 text-right text-xs font-bold text-warning border-r border-[var(--border)]">
                                 {row.outTotal ? fmtRupee(row.outTotal) : "—"}
                               </td>
                               <td className="px-3 py-2.5 text-right text-xs font-bold text-main">
@@ -1194,10 +1172,10 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
-        </div>
-      </div>
+        </AppPageBody>
+      </AppPage>
     </div>
   );
 };

@@ -204,13 +204,17 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       </div>
 
       <div style={{ display: activeTab === "terms" ? "block" : "none" }}>
-        <TermsAndCondition
-          terms={form.terms?.buying ?? null}
-          setTerms={(buying) =>
-            setForm((p) => ({ ...p, terms: { buying } }))
-          }
-          type="buying"
-        />
+      <TermsAndCondition
+  terms={form.terms?.buying ?? null}
+  setTerms={(buying) =>
+    setForm((p) => ({
+      ...p,
+      terms: { buying },
+    }))
+  }
+  type="buying"
+  compact={true}
+/>
       </div>
     </>
   ), [

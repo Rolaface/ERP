@@ -148,15 +148,27 @@ export const useInvoiceForm = (
   }, [isOpen]);
 
   // Auto-calculate due date from payment terms
-  useEffect(() => {
-    const terms = formData.paymentInformation?.paymentTerms;
-    if (!terms || !formData.dateOfInvoice) return;
-    const due = calculateDueDate(formData.dateOfInvoice, terms);
-    setFormData((prev) => ({
-      ...prev,
-      dueDate: prev.dueDate || due,
-    }));
-  }, [formData.dateOfInvoice, formData.paymentInformation?.paymentTerms]);
+useEffect(() => {
+  const terms =
+    formData.terms?.selling?.payment?.dueDates ||
+    formData.paymentInformation?.paymentTerms;
+
+  if (!terms || !formData.dateOfInvoice) return;
+
+  const due = calculateDueDate(
+    formData.dateOfInvoice,
+    terms,
+  );
+
+  setFormData((prev) => ({
+    ...prev,
+    dueDate: due,
+  }));
+}, [
+  formData.dateOfInvoice,
+  formData.terms?.selling?.payment?.dueDates,
+  formData.paymentInformation?.paymentTerms,
+]);
 
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
@@ -261,7 +273,7 @@ export const useInvoiceForm = (
         if (cancelled) return;
         setExchangeRateError(err?.message || "Exchange rate not found");
         setFormData((prev) => {
-          if (prev.exchangeRt === "1") return prev; // 🔥 STOP LOOP
+          if (prev.exchangeRt === "1") return prev; 
           return { ...prev, exchangeRt: "1" };
         });
         showApiError(err);
@@ -447,17 +459,17 @@ export const useInvoiceForm = (
         shippingAddressObj?.country || billingAddressObj?.country,
       );
 
-      const paymentInformation = {
-        paymentTerms:
-          company?.terms?.selling?.payment?.dueDates ??
-          data.paymentInformation?.paymentTerms ??
-          "",
-        paymentMethod: "01",
-        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-        accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-        routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-        swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-      };
+const paymentInformation = {
+  paymentTerms:
+    data?.terms?.selling?.payment?.dueDates ??
+    company?.terms?.selling?.payment?.dueDates ??
+    "",
+  paymentMethod: "01",
+  bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+  accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+  routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+  swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+};
 
       setFormData((prev) => {
         const billingId = billingAddressObj?.id || "";

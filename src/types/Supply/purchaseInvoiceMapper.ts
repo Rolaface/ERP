@@ -34,9 +34,13 @@ const skeletonAddress = (
   email: str(source?.email),
 });
 
-
-// UI → API  (Create / Update payload)
-
+const generate9DigitBarcode = (): string => {
+  const array = new Uint32Array(1);
+  window.crypto.getRandomValues(array);
+  
+  const randomNum = array[0] % 1_000_000_000;
+  return randomNum.toString().padStart(9, '0');
+};
 
 export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
   const items = form.items
@@ -59,7 +63,7 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
       batchNo: str(it.batchNo),
       mfgDate: str(it.mfgDate),
       expDate: str(it.expDate),
-      barCode: num(it.barcodeId),
+      barCode: generate9DigitBarcode(),
       discount: num(it.discount),
       warehouse: form.updateStock ? str(it.warehouse) : null,
     }));

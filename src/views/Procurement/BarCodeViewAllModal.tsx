@@ -1,40 +1,17 @@
+// components/BarcodeViewAllModal.tsx
 import React from "react";
+import { buildBars } from "./BarCodeViewModal";
 
-export const buildBars = (val: string): string => {
-  const W = 180, H = 48;
-  const seed = String(val).split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 7), 0);
-  const unitW = (W - 8) / 42;
-  let x = 4, rects = "";
-
-  for (let b = 0; b < 42; b++) {
-    const barW = Math.max(1, Math.min(3, 1 + ((seed * (b * 13 + 7)) % 17) % 3)) * unitW / 2;
-    if ((seed * (b + 3) * 11) % 5 !== 0) {
-      rects += `<rect x="${x.toFixed(1)}" y="0" width="${barW.toFixed(1)}" height="${H}" fill="currentColor"/>`;
-    }
-    x += barW + ((((seed * (b + 1) * 3) % 3) + 1) * unitW) / 3;
-    if (x > W - 4) break;
-  }
-
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
-    style="width:100%;max-width:180px;height:${H}px">${rects}</svg>`;
-};
-
- export interface BatchRow {
-   batchNumber: string;
-   barcodeId: string;
-   quantity: number;
-   manufactureDate: string;
-   expiryDate: string;
-   postDate: string;
-   supplierName: string;
- }
- 
- export interface ItemSearchResult {
-   itemCode: string;
-   itemName: string;
-   batches: BatchRow[];
- }
- 
+export interface BatchRow {
+  batchNumber: string;
+  barcodeId: string;
+  quantity: number;
+  manufactureDate: string;
+  expiryDate: string;
+  postDate: string;
+  supplierName: string;
+  barcodeImageUrl?: string;
+}
 
 interface Props {
   open: boolean;
@@ -47,20 +24,30 @@ interface Props {
 const fmtDate = (d?: string) =>
   d ? new Date(d).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }) : "—";
 
+// ── Print HTML builder ────────────────────────────────────────────────────────
+
 const buildAllPrintHTML = (batches: BatchRow[], itemName: string, itemCode: string): string => {
-  const cards = batches.map(b => `
+  const cards = batches.map(b => {
+    const barcodeBlock = b.barcodeImageUrl
+      ? `<img src="${b.barcodeImageUrl}" alt="barcode" style="max-width:180px;height:48px;object-fit:contain;display:block;margin:0 auto"/>`
+      : buildBars(b.barcodeId);
+
+    const badges = [
+      `Qty: ${b.quantity}`,
+      `Exp: ${fmtDate(b.expiryDate)}`,
+      ...(b.supplierName ? [`Sup: ${b.supplierName}`] : []),
+    ].map(t => `<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:#f3f4f6;border:1px solid #e5e7eb;color:#555;font-family:monospace">${t}</span>`).join("");
+
+    return `
     <div style="border:1px solid #ddd;border-radius:6px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:6px;break-inside:avoid">
       <p style="margin:0;font-size:11px;font-weight:700;color:#111;text-align:center">${b.batchNumber}</p>
       <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;color:#111">
-        ${buildBars(b.barcodeId)}
+        ${barcodeBlock}
         <p style="margin:0;font-size:11px;font-family:monospace;letter-spacing:.12em;color:#111">${b.barcodeId}</p>
       </div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">
-        <span style="font-size:9px;padding:2px 6px;border-radius:3px;background:#f3f4f6;border:1px solid #e5e7eb;color:#555;font-family:monospace">Qty: ${b.quantity}</span>
-        <span style="font-size:9px;padding:2px 6px;border-radius:3px;background:#f3f4f6;border:1px solid #e5e7eb;color:#555;font-family:monospace">Exp: ${fmtDate(b.expiryDate)}</span>
-        <span style="font-size:9px;padding:2px 6px;border-radius:3px;background:#f3f4f6;border:1px solid #e5e7eb;color:#555;font-family:monospace">Sup: ${b.supplierName}</span>
-      </div>
-    </div>`).join("");
+      <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">${badges}</div>
+    </div>`;
+  }).join("");
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>All Barcodes — ${itemName}</title>
@@ -80,6 +67,8 @@ const buildAllPrintHTML = (batches: BatchRow[], itemName: string, itemCode: stri
 <div class="grid">${cards}</div>
 </body></html>`;
 };
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 const BarcodeViewAllModal: React.FC<Props> = ({ open, onClose, itemName, itemCode, batches }) => {
   if (!open) return null;
@@ -142,19 +131,39 @@ const BarcodeViewAllModal: React.FC<Props> = ({ open, onClose, itemName, itemCod
         {/* Body */}
         <div style={{ padding:"14px 16px",overflowY:"auto",flex:1 }}>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
-            {batches.map((b, i) => (
-              <div key={i} style={{ border:"0.5px solid var(--border,#e5e7eb)",borderRadius:8,padding:"12px 14px",display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
-                <p style={{ fontSize:11,fontWeight:600,margin:0,fontFamily:"monospace",textAlign:"center" }}>{b.batchNumber}</p>
-                <div style={{ width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"4px 0",color:"var(--text,#111)" }}
-                  dangerouslySetInnerHTML={{ __html: buildBars(b.barcodeId) }} />
-                <p style={{ fontSize:11,fontFamily:"monospace",letterSpacing:".12em",margin:0 }}>{b.barcodeId}</p>
-                <div style={{ display:"flex",gap:4,flexWrap:"wrap",justifyContent:"center" }}>
-                  {[`Qty: ${b.quantity}`,`Exp: ${fmtDate(b.expiryDate)}`,`${b.supplierName}`].map(l => (
-                    <span key={l} style={{ fontSize:9,padding:"2px 6px",borderRadius:3,background:"var(--bg,#f3f4f6)",border:"0.5px solid var(--border,#e5e7eb)",color:"var(--muted,#666)",fontFamily:"monospace" }}>{l}</span>
-                  ))}
+            {batches.map((b) => {
+              const badges = [
+                `Qty: ${b.quantity}`,
+                `Exp: ${fmtDate(b.expiryDate)}`,
+                ...(b.supplierName ? [b.supplierName] : []),
+              ];
+
+              return (
+                <div key={b.batchNumber} style={{ border:"0.5px solid var(--border,#e5e7eb)",borderRadius:8,padding:"12px 14px",display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
+                  <p style={{ fontSize:11,fontWeight:600,margin:0,fontFamily:"monospace",textAlign:"center" }}>{b.batchNumber}</p>
+
+                  {/* Barcode: real image if available, else SVG */}
+                  <div style={{ width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"4px 0",color:"var(--text,#111)" }}>
+                    {b.barcodeImageUrl ? (
+                      <img
+                        src={b.barcodeImageUrl}
+                        alt="barcode"
+                        style={{ maxWidth:180,height:48,objectFit:"contain",display:"block" }}
+                      />
+                    ) : (
+                      <div dangerouslySetInnerHTML={{ __html: buildBars(b.barcodeId) }} />
+                    )}
+                    <p style={{ fontSize:11,fontFamily:"monospace",letterSpacing:".12em",margin:0 }}>{b.barcodeId}</p>
+                  </div>
+
+                  <div style={{ display:"flex",gap:4,flexWrap:"wrap",justifyContent:"center" }}>
+                    {badges.map(l => (
+                      <span key={l} style={{ fontSize:9,padding:"2px 6px",borderRadius:3,background:"var(--bg,#f3f4f6)",border:"0.5px solid var(--border,#e5e7eb)",color:"var(--muted,#666)",fontFamily:"monospace" }}>{l}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

@@ -1,90 +1,83 @@
-import React from "react";
-import { ModalInput,ModalSelect } from "../ui/modal/modalComponent";
+import React, { useCallback } from "react";
+import { ModalInput } from "../ui/modal/modalComponent";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
+
+import { getSupplierList } from "../../api/lookupApi";
 import type {
   ItemFormChangeHandler,
   ItemFormData,
-  SupplierOption,
+  
 } from "./itemModalTypes";
 
 interface PricingSectionProps {
   form: ItemFormData;
-  suppliers: SupplierOption[];
-  loadingSuppliers: boolean;
   onFormChange: ItemFormChangeHandler;
 }
 
-/**
- * Sales & Purchase section of the Item Details tab.
- * Renders: Selling Price | Sales Account | Buying Price | Purchase Account | Preferred Vendor
- * Matches the target screenshot layout exactly.
- */
 const PricingSection: React.FC<PricingSectionProps> = React.memo(
-  ({ form, suppliers, loadingSuppliers, onFormChange }) => (
-    <>
-      {/* Section heading — uppercase label as in screenshot */}
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted pt-1">
-        Sales &amp; Purchase
-      </p>
+  ({ form, onFormChange }) => {
 
-      <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-5">
-        {/* Selling Price */}
-        <ModalInput
-          label="Selling Price"
-          name="sellingPrice"
-          type="number"
-          value={form.sellingPrice ?? ""}
-          onChange={onFormChange}
-          className="no-spinner"
-        />
+const fetchSupplierOptions = useCallback(async (q: string) => {
+  try {
+    const raw = await getSupplierList({ search: q, page: 1, page_size: 50 });
+    return raw; 
+  } catch {
+    return [];
+  }
+}, []);
 
-        {/* Sales Account */}
-        {/* <ModalInput
-          label="Sales Account"
-          name="salesAccount"
-          value={form.salesAccount ?? ""}
-          onChange={onFormChange}
-          placeholder="e.g. 4000-Sales"
-        /> */}
+    const handleSupplierChange = useCallback(
+  (_: string, option: any) => {
+    onFormChange({
+      target: { name: "preferredVendor", value: option?.value ?? "" },
+    } as React.ChangeEvent<HTMLInputElement>);
+    onFormChange({
+      target: { name: "preferredVendorName", value: option?.label ?? "" },
+    } as React.ChangeEvent<HTMLInputElement>);
+  },
+  [onFormChange],
+);
 
-        {/* Buying Price */}
-        <ModalInput
-          label="Buying Price"
-          name="buyingPrice"
-          type="number"
-          value={form.buyingPrice ?? ""}
-          onChange={onFormChange}
-          placeholder="0.00"
-          className="no-spinner"
-        />
+    return (
+      <>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted pt-1">
+          Sales &amp; Purchase
+        </p>
 
-        {/* Purchase Account */}
-        {/* <ModalInput
-          label="Purchase Account"
-          name="purchaseAccount"
-          value={form.purchaseAccount ?? ""}
-          onChange={onFormChange}
-          placeholder="e.g. 5000-COGS"
-        /> */}
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-5">
+          {/* Selling Price */}
+          <ModalInput
+            label="Selling Price"
+            name="sellingPrice"
+            type="number"
+            value={form.sellingPrice ?? ""}
+            onChange={onFormChange}
+            className="no-spinner"
+          />
 
-        {/* Preferred Vendor */}
-        <ModalSelect
-          label="Preferred Vendor"
-          name="preferredVendor"
-          value={form.preferredVendor ?? ""}
-          onChange={onFormChange}
-          disabled={loadingSuppliers}
-          placeholder={loadingSuppliers ? "Loading suppliers..." : "Select Supplier"}
-        >
-          {!loadingSuppliers &&
-            suppliers.map((supplier) => (
-              <option key={supplier.value} value={supplier.value}>
-                {supplier.label}
-              </option>
-            ))}
-        </ModalSelect>
-      </div>
-    </>
-  ),
+          {/* Buying Price */}
+          <ModalInput
+            label="Buying Price"
+            name="buyingPrice"
+            type="number"
+            value={form.buyingPrice ?? ""}
+            onChange={onFormChange}
+            placeholder="0.00"
+            className="no-spinner"
+          />
+
+          {/* Preferred Vendor — SearchSelect2 */}
+         <SearchSelect2
+  label="Preferred Vendor"
+  value={form.preferredVendorName ?? form.preferredVendor ?? ""}
+  onChange={handleSupplierChange}
+  fetchOptions={fetchSupplierOptions}
+  placeholder="Search supplier..."
+/>
+        </div>
+      </>
+    );
+  },
 );
 
 PricingSection.displayName = "PricingSection";
