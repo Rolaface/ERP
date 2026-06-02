@@ -461,7 +461,7 @@ const ExpenseHistory: React.FC = () => {
 
             <ActionMenu
               customActions={
-                ["Paid", "Cancelled", "Rejected"].includes(exp.approvalStatus)
+                ["Paid", "Cancelled", "Rejected","Approved"].includes(exp.approvalStatus)
                   ? []
                   : [
                     ...(!isEmployeeView && exp.approvalStatus === "Draft"
@@ -477,7 +477,15 @@ const ExpenseHistory: React.FC = () => {
                       ]
                       : []),
 
-                    ...(exp.approvalStatus === "Unpaid"
+                    ...(exp.approvalStatus === "Draft"
+                      ? [
+                        {
+                          label: "Delete",
+                          onClick: () => handleDelete(exp.id),
+                        },
+                      ]
+                      : []),
+                    ...(exp.approvalStatus === "Draft"
                       ? [
                         {
                           label: "Cancel",
@@ -485,6 +493,7 @@ const ExpenseHistory: React.FC = () => {
                         },
                       ]
                       : []),
+
 
                     ...(!isEmployeeView &&
                       can(PAYMENT_MODULE, "create") &&
