@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { getAllTaxCategories } from "../../api/taxCategoryApi";
 import { showApiError, showSuccess } from "../../utils/alert";
-import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import {
   getAllItems,
   getItemByItemCode,
@@ -118,7 +117,6 @@ const Items: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [activeSummary, setActiveSummary] = useState<ItemSummary | null>(null);
 
-  // tax cat filter
   const [taxCategories, setTaxCategories] = useState<{ label: string; value: string }[]>([]);
 
   /* ── All items for sidebar (unpaginated) ── */
@@ -142,21 +140,21 @@ const Items: React.FC = () => {
   }, [searchTerm]);
 
   useEffect(() => {
-  const fetchTaxCategories = async () => {
-    try {
-      const res = await getAllTaxCategories(1, 1000);
-      const categories = Array.isArray(res?.data)
-        ? res.data
-            .filter((cat: any) => cat.disabled === 0)
-            .map((cat: any) => ({ label: cat.title, value: cat.name }))
-        : [];
-      setTaxCategories(categories);
-    } catch (err) {
-      showApiError(err);
-    }
-  };
-  void fetchTaxCategories();
-}, []);
+    const fetchTaxCategories = async () => {
+      try {
+        const res = await getAllTaxCategories(1, 1000);
+        const categories = Array.isArray(res?.data)
+          ? res.data
+              .filter((cat: any) => cat.disabled === 0)
+              .map((cat: any) => ({ label: cat.title, value: cat.name }))
+          : [];
+        setTaxCategories(categories);
+      } catch (err) {
+        showApiError(err);
+      }
+    };
+    void fetchTaxCategories();
+  }, []);
 
   /* ── Fetch item list ── */
   const fetchItems = useCallback(async () => {
@@ -177,7 +175,6 @@ const Items: React.FC = () => {
         taxPerct: it.taxInfo?.taxPerct ?? "",
         preferredVendor: it.vendorInfo?.preferredVendor ?? "",
         preferredVendorName: it.vendorInfo?.preferredVendorName ?? "",
-
         salesAccount: it.vendorInfo?.salesAccount ?? "",
         purchaseAccount: it.vendorInfo?.purchaseAccount ?? "",
         minStockLevel: it.inventoryInfo?.minStockLevel ?? "",
@@ -238,7 +235,7 @@ const Items: React.FC = () => {
       }));
       setAllItems(flat);
     } catch (err) {
-       showApiError(err);
+      showApiError(err);
     }
   }, []);
 
@@ -250,7 +247,6 @@ const Items: React.FC = () => {
 
     try {
       const res = await getItemByItemCode(activeSummary.id);
-      // Defensively handle both { data: { data: item } } and { data: item }
       const raw = res?.data?.data ?? res?.data;
       if (!raw?.id) {
         console.error("refetchItemData: unexpected response shape", res);
@@ -258,7 +254,7 @@ const Items: React.FC = () => {
       }
       setSelectedItem(flattenItemDetail(raw));
     } catch (err) {
-      showApiError(err)
+      showApiError(err);
     }
   }, [activeSummary?.id, fetchAllItems, fetchItems]);
 
@@ -267,25 +263,18 @@ const Items: React.FC = () => {
   }, [openItemCreate, refetchItemData]);
 
   const handleRowClick = async (summary: ItemSummary) => {
-    // ── 1. Synchronous state updates FIRST (before any await) ──────────────
     setActiveSummary(summary);
-    setViewMode("detail"); // ← panel appears immediately
+    setViewMode("detail");
     setDetailLoading(true);
-    setSelectedItem(null); // ← clears stale data while loading
+    setSelectedItem(null);
 
-    // ── 2. Sidebar population (fire-and-forget) ───────────────────────────
     if (allItems.length === 0) void fetchAllItems();
 
-    // ── 3. Fetch full item detail ─────────────────────────────────────────
     try {
       const res = await getItemByItemCode(summary.id);
-
-      // Defensive: API returns { data: { data: {...item} } } normally,
-      // but fall back to res.data if the inner .data wrapper is missing.
       const raw = res?.data?.data ?? res?.data;
 
       if (!raw?.id) {
-        // Print the full response so we can debug further if needed
         console.error(
           "handleRowClick: item not found in response. Full response:",
           JSON.stringify(res, null, 2),
@@ -324,7 +313,6 @@ const Items: React.FC = () => {
     }
   };
 
-
   const handleDeleteClick = async (item: ItemSummary, e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -353,9 +341,7 @@ const Items: React.FC = () => {
       closeSwal();
       showSuccess("Item deleted successfully");
 
-      if (activeSummary?.id === item.id) {
-        handleBack();
-      }
+      if (activeSummary?.id === item.id) handleBack();
 
       triggerRefresh(REFRESH_KEYS.ITEM_LIST);
     } catch (err: any) {
@@ -363,8 +349,6 @@ const Items: React.FC = () => {
       showApiError(err);
     }
   };
-
-
 
   /* ── Detail view action handlers ── */
   const handleDetailEdit = async () => {
@@ -382,6 +366,7 @@ const Items: React.FC = () => {
     if (!activeSummary) return;
     await handleDeleteClick(activeSummary, {} as React.MouseEvent);
   };
+
   const columns: Column<ItemSummary>[] = [
     {
       key: "id",
@@ -389,9 +374,7 @@ const Items: React.FC = () => {
       align: "left",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">
-            {i.id}
-          </span>
+          <span className="block">{i.id}</span>
         </div>
       ),
       tooltip: (i) => i.id,
@@ -402,9 +385,7 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">
-            {i.brand || "-"}
-          </span>
+          <span className="block">{i.brand || "-"}</span>
         </div>
       ),
       tooltip: (i) => i.brand || "-",
@@ -415,9 +396,7 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block font-medium">
-            {i.itemName}
-          </span>
+          <span className="block font-medium">{i.itemName}</span>
         </div>
       ),
       tooltip: (i) => i.itemName,
@@ -428,9 +407,7 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">
-            {i.itemGroup}
-          </span>
+          <span className="block">{i.itemGroup}</span>
         </div>
       ),
       tooltip: (i) => i.itemGroup,
@@ -441,9 +418,7 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">
-            {i.minStockLevel ?? "-"}
-          </span>
+          <span className="block">{i.minStockLevel ?? "-"}</span>
         </div>
       ),
       tooltip: (i) => i.minStockLevel ?? "-",
@@ -454,9 +429,7 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">
-            {i.maxStockLevel ?? "-"}
-          </span>
+          <span className="block">{i.maxStockLevel ?? "-"}</span>
         </div>
       ),
       tooltip: (i) => i.maxStockLevel ?? "-",
@@ -467,9 +440,7 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">
-            {i.preferredVendorName || "-"}
-          </span>
+          <span className="block">{i.preferredVendorName || "-"}</span>
         </div>
       ),
       tooltip: (i) => i.preferredVendorName || "-",
@@ -480,9 +451,7 @@ const Items: React.FC = () => {
       align: "center",
       render: (i) => (
         <div className="py-1.5">
-          <span className="block">
-            {i.sellingPrice}
-          </span>
+          <span className="block">{i.sellingPrice}</span>
         </div>
       ),
       tooltip: (i) => i.sellingPrice,
@@ -524,11 +493,15 @@ const Items: React.FC = () => {
     },
   ];
 
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <>
+    // Single root: fills whatever space the outlet gives — no padding leaks
+    <div className="flex flex-1 flex-col min-h-0 h-full">
       {viewMode === "table" ? (
-        <div className="h-full min-h-0">
+
+        /* Table mode — full height, no extra wrapper padding */
+        <div className="flex flex-1 flex-col min-h-0">
           <Table
             loading={loading || initialLoad}
             columns={columns}
@@ -550,49 +523,40 @@ const Items: React.FC = () => {
               setPage(1);
             }}
             onPageChange={setPage}
-            // extraFilters={
-            //   <div className="w-44">
-            //     <FilterSelect
-            //       value={filters.taxCategory || ""}
-            //       onChange={(e) => {
-            //         setFilters((prev) => ({
-            //           ...prev,
-            //           taxCategory: e.target.value || undefined,
-            //         }));
-            //         setPage(1);
-            //       }}
-            //       options={taxCategories}
-            //     />
-            //   </div>
-            // }
           />
         </div>
-      ) : (
-        <div className="p-4 sm:p-8">
-          <ItemDetailView
-            isOpen={true}
-            onClose={handleBack}
-            allItems={allItems.length > 0 ? allItems : items}
-            item={selectedItem}
-            loadingDetail={detailLoading}
-            onSelectItem={(summary) => handleRowClick(summary)}
-            onEditItem={handleDetailEdit}
-            onDeleteItem={handleDetailDelete}
-            onAddItem={handleAddItem}
-            salesInvoices={salesInvoices}
-            purchaseInvoices={purchaseInvoices}
-            stockRows={stockRows}
-            loadingSales={loadingSales}
-            loadingPurchase={loadingPurchase}
-            loadingStock={loadingStock}
-            onStockSearch={(from, to) => {
-              console.log("Stock search:", from, "→", to);
-            }}
-          />
-        </div>
-      )}
 
-    </>
+      ) : (
+
+        /*
+          Detail mode — edge-to-edge, no padding.
+          ItemDetailView already manages its own height internally
+          via height: calc(100vh - 8rem). Adding outer padding was
+          causing the double-chrome / wasted-space issue.
+        */
+        <ItemDetailView
+          isOpen={true}
+          onClose={handleBack}
+          allItems={allItems.length > 0 ? allItems : items}
+          item={selectedItem}
+          loadingDetail={detailLoading}
+          onSelectItem={(summary) => handleRowClick(summary)}
+          onEditItem={handleDetailEdit}
+          onDeleteItem={handleDetailDelete}
+          onAddItem={handleAddItem}
+          salesInvoices={salesInvoices}
+          purchaseInvoices={purchaseInvoices}
+          stockRows={stockRows}
+          loadingSales={loadingSales}
+          loadingPurchase={loadingPurchase}
+          loadingStock={loadingStock}
+          onStockSearch={(from, to) => {
+            console.log("Stock search:", from, "→", to);
+          }}
+        />
+
+      )}
+    </div>
   );
 };
 
