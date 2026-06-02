@@ -43,7 +43,7 @@ export async function getAllProformaInvoices(
 
 export async function deleteProformaInvoiceById(proformaId: string) {
   const resp = await api.delete(ProformaAPI.delete, {
-    data: { proformaId },   
+    data: { id: proformaId },   
   });
 
   return resp.data;
