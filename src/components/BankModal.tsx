@@ -26,6 +26,7 @@ interface BankModalProps {
   onSubmit: (data: any) => Promise<boolean> | boolean;
   initialData?: (BankFormData & { name?: string }) | null;
   isEditMode?: boolean;
+  isViewMode?: boolean;
   modalId: string;
 }
 
@@ -61,6 +62,7 @@ const BankModal: React.FC<BankModalProps> = ({
   onSubmit,
   initialData,
   isEditMode = false,
+  isViewMode = false,
   modalId,
 }) => {
   const resolvedModalId = useRef(modalId).current;
@@ -86,20 +88,26 @@ const BankModal: React.FC<BankModalProps> = ({
   // ── Field handler ──────────────────────────────────────────────────────────
   const handleChange = useCallback(
     (field: keyof BankFormData, value: string) => {
+      if (isViewMode) return;
+
       setForm((prev) => ({ ...prev, [field]: value }));
+
       markDirty();
+
       setErrors((prev) => {
         if (!prev[field]) return prev;
+
         const next = { ...prev };
         delete next[field];
         return next;
       });
     },
-    [markDirty],
+    [markDirty, isViewMode],
   );
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
+    if (isViewMode) return;
     const validationErrors = validate(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -143,34 +151,42 @@ const BankModal: React.FC<BankModalProps> = ({
   // ── Footer ─────────────────────────────────────────────────────────────────
   const footer = (
     <div className="flex items-center justify-between w-full">
-      <button
-        type="button"
-        onClick={handleReset}
-        className="px-4 py-2 text-sm font-medium text-muted border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
-      >
-        Reset
-      </button>
+      {!isViewMode && (
+        <button
+          type="button"
+          onClick={handleReset}
+          className="px-4 py-2 text-sm font-medium text-muted border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
+        >
+          Reset
+        </button>
+      )}
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+          onClick={() =>
+            isViewMode
+              ? onClose()
+              : handleCloseWithConfirm(onClose, resolvedModalId)
+          }
           className="px-4 py-2 text-sm font-medium text-main border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
         >
-          Cancel
+          {isViewMode ? "Close" : "Cancel"}
         </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""
-            }`}
-        >
-          {isSubmitting
-            ? "Saving..."
-            : isEditMode
-              ? "Update Bank"
-              : "Add Bank"}
-        </button>
+        {!isViewMode && (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""
+              }`}
+          >
+            {isSubmitting
+              ? "Saving..."
+              : isEditMode
+                ? "Update Bank"
+                : "Add Bank"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -180,7 +196,13 @@ const BankModal: React.FC<BankModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={isEditMode ? "Edit Bank" : "Create New Bank"}
+      title={
+        isViewMode
+          ? "View Bank"
+          : isEditMode
+            ? "Edit Bank"
+            : "Create New Bank"
+      }
       subtitle="Provide bank name and SWIFT/BIC number"
       icon={Landmark}
       footer={footer}
@@ -195,7 +217,7 @@ const BankModal: React.FC<BankModalProps> = ({
             required
             value={form.bank_name}
             onChange={(e) => handleChange("bank_name", e.target.value)}
-            disabled={isEditMode}
+            disabled={isEditMode || isViewMode}
             error={errors.bank_name}
             autoFocus={!isEditMode}
           />
@@ -208,6 +230,7 @@ const BankModal: React.FC<BankModalProps> = ({
           onChange={(e) =>
             handleChange("swift_number", e.target.value.toUpperCase())
           }
+          disabled={isViewMode}
           error={errors.swift_number}
           maxLength={11}
         />

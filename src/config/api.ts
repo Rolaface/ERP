@@ -31,8 +31,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -179,17 +179,18 @@ export const API = {
     getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`
   },
 
-  accounting: {
-    createCOA: `${ERP_BASE}/api/method/erpnext.accounts.utils.add_ac`,
-    getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
-    getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
-    getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
-    getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
-    getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
-    getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
-    getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
-    getLedger: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
-  },
+accounting: {
+  createCOA: `${ERP_BASE}/api/method/erpnext.accounts.utils.add_ac`,
+  deleteCOA: `${ERP_BASE}/api/method/frappe.client.delete`,
+  getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
+  getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
+  getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
+  getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
+  getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
+  getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
+  getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
+  getLedger: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
+},
 
   journalEntry: {
     getByIdOnly: `${ERP_BASE}/api/resource`,
@@ -366,11 +367,11 @@ export const API = {
    * PROFORMA
    * ========================= */
   proforma: {
-    getAll: `${ERP_BASE}api/method/custom_api.api.selling.quotation.api.get_quotations`,
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.get_quotations`,
     getById: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.get_quotation_by_id`,
-    create: `${ERP_BASE}api/method/custom_api.api.selling.quotation.api.create_quotation`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.create_quotation`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation_status`,
-    edit: `$(ERP_BASE)/api/method/custom_api.api.selling.quotation.api.update_quotation`,
+    edit: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation`,
     delete: `${ERP_BASE}/api/method/erpnext.proforma.api.delete_proforma`,
   },
 

@@ -204,7 +204,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
             row.is_group ? "font-semibold text-main" : "font-normal text-main"
           }
         >
-          {row.name}
+          {row.account_name}
           {row.disabled === 1 && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-draft text-gray-300 ml-2">
               Disabled
