@@ -82,6 +82,25 @@ const addressStub = (id: string, type: string): ApiAddress | null =>
 // Hook
 // ─────────────────────────────────────────────
 
+
+import dayjs from "dayjs";
+
+const calculateDueDate = (
+  invoiceDate: string,
+  terms: string,
+) => {
+  if (!invoiceDate) return "";
+
+  const match = terms?.match(/(\d+)/);
+  const days = match ? Number(match[1]) : 0;
+
+  let date = dayjs(invoiceDate, "YYYY-MM-DD", true);
+
+  if (!date.isValid()) return "";
+
+  return date.add(days, "day").format("YYYY-MM-DD");
+};
+
 export const usePurchaseInvoiceForm = ({
   isOpen,
   onSuccess,
@@ -275,6 +294,25 @@ export const usePurchaseInvoiceForm = ({
 
     loadCompanyData();
   }, [isOpen, pId]);
+  useEffect(() => {
+  const terms =
+    form.terms?.buying?.payment?.dueDates;
+
+  if (!terms || !form.date) return;
+
+  const due = calculateDueDate(
+    form.date,
+    terms,
+  );
+
+  setForm((prev) => ({
+    ...prev,
+    dueDate: due,
+  }));
+}, [
+  form.date,
+  form.terms?.buying?.payment?.dueDates,
+]);
 
   // ── Load PI in edit mode ───────────────────
   useEffect(() => {
@@ -591,10 +629,14 @@ export const usePurchaseInvoiceForm = ({
   );
 
   // ── Supplier ───────────────────────────────
-  const handleSupplierChange = async (sup: any) => {
-    if (!sup) return;
+const handleSupplierChange = async (sup: any) => {
+  if (!sup) return;
+setForm((prev) => ({
+  ...prev,
+  supplierId: sup.id || sup.value || "",
+}));
 
-    try {
+  try {
       const res = await getSupplierById(sup.id || sup.value);
       const supplier =
         res?.message?.data ||

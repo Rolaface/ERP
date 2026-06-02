@@ -100,7 +100,7 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
 
     updateStock: form.updateStock ?? true,
     poDate: form.date,
-
+dueDate: form.dueDate,
     currency: form.currency,
     status: form.status,
     taxCategory: form.taxCategory,
@@ -306,6 +306,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
 
     poNumber: str(api.lpoNumber || api.poId || ""),
     date: str(api.piDate),
+    dueDate: str(api.dueDate || api.due_date),
     taxCategory: str(api.taxCategory),
     updateStock: api.updateStock ?? true,
 

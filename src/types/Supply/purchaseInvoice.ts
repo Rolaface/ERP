@@ -62,6 +62,7 @@ export interface PurchaseInvoiceFormData {
   warehouse?: string;
   poNumber: string;
   date: string;
+  dueDate: string;
   supplier: string;
   supplierId: string;
   supplierEmail?: string;
@@ -180,6 +181,7 @@ export const emptyAddress: AddressBlock = {
 export const emptyPOForm: PurchaseInvoiceFormData = {
   poNumber: "",
   date: "",
+  dueDate: "",
   supplier: "",
   supplierContact: "",
   supplierContactDisplay: "",
