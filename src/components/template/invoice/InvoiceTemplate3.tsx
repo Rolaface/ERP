@@ -24,11 +24,11 @@ const InvoiceTemplate3 = forwardRef<HTMLDivElement, InvoiceTemplate3Props>(
         case "ZMW":
           return "ZK";
         case "INR":
-          return "₹";
+          return "";
         case "USD":
           return "$";
         default:
-          return "₹";
+          return "";
       }
     };
 

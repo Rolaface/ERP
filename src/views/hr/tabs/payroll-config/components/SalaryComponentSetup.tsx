@@ -120,6 +120,16 @@ export function SalaryComponentSetup() {
         tooltip: (row) => row.formula ?? String(row.amount ?? ""),
       },
       {
+        key: "description",
+        header: "Description",
+        render: (row) => (
+          <span className="text-sm text-main">
+            {row.description || "—"}
+          </span>
+        ),
+      },
+      
+      {
         key: "depends_on_payment_days",
         header: "Pay Days",
         render: (row) => (

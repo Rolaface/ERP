@@ -71,7 +71,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                 Current Month Salary
               </p>
               <p className="text-3xl font-bold text-green-600">
-                ₹{currentRecord?.netPay.toLocaleString() || "0"}
+                {currentRecord?.netPay.toLocaleString() || "0"}
               </p>
             </div>
           </div>
@@ -87,7 +87,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
               <p className="text-xs text-slate-500 uppercase">Gross Salary</p>
             </div>
             <p className="text-2xl font-bold text-slate-800">
-              ₹{currentRecord?.grossPay.toLocaleString() || "0"}
+              {currentRecord?.grossPay.toLocaleString() || "0"}
             </p>
           </div>
 
@@ -99,7 +99,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
               <p className="text-xs text-slate-500 uppercase">Deductions</p>
             </div>
             <p className="text-2xl font-bold text-red-600">
-              ₹{currentRecord?.totalDeductions.toLocaleString() || "0"}
+              {currentRecord?.totalDeductions.toLocaleString() || "0"}
             </p>
           </div>
 
@@ -164,26 +164,26 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                   <div className="flex justify-between">
                     <span className="text-slate-700">Basic Salary</span>
                     <span className="font-semibold">
-                      ₹{currentRecord.basicSalary.toLocaleString()}
+                      {currentRecord.basicSalary.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-700">HRA</span>
                     <span className="font-semibold">
-                      ₹{currentRecord.hra.toLocaleString()}
+                      {currentRecord.hra.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-700">Allowances</span>
                     <span className="font-semibold">
-                      ₹{currentRecord.allowances.toLocaleString()}
+                      {currentRecord.allowances.toLocaleString()}
                     </span>
                   </div>
                   {currentRecord.overtimePay > 0 && (
                     <div className="flex justify-between bg-white px-3 py-2 rounded">
                       <span className="text-slate-700">Overtime</span>
                       <span className="font-semibold text-green-700">
-                        ₹{currentRecord.overtimePay.toLocaleString()}
+                        {currentRecord.overtimePay.toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -191,7 +191,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                     <div className="flex justify-between bg-white px-3 py-2 rounded">
                       <span className="text-slate-700">Bonus</span>
                       <span className="font-semibold text-green-700">
-                        ₹{currentRecord.totalBonus.toLocaleString()}
+                        {currentRecord.totalBonus.toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -201,7 +201,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                         Arrears
                       </span>
                       <span className="font-bold text-amber-700">
-                        ₹{currentRecord.arrears.toLocaleString()}
+                        {currentRecord.arrears.toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -210,7 +210,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                       Gross Salary
                     </span>
                     <span className="font-bold text-lg text-green-700">
-                      ₹{currentRecord.grossPay.toLocaleString()}
+                      {currentRecord.grossPay.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -228,34 +228,34 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                       Income Tax ({currentRecord.taxRegime})
                     </span>
                     <span className="font-semibold">
-                      ₹{currentRecord.taxDeduction.toLocaleString()}
+                      {currentRecord.taxDeduction.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-700">Provident Fund</span>
                     <span className="font-semibold">
-                      ₹{currentRecord.pfDeduction.toLocaleString()}
+                      {currentRecord.pfDeduction.toLocaleString()}
                     </span>
                   </div>
                   {currentRecord.esiDeduction > 0 && (
                     <div className="flex justify-between">
                       <span className="text-slate-700">ESI</span>
                       <span className="font-semibold">
-                        ₹{currentRecord.esiDeduction.toLocaleString()}
+                        {currentRecord.esiDeduction.toLocaleString()}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span className="text-slate-700">Professional Tax</span>
                     <span className="font-semibold">
-                      ₹{currentRecord.professionalTax.toLocaleString()}
+                      {currentRecord.professionalTax.toLocaleString()}
                     </span>
                   </div>
                   {currentRecord.loanDeduction > 0 && (
                     <div className="flex justify-between bg-white px-3 py-2 rounded">
                       <span className="text-slate-700">Loan EMI</span>
                       <span className="font-semibold">
-                        ₹{currentRecord.loanDeduction.toLocaleString()}
+                        {currentRecord.loanDeduction.toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -263,7 +263,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                     <div className="flex justify-between bg-white px-3 py-2 rounded">
                       <span className="text-slate-700">Advance Recovery</span>
                       <span className="font-semibold">
-                        ₹{currentRecord.advanceDeduction.toLocaleString()}
+                        {currentRecord.advanceDeduction.toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -272,7 +272,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                       Total Deductions
                     </span>
                     <span className="font-bold text-lg text-red-700">
-                      ₹{currentRecord.totalDeductions.toLocaleString()}
+                      {currentRecord.totalDeductions.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -287,7 +287,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                     Net Salary (Take Home)
                   </p>
                   <p className="text-4xl font-bold">
-                    ₹{currentRecord.netPay.toLocaleString()}
+                    {currentRecord.netPay.toLocaleString()}
                   </p>
                   <p className="text-green-100 text-xs mt-2">
                     Payment Status:{" "}
@@ -344,7 +344,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
                       <div className="text-right">
                         <p className="text-xs text-slate-500">Net Pay</p>
                         <p className="text-lg font-bold text-green-600">
-                          ₹{record.netPay.toLocaleString()}
+                          {record.netPay.toLocaleString()}
                         </p>
                       </div>
                       <span
@@ -493,7 +493,7 @@ export const EmployeeSelfService: React.FC<EmployeeSelfServiceProps> = ({
             <div className="p-8">
               <div className="text-center mb-6">
                 <p className="text-4xl font-bold text-green-600">
-                  ₹{selectedPayslip.netPay.toLocaleString()}
+                  {selectedPayslip.netPay.toLocaleString()}
                 </p>
                 <p className="text-slate-600 mt-1">Net Salary</p>
               </div>

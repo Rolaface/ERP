@@ -63,7 +63,7 @@ const EditEmployeePayrollModal: React.FC<Props> = ({ record, onClose, onSave, on
         <div className="flex items-center justify-between bg-app border border-theme rounded-xl px-5 py-3">
           <span className="text-sm font-semibold text-muted">Estimated Gross</span>
           <span className="text-lg font-extrabold text-success tabular-nums font-mono">
-            ₹{estimatedGross.toLocaleString("en-IN")}
+            {estimatedGross.toLocaleString("en-IN")}
           </span>
         </div>
       </div>

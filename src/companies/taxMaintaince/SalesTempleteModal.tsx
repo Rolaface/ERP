@@ -4,7 +4,7 @@ import { FileSpreadsheet, Plus, Trash2 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
-import { ModalInput } from "../../components/ui/modal/modalComponent";
+import { ModalInput, NumericInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import TaxCategorySelect from "../../components/selects/TaxCategorySelect";
 
@@ -245,7 +245,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
             {/* Tax Category */}
             <div className="col-span-4">
               <TaxCategorySelect
-               label="Tax Category"
+                label="Tax Category"
                 value={form.tax_category}
                 onChange={(value) =>
                   handleChange({
@@ -371,24 +371,27 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
                       {/* Rate */}
                       <td className="px-3 py-2">
-                        <ModalInput
-                          label=""
-                          type="number"
-                          name="rate"
-                          value={row.rate}
-                          onChange={(e) =>
-                            handleRowChange(
-                              actualIdx,
-                              "rate",
-                              Number(e.target.value),
-                            )
-                          }
-                          error={errors[`rate_${actualIdx}`]}
-                          className="w-full no-spinner"
-                          placeholder="0.00"
-                          disabled={row.charge_type === "Actual"}
-                        />
-                      </td>
+                          <NumericInput
+                            name="rate"
+                            value={row.rate || null}
+                            onChange={(value) =>
+                              handleRowChange(
+                                actualIdx,
+                                "rate",
+                                value ?? 0,
+                              )
+                            }
+                            className="w-full"
+                            placeholder="0.00"
+                            disabled={row.charge_type === "Actual"}
+                          />
+                          {errors[`rate_${actualIdx}`] && (
+                            <p className="text-xs text-danger mt-1">
+                              {errors[`rate_${actualIdx}`]}
+                            </p>
+                          )}
+                        </td>
+
 
                       {/* Tax Amount */}
                       <td className="px-3 py-2">
@@ -425,7 +428,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                             )
                           }
                           className="w-full"
-                          placeholder="e.g. Shipping flat ₹200"
+                          placeholder="e.g. Shipping flat 200"
                         />
                       </td>
 
@@ -458,11 +461,10 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                   key={i}
                   type="button"
                   onClick={() => setPage(i)}
-                  className={`w-6 h-6 rounded text-xs transition-colors ${
-                    page === i
+                  className={`w-6 h-6 rounded text-xs transition-colors ${page === i
                       ? "bg-primary text-white"
                       : "bg-[var(--border)] text-muted hover:bg-primary/20"
-                  }`}
+                    }`}
                 >
                   {i + 1}
                 </button>

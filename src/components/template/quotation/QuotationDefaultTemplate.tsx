@@ -39,7 +39,7 @@ const QuotationDefaultTemplate = forwardRef<
 
   const symbol =
     data.currency === "INR"
-      ? "₹"
+      ? ""
       : data.currency === "USD"
         ? "$"
         : data.currency === "ZMW"

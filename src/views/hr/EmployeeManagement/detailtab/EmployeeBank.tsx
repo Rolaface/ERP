@@ -1,136 +1,121 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import type { BankAccount } from "../../../../types/BankAccount/bank";
+import { openBankAccountModal } from "../../../../store/modalStore";
 import ModalTable from "../../../../components/ui/Table/ModalTableInside";
+import ActionButton, {
+  ActionGroup,
+  ActionMenu,
+} from "../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../components/ui/Table/type";
-import {
-  getAllBankAccounts,
-  updateBankAccountStatus,
-} from "../../../../api/BankAccountApi";
+import { getAllBankAccounts } from "../../../../api/BankAccountApi";
 import { showApiError } from "../../../../utils/alert";
-
-const mask = (val?: string) => {
-  if (!val) return "—";
-  if (val.length <= 4) return "*".repeat(val.length);
-  return "*".repeat(val.length - 4) + val.slice(-4);
-};
+import { useMaskedRows } from "../../../../utils/Usemaskedrows";
+import { useBankAccountActions } from "../../../../utils/useBankAccountActions";
+import { DefaultBadge, StatusBadge } from "../../../../components/UI_Utils/BankAccountBadges";
 
 interface Props {
   employeename?: string;
+  emp?: any;
   onAdd?: (refresh: () => void) => void;
   onEdit?: (row: BankAccount) => void;
 }
 
-const employeenameBankDetails: React.FC<Props> = ({
+const EmployeeBankDetails: React.FC<Props> = ({
   employeename,
+  emp,
   onAdd,
   onEdit,
 }) => {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const [search, setSearch]             = useState("");
+  const [loading, setLoading]           = useState(false);
+  const [page, setPage]                 = useState(1);
+  const [pageSize, setPageSize]         = useState(10);
+  const [totalPages, setTotalPages]     = useState(1);
+  const [totalItems, setTotalItems]     = useState(0);
 
-const fetchAccounts = useCallback(async () => {
-  if (!employeename) return;
-  try {
-    setLoading(true);
-    const res = await getAllBankAccounts({
-      party_type: "Employee",
-      party: employeename,
-      page,
-      page_size: pageSize,
-    });
-    setBankAccounts(res.data || []);           // ← only once
-    setTotalPages(res.pagination?.total_pages || 1);
-    setTotalItems(res.pagination?.total || 0);
-  } catch (err: any) {
-    showApiError(err);
-  } finally {
-    setLoading(false);
-  }
-}, [employeename, page, pageSize]);
-  const refresh = useCallback(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+  const { isVisible, toggle, reveal } = useMaskedRows();
 
-  useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+  const fetchAccounts = useCallback(async () => {
+    if (!employeename) return;
+    try {
+      setLoading(true);
+      const res = await getAllBankAccounts({
+        party_type: "Employee",
+        party: employeename,
+        page,
+        page_size: pageSize,
+      });
+      setBankAccounts(res.data || []);
+      setTotalPages(res.pagination?.total_pages || 1);
+      setTotalItems(res.pagination?.total || 0);
+    } catch (err: any) {
+      showApiError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [employeename, page, pageSize]);
 
-  useEffect(() => {
-    if (onAdd) onAdd(refresh);
-  }, [onAdd, refresh]);
+  const refresh = useCallback(() => fetchAccounts(), [fetchAccounts]);
+  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
+  useEffect(() => { if (onAdd) onAdd(refresh); }, [onAdd, refresh]);
 
-  const handleSetDefault = useCallback(
-    async (row: BankAccount) => {
-      if (row.isDisabled) {
-        showApiError("Disabled account cannot be default");
-        return;
-      }
-      try {
-        setActionLoadingId(String(row.id));
-        await updateBankAccountStatus({
-          bankAccountId: String(row.id),
-          isDefault: 1,
-          isDisabled: 0,
-        });
-        await fetchAccounts();
-      } catch (err: any) {
-        showApiError(err?.message);
-      } finally {
-        setActionLoadingId(null);
-      }
-    },
-    [fetchAccounts],
-  );
+  // ── Actions hook ──────────────────────────────────────────────────────────
+  const { getMenuActions } = useBankAccountActions(fetchAccounts);
 
-  const handleToggleDisable = useCallback(
-    async (row: BankAccount) => {
-      try {
-        setActionLoadingId(String(row.id));
-        await updateBankAccountStatus({
-          bankAccountId: String(row.id),
-          isDisabled: row.isDisabled ? 0 : 1,
-          isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
-        });
-        await fetchAccounts();
-      } catch (err: any) {
-        showApiError(err?.message);
-      } finally {
-        setActionLoadingId(null);
-      }
-    },
-    [fetchAccounts],
-  );
+  // ── Modal helpers ─────────────────────────────────────────────────────────
+  const empFullName = emp
+    ? [emp.first_name, emp.middle_name, emp.last_name].filter(Boolean).join(" ")
+    : employeename;
 
+  const employeeInitial = {
+    accountFor: "Employee" as const,
+    partyId: employeename,
+    partyName: empFullName,
+    currency: emp?.salary_currency || emp?.default_currency || "",
+  };
+
+  const handleAdd = () => {
+    openBankAccountModal(
+      employeeInitial,
+      false,
+      { onSuccess: () => fetchAccounts() },
+    );
+  };
+
+  const handleEdit = (row: BankAccount) => {
+    if (onEdit) { onEdit(row); return; }
+    const { accountFor: _discard, ...rowRest } = row as any;
+    openBankAccountModal(
+      { ...employeeInitial, ...rowRest },
+      true,
+      { onSuccess: () => fetchAccounts() },
+    );
+  };
+
+  // ── Columns ───────────────────────────────────────────────────────────────
   const columns: Column<BankAccount>[] = [
     {
       key: "dateAdded",
       header: "Date",
       render: (row) =>
-        row.dateAdded
-          ? new Date(row.dateAdded).toLocaleDateString("en-GB")
-          : "—",
+        row.dateAdded ? new Date(row.dateAdded).toLocaleDateString("en-GB") : "—",
     },
     {
       key: "bankName",
       header: "Bank",
       render: (row) => (
-        <span className="font-semibold">{row.bankName || "—"}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-semibold">{row.bankName || "—"}</span>
+          <DefaultBadge isDefault={row.isDefault} />
+        </div>
       ),
     },
     {
       key: "accountNo",
       header: "Acc No",
-      render: (row) => (
-        <span title={row.accountNo ? String(row.accountNo) : ""} className="cursor-pointer">
-          {mask(row.accountNo)}
-        </span>
-      ),
+      render: (row) => reveal(row.id, row.accountNo),
     },
     {
       key: "accountHolderName",
@@ -140,39 +125,33 @@ const fetchAccounts = useCallback(async () => {
     {
       key: "sortCode",
       header: "IFSC/Sort",
-      render: (row) => (
-        <span title={row.sortCode ? String(row.sortCode) : ""} className="cursor-pointer">
-          {mask(row.sortCode)}
-        </span>
-      ),
-    },
-    // {
-    //   key: "currency",
-    //   header: "Currency",
-    //   render: (row) => <span>{row.currency || "—"}</span>,
-    // },
-    {
-      key: "isDefault",
-      header: "Default",
-      render: (row) =>
-        row.isDefault ? (
-          <span className="text-green-600 font-semibold">Yes</span>
-        ) : (
-          "—"
-        ),
+      render: (row) => reveal(row.id, row.sortCode),
     },
     {
       key: "isDisabled",
       header: "Status",
-      render: (row) =>
-        row.isDisabled ? (
-          <span className="text-red-500 font-semibold">Disabled</span>
-        ) : (
-          <span className="text-green-600">Active</span>
-        ),
+      render: (row) => <StatusBadge isDisabled={row.isDisabled} />,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (row) => (
+        <ActionGroup>
+          
+          <ActionButton
+            type="view"
+            iconOnly
+            title={isVisible(row.id) ? "Hide Details" : "Show Details"}
+            onClick={() => toggle(row.id)}
+          />
+          <ActionMenu customActions={getMenuActions(row)} />
+        </ActionGroup>
+      ),
     },
   ];
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
@@ -184,16 +163,16 @@ const fetchAccounts = useCallback(async () => {
           showToolbar
           searchValue={search}
           onSearch={setSearch}
+          enableAdd
+          addLabel="Add Bank Account"
+          onAdd={handleAdd}
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
           pageSizeOptions={[10, 25, 50, 100]}
           onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
           emptyMessage="No bank accounts found"
         />
       </div>
@@ -201,4 +180,4 @@ const fetchAccounts = useCallback(async () => {
   );
 };
 
-export default employeenameBankDetails;
+export default EmployeeBankDetails;

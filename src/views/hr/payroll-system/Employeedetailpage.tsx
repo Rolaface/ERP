@@ -145,7 +145,7 @@ export const EmployeeDetailPage: React.FC<EmployeeDetailPageProps> = ({
 
               <div className="text-right">
                 <p className="text-[10px] text-white/60 uppercase tracking-wider">Net Pay</p>
-                <p className="text-3xl font-extrabold tabular-nums">₹{fmtINR(selected.netPay)}</p>
+                <p className="text-3xl font-extrabold tabular-nums">{fmtINR(selected.netPay)}</p>
                 <button
                   onClick={() => onViewPayslip(selected)}
                   className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-white/15 border border-white/25 text-white text-[11px] font-bold rounded-lg hover:bg-white/25 transition ml-auto"
@@ -158,8 +158,8 @@ export const EmployeeDetailPage: React.FC<EmployeeDetailPageProps> = ({
             {/* Quick stats */}
             <div className="flex gap-6 mt-4 pt-4 border-t border-white/15">
               {[
-                { label: "Gross Pay",       val: `₹${fmtINR(selected.grossPay)}` },
-                { label: "Deductions",      val: `₹${fmtINR(totalDed)}`          },
+                { label: "Gross Pay",       val: `${fmtINR(selected.grossPay)}` },
+                { label: "Deductions",      val: `${fmtINR(totalDed)}`          },
                 { label: "Paid Days",       val: `${selected.paidDays}/${selected.workingDays}` },
                 { label: "Net Retention",   val: `${netPct}%`                     },
               ].map(({ label, val }) => (
@@ -239,12 +239,12 @@ export const EmployeeDetailPage: React.FC<EmployeeDetailPageProps> = ({
                     ].map(({ label, val }) => (
                       <div key={label} className="flex justify-between items-center py-2 border-b border-theme last:border-0">
                         <span className="text-xs text-muted">{label}</span>
-                        <span className="text-xs font-bold text-main tabular-nums">₹{fmtINR(val)}</span>
+                        <span className="text-xs font-bold text-main tabular-nums">{fmtINR(val)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between items-center pt-3 mt-1">
                       <span className="text-sm font-extrabold text-main">Gross Total</span>
-                      <span className="text-base font-extrabold text-success tabular-nums">₹{fmtINR(selected.grossPay)}</span>
+                      <span className="text-base font-extrabold text-success tabular-nums">{fmtINR(selected.grossPay)}</span>
                     </div>
                   </div>
 
@@ -260,12 +260,12 @@ export const EmployeeDetailPage: React.FC<EmployeeDetailPageProps> = ({
                     ].map(({ label, val }) => (
                       <div key={label} className="flex justify-between items-center py-2 border-b border-theme last:border-0">
                         <span className="text-xs text-muted">{label}</span>
-                        <span className="text-xs font-bold text-danger tabular-nums">₹{fmtINR(val)}</span>
+                        <span className="text-xs font-bold text-danger tabular-nums">{fmtINR(val)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between items-center pt-3 mt-1">
                       <span className="text-sm font-extrabold text-main">Total Deductions</span>
-                      <span className="text-base font-extrabold text-danger tabular-nums">₹{fmtINR(totalDed)}</span>
+                      <span className="text-base font-extrabold text-danger tabular-nums">{fmtINR(totalDed)}</span>
                     </div>
                   </div>
                 </div>
@@ -276,7 +276,7 @@ export const EmployeeDetailPage: React.FC<EmployeeDetailPageProps> = ({
                     <p className="text-xs font-extrabold text-white/65 uppercase tracking-wider">Final Net Pay</p>
                     <p className="text-xs text-white/50 mt-0.5">Gross Earnings − Total Deductions</p>
                   </div>
-                  <p className="text-3xl font-extrabold tabular-nums">₹{fmtINR(selected.netPay)}</p>
+                  <p className="text-3xl font-extrabold tabular-nums">{fmtINR(selected.netPay)}</p>
                 </div>
               </div>
             )}

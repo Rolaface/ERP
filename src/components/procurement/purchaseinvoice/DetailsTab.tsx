@@ -99,10 +99,10 @@ const PIColumnHeaders: React.FC<{ items: ItemRow[] }> = ({ items }) => (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[63px] whitespace-nowrap">
       Tax Name
     </th>
-     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
+     {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
       Barcode Id
         <span className="text-danger">*</span>
-    </th>
+    </th> */}
     <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[80px]">
       Amount
     </th>
@@ -470,7 +470,7 @@ export const DetailsTab = ({
             />
           </Tooltip>
         </td>
-         <td className="px-1 py-1">
+         {/* <td className="px-1 py-1">
           <Tooltip
             content={it.barcodeId ? `Barcode: ${it.barcodeId}` : "Enter barcode id"}
           >
@@ -482,7 +482,7 @@ export const DetailsTab = ({
               className="w-[85px] py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </Tooltip>
-        </td>
+        </td> */}
 
         {/* AMOUNT */}
         <td className="px-1 py-1.5 text-right">

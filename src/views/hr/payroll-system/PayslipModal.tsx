@@ -91,7 +91,7 @@ export const PayslipModal: React.FC<Props> = ({ record, onClose, onDownload, onE
           <div className="border border-slate-200 rounded-lg overflow-hidden">
             <div className="bg-[#f0faf4] px-4 py-3 border-b border-slate-200">
               <p className="text-[10px] text-slate-500 mb-1">Employee Net Pay</p>
-              <p className="text-xl font-bold font-mono text-slate-900">₹{record.netPay.toLocaleString("en-IN")}</p>
+              <p className="text-xl font-bold font-mono text-slate-900">{record.netPay.toLocaleString("en-IN")}</p>
             </div>
             <div className="px-4 py-2.5 space-y-1.5">
               {[["Paid Days", `${record.paidDays}`], ["LOP Days", `${lop}`]].map(([l, v]) => (
@@ -127,9 +127,9 @@ export const PayslipModal: React.FC<Props> = ({ record, onClose, onDownload, onE
           ))}
           <tr style={{ background: "#f1f5f9" }}>
             <td className="px-3 py-2.5 font-bold text-slate-800 border border-slate-300">Gross Earnings</td>
-            <td className="px-3 py-2.5 text-right font-bold font-mono text-slate-900 border border-slate-300">₹{fmt(record.grossPay)}</td>
+            <td className="px-3 py-2.5 text-right font-bold font-mono text-slate-900 border border-slate-300">{fmt(record.grossPay)}</td>
             <td className="px-3 py-2.5 font-bold text-slate-800 border border-slate-300">Total Deductions</td>
-            <td className="px-3 py-2.5 text-right font-bold font-mono text-slate-900 border border-slate-300">₹{fmt(totalDed)}</td>
+            <td className="px-3 py-2.5 text-right font-bold font-mono text-slate-900 border border-slate-300">{fmt(totalDed)}</td>
           </tr>
         </tbody>
       </table>
@@ -140,7 +140,7 @@ export const PayslipModal: React.FC<Props> = ({ record, onClose, onDownload, onE
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-700">Total Net Payable</p>
           <p className="text-[9px] text-slate-400">Gross Earnings − Total Deductions</p>
         </div>
-        <p className="text-base font-bold font-mono text-slate-900">₹{fmt(record.netPay)}</p>
+        <p className="text-base font-bold font-mono text-slate-900">{fmt(record.netPay)}</p>
       </div>
 
       <p className="text-right text-[10px] text-slate-500 mb-4">

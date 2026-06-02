@@ -11,12 +11,14 @@ import {
 } from "../../utils/alert";
 import { updateCompanyById } from "../../api/companySetupApi";
 import { fireManagedSwal } from "../../utils/swalManager";
+
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 interface BuyingSellingProps {
   terms?: Terms | null;
   onSaveSuccess?: () => void;
 }
+
 const normalizeSection = (section?: TermSection): TermSection => ({
   general: section?.general ?? "",
   delivery: section?.delivery ?? "",
@@ -47,6 +49,11 @@ const emptySection = (): TermSection => ({
   },
 });
 
+// Read a CSS variable value at runtime (for use in JS contexts like SweetAlert)
+const getCssVar = (varName: string, fallback: string) =>
+  getComputedStyle(document.documentElement).getPropertyValue(varName).trim() ||
+  fallback;
+
 const BuyingSelling: React.FC<BuyingSellingProps> = ({
   terms,
   onSaveSuccess,
@@ -55,20 +62,19 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
     buying: emptySection(),
     selling: emptySection(),
   });
+
   const hasChanges = React.useMemo(() => {
     if (!terms) return false;
-
     const original = JSON.stringify({
       buying: normalizeSection(terms.buying),
       selling: normalizeSection(terms.selling),
     });
     const current = JSON.stringify(formData);
-
     return original !== current;
   }, [formData, terms]);
+
   useEffect(() => {
     if (!terms) return;
-
     setFormData({
       buying: normalizeSection(terms.buying),
       selling: normalizeSection(terms.selling),
@@ -77,28 +83,30 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
 
   const handleReset = () => {
     if (!terms) return;
-
     setFormData({
       buying: normalizeSection(terms.buying),
       selling: normalizeSection(terms.selling),
     });
   };
+
   const handleSubmit = async () => {
     if (!hasChanges) {
       fireManagedSwal({
         icon: "info",
         title: "No Changes",
-        text: "Please apply changes before saving.",
+        text: "No changes to save.",
       });
       return;
     }
+
     const confirm = await fireManagedSwal({
       title: "Save Terms?",
       text: "Do you want to update company terms and conditions?",
       icon: "question",
       showCancelButton: true,
-      confirmButtonColor: "#22c55e",
-      cancelButtonColor: "#ef4444",
+      // Read theme-aware colors at call time so they match current theme
+      confirmButtonColor: getCssVar("--success", "#22c55e"),
+      cancelButtonColor: getCssVar("--danger", "#dc2626"),
       confirmButtonText: "Yes, Save",
     });
 
@@ -111,9 +119,7 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
 
     try {
       showLoading("Saving Terms...");
-
       await updateCompanyById(payload);
-
       closeSwal();
       onSaveSuccess && onSaveSuccess();
       showSuccess("Terms saved successfully!");
@@ -122,51 +128,54 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
       showApiError(err);
     }
   };
+
   return (
-    <div className=" bg-app">
-      {/* SUCCESS TOAST */}
+    <div className="bg-app">
+      {/*
+        xs/sm  → single column (full width each)
+        lg+    → side by side (panels are wide enough to be useful)
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        <TermsAndCondition
+          title="Buying Terms & Conditions"
+          terms={formData.buying}
+          setTerms={(updated) =>
+            setFormData((prev) => ({ ...prev, buying: updated }))
+          }
+        />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-xl border border-theme shadow-sm p-4">
-          <TermsAndCondition
-            title="Buying Terms & Conditions"
-            terms={formData.buying}
-            setTerms={(updated) =>
-              setFormData((prev) => ({ ...prev, buying: updated }))
-            }
-          />
-        </div>
-
-        <div className="bg-card rounded-xl border border-theme shadow-sm p-4">
-          <TermsAndCondition
-            title="Selling Terms & Conditions"
-            terms={formData.selling}
-            setTerms={(updated) =>
-              setFormData((prev) => ({ ...prev, selling: updated }))
-            }
-          />
-        </div>
+        <TermsAndCondition
+          title="Selling Terms & Conditions"
+          terms={formData.selling}
+          setTerms={(updated) =>
+            setFormData((prev) => ({ ...prev, selling: updated }))
+          }
+        />
       </div>
 
-      {/* ACTION BUTTONS */}
-      <div className="flex justify-end gap-3 mt-6">
+      {/* Action buttons */}
+      <div className="flex flex-wrap justify-end gap-3 mt-4 pt-4 border-t border-theme sm:mt-6 sm:pt-0 sm:border-none">
         <button
+          type="button"
           onClick={handleReset}
-          className="px-4 py-2 border border-theme rounded bg-card"
+          disabled={!hasChanges}
+          title={!hasChanges ? "Nothing to reset" : "Reset to saved values"}
+          className={`flex items-center gap-2 px-4 py-2 border border-theme rounded-lg bg-card text-sm transition-opacity
+            ${hasChanges ? "text-muted hover:opacity-80" : "text-muted opacity-40 cursor-not-allowed"}`}
         >
-          <RotateCcw className="inline-block mr-2" />
+          <RotateCcw size={14} />
           Reset
         </button>
 
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={!hasChanges}
-          title={!hasChanges ? "Apply changes before saving" : ""}
-          className={`px-5 py-2 rounded text-white flex items-center gap-2
-    ${hasChanges ? "bg-primary hover:opacity-90" : "bg-gray-300 cursor-not-allowed"}
-  `}
+          title={!hasChanges ? "No changes to save" : "Save terms"}
+          className={`flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium transition-opacity bg-primary
+            ${hasChanges ? "hover:opacity-90" : "opacity-40 cursor-not-allowed"}`}
         >
-          <Save className="inline-block mr-2" />
+          <Save size={14} />
           Save Terms
         </button>
       </div>

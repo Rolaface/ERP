@@ -125,13 +125,13 @@ export const currencyOptions = [
   { value: "GBP", label: "GBP (£)" },
   { value: "CNY", label: "CNY (¥)" },
   { value: "EUR", label: "EUR (€)" },
-  { value: "INR", label: "INR (₹)" },
+  { value: "INR", label: "INR ()" },
   { value: "GHS", label: "GHS (₵)" },
 ] as const;
 
 export const currencySymbols: Record<string, string> = {
   ZMW: "ZK",
-  INR: "₹",
+  INR: "",
   USD: "$",
   ZAR: "R",
   GBP: "£",

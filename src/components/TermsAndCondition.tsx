@@ -1,13 +1,5 @@
-import React, { useState } from "react";
-import { useEffect } from "react";
-import {
-  FaEdit,
-  FaTimes,
-  FaCheck,
-  FaPlus,
-  FaTrash,
-  FaFileAlt,
-} from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { FaPlus, FaTrash, FaFileAlt } from "react-icons/fa";
 import { MdOutlineTextFields, MdOutlineCalendarToday } from "react-icons/md";
 import { NumericInput } from "../components/ui/modal/modalComponent";
 import type {
@@ -23,6 +15,7 @@ interface Props {
   setTerms: (updated: TermSection) => void;
   type?: "buying" | "selling";
   isViewMode?: boolean;
+  compact?: boolean; // ← pass true inside modals/invoices
 }
 
 type LocalPhase = TermPhase & { id?: string; isDelete?: number };
@@ -135,7 +128,7 @@ export const ConditionCell: React.FC<ConditionCellProps> = ({
           onChange={(e) => onChange(e.target.value)}
         />
       ) : (
-        <div className="flex items-center gap-1 flex-1 min-w-0">
+        <div className="flex items-center gap-1 flex-1 min-w-0 flex-wrap">
           <span className="text-muted text-sm whitespace-nowrap">
             Payable within
           </span>
@@ -217,16 +210,16 @@ export const TemplateField: React.FC<TemplateFieldProps> = ({
   }
 
   return (
-    <div className="flex items-center gap-1.5 flex-1">
+    <div className="flex items-center gap-1.5 flex-1 min-w-0">
       {isCustom ? (
         <input
-          className="flex-1 bg-transparent text-muted outline-none border-b border-theme focus:border-primary text-sm"
+          className="flex-1 bg-transparent text-muted outline-none border-b border-theme focus:border-primary text-sm min-w-0"
           value={value}
           placeholder="Enter full text..."
           onChange={(e) => onChange(e.target.value)}
         />
       ) : (
-        <div className="flex items-center gap-1.5 flex-1 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-1 flex-wrap min-w-0">
           <span className="text-muted text-sm whitespace-nowrap">{prefix}</span>
           <NumericInput
             name="templateNumber"
@@ -265,16 +258,12 @@ const TermsAndCondition: React.FC<Props> = ({
   setTerms,
   type,
   isViewMode = false,
+  compact = false,
 }) => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState<TermSection | null>(null);
 
-  const baseTerms: TermSection = terms ?? emptyTerms;
-  const currentTerms: TermSection = isEditing
-    ? (draft ?? baseTerms)
-    : baseTerms;
+  const currentTerms: TermSection = terms ?? emptyTerms;
   const activeKey = TABS[activeTab].key;
 
   const ensurePayment = (src: TermSection): PaymentTerms => ({
@@ -300,68 +289,39 @@ const TermsAndCondition: React.FC<Props> = ({
   };
 
   useEffect(() => {
-    if (!isEditing) return;
-
     const total = currentPaymentPhases.reduce(
       (sum, p) => sum + Number(p.credit_days || 0),
       0,
     );
-
-    updatePayment({
-      dueDates: total ? `Payment due within ${total} days` : "",
-    });
+    const current = ensurePayment(currentTerms).dueDates;
+    const next = total ? `Payment due within ${total} days` : "";
+    if (current !== next) {
+      updatePayment({ dueDates: next });
+    }
   }, [currentPaymentPhases]);
 
-  const startEditing = () => {
-    setDraft(terms ?? emptyTerms);
-    setIsEditing(true);
-  };
-  const cancelEditing = () => {
-    setDraft(null);
-    setIsEditing(false);
-  };
-
-  const saveEditing = () => {
-    if (!draft) {
-      setIsEditing(false);
-      return;
-    }
-    if (isOverLimit) return;
-    setTerms(draft);
-    setDraft(null);
-    setIsEditing(false);
-  };
-
-  const updateDraft = (updater: (prev: TermSection) => TermSection) => {
-    if (!isEditing) return;
-    setDraft((prev) => updater(prev ?? baseTerms));
-  };
-
   const updateTopField = (key: keyof TermSection, value: string) =>
-    updateDraft((prev) => ({ ...prev, [key]: value }));
+    setTerms({ ...currentTerms, [key]: value });
 
   const updatePayment = (patch: Partial<PaymentTerms>) =>
-    updateDraft((prev) => ({
-      ...prev,
-      payment: { ...ensurePayment(prev), ...patch },
-    }));
+    setTerms({
+      ...currentTerms,
+      payment: { ...ensurePayment(currentTerms), ...patch },
+    });
 
   const addPhase = () => {
-    if (!isEditing) return;
     updatePayment({
       phases: [...ensurePayment(currentTerms).phases, emptyPhase()],
     });
   };
 
   const updatePhase = (index: number, patch: Partial<TermPhase>) => {
-    if (!isEditing) return;
     const phases = ensurePayment(currentTerms).phases;
     const next = phases.map((p, i) => (i === index ? { ...p, ...patch } : p));
     updatePayment({ phases: next });
   };
 
   const removePhase = (index: number) => {
-    if (!isEditing) return;
     const next = ensurePayment(currentTerms).phases.filter(
       (_, i) => i !== index,
     );
@@ -373,35 +333,37 @@ const TermsAndCondition: React.FC<Props> = ({
     0,
   );
 
+  // ── Cell padding — tighter in compact mode ──────────────────────────────────
+  const cellPy = compact ? "py-1" : "py-2.5";
+
+  // ── Render helpers ──────────────────────────────────────────────────────────
+
   const renderPaymentTable = () => {
     const payment = ensurePayment(currentTerms);
     const rawPhases = payment.phases as LocalPhase[];
+    const visiblePhases = rawPhases.filter((p) => p.isDelete !== 1);
 
     return (
-      <div className="space-y-4">
-        <div className="border border-theme rounded-lg overflow-visible">
-          <table className="w-full text-sm table-fixed">
+      <div className={compact ? "space-y-2" : "space-y-4"}>
+        {/* Table */}
+        <div className="border border-theme rounded-lg overflow-x-auto">
+          <table className="w-full text-sm min-w-[480px]">
             <colgroup>
-              <col style={{ width: 32 }} />
-              <col style={{ width: 140 }} />
-              <col style={{ width: 86 }} />
+              <col style={{ width: 28 }} />
+              <col style={{ width: "22%" }} />
+              <col style={{ width: 64 }} />
               <col />
-              <col style={{ width: 110 }} />
-              <col style={{ width: 36 }} />
+              <col style={{ width: 90 }} />
+              {!isViewMode && <col style={{ width: 32 }} />}
             </colgroup>
             <thead>
               <tr className="table-head">
-                <th className="px-3 py-2 text-left text-xs font-medium">#</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">
-                  Phase
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium">%</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">
-                  Description
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium">
-                  Credit Days
-                </th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">#</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">Phase</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">%</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">Description</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">Credit Days</th>
+                {!isViewMode && <th style={{ width: 32 }} />}
               </tr>
             </thead>
             <tbody>
@@ -412,29 +374,29 @@ const TermsAndCondition: React.FC<Props> = ({
                     key={idx}
                     className="border-t border-theme row-hover align-middle"
                   >
-                    <td className="px-3 py-2.5 text-xs text-muted">
-                      {idx + 1}
-                    </td>
+                    <td className={`px-2 ${cellPy} text-xs text-muted`}>{idx + 1}</td>
 
-                    <td className="px-3 py-2.5 overflow-hidden">
-                      {isEditing ? (
+                    <td className={`px-2 ${cellPy} overflow-hidden`}>
+                      {isViewMode ? (
+                        <span className="block truncate text-xs" title={p.name}>
+                          {p.name || "—"}
+                        </span>
+                      ) : (
                         <input
-                          className="w-full bg-transparent text-muted outline-none text-sm"
+                          className="w-full bg-transparent text-muted outline-none text-xs"
                           value={p.name}
+                          placeholder="Phase name..."
                           onChange={(e) =>
                             updatePhase(idx, { name: e.target.value })
                           }
                         />
-                      ) : (
-                        <span className="block truncate text-sm" title={p.name}>
-                          {p.name || "—"}
-                        </span>
                       )}
                     </td>
 
-                    {/* % cell — text turns danger color when over limit */}
-                    <td className="px-3 py-2.5 overflow-hidden">
-                      {isEditing ? (
+                    <td className={`px-2 ${cellPy} overflow-hidden`}>
+                      {isViewMode ? (
+                        <span className="text-xs">{p.percentage || "—"}</span>
+                      ) : (
                         <NumericInput
                           name="percentage"
                           value={p.percentage ? Number(p.percentage) : null}
@@ -444,37 +406,34 @@ const TermsAndCondition: React.FC<Props> = ({
                               percentage: value == null ? "" : String(value),
                             })
                           }
-                          className={`w-full ${
-                            isOverLimit ? "text-danger" : "text-muted"
-                          }`}
+                          className={`w-full text-xs ${isOverLimit ? "text-danger" : "text-muted"}`}
                         />
-                      ) : (
-                        <span className="text-sm">{p.percentage || "—"}</span>
                       )}
                     </td>
 
-                    <td className="px-3 py-2.5 overflow-hidden">
-                      {isEditing ? (
+                    <td className={`px-2 ${cellPy} overflow-hidden`}>
+                      {isViewMode ? (
+                        <span className="block truncate text-xs" title={p.condition}>
+                          {p.condition || "—"}
+                        </span>
+                      ) : (
                         <input
-                          className="w-full bg-transparent text-muted outline-none text-sm"
+                          className="w-full bg-transparent text-muted outline-none text-xs"
                           value={p.condition}
                           placeholder="Enter description..."
                           onChange={(e) =>
                             updatePhase(idx, { condition: e.target.value })
                           }
                         />
-                      ) : (
-                        <span
-                          className="block truncate text-sm"
-                          title={p.condition}
-                        >
-                          {p.condition || "—"}
-                        </span>
                       )}
                     </td>
 
-                    <td className="px-3 py-2.5 overflow-hidden">
-                      {isEditing ? (
+                    <td className={`px-2 ${cellPy} overflow-hidden`}>
+                      {isViewMode ? (
+                        <span className="text-xs font-medium block text-center">
+                          {p.credit_days || "—"}
+                        </span>
+                      ) : (
                         <NumericInput
                           name="credit_days"
                           value={p.credit_days ? Number(p.credit_days) : null}
@@ -484,72 +443,94 @@ const TermsAndCondition: React.FC<Props> = ({
                               credit_days: value == null ? "" : String(value),
                             })
                           }
-                          className="w-full text-center"
+                          className="w-full text-center text-xs"
                         />
-                      ) : (
-                        <span className="text-sm font-medium block text-center">
-                          {p.credit_days || "—"}
-                        </span>
                       )}
                     </td>
 
-                    <td className="px-3 py-2.5 text-center align-middle">
-                      {isEditing && (
+                    {!isViewMode && (
+                      <td className={`px-2 ${cellPy} text-center align-middle`}>
                         <button
                           type="button"
                           onClick={() => removePhase(idx)}
                           className="flex items-center justify-center text-danger opacity-60 hover:opacity-100 transition-opacity"
                         >
-                          <FaTrash size={11} />
+                          <FaTrash size={10} />
                         </button>
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
+
+              {visiblePhases.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={isViewMode ? 5 : 6}
+                    className="px-3 py-3 text-center text-xs text-muted"
+                  >
+                    {isViewMode
+                      ? "No phases defined."
+                      : 'No phases yet. Click "+ Add Phase" below to begin.'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
-        {/* Fixed-height slot for over-limit warning */}
-        <div style={{ minHeight: 16 }} className="flex items-center">
-          {isEditing && isOverLimit && (
-            <span className="text-danger text-xs">
-              Total percentage cannot exceed 100% (currently {totalPercentage}%)
-            </span>
-          )}
-        </div>
+        {/* Over-limit warning */}
+        {!isViewMode && isOverLimit && (
+          <span className="block text-danger text-xs">
+            Total percentage cannot exceed 100% (currently {totalPercentage}%)
+          </span>
+        )}
 
-        {isEditing && (
+        {/* "Add Phase" button — always below the table, size adapts to compact */}
+        {!isViewMode && (
           <div className="flex justify-end">
             <button
               type="button"
               onClick={addPhase}
-              className="px-4 py-1.5 bg-primary text-white rounded-lg text-sm flex items-center gap-1.5"
+              className={`bg-primary text-white rounded-lg flex items-center gap-1.5 ${
+                compact
+                  ? "px-3 py-1 text-xs"
+                  : "px-4 py-1.5 text-sm"
+              }`}
             >
-              <FaPlus size={11} /> Add Phase
+              <FaPlus size={compact ? 9 : 11} /> Add Phase
             </button>
           </div>
         )}
 
-        <div className="space-y-2 text-sm pt-1">
-          <div className="flex items-center min-h-[28px]">
-            <span className="w-48 flex-shrink-0 text-muted font-medium">
+        {/* Payment meta fields */}
+        {/* compact → 2-col grid; default → stacked */}
+        <div
+          className={
+            compact
+              ? "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 pt-2 border-t border-theme text-sm"
+              : "space-y-2 text-sm pt-1"
+          }
+        >
+          {/* Due Dates — always read-only */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[24px]">
+            <span className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}>
               Due Dates:
             </span>
             <TemplateField
               prefix="Payment due within"
               suffix="days"
               suffixKeyword="days"
-              value={`Payment due within ${totalCreditDays} days ${
-                totalCreditDays ? `(Due on ${getDueDate(totalCreditDays)})` : ""
+              value={`Payment due within ${totalCreditDays} days${
+                totalCreditDays ? ` (Due on ${getDueDate(totalCreditDays)})` : ""
               }`}
               onChange={() => {}}
               disabled={true}
             />
           </div>
-          <div className="flex items-center min-h-[28px]">
-            <span className="w-48 flex-shrink-0 text-muted font-medium">
+
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[24px]">
+            <span className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}>
               Late Payment Charges:
             </span>
             <TemplateField
@@ -558,20 +539,23 @@ const TermsAndCondition: React.FC<Props> = ({
               suffixKeyword="%"
               value={payment.lateCharges ?? ""}
               onChange={(v) => updatePayment({ lateCharges: v })}
-              disabled={!isEditing}
+              disabled={isViewMode}
             />
           </div>
+
           <LabeledRow
             label="Tax / Additional Charges:"
             value={payment.taxes ?? ""}
-            disabled={!isEditing}
+            disabled={isViewMode}
             onChange={(v) => updatePayment({ taxes: v })}
+            compact={compact}
           />
           <LabeledRow
             label="Notes:"
             value={payment.notes ?? ""}
-            disabled={!isEditing}
+            disabled={isViewMode}
             onChange={(v) => updatePayment({ notes: v })}
+            compact={compact}
           />
         </div>
       </div>
@@ -580,11 +564,13 @@ const TermsAndCondition: React.FC<Props> = ({
 
   const renderTextSection = (key: keyof TermSection, label: string) => (
     <textarea
-      disabled={!isEditing}
+      disabled={isViewMode}
       value={(currentTerms[key] as string) ?? ""}
       onChange={(e) => updateTopField(key, e.target.value)}
       placeholder={`Enter ${label.toLowerCase()}...`}
-      className="w-full h-48 bg-card border border-theme rounded-lg px-4 py-3 text-sm text-main focus:ring-2 outline-none resize-none"
+      className={`w-full bg-card border border-theme rounded-lg px-4 py-3 text-sm text-main focus:ring-2 outline-none resize-none disabled:opacity-60 disabled:cursor-not-allowed ${
+        compact ? "h-32" : "h-48"
+      }`}
     />
   );
 
@@ -599,41 +585,35 @@ const TermsAndCondition: React.FC<Props> = ({
         type={type}
       />
 
-      <div className="bg-card rounded-xl border border-theme shadow-sm overflow-hidden">
+      <div className="bg-card rounded-xl border border-theme shadow-sm overflow-hidden w-full">
         {/* Header */}
         <div
-          className="px-4 py-2.5 flex items-center"
+          className="px-3 py-2 flex items-center gap-2"
           style={{ background: "var(--primary-600)" }}
         >
-          <h2 className="font-semibold text-white text-sm">
+          <h2 className="font-semibold text-white text-xs sm:text-sm truncate flex-1 min-w-0">
             {title ?? "Terms & Conditions"}
           </h2>
-          <div className="ml-auto">
-            <button
-              type="button"
-              onClick={() => setPreviewOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium text-white border border-white/30 hover:bg-white/15 transition-colors"
-            >
-              <FaFileAlt size={10} /> Preview All
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-white border border-white/30 hover:bg-white/15 transition-colors whitespace-nowrap"
+          >
+            <FaFileAlt size={10} />
+            <span>Preview</span>
+          </button>
         </div>
 
-        {/* Tab pills */}
-        <div className="flex items-center gap-1 px-4 py-2 border-b border-theme bg-card overflow-x-auto">
+        {/* Tab pills — always scrollable */}
+        <div className="flex items-center gap-1 px-2 py-1.5 border-b border-theme bg-card overflow-x-auto scrollbar-none">
           {TABS.map((tab, i) => (
             <button
               key={tab.key}
               type="button"
-              disabled={false}
               onClick={() => setActiveTab(i)}
-              className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all
-                ${i === activeTab ? "text-white shadow-sm" : "text-muted hover:bg-theme"}
-                
-              `}
-              style={
-                i === activeTab ? { background: "var(--primary-600)" } : {}
-              }
+              className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
+                ${i === activeTab ? "text-white shadow-sm" : "text-muted hover:bg-theme"}`}
+              style={i === activeTab ? { background: "var(--primary-600)" } : {}}
             >
               {tab.short}
             </button>
@@ -641,81 +621,42 @@ const TermsAndCondition: React.FC<Props> = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 bg-card min-h-[120px]">
+        <div className={`bg-card ${compact ? "p-2 sm:p-3" : "p-3 sm:p-5"} min-h-[80px]`}>
           {activeKey === "payment"
             ? renderPaymentTable()
             : renderTextSection(activeKey, TABS[activeTab].label)}
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-3 px-4 py-3 border-t border-theme">
-          {isEditing ? (
-            <>
-              <button
-                type="button"
-                onClick={cancelEditing}
-                className="px-4 py-1.5 bg-card border border-theme text-muted rounded-lg text-sm flex items-center gap-1.5"
-              >
-                <FaTimes size={11} /> Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={saveEditing}
-                disabled={isOverLimit}
-                title={
-                  isOverLimit
-                    ? `Total is ${totalPercentage}% — must be 100% or less`
-                    : ""
-                }
-                className={`px-5 py-1.5 rounded-lg text-white text-sm font-medium flex items-center gap-1.5 transition-all duration-200 ${
-                  isOverLimit ? "opacity-40 cursor-not-allowed" : ""
-                }`}
-                style={
-                  !isOverLimit
-                    ? {
-                        background:
-                          "linear-gradient(90deg, var(--primary) 0%, var(--primary-600) 100%)",
-                      }
-                    : { background: "var(--muted)" }
-                }
-              >
-                <FaCheck size={11} /> Apply Changes
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={startEditing}
-              className="px-5 py-1.5 bg-primary text-white rounded-lg text-sm font-medium flex items-center gap-1.5"
-            >
-              <FaEdit size={11} /> Edit
-            </button>
-          )}
         </div>
       </div>
     </>
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LabeledRow
+// ─────────────────────────────────────────────────────────────────────────────
 const LabeledRow = ({
   label,
   value,
   disabled,
   onChange,
+  compact = false,
 }: {
   label: string;
   value: string;
   disabled: boolean;
   onChange: (v: string) => void;
+  compact?: boolean;
 }) => (
-  <div className="flex items-center min-h-[28px]">
-    <span className="w-48 flex-shrink-0 text-muted font-medium">{label}</span>
+  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[24px]">
+    <span className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}>
+      {label}
+    </span>
     <input
       disabled={disabled}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="flex-1 bg-transparent text-muted outline-none text-sm"
+      placeholder={disabled ? "" : "Enter value..."}
+      className="flex-1 min-w-0 bg-transparent text-muted outline-none text-xs disabled:opacity-60 disabled:cursor-not-allowed"
     />
   </div>
 );

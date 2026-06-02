@@ -4,10 +4,12 @@ export interface TaxRow {
 }
 
 export interface TaxCategoryFormData {
-  name?: string;       
+  name?: string;
   title: string;
   disabled: boolean;
-  taxes: TaxRow[];     
+  title_code: string;
+  title_desc: string;
+  taxes: TaxRow[];
 }
 
 export const defaultTaxRow: TaxRow = {
@@ -18,5 +20,7 @@ export const defaultTaxRow: TaxRow = {
 export const defaultForm: TaxCategoryFormData = {
   title: "",
   disabled: false,
-  taxes: [{ tax_type: "", tax_rate: 0 }], 
+  title_code: "",
+  title_desc: "",
+  taxes: [{ tax_type: "", tax_rate: 0 }],
 };

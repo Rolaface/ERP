@@ -102,11 +102,26 @@ export function GradeSetup() {
     () => [
       {
         key: "name",
-        header: "Grade",
-        render: (row) => (
-          <span className="font-medium text-main">{row.name || "-"}</span>
-        ),
+        header: "Code",
+        render: (row) => {
+          const separatorIdx = row.name.indexOf(" | ");
+          const code = separatorIdx !== -1 ? row.name.slice(0, separatorIdx) : row.name;
+          return <span className="font-medium text-main">{code || "-"}</span>;
+        },
         tooltip: (row) => row.name,
+      },
+      {
+        key: "name" as any,
+        header: "Description",
+        render: (row) => {
+          const separatorIdx = row.name.indexOf(" | ");
+          const desc = separatorIdx !== -1 ? row.name.slice(separatorIdx + 3) : "";
+          return (
+            <span className="text-sm text-muted break-words whitespace-normal">
+              {desc || "-"}
+            </span>
+          );
+        },
       },
       {
         key: "default_salary_structure",

@@ -21,8 +21,8 @@ export async function updateProformaInvoiceStatus(
   status: string,
 ) {
   const resp = await api.patch(ProformaAPI.updateStatus, {
-    proformaId: proformaId,
-    proformaStatus: status,
+    id: proformaId,
+    action: status, 
   });
 
   return resp.data;
@@ -36,7 +36,7 @@ export async function getAllProformaInvoices(
   search?: string,
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(ProformaAPI.getAll, {
-    params: { page, page_size, sortBy, sortOrder, search},
+    params: { page, page_size, sortBy, sortOrder, search, documentType: "Proforma Invoice"},
   });
   return resp.data;
 }
@@ -49,3 +49,13 @@ export async function deleteProformaInvoiceById(proformaId: string) {
   return resp.data;
 }
 
+export async function editProformaInvoice(
+  id: string,
+  payload: any
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${ProformaAPI.edit}?id=${encodeURIComponent(id)}`,
+    payload,
+  );
+  return resp.data;
+}

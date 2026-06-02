@@ -88,9 +88,9 @@
 //         <div className="space-y-4">
 //           <div className="grid grid-cols-4 gap-4">
 //             <StatCard label="Total Employees" value={String(summary.employees)} color="bg-info" />
-//             <StatCard label="Gross Payout"    value={`₹${fmtINR(summary.gross)}`} color="bg-success" />
-//             <StatCard label="Total Deductions" value={`₹${fmtINR(summary.deductions)}`} color="bg-danger" />
-//             <StatCard label="Net Payout"      value={`₹${fmtINR(summary.net)}`}   color="bg-primary" />
+//             <StatCard label="Gross Payout"    value={`${fmtINR(summary.gross)}`} color="bg-success" />
+//             <StatCard label="Total Deductions" value={`${fmtINR(summary.deductions)}`} color="bg-danger" />
+//             <StatCard label="Net Payout"      value={`${fmtINR(summary.net)}`}   color="bg-primary" />
 //           </div>
 
 //           <div className="bg-card border border-theme rounded-xl p-5">
@@ -103,7 +103,7 @@
 //               ].map(({ label, val, color }) => (
 //                 <div key={label} className={`rounded-xl border-l-4 ${color} bg-app px-4 py-3`}>
 //                   <p className="text-xs text-muted mb-1">{label}</p>
-//                   <p className="text-lg font-extrabold text-main tabular-nums">₹{fmtINR(val)}</p>
+//                   <p className="text-lg font-extrabold text-main tabular-nums">{fmtINR(val)}</p>
 //                 </div>
 //               ))}
 //             </div>
@@ -130,10 +130,10 @@
 //                 return (
 //                   <div key={d.dept} className="flex flex-col items-center gap-2 flex-1">
 //                     <div className="flex items-end gap-1 w-full justify-center" style={{ height: 128 }}>
-//                       <div title={`Gross: ₹${fmtINR(d.gross)}`}
+//                       <div title={`Gross: ${fmtINR(d.gross)}`}
 //                         className="bg-primary/80 rounded-t-md flex-1 transition-all hover:bg-primary cursor-pointer max-w-[24px]"
 //                         style={{ height: h }} />
-//                       <div title={`Net: ₹${fmtINR(d.net)}`}
+//                       <div title={`Net: ${fmtINR(d.net)}`}
 //                         className="bg-success/80 rounded-t-md flex-1 transition-all hover:bg-success cursor-pointer max-w-[24px]"
 //                         style={{ height: Math.round((d.net / maxGross) * 120) }} />
 //                     </div>
@@ -163,9 +163,9 @@
 //                   <tr key={d.dept} className={`border-b border-theme last:border-0 ${i%2===1?"bg-app":"bg-card"}`}>
 //                     <td className="px-5 py-3 text-sm font-bold text-main">{d.dept}</td>
 //                     <td className="px-5 py-3 text-sm text-muted">{d.count}</td>
-//                     <td className="px-5 py-3 text-sm font-bold text-main tabular-nums">₹{fmtINR(d.gross)}</td>
-//                     <td className="px-5 py-3 text-sm font-bold text-success tabular-nums">₹{fmtINR(d.net)}</td>
-//                     <td className="px-5 py-3 text-sm text-muted tabular-nums">₹{fmtINR(Math.round(d.net / d.count))}</td>
+//                     <td className="px-5 py-3 text-sm font-bold text-main tabular-nums">{fmtINR(d.gross)}</td>
+//                     <td className="px-5 py-3 text-sm font-bold text-success tabular-nums">{fmtINR(d.net)}</td>
+//                     <td className="px-5 py-3 text-sm text-muted tabular-nums">{fmtINR(Math.round(d.net / d.count))}</td>
 //                   </tr>
 //                 ))}
 //               </tbody>
@@ -182,8 +182,8 @@
 //               title: "Income Tax (TDS)",
 //               color: "border-danger/30 bg-danger/5",
 //               items: [
-//                 ["Total TDS Collected", `₹${fmtINR(summary.tax)}`],
-//                 ["Avg TDS / Employee",  `₹${fmtINR(paid.length ? Math.round(summary.tax / paid.length) : 0)}`],
+//                 ["Total TDS Collected", `${fmtINR(summary.tax)}`],
+//                 ["Avg TDS / Employee",  `${fmtINR(paid.length ? Math.round(summary.tax / paid.length) : 0)}`],
 //                 ["New Regime Employees", `${paid.filter(r => r.taxRegime === "New").length}`],
 //                 ["Old Regime Employees", `${paid.filter(r => r.taxRegime === "Old").length}`],
 //               ],
@@ -192,18 +192,18 @@
 //               title: "Provident Fund (PF)",
 //               color: "border-info/30 bg-info/5",
 //               items: [
-//                 ["Employee Contribution (12%)", `₹${fmtINR(summary.pf)}`],
-//                 ["Employer Contribution (12%)", `₹${fmtINR(summary.pf)}`],
-//                 ["Total PF Remittance",          `₹${fmtINR(summary.pf * 2)}`],
+//                 ["Employee Contribution (12%)", `${fmtINR(summary.pf)}`],
+//                 ["Employer Contribution (12%)", `${fmtINR(summary.pf)}`],
+//                 ["Total PF Remittance",          `${fmtINR(summary.pf * 2)}`],
 //               ],
 //             },
 //             {
 //               title: "ESI",
 //               color: "border-warning/30 bg-warning/5",
 //               items: [
-//                 ["Employee Contribution (0.75%)", `₹${fmtINR(summary.esi)}`],
-//                 ["Employer Contribution (3.25%)", `₹${fmtINR(Math.round(summary.esi * (ESI_EMPLOYER_RATE / ESI_RATE)))}`],
-//                 ["Total ESI Remittance",           `₹${fmtINR(Math.round(summary.esi * (1 + ESI_EMPLOYER_RATE / ESI_RATE)))}`],
+//                 ["Employee Contribution (0.75%)", `${fmtINR(summary.esi)}`],
+//                 ["Employer Contribution (3.25%)", `${fmtINR(Math.round(summary.esi * (ESI_EMPLOYER_RATE / ESI_RATE)))}`],
+//                 ["Total ESI Remittance",           `${fmtINR(Math.round(summary.esi * (1 + ESI_EMPLOYER_RATE / ESI_RATE)))}`],
 //               ],
 //             },
 //           ].map(({ title, color, items }) => (
@@ -311,7 +311,7 @@
 //               ].map(({ label, val, color }) => (
 //                 <div key={label} className="bg-app rounded-lg p-3">
 //                   <p className="text-[10px] text-muted mb-1">{label}</p>
-//                   <p className={`text-sm font-extrabold ${color} tabular-nums`}>₹{fmtINR(val)}</p>
+//                   <p className={`text-sm font-extrabold ${color} tabular-nums`}>{fmtINR(val)}</p>
 //                 </div>
 //               ))}
 //             </div>

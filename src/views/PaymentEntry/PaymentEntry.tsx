@@ -60,8 +60,8 @@ const formatDate = (date: string | Date): string => {
 };
 
 const formatAmount = (amount?: number): string => {
-  if (amount === undefined || amount === null) return "₹ 0";
-  return `₹ ${amount.toLocaleString("en-IN")}`;
+  if (amount === undefined || amount === null) return " 0";
+  return ` ${amount.toLocaleString("en-IN")}`;
 };
 
 interface PaymentEntryProps {

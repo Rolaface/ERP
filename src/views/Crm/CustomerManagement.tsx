@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import CustomerDetailView from "./CustomerDetailView";
 import { openPaymentEntryModal } from "../../store/modalStore";
+import { CreditCard } from "lucide-react";
 import {
   showLoading,
   showApiError,
@@ -28,7 +29,7 @@ import {
   REFRESH_KEYS,
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
-
+import { updateEntityStatus } from "../../hooks/statusManager";
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -64,8 +65,8 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
-  const [taxCategory, setTaxCategory] = useState<string>("");
-  const [taxCategoryOptions, setTaxCategoryOptions] = useState<{ label: string; value: string }[]>([]);
+  const [taxCategory, ] = useState<string>("");
+
 
   const fetchCustomers = async () => {
     try {
@@ -96,7 +97,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
-
 
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(REFRESH_KEYS.CUSTOMER_LIST, () => {
@@ -218,38 +218,38 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setViewMode("table");
     setSelectedCustomer(null);
   };
-
   const handleDisableCustomer = async (
     customerId: string,
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
 
-    const result = await fireManagedSwal({
-      title: "Disable Customer?",
-      text: "Customer will be marked as inactive.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, Disable",
+    await updateEntityStatus(customerId, {
+      entityName: "Customer",
+      action: "inactive",
+      updateFn: updateCustomerStatus,
+      onSuccess: () => {
+        triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
+      },
     });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      showLoading("Disabling Customer...");
-
-      await updateCustomerStatus(customerId, "inactive");
-
-      closeSwal();
-
-      showSuccess("Customer disabled successfully.");
-
-      triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
-    } catch (error) {
-      closeSwal();
-      showApiError(error);
-    }
   };
+
+  const handleEnableCustomer = async (
+    customerId: string,
+    e: React.MouseEvent,
+  ) => {
+    e.stopPropagation();
+
+    await updateEntityStatus(customerId, {
+      entityName: "Customer",
+      action: "active",
+      updateFn: updateCustomerStatus,
+      onSuccess: () => {
+        triggerRefresh(REFRESH_KEYS.CUSTOMER_LIST);
+      },
+    });
+  };
+
   const columns: Column<CustomerSummary>[] = [
     {
       key: "id",
@@ -374,20 +374,27 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
             {...(can(CUSTOMER_MODULE, "delete")
               ? { onDelete: (e) => handleDelete(customer.id, e as any) }
               : {})}
-            onDisable={
-              customer.status !== "Inactive"
-                ? (e) => handleDisableCustomer(customer.id, e as any)
-                : undefined
-            }
+           onDisable={
+  customer.status === "Active"
+    ? (e) => handleDisableCustomer(customer.id, e as any)
+    : undefined
+}
+
+onEnable={
+  customer.status === "Disabled"
+    ? (e) => handleEnableCustomer(customer.id, e as any)
+    : undefined
+}
             customActions={[
               // Receive Payment only if user has Payment Entry create
               ...(can(PAYMENT_MODULE, "create")
                 ? [
-                  {
-                    label: "Receive Payment",
-                    onClick: () => handleMakePayment(customer),
-                  },
-                ]
+                    {
+                      label: "Receive Payment",
+                        icon: <CreditCard className="w-4 h-4" />,
+                      onClick: () => handleMakePayment(customer),
+                    },
+                  ]
                 : []),
             ]}
           />

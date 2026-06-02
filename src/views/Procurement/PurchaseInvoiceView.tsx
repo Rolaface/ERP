@@ -151,7 +151,7 @@ const PurchaseInvoiceView: React.FC<PurchaseInvoiceViewProps> = ({
       case "USD":
         return "$";
       case "INR":
-        return "₹";
+        return "";
       default:
         return currency;
     }

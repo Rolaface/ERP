@@ -4,7 +4,7 @@ import SupplierDetailView from "./SupplierDetailView";
 import {
   deleteSupplier,
   getSupplierById,
-  getSuppliers,
+  getSuppliers,updateSupplierStatus
 } from "../../api/procurement/supplierApi";
 import { mapSupplierApi } from "../../types/Supply/supplierMapper";
 import Table from "../../components/ui/Table/Table";
@@ -21,6 +21,8 @@ import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore"
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
+import { updateEntityStatus } from "../../hooks/statusManager";
+import { CreditCard } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -220,6 +222,21 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
       setIsFetching(false);
     }
   };
+  const handleSupplierStatusChange = async (
+  supplier: Supplier,
+  action: "active" | "inactive",
+) => {
+  if (!supplier.supplierId) return;
+
+  await updateEntityStatus(supplier.supplierId, {
+    entityName: "Supplier",
+    action,
+    updateFn: updateSupplierStatus,
+    onSuccess: () => {
+      triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
+    },
+  });
+};
 
   const handleEditSupplier = async (supplier: Supplier, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -258,6 +275,37 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
     }
   };
 
+  const handleDisableSupplier = async (
+  supplierId: string,
+  e: React.MouseEvent,
+) => {
+  e.stopPropagation();
+
+  await updateEntityStatus(supplierId, {
+    entityName: "Supplier",
+    action: "inactive",
+    updateFn: updateSupplierStatus,
+    onSuccess: () => {
+      triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
+    },
+  });
+};
+
+const handleEnableSupplier = async (
+  supplierId: string,
+  e: React.MouseEvent,
+) => {
+  e.stopPropagation();
+
+  await updateEntityStatus(supplierId, {
+    entityName: "Supplier",
+    action: "active",
+    updateFn: updateSupplierStatus,
+    onSuccess: () => {
+      triggerRefresh(REFRESH_KEYS.SUPPLIER_LIST);
+    },
+  });
+};
   const handleExportCSV = async () => {
     try {
       showLoading("Exporting suppliers...");
@@ -421,18 +469,51 @@ const SupplierManagement: React.FC<Props> = ({ onAdd }) => {
             </PermissionGate>
 
             <ActionMenu
-              {...(can(SUPPLIER_MODULE, "delete")
-                ? { onDelete: (e) => handleDeleteSupplier(supplier, e as any) }
-                : {})}
-              customActions={[
-                ...(can(PAYMENT_MODULE, "create")
-                  ? [{ label: "Make Payment", onClick: () => handleMakePayment(supplier) }]
-                  : []),
-                ...(can(PAYMENT_MODULE, "create")
-                  ? [{ label: "Make Advance Payment", onClick: () => handleMakeAdvancePayment(supplier) }]
-                  : []),
-              ]}
-            />
+  {...(can(SUPPLIER_MODULE, "delete")
+    ? { onDelete: (e) => handleDeleteSupplier(supplier, e as any) }
+    : {})}
+
+  onDisable={
+    supplier.status === "active"
+      ? (e) =>
+          handleDisableSupplier(
+            supplier.supplierId!,
+            e as any,
+          )
+      : undefined
+  }
+
+  onEnable={
+    supplier.status === "inactive"
+      ? (e) =>
+          handleEnableSupplier(
+            supplier.supplierId!,
+            e as any,
+          )
+      : undefined
+  }
+
+  customActions={[
+    ...(can(PAYMENT_MODULE, "create")
+      ? [
+          {
+            label: "Make Payment",
+            icon: <CreditCard className="w-4 h-4" />,
+            onClick: () => handleMakePayment(supplier),
+          },
+        ]
+      : []),
+    ...(can(PAYMENT_MODULE, "create")
+      ? [
+          {
+            label: "Make Advance Payment",
+             icon: <CreditCard className="w-4 h-4" />,
+            onClick: () => handleMakeAdvancePayment(supplier),
+          },
+        ]
+      : []),
+  ]}
+/>
           </ActionGroup>
         ),
       },

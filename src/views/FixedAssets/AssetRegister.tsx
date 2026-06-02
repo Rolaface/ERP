@@ -302,7 +302,7 @@ const AssetRegister: React.FC = () => {
     {
       key: "value",
       header: "Value",
-      render: (row) => `₹ ${row.value.toLocaleString()}`,
+      render: (row) => ` ${row.value.toLocaleString()}`,
     },
     {
       key: "actions",

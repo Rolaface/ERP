@@ -260,7 +260,7 @@ const AmountCell: React.FC<{
         width: "100%",
       }}
     >
-      {/* fx / ₹ toggle pill */}
+      {/* fx /  toggle pill */}
 
       {formulaMode ? (
         <ModalInput
