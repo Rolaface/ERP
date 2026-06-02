@@ -288,17 +288,21 @@ const TermsAndCondition: React.FC<Props> = ({
     return today.toLocaleDateString("en-GB");
   };
 
-  useEffect(() => {
-    const total = currentPaymentPhases.reduce(
-      (sum, p) => sum + Number(p.credit_days || 0),
-      0,
-    );
-    const current = ensurePayment(currentTerms).dueDates;
-    const next = total ? `Payment due within ${total} days` : "";
-    if (current !== next) {
-      updatePayment({ dueDates: next });
-    }
-  }, [currentPaymentPhases]);
+useEffect(() => {
+  const total = Math.max(
+    0,
+    ...currentPaymentPhases.map(
+      (p) => Number(p.credit_days || 0)
+    ),
+  );
+
+  const current = ensurePayment(currentTerms).dueDates;
+  const next = total ? `Payment due within ${total} days` : "";
+
+  if (current !== next) {
+    updatePayment({ dueDates: next });
+  }
+}, [currentPaymentPhases]);
 
   const updateTopField = (key: keyof TermSection, value: string) =>
     setTerms({ ...currentTerms, [key]: value });
@@ -328,11 +332,12 @@ const TermsAndCondition: React.FC<Props> = ({
     updatePayment({ phases: next });
   };
 
-  const totalCreditDays = currentPaymentPhases.reduce(
-    (sum, p) => sum + Number(p.credit_days || 0),
-    0,
-  );
-
+const totalCreditDays = Math.max(
+  0,
+  ...currentPaymentPhases.map(
+    (p) => Number(p.credit_days || 0)
+  ),
+);
   // ── Cell padding — tighter in compact mode ──────────────────────────────────
   const cellPy = compact ? "py-1" : "py-2.5";
 
