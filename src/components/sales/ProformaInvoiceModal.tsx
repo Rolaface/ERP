@@ -496,6 +496,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                 terms={formData.terms?.selling}
                 setTerms={actions.setTerms}
                 type="selling"
+                compact={true}
               />
             </div>
           )}

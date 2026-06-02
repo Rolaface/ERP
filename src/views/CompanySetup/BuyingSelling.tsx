@@ -49,6 +49,11 @@ const emptySection = (): TermSection => ({
   },
 });
 
+// Read a CSS variable value at runtime (for use in JS contexts like SweetAlert)
+const getCssVar = (varName: string, fallback: string) =>
+  getComputedStyle(document.documentElement).getPropertyValue(varName).trim() ||
+  fallback;
+
 const BuyingSelling: React.FC<BuyingSellingProps> = ({
   terms,
   onSaveSuccess,
@@ -99,8 +104,9 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
       text: "Do you want to update company terms and conditions?",
       icon: "question",
       showCancelButton: true,
-      confirmButtonColor: "#22c55e",
-      cancelButtonColor: "#ef4444",
+      // Read theme-aware colors at call time so they match current theme
+      confirmButtonColor: getCssVar("--success", "#22c55e"),
+      cancelButtonColor: getCssVar("--danger", "#dc2626"),
       confirmButtonText: "Yes, Save",
     });
 
@@ -125,8 +131,11 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
 
   return (
     <div className="bg-app">
-      {/* Responsive: stacks on mobile, side-by-side on lg+ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      {/*
+        xs/sm  → single column (full width each)
+        lg+    → side by side (panels are wide enough to be useful)
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         <TermsAndCondition
           title="Buying Terms & Conditions"
           terms={formData.buying}
@@ -145,11 +154,14 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
       </div>
 
       {/* Action buttons */}
-      <div className="flex flex-wrap justify-end gap-3 mt-4 sm:mt-6">
+      <div className="flex flex-wrap justify-end gap-3 mt-4 pt-4 border-t border-theme sm:mt-6 sm:pt-0 sm:border-none">
         <button
           type="button"
           onClick={handleReset}
-          className="flex items-center gap-2 px-4 py-2 border border-theme rounded-lg bg-card text-muted text-sm hover:opacity-80 transition-opacity"
+          disabled={!hasChanges}
+          title={!hasChanges ? "Nothing to reset" : "Reset to saved values"}
+          className={`flex items-center gap-2 px-4 py-2 border border-theme rounded-lg bg-card text-sm transition-opacity
+            ${hasChanges ? "text-muted hover:opacity-80" : "text-muted opacity-40 cursor-not-allowed"}`}
         >
           <RotateCcw size={14} />
           Reset
@@ -159,9 +171,9 @@ const BuyingSelling: React.FC<BuyingSellingProps> = ({
           type="button"
           onClick={handleSubmit}
           disabled={!hasChanges}
-          title={!hasChanges ? "No changes to save" : ""}
-          className={`flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium transition-opacity
-            ${hasChanges ? "bg-primary hover:opacity-90" : "bg-gray-300 cursor-not-allowed opacity-60"}`}
+          title={!hasChanges ? "No changes to save" : "Save terms"}
+          className={`flex items-center gap-2 px-5 py-2 rounded-lg text-white text-sm font-medium transition-opacity bg-primary
+            ${hasChanges ? "hover:opacity-90" : "opacity-40 cursor-not-allowed"}`}
         >
           <Save size={14} />
           Save Terms
