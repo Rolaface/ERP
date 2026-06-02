@@ -143,6 +143,7 @@ export const emptyForm: ItemFormData = {
   sku: "",
   taxPreference: "",
   preferredVendor: "",
+  preferredVendorName: "",
   salesAccount: "",
   purchaseAccount: "",
   countryCode: "",
@@ -267,6 +268,8 @@ const mapApiToForm = (item: any) => {
 
     // VENDOR
     preferredVendor: item.vendorInfo?.preferredVendor || "",
+    preferredVendorName: item.vendorInfo?.preferredVendorName || "",
+    
 
     // INVENTORY INFO
     valuationMethod: item.inventoryInfo?.valuationMethod || "",
@@ -377,8 +380,8 @@ export const useItemForm = ({
     }
 
     setActiveTab("details");
-    void fetchSuppliers();
-  }, [fetchSuppliers, initialData, isEditMode, isOpen]);
+   
+  }, [ initialData, isEditMode, isOpen]);
 
   const getDetailsValidationError = (): ItemValidationError | null => {
     for (const { field, label } of itemDetailFields) {
