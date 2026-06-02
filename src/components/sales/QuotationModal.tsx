@@ -16,9 +16,13 @@ import {
   currencySymbols,
   paymentMethodOptions,
   currencyOptions,
+  ITEMS_PER_PAGE,
 } from "../../constants/invoice.constants";
 import ModalFooter from "../common/ModalFooter";
 import type { ModalSubmitHandler } from "../../types/modal";
+import ItemTable from "../common/ItemTable";
+import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
+import { InvoiceAddressTab } from "./InvoiceAddressTab";
 
 interface QuotationModalProps {
   isOpen: boolean;
@@ -50,16 +54,35 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     totals,
     ui,
     actions,
-  } = useQuotationForm(isOpen, onClose, onSubmit);
+  } = useQuotationForm(
+    isOpen, 
+    onClose, 
+    onSubmit,
+    mode === "edit" ? "edit" : "proforma",
+    initialData,
+  );
 
-  const tabs: Array<"details" | "address" | "terms"> = [
+  const tabs: Array<"details" | "address" | "otherCharges" | "terms"> = [
     "details",
     "address",
+    "otherCharges",
     "terms",
   ];
-  const handleNext = () => {
-    if (ui.activeTab === "details" && !actions.validateDetails()) return;
+  // const handleNext = () => {
+  //   if (ui.activeTab === "details" && !actions.validateDetails()) return;
 
+  //   const currentIndex = tabs.indexOf(ui.activeTab as any);
+  //   if (currentIndex < tabs.length - 1) {
+  //     ui.setActiveTab(tabs[currentIndex + 1]);
+  //   }
+  // };
+    useEffect(() => {
+      if (isOpen) {
+        ui.setActiveTab("details");
+      }
+    }, [isOpen]);
+ 
+   const handleNext = () => {
     const currentIndex = tabs.indexOf(ui.activeTab as any);
     if (currentIndex < tabs.length - 1) {
       ui.setActiveTab(tabs[currentIndex + 1]);
@@ -301,235 +324,17 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
               {/*  MAIN BODY (TABLE LEFT + RIGHT SIDEBAR)  */}
               <div className="grid grid-cols-[4fr_1fr] gap-4">
                 {/* LEFT: QUOTED ITEMS TABLE  */}
-                <div className="bg-card rounded-lg p-2 shadow-sm flex-1">
-                  <div className="flex items-center gap-1 ">
-                    <h3 className="text-sm font-semibold text-main">
-                      Quoted Items
-                    </h3>
-                  </div>
-                  <div className="mt-2 overflow-x-auto">
-                    <table className="w-full min-w-[760px] border-collapse text-[10px]">
-                      <thead>
-                        <tr className="border-b border-theme">
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">
-                            #
-                          </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
-                            Item
-                          </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[110px] whitespace-nowrap">
-                            Description
-                          </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[90px] whitespace-nowrap">
-                            Packing
-                            <span className="ml-1 text-[9px] text-muted/60 font-normal">(unit × size)</span>
-                          </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
-                            Qty
-                          </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-                            Unit Price <span className="text-danger">*</span>
-                          </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-                            Dis(%)
-                          </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
-                            Tax (%)
-                          </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px]  whitespace-nowrap">
-                            Tax Code
-                          </th>
-                          <th className="px-2 py-3 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
-                            Amount
-                          </th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedItems.map((it, idx) => {
-                          const i = ui.page * 5 + idx;
-                          const qty = Number(it.quantity) || 0;
-                          const price = Number(it.price) || 0;
-                          const discount = Number(it.discount) || 0;
-                          const vatRate = Number(it.vatRate) || 0;
-                          const discountAmount = qty * price * (discount / 100);
-                          const amount = qty * price - discountAmount;
-                          return (
-                            <tr
-                              key={i}
-                              className="border-b border-theme bg-card row-hover"
-                            >
-                              <td className="px-3 py-2 text-[10px]">{i + 1}</td>
-                              <td className="px-0.5 py-1">
-                                <div className="w-[180px]">
-                                  <ItemSelect
-                                    taxCategory={ui.taxCategory}
-                                    value={it.itemCode}
-                                    onChange={(item) => {
-                                      actions.handleItemSelect(i, item.id);
-                                    }}
-                                  />
-                                </div>
-                              </td>
-                              <td className="px-0.5 py-1">
-
-                                <input
-                                  type="text"
-                                  name="description"
-                                  value={it.description ?? ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                  placeholder="Description"
-                                  className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                />
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <div className="flex items-center gap-1">
-
-                                  {/* PACKING UNIT */}
-                                  <input
-                                    type="number"
-                                    name="packingUnit"
-                                    value={it.packingUnit || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
-                                    className="w-[40px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
-
-                                  />
-
-                                  <span className="text-[10px] text-muted font-semibold">×</span>
-
-                                  {/* PACKING SIZE */}
-                                  <input
-                                    type="number"
-                                    name="packingSize"
-                                    value={it.packingSize || ""}
-                                    onChange={(e) => actions.handleItemChange(i, e)}
-                                    className="w-[40px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main text-center no-spinner"
-                                  />
-
-                                </div>
-                              </td>
-
-                              <td className="px-0.5 py-1">
-                                <input
-                                  type="number"
-                                  name="quantity"
-                                  value={it.quantity ?? ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                  className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                />
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <input
-                                  type="number"
-                                  name="price"
-                                  value={it.price ?? ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                  className="w-[66px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                />
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <input
-                                  type="number"
-                                  name="discount"
-                                  value={it.discount ?? ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                  className="w-[53px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                />
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <input
-                                  type="number"
-                                  name="vatRate"
-                                  value={it.vatRate ?? ""}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                  className="w-[55px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary no-spinner"
-                                />
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <input
-                                  type="text"
-                                  name="vatCode"
-                                  value={it.vatCode}
-                                  onChange={(e) =>
-                                    actions.handleItemChange(i, e)
-                                  }
-                                  className="w-[48px]  py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                                />
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <span className="text-[10px] font-medium text-main">
-                                  {symbol} {amount.toFixed(2)}
-                                </span>
-                              </td>
-                              <td className="px-0.5 py-1">
-                                <button
-                                  type="button"
-                                  onClick={() => actions.removeItem(i)}
-                                  className="p-0.5 rounded bg-danger/10 text-danger hover:bg-danger/20 transition text-[10px]"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="mt-3 flex justify-between items-center gap-3">
-                    {/* Add Item Button */}
-                    <button
-                      type="button"
-                      onClick={actions.addItem}
-                      className="px-4 py-1.5 bg-primary hover:bg-[var(--primary-600)] text-white rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
-                    >
-                      <Plus size={14} />
-                      Add Item
-                    </button>
-
-                    {/* Pagination Controls */}
-                    {(ui.itemCount > 5 || ui.page > 0) && (
-                      <div className="flex items-center gap-3 py-1 px-2 bg-app rounded">
-                        <div className="text-[11px] text-muted whitespace-nowrap">
-                          Showing {ui.page * 5 + 1} to{" "}
-                          {Math.min((ui.page + 1) * 5, ui.itemCount)} of{" "}
-                          {ui.itemCount} items
-                        </div>
-
-                        <div className="flex gap-1.5 items-center">
-                          <button
-                            type="button"
-                            onClick={() => ui.setPage(Math.max(0, ui.page - 1))}
-                            disabled={ui.page === 0}
-                            className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px]"
-                          >
-                            Previous
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => ui.setPage(ui.page + 1)}
-                            disabled={(ui.page + 1) * 5 >= ui.itemCount}
-                            className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px]"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  {/* Reusable ItemTable Component */}
+                <ItemTable
+                  paginatedItems={paginatedItems}
+                  ui={ui}
+                  actions={actions}
+                  formData={formData}
+                  symbol={symbol}
+                  ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                  isSalesInvoice={false}
+                  taxCategory={formData.taxCategory || customerDetails?.customerTaxCategory}
+                />
 
                 {/* RIGHT: CUSTOMER DETAILS + SUMMARY (STACKED) */}
                 <div className="flex flex-col gap-2">
@@ -639,20 +444,10 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
             </div>
           )}
 
-          {/* TERMS TAB */}
-          {ui.activeTab === "terms" && (
-            <div className="w-full mt-3">
-              <TermsAndCondition
-                terms={formData.terms?.selling}
-                setTerms={actions.setTerms}
-                type="selling"
-              />
-            </div>
-          )}
-
+    {/* ──────────── ADDITIONAL DETAILS (Address) ──────────── */}
           {ui.activeTab === "address" && (
             <div className="space-y-6 overflow-hidden">
-              {/* PAYMENT INFO */}
+              {/* Payment Info */}
               <PaymentInfoBlock
                 data={formData.paymentInformation}
                 onChange={(e) =>
@@ -662,32 +457,42 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                 showPaymentMethod={false}
               />
 
-              {/* BILLING + SHIPPING */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Billing */}
-                <AddressBlock
-                  type="billing"
-                  title="Billing Address"
-                  subtitle="Invoice and payment details"
-                  data={formData.billingAddress}
-                  onChange={(e) =>
-                    actions.handleInputChange(e, "billingAddress")
-                  }
-                />
+              {/* Address boxes — incoterm/shipping stripped */}
+              <InvoiceAddressTab
+                customerId={formData.customerId}
+                formData={formData}
+                onFormChange={actions.handleInputChange}
+              />
+            </div>
+          )}
 
-                {/* Shipping */}
-                <AddressBlock
-                  type="shipping"
-                  title="Shipping Address"
-                  subtitle="Delivery location"
-                  data={formData.shippingAddress}
-                  sameAsBilling={ui.sameAsBilling}
-                  onSameAsBillingChange={actions.handleSameAsBillingChange}
-                  onChange={(e) =>
-                    actions.handleInputChange(e, "shippingAddress")
-                  }
-                />
-              </div>
+          {/* ──────────── SHIPPING & OTHER CHARGES ──────────── */}
+         {ui.activeTab === "otherCharges" && (
+            <InvoiceChargesTab
+              taxes={formData.taxes || []}
+              charges={formData.invoiceCharges || []}
+              currency={formData.currencyCode}
+              totals={totals}
+              onAdd={actions.addOtherCharge}
+              onChange={actions.handleOtherChargeChange}
+              onRemove={actions.removeOtherCharge}
+              selectedTemplate={formData.salesTaxTemplate}
+              onTemplateSelect={(name, taxes) => {
+                actions.handleTemplateSelect(name, taxes);
+              }}
+              onTaxChange={actions.handleTaxChange}
+            />
+          )}
+
+          {/* ──────────── TERMS & CONDITIONS ──────────── */}
+          {ui.activeTab === "terms" && (
+            <div className="h-full w-full">
+              <TermsAndCondition
+                terms={formData.terms?.selling}
+                setTerms={actions.setTerms}
+                type="selling"
+                compact={true}
+              />
             </div>
           )}
         </div>

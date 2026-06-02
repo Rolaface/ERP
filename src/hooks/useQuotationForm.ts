@@ -33,7 +33,8 @@ type NestedSection =
 export const useQuotationForm = (
   isOpen: boolean,
   onClose: () => void,
-  onSubmit?: ModalSubmitHandler,
+  onSubmit?: (data: any) => void,
+ mode?: "invoice" | "proforma" | "edit",
   initialData?: any,
 ) => {
   type QuotationFormState = Invoice & {
