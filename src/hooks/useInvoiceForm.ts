@@ -423,8 +423,11 @@ useEffect(() => {
     id: string;
   }) => {
     setCustomerNameDisplay(name);
-    setFormData((p) => ({ ...p, customerId: id }));
-
+    setFormData((p) => ({ ...p, customerId: id }));setFormData((p) => ({
+  ...p,
+  customerId: id,
+  terms: { selling: EMPTY_TERMS.selling },
+}));
     try {
       const [customerRes, companyRes] = await Promise.all([
         getCustomerByCustomerCode(id),
