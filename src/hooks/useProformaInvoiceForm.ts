@@ -322,7 +322,7 @@ useEffect(() => {
       throw new Error("Please select a customer");
     }
     if (!formData.dateOfInvoice) {
-      throw new Error("Please select date of invoice");
+      throw new Error("Please select date of Proforma Invoice");
     }
     if (!formData.validTill) {
       throw new Error("Please select valid till date");
