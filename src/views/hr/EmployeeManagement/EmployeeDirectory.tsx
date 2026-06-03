@@ -31,23 +31,24 @@ import EmployeeDetailView from "./employeeDetailView";
 import { useAuth } from "../../../context/AuthContext";
 import { HrTableFrame } from "../components/HrTabLayout";
 import { resolveLabel } from "../../../api/utils/labelResolver";
+import { getAllDepartments, getallbranches } from "../../../api/utils/frappeUtilsApi";
 
-import {
-  getAllDepartments,
-  getallbranches,
-} from "../../../api/utils/frappeUtilsApi";
+// ── Constants ────────────────────────────────────────────────────
 
 const EMP_MODULE = "Employee";
 
+// ── Types ────────────────────────────────────────────────────────
+
 interface EmployeeDirectoryProps {
   isEmployeeView?: boolean;
-  canCreate?: boolean;
-  canEdit?: boolean;
-  canDelete?: boolean;
 }
+
+// ── Helpers ──────────────────────────────────────────────────────
 
 const unwrapEmployee = (res: any): any =>
   res?.message?.data ?? res?.data ?? res;
+
+// ── Component ────────────────────────────────────────────────────
 
 const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   isEmployeeView = false,
@@ -73,53 +74,48 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
+  // ── Reset page on search ─────────────────────────────────────
+
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
 
+  // ── Fetch ────────────────────────────────────────────────────
+
   const fetchEmployees = useCallback(async () => {
     if (!mountedRef.current) return;
     setIsFetching(true);
+
     try {
-      const searchParam = isEmployeeView
-        ? user?.employeeId
-        : searchTerm || undefined;
+      const searchParam = isEmployeeView ? user?.employeeId : searchTerm || undefined;
       const res = await getAllEmployees(page, pageSize, undefined, searchParam);
       if (!mountedRef.current) return;
 
-    const mapped = await Promise.all(
-  (res.data || []).map(
-    async (e: any) => {
-      const departmentLabel =
-        await resolveLabel({
-          value: e.department,
-          fetcher:
-            getAllDepartments,
-        });
+      // FIX: fetch lookup data once, then return cached result via fetcher
+      const [allDepartments, allBranches] = await Promise.all([
+        getAllDepartments(),
+        getallbranches(),
+      ]);
 
-      const branchLabel =
-        await resolveLabel({
-          value: e.branch,
-          fetcher:
-            getallbranches,
-        });
+      const mapped: EmployeeSummary[] = await Promise.all(
+        (res.data || []).map(async (e: any) => ({
+          id: e.name,
+          employeeId: e.name,
+          name: e.employee_name,
+          image: e.image ?? null,
+          jobTitle: e.designation || "-",
+          department:
+            (await resolveLabel({ value: e.department, fetcher: () => Promise.resolve(allDepartments) })) ||
+            e.department ||
+            "-",
+          branch:
+            (await resolveLabel({ value: e.branch, fetcher: () => Promise.resolve(allBranches) })) ||
+            e.branch ||
+            "-",
+          status: e.status,
+        })),
+      );
 
-      return {
-        id: e.name,
-        employeeId: e.name,
-        name: e.employee_name,
-        image: e.image ?? null,
-        jobTitle:
-          e.designation,
-        department:
-          departmentLabel || "-",
-        branch:
-          branchLabel || "-",
-        status: e.status,
-      };
-    },
-  ),
-);
       setEmployees(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);
@@ -133,7 +129,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     }
   }, [page, pageSize, searchTerm, isEmployeeView, user?.employeeId]);
 
-  // Keep a stable ref to always call the latest fetchEmployees
+  // Keep a stable ref so subscriptions always call the latest version
   const fetchEmployeesRef = useRef(fetchEmployees);
   useEffect(() => {
     fetchEmployeesRef.current = fetchEmployees;
@@ -148,13 +144,13 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     };
   }, []);
 
-  // Refetch on pagination / search changes
+  // Refetch on pagination / search change
   useEffect(() => {
     if (isInitialLoad) return;
     fetchEmployees();
   }, [page, pageSize, searchTerm]);
 
-  // Subscribe once; always calls the latest fetchEmployees via ref
+  // Subscribe once to refresh store
   useEffect(() => {
     const unsubscribe = subscribeToRefresh(
       REFRESH_KEYS.EMPLOYEE_LIST,
@@ -163,7 +159,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     return unsubscribe;
   }, [subscribeToRefresh]);
 
-  // ── Handlers ────────────────────────────────────────────────────
+  // ── Handlers ─────────────────────────────────────────────────
 
   const handleViewEmployee = async (id: string) => {
     try {
@@ -191,15 +187,13 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     });
   };
 
-  // FIX: added onSuccess so status changes (Left, Suspended, etc.) trigger a refetch
   const handleEdit = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       showLoading("Fetching Employee...");
       const res = await getEmployeeById(id);
-      const employeeData = unwrapEmployee(res);
       closeSwal();
-      openEmployeeModal(employeeData, true, {
+      openEmployeeModal(unwrapEmployee(res), true, {
         onSuccess: () => triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST),
       });
     } catch (error) {
@@ -208,7 +202,6 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     }
   };
 
-  
   const handleDisable = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const result = await fireManagedSwal({
@@ -231,28 +224,29 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       showApiError(error);
     }
   };
+
   const handleEnable = async (id: string, e: React.MouseEvent) => {
-  e.stopPropagation();
-  const result = await fireManagedSwal({
-    title: "Enable Employee?",
-    text: "Employee will be marked as active.",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: "Yes, Enable",
-  });
-  if (!result.isConfirmed) return;
-  try {
-    showLoading("Enabling Employee...");
-    await updateEmployeeStatus(id, "Active");
-    closeSwal();
-    showSuccess("Employee enabled successfully");
-    await fetchEmployees();
-    triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+    e.stopPropagation();
+    const result = await fireManagedSwal({
+      title: "Enable Employee?",
+      text: "Employee will be marked as active.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Enable",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      showLoading("Enabling Employee...");
+      await updateEmployeeStatus(id, "Active");
+      closeSwal();
+      showSuccess("Employee enabled successfully");
+      await fetchEmployees();
+      triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -279,7 +273,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     }
   };
 
-  // ── Columns ─────────────────────────────────────────────────────
+  // ── Columns ──────────────────────────────────────────────────
 
   const columns: Column<EmployeeSummary>[] = [
     {
@@ -364,32 +358,23 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
           )}
           {!isEmployeeView && (
             <ActionMenu
-  {...(can(EMP_MODULE, "write") && e.status !== "Inactive"
-    ? {
-        onDisable: (ev) =>
-          handleDisable(e.id, ev as React.MouseEvent),
-      }
-    : {})}
-  {...(can(EMP_MODULE, "write") && e.status === "Inactive"
-    ? {
-        onEnable: (ev) =>
-          handleEnable(e.id, ev as React.MouseEvent),
-      }
-    : {})}
-  {...(can(EMP_MODULE, "delete")
-    ? {
-        onDelete: (ev) =>
-          handleDelete(e.id, ev as React.MouseEvent),
-      }
-    : {})}
-/>
+              {...(can(EMP_MODULE, "write") && e.status !== "Inactive"
+                ? { onDisable: (ev) => handleDisable(e.id, ev as React.MouseEvent) }
+                : {})}
+              {...(can(EMP_MODULE, "write") && e.status === "Inactive"
+                ? { onEnable: (ev) => handleEnable(e.id, ev as React.MouseEvent) }
+                : {})}
+              {...(can(EMP_MODULE, "delete")
+                ? { onDelete: (ev) => handleDelete(e.id, ev as React.MouseEvent) }
+                : {})}
+            />
           )}
         </ActionGroup>
       ),
     },
   ];
 
-  // ── Render ───────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────
 
   return (
     <HrTableFrame>

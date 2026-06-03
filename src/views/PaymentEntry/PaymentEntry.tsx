@@ -17,7 +17,7 @@ import SendEmailModal from "../../components/common/SendEmailModal";
 import PaymentEntryDetailModal from "./PaymetnEntryDetailModal";
 import ActionButton from "../../components/ui/Table/ActionButton";
 import type { PaymentEntryDetail } from "./PaymetnEntryDetailModal";
-
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 interface PaymentAPI {
   paymentId: string;
   paymentDate: string;
@@ -237,7 +237,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
           <ActionMenu
             customActions={[
               {
-                label: "Compose Email",
+                label: "Compose Email", icon: ACTION_ICONS.EMAIL,
                 onClick: async () => {
                   setEmailPayment(row);
                   setEmailContactEmail(null);

@@ -8,11 +8,16 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
+import {
+  ACTION_ICONS,
+  getStatusActionIcon,
+} from "../../components/UI_Utils/statusActionIcons";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import type { Column } from "../../components/ui/Table/type";
 import type { PurchaseOrderDetail } from "../../types/Supply/purchaseOrder";
 import { createPurchaseInvoiceFromPO } from "../../api/procurement/PurchaseOrderApi";
 import { openPaymentEntryModal } from "../../store/modalStore";
+
 import {
   showApiError,
   showSuccess,
@@ -21,10 +26,10 @@ import {
 } from "../../utils/alert";
 import {
   getPurchaseOrders,
-  updatePurchaseOrderStatus, deletePo
+  updatePurchaseOrderStatus,
+  deletePo,
 } from "../../api/procurement/PurchaseOrderApi";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+
 import { getPurchaseOrderById } from "../../api/procurement/PurchaseOrderApi";
 import type { PurchaseOrderFilters } from "../../api/procurement/PurchaseOrderApi";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
@@ -32,7 +37,10 @@ import { generatePurchaseOrderPDF } from "../../components/template/purchaseorde
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import PdfPreviewModal from ".././Sales/PdfPreviewModal";
-import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import {
+  REFRESH_KEYS,
+  useDataRefreshStore,
+} from "../../store/dataRefreshStore";
 import PermissionGate from "../PermissionGate";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PurchaseOrderDetailModal from "../../components/procurement/purchaseorder/PurchaseOrderDetailsModal";
@@ -44,8 +52,6 @@ type OutletContextType = {
   openPOCreate: () => void;
   openPOEdit: (poId: string | number) => void;
 };
-
-
 
 interface PurchaseOrder {
   id: string;
@@ -63,8 +69,6 @@ interface PurchaseOrdersTableProps {
   onAdd?: () => void;
 }
 
-
-
 type POStatus = "Draft" | "Approved" | "Cancelled" | "Completed";
 
 const STATUS_TRANSITIONS: Record<POStatus, POStatus[]> = {
@@ -73,8 +77,6 @@ const STATUS_TRANSITIONS: Record<POStatus, POStatus[]> = {
   Cancelled: [],
   Completed: [],
 };
-
-const CRITICAL_STATUSES: POStatus[] = ["Completed"];
 
 const statusOptions = [
   { label: "Draft", value: "Draft" },
@@ -87,7 +89,7 @@ const PO_MODULE = "Purchase Order";
 const PAYMENT_MODULE = "Payment Entry";
 const PI_MODULE = "Purchase Invoice";
 
-const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
+const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
   const { openPOEdit } = useOutletContext<OutletContextType>();
   const { can } = usePermission();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -97,23 +99,27 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [, setModalOpen] = useState(false);
 
-  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrderDetail | null>(null);
+  const [selectedOrder, setSelectedOrder] =
+    useState<PurchaseOrderDetail | null>(null);
   const [filters, setFilters] = useState<PurchaseOrderFilters>({});
   const [company, setCompany] = useState<any | null>(null);
 
   //email
   const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailPurchaseOrder, setEmailPurchaseOrder] = useState<PurchaseOrder | null>(null);
-  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(null);
-  const [emailPurchaseOrderAttachments, setEmailPurchaseOrderAttachments] = useState<
-    { name: string; file_name: string }[]
-  >([]);
-
+  const [emailPurchaseOrder, setEmailPurchaseOrder] =
+    useState<PurchaseOrder | null>(null);
+  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(
+    null,
+  );
+  const [emailPurchaseOrderAttachments, setEmailPurchaseOrderAttachments] =
+    useState<{ name: string; file_name: string }[]>([]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(null);
+  const [drawerData, setDrawerData] = useState<PurchaseOrderDetail | null>(
+    null,
+  );
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
@@ -188,12 +194,17 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
     fetchOrders();
   }, [page, pageSize, filters]);
 
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
 
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.PURCHASE_ORDER_LIST, () => {
-      fetchOrders();
-    });
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.PURCHASE_ORDER_LIST,
+      () => {
+        fetchOrders();
+      },
+    );
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchOrders]);
 
@@ -239,9 +250,8 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
             fetchOrders();
             showSuccess(`Payment ${paymentId} created`);
           },
-        }
+        },
       );
-
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -262,7 +272,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
       // OPTIONAL: refresh table
       fetchOrders();
-
     } catch (err: any) {
       closeSwal();
       showApiError(err);
@@ -362,7 +371,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
 
       const res = await deletePo(order.id);
 
-
       if (res.status < 200 || res.status >= 300) {
         throw new Error("Delete failed");
       }
@@ -411,48 +419,58 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({ onAdd }) => {
       return [];
     }
   };
-const handleExportCSV = async () => {
-  try {
-    showLoading("Exporting purchase orders...");
+  const handleExportCSV = async () => {
+    try {
+      showLoading("Exporting purchase orders...");
 
-    const dataToExport = await fetchAllPOsForExport();
+      const dataToExport = await fetchAllPOsForExport();
 
-    if (!dataToExport.length) {
+      if (!dataToExport.length) {
+        closeSwal();
+        showApiError("No purchase orders to export");
+        return;
+      }
+
+      const headers = [
+        "PO ID",
+        "Supplier",
+        "Reference No",
+        "Date",
+        "Delivery Date",
+        "Amount",
+        "Status",
+      ];
+      const rows = dataToExport.map((po) => [
+        po.id ?? "",
+        po.supplier ?? "",
+        po.referenceNumber ?? "",
+        po.date ?? "",
+        po.deliveryDate ?? "",
+        Number(po.amount || 0).toFixed(2),
+        po.status ?? "",
+      ]);
+
+      const csvContent = [headers, ...rows]
+        .map((row) =>
+          row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+        )
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Purchase_Orders_Export.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+
       closeSwal();
-      showApiError("No purchase orders to export");
-      return;
+      showSuccess("CSV exported successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
     }
-
-    const headers = ["PO ID", "Supplier", "Reference No", "Date", "Delivery Date", "Amount", "Status"];
-    const rows = dataToExport.map((po) => [
-      po.id ?? "",
-      po.supplier ?? "",
-      po.referenceNumber ?? "",
-      po.date ?? "",
-      po.deliveryDate ?? "",
-      Number(po.amount || 0).toFixed(2),
-      po.status ?? "",
-    ]);
-
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "Purchase_Orders_Export.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-
-    closeSwal();
-    showSuccess("CSV exported successfully");
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+  };
 
   const handleView = async (poId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -491,7 +509,20 @@ const handleExportCSV = async () => {
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
 
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
@@ -502,7 +533,6 @@ const handleExportCSV = async () => {
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
 
-
   const columns: Column<PurchaseOrder>[] = [
     {
       key: "id",
@@ -510,9 +540,7 @@ const handleExportCSV = async () => {
       align: "left",
       render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.id || "—"}
-          </span>
+          <span className="block">{o.id || "—"}</span>
         </div>
       ),
     },
@@ -522,9 +550,7 @@ const handleExportCSV = async () => {
       align: "center",
       render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.supplier || "—"}
-          </span>
+          <span className="block">{o.supplier || "—"}</span>
         </div>
       ),
       tooltip: (o) => o.supplier || "—",
@@ -535,9 +561,7 @@ const handleExportCSV = async () => {
       align: "center",
       render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.date ? formatDate(o.date) : "—"}
-          </span>
+          <span className="block">{o.date ? formatDate(o.date) : "—"}</span>
         </div>
       ),
       tooltip: (o) => o.date || "—",
@@ -582,7 +606,6 @@ const handleExportCSV = async () => {
       align: "center",
       render: (o) => (
         <ActionGroup>
-
           <ActionButton
             type="view"
             onClick={(e) => handleView(o.id, e)}
@@ -596,57 +619,88 @@ const handleExportCSV = async () => {
               onClick={(e) => handleEdit(o, e)}
               iconOnly
               disabled={o.status !== "Draft"}
-              title={o.status !== "Draft" ? "Only Draft POs can be edited" : "Edit Purchase Order"}
+              title={
+                o.status !== "Draft"
+                  ? "Only Draft POs can be edited"
+                  : "Edit Purchase Order"
+              }
             />
           </PermissionGate>
 
           <ActionMenu
-            // Delete — needs delete
             {...(can(PO_MODULE, "delete")
               ? { onDelete: (e) => handleDelete(o, e as any) }
               : {})}
             customActions={[
-              { label: "View PDF", onClick: () => handlePreviewPDF(o) },
+              {
+                label: "View PDF",
+                icon: ACTION_ICONS.PDF,
+                onClick: () => handlePreviewPDF(o),
+              },
 
               ...(["Approved", "Completed"].includes(o.status)
-                ? [{
-                  label: "Compose Email",
-                  onClick: async () => {
-                    setEmailPurchaseOrder(o);
-                    setEmailContactEmail(null);
-                    setEmailPurchaseOrderAttachments([]);
-                    setEmailModalOpen(true);
+                ? [
+                    {
+                      label: "Compose Email",
+                      icon: ACTION_ICONS.EMAIL,
+                      onClick: async () => {
+                        setEmailPurchaseOrder(o);
+                        setEmailContactEmail(null);
+                        setEmailPurchaseOrderAttachments([]);
+                        setEmailModalOpen(true);
 
-                    try {
-                      const res = await getPurchaseOrderById(o.id);
-                      if (res?.status === "success") {
-                        setEmailContactEmail(res.data?.contact_email ?? null);
-                        setEmailPurchaseOrderAttachments(res.data?.attachments ?? []);
-                      }
-                    } catch {
-                      // non-critical
-                    }
-                  },
-                }]
+                        try {
+                          const res = await getPurchaseOrderById(o.id);
+                          if (res?.status === "success") {
+                            setEmailContactEmail(
+                              res.data?.contact_email ?? null,
+                            );
+                            setEmailPurchaseOrderAttachments(
+                              res.data?.attachments ?? [],
+                            );
+                          }
+                        } catch {
+                          // non-critical
+                        }
+                      },
+                    },
+                  ]
                 : []),
 
               // Advance Payment — needs Payment Entry create + Approved status
               ...(can(PAYMENT_MODULE, "create") && o.status === "Approved"
-                ? [{ label: "Make Advance Payment", onClick: () => handleMakePayment(o) }]
+                ? [
+                    {
+                      label: "Make Advance Payment",
+                      icon: ACTION_ICONS.ADVANCE_PAYMENT,
+                      onClick: () => handleMakePayment(o),
+                    },
+                  ]
                 : []),
 
               // Make Purchase Invoice — needs Purchase Invoice create + Approved
               ...(can(PI_MODULE, "create") && o.status === "Approved"
-                ? [{ label: "Make Purchase Invoice", onClick: () => handleCreateInvoiceFromPO(o) }]
+                ? [
+                    {
+                      label: "Make Purchase Invoice",
+                      icon: ACTION_ICONS.PURCHASE_INVOICE,
+                      onClick: () => handleCreateInvoiceFromPO(o),
+                    },
+                  ]
                 : []),
 
-              // Status transitions — needs write
               ...(can(PO_MODULE, "write")
-                ? (STATUS_TRANSITIONS[o.status as POStatus] ?? []).map((status) => ({
-                  label: status === "Approved" ? "Approve" : status,
-                  danger: status === "Completed",
-                  onClick: () => handleStatusChange(o.id, status),
-                }))
+                ? (STATUS_TRANSITIONS[o.status as POStatus] ?? []).map(
+                    (status) => ({
+                      label: status === "Approved" ? "Approve" : status,
+
+                      icon: getStatusActionIcon(status),
+
+                      danger: status === "Completed" || status === "Cancelled",
+
+                      onClick: () => handleStatusChange(o.id, status),
+                    }),
+                  )
                 : []),
             ]}
           />
@@ -741,7 +795,6 @@ const handleExportCSV = async () => {
           }
         }}
       />
-
 
       <SendEmailModal
         open={emailModalOpen}
