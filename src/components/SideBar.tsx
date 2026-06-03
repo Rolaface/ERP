@@ -256,7 +256,7 @@ const settingsItems: SettingsItem[] = [
     to: "/Expense-Management",
     label: "Expense Management",
     icon: <CreditCard {...iconProps} />,
-    modules: ["Expense Claim", "Expense Claim Type"],
+    modules: ["Expense Claim", "Expense Claim Type","Employee Advance"],
     hideInEmployeeView: true,
   },
   {
@@ -416,6 +416,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     "/currency-conversion",
     "/customer-group",
     "/Tax-Maintenance",
+    "/Expense-Management",
+    "/Email-Template",
   ].some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
