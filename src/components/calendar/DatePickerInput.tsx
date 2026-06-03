@@ -25,7 +25,7 @@ const DatePickerInput: React.FC<Props> = ({
 }) => {
   // : Sync internal state when the external `value` prop changes (e.g. form reset)
   const [internalValue, setInternalValue] = useState<Dayjs | null>(
-    value ? dayjs(value) : null
+    value ? dayjs(value) : null,
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +55,6 @@ const DatePickerInput: React.FC<Props> = ({
   };
 
   return (
- 
     <div className="flex flex-col text-sm w-full min-w-0">
       {label && (
         <span className="block text-[10px] font-medium text-main mb-1">
@@ -73,7 +72,8 @@ const DatePickerInput: React.FC<Props> = ({
         // : Hook into MUI's built-in error reporting for invalid dates
         onError={(reason) => {
           if (reason === "invalidDate") setError("Invalid date");
-          else if (reason === "disableFuture") setError("Future date not allowed");
+          else if (reason === "disableFuture")
+            setError("Future date not allowed");
           else if (reason === "disablePast") setError("Past date not allowed");
           else setError(null);
         }}
@@ -87,7 +87,7 @@ const DatePickerInput: React.FC<Props> = ({
             disablePortal: false,
             modifiers: [{ name: "preventOverflow", enabled: true }],
           },
-         
+
           textField: {
             size: "small",
             required,
@@ -95,10 +95,9 @@ const DatePickerInput: React.FC<Props> = ({
             error: !!error,
             placeholder: "DD-MMM-YYYY",
             inputProps: {
-              
               "aria-label": label ?? "Date",
             },
-           
+
             sx: {
               "& .MuiOutlinedInput-root": {
                 height: "28px",
@@ -132,14 +131,13 @@ const DatePickerInput: React.FC<Props> = ({
               "&:hover fieldset": {
                 borderColor: "rgba(37,99,235,0.4)",
               },
-             
+
               ...sx,
             },
           },
         }}
       />
 
-      {/* FIX 2: Show the validation error below the input */}
       {error && (
         <FormHelperText error sx={{ margin: "2px 0 0", fontSize: "10px" }}>
           {error}

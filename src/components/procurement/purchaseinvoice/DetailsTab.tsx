@@ -652,6 +652,23 @@ export const DetailsTab = ({
             </Tooltip>
           </div>
 
+          <div className="w-[128px] ml-2">
+            <Tooltip content={form.dueDate ? `Date: ${form.dueDate}` : "Enter date"}>
+              <DatePickerInput
+                label=" Due Date"
+                name="dueDate"
+                value={form.dueDate}
+                required
+                onChange={(name, value) =>
+                  onFormChange({
+                    target: { name, value },
+                  } as any)
+                }
+              />
+            </Tooltip>
+          </div>
+
+
           <div className="w-[100px] ml-3">
             <Tooltip
               content={

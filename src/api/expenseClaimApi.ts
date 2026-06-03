@@ -3,8 +3,11 @@
 
   import { API, ERP_BASE } from "../config/api";
   const api = createAxiosInstance(ERP_BASE);
+
   export const ExpenseClaimAPI = API.ExpenseClaim;
   export const AccountApi=API.Account;
+  export const FrappeUtilsAPI = API.frappeUtilsAPI;
+  
   interface AccountOption {
     label: string;
     value: string;
@@ -191,6 +194,8 @@ export interface EmployeeAdvanceRaw {
   purpose: string;
   currency: string;
   status: string;
+  exchange_rate?: number;
+  
 }
 export interface MappedEmployeeAdvance {
   id: string;              
@@ -198,10 +203,12 @@ export interface MappedEmployeeAdvance {
   employeeId: string;       
   advanceDate: string; 
   allocatedAmount: number;  
-  unclaimedAmount: number; 
+  unclaimedAmount: number;
+   
   claimedAmount: number;
   purpose: string; 
   status: "Pending" | "Partially Claimed" | "Fully Claimed";
+  exchange_rate: number; 
 }
 function deriveStatus(raw: EmployeeAdvanceRaw): MappedEmployeeAdvance["status"] {
   if (raw.claimed_amount <= 0) return "Pending";
@@ -230,10 +237,11 @@ export async function getAdvancesByEmployee(
     employeeId:      item.employee,
     advanceDate:     item.posting_date,
     allocatedAmount: item.advance_amount,
-    unclaimedAmount: Math.max(0, item.advance_amount - item.claimed_amount),
+    unclaimedAmount: Math.max(0, (item.advance_amount ?? 0) - (item.claimed_amount ?? 0)),
     claimedAmount:   item.claimed_amount,
     purpose:        item.purpose,
     status:          deriveStatus(item),
+     exchange_rate:   item.exchange_rate ?? 1,  
   }));
 }
 
@@ -284,3 +292,152 @@ export interface ExpenseClaimAdvanceItem {
   posting_date: string; 
   doctype: "Expense Claim Advance";
 }
+// advance api
+export interface CreateEmployeeAdvancePayload {
+  posting_date: string;
+  repay_unclaimed_amount_from_salary: number;
+  employee_name: string;
+  advance_account: string;
+  employee: string;
+  purpose: string;
+  advance_amount: number;
+  mode_of_payment: string;
+}
+
+export async function createEmployeeAdvance(
+  payload: CreateEmployeeAdvancePayload
+): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    ExpenseClaimAPI.advance,
+    payload
+  );
+  return resp.data || null;
+}
+
+export async function getAdvanceGLAccounts(
+  search?: string
+): Promise<AccountOption[]> {
+  try {
+    const filters = encodeURIComponent(
+      JSON.stringify({
+        is_group: 0,
+        root_type: "Asset",
+        account_type: "Receivable",
+      })
+    );
+
+    const params = new URLSearchParams();
+    params.append("txt", search ?? "");
+    const resp: AxiosResponse = await api.get(
+      `${AccountApi.getAccountsResource}?${params.toString()}&filters=${filters}`
+    );
+
+    const raw: any[] = resp?.data?.results ?? resp?.data?.data ?? [];
+    return raw.map((item) => ({
+      label: item.value ?? item.name,
+      value: item.value ?? item.name,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function updateEmployeeAdvance(
+  id: string,
+  payload: CreateEmployeeAdvancePayload
+): Promise<any> {
+  const url = `${ExpenseClaimAPI.advance}/${encodeURIComponent(id)}`;
+  const resp: AxiosResponse = await api.put(url, payload);
+  return resp.data || null;
+}
+
+export async function getAllAdvances(
+  search?: string,
+  pageSize = 10
+): Promise<{ data: any[]; pagination: { total_pages: number; total: number } }> {
+
+  const params = new URLSearchParams();
+  params.append("fields", JSON.stringify(["name", "employee_name", "purpose", "advance_amount", "status", "posting_date"])); 
+  params.append("with_pagination", "1");
+
+  if (search?.trim()) {
+    params.append("txt", search.trim());
+  }
+
+  const resp: AxiosResponse = await api.get(
+    `${ExpenseClaimAPI.advance}?${params.toString()}`
+  );
+
+  const raw: any[] = resp?.data?.data ?? [];
+
+  return {
+    data: raw.map((item) => ({
+      name:           item.name,
+      posting_date:   item.posting_date,
+      employee_name:  item.employee_name,
+      purpose:        item.purpose,
+      advance_amount: item.advance_amount,
+      status:         item.status,
+    })),
+    pagination: {
+      total:       raw.length,
+      total_pages: Math.ceil(raw.length / pageSize) || 1,
+    },
+  };
+}
+export async function getAdvanceById(id: string): Promise<any> {
+  const params = new URLSearchParams();
+  params.append("fields", JSON.stringify(["*"]));
+  params.append("filters", JSON.stringify({ name: id }));
+
+  const resp: AxiosResponse = await api.get(
+    `${ExpenseClaimAPI.advance}?${params.toString()}`
+  );
+
+  const raw: any[] = resp?.data?.data ?? [];
+  return raw[0] ?? null;
+}
+export async function deleteEmployeeAdvance(id: string): Promise<any> {
+  const resp: AxiosResponse = await api.delete(
+    `${ExpenseClaimAPI.advance}/${encodeURIComponent(id)}`
+  );
+  return resp.data || null;
+}
+export async function updateAdvanceStatus(
+  id: string,
+  action: "submit" | "cancel"
+): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    ExpenseClaimAPI.changeAdvanceStatus,
+    {
+      docnames: JSON.stringify([id]),
+      action,
+      doctype: "Employee Advance",
+    }
+  );
+  return resp.data || null;
+}
+
+export async function getAllEmployees(
+  search?: string,
+): Promise<any[]> {
+  try {
+    const params = new URLSearchParams();
+
+    if (search) {
+      params.append("search", search);
+    }
+    const resp: AxiosResponse = await api.get(
+      `${FrappeUtilsAPI.getemployeeforAssetMovement}?${params.toString()}`
+    );
+
+    return resp.data?.data ?? [];
+
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to fetch employees",
+    );
+  }
+} 

@@ -93,7 +93,6 @@ const SupplierDetailView: React.FC<Props> = ({
   const billingAddr  = addresses.find((a: any) => a.type === "Billing") ?? addresses[0];
   const terms = (supplier?.terms as any)?.Buying ?? (supplier?.terms as any)?.buying;
 
- 
   const billingLines = billingAddr
     ? [
         [billingAddr.line1, billingAddr.line2].filter(Boolean).join(", "),
@@ -102,7 +101,6 @@ const SupplierDetailView: React.FC<Props> = ({
       ].filter(Boolean)
     : [];
 
-  
   const q = searchTerm.trim().toLowerCase();
   const filteredSuppliers = suppliers.filter((s) => {
     const sName = ((s as any).name ?? s.supplierName ?? "").toLowerCase();
@@ -117,7 +115,6 @@ const SupplierDetailView: React.FC<Props> = ({
     return false;
   };
 
- 
   useEffect(() => {
     if (activeTab !== "statement" || !supplierId) return;
     const load = async () => {
@@ -137,36 +134,12 @@ const SupplierDetailView: React.FC<Props> = ({
   const renderActionButton = () => {
     switch (activeTab) {
       case "purchase-orders":
-        // return (
-        //   <button onClick={() => openPOCreate()}
-        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-        //     <Plus size={13} /> New PO
-        //   </button>
-        // );
         return null;
       case "bills":
-        // return (
-        //   <button onClick={() => openPICreate()}
-        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-        //     <Plus size={13} /> New Invoice
-        //   </button>
-        // );
         return null;
       case "bank-accounts":
-        // return (
-        //   <button onClick={() => { setEditingRow(null); setShowBankModal(true); }}
-        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-        //     <Plus size={13} /> Add Bank
-        //   </button>
-        // );
         return null;
       case "payments":
-        // return (
-        //   <button onClick={() => setShowPaymentModal(true)}
-        //     className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] font-bold px-3 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap">
-        //     <Plus size={13} /> Make Payment
-        //   </button>
-        // );
         return null;
       default:
         return null;
@@ -174,8 +147,10 @@ const SupplierDetailView: React.FC<Props> = ({
   };
 
   // ── Sidebar List ────────────────────────────────────────────────────────
+  // CHANGED: outer div h-[450px] → h-[490px] no-scrollbar (matches customer)
+  // CHANGED: inner scroll div removed min-h-0, added rounded-2xl (matches customer)
   const SidebarList = () => (
-      <div className="flex flex-col h-[450px]">
+    <div className="flex flex-col h-[490px] no-scrollbar">
       <div className="px-3 py-2.5 border-b border-theme shrink-0">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
@@ -188,7 +163,7 @@ const SupplierDetailView: React.FC<Props> = ({
           />
         </div>
       </div>
-      <div className="overflow-y-auto px-2 py-1.5 flex-1 min-h-0 no-scrollbar">
+      <div className="overflow-y-auto px-2 py-1.5 flex-1 rounded-2xl no-scrollbar">
         {filteredSuppliers.length === 0 && (
           <p className="text-[10px] text-muted text-center py-6">No suppliers found</p>
         )}
@@ -266,7 +241,6 @@ const SupplierDetailView: React.FC<Props> = ({
                     {supplierId}
                   </span>
                 )}
-                {/* Status dot */}
                 {(supplier as any)?.status === "Active" && (
                   <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 uppercase shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -285,12 +259,6 @@ const SupplierDetailView: React.FC<Props> = ({
               Added {fmtDate(createdAt)}
             </span>
           )}
-          {/* <button
-            onClick={() => onEdit(supplier)}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold border border-theme rounded-lg text-main hover:bg-row-hover transition-all"
-          >
-            Edit
-          </button> */}
           {renderActionButton()}
         </div>
       </header>
@@ -358,14 +326,19 @@ const SupplierDetailView: React.FC<Props> = ({
             {activeTab === "overview" && (
               <div className="p-4 space-y-4">
 
-                {/* KPI strip — 4 cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                    <KpiCard
+                {/* CHANGED: grid-cols-5 → grid-cols-6 to match customer layout width */}
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+                  <KpiCard
                     icon={<Users size={15} />}
                     label="Supplier Type"
                     value={(supplier as any)?.type ?? (supplier as any)?.supplierType}
                   />
-                     <KpiCard
+                  <KpiCard
+                    icon={<Globe size={15} />}
+                    label="Registration No"
+                    value={(supplier as any)?.registrationNo ?? (supplier as any)?.registration_no}
+                  />
+                  <KpiCard
                     icon={<Banknote size={15} />}
                     label="Currency"
                     value={(supplier as any)?.currency ?? supplier?.currency}
@@ -381,19 +354,18 @@ const SupplierDetailView: React.FC<Props> = ({
                     value={supplier?.tpin}
                     mono
                   />
-                   <KpiCard
+                  <KpiCard
                     icon={<Layers size={15} />}
                     label="Supplier Group"
                     value={(supplier as any)?.supplierGroup}
                   />
                 </div>
 
-
                 {/* Contact + Terms */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-                  {/* Contact card — from contacts[] & addresses[] */}
-                  <div className="bg-card rounded-2xl border border-theme overflow-hidden no-scrollbar">
+                  {/* CHANGED: contact card — overflow-hidden → overflow-auto h-[390px] no-scrollbar (matches customer) */}
+                  <div className="bg-card rounded-2xl border border-theme overflow-auto h-[390px] no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme">
                       <Mail size={12} className="text-primary" />
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Contact Channels</h4>
@@ -422,20 +394,26 @@ const SupplierDetailView: React.FC<Props> = ({
                       />
                     </div>
 
-                    {/* Billing address block */}
-                    {billingLines.length > 0 && (
-                      <div className="px-4 py-3 border-t border-theme bg-row-hover/40">
-                        <div className="flex items-start gap-2">
-                          <MapPin size={11} className="text-primary mt-0.5 shrink-0" />
-                          <div>
-                            <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-1">Billing Address</p>
-                            {billingLines.map((line, i) => (
-                              <p key={i} className="text-xs font-medium text-main leading-snug">{line}</p>
-                            ))}
-                          </div>
-                        </div>
+                    {/* Addresses block — matches customer's Physical Locations section */}
+                    <div className="border-t border-theme">
+                      <div className="flex items-center gap-2 px-5 py-3 border-b border-theme bg-row-hover/30">
+                        <MapPin size={12} className="text-primary" />
+                        <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Physical Locations</h4>
                       </div>
-                    )}
+
+                      {billingLines.length > 0 && (
+                        <div className="px-4 py-3 border-b border-theme last:border-0">
+                          <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-1.5">Billing Address</p>
+                          {billingLines.map((line, i) => (
+                            <p key={i} className="text-xs font-medium text-main leading-snug">{line}</p>
+                          ))}
+                        </div>
+                      )}
+
+                      {!billingLines.length && (
+                        <p className="px-4 py-4 text-xs text-muted italic">No addresses on file</p>
+                      )}
+                    </div>
 
                     {/* All contacts list — if more than one */}
                     {contacts.length > 1 && (
@@ -463,14 +441,14 @@ const SupplierDetailView: React.FC<Props> = ({
                     )}
                   </div>
 
-                  {/* Terms card — from terms.Buying */}
-                  <div className="bg-card rounded-2xl border border-theme flex flex-col" style={{ maxHeight: 480 }}>
+                  {/* CHANGED: terms card — removed inline style maxHeight, use h-[390px] no-scrollbar (matches customer) */}
+                  <div className="bg-card rounded-2xl border border-theme flex flex-col h-[390px] no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme shrink-0">
                       <FileText size={12} className="text-primary" />
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Terms & Conditions</h4>
                     </div>
 
-                  <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted no-scrollbar">
+                    <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted no-scrollbar">
 
                       {/* General */}
                       {terms?.general && (
@@ -509,10 +487,10 @@ const SupplierDetailView: React.FC<Props> = ({
                       {(terms?.payment?.dueDates || terms?.payment?.lateCharges || terms?.payment?.taxes || terms?.payment?.notes) && (
                         <TermsSection title="Payment Details">
                           <div className="space-y-1">
-                            {terms.payment.dueDates   && <TermLine label="Due Dates"     value={terms.payment.dueDates} />}
-                            {terms.payment.lateCharges && <TermLine label="Late Charges" value={terms.payment.lateCharges} />}
-                            {terms.payment.taxes       && <TermLine label="Taxes"        value={terms.payment.taxes} />}
-                            {terms.payment.notes       && <TermLine label="Notes"        value={terms.payment.notes} />}
+                            {terms.payment.dueDates    && <TermLine label="Due Dates"     value={terms.payment.dueDates} />}
+                            {terms.payment.lateCharges && <TermLine label="Late Charges"  value={terms.payment.lateCharges} />}
+                            {terms.payment.taxes       && <TermLine label="Taxes"         value={terms.payment.taxes} />}
+                            {terms.payment.notes       && <TermLine label="Notes"         value={terms.payment.notes} />}
                           </div>
                         </TermsSection>
                       )}
@@ -594,24 +572,6 @@ const SupplierDetailView: React.FC<Props> = ({
           </div>
         </main>
       </div>
-
-      {/* ── MODALS ── */}
-      {/* <PurchaseOrderModal isOpen={showPOModal} onClose={() => setShowPOModal(false)} /> */}
-
-      {/* <PaymentEntryModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        
-      />
-
-      <AddBankAccountModal
-        isOpen={showBankModal}
-        onClose={() => { setShowBankModal(false); setEditingRow(null); }}
-        onSubmit={() => { setShowBankModal(false); bankAccountsRefresh.current?.(); }}
-        partyName={supplierName}
-        defaultAccountFor="Supplier"
-        initialData={editingRow}
-      /> */}
     </div>
   );
 };

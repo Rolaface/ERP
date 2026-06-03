@@ -179,18 +179,18 @@ export const API = {
     getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`
   },
 
-accounting: {
-  createCOA: `${ERP_BASE}/api/method/erpnext.accounts.utils.add_ac`,
-  deleteCOA: `${ERP_BASE}/api/method/frappe.client.delete`,
-  getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
-  getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
-  getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
-  getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
-  getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
-  getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
-  getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
-  getLedger: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
-},
+  accounting: {
+    createCOA: `${ERP_BASE}/api/method/erpnext.accounts.utils.add_ac`,
+    deleteCOA: `${ERP_BASE}/api/method/frappe.client.delete`,
+    getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
+    getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
+    getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
+    getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,
+    getCashFlow: `${ERP_BASE}/api/method/custom_api.api.cash_flow.get_cash_flow`,
+    getAllPayables: `${ERP_BASE}/api/method/custom_api.api.accounts_payable.get_accounts_payable`,
+    getAllReceivable: `${ERP_BASE}/api/method/custom_api.api.accounts_receivable.get_accounts_receivable`,
+    getLedger: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_general_ledger_detail`,
+  },
 
   journalEntry: {
     getByIdOnly: `${ERP_BASE}/api/resource`,
@@ -372,7 +372,7 @@ accounting: {
     create: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.create_quotation`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation_status`,
     edit: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation`,
-    delete: `${ERP_BASE}/api/method/erpnext.proforma.api.delete_proforma`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.delete_quotation`,
   },
 
   /* =========================
@@ -425,6 +425,9 @@ accounting: {
     approveClaim: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.update_expense_claim_status`,
     getAdvanceById: `${ERP_BASE}/api/resource/Employee Advance`,
     attachDocument:`${ERP_BASE}/api/method/upload_file`,
+    advance: `${ERP_BASE}/api/resource/Employee Advance`,
+    changeAdvanceStatus: `${ERP_BASE}/api/method/frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs`,
+    
   },
   /* =========================
    * STOCK
@@ -699,7 +702,7 @@ accounting: {
     locationSearch: `${ERP_BASE}/api/method/custom_api.api.search.get_locations`,
     createlocation: `${ERP_BASE}/api/resource/Location`,
     getitemcodeforFaixedAsset: `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
-    getemployeeforAssetMovement: `${ERP_BASE}/api/method/custom_api.api.search.get_employees`,
+    getemployeeforAssetMovement: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
     getdepartment: `${ERP_BASE}/api/method/custom_hrms.api.search.get_departments`,
     getgrade: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employee_grades`,
     getdesignation: `${ERP_BASE}/api/method/custom_hrms.api.search.get_designations`,
@@ -711,6 +714,7 @@ accounting: {
     getBranches: `${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
     createbranch: `${ERP_BASE}/api/resource/Branch`,
     getshifts: `${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
+    employeesearch: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
 
 
   },

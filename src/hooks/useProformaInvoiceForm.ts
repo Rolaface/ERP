@@ -121,7 +121,7 @@ export function buildInvoicePayload(
 }
 
 
-export const useQuotationForm = (
+export const useProformaInvoiceForm = (
   isOpen: boolean,
   _onClose: () => void,
   _onSubmit?: (data: any) => void,
