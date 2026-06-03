@@ -268,13 +268,30 @@ const AccountsPayable = () => {
 
             if (!isSummary) {
               if (row.due_date) {
-                const dueDate = new Date(row.due_date);
-                const timeDiff = dueDate.getTime() - today.getTime();
-                daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                dueDisplay = row.due_date;
+                const safeDateStr = row.due_date.includes(" ") 
+                  ? row.due_date.replace(" ", "T") 
+                  : row.due_date;
+                
+                const dueDateObj = new Date(safeDateStr);
+                
+                if (!isNaN(dueDateObj.getTime())) {
+                  const timeDiff = dueDateObj.getTime() - today.getTime();
+                  daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                }
+                
+                dueDisplay = formatDate(row.due_date);
+                
+              } else if (row.posting_date) {
+                daysLeft = -(row.age || 0);
+                dueDisplay = formatDate(row.posting_date);
+                
+              } else if ((row as any).report_date) {
+                daysLeft = -(row.age || 0);
+                dueDisplay = formatDate((row as any).report_date);
+                
               } else {
                 daysLeft = -(row.age || 0);
-                dueDisplay = `${row.report_date}`;
+                dueDisplay = "—";
               }
 
               status = "Pending";
