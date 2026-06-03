@@ -134,7 +134,6 @@ const TableInner = <T extends Record<string, any>>({
   pageSizeOptions = [10, 20, 50, 100],
   onPageChange,
   onPageSizeChange,
-  defaultVisibleCount = 6,
 }: TableProps<T>) => {
   const allKeys = useMemo(() => columns.map((col) => col.key), [columns]);
   const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
@@ -150,25 +149,7 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
       return filtered;
     }
   }
-  //Rollback to this commented code if the new logic causes issues - it was an attempt to always show "actions" column if it exists, while still respecting defaultVisibleCount for other columns
-  // const nonActionKeys = allKeys.filter((k) => k !== "actions");
-  // const first5 = nonActionKeys.slice(0, 5);
-  // return allKeys.includes("actions") ? [...first5, "actions"] : allKeys.slice(0, 6);
-  const nonActionKeys = allKeys.filter((k) => k !== "actions");
-  const limit = allKeys.includes("actions") ? defaultVisibleCount - 1 : defaultVisibleCount;
-  const initialKeys = nonActionKeys.slice(0, limit);
- const statusColumn = columns.find(
-  (c) => c.header?.toLowerCase() === "status"
-);
-
-if (
-  statusColumn &&
-  !initialKeys.includes(statusColumn.key)
-) {
-  initialKeys.pop();
-  initialKeys.push(statusColumn.key);
-}
-  return allKeys.includes("actions") ? [...initialKeys, "actions"] : initialKeys;
+ return allKeys;
 });
 
 
