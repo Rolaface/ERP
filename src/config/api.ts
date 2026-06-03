@@ -31,8 +31,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -230,7 +230,7 @@ export const API = {
    * EMPLOYEE / HRMS
    * ========================= */
   employee: {
-    getAll: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employees`,
+    getAll: `${ERP_BASE}/api/resource/Employee`,
     getById: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employee_by_id`,
     Dp: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.upload_employee_image`,
     create: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.create_employee`,

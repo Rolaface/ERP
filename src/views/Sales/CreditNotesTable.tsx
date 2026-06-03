@@ -6,15 +6,30 @@ import { openCreditNoteModal } from "../../store/modalStore";
 import { getAllCreditNotes, deleteCreditNote } from "../../api/CreditNoteapi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { showLoading, closeSwal, showSuccess, showApiError } from "../../utils/alert";
+import {
+  showLoading,
+  closeSwal,
+  showSuccess,
+  showApiError,
+} from "../../utils/alert";
 import InvoiceDetailsModal from "./InvoiceDetailsModal";
-import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
+import ActionButton, {
+  ActionGroup,
+  ActionMenu,
+} from "../../components/ui/Table/ActionButton";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { getCreditNoteById, submitCreditNote, cancelCreditNote } from "../../api/CreditNoteapi";
+import {
+  getCreditNoteById,
+  submitCreditNote,
+  cancelCreditNote,
+} from "../../api/CreditNoteapi";
 import { CreditNote } from "../../types/sales/Creditnotes";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-
+import {
+  ACTION_ICONS,
+  
+} from "../../components/UI_Utils/statusActionIcons";
 
 const CREDIT_NOTE_MODULE = "Sales Invoice";
 const CreditNotesTable: React.FC = () => {
@@ -27,7 +42,6 @@ const CreditNotesTable: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
 
   // ── Search (server) ───────────────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,7 +56,9 @@ const CreditNotesTable: React.FC = () => {
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
   // ── Reset page when search changes ───────────────────────────────────────
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // ── Fetch credit notes ────────────────────────────────────────────────────
   const fetchCreditNotes = async () => {
@@ -139,7 +155,6 @@ const CreditNotesTable: React.FC = () => {
     }
   };
 
-
   const handleOpenReceipt = (receiptUrl: string) => {
     const normalizedUrl = receiptUrl.startsWith("http://")
       ? receiptUrl.replace(/^http:\/\//i, "https://")
@@ -151,7 +166,10 @@ const CreditNotesTable: React.FC = () => {
         u.port = "";
         return u.toString();
       } catch {
-        return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
+        return normalizedUrl.replace(
+          /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
+          "$1$2",
+        );
       }
     })();
 
@@ -264,18 +282,17 @@ const CreditNotesTable: React.FC = () => {
           Amount: r.amount,
           Status: r.status,
           Currency: r.currency,
-        }))
+        })),
       );
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Credit Notes");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-        ),
-        "Credit_Notes.xlsx"
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "Credit_Notes.xlsx",
       );
 
       closeSwal();
@@ -288,7 +305,20 @@ const CreditNotesTable: React.FC = () => {
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
 
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
@@ -301,32 +331,30 @@ const CreditNotesTable: React.FC = () => {
 
   const columns: Column<CreditNote>[] = [
     {
-      key: "noteNo", header: "Credit Invoice No",
+      key: "noteNo",
+      header: "Credit Invoice No",
       render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.noteNo || "—"}
-          </span>
+          <span className="block">{o.noteNo || "—"}</span>
         </div>
       ),
     },
     {
-      key: "invoiceNo", header: "Receipt No", render: (o) => (
+      key: "invoiceNo",
+      header: "Receipt No",
+      render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.invoiceNo || "—"}
-          </span>
+          <span className="block">{o.invoiceNo || "—"}</span>
         </div>
       ),
     },
     {
-      key: "customer", header: "Customer",
+      key: "customer",
+      header: "Customer",
       align: "center",
       render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {o.customer || "—"}
-          </span>
+          <span className="block">{o.customer || "—"}</span>
         </div>
       ),
     },
@@ -343,11 +371,11 @@ const CreditNotesTable: React.FC = () => {
       ),
     },
     {
-      key: "date", header: "Date", render: (o) => (
+      key: "date",
+      header: "Date",
+      render: (o) => (
         <div className="py-1.5">
-          <span className="block">
-            {formatDate(o.date) || "—"}
-          </span>
+          <span className="block">{formatDate(o.date) || "—"}</span>
         </div>
       ),
     },
@@ -369,7 +397,10 @@ const CreditNotesTable: React.FC = () => {
           <ActionButton
             type="view"
             iconOnly
-            onClick={() => { setDetailsId(r.noteNo); setDetailsOpen(true); }}
+            onClick={() => {
+              setDetailsId(r.noteNo);
+              setDetailsOpen(true);
+            }}
           />
 
           {/* Edit — needs write + Draft */}
@@ -379,29 +410,51 @@ const CreditNotesTable: React.FC = () => {
               onClick={(e) => handleEdit(r, e)}
               iconOnly
               disabled={r.status !== "Draft"}
-              title={r.status !== "Draft" ? "Only Draft invoices can be edited" : "Edit Credit Note"}
+              title={
+                r.status !== "Draft"
+                  ? "Only Draft invoices can be edited"
+                  : "Edit Credit Note"
+              }
             />
           </PermissionGate>
 
           <ActionMenu
             // Delete — needs delete
             {...(can(CREDIT_NOTE_MODULE, "delete")
-              ? { onDelete: (e) => { e?.stopPropagation(); handleDelete(r.noteNo); } }
+              ? {
+                  onDelete: (e) => {
+                    e?.stopPropagation();
+                    handleDelete(r.noteNo);
+                  },
+                }
               : {})}
             customActions={[
               // Submit — needs write + Draft
               ...(r.status === "Draft" && can(CREDIT_NOTE_MODULE, "write")
-                ? [{ label: "Approve", onClick: () => handleSubmit(r.noteNo) }]
+                ? [
+                    {
+                      label: "Approve",
+                      icon: ACTION_ICONS.APPROVE,
+                      onClick: () => handleSubmit(r.noteNo),
+                    },
+                  ]
                 : []),
               // Cancel — needs write
-              ...(!["Draft", "Cancelled"].includes(r.status) && can(CREDIT_NOTE_MODULE, "write")
-                ? [{ label: "Cancel", onClick: () => handleCancel(r.noteNo), danger: true }]
+              ...(!["Draft", "Cancelled"].includes(r.status) &&
+              can(CREDIT_NOTE_MODULE, "write")
+                ? [
+                    {
+                      label: "Cancel",
+                      icon: ACTION_ICONS.CANCEL,
+                      onClick: () => handleCancel(r.noteNo),
+                      danger: true,
+                    },
+                  ]
                 : []),
             ]}
           />
         </ActionGroup>
       ),
-
     },
   ];
 
@@ -415,32 +468,31 @@ const CreditNotesTable: React.FC = () => {
         loading={loading || initialLoad}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableAdd={can(CREDIT_NOTE_MODULE, "create")}
         addLabel="Add Credit Note"
         onAdd={() => openCreditNoteModal()}
-
         emptyMessage="No credit notes found"
         enableColumnSelector
-        enableExport={can(CREDIT_NOTE_MODULE, "export")} 
+        enableExport={can(CREDIT_NOTE_MODULE, "export")}
         onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
         pageSizeOptions={[10, 25, 50, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
       />
-
-
-
-
-
-
     </div>
   );
 };

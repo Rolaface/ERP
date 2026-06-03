@@ -4,6 +4,7 @@ import ActionButton, { ActionMenu } from "../../../../components/ui/Table/Action
 import type { Column } from "../../../../components/ui/Table/type";
 import NewCycleModal from "../../../../components/Hr/performance/Newcyclemodal";
 import type { NewCyclePayload } from "../../../../hooks/appraisal/useCycleModal";
+
 import {
   getCycleList,
   getCycleById,
@@ -187,14 +188,8 @@ const CycleList = () => {
             title="View cycle"
           />
           <ActionMenu
-            customActions={[
-              {
-                label: "Delete",
-                danger: true,
-                onClick: () => handleDelete(row.name, row.cycle_name),
-              },
-            ]}
-          />
+  onDelete={() => handleDelete(row.name, row.cycle_name)}
+/>
         </div>
       ),
     },

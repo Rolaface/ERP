@@ -19,6 +19,7 @@ import { useTaxConfigs } from "../hooks/useTaxConfigs";
 import { openTaxConfigModal } from "../../../../../store/modalStore";
 import { showApiError } from "../../../../../utils/alert";
 import { parseFrappeError } from "../../leave-config/hooks/parseFrappeError";
+import { ACTION_ICONS } from "../../../../../components/UI_Utils/statusActionIcons";
 
 const formatDate = (date: string | Date) => {
   if (!date) return "";
@@ -210,19 +211,18 @@ export function TaxConfigurationSetup() {
               onClick={() => handleEdit(row)}
             />
             <ActionMenu
-              customActions={[
-                {
-                  label: row.disabled? "Enabled" : "Disabled",
-                  onClick: () => handleStatus(row),
-                  disabled: actionLoadingId === row.name,
-                },
-                {
-                  label: "Delete",
-                  onClick: () => handleDelete(row),
-                  disabled: actionLoadingId === row.name,
-                },
-              ]}
-            />
+  onDelete={() => handleDelete(row)}
+  customActions={[
+    {
+      label: row.disabled ? "Enable" : "Disable",
+      icon: row.disabled
+        ? ACTION_ICONS.ENABLE
+        : ACTION_ICONS.DISABLE,
+      onClick: () => handleStatus(row),
+      disabled: actionLoadingId === row.name,
+    },
+  ]}
+/>
           </ActionGroup>
         ),
       },

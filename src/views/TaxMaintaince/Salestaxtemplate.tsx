@@ -18,9 +18,9 @@ import type {
 } from "../../types/tax/salesTemplate";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
-const SALES_TAX_TEMPLATE_MODULE =
-  "Sales Taxes and Charges Template";
+const SALES_TAX_TEMPLATE_MODULE = "Sales Taxes and Charges Template";
 
 const SalesTaxTemplate: React.FC = () => {
   const [templates, setTemplates] = useState<SalesTaxTemplateSummary[]>([]);
@@ -35,7 +35,6 @@ const SalesTaxTemplate: React.FC = () => {
   const { can } = usePermission();
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-
 
   const { createSalesTax, updateSalesTax, updateStatus, deleteSalesTax } =
     useSalesTaxTemplate();
@@ -56,7 +55,7 @@ const SalesTaxTemplate: React.FC = () => {
       const res = await getAllTemplates(
         page,
         pageSize,
-        searchTerm || undefined
+        searchTerm || undefined,
       );
       const list: SalesTaxTemplateSummary[] = res?.data?.templates ?? [];
       const pagination = res?.data?.pagination;
@@ -90,7 +89,7 @@ const SalesTaxTemplate: React.FC = () => {
       {
         title: "Add Sales Tax Template",
         subtitle: "Configure charges and tax rates",
-      }
+      },
     );
   };
 
@@ -109,16 +108,23 @@ const SalesTaxTemplate: React.FC = () => {
         taxes:
           Array.isArray(data?.taxes) && data.taxes.length > 0
             ? data.taxes.map((t: any) => ({
-              name: t.name,
-              charge_type: t.charge_type,
-              account_head: t.account_head || "",
-              rate: Number(t.rate) || 0,
-              tax_amount: Number(t.tax_amount) || 0,
-              description: t.description || "",
-            }))
-            : [{ charge_type: "On Net Total", account_head: "", rate: 0, tax_amount: 0, description: "" }],
+                name: t.name,
+                charge_type: t.charge_type,
+                account_head: t.account_head || "",
+                rate: Number(t.rate) || 0,
+                tax_amount: Number(t.tax_amount) || 0,
+                description: t.description || "",
+              }))
+            : [
+                {
+                  charge_type: "On Net Total",
+                  account_head: "",
+                  rate: 0,
+                  tax_amount: 0,
+                  description: "",
+                },
+              ],
       };
-
 
       openSalesTaxTemplateModal(
         formData,
@@ -132,7 +138,7 @@ const SalesTaxTemplate: React.FC = () => {
         {
           title: "Edit Sales Tax Template",
           subtitle: "Update charges and tax rates",
-        }
+        },
       );
     } catch (error) {
       showApiError(error);
@@ -150,7 +156,7 @@ const SalesTaxTemplate: React.FC = () => {
 
   const handleToggleStatus = async (
     row: SalesTaxTemplateSummary,
-    e: React.MouseEvent
+    e: React.MouseEvent,
   ) => {
     e.stopPropagation();
     const newDisabled: 0 | 1 = row.disabled === 1 ? 0 : 1;
@@ -167,7 +173,7 @@ const SalesTaxTemplate: React.FC = () => {
 
     if (!confirm.isConfirmed) return;
 
-    await updateStatus(row.name, newDisabled); // 
+    await updateStatus(row.name, newDisabled); //
     await fetchTemplates();
   };
 
@@ -204,12 +210,32 @@ const SalesTaxTemplate: React.FC = () => {
           <div className="py-1.5">
             <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
               {isExpanded ? (
-                <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  className="w-4 h-4 text-primary"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path
+                    d="M6 9l6 6 6-6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               ) : (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path
+                    d="M9 6l6 6-6 6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               )}
             </span>
@@ -241,7 +267,6 @@ const SalesTaxTemplate: React.FC = () => {
             {tc.tax_category || <span className="italic text-muted/60">—</span>}
           </span>
         </div>
-
       ),
     },
     {
@@ -285,38 +310,39 @@ const SalesTaxTemplate: React.FC = () => {
       align: "center",
       render: (tc) => (
         <ActionGroup>
-
           {(can(SALES_TAX_TEMPLATE_MODULE, "write") ||
             can(SALES_TAX_TEMPLATE_MODULE, "delete")) && (
-              <ActionMenu
-                {...(can(SALES_TAX_TEMPLATE_MODULE, "write")
-                  ? {
-                    onEdit: (e) =>
-                      handleEdit(tc, e as React.MouseEvent),
+            <ActionMenu
+              {...(can(SALES_TAX_TEMPLATE_MODULE, "write")
+                ? {
+                    onEdit: (e) => handleEdit(tc, e as React.MouseEvent),
                   }
-                  : {})}
-                {...(can(SALES_TAX_TEMPLATE_MODULE, "delete")
-                  ? {
+                : {})}
+              {...(can(SALES_TAX_TEMPLATE_MODULE, "delete")
+                ? {
                     onDelete: (e) =>
                       handleDelete(tc.name, e as React.MouseEvent),
                   }
-                  : {})}
-                customActions={
-                  can(SALES_TAX_TEMPLATE_MODULE, "write")
-                    ? [
+                : {})}
+              customActions={
+                can(SALES_TAX_TEMPLATE_MODULE, "write")
+                  ? [
                       {
                         label: tc.disabled ? "Enable" : "Disable",
+                        icon: tc.disabled
+                          ? ACTION_ICONS.ENABLE
+                          : ACTION_ICONS.DISABLE,
                         onClick: () =>
                           handleToggleStatus(tc, {
-                            stopPropagation: () => { },
+                            stopPropagation: () => {},
                           } as React.MouseEvent),
                         danger: !tc.disabled,
                       },
                     ]
-                    : []
-                }
-              />
-            )}
+                  : []
+              }
+            />
+          )}
         </ActionGroup>
       ),
     },
@@ -338,7 +364,13 @@ const SalesTaxTemplate: React.FC = () => {
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr style={{ borderBottom: "1px solid rgba(201,125,46,0.2)" }}>
-              {["Charge Type", "Account Head", "Rate", "Tax Amount", "Description"].map((h) => (
+              {[
+                "Charge Type",
+                "Account Head",
+                "Rate",
+                "Tax Amount",
+                "Description",
+              ].map((h) => (
                 <th
                   key={h}
                   className="text-left py-2 px-3 font-bold text-muted uppercase tracking-widest text-[10px]"
@@ -355,7 +387,8 @@ const SalesTaxTemplate: React.FC = () => {
                 className="transition-colors"
                 style={{
                   borderBottom: "1px solid rgba(0,0,0,0.04)",
-                  background: i % 2 !== 0 ? "rgba(201,125,46,0.03)" : "transparent",
+                  background:
+                    i % 2 !== 0 ? "rgba(201,125,46,0.03)" : "transparent",
                 }}
               >
                 <td className="py-2 px-3">
@@ -371,7 +404,10 @@ const SalesTaxTemplate: React.FC = () => {
                     <span className="text-muted italic text-[10px]">N/A</span>
                   ) : (
                     <>
-                      <span className="font-semibold" style={{ color: "var(--primary, #c97d2e)" }}>
+                      <span
+                        className="font-semibold"
+                        style={{ color: "var(--primary, #c97d2e)" }}
+                      >
                         {Number(row.rate).toFixed(2)}
                       </span>
                       <span className="text-muted ml-0.5">%</span>
