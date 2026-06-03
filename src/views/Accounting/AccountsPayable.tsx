@@ -42,7 +42,7 @@ type PayableVoucherType =
   | "Expense Claim";
 
 type PayableRecord = {
-  report_date?: string;
+  posting_date?: string;
   supplier?: string;
   party?: string;
   supplier_name?: string;
@@ -105,7 +105,7 @@ const AccountsPayable = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [reportDate, setReportDate] = useState(getTodayDate());
+  const [postingDate, setPostingDate] = useState(getTodayDate());
 
   const [selectedGroupBy, setSelectedGroupBy] = useState<string[]>([]);
 
@@ -220,7 +220,7 @@ const AccountsPayable = () => {
   }, [
     searchTerm,
     filterStatus,
-    reportDate,
+    postingDate,
     selectedGroupBy,
     selectedCostCenter,
     selectedSuppliers,
@@ -238,8 +238,7 @@ const AccountsPayable = () => {
         ...(filterStatus && filterStatus !== "all"
           ? { status: filterStatus }
           : {}),
-        report_date: reportDate || undefined,
-        cost_center: selectedCostCenter || undefined,
+        posting_date: postingDate || undefined,        cost_center: selectedCostCenter || undefined,
         party: selectedSuppliers.length
           ? selectedSuppliers.join(",")
           : undefined,
@@ -284,10 +283,6 @@ const AccountsPayable = () => {
               } else if (row.posting_date) {
                 daysLeft = -(row.age || 0);
                 dueDisplay = formatDate(row.posting_date);
-                
-              } else if ((row as any).report_date) {
-                daysLeft = -(row.age || 0);
-                dueDisplay = formatDate((row as any).report_date);
                 
               } else {
                 daysLeft = -(row.age || 0);
@@ -350,7 +345,7 @@ const AccountsPayable = () => {
     pageSize,
     searchTerm,
     filterStatus,
-    reportDate,
+    postingDate,
     selectedGroupBy,
     sortBy,
     sortOrder,
@@ -442,7 +437,7 @@ const AccountsPayable = () => {
         page: 1,
         page_size: 999999,
         search: searchTerm,
-        report_date: reportDate || undefined,
+        posting_date: postingDate || undefined,
         cost_center: selectedCostCenter || undefined,
         party: selectedSuppliers.length
           ? selectedSuppliers.join(",")
@@ -483,7 +478,7 @@ const AccountsPayable = () => {
         "Paid Amount": row.amounts?.paid ?? row.paid ?? 0,
         "Credit Note": row.amounts?.credit_note ?? row.credit_note ?? 0,
         "Outstanding Amount": row.amounts?.outstanding ?? row.outstanding ?? 0,
-        "Report Date": row.report_date || "",
+        "Posting Date": row.posting_date || "",
         "Due Date": row.due_date || "",
         "Age (Days)": row.age || 0,
         Currency: row.currency || currencySymbol || "-",
@@ -822,10 +817,10 @@ const AccountsPayable = () => {
           <div className="relative">
             <input
               type="date"
-              value={reportDate}
-              onChange={(e) => setReportDate(e.target.value)}
+              value={postingDate}
+onChange={(e) => setPostingDate(e.target.value)}
               className="px-3 py-2 border border-theme bg-app rounded-lg text-main text-sm h-[38px] w-full sm:w-auto cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              title="Report Date"
+              title="Posting Date"
             />
           </div>
 
@@ -1124,7 +1119,7 @@ const AccountsPayable = () => {
             selectedVoucherType !== "" ||
             filterStatus !== "all" ||
             searchTerm !== "" ||
-            reportDate !== getTodayDate()) && (
+            postingDate !== getTodayDate()) && (
             <button
               onClick={() => {
                 setSearchTerm("");
@@ -1133,7 +1128,7 @@ const AccountsPayable = () => {
                 setSelectedSuppliers([]);
                 setSelectedCostCenter("");
                 setSelectedPayableAccount("");
-                setReportDate(getTodayDate());
+                setPostingDate(getTodayDate());
                 setSelectedVoucherType("");
                 setActiveDropdown(null);
               }}

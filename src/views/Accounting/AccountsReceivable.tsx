@@ -114,7 +114,7 @@ const AccountsReceivable = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [reportDate, setReportDate] = useState(getTodayDate());
+  const [postingDate, setPostingDate] = useState(getTodayDate());
 
   const [selectedGroupBy, setSelectedGroupBy] = useState<string[]>([]);
 
@@ -225,7 +225,7 @@ const AccountsReceivable = () => {
   }, [
     searchTerm,
     filterStatus,
-    reportDate,
+    postingDate,
     selectedGroupBy,
     selectedCostCenter,
     selectedCustomers,
@@ -243,7 +243,7 @@ const AccountsReceivable = () => {
         ...(filterStatus && filterStatus !== "all"
           ? { status: filterStatus }
           : {}),
-        report_date: reportDate || undefined,
+        posting_date: postingDate || undefined,
         cost_center: selectedCostCenter || undefined,
         party: selectedCustomers.length
           ? selectedCustomers.join(",")
@@ -353,7 +353,7 @@ const AccountsReceivable = () => {
     pageSize,
     searchTerm,
     filterStatus,
-    reportDate,
+    postingDate,
     selectedGroupBy,
     sortBy,
     sortOrder,
@@ -447,7 +447,7 @@ const AccountsReceivable = () => {
         page: 1,
         page_size: 999999,
         search: searchTerm,
-        report_date: reportDate || undefined,
+        posting_date: postingDate || undefined,
         cost_center: selectedCostCenter || undefined,
         party: selectedCustomers.length
           ? selectedCustomers.join(",")
@@ -771,10 +771,10 @@ const AccountsReceivable = () => {
           <div className="relative">
             <input
               type="date"
-              value={reportDate}
-              onChange={(e) => setReportDate(e.target.value)}
+              value={postingDate}
+              onChange={(e) => setPostingDate(e.target.value)}
               className="px-3 py-2 border border-theme bg-app rounded-lg text-main text-sm h-[38px] w-full sm:w-auto cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              title="Report Date"
+              title="Posting Date"
             />
           </div>
 
@@ -1072,7 +1072,7 @@ const AccountsReceivable = () => {
             selectedGroupBy.length > 0 ||
             filterStatus !== "all" ||
             searchTerm !== "" ||
-            reportDate !== getTodayDate()) && (
+            postingDate !== getTodayDate()) && (
             <button
               onClick={() => {
                 setSearchTerm("");
@@ -1082,7 +1082,7 @@ const AccountsReceivable = () => {
                 setSelectedCustomers([]);
                 setSelectedCostCenter("");
                 setSelectedReceivableAccount("");
-                setReportDate(getTodayDate());
+                setPostingDate(getTodayDate());
                 setActiveDropdown(null);
               }}
               className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
