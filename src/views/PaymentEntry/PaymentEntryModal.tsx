@@ -44,6 +44,9 @@ interface Props {
     referenceName?: string;
     referenceType?: "Purchase Order" | "Purchase Invoice" | "Sales Invoice";
     date?: string;
+    glTo?: string;
+    modeOfPayment?: string;
+    currencyTo?: string;
   };
 }
 
@@ -70,7 +73,8 @@ function buildPayload(
     if (form?.referenceType === "Purchase Order") return "Purchase Order";
     if (form?.referenceType === "Purchase Invoice") return "Purchase Invoice";
     if (form?.referenceType === "Sales Invoice") return "Sales Invoice";
-     if (form?.referenceType === "Expense Claim") return "Expense Claim";
+    if (form?.referenceType === "Expense Claim") return "Expense Claim";
+    if (form?.referenceType === "Employee Advance") return "Employee Advance";
 
     switch (partyType) {
       case "Supplier":
@@ -78,8 +82,8 @@ function buildPayload(
       case "Customer":
         return "Sales Invoice";
       case "Employee":
-      return "Expense Claim";
-        
+        return "Expense Claim";
+
       default:
         return "Journal Entry";
     }
@@ -282,6 +286,18 @@ const PaymentEntryModal: React.FC<Props> = ({
       base.partyId = defaultValues.partyId;
     }
 
+    if (defaultValues?.glTo) {
+      base.glTo = defaultValues.glTo;
+    }
+
+    if (defaultValues?.currencyTo){
+       base.currencyTo = defaultValues.currencyTo;
+    }
+
+    if (defaultValues?.modeOfPayment) {
+  base.mode = defaultValues.modeOfPayment;   
+}
+
     if (defaultValues?.referenceName) {
       const lockedAmount = Math.max(
         0,
@@ -436,6 +452,13 @@ const PaymentEntryModal: React.FC<Props> = ({
 
   const handleFormChange = useCallback(
     (updates: Record<string, any>) => {
+       if (
+      form.referenceType === "Employee Advance" &&
+      form.glTo
+    ) {
+      delete updates.glTo;
+      delete updates.currencyTo;
+    }
       setForm((prev) => {
         if (prev.referenceName) {
           const referenceName = prev.referenceName;
@@ -486,7 +509,7 @@ const PaymentEntryModal: React.FC<Props> = ({
       });
       // setError((prev) => (prev ? null : prev));
     },
-    [],
+    [form.referenceType, form.glTo]
   );
 
   const goToTab = useCallback((tab: TabType) => {
@@ -648,6 +671,12 @@ const PaymentEntryModal: React.FC<Props> = ({
                 onFormChange={handleFormChange}
                 onAllocate={isAdvanceFromPO ? undefined : handleAllocateLink}
                 islocked={Boolean(form?.referenceName)}
+                isGlToLocked={
+                  form.referenceType === "Employee Advance" && Boolean(form.glTo)
+                }
+                isModeOfPaymentLocked={
+    form.referenceType === "Employee Advance" && Boolean(form.mode)  
+  }
                 isPartyLocked={Boolean(
                   form?.referenceName && form?.partyName && form?.partyType,
                 )}

@@ -9,12 +9,14 @@ import Table from "../../components/ui/Table/Table";
 import ActionButton, { ActionMenu } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
+import { openPaymentEntryModal } from "../../store/modalStore";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
 import { fireManagedSwal } from "../../utils/swalManager";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { openEmployeeAdvanceModal } from "../../store/modalStore";  
+import {getAllAdvances,getAdvanceById,deleteEmployeeAdvance, updateAdvanceStatus} from "../../api/expenseClaimApi";
+import EmployeeAdvanceDetailModal, { EmployeeAdvanceDetail } from "../../views/ExpenseManagement/advanceDetailView";
 
 const EMPLOYEE_ADVANCE_MODULE = "Employee Advance";
 
@@ -27,9 +29,29 @@ interface EmployeeAdvance {
   status: string;
 }
 
+
+
 const EmployeeAdvanceTable: React.FC = () => {
   const mountedRef = useRef(true);
   const { can } = usePermission();
+  const [drawerOpen,    setDrawerOpen]    = useState(false);
+const [drawerData,    setDrawerData]    = useState<EmployeeAdvanceDetail | null>(null);
+const [drawerLoading, setDrawerLoading] = useState(false);
+const handleViewClick = async (ea: EmployeeAdvance, e?: React.MouseEvent<HTMLButtonElement>) => {
+  if (!e) return;
+  e.stopPropagation();
+  setDrawerOpen(true);
+  setDrawerLoading(true);
+  setDrawerData(null);
+  try {
+    const advance = await getAdvanceById(ea.id);
+    setDrawerData(advance);
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setDrawerLoading(false);
+  }
+};
 
   const [employeeAdvances, setEmployeeAdvances] = useState<EmployeeAdvance[]>([]);
   const [isInitialLoad,    setIsInitialLoad]    = useState(true);
@@ -45,36 +67,36 @@ const EmployeeAdvanceTable: React.FC = () => {
 
   useEffect(() => { setPage(1); }, [searchTerm]);
 
-  const fetchEmployeeAdvances = useCallback(async () => {
+const fetchEmployeeAdvances = useCallback(async () => {
+  if (!mountedRef.current) return;
+  setIsFetching(true);
+  try {
+    const res = await getAllAdvances(searchTerm, page, pageSize);
     if (!mountedRef.current) return;
-    setIsFetching(true);
-    try {
-      const res = await getEmployeeAdvances(searchTerm, page, pageSize);
-      if (!mountedRef.current) return;
-      setEmployeeAdvances(
-        res.data.map((item) => ({
-          id:            item.name,
-          posting_date:  item.posting_date,
-          employee_name: item.employee_name,
-          purpose:       item.purpose,
-          amount:        item.amount,
-          status:        item.status,
-        }))
-      );
-      setTotalPages(res.pagination.total_pages);
-      setTotalItems(res.pagination.total);
-    } catch (err) {
-      showApiError(err);
-      setEmployeeAdvances([]);
-      setTotalPages(1);
-      setTotalItems(0);
-    } finally {
-      if (mountedRef.current) {
-        setIsFetching(false);
-        setIsInitialLoad(false);
-      }
+    setEmployeeAdvances(
+      res.data.map((item) => ({
+        id:            item.name,
+        posting_date:  item.posting_date,
+        employee_name: item.employee_name,
+        purpose:       item.purpose,
+        amount:        item.advance_amount, 
+        status:        item.status,
+      }))
+    );
+    setTotalPages(res.pagination.total_pages);
+    setTotalItems(res.pagination.total);
+  } catch (err) {
+    showApiError(err);
+    setEmployeeAdvances([]);
+    setTotalPages(1);
+    setTotalItems(0);
+  } finally {
+    if (mountedRef.current) {
+      setIsFetching(false);
+      setIsInitialLoad(false);
     }
-  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
+  }
+}, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -110,34 +132,114 @@ const EmployeeAdvanceTable: React.FC = () => {
       showApiError(err);
     }
   };
-
-  const handleOpenEdit = async (ea: EmployeeAdvance) => {
-    try {
-      const res = await getEmployeeAdvanceById(ea.id);
-      const advance = res.data;
-    const formData = {
-  id:                           advance.name,
-  posting_date:                 advance.posting_date,
-  employee:                     advance.employee,       
-  employee_name:                advance.employee_name,  
-  purpose:                      advance.purpose,
-  amount:                       advance.advance_amount, 
-  advance_account:              advance.advance_account,
-  payment_mode:                 advance.mode_of_payment,
-  repay_unclaimed_from_salary:  advance.repay_unclaimed_amount_from_salary,
+ const handleStatusChange = async (id: string, action: "submit" | "cancel") => {
+  const result = await fireManagedSwal({
+    icon: "warning",
+    title: "Are you sure?",
+    text: `${action === "submit" ? "Approve" : "Cancel"} this employee advance?`,
+    showCancelButton: true,
+    confirmButtonColor: action === "submit" ? "#22c55e" : "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: `Yes, ${action === "submit" ? "approve" : "cancel"}`,
+    reverseButtons: true,
+  });
+  if (!result.isConfirmed) return;
+  try {
+    showLoading(`${action === "submit" ? "Approving" : "Cancelling"} advance...`);
+    await updateAdvanceStatus(id, action);
+    closeSwal();
+    showSuccess(`Employee advance ${action === "submit" ? "approved" : "cancelled"} successfully`);
+    fetchEmployeeAdvances();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
 };
-      openEmployeeAdvanceModal(formData, true, {
-        onSuccess: async () => {
-          showSuccess("Employee advance updated successfully");
-          fetchEmployeeAdvances();
-        },
-      });
+const handleMakePayment = useCallback(
+  async (ea: EmployeeAdvance) => {
+    try {
+      showLoading("Opening payment...");
+      const advance = await getAdvanceById(ea.id);
       closeSwal();
+
+      if (!advance) {
+        showApiError("Advance record not found");
+        return;
+      }
+
+      openPaymentEntryModal(
+        {
+          paymentType: "Pay",
+          partyType: "Employee",
+          partyName: advance.employee_name,
+          partyId: advance.employee,
+          amount: advance.advance_amount,
+          referenceName: advance.name,
+          referenceType: "Employee Advance",
+          glTo: advance.advance_account,
+           currencyTo: advance.currency, 
+          modeOfPayment: advance.mode_of_payment,
+        },
+        false,
+        {
+          onSuccess: (result) => {
+            fetchEmployeeAdvances();
+            const paymentId =
+              typeof result === "string"
+                ? result
+                : ((result as any)?.paymentId ?? (result as any)?.id ?? "");
+            showSuccess(
+              paymentId
+                ? `Payment ${paymentId} created`
+                : "Payment created successfully",
+            );
+          },
+        },
+      );
     } catch (err) {
       closeSwal();
       showApiError(err);
     }
-  };
+  },
+  [fetchEmployeeAdvances],
+);
+
+const handleOpenEdit = async (ea: EmployeeAdvance) => {
+  try {
+    showLoading("Loading advance details...");
+    const advance = await getAdvanceById(ea.id); 
+
+    if (!advance) {
+      closeSwal();
+      showApiError("Advance record not found");
+      return;
+    }
+
+    const formData = {
+      id:                          advance.name,
+      posting_date:                advance.posting_date,
+      employee:                    advance.employee,
+      employee_name:               advance.employee_name,
+      purpose:                     advance.purpose,
+      amount:                      advance.advance_amount,
+      advance_account:             advance.advance_account,
+      payment_mode:                advance.mode_of_payment,
+      repay_unclaimed_from_salary: advance.repay_unclaimed_amount_from_salary === 1,
+    };
+
+    openEmployeeAdvanceModal(formData, true, {
+      onSuccess: async () => {
+        showSuccess("Employee advance updated successfully");
+        fetchEmployeeAdvances();
+      },
+    });
+    closeSwal();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+
 
   const handleExportExcel = async () => {
     try {
@@ -255,34 +357,58 @@ const EmployeeAdvanceTable: React.FC = () => {
         ),
         tooltip: (ea) => `Status: ${ea.status}`,
       },
-      {
-        key:    "actions",
-        header: "Actions",
-        align:  "center",
-        render: (ea) => (
-          <div className="flex items-center justify-center gap-2">
-            <ActionButton
-              type="view"
-              onClick={(e) => { e.stopPropagation(); }}
-              iconOnly
-            />
-            <PermissionGate module={EMPLOYEE_ADVANCE_MODULE} action="write">
-              <ActionButton
-                type="edit"
-                onClick={() => { handleOpenEdit(ea); }}
-                iconOnly
-              />
-            </PermissionGate>
-            <ActionMenu
-              {...(can(EMPLOYEE_ADVANCE_MODULE, "delete")
-                ? { onDelete: () => handleDelete(ea.id) }
-                : {})}
-            />
-          </div>
-        ),
-      },
+{
+  key: "actions",
+  header: "Actions",
+  align: "center",
+  render: (ea) => {
+    const status      = ea.status?.toLowerCase();
+    const isDraft     = status === "draft";
+    const isUnpaid    = status === "unpaid";
+    const isCancelled = status === "cancelled";
+
+    return (
+      <div className="flex items-center justify-center gap-2">
+        <ActionButton
+  type="view"
+  onClick={(e) => handleViewClick(ea, e)}
+  iconOnly
+/>
+        <ActionButton
+          type="edit"
+          onClick={() => { handleOpenEdit(ea); }}
+          iconOnly
+          disabled={!isDraft}
+        />
+
+        <ActionMenu
+  {...((isDraft || isCancelled) && { onDelete: () => handleDelete(ea.id) })}
+  customActions={[
+    {
+      label: "Approve",
+      onClick: () => handleStatusChange(ea.id, "submit"),
+      disabled: !isDraft,
+     
+    },
+    {
+  label: "Make Payment",
+  onClick: () => handleMakePayment(ea),
+  disabled: !isUnpaid,
+},
+    {
+      label: "Cancel",
+      onClick: () => handleStatusChange(ea.id, "cancel"),
+      danger: true,
+      disabled: !isUnpaid,
+    },
+  ]}
+/>
+      </div>
+    );
+  },
+},
     ],
-    [handleDelete, can]
+    [handleDelete, handleOpenEdit, handleViewClick, handleMakePayment, can]
   );
 
   return (
@@ -325,6 +451,12 @@ const EmployeeAdvanceTable: React.FC = () => {
           setPage(1);
         }}
       />
+    <EmployeeAdvanceDetailModal
+  open={drawerOpen}
+  data={drawerData} 
+  loading={drawerLoading}
+  onClose={() => { setDrawerOpen(false); setDrawerData(null); }}
+/>
     </div>
   );
 };

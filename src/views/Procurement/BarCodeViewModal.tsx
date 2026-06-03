@@ -113,12 +113,15 @@ const BarcodeViewModal: React.FC<Props> = ({ open, onClose, batch, itemName, ite
         alt="barcode"
         style={{ maxWidth:180, height:48, objectFit:"contain", display:"block" }}
       />
+    // ) : (
+    //   <div
+    //     style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", color:"var(--text,#111)" }}
+    //     dangerouslySetInnerHTML={{ __html: buildBars(batch.barcodeId) }}
+    //   />
+    // );
     ) : (
-      <div
-        style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", color:"var(--text,#111)" }}
-        dangerouslySetInnerHTML={{ __html: buildBars(batch.barcodeId) }}
-      />
-    );
+  <p style={{ fontSize:11, color:"var(--muted,#888)", margin:0 }}>No barcode image</p>
+);
 
   const metaFields = [
     { label:"Mfg Date",  value: fmtDate(batch.manufactureDate) },

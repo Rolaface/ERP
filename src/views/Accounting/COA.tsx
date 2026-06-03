@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import ExpandableTreeTable, { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
-import { getChartOfAccounts } from "../../api/Accounting/AccountApi";
+import { getChartOfAccounts, deleteChartOfAccount } from "../../api/Accounting/AccountApi";
 import GLView from "./glview";
 import { useNavigate } from "react-router-dom";
+import { showConfirm, showLoading, showSuccess, showApiError, closeSwal } from "../../utils/alert";
+
 import {
   AlertCircle,
   Loader2,
@@ -159,6 +161,38 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
     setShowNewAccount(true);
   };
 
+  const handleDeleteAccount = async (
+    row: COAAccount,
+  ) => {
+    const confirmed = await showConfirm(
+      `Are you sure you want to delete account "${row.account_name}"?`,
+      {
+        title: "Delete Account",
+        confirmButtonText: "Delete",
+      }
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    showLoading("Deleting Account...");
+
+    try {
+      await deleteChartOfAccount(row.name);
+
+      await fetchCOA();
+
+      showSuccess(
+        `Account "${row.account_name}" deleted successfully.`
+      );
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      closeSwal();
+    }
+  };
+
   const handleModalClose = () => {
     setShowNewAccount(false);
     setSelectedParent(null);
@@ -312,7 +346,7 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
           {
             label: "Delete",
             icon: <Trash2 size={12} />,
-            onClick: () => console.log("Delete", row.name),
+            onClick: () => handleDeleteAccount(row),
             danger: true,
             dividerBefore: true,
           },

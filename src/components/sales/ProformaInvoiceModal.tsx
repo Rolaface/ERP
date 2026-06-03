@@ -13,7 +13,9 @@ import { MinimizableModal } from "../common/MinimizableModal";
 import { getAllCustomers } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";
 import { createProformaInvoice, editProformaInvoice } from "../../api/proformaInvoiceApi";
-import { useInvoiceForm } from "../../hooks/useInvoiceForm";
+// import { useInvoiceForm } from "../../hooks/useInvoiceForm";
+import { useProformaInvoiceForm } from "../../hooks/useProformaInvoiceForm";
+
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import DatePickerInput from "../calendar/DatePickerInput";
 import ItemTable from "../common/ItemTable";
@@ -61,7 +63,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     totals,
     ui,
     actions,
-  } = useInvoiceForm(
+  } = useProformaInvoiceForm(
     isOpen,
     onClose,
     undefined,
@@ -118,6 +120,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
       if (mode === "edit") {
         const invoiceNumber = formData.invoiceNumber ?? initialData?.id ?? initialData?.proformaId;
+        console.log("Editing Proforma Invoice with number:", invoiceNumber);
         
         if (!invoiceNumber) {
           showValidationError("Invalid invoice reference");
@@ -130,8 +133,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         response = await createProformaInvoice(finalPayload);
       }
 
-      // Safely unwrap the backend response (handles both wrapped "message" and direct data)
-      const res = response?.message || response;
+       const res = response?.message || response;
 
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(res?.message || res || "Failed to save proforma invoice");
@@ -284,8 +286,8 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
                   <div>
                     <DatePickerInput
-                      label="Valid Till"
-                      name="dueDate"
+                      label="Due Date"
+                      name="validTill"
                       value={formData.validTill}
                       required
                       onChange={(name, value) =>

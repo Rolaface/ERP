@@ -20,10 +20,41 @@ export interface CreateCOAPayload {
   is_root: "false";
 }
 
+export interface DeleteCOAPayload {
+  doctype: "Account";
+  name: string;
+}
+
 export async function createChartOfAccount(
   payload: CreateCOAPayload,
 ): Promise<any> {
   const resp: AxiosResponse = await api.post(AccountingAPI.createCOA, payload);
+  return resp.data;
+}
+
+export async function deleteChartOfAccount(
+  accountName: string,
+): Promise<any> {
+  const payload: DeleteCOAPayload = {
+    doctype: "Account",
+    name: accountName,
+  };
+
+  const formData = new FormData();
+
+  formData.append("doctype", payload.doctype);
+  formData.append("name", payload.name);
+
+  const resp: AxiosResponse = await api.post(
+    AccountingAPI.deleteCOA,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
+  );
+
   return resp.data;
 }
 
@@ -109,7 +140,12 @@ export interface AccountsPayableFilters {
   range?: string;
   group_by?: "supplier" | "voucher" | "none";
   search?: any;
-  voucher_type?: "Purchase Invoice" | "Payment Entry";
+  voucher_type?: "Purchase Invoice"
+  | "Purchase Order"
+  | "Purchase Receipt"
+  | "Payment Entry"
+  | "Journal Entry"
+  | "Expense Claim";
   // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
   status?: any;
   page?: number;
@@ -140,7 +176,11 @@ export interface AccountsReceivableFilters {
   range?: string;
   group_by?: "customer" | "voucher" | "none";
   search?: any;
-  voucher_type?: "Sales Invoice" | "Payment Entry";
+  voucher_type?: "Sales Invoice"
+  | "Sales Order"
+  | "Delivery Note"
+  | "Payment Entry"
+  | "Journal Entry";
   // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
   status?: any;
   page?: number;
