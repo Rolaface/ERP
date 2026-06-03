@@ -145,7 +145,7 @@ const menuItems: MenuItem[] = [
     name: "Customer",
     to: "/crm",
     icon: <Users {...iconProps} />,
-    modules: ["Customer", "Payment Entry","Customer Group"],
+    modules: ["Customer", "Payment Entry", "Customer Group"],
     hideInEmployeeView: true,
   },
   {
@@ -187,7 +187,7 @@ const menuItems: MenuItem[] = [
   //   to: "/performance",
   //   icon: <BarChart2 {...iconProps} />,
   //   modules: ["Performance"],
-  //   hideInEmployeeView: false, 
+  //   hideInEmployeeView: false,
   // },
 ];
 
@@ -210,7 +210,7 @@ const settingsItems: SettingsItem[] = [
     to: "/bank-management",
     label: "Bank Management",
     icon: <Landmark {...iconProps} />,
-    modules: ["Bank", "Bank Account" , "Mode of Payment","Currency Exchange"],
+    modules: ["Bank", "Bank Account", "Mode of Payment", "Currency Exchange"],
     hideInEmployeeView: true,
   },
   // {
@@ -256,7 +256,7 @@ const settingsItems: SettingsItem[] = [
     to: "/Expense-Management",
     label: "Expense Management",
     icon: <CreditCard {...iconProps} />,
-    modules: ["Expense Claim", "Expense Claim Type","Employee Advance"],
+    modules: ["Expense Claim", "Expense Claim Type", "Employee Advance"],
     hideInEmployeeView: true,
   },
   {
@@ -477,7 +477,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 flex shrink-0 items-center justify-center overflow-hidden
                 rounded-xl border border-[var(--border)] bg-card font-bold text-primary
                 transition-all duration-300
-                ${open ? "h-11 w-11 text-sm" : "h-10 w-10 text-sm"}
+                ${open ? "h-11 w-11 text-sm" : "h-12 w-12 text-sm"}
               `}
             >
               {company?.logo ? (
@@ -491,16 +491,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               )}
             </div>
             <div
-              className={`
-                flex flex-col min-w-0 transition-all duration-200
-                ${
-                  open
-                    ? "opacity-100 w-auto"
-                    : "opacity-0 w-0 overflow-hidden pointer-events-none"
-                }
-              `}
+              className={`flex flex-col min-w-0 flex-1 transition-all duration-200
+                ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden pointer-events-none"}`}
             >
-              <span className="truncate text-sm font-bold text-main leading-tight">
+              <span
+                title={company?.name}
+                className="text-sm font-semibold text-main leading-5 break-words"
+              >
                 {company?.name ?? "Loading…"}
               </span>
             </div>
