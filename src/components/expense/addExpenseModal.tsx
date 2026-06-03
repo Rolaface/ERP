@@ -18,7 +18,7 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
-import { getAllEmployees, getEmployeeById } from "../../api/employeeapi";
+import {  getEmployeeById } from "../../api/employeeapi";
 import EmployeeAdvanceList from "../../views/ExpenseManagement/advanceList";
 import { useHRView } from "../../hooks/permission/useHRView";
 import { useAuth } from "../../context/AuthContext";
@@ -31,6 +31,7 @@ import {
   getExpenseClaimById,
   type MappedEmployeeAdvance,
   attachDocumentToExpenseClaim,
+  getAllEmployees,
 } from "../../api/expenseClaimApi";
 import { showApiError } from "../../utils/alert";
 import DatePickerInput from "../calendar/DatePickerInput";
@@ -507,21 +508,19 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     }
   }, []);
 
-  const fetchEmployees = useCallback(async (search: string) => {
-    try {
-      const res = await getAllEmployees(1, 50, search);
-      const data = res?.results ?? res?.data ?? [];
-      return data.map((emp: any) => ({
-        value: emp.name,
-        label: emp.employee_name,
-      }));
-    } catch (err) {
-      showApiError(err);
-      return [];
-    }
-  }, []);
+const fetchEmployees = useCallback(async (search: string) => {
+  try {
+    const data = await getAllEmployees(search);
+    return data.map((emp: any) => ({
+      value: emp.value,
+      label: emp.label,
+    }));
+  } catch (err) {
+    showApiError(err);
+    return [];
+  }
+}, []);
 
-  // ── validation ────────────────────────────────────────────────────────────
   const validateExpense = () => {
     const newErrors: Record<string, string> = {};
     if (!form.claim_title.trim()) newErrors.claim_title = "Title is required";

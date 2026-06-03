@@ -333,7 +333,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   <ModalInput
                     label="Registration No"
                     name="registration_no"
-                    type="number"
+                    type="string"
                     value={form.registration_no ?? ""}
                     onChange={handleChange}
                     placeholder="Enter registration number"
