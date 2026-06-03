@@ -1,6 +1,8 @@
 // components/BarcodeViewAllModal.tsx
 import React from "react";
 import { buildBars } from "./BarCodeViewModal";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 export interface BatchRow {
   batchNumber: string;
@@ -28,9 +30,12 @@ const fmtDate = (d?: string) =>
 
 const buildAllPrintHTML = (batches: BatchRow[], itemName: string, itemCode: string): string => {
   const cards = batches.map(b => {
+    // const barcodeBlock = b.barcodeImageUrl
+    //   ? `<img src="${b.barcodeImageUrl}" alt="barcode" style="max-width:180px;height:48px;object-fit:contain;display:block;margin:0 auto"/>`
+    //   : buildBars(b.barcodeId);
     const barcodeBlock = b.barcodeImageUrl
-      ? `<img src="${b.barcodeImageUrl}" alt="barcode" style="max-width:180px;height:48px;object-fit:contain;display:block;margin:0 auto"/>`
-      : buildBars(b.barcodeId);
+  ? `<img src="${b.barcodeImageUrl}" alt="barcode" style="max-width:180px;height:48px;object-fit:contain;display:block;margin:0 auto"/>`
+  : `<p style="font-size:10px;color:#888;margin:0">No image</p>`;
 
     const badges = [
       `Qty: ${b.quantity}`,
@@ -43,7 +48,7 @@ const buildAllPrintHTML = (batches: BatchRow[], itemName: string, itemCode: stri
       <p style="margin:0;font-size:11px;font-weight:700;color:#111;text-align:center">${b.batchNumber}</p>
       <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;color:#111">
         ${barcodeBlock}
-        <p style="margin:0;font-size:11px;font-family:monospace;letter-spacing:.12em;color:#111">${b.barcodeId}</p>
+        <p style="margin:0;font-size:11px;font-family:monospace;letter-spacing:.12em;color:#111">${b.barcodeId ?? ""}</p>
       </div>
       <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">${badges}</div>
     </div>`;
@@ -81,14 +86,59 @@ const BarcodeViewAllModal: React.FC<Props> = ({ open, onClose, itemName, itemCod
     setTimeout(() => w.print(), 400);
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([buildAllPrintHTML(batches, itemName, itemCode)], { type: "text/html" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `barcodes-${itemCode}-all.html`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
+const handleDownload = async () => {
+  const loadImageAsBase64 = (url: string): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "use-credentials"; // sends cookies for erp.local session
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext("2d")!.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => reject(new Error("Failed to load: " + url));
+      img.src = url;
+    });
+
+  // Pre-load all barcode images via native Image (respects session/cookies)
+  const batchesWithBase64 = await Promise.all(
+    batches.map(async (b) => {
+      if (!b.barcodeImageUrl) return b;
+      try {
+        const base64 = await loadImageAsBase64(b.barcodeImageUrl);
+        return { ...b, barcodeImageUrl: base64 };
+      } catch {
+        return { ...b, barcodeImageUrl: undefined };
+      }
+    })
+  );
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:20px;font-family:Arial,sans-serif";
+  container.innerHTML = buildAllPrintHTML(batchesWithBase64, itemName, itemCode);
+  document.body.appendChild(container);
+
+  // Wait for <img> tags in container to finish loading (they're already base64, instant)
+  await Promise.all(
+    Array.from(container.querySelectorAll("img")).map(
+      (img) => new Promise((res) => { img.onload = img.onerror = res; if (img.complete) res(null); })
+    )
+  );
+
+  try {
+    const canvas = await html2canvas(container, { scale: 2, useCORS: false, allowTaint: true });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = (canvas.height * pageW) / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, pageW, pageH);
+    pdf.save(`barcodes-${itemCode}-all.pdf`);
+  } finally {
+    document.body.removeChild(container);
+  }
+};
 
   return (
     <>
@@ -150,9 +200,12 @@ const BarcodeViewAllModal: React.FC<Props> = ({ open, onClose, itemName, itemCod
                         alt="barcode"
                         style={{ maxWidth:180,height:48,objectFit:"contain",display:"block" }}
                       />
+                    // ) : (
+                    //   <div dangerouslySetInnerHTML={{ __html: buildBars(b.barcodeId) }} />
+                    // )}
                     ) : (
-                      <div dangerouslySetInnerHTML={{ __html: buildBars(b.barcodeId) }} />
-                    )}
+  <p style={{ fontSize:10, color:"var(--muted,#888)", margin:0 }}>No image</p>
+)}
                     <p style={{ fontSize:11,fontFamily:"monospace",letterSpacing:".12em",margin:0 }}>{b.barcodeId}</p>
                   </div>
 
