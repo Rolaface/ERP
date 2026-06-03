@@ -714,6 +714,7 @@ accounting: {
     getBranches: `${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
     createbranch: `${ERP_BASE}/api/resource/Branch`,
     getshifts: `${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
+    employeesearch: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
 
 
   },
