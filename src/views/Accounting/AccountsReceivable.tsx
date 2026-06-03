@@ -29,6 +29,12 @@ import { getPaymentById } from "../../api/CustomerPayment";
 import PaymentEntryDetailModal, {
   type PaymentEntryDetail,
 } from "../../components/PaymentEntryDetailModal";
+
+import JournalEntryDetailModal, {
+  type JournalEntryDetail,
+} from "../../components/JournalEntryDetailModal";
+
+import { getJournalEntryById } from "../../api/Accounting/JournalEntryApi";
 import { showApiError } from "../../utils/alert";
 import { useCompanyStore } from "../../store/companyStore";
 
@@ -115,20 +121,24 @@ const AccountsReceivable = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [costCenterOptions, setCostCenterOptions] = useState<LookupOption[]>([]);
+  const [costCenterOptions, setCostCenterOptions] = useState<LookupOption[]>(
+    [],
+  );
   const [customerOptions, setCustomerOptions] = useState<LookupOption[]>([]);
-  const [receivableAccountOptions, setReceivableAccountOptions] = useState<LookupOption[]>([]);
+  const [receivableAccountOptions, setReceivableAccountOptions] = useState<
+    LookupOption[]
+  >([]);
 
   const [selectedVoucherType, setSelectedVoucherType] = useState<
     ReceivableVoucherType | ""
   >("");
   const voucherTypeOptions: ReceivableVoucherType[] = [
-  "Sales Invoice",
-  "Sales Order",
-  "Delivery Note",
-  "Payment Entry",
-  "Journal Entry",
-];
+    "Sales Invoice",
+    "Sales Order",
+    "Delivery Note",
+    "Payment Entry",
+    "Journal Entry",
+  ];
   const [selectedCostCenter, setSelectedCostCenter] = useState<string>("");
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [selectedReceivableAccount, setSelectedReceivableAccount] =
@@ -160,6 +170,11 @@ const AccountsReceivable = () => {
     useState<PaymentEntryDetail | null>(null);
   const [paymentDrawerLoading, setPaymentDrawerLoading] = useState(false);
 
+  const [journalDrawerOpen, setJournalDrawerOpen] = useState(false);
+  const [journalDrawerData, setJournalDrawerData] =
+    useState<JournalEntryDetail | null>(null);
+  const [journalDrawerLoading, setJournalDrawerLoading] = useState(false);
+
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
@@ -190,13 +205,13 @@ const AccountsReceivable = () => {
           getCompanyRecievableAccounts(),
         ]);
         setCostCenterOptions(
-          cc.map((c: any) => ({ label: c.label || c.value, value: c.value }))
+          cc.map((c: any) => ({ label: c.label || c.value, value: c.value })),
         );
         setCustomerOptions(
-          cust.map((c: any) => ({ label: c.label || c.value, value: c.value }))
+          cust.map((c: any) => ({ label: c.label || c.value, value: c.value })),
         );
         setReceivableAccountOptions(
-          acc.map((a: any) => ({ label: a.label || a.value, value: a.value }))
+          acc.map((a: any) => ({ label: a.label || a.value, value: a.value })),
         );
       } catch (error) {
         console.error(error);
@@ -340,7 +355,10 @@ const AccountsReceivable = () => {
       setDrawerData(null);
       try {
         const res = await getSalesInvoiceById(row.id);
-        if (res?.message?.status_code === 200 || res?.message?.status === "success") {
+        if (
+          res?.message?.status_code === 200 ||
+          res?.message?.status === "success"
+        ) {
           setDrawerData(res?.message?.data as InvoiceDetail);
         }
       } catch (err) {
@@ -361,6 +379,23 @@ const AccountsReceivable = () => {
         showApiError(err);
       } finally {
         setPaymentDrawerLoading(false);
+      }
+    } else if (row.voucherType === "Journal Entry") {
+      setJournalDrawerOpen(true);
+      setJournalDrawerLoading(true);
+      setJournalDrawerData(null);
+      try {
+        const res = await getJournalEntryById(row.id);
+
+        const journalData = res?.message?.data || res?.data;
+
+        if (journalData) {
+          setJournalDrawerData(journalData as JournalEntryDetail);
+        }
+      } catch (err) {
+        showApiError(err);
+      } finally {
+        setJournalDrawerLoading(false);
       }
     } else {
       console.log(`View detail is not supported for ${row.voucherType}.`);
@@ -527,18 +562,37 @@ const AccountsReceivable = () => {
     { label: "91-120 Days", key: "91_120" },
     { label: "121+ Days", key: "121_above" },
   ];
-  const formatDate = (date?: string | Date) => {
-    if (!date) return "";
+  const formatDate = (date?: string | Date | null): string => {
+  if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  try {
+    let d: Date;
 
-    if (typeof date === "string") {
-      const [year, month, day] = date.split("T")[0].split("-").map(Number);
-      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    if (date instanceof Date) {
+      d = date;
+    } else {
+      let safeDateStr = String(date).trim();
+      if (safeDateStr.includes(" ")) {
+        safeDateStr = safeDateStr.replace(" ", "T");
+      }
+      d = new Date(safeDateStr);
     }
 
-    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-  };
+    if (isNaN(d.getTime())) return "";
+
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+      .format(d)
+      .replace(/ /g, "-")
+      .toUpperCase();
+      
+  } catch (error) {
+    return "";
+  }
+};
 
   const columns: Column<Receivable>[] = [
     {
@@ -573,7 +627,8 @@ const AccountsReceivable = () => {
       header: "Total",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          {currencySymbol || "-"} {row.invoicedAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"}{" "}
+          {row.invoicedAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -584,7 +639,8 @@ const AccountsReceivable = () => {
       header: "Paid",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          {currencySymbol || "-"} {row.paidAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"}{" "}
+          {row.paidAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -597,7 +653,8 @@ const AccountsReceivable = () => {
         <span
           className={`text-main ${row.isSummary ? "font-bold" : "font-semibold"}`}
         >
-          {currencySymbol || "-"} {row.outstandingAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"}{" "}
+          {row.outstandingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -606,7 +663,8 @@ const AccountsReceivable = () => {
     {
       key: "due",
       header: "Due/Posted Date",
-      render: (row) => (row.isSummary ? null : <span>{formatDate(row.due)}</span>),
+      render: (row) =>
+        row.isSummary ? null : <span>{formatDate(row.due)}</span>,
     },
     {
       key: "days",
@@ -620,8 +678,9 @@ const AccountsReceivable = () => {
               <FaClock className="text-muted text-xs" />
             )}
             <span
-              className={`text-xs font-medium ${row.overdue ? "text-danger" : "text-muted"
-                }`}
+              className={`text-xs font-medium ${
+                row.overdue ? "text-danger" : "text-muted"
+              }`}
             >
               {Math.abs(row.days)} days {row.overdue ? "overdue" : "left"}
             </span>
@@ -636,14 +695,15 @@ const AccountsReceivable = () => {
         const s = row.status.toLowerCase();
         return (
           <span
-            className={`px-3 py-1 rounded-full text-[10px] font-bold ${s === "paid"
-              ? "bg-success text-success"
-              : s === "overdue"
-                ? "bg-danger text-white"
-                : s === "pending"
-                  ? "bg-warning text-warning"
-                  : "bg-primary text-white"
-              }`}
+            className={`px-3 py-1 rounded-full text-[10px] font-bold ${
+              s === "paid"
+                ? "bg-success text-success"
+                : s === "overdue"
+                  ? "bg-danger text-white"
+                  : s === "pending"
+                    ? "bg-warning text-warning"
+                    : "bg-primary text-white"
+            }`}
           >
             {row.status}
           </span>
@@ -706,10 +766,11 @@ const AccountsReceivable = () => {
               onClick={() =>
                 setActiveDropdown(activeDropdown === "status" ? null : "status")
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${filterStatus !== "all"
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
+                filterStatus !== "all"
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               <FaFilter className="text-xs" /> {filterStatus}
             </button>
@@ -722,10 +783,11 @@ const AccountsReceivable = () => {
                       setFilterStatus(s);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${filterStatus === s
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${
+                      filterStatus === s
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     {s}
                   </button>
@@ -740,10 +802,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "voucherType" ? null : "voucherType",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedVoucherType !== ""
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedVoucherType !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Voucher Type
             </button>
@@ -755,10 +818,11 @@ const AccountsReceivable = () => {
                     setSelectedVoucherType("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${selectedVoucherType === ""
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-main hover:bg-app"
-                    }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    selectedVoucherType === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
                 >
                   All Types
                 </button>
@@ -770,10 +834,11 @@ const AccountsReceivable = () => {
                       setSelectedVoucherType(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm ${selectedVoucherType === opt
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={`block w-full text-left px-4 py-2 text-sm ${
+                      selectedVoucherType === opt
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     {opt}
                   </button>
@@ -789,10 +854,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "groupBy" ? null : "groupBy",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${selectedGroupBy.length > 0
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
+                selectedGroupBy.length > 0
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Group By{" "}
               {selectedGroupBy.length > 0 && `(${selectedGroupBy.length})`}
@@ -830,10 +896,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "customer" ? null : "customer",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedCustomers.length > 0
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedCustomers.length > 0
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Customer{" "}
               {selectedCustomers.length > 0 && `(${selectedCustomers.length})`}
@@ -876,10 +943,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "costCenter" ? null : "costCenter",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedCostCenter !== ""
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedCostCenter !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Cost Center
             </button>
@@ -890,10 +958,11 @@ const AccountsReceivable = () => {
                     setSelectedCostCenter("");
                     setActiveDropdown(null);
                   }}
-                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === ""
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-main hover:bg-app"
-                    }`}
+                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                    selectedCostCenter === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
                 >
                   All Cost Centers
                   {selectedCostCenter === "" && (
@@ -907,10 +976,11 @@ const AccountsReceivable = () => {
                       setSelectedCostCenter(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt.value
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                      selectedCostCenter === opt.value
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     <span className="truncate pr-2">{opt.label}</span>
                     {selectedCostCenter === opt.value && (
@@ -929,10 +999,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "account" ? null : "account",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedReceivableAccount !== ""
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedReceivableAccount !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Account
             </button>
@@ -943,10 +1014,11 @@ const AccountsReceivable = () => {
                     setSelectedReceivableAccount("");
                     setActiveDropdown(null);
                   }}
-                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedReceivableAccount === ""
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-main hover:bg-app"
-                    }`}
+                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                    selectedReceivableAccount === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
                 >
                   All Accounts
                   {selectedReceivableAccount === "" && (
@@ -960,10 +1032,11 @@ const AccountsReceivable = () => {
                       setSelectedReceivableAccount(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedReceivableAccount === opt.value
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                      selectedReceivableAccount === opt.value
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     <span className="truncate pr-2">{opt.label}</span>
                     {selectedReceivableAccount === opt.value && (
@@ -983,23 +1056,23 @@ const AccountsReceivable = () => {
             filterStatus !== "all" ||
             searchTerm !== "" ||
             reportDate !== getTodayDate()) && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setFilterStatus("all");
-                  setSelectedVoucherType("");
-                  setSelectedGroupBy([]);
-                  setSelectedCustomers([]);
-                  setSelectedCostCenter("");
-                  setSelectedReceivableAccount("");
-                  setReportDate(getTodayDate());
-                  setActiveDropdown(null);
-                }}
-                className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
-              >
-                Clear All
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setFilterStatus("all");
+                setSelectedVoucherType("");
+                setSelectedGroupBy([]);
+                setSelectedCustomers([]);
+                setSelectedCostCenter("");
+                setSelectedReceivableAccount("");
+                setReportDate(getTodayDate());
+                setActiveDropdown(null);
+              }}
+              className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
+            >
+              Clear All
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 w-full lg:w-auto justify-end">
@@ -1024,7 +1097,10 @@ const AccountsReceivable = () => {
         showToolbar={true}
         tableId="accounts-receivable"
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         toolbarPlaceholder="Search receivables..."
         enableColumnSelector
         totalItems={totalItems}
@@ -1058,8 +1134,8 @@ const AccountsReceivable = () => {
                     item.key as keyof typeof kpis.ageing_summary
                   ]
                     ? kpis.ageing_summary[
-                      item.key as keyof typeof kpis.ageing_summary
-                    ].toLocaleString(undefined, { maximumFractionDigits: 0 })
+                        item.key as keyof typeof kpis.ageing_summary
+                      ].toLocaleString(undefined, { maximumFractionDigits: 0 })
                     : "0"}
                 </p>
               )}
@@ -1101,6 +1177,15 @@ const AccountsReceivable = () => {
         onClose={() => {
           setPaymentDrawerOpen(false);
           setPaymentDrawerData(null);
+        }}
+      />
+      <JournalEntryDetailModal
+        open={journalDrawerOpen}
+        data={journalDrawerData}
+        loading={journalDrawerLoading}
+        onClose={() => {
+          setJournalDrawerOpen(false);
+          setJournalDrawerData(null);
         }}
       />
     </div>

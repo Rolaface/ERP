@@ -375,6 +375,7 @@ const GlobalModalHandler: React.FC = () => {
             onClose={handleClose}
             onSubmit={handleSubmit}
             initialData={modal.initialData}
+             mode={modal.isEdit ? "edit" : "create"}
           />,
         );
 
@@ -705,6 +706,7 @@ const GlobalModalHandler: React.FC = () => {
             onClose={handleClose}
             initialData={getInitialData<CreateUserFormData>(modal.initialData)}
             isEditMode={modal.isEdit}
+            isViewMode={modal.context?.isViewMode ?? false}
             onSubmit={
               modal.isEdit && context?.onSubmit
                 ? async (data: CreateUserFormData) => {
@@ -713,20 +715,32 @@ const GlobalModalHandler: React.FC = () => {
                   useDataRefreshStore
                     .getState()
                     .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
-                  if (context?.onSuccess) await context.onSuccess(undefined);
+
+                  if (context?.onSuccess) {
+                    await context.onSuccess(undefined);
+                  }
+
                   handleClose();
                 }
                 : async (data: CreateUserFormData) => {
                   const response = await createUser(data);
+
                   if (response.message.status !== "success") {
-                    throw new Error(response.message.data  || "User creation failed");
+                    throw new Error(
+                      response.message.data || "User creation failed"
+                    );
                   }
+
                   showSuccess("User created successfully");
+
                   useDataRefreshStore
                     .getState()
                     .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
-                  if (context?.onSuccess)
+
+                  if (context?.onSuccess) {
                     await context.onSuccess(response.message.data);
+                  }
+
                   handleClose();
                 }
             }

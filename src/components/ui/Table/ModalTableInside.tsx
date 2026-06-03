@@ -6,7 +6,6 @@ import Tooltip from "../../Tooltip";
 import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { useColumnStore } from "../../../store/useColumnStore";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SortState {
   sortBy:    string;
@@ -122,7 +121,7 @@ const ModalTableInner = <T extends Record<string, any>>({
   bodyMaxHeight   = 300,
 }: ModalTableProps<T>) => {
 
-  // ── Visible columns ──────────────────────────────────────────────────────
+
   const allKeys = useMemo(() => columns.map((c) => c.key), [columns]);
   const { setVisibleKeys: saveVisibleKeys } = useColumnStore();
 
@@ -142,9 +141,7 @@ const ModalTableInner = <T extends Record<string, any>>({
         filtered.push("actions");
       return filtered;
     }
-    const nonAction = allKeys.filter((k) => k !== "actions");
-    const first5    = nonAction.slice(0, 5);
-    return allKeys.includes("actions") ? [...first5, "actions"] : allKeys.slice(0, 6);
+    return allKeys;
   });
 
   const handleApplyColumns = (keys: string[]) => {

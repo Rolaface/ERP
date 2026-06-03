@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
-import {
-  FaFilter,
-  FaDownload,
-  FaEye,
-  FaClock,
-  FaCheck,
-} from "react-icons/fa";
+import { FaFilter, FaDownload, FaEye, FaClock, FaCheck } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
@@ -30,6 +24,12 @@ import { getPaymentById } from "../../api/CustomerPayment";
 import PaymentEntryDetailModal, {
   type PaymentEntryDetail,
 } from "../../components/PaymentEntryDetailModal";
+
+import JournalEntryDetailModal, {
+  type JournalEntryDetail,
+} from "../../components/JournalEntryDetailModal";
+
+import { getJournalEntryById } from "../../api/Accounting/JournalEntryApi";
 import { useCompanyStore } from "../../store/companyStore";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
@@ -116,17 +116,21 @@ const AccountsPayable = () => {
     PayableVoucherType | ""
   >("");
   const voucherTypeOptions: PayableVoucherType[] = [
-  "Purchase Invoice",
-  "Purchase Order",
-  "Purchase Receipt",
-  "Payment Entry",
-  "Journal Entry",
-  "Expense Claim",
-];
-  
-  const [costCenterOptions, setCostCenterOptions] = useState<LookupOption[]>([]);
+    "Purchase Invoice",
+    "Purchase Order",
+    "Purchase Receipt",
+    "Payment Entry",
+    "Journal Entry",
+    "Expense Claim",
+  ];
+
+  const [costCenterOptions, setCostCenterOptions] = useState<LookupOption[]>(
+    [],
+  );
   const [supplierOptions, setSupplierOptions] = useState<LookupOption[]>([]);
-  const [payableAccountOptions, setPayableAccountOptions] = useState<LookupOption[]>([]);
+  const [payableAccountOptions, setPayableAccountOptions] = useState<
+    LookupOption[]
+  >([]);
 
   const [selectedCostCenter, setSelectedCostCenter] = useState<string>("");
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
@@ -160,6 +164,11 @@ const AccountsPayable = () => {
     useState<PaymentEntryDetail | null>(null);
   const [paymentDrawerLoading, setPaymentDrawerLoading] = useState(false);
 
+  const [journalDrawerOpen, setJournalDrawerOpen] = useState(false);
+  const [journalDrawerData, setJournalDrawerData] =
+    useState<JournalEntryDetail | null>(null);
+  const [journalDrawerLoading, setJournalDrawerLoading] = useState(false);
+
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
@@ -191,13 +200,13 @@ const AccountsPayable = () => {
         ]);
 
         setCostCenterOptions(
-          cc.map((c: any) => ({ label: c.label || c.value, value: c.value }))
+          cc.map((c: any) => ({ label: c.label || c.value, value: c.value })),
         );
         setSupplierOptions(
-          supp.map((s: any) => ({ label: s.label || s.value, value: s.value }))
+          supp.map((s: any) => ({ label: s.label || s.value, value: s.value })),
         );
         setPayableAccountOptions(
-          acc.map((a: any) => ({ label: a.label || a.value, value: a.value }))
+          acc.map((a: any) => ({ label: a.label || a.value, value: a.value })),
         );
       } catch (error) {
         console.error(error);
@@ -366,6 +375,23 @@ const AccountsPayable = () => {
       } finally {
         setPaymentDrawerLoading(false);
       }
+    } else if (row.voucherType === "Journal Entry") {
+      setJournalDrawerOpen(true);
+      setJournalDrawerLoading(true);
+      setJournalDrawerData(null);
+      try {
+        const res = await getJournalEntryById(row.id);
+
+        const journalData = res?.message?.data || res?.data;
+
+        if (journalData) {
+          setJournalDrawerData(journalData as JournalEntryDetail);
+        }
+      } catch (err) {
+        showApiError(err);
+      } finally {
+        setJournalDrawerLoading(false);
+      }
     } else {
       console.log(`View detail is not supported for ${row.voucherType}.`);
     }
@@ -496,13 +522,17 @@ const AccountsPayable = () => {
   const stats = [
     {
       label: "Total Payables (Outstanding)",
-      value: `${currencySymbol || "-"} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, {
+      value: `${currencySymbol || "-"} ${(
+        kpis?.total_outstanding || 0
+      ).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
     {
       label: "Overdue Amount",
-      value: `${currencySymbol || "-"} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, {
+      value: `${currencySymbol || "-"} ${(
+        kpis?.overdue_amount || 0
+      ).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
@@ -512,7 +542,9 @@ const AccountsPayable = () => {
     },
     {
       label: "Total Invoiced",
-      value: `${currencySymbol || "-"} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, {
+      value: `${currencySymbol || "-"} ${(
+        kpis?.total_invoiced || 0
+      ).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
@@ -572,17 +604,35 @@ const AccountsPayable = () => {
     scheduleData.week4Plus,
   ];
 
-  const formatDate = (date: string | Date) => {
+  const formatDate = (date?: string | Date | null): string => {
     if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    try {
+      let d: Date;
 
-    if (typeof date === "string") {
-      const [year, month, day] = date.split("T")[0].split("-").map(Number);
-      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+      if (date instanceof Date) {
+        d = date;
+      } else {
+        let safeDateStr = String(date).trim();
+        if (safeDateStr.includes(" ")) {
+          safeDateStr = safeDateStr.replace(" ", "T");
+        }
+        d = new Date(safeDateStr);
+      }
+
+      if (isNaN(d.getTime())) return "";
+
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+        .format(d)
+        .replace(/ /g, "-")
+        .toUpperCase();
+    } catch (error) {
+      return "";
     }
-
-    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
 
   const columns: Column<Payable>[] = [
@@ -626,7 +676,8 @@ const AccountsPayable = () => {
       header: "Total",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          {currencySymbol || "-"} {row.invoicedAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"}{" "}
+          {row.invoicedAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -637,7 +688,8 @@ const AccountsPayable = () => {
       header: "Paid",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-          {currencySymbol || "-"} {row.paidAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"}{" "}
+          {row.paidAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -650,7 +702,8 @@ const AccountsPayable = () => {
         <span
           className={`text-main ${row.isSummary ? "font-bold" : "font-semibold"}`}
         >
-          {currencySymbol || "-"} {row.outstandingAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"}{" "}
+          {row.outstandingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -659,7 +712,8 @@ const AccountsPayable = () => {
     {
       key: "due",
       header: "Due/Posted Date",
-      render: (row) => (row.isSummary ? null : <span>{formatDate(row.due)}</span>),
+      render: (row) =>
+        row.isSummary ? null : <span>{formatDate(row.due)}</span>,
     },
     {
       key: "days",
@@ -669,12 +723,13 @@ const AccountsPayable = () => {
           <div className="flex items-center gap-1">
             <FaClock className="text-muted text-xs" />
             <span
-              className={`text-xs font-medium ${row.days < 0
-                ? "text-danger"
-                : row.days <= 7
-                  ? "text-warning"
-                  : "text-muted"
-                }`}
+              className={`text-xs font-medium ${
+                row.days < 0
+                  ? "text-danger"
+                  : row.days <= 7
+                    ? "text-warning"
+                    : "text-muted"
+              }`}
             >
               {row.days < 0
                 ? `${Math.abs(row.days)} days overdue`
@@ -691,14 +746,15 @@ const AccountsPayable = () => {
         const s = row.status.toLowerCase();
         return (
           <span
-            className={`px-3 py-1 rounded-full text-[10px] font-bold ${s === "paid"
-              ? "bg-success text-success"
-              : s === "overdue"
-                ? "bg-danger text-white"
-                : s === "pending"
-                  ? "bg-warning text-warning"
-                  : "bg-primary text-white"
-              }`}
+            className={`px-3 py-1 rounded-full text-[10px] font-bold ${
+              s === "paid"
+                ? "bg-success text-success"
+                : s === "overdue"
+                  ? "bg-danger text-white"
+                  : s === "pending"
+                    ? "bg-warning text-warning"
+                    : "bg-primary text-white"
+            }`}
           >
             {row.status}
           </span>
@@ -761,10 +817,11 @@ const AccountsPayable = () => {
               onClick={() =>
                 setActiveDropdown(activeDropdown === "status" ? null : "status")
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${filterStatus !== "all"
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
+                filterStatus !== "all"
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               <FaFilter className="text-xs" /> {filterStatus}
             </button>
@@ -777,10 +834,11 @@ const AccountsPayable = () => {
                       setFilterStatus(s);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${filterStatus === s
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${
+                      filterStatus === s
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     {s}
                   </button>
@@ -796,10 +854,11 @@ const AccountsPayable = () => {
                   activeDropdown === "voucherType" ? null : "voucherType",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedVoucherType !== ""
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedVoucherType !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Voucher Type
             </button>
@@ -811,10 +870,11 @@ const AccountsPayable = () => {
                     setSelectedVoucherType("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm transition-colors ${selectedVoucherType === ""
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-main hover:bg-app"
-                    }`}
+                  className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                    selectedVoucherType === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
                 >
                   All Types
                 </button>
@@ -826,10 +886,11 @@ const AccountsPayable = () => {
                       setSelectedVoucherType(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${selectedVoucherType === opt
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                      selectedVoucherType === opt
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     {opt}
                   </button>
@@ -845,10 +906,11 @@ const AccountsPayable = () => {
                   activeDropdown === "groupBy" ? null : "groupBy",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${selectedGroupBy.length > 0
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
+                selectedGroupBy.length > 0
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Group By{" "}
               {selectedGroupBy.length > 0 && `(${selectedGroupBy.length})`}
@@ -886,10 +948,11 @@ const AccountsPayable = () => {
                   activeDropdown === "supplier" ? null : "supplier",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedSuppliers.length > 0
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedSuppliers.length > 0
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Supplier{" "}
               {selectedSuppliers.length > 0 && `(${selectedSuppliers.length})`}
@@ -932,10 +995,11 @@ const AccountsPayable = () => {
                   activeDropdown === "costCenter" ? null : "costCenter",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedCostCenter !== ""
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedCostCenter !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Cost Center
             </button>
@@ -946,10 +1010,11 @@ const AccountsPayable = () => {
                     setSelectedCostCenter("");
                     setActiveDropdown(null);
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === ""
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-main hover:bg-app"
-                    }`}
+                  className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                    selectedCostCenter === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
                 >
                   All Cost Centers
                   {selectedCostCenter === "" && (
@@ -963,10 +1028,11 @@ const AccountsPayable = () => {
                       setSelectedCostCenter(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt.value
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                      selectedCostCenter === opt.value
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     <span className="truncate pr-2">{opt.label}</span>
                     {selectedCostCenter === opt.value && (
@@ -985,10 +1051,11 @@ const AccountsPayable = () => {
                   activeDropdown === "account" ? null : "account",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedPayableAccount !== ""
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedPayableAccount !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Account
             </button>
@@ -999,10 +1066,11 @@ const AccountsPayable = () => {
                     setSelectedPayableAccount("");
                     setActiveDropdown(null);
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedPayableAccount === ""
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-main hover:bg-app"
-                    }`}
+                  className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                    selectedPayableAccount === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
                 >
                   All Accounts
                   {selectedPayableAccount === "" && (
@@ -1016,10 +1084,11 @@ const AccountsPayable = () => {
                       setSelectedPayableAccount(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedPayableAccount === opt.value
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                      selectedPayableAccount === opt.value
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     <span className="truncate pr-2">{opt.label}</span>
                     {selectedPayableAccount === opt.value && (
@@ -1039,23 +1108,23 @@ const AccountsPayable = () => {
             filterStatus !== "all" ||
             searchTerm !== "" ||
             reportDate !== getTodayDate()) && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setFilterStatus("all");
-                  setSelectedGroupBy([]);
-                  setSelectedSuppliers([]);
-                  setSelectedCostCenter("");
-                  setSelectedPayableAccount("");
-                  setReportDate(getTodayDate());
-                  setSelectedVoucherType("");
-                  setActiveDropdown(null);
-                }}
-                className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
-              >
-                Clear All
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setFilterStatus("all");
+                setSelectedGroupBy([]);
+                setSelectedSuppliers([]);
+                setSelectedCostCenter("");
+                setSelectedPayableAccount("");
+                setReportDate(getTodayDate());
+                setSelectedVoucherType("");
+                setActiveDropdown(null);
+              }}
+              className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
+            >
+              Clear All
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 w-full lg:w-auto justify-end">
@@ -1081,7 +1150,10 @@ const AccountsPayable = () => {
         showToolbar={true}
         tableId="accounts-payable"
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         toolbarPlaceholder="Search payables..."
         enableColumnSelector
         pageSizeOptions={[10, 25, 50, 100]}
@@ -1155,6 +1227,15 @@ const AccountsPayable = () => {
         onClose={() => {
           setPaymentDrawerOpen(false);
           setPaymentDrawerData(null);
+        }}
+      />
+      <JournalEntryDetailModal
+        open={journalDrawerOpen}
+        data={journalDrawerData}
+        loading={journalDrawerLoading}
+        onClose={() => {
+          setJournalDrawerOpen(false);
+          setJournalDrawerData(null);
         }}
       />
     </div>

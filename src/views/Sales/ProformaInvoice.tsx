@@ -582,7 +582,7 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
     },
     {
       key: "validTill",
-      header: "Valid Till",
+      header: "Due Date",
       align: "left",
       sortable: true,
       render: (inv) => (

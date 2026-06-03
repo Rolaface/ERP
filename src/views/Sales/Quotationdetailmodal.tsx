@@ -1,24 +1,72 @@
 import React from "react";
+import Tooltip from "../../components/Tooltip"; // Ensure this path is correct
 
-// ─── Types 
+// ─── Types ────────────────────────────────────────────────────────────────────
 export interface QuotationDetail {
-  id: string;
-  customerId: string;
+  id?: string;
+  customerId?: string;
+  customerName?: string;
   customerTpin?: string;
-  currencyCode: string;
-  // exchangeRt?: string;
-  transactionDate: string;
-  industryBases?: string;
-  validUntil: string;
-  invoiceStatus: string;
+  currencyCode?: string;
+  currency?: string;
+  exchangeRt?: string | number;
+  exchangeRate?: number;
+  transactionDate?: string;
+  postingDate?: string;
+  validUntil?: string;
+  validTill?: string;
+  invoiceStatus?: string;
+  status?: string;
   invoiceType?: string;
+  industryBases?: string;
   destnCountryCd?: string;
   lpoNumber?: string | null;
-  billingAddress?: { line1?: string; line2?: string; postalCode?: string; city?: string; state?: string; country?: string };
-  shippingAddress?: { line1?: string; line2?: string; postalCode?: string; city?: string; state?: string; country?: string };
-  paymentInformation?: { paymentTerms?: string; paymentMethod?: string; bankName?: string; accountNumber?: string; routingNumber?: string; swiftCode?: string };
-  items?: Array<{ itemCode?: string; itemName?: string; description?: string; quantity?: number; price?: number; discount?: number; vatCode?: string | null; packingUnit?: string; packingSize?: string }>;
-  terms?: { selling?: { general?: string; delivery?: string; cancellation?: string; warranty?: string; liability?: string; payment?: { dueDates?: string; lateCharges?: string; taxes?: string; notes?: string; phases?: Array<{ name: string; percentage: string; condition: string }> } } };
+  grandTotal?: number;
+  netTotal?: number;
+  billingAddress?: any;
+  shippingAddress?: any;
+  paymentInformation?: { 
+    paymentTerms?: string; 
+    paymentMethod?: string; 
+    bankName?: string; 
+    accountNumber?: string; 
+    routingNumber?: string; 
+    swiftCode?: string 
+  };
+  items?: Array<{
+    itemCode?: string; 
+    itemName?: string; 
+    description?: string;
+    quantity?: string | number; 
+    rate?: string | number; 
+    price?: string | number;
+    discountAmount?: string | number; 
+    discount?: string | number; 
+    tax?: string | number;
+    amount?: string | number; 
+    itemTotal?: string | number; 
+    packingUnit?: string | number; 
+    packingSize?: string | number;
+    batchNo?: string;
+    expDate?: string;
+    vatCode?: string | null;
+  }>;
+  terms?: { 
+    selling?: { 
+      general?: string; 
+      delivery?: string; 
+      cancellation?: string; 
+      warranty?: string; 
+      liability?: string; 
+      payment?: { 
+        dueDates?: string; 
+        lateCharges?: string; 
+        taxes?: string; 
+        notes?: string; 
+        phases?: Array<{ name: string; percentage: string; condition: string }> 
+      } 
+    } 
+  };
 }
 
 interface Props {
@@ -33,28 +81,78 @@ interface Props {
   onClosePdf?: () => void;
 }
 
-// ─── Helpers 
-const fmt = (n?: number, currency = "USD") =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(n ?? 0);
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const fmt = (n?: number, currency = "USD") => {
+  if (n == null) return "—";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${currency} ${n.toFixed(2)}`;
+  }
+};
 
 const fmtDate = (d?: string) =>
-  d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  d
+    ? new Date(d).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
 
 const STATUS_MAP: Record<string, string> = {
-  Draft: "bg-draft", Sent: "bg-info", Paid: "bg-success", Overdue: "bg-danger",
+  Draft: "bg-draft", 
+  Sent: "bg-info", 
+  Approved: "bg-success", 
+  Paid: "bg-success", 
+  Overdue: "bg-danger",
 };
 
 // Compact label+value field
 const F: React.FC<{ label: string; value?: string | null; mono?: boolean }> = ({ label, value, mono }) => (
   <div>
-    <p style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 1 }}>{label}</p>
+    <p style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 1 }}>
+      {label}
+    </p>
     <p style={{ fontSize: 13, color: value ? "var(--text)" : "var(--muted)", fontWeight: 500, fontFamily: mono ? "monospace" : undefined, lineHeight: 1.3 }}>
       {value || "—"}
     </p>
   </div>
 );
 
-// Section divider with inline title
+/** Strip HTML tags from address display strings returned by the API */
+const stripHtml = (html?: string | null): string[] => {
+  if (!html) return [];
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+};
+
+// Address card from display HTML string
+const AddressCard: React.FC<{ label: string; html?: string | null; name?: string; }> = ({ label, html, name }) => {
+  const lines = stripHtml(html);
+  if (!lines.length && !name) return null;
+  return (
+    <div style={{ padding: "7px 9px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)" }}>
+      <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>
+        {label}
+      </p>
+      {name && <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{name}</p>}
+      {lines.map((l, i) => (
+        <p key={i} style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>{l}</p>
+      ))}
+    </div>
+  );
+};
+
+// Section divider
 const S: React.FC<{ title: string }> = ({ title }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0 7px" }}>
     <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--muted)", whiteSpace: "nowrap" }}>{title}</span>
@@ -69,16 +167,21 @@ const QuotationDetailModal: React.FC<Props> = ({
 }) => {
   if (!open) return null;
 
-  const items      = data?.items ?? [];
-  const subtotal   = items.reduce((s, it) => s + (it.price ?? 0) * (it.quantity ?? 0), 0);
-  const totalDisc  = items.reduce((s, it) => s + (it.discount ?? 0), 0);
-  const grandTotal = subtotal - totalDisc;
-  const currency   = data?.currencyCode ?? "USD";
-  const statusCls  = STATUS_MAP[data?.invoiceStatus ?? "Draft"] ?? "bg-draft";
-  const phases =
-  data?.terms?.selling?.payment?.phases
-    ?.filter(p => p?.name && p?.percentage)
-    ?.slice(0, 3) ?? [];
+  const hasAddresses = data?.billingAddress || data?.shippingAddress;
+  const items = data?.items ?? [];
+  
+  // Safe math handling strings & missing fields
+  const subtotal = items.reduce((s, it) => s + Number(it.rate ?? it.price ?? 0) * Number(it.quantity ?? 0), 0);
+  const totalDisc = items.reduce((s, it) => s + Number(it.discountAmount ?? it.discount ?? 0), 0);
+  const grandTotal = data?.grandTotal ?? data?.netTotal ?? (subtotal - totalDisc);
+  const currency = data?.currency ?? data?.currencyCode ?? "USD";
+  
+  const currentStatus = data?.status ?? data?.invoiceStatus ?? "Draft";
+  const statusCls = STATUS_MAP[currentStatus] ?? "bg-draft";
+  const quotationDisplayId = data?.id ?? "—";
+  
+  const phases = data?.terms?.selling?.payment?.phases?.filter((p) => p?.percentage)?.slice(0, 3) ?? [];
+  const exchangeRateDisplay = data?.exchangeRate ?? data?.exchangeRt != null ? String(data?.exchangeRate ?? data?.exchangeRt) : null;
 
   return (
     <>
@@ -107,15 +210,14 @@ const QuotationDetailModal: React.FC<Props> = ({
           }
           .qdm-btn:hover  { opacity:.85; transform:translateY(-1px) }
           .qdm-btn:active { transform:translateY(0) }
-          .qdm-irow { transition: background .1s }
-          .qdm-irow:hover { background: var(--row-hover) }
-          .qdm-trow:hover { background: var(--row-hover) }
+          .qdm-irow { transition:background .1s }
+          .qdm-irow:hover { background:var(--row-hover) }
+          .qdm-trow:hover { background:var(--row-hover) }
         `}</style>
 
         {/* ── HEADER ── */}
         <div style={{
-          padding: "10px 14px",
-          borderBottom: "1px solid var(--border)",
+          padding: "10px 14px", borderBottom: "1px solid var(--border)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           background: "var(--card)", flexShrink: 0,
         }}>
@@ -128,10 +230,10 @@ const QuotationDetailModal: React.FC<Props> = ({
             </div>
             <div style={{ lineHeight: 1 }}>
               <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>Quotation</p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{data?.id ?? "—"}</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{quotationDisplayId}</p>
             </div>
             <span className={`qdm-btn ${statusCls}`} style={{ cursor: "default", padding: "2px 9px", fontSize: 10, borderRadius: 20 }}>
-              {data?.invoiceStatus ?? "Draft"}
+              {currentStatus}
             </span>
           </div>
 
@@ -174,79 +276,153 @@ const QuotationDetailModal: React.FC<Props> = ({
               </div>
               <div style={{ padding: "9px 11px", borderRadius: 7, background: "var(--bg)", border: "1px solid var(--border)" }}>
                 <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Issue Date</p>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.transactionDate)}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.transactionDate ?? data.postingDate)}</p>
               </div>
               <div style={{ padding: "9px 11px", borderRadius: 7, background: "var(--bg)", border: "1px solid var(--border)" }}>
                 <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Valid Until</p>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.validUntil)}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.validUntil ?? data.validTill)}</p>
               </div>
             </div>
 
             {/* ── CUSTOMER ── */}
-            <S title="Customer & Transaction" />
+            <S title="Customer & Transaction Info" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginBottom: 7 }}>
-              <F label="Customer" value={data.customerId} />
+              <F label="Customer" value={data.customerName || data.customerId} />
               <F label="TPIN" value={data.customerTpin} mono />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
-              <F label="Invoice Type" value={data.invoiceType} />
-              <F label="Industry"     value={data.industryBases} />
-              {/* <F label="Currency"     value={`${data.currencyCode} · ${data.exchangeRt ?? 1}`} /> */}
-              <F label="Destination"  value={data.destnCountryCd?.toUpperCase()} />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+              <F label="Currency" value={currency} />
+              <F label="Exchange Rate" value={exchangeRateDisplay} />
+              <F label="Destination" value={data.destnCountryCd?.toUpperCase()} />
             </div>
-            {data.lpoNumber && (
-              <div style={{ marginTop: 7 }}><F label="LPO Number" value={data.lpoNumber} /></div>
+            {(data.lpoNumber || data.invoiceType || data.industryBases) && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginTop: 7 }}>
+                <F label="Invoice Type" value={data.invoiceType} />
+                <F label="Industry" value={data.industryBases} />
+                {data.lpoNumber && <F label="LPO Number" value={data.lpoNumber} />}
+              </div>
             )}
 
             {/* ── ADDRESSES ── */}
-            {(data.billingAddress || data.shippingAddress) && (<>
+            {hasAddresses && (<>
               <S title="Addresses" />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                {[{ label: "Billing", addr: data.billingAddress }, { label: "Shipping", addr: data.shippingAddress }].map(({ label, addr }) =>
-                  addr ? (
-                    <div key={label} style={{ padding: "7px 9px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)" }}>
-                      <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{label}</p>
-                      {[addr.line1, addr.city, [addr.state, addr.postalCode].filter(Boolean).join(", "), addr.country?.toUpperCase()]
-                        .filter(Boolean)
-                        .map((l, i) => <p key={i} style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>{l}</p>)}
-                    </div>
-                  ) : <div key={label} />
-                )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 6 }}>
+                <AddressCard label="Billing Address" html={data.billingAddress} />
+                <AddressCard label="Shipping Address" html={data.shippingAddress} />
               </div>
             </>)}
 
             {/* ── LINE ITEMS ── */}
             <S title="Line Items" />
             <div style={{ borderRadius: 7, overflow: "hidden", border: "1px solid var(--border)" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 72px 88px 72px 96px", padding: "6px 10px", background: "var(--table-head)", color: "var(--table-head-text)", fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", gap: 4 }}>
+              {/* Head */}
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 90px 90px 96px", padding: "6px 10px", background: "var(--table-head)", color: "var(--table-head-text)", fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", gap: 4 }}>
                 <span>Item</span>
                 <span style={{ textAlign: "right" }}>Qty</span>
                 <span style={{ textAlign: "right" }}>Price</span>
                 <span style={{ textAlign: "right" }}>Disc.</span>
                 <span style={{ textAlign: "right" }}>Total</span>
               </div>
+              
+              {/* Rows */}
               {items.map((it, i) => {
-                const rowTotal = (it.price ?? 0) * (it.quantity ?? 0) - (it.discount ?? 0);
+                const qty = Math.abs(Number(it.quantity ?? 0));
+                const rate = Number(it.rate ?? it.price ?? 0);
+                const baseTotal = qty * rate;
+                
+                // If API provides discount amount use it, else calculate from percentage if that's how it's sent
+                let discountAmount = Number(it.discountAmount ?? it.discount ?? 0);
+                let discountPercent = 0;
+                
+                // If it's stored as percentage in the API (like InvoiceModal does):
+                if (discountAmount > 0 && discountAmount <= 100 && (it.discountAmount == null && it.discount != null)) {
+                  discountPercent = discountAmount;
+                  discountAmount = (baseTotal * discountPercent) / 100;
+                } else if (baseTotal > 0 && discountAmount > 0) {
+                  discountPercent = (discountAmount / baseTotal) * 100;
+                }
+
+                const rowTotal = it.amount != null ? Number(it.amount) : it.itemTotal != null ? Number(it.itemTotal) : (baseTotal - discountAmount);
+
+                const displayName = it.itemName || it.description || it.itemCode || "—";
+                const showCodeSubtitle = it.itemCode && it.itemCode !== displayName;
+
                 return (
-                  <div key={i} className="qdm-irow" style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 72px 88px 72px 96px", padding: "7px 10px", gap: 4, borderTop: "1px solid var(--border)", alignItems: "center" }}>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.itemName || it.itemCode}</p>
-                      {it.description && <p style={{ fontSize: 10, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.description}</p>}
-                      {it.itemCode && it.itemName && <p style={{ fontSize: 9, color: "var(--muted)", fontFamily: "monospace" }}>{it.itemCode}</p>}
+                <div key={i} className="qdm-irow" style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 90px 90px 96px", padding: "7px 10px", gap: 4, borderTop: "1px solid var(--border)", alignItems: "start" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <Tooltip content={displayName}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayName}</p>
+                    </Tooltip>
+                    {showCodeSubtitle && <p style={{ fontSize: 9, color: "var(--muted)", fontFamily: "monospace" }}>{it.itemCode}</p>}
+                    
+                    {/* Item Badges */}
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 3 }}>
+                      {it.vatCode && (
+                        <span style={{ fontSize: 9, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 5px", color: "var(--muted)", fontFamily: "monospace" }}>
+                          Tax: {it.vatCode}
+                        </span>
+                      )}
+                      {it.batchNo && (
+                        <span style={{ fontSize: 9, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 5px", color: "var(--muted)", fontFamily: "monospace" }}>
+                          Batch: {it.batchNo}
+                        </span>
+                      )}
+                      {(it.packingSize != null || it.packingUnit != null) && (
+                        <span style={{ fontSize: 9, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 5px", color: "var(--muted)" }}>
+                          Pack {it.packingSize}/{it.packingUnit}
+                        </span>
+                      )}
+                      {it.expDate && (
+                        <span style={{ fontSize: 9, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 5px", color: "var(--muted)" }}>
+                          Exp: {fmtDate(it.expDate)}
+                        </span>
+                      )}
                     </div>
-                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{(it.quantity ?? 0).toLocaleString()}</p>
-                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(it.price, currency)}</p>
-                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{it.discount ? fmt(it.discount, currency) : "—"}</p>
-                    <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(rowTotal, currency)}</p>
                   </div>
-                );
-              })}
-              {/* Totals */}
+                  
+                  {/* Qty */}
+                  <Tooltip content={`Quantity: ${qty.toLocaleString()}`}>
+                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums", paddingTop: 1 }}>{qty.toLocaleString()}</p>
+                  </Tooltip>
+
+                  {/* Price */}
+                  <Tooltip content={`Unit price: ${fmt(rate, currency)}`}>
+                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums", paddingTop: 1 }}>{fmt(rate, currency)}</p>
+                  </Tooltip>
+
+                  {/* Disc */}
+                  <Tooltip content={discountAmount > 0 ? `Discount: ${fmt(discountAmount, currency)}` : "No discount"}>
+                    <div style={{ textAlign: "right" }}>
+                      {discountAmount > 0 ? (
+                        <>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--danger)", fontVariantNumeric: "tabular-nums", lineHeight: 1.3 }}>
+                            {discountPercent > 0 ? `${discountPercent.toFixed(1)}%` : "DISC."}
+                          </p>
+                          <p style={{ fontSize: 10, color: "var(--muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1.3 }}>
+                            -{discountAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </>
+                      ) : (
+                        <p style={{ fontSize: 12, color: "var(--muted)" }}>—</p>
+                      )}
+                    </div>
+                  </Tooltip>
+
+                  {/* Row total */}
+                  <Tooltip content={`Row total: ${fmt(rowTotal, currency)}`}>
+                    <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums", paddingTop: 1 }}>
+                      {fmt(rowTotal, currency)}
+                    </p>
+                  </Tooltip>
+                </div>
+              )})}
+
+              {/* Totals footer */}
               <div style={{ background: "var(--bg)", borderTop: "2px solid var(--border)", padding: "7px 10px", display: "flex", flexDirection: "column", gap: 3 }}>
                 {[
-                  { label: "Subtotal",    val: fmt(subtotal, currency),         big: false, red: false },
-                  ...(totalDisc > 0 ? [{ label: "Discount", val: `- ${fmt(totalDisc, currency)}`, big: false, red: true }] : []),
-                  { label: "Grand Total", val: fmt(grandTotal, currency),        big: true,  red: false },
+                  { label: "Subtotal",    val: fmt(subtotal, currency),              big: false, red: false },
+                  ...(totalDisc > 0 ? [{ label: "Total Discount", val: `- ${fmt(totalDisc, currency)}`, big: false, red: true }] : []),
+                  { label: "Grand Total", val: fmt(grandTotal, currency),     big: true,  red: false },
                 ].map(({ label, val, big, red }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</span>
@@ -260,7 +436,7 @@ const QuotationDetailModal: React.FC<Props> = ({
             {data.paymentInformation && (<>
               <S title="Payment Information" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-                <F label="Payment Terms"  value={data.paymentInformation.paymentTerms} />
+                <F label="Payment Terms"  value={data.paymentInformation.paymentTerms ?? data.terms?.selling?.payment?.notes ?? null} />
                 <F label="Method"         value={data.paymentInformation.paymentMethod} />
                 <F label="Bank"           value={data.paymentInformation.bankName} />
                 {data.paymentInformation.accountNumber && <F label="Account No." value={data.paymentInformation.accountNumber} mono />}
@@ -270,14 +446,14 @@ const QuotationDetailModal: React.FC<Props> = ({
             </>)}
 
             {/* ── PAYMENT SCHEDULE ── */}
-            {(data.terms?.selling?.payment?.phases?.length ?? 0) > 0 && (<>
+            {phases.length > 0 && (<>
               <S title="Payment Schedule" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-               {phases.map((phase, i) => (
+                {phases.map((phase, i) => (
                   <div key={i} style={{ padding: "7px 9px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)" }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 3 }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: "var(--primary)" }}>{phase.percentage}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)" }}>{phase.name}</span>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: "var(--primary)" }}>{phase.percentage}%</span>
+                      {phase.name && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)" }}>{phase.name}</span>}
                     </div>
                     <p style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.4 }}>{phase.condition}</p>
                   </div>
@@ -298,6 +474,7 @@ const QuotationDetailModal: React.FC<Props> = ({
                 { label: "Warranty",     value: s.warranty },
                 { label: "Liability",    value: s.liability },
                 { label: "Late Charges", value: s.payment?.lateCharges },
+                { label: "Due Dates",    value: s.payment?.dueDates },
                 { label: "General",      value: s.general },
               ].filter(r => r.value);
               if (!rows.length) return null;
@@ -328,7 +505,7 @@ const QuotationDetailModal: React.FC<Props> = ({
                 </button>
                 <div style={{ lineHeight: 1 }}>
                   <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>PDF Preview</p>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{data?.id}</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{quotationDisplayId}</p>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 5 }}>

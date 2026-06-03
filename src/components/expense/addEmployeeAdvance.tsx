@@ -5,12 +5,16 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
-import { getAllEmployees } from "../../api/employeeapi";
 import { showApiError } from "../../utils/alert";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { getAllModeOfPayment } from "../../api/BankAccountApi";
-import { getAdvanceGLAccounts,createEmployeeAdvance,updateEmployeeAdvance,
-  type CreateEmployeeAdvancePayload,} from "../../api/expenseClaimApi";
+import {
+  getAdvanceGLAccounts,
+  createEmployeeAdvance,
+  updateEmployeeAdvance,
+  getAllEmployees,
+  type CreateEmployeeAdvancePayload,
+} from "../../api/expenseClaimApi";
 
 export interface EmployeeAdvanceFormData {
   id?: string;
@@ -35,8 +39,6 @@ const defaultForm: EmployeeAdvanceFormData = {
   repay_unclaimed_from_salary: false,
 };
 
-
-
 interface EmployeeAdvanceModalProps {
   modalId: string;
   isOpen: boolean;
@@ -51,7 +53,10 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
   onSubmit,
 }) => {
   const modals = useModalStore((state) => state.modals);
-  const modal = useMemo(() => modals.find((m) => m.id === modalId), [modals, modalId]);
+  const modal = useMemo(
+    () => modals.find((m) => m.id === modalId),
+    [modals, modalId],
+  );
   const isEditMode = modal?.isEdit ?? false;
 
   const [form, setForm] = useState<EmployeeAdvanceFormData>(defaultForm);
@@ -75,7 +80,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const target = e.target as HTMLInputElement;
     const { name, value, type } = target;
@@ -88,11 +93,10 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
 
   const fetchEmployees = useCallback(async (search: string) => {
     try {
-      const res = await getAllEmployees(1, 50, search);
-      const data = res?.results ?? res?.data ?? [];
+      const data = await getAllEmployees(search);
       return data.map((emp: any) => ({
-        value: emp.name,
-        label: emp.employee_name,
+        value: emp.value,
+        label: emp.label,
       }));
     } catch (err) {
       showApiError(err);
@@ -100,30 +104,30 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
     }
   }, []);
   const fetchPaymentModes = useCallback(async (search: string) => {
-  try {
-    const res = await getAllModeOfPayment(1, 50, search || undefined, 1); // enabled=1 only
-    return res.data.map((mode: { name: string }) => ({
-      value: mode.name,
-      label: mode.name,
-    }));
-  } catch (err) {
-    showApiError(err);
-    return [];
-  }
-}, []);
+    try {
+      const res = await getAllModeOfPayment(1, 50, search || undefined, 1);
+      return res.data.map((mode: { name: string }) => ({
+        value: mode.name,
+        label: mode.name,
+      }));
+    } catch (err) {
+      showApiError(err);
+      return [];
+    }
+  }, []);
 
-const fetchAdvanceAccounts = useCallback(async (search: string) => {
-  try {
-    const res = await getAdvanceGLAccounts(search || undefined);
-    return res.map((acc) => ({
-      value: acc.value,
-      label: acc.label,
-    }));
-  } catch (err) {
-    showApiError(err);
-    return [];
-  }
-}, []);
+  const fetchAdvanceAccounts = useCallback(async (search: string) => {
+    try {
+      const res = await getAdvanceGLAccounts(search || undefined);
+      return res.map((acc) => ({
+        value: acc.value,
+        label: acc.label,
+      }));
+    } catch (err) {
+      showApiError(err);
+      return [];
+    }
+  }, []);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -132,44 +136,47 @@ const fetchAdvanceAccounts = useCallback(async (search: string) => {
     if (!form.purpose.trim()) newErrors.purpose = "Purpose is required";
     if (form.amount === "" || Number(form.amount) <= 0)
       newErrors.amount = "Enter a valid amount";
-    if (!form.advance_account) newErrors.advance_account = "Advance account is required";
+    if (!form.advance_account)
+      newErrors.advance_account = "Advance account is required";
     if (!form.payment_mode) newErrors.payment_mode = "Payment mode is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-  if (!validate()) return;
-  setLoading(true);
-  try {
-    const payload: CreateEmployeeAdvancePayload = {
-      posting_date: form.posting_date,
-      employee: form.employee,
-      employee_name: form.employee_name ?? employeeDisplayName, 
-      purpose: form.purpose,
-      advance_amount: Number(form.amount),
-      advance_account: form.advance_account,
-      mode_of_payment: form.payment_mode,
-      repay_unclaimed_amount_from_salary: form.repay_unclaimed_from_salary ? 1 : 0, 
-    };
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      const payload: CreateEmployeeAdvancePayload = {
+        posting_date: form.posting_date,
+        employee: form.employee,
+        employee_name: form.employee_name ?? employeeDisplayName,
+        purpose: form.purpose,
+        advance_amount: Number(form.amount),
+        advance_account: form.advance_account,
+        mode_of_payment: form.payment_mode,
+        repay_unclaimed_amount_from_salary: form.repay_unclaimed_from_salary
+          ? 1
+          : 0,
+      };
 
-    if (isEditMode) {
-      await updateEmployeeAdvance(form.id!, payload);
-    } else {
-      await createEmployeeAdvance(payload);
+      if (isEditMode) {
+        await updateEmployeeAdvance(form.id!, payload);
+      } else {
+        await createEmployeeAdvance(payload);
+      }
+
+      if (modal?.context?.onSuccess) await modal.context.onSuccess(payload);
+      if (modal?.context?.callback) await modal.context.callback(payload);
+      onSubmit?.({ ...form });
+      reset();
+      onClose();
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setLoading(false);
     }
-
-    if (modal?.context?.onSuccess) await modal.context.onSuccess(payload);
-    if (modal?.context?.callback) await modal.context.callback(payload);
-    onSubmit?.({ ...form });
-    reset();
-    onClose();
-  } catch (err) {
-    showApiError(err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const footer = (
     <>
@@ -190,16 +197,19 @@ const fetchAdvanceAccounts = useCallback(async (search: string) => {
       isOpen={isOpen}
       onClose={onClose}
       title={isEditMode ? "Edit Employee Advance" : "Employee Advance"}
-      subtitle={isEditMode ? "Update employee advance" : "Create a new employee advance"}
+      subtitle={
+        isEditMode ? "Update employee advance" : "Create a new employee advance"
+      }
       icon={Wallet}
       footer={footer}
       customWidth="46vw"
       height="auto"
     >
-      <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col">
+      <form
+        onSubmit={(e) => e.preventDefault()}
+        className="h-full flex flex-col"
+      >
         <div className="p-4 flex flex-col gap-4">
-
-          {/* Row 1: Posting Date + Employee */}
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-6">
               <div className="flex flex-col gap-1">
@@ -214,7 +224,9 @@ const fetchAdvanceAccounts = useCallback(async (search: string) => {
                   }}
                 />
                 {errors.posting_date && (
-                  <span className="text-danger text-[10px]">{errors.posting_date}</span>
+                  <span className="text-danger text-[10px]">
+                    {errors.posting_date}
+                  </span>
                 )}
               </div>
             </div>
@@ -224,7 +236,11 @@ const fetchAdvanceAccounts = useCallback(async (search: string) => {
                 required
                 value={employeeDisplayName}
                 onChange={(val, option) => {
-                  setForm((prev) => ({ ...prev, employee: val || "" }));
+                  setForm((prev) => ({
+                    ...prev,
+                    employee: val || "",
+                    employee_name: option?.label || "",
+                  }));
                   setEmployeeDisplayName(option?.label || "");
                   if (errors.employee)
                     setErrors((prev) => ({ ...prev, employee: "" }));
@@ -283,22 +299,21 @@ const fetchAdvanceAccounts = useCallback(async (search: string) => {
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-6">
               <SearchSelect2
-  label="Payment Mode"
-  required
-  value={form.payment_mode}
-  onChange={(val) => {
-    setForm((prev) => ({ ...prev, payment_mode: val || "" }));
-    if (errors.payment_mode)
-      setErrors((prev) => ({ ...prev, payment_mode: "" }));
-  }}
-  fetchOptions={fetchPaymentModes}  
-  placeholder="Select payment mode"
-  error={errors.payment_mode}
-/>
+                label="Payment Mode"
+                required
+                value={form.payment_mode}
+                onChange={(val) => {
+                  setForm((prev) => ({ ...prev, payment_mode: val || "" }));
+                  if (errors.payment_mode)
+                    setErrors((prev) => ({ ...prev, payment_mode: "" }));
+                }}
+                fetchOptions={fetchPaymentModes}
+                placeholder="Select payment mode"
+                error={errors.payment_mode}
+              />
             </div>
           </div>
 
-          
           <div className="flex items-center gap-3 pt-1">
             <input
               id="repay_unclaimed_from_salary"
@@ -318,7 +333,6 @@ const fetchAdvanceAccounts = useCallback(async (search: string) => {
               Repay unclaimed amount from salary
             </label>
           </div>
-
         </div>
       </form>
     </MinimizableModal>
