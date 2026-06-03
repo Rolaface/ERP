@@ -58,9 +58,8 @@ export const getAllPayments = async (
 export const getPaymentById = async (paymentId: string): Promise<any> => {
   const resp: AxiosResponse = await api.get(CustomerPaymentAPI.getPaymentById, {
     params: {
-      payment_id: paymentId,
+      id: paymentId,
     },
   });
-
   return resp.data;
 };

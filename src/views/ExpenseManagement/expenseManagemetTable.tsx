@@ -157,7 +157,7 @@ const ExpenseHistory: React.FC = () => {
             partyType: "Employee",
             partyName: claim.employee_name,
             partyId: claim.employee ?? exp.id,
-            amount: claim.grandTotal,
+            amount: claim.grand_total,
             referenceName: claim.name,
             referenceType: "Expense Claim",
           },
