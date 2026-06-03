@@ -15,6 +15,10 @@ import { getDebitNotebyId } from "../../api/DebitNoteapi";
 import { DebitNote } from "../../types/sales/Debitnotes";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
+import {
+  ACTION_ICONS,
+  getStatusActionIcon,
+} from "../../components/UI_Utils/statusActionIcons";
 
 
 const mapItem = (item: any): DebitNote => ({
@@ -357,10 +361,10 @@ const { can } = usePermission();
               : {})}
             customActions={[
               ...(r.status === "Draft" && can(DEBIT_NOTE_MODULE, "write")
-                ? [{ label: "Approve", onClick: () => handleSubmit(r.noteNo) }]
+                ? [{ label: "Approve", icon: ACTION_ICONS.APPROVE, onClick: () => handleSubmit(r.noteNo) }]
                 : []),
               ...(!["Draft", "Cancelled"].includes(r.status) && can(DEBIT_NOTE_MODULE, "write")
-                ? [{ label: "Cancel", onClick: () => handleCancel(r.noteNo), danger: true }]
+                ? [{ label: "Cancel", icon: ACTION_ICONS.CANCEL, onClick: () => handleCancel(r.noteNo), danger: true }]
                 : []),
             ]}
           />

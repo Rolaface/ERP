@@ -39,6 +39,22 @@ import {
 import { fireManagedSwal } from "../../utils/swalManager";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
+import {
+  ACTION_ICONS,
+  getStatusActionIcon,
+} from "../../components/UI_Utils/statusActionIcons";
+
+import {
+  FileCheck,
+  Ban,
+  BadgeDollarSign,
+  Undo2,
+  Scan,
+  FileText,
+  CreditCard,
+  CircleCheckBig,
+  FileMinus,
+} from "lucide-react";
 
 interface Purchaseinvoice {
   pId: string;
@@ -57,6 +73,8 @@ interface Purchaseinvoice {
 interface PurchaseinvoicesTableProps {
   onAdd?: () => void;
 }
+
+
 
 export type PIStatus =
   | "Draft"
@@ -649,9 +667,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               ? { onDelete: (e) => handleDelete(o, e as any) }
               : {})}
             customActions={[
-              { label: "View PDF", onClick: () => handleOpenPDF(o) },
+              { label: "View PDF", icon: ACTION_ICONS.PDF, onClick: () => handleOpenPDF(o) },
               {
                 label: "Scan PI",
+                icon: ACTION_ICONS.SCAN,
                 onClick: () => openScanPIModal(o.pId),
               },
 
@@ -660,28 +679,31 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
                 ? [
                     {
                       label: "Make Payment",
+                      icon: ACTION_ICONS.PAYMENT,
                       onClick: () => handleMakePayment(o.pId),
                     },
                   ]
                 : []),
 
               ...(can(PI_MODULE, "write")
-                ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-                    (status) => ({
-                      label:
-                        status === "Submitted"
-                          ? "Approve"
-                          : status === "Cancelled"
-                            ? "Cancel"
-                            : status,
+  ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
+      (status) => ({
+        label:
+          status === "Submitted"
+            ? "Approve"
+            : status === "Cancelled"
+              ? "Cancel"
+              : status,
 
-                      danger:
-                        status === "Cancelled" ||
-                        status === "Debit Note Issued",
-                      onClick: () => handleStatusChange(o.pId, status),
-                    }),
-                  )
-                : []),
+icon: getStatusActionIcon(status),
+        danger:
+          status === "Cancelled" ||
+          status === "Debit Note Issued",
+
+        onClick: () => handleStatusChange(o.pId, status),
+      }),
+    )
+  : [])
             ]}
           />
         </ActionGroup>
