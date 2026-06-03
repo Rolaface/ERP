@@ -176,6 +176,9 @@ const handleMakePayment = useCallback(
           amount: advance.advance_amount,
           referenceName: advance.name,
           referenceType: "Employee Advance",
+          glTo: advance.advance_account,
+           currencyTo: advance.currency, 
+          modeOfPayment: advance.mode_of_payment,
         },
         false,
         {
