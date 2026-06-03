@@ -145,7 +145,7 @@ const menuItems: MenuItem[] = [
     name: "Customer",
     to: "/crm",
     icon: <Users {...iconProps} />,
-    modules: ["Customer", "Payment Entry","Customer Group"],
+    modules: ["Customer", "Payment Entry", "Customer Group"],
     hideInEmployeeView: true,
   },
   {
@@ -187,7 +187,7 @@ const menuItems: MenuItem[] = [
   //   to: "/performance",
   //   icon: <BarChart2 {...iconProps} />,
   //   modules: ["Performance"],
-  //   hideInEmployeeView: false, 
+  //   hideInEmployeeView: false,
   // },
 ];
 
@@ -210,7 +210,7 @@ const settingsItems: SettingsItem[] = [
     to: "/bank-management",
     label: "Bank Management",
     icon: <Landmark {...iconProps} />,
-    modules: ["Bank", "Bank Account" , "Mode of Payment","Currency Exchange"],
+    modules: ["Bank", "Bank Account", "Mode of Payment", "Currency Exchange"],
     hideInEmployeeView: true,
   },
   // {
@@ -256,7 +256,7 @@ const settingsItems: SettingsItem[] = [
     to: "/Expense-Management",
     label: "Expense Management",
     icon: <CreditCard {...iconProps} />,
-    modules: ["Expense Claim", "Expense Claim Type","Employee Advance"],
+    modules: ["Expense Claim", "Expense Claim Type", "Employee Advance"],
     hideInEmployeeView: true,
   },
   {
@@ -500,9 +500,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 }
               `}
             >
-              <span className="truncate text-sm font-bold text-main leading-tight">
-                {company?.name ?? "Loading…"}
-              </span>
+              {open && (
+                <span className="text-sm font-bold text-main break-words">
+                  {company?.name ?? "Loading…"}
+                </span>
+              )}
             </div>
           </div>
         </div>
