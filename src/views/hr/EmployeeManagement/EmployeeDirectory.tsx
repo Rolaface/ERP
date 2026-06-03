@@ -208,7 +208,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
     }
   };
 
-  // FIX: added fetchEmployees() call so table updates immediately after disable
+  
   const handleDisable = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const result = await fireManagedSwal({
@@ -231,6 +231,28 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
       showApiError(error);
     }
   };
+  const handleEnable = async (id: string, e: React.MouseEvent) => {
+  e.stopPropagation();
+  const result = await fireManagedSwal({
+    title: "Enable Employee?",
+    text: "Employee will be marked as active.",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Enable",
+  });
+  if (!result.isConfirmed) return;
+  try {
+    showLoading("Enabling Employee...");
+    await updateEmployeeStatus(id, "Active");
+    closeSwal();
+    showSuccess("Employee enabled successfully");
+    await fetchEmployees();
+    triggerRefresh(REFRESH_KEYS.EMPLOYEE_LIST);
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -342,19 +364,25 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
           )}
           {!isEmployeeView && (
             <ActionMenu
-              {...(can(EMP_MODULE, "write") && e.status !== "Inactive"
-                ? {
-                    onDisable: (ev) =>
-                      handleDisable(e.id, ev as React.MouseEvent),
-                  }
-                : {})}
-              {...(can(EMP_MODULE, "delete")
-                ? {
-                    onDelete: (ev) =>
-                      handleDelete(e.id, ev as React.MouseEvent),
-                  }
-                : {})}
-            />
+  {...(can(EMP_MODULE, "write") && e.status !== "Inactive"
+    ? {
+        onDisable: (ev) =>
+          handleDisable(e.id, ev as React.MouseEvent),
+      }
+    : {})}
+  {...(can(EMP_MODULE, "write") && e.status === "Inactive"
+    ? {
+        onEnable: (ev) =>
+          handleEnable(e.id, ev as React.MouseEvent),
+      }
+    : {})}
+  {...(can(EMP_MODULE, "delete")
+    ? {
+        onDelete: (ev) =>
+          handleDelete(e.id, ev as React.MouseEvent),
+      }
+    : {})}
+/>
           )}
         </ActionGroup>
       ),
