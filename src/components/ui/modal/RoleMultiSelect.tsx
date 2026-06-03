@@ -13,6 +13,7 @@ interface RoleMultiSelectProps {
   onAdd: (id: string, label: string) => void;
   onRemove: (id: string) => void;
   onDirty: () => void;
+  disabled?: boolean;
 }
 
 const RoleMultiSelect: React.FC<RoleMultiSelectProps> = ({
@@ -22,6 +23,7 @@ const RoleMultiSelect: React.FC<RoleMultiSelectProps> = ({
   onAdd,
   onRemove,
   onDirty,
+  disabled = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -53,11 +55,14 @@ const RoleMultiSelect: React.FC<RoleMultiSelectProps> = ({
   }, []);
 
   const toggle = (opt: Option) => {
+    if (disabled) return;
+
     if (selected.includes(opt.value)) {
       onRemove(opt.value);
     } else {
       onAdd(opt.value, opt.label);
     }
+
     onDirty();
   };
 
@@ -66,8 +71,12 @@ const RoleMultiSelect: React.FC<RoleMultiSelectProps> = ({
       {/* Trigger */}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--input-bg,white)] text-sm text-main hover:border-primary/50 transition-colors min-h-[36px]"
+        disabled={disabled}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((o) => !o);
+        }}
+         className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--input-bg,white)] text-sm text-main hover:border-primary/50 transition-colors min-h-[36px]"
       >
         <div className="flex flex-wrap gap-1 flex-1 min-w-0">
           {selected.length === 0 ? (
@@ -83,7 +92,14 @@ const RoleMultiSelect: React.FC<RoleMultiSelectProps> = ({
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onRemove(id); onDirty(); } }}
-                  onClick={(e) => { e.stopPropagation(); onRemove(id); onDirty(); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+
+                    if (disabled) return;
+
+                    onRemove(id);
+                    onDirty();
+                  }}
                   className="hover:text-[var(--danger)] transition-colors cursor-pointer"
                 >
                   <X className="w-2.5 h-2.5" />
