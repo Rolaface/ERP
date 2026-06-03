@@ -659,6 +659,7 @@ export const DetailsTab = ({
                 name="dueDate"
                 value={form.dueDate}
                 required
+                disabled
                 onChange={(name, value) =>
                   onFormChange({
                     target: { name, value },
