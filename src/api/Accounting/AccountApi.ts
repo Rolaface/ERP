@@ -140,7 +140,12 @@ export interface AccountsPayableFilters {
   range?: string;
   group_by?: "supplier" | "voucher" | "none";
   search?: any;
-  voucher_type?: "Purchase Invoice" | "Payment Entry";
+  voucher_type?: "Purchase Invoice"
+  | "Purchase Order"
+  | "Purchase Receipt"
+  | "Payment Entry"
+  | "Journal Entry"
+  | "Expense Claim";
   // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
   status?: any;
   page?: number;
@@ -171,7 +176,11 @@ export interface AccountsReceivableFilters {
   range?: string;
   group_by?: "customer" | "voucher" | "none";
   search?: any;
-  voucher_type?: "Sales Invoice" | "Payment Entry";
+  voucher_type?: "Sales Invoice"
+  | "Sales Order"
+  | "Delivery Note"
+  | "Payment Entry"
+  | "Journal Entry";
   // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
   status?: any;
   page?: number;

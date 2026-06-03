@@ -30,9 +30,15 @@ import PaymentEntryDetailModal, {
   type PaymentEntryDetail,
 } from "../../components/PaymentEntryDetailModal";
 import { showApiError } from "../../utils/alert";
+import { useCompanyStore } from "../../store/companyStore";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
-type ReceivableVoucherType = "Sales Invoice" | "Payment Entry";
+type ReceivableVoucherType =
+  | "Sales Invoice"
+  | "Sales Order"
+  | "Delivery Note"
+  | "Payment Entry"
+  | "Journal Entry";
 
 type ReceivableRecord = {
   posting_date?: string;
@@ -90,12 +96,18 @@ type Receivable = {
   actions?: string;
 };
 
+type LookupOption = {
+  label: string;
+  value: string;
+};
+
 const AccountsReceivable = () => {
   const getTodayDate = () => new Date().toISOString().split("T")[0];
 
+  const { currencySymbol } = useCompanyStore();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [currency, setCurrency] = useState("");
   const [reportDate, setReportDate] = useState(getTodayDate());
 
   const [selectedGroupBy, setSelectedGroupBy] = useState<string[]>([]);
@@ -103,19 +115,20 @@ const AccountsReceivable = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [costCenterOptions, setCostCenterOptions] = useState<string[]>([]);
-  const [customerOptions, setCustomerOptions] = useState<string[]>([]);
-  const [receivableAccountOptions, setReceivableAccountOptions] = useState<
-    string[]
-  >([]);
+  const [costCenterOptions, setCostCenterOptions] = useState<LookupOption[]>([]);
+  const [customerOptions, setCustomerOptions] = useState<LookupOption[]>([]);
+  const [receivableAccountOptions, setReceivableAccountOptions] = useState<LookupOption[]>([]);
 
   const [selectedVoucherType, setSelectedVoucherType] = useState<
     ReceivableVoucherType | ""
   >("");
   const voucherTypeOptions: ReceivableVoucherType[] = [
-    "Sales Invoice",
-    "Payment Entry",
-  ];
+  "Sales Invoice",
+  "Sales Order",
+  "Delivery Note",
+  "Payment Entry",
+  "Journal Entry",
+];
   const [selectedCostCenter, setSelectedCostCenter] = useState<string>("");
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [selectedReceivableAccount, setSelectedReceivableAccount] =
@@ -176,9 +189,15 @@ const AccountsReceivable = () => {
           getCustomerList(),
           getCompanyRecievableAccounts(),
         ]);
-        setCostCenterOptions(cc.map((c: any) => c.value));
-        setCustomerOptions(cust.map((c: any) => c.value));
-        setReceivableAccountOptions(acc.map((a: any) => a.value));
+        setCostCenterOptions(
+          cc.map((c: any) => ({ label: c.label || c.value, value: c.value }))
+        );
+        setCustomerOptions(
+          cust.map((c: any) => ({ label: c.label || c.value, value: c.value }))
+        );
+        setReceivableAccountOptions(
+          acc.map((a: any) => ({ label: a.label || a.value, value: a.value }))
+        );
       } catch (error) {
         console.error(error);
       }
@@ -225,7 +244,6 @@ const AccountsReceivable = () => {
         const payload = response.message.data;
         const backendKpis = payload.kpis;
         const backendData = payload.rows || payload.data || [];
-        setCurrency(backendData?.[0]?.currency ?? "-");
 
         setKpis(backendKpis);
 
@@ -417,7 +435,7 @@ const AccountsReceivable = () => {
         "Posting Date": row.posting_date || "",
         "Due Date": row.due_date || "",
         "Age (Days)": row.age || 0,
-        Currency: row.currency || "INR",
+        Currency: row.currency || currencySymbol || "-",
         "PO No": row.po_no || "",
       }));
 
@@ -471,19 +489,19 @@ const AccountsReceivable = () => {
   const stats = [
     {
       label: "Total Outstanding",
-      value: `${currency} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currencySymbol || "-"} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
       label: "Overdue Amount",
-      value: `${currency} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currencySymbol || "-"} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
       label: "Total Customers",
       value: ` ${kpis?.total_customers || 0}`,
     },
     {
-      label: "Total Invoiced",
-      value: `${currency} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      label: "Total Amount",
+      value: `${currencySymbol || "-"} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
   ];
 
@@ -552,11 +570,10 @@ const AccountsReceivable = () => {
     },
     {
       key: "invoicedAmount",
-      header: "Invoiced",
+      header: "Total",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-
-          {row.invoicedAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"} {row.invoicedAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -567,8 +584,7 @@ const AccountsReceivable = () => {
       header: "Paid",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-
-          {currency} {row.paidAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"} {row.paidAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -581,8 +597,7 @@ const AccountsReceivable = () => {
         <span
           className={`text-main ${row.isSummary ? "font-bold" : "font-semibold"}`}
         >
-
-          {currency} {row.outstandingAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"} {row.outstandingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -676,8 +691,6 @@ const AccountsReceivable = () => {
           ref={dropdownRef}
           className="flex flex-wrap gap-3 items-center w-full lg:w-auto"
         >
-
-
           <div className="relative">
             <input
               type="date"
@@ -829,22 +842,22 @@ const AccountsReceivable = () => {
               <div className="absolute top-full left-0 mt-2 bg-card border border-theme rounded-lg z-20 w-64 shadow-xl max-h-64 overflow-y-auto py-1">
                 {customerOptions.map((opt) => (
                   <label
-                    key={opt}
+                    key={opt.value}
                     className="flex items-center gap-3 px-4 py-2 hover:bg-app cursor-pointer text-sm text-main transition-colors"
                   >
                     <input
                       type="checkbox"
-                      checked={selectedCustomers.includes(opt)}
+                      checked={selectedCustomers.includes(opt.value)}
                       onChange={() =>
                         handleMultiSelect(
-                          opt,
+                          opt.value,
                           selectedCustomers,
                           setSelectedCustomers,
                         )
                       }
                       className="rounded border-theme bg-app text-primary focus:ring-primary/50 cursor-pointer"
                     />
-                    <span className="truncate">{opt}</span>
+                    <span className="truncate">{opt.label}</span>
                   </label>
                 ))}
                 {customerOptions.length === 0 && (
@@ -889,18 +902,18 @@ const AccountsReceivable = () => {
                 </button>
                 {costCenterOptions.map((opt) => (
                   <button
-                    key={opt}
+                    key={opt.value}
                     onClick={() => {
-                      setSelectedCostCenter(opt);
+                      setSelectedCostCenter(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt.value
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-main hover:bg-app"
                       }`}
                   >
-                    <span className="truncate pr-2">{opt}</span>
-                    {selectedCostCenter === opt && (
+                    <span className="truncate pr-2">{opt.label}</span>
+                    {selectedCostCenter === opt.value && (
                       <FaCheck className="text-[10px] shrink-0" />
                     )}
                   </button>
@@ -942,18 +955,18 @@ const AccountsReceivable = () => {
                 </button>
                 {receivableAccountOptions.map((opt) => (
                   <button
-                    key={opt}
+                    key={opt.value}
                     onClick={() => {
-                      setSelectedReceivableAccount(opt);
+                      setSelectedReceivableAccount(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedReceivableAccount === opt
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedReceivableAccount === opt.value
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-main hover:bg-app"
                       }`}
                   >
-                    <span className="truncate pr-2">{opt}</span>
-                    {selectedReceivableAccount === opt && (
+                    <span className="truncate pr-2">{opt.label}</span>
+                    {selectedReceivableAccount === opt.value && (
                       <FaCheck className="text-[10px] shrink-0" />
                     )}
                   </button>
@@ -1041,7 +1054,6 @@ const AccountsReceivable = () => {
                 <div className="h-8 w-20 bg-theme rounded mx-auto mt-1 animate-pulse"></div>
               ) : (
                 <p className="text-2xl font-bold text-main">
-
                   {kpis?.ageing_summary[
                     item.key as keyof typeof kpis.ageing_summary
                   ]
