@@ -30,9 +30,16 @@ import { getPaymentById } from "../../api/CustomerPayment";
 import PaymentEntryDetailModal, {
   type PaymentEntryDetail,
 } from "../../components/PaymentEntryDetailModal";
+import { useCompanyStore } from "../../store/companyStore";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
-type PayableVoucherType = "Purchase Invoice" | "Payment Entry";
+type PayableVoucherType =
+  | "Purchase Invoice"
+  | "Purchase Order"
+  | "Purchase Receipt"
+  | "Payment Entry"
+  | "Journal Entry"
+  | "Expense Claim";
 
 type PayableRecord = {
   report_date?: string;
@@ -86,8 +93,15 @@ type Payable = {
   actions?: string;
 };
 
+type LookupOption = {
+  label: string;
+  value: string;
+};
+
 const AccountsPayable = () => {
   const getTodayDate = () => new Date().toISOString().split("T")[0];
+
+  const { currencySymbol } = useCompanyStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -102,14 +116,17 @@ const AccountsPayable = () => {
     PayableVoucherType | ""
   >("");
   const voucherTypeOptions: PayableVoucherType[] = [
-    "Purchase Invoice",
-    "Payment Entry",
-  ];
-  const [costCenterOptions, setCostCenterOptions] = useState<string[]>([]);
-  const [supplierOptions, setSupplierOptions] = useState<string[]>([]);
-  const [payableAccountOptions, setPayableAccountOptions] = useState<string[]>(
-    [],
-  );
+  "Purchase Invoice",
+  "Purchase Order",
+  "Purchase Receipt",
+  "Payment Entry",
+  "Journal Entry",
+  "Expense Claim",
+];
+  
+  const [costCenterOptions, setCostCenterOptions] = useState<LookupOption[]>([]);
+  const [supplierOptions, setSupplierOptions] = useState<LookupOption[]>([]);
+  const [payableAccountOptions, setPayableAccountOptions] = useState<LookupOption[]>([]);
 
   const [selectedCostCenter, setSelectedCostCenter] = useState<string>("");
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
@@ -137,7 +154,6 @@ const AccountsPayable = () => {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
-  const [currency, setCurrency] = useState("-");
 
   const [paymentDrawerOpen, setPaymentDrawerOpen] = useState(false);
   const [paymentDrawerData, setPaymentDrawerData] =
@@ -174,9 +190,15 @@ const AccountsPayable = () => {
           getCompanyPayableAccounts(),
         ]);
 
-        setCostCenterOptions(cc.map((c: any) => c.value));
-        setSupplierOptions(supp.map((s: any) => s.value));
-        setPayableAccountOptions(acc.map((a: any) => a.value));
+        setCostCenterOptions(
+          cc.map((c: any) => ({ label: c.label || c.value, value: c.value }))
+        );
+        setSupplierOptions(
+          supp.map((s: any) => ({ label: s.label || s.value, value: s.value }))
+        );
+        setPayableAccountOptions(
+          acc.map((a: any) => ({ label: a.label || a.value, value: a.value }))
+        );
       } catch (error) {
         console.error(error);
       }
@@ -223,7 +245,6 @@ const AccountsPayable = () => {
         const payload = response.message.data;
         const backendKpis = payload.kpis;
         const backendData = payload.rows || payload.data || [];
-        setCurrency(backendData?.[0]?.currency ?? "-");
         setKpis(backendKpis);
 
         const mappedPayables: Payable[] = backendData.map(
@@ -422,7 +443,7 @@ const AccountsPayable = () => {
         "Report Date": row.report_date || "",
         "Due Date": row.due_date || "",
         "Age (Days)": row.age || 0,
-        Currency: row.currency || "-",
+        Currency: row.currency || currencySymbol || "-",
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -475,13 +496,13 @@ const AccountsPayable = () => {
   const stats = [
     {
       label: "Total Payables (Outstanding)",
-      value: `${currency} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, {
+      value: `${currencySymbol || "-"} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
     {
       label: "Overdue Amount",
-      value: `${currency} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, {
+      value: `${currencySymbol || "-"} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
@@ -491,7 +512,7 @@ const AccountsPayable = () => {
     },
     {
       label: "Total Invoiced",
-      value: `${currency} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, {
+      value: `${currencySymbol || "-"} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, {
         maximumFractionDigits: 0,
       })}`,
     },
@@ -561,9 +582,9 @@ const AccountsPayable = () => {
       return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
     }
 
-    // Date object — use local methods
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
+
   const columns: Column<Payable>[] = [
     {
       key: "id",
@@ -585,7 +606,7 @@ const AccountsPayable = () => {
     },
     {
       key: "vendor",
-      header: "Supplier",
+      header: "Party",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
           {row.vendor}
@@ -602,11 +623,10 @@ const AccountsPayable = () => {
     },
     {
       key: "invoicedAmount",
-      header: "Invoiced",
+      header: "Total",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-
-          {row.invoicedAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"} {row.invoicedAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -617,8 +637,7 @@ const AccountsPayable = () => {
       header: "Paid",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-
-          {currency} {row.paidAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"} {row.paidAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -631,8 +650,7 @@ const AccountsPayable = () => {
         <span
           className={`text-main ${row.isSummary ? "font-bold" : "font-semibold"}`}
         >
-
-          {currency} {row.outstandingAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"} {row.outstandingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -728,7 +746,6 @@ const AccountsPayable = () => {
           ref={dropdownRef}
           className="flex flex-wrap gap-3 items-center w-full lg:w-auto"
         >
-
           <div className="relative">
             <input
               type="date"
@@ -881,22 +898,22 @@ const AccountsPayable = () => {
               <div className="absolute top-full left-0 mt-2 bg-card border border-theme rounded-lg z-20 w-64 shadow-xl max-h-64 overflow-y-auto py-1">
                 {supplierOptions.map((opt) => (
                   <label
-                    key={opt}
+                    key={opt.value}
                     className="flex items-center gap-3 px-4 py-2 hover:bg-app cursor-pointer text-sm text-main transition-colors"
                   >
                     <input
                       type="checkbox"
-                      checked={selectedSuppliers.includes(opt)}
+                      checked={selectedSuppliers.includes(opt.value)}
                       onChange={() =>
                         handleMultiSelect(
-                          opt,
+                          opt.value,
                           selectedSuppliers,
                           setSelectedSuppliers,
                         )
                       }
                       className="rounded border-theme bg-app text-primary focus:ring-primary/50 cursor-pointer"
                     />
-                    <span className="truncate">{opt}</span>
+                    <span className="truncate">{opt.label}</span>
                   </label>
                 ))}
                 {supplierOptions.length === 0 && (
@@ -941,18 +958,18 @@ const AccountsPayable = () => {
                 </button>
                 {costCenterOptions.map((opt) => (
                   <button
-                    key={opt}
+                    key={opt.value}
                     onClick={() => {
-                      setSelectedCostCenter(opt);
+                      setSelectedCostCenter(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt.value
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-main hover:bg-app"
                       }`}
                   >
-                    <span className="truncate pr-2">{opt}</span>
-                    {selectedCostCenter === opt && (
+                    <span className="truncate pr-2">{opt.label}</span>
+                    {selectedCostCenter === opt.value && (
                       <FaCheck className="text-[10px] shrink-0" />
                     )}
                   </button>
@@ -994,18 +1011,18 @@ const AccountsPayable = () => {
                 </button>
                 {payableAccountOptions.map((opt) => (
                   <button
-                    key={opt}
+                    key={opt.value}
                     onClick={() => {
-                      setSelectedPayableAccount(opt);
+                      setSelectedPayableAccount(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedPayableAccount === opt
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedPayableAccount === opt.value
                       ? "bg-primary/10 text-primary font-medium"
                       : "text-main hover:bg-app"
                       }`}
                   >
-                    <span className="truncate pr-2">{opt}</span>
-                    {selectedPayableAccount === opt && (
+                    <span className="truncate pr-2">{opt.label}</span>
+                    {selectedPayableAccount === opt.value && (
                       <FaCheck className="text-[10px] shrink-0" />
                     )}
                   </button>
@@ -1094,7 +1111,6 @@ const AccountsPayable = () => {
                 <div className="h-8 w-24 bg-theme rounded mx-auto mt-1 animate-pulse"></div>
               ) : (
                 <p className="text-2xl font-bold text-main">
-
                   {schedule.amount.toLocaleString(undefined, {
                     maximumFractionDigits: 0,
                   })}
