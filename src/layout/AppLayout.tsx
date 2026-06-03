@@ -172,7 +172,7 @@ const openProformaCreate = () => openProformaModal();
   const openProformaEdit = (proformaId: string, data: any) => openProformaModal({ ...data, proformaId }, true);
 
   const openQuotationCreate = () => openQuotationModal();
-  const openQuotationEdit = (quotationId: string, data: any) => openQuotationModal({ quotationId }, true);
+  const openQuotationEdit = (quotationId: string, data: any) => openQuotationModal({...data, quotationId }, true);
 
   // CRM handlers
   const openCustomerCreate = () => openCustomerModal();

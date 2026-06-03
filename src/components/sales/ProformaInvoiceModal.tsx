@@ -286,7 +286,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
                   <div>
                     <DatePickerInput
-                      label="Valid Till"
+                      label="Due Date"
                       name="validTill"
                       value={formData.validTill}
                       required

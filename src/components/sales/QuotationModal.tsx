@@ -23,7 +23,10 @@ import type { ModalSubmitHandler } from "../../types/modal";
 import ItemTable from "../common/ItemTable";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
-
+import { showApiError, showSuccess, showValidationError } from "../../utils/alert";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+import { createProformaInvoice, editProformaInvoice } from "../../api/proformaInvoiceApi";
+import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 interface QuotationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -88,53 +91,128 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       ui.setActiveTab(tabs[currentIndex + 1]);
     }
   };
+  const validateDetailsOrFocus = () => {
+      try {
+        actions.validateForm();
+        return true;
+      } catch (err: any) {
+        ui.setActiveTab("details");
+        showValidationError(err.message);
+        return false;
+      }
+    };
 
   const symbol = currencySymbols[formData.currencyCode] || "";
 
-  const handleSave = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  // const handleSave = async (e?: React.FormEvent) => {
+  //   e?.preventDefault();
 
-    if (!actions.validateDetails()) {
-      ui.setActiveTab("details");
-      return false;
-    }
+  //   if (!actions.validateDetails()) {
+  //     ui.setActiveTab("details");
+  //     return false;
+  //   }
 
-    const didSubmit = await actions.handleSubmit({
-      preventDefault: () => { },
-    } as React.FormEvent);
+  //   const didSubmit = await actions.handleSubmit({
+  //     preventDefault: () => { },
+  //   } as React.FormEvent);
 
-    if (didSubmit) {
-      resetDirty();
-      onClose();
-    }
+  //   if (didSubmit) {
+  //     resetDirty();
+  //     onClose();
+  //   }
 
-    return didSubmit;
-  };
+  //   return didSubmit;
+  // };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // const handleFormSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
 
-    if (ui.activeTab === "details") {
-      const isValid = actions.validateDetails();
+  //   if (ui.activeTab === "details") {
+  //     const isValid = actions.validateDetails();
 
-      if (!isValid) {
-        return;
+  //     if (!isValid) {
+  //       return;
+  //     }
+
+  //     handleNext();
+  //     return;
+  //   }
+
+  //   if (ui.activeTab === "address") {
+  //     handleNext();
+  //     return;
+  //   }
+
+  //   if (ui.activeTab === "terms") {
+  //     await handleSave(e);
+  //   }
+  // };
+
+   const handleSave = async () => {
+      if (!validateDetailsOrFocus()) return;
+  
+      try {
+        const payload = await actions.handleSubmit({
+          preventDefault: () => {},
+        } as React.FormEvent);
+        
+        if (!payload) return;
+        
+        const finalPayload = {
+          ...payload,
+          documentType: "Quotation",
+        };
+        
+        let response;
+  
+        if (mode === "edit") {
+          const quotationNumber = formData.invoiceNumber ?? initialData?.id ?? initialData?.proformaId;
+          console.log("Editing Proforma Invoice with number:", quotationNumber);
+          
+          if (!quotationNumber) {
+            showValidationError("Invalid quotation reference");
+            return;
+          }
+  
+          // Use your actual edit API function
+          response = await editProformaInvoice(quotationNumber, finalPayload);
+        } else {
+          response = await createProformaInvoice(finalPayload);
+        }
+  
+         const res = response?.message || response;
+  
+        if (!res || ![200, 201].includes(res.status_code)) {
+          showApiError(parseFrappeError || res?.message || res || "Failed to save Quotation");
+          return;
+        }
+  
+        showSuccess(res.message || "Quotation saved successfully");
+  
+        const canClose = await onSubmit?.(res);
+        if (canClose === false) return;
+  
+        resetDirty();
+        // actions.handleReset();
+        onClose();
+        
+        // Refresh the table data in the background
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
+        
+      } catch (error: any) {
+        showApiError(error);
       }
-
-      handleNext();
-      return;
-    }
-
-    if (ui.activeTab === "address") {
-      handleNext();
-      return;
-    }
-
-    if (ui.activeTab === "terms") {
-      await handleSave(e);
-    }
-  };
-
+    };
+  
+    const handleFormSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      await handleSave();
+    };
+  
+    const handleClose = () => {
+      actions.handleReset();
+      onClose();
+    };
 
   const footerContent = (
     <ModalFooter
@@ -152,11 +230,23 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title="Create Quotation"
+      onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+      title={
+        mode === "edit" ? "Edit Quotation" : "Create Quotation"
+      }
       subtitle="Create and manage quotation details"
       icon={FileSignature}
-      footer={footerContent}
+      footer={
+        <ModalFooter
+          onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          onReset={async () => {
+            resetDirty();
+            await actions.handleReset();
+          }}
+          onSave={handleSave}
+          onNext={ui.activeTab === "terms" ? undefined : handleNext}
+        />
+      }
       customWidth="82vw"
       height="82vh"
     >
@@ -172,6 +262,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
             {[
               { key: "details", label: "Details" },
               { key: "address", label: "Additional Details" },
+              { key: "otherCharges", label: "Shipping & Other Charges" },
               { key: "terms", label: "Terms & Conditions" },
             ].map((tab) => (
               <button
@@ -237,8 +328,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   <div>
                     <DatePickerInput
                       label="Valid Until"
-                      name="dueDate"
-                      value={formData.dueDate}
+                      name="validTill"
+                      value={formData.validTill}
                       required
                       onChange={(name, value) =>
                         actions.handleInputChange({

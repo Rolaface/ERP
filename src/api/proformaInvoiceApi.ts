@@ -41,6 +41,19 @@ export async function getAllProformaInvoices(
   return resp.data;
 }
 
+export async function getAllQuotation(
+  page: number = 1,
+  page_size: number = 10,
+  sortBy: string = "",
+  sortOrder: "asc" | "desc" = "asc",
+  search?: string,
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(ProformaAPI.getAll, {
+    params: { page, page_size, sortBy, sortOrder, search, documentType: "Quotation"},
+  });
+  return resp.data;
+}
+
 export async function deleteProformaInvoiceById(proformaId: string) {
   const resp = await api.delete(ProformaAPI.delete, {
     data: { id: proformaId },   
