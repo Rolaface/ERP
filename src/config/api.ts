@@ -702,7 +702,7 @@ accounting: {
     locationSearch: `${ERP_BASE}/api/method/custom_api.api.search.get_locations`,
     createlocation: `${ERP_BASE}/api/resource/Location`,
     getitemcodeforFaixedAsset: `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
-    getemployeeforAssetMovement: `${ERP_BASE}/api/method/custom_api.api.search.get_employees`,
+    getemployeeforAssetMovement: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
     getdepartment: `${ERP_BASE}/api/method/custom_hrms.api.search.get_departments`,
     getgrade: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employee_grades`,
     getdesignation: `${ERP_BASE}/api/method/custom_hrms.api.search.get_designations`,
@@ -714,6 +714,7 @@ accounting: {
     getBranches: `${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
     createbranch: `${ERP_BASE}/api/resource/Branch`,
     getshifts: `${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
+    employeesearch: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
 
 
   },
