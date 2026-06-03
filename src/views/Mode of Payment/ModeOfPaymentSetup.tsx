@@ -6,7 +6,12 @@ import {
   getModeOfPaymentByName,
   updateModeOfPaymentStatus,
 } from "../../api/BankAccountApi";
-import { closeSwal, showApiError, showLoading, showSuccess } from "../../utils/alert";
+import {
+  closeSwal,
+  showApiError,
+  showLoading,
+  showSuccess,
+} from "../../utils/alert";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -19,8 +24,7 @@ import {
   AppPageBody,
 } from "../../components/ui/app-shell";
 import { usePermission } from "../../hooks/permission/usePermission";
-
-
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 const MODE_OF_PAYMENT_MODULE = "Mode Of Payment";
 
@@ -61,7 +65,10 @@ const ModeOfPaymentSetup: React.FC = () => {
     const previous = row.enabled;
     try {
       setActionLoadingId(String(row.id));
-      await updateModeOfPaymentStatus({ name: row.id, enabled: previous ? 0 : 1 });
+      await updateModeOfPaymentStatus({
+        name: row.id,
+        enabled: previous ? 0 : 1,
+      });
       await fetchData();
       showSuccess("Status updated successfully");
     } catch (err: any) {
@@ -94,7 +101,6 @@ const ModeOfPaymentSetup: React.FC = () => {
       align: "center",
       render: (row: any) => (
         <div className="flex items-center justify-center gap-2">
-
           <ActionButton
             type="edit"
             onClick={(e) => handleEdit(row.id, e)}
@@ -105,6 +111,7 @@ const ModeOfPaymentSetup: React.FC = () => {
             customActions={[
               {
                 label: row.enabled ? "Disable" : "Enable",
+                icon: row.enabled ? ACTION_ICONS.DISABLE : ACTION_ICONS.ENABLE,
                 onClick: () => handleToggle(row),
                 disabled: actionLoadingId === String(row.id),
               },
@@ -140,8 +147,14 @@ const ModeOfPaymentSetup: React.FC = () => {
           pageSizeOptions={[10, 25, 50, 100]}
           onPageChange={setPage}
           searchValue={search}
-          onSearch={(value) => { setSearch(value); setPage(1); }}
-          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          onSearch={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
         />
       </AppPageBody>
     </AppPage>

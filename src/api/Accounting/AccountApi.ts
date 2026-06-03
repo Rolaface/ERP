@@ -128,7 +128,7 @@ export async function getProfitAndLoss(
 
 export interface AccountsPayableFilters {
   company?: string;
-  report_date?: string;
+  posting_date?: string;
   currency?:string;
   cost_center?: string;
   payable_account?: string;
@@ -164,7 +164,7 @@ export async function getAllPayables(
 
 export interface AccountsReceivableFilters {
   company?: string;
-  report_date?: string;
+  posting_date?: string;
   currency?:string;
   cost_center?: string;
   receivable_account?: string;

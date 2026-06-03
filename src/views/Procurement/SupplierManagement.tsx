@@ -22,7 +22,8 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { updateEntityStatus } from "../../hooks/statusManager";
-import { CreditCard } from "lucide-react";
+
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -498,7 +499,7 @@ const handleEnableSupplier = async (
       ? [
           {
             label: "Make Payment",
-            icon: <CreditCard className="w-4 h-4" />,
+             icon: ACTION_ICONS.ADVANCE_PAYMENT,
             onClick: () => handleMakePayment(supplier),
           },
         ]
@@ -507,7 +508,7 @@ const handleEnableSupplier = async (
       ? [
           {
             label: "Make Advance Payment",
-             icon: <CreditCard className="w-4 h-4" />,
+             icon: ACTION_ICONS.ADVANCE_PAYMENT,
             onClick: () => handleMakeAdvancePayment(supplier),
           },
         ]
