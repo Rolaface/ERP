@@ -124,15 +124,9 @@ export function DepartmentSetup() {
               onClick={() => handleEdit(row)}
               disabled={actionLoadingId === row.name}
             />
-            <ActionMenu
-              customActions={[
-                {
-                  label: "Delete",
-                  onClick: () => handleDelete(row),
-                  disabled: actionLoadingId === row.name,
-                },
-              ]}
-            />
+           <ActionMenu
+  onDelete={() => handleDelete(row)}
+/>
           </ActionGroup>
         ),
       },

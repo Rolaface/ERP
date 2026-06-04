@@ -42,7 +42,7 @@ type PayableVoucherType =
   | "Expense Claim";
 
 type PayableRecord = {
-  report_date?: string;
+  posting_date?: string;
   supplier?: string;
   party?: string;
   supplier_name?: string;
@@ -105,7 +105,7 @@ const AccountsPayable = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [reportDate, setReportDate] = useState(getTodayDate());
+  const [postingDate, setPostingDate] = useState(getTodayDate());
 
   const [selectedGroupBy, setSelectedGroupBy] = useState<string[]>([]);
 
@@ -220,7 +220,7 @@ const AccountsPayable = () => {
   }, [
     searchTerm,
     filterStatus,
-    reportDate,
+    postingDate,
     selectedGroupBy,
     selectedCostCenter,
     selectedSuppliers,
@@ -238,8 +238,7 @@ const AccountsPayable = () => {
         ...(filterStatus && filterStatus !== "all"
           ? { status: filterStatus }
           : {}),
-        report_date: reportDate || undefined,
-        cost_center: selectedCostCenter || undefined,
+        posting_date: postingDate || undefined,        cost_center: selectedCostCenter || undefined,
         party: selectedSuppliers.length
           ? selectedSuppliers.join(",")
           : undefined,
@@ -268,13 +267,26 @@ const AccountsPayable = () => {
 
             if (!isSummary) {
               if (row.due_date) {
-                const dueDate = new Date(row.due_date);
-                const timeDiff = dueDate.getTime() - today.getTime();
-                daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                dueDisplay = row.due_date;
+                const safeDateStr = row.due_date.includes(" ") 
+                  ? row.due_date.replace(" ", "T") 
+                  : row.due_date;
+                
+                const dueDateObj = new Date(safeDateStr);
+                
+                if (!isNaN(dueDateObj.getTime())) {
+                  const timeDiff = dueDateObj.getTime() - today.getTime();
+                  daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                }
+                
+                dueDisplay = formatDate(row.due_date);
+                
+              } else if (row.posting_date) {
+                daysLeft = -(row.age || 0);
+                dueDisplay = formatDate(row.posting_date);
+                
               } else {
                 daysLeft = -(row.age || 0);
-                dueDisplay = `${row.report_date}`;
+                dueDisplay = "—";
               }
 
               status = "Pending";
@@ -333,7 +345,7 @@ const AccountsPayable = () => {
     pageSize,
     searchTerm,
     filterStatus,
-    reportDate,
+    postingDate,
     selectedGroupBy,
     sortBy,
     sortOrder,
@@ -425,7 +437,7 @@ const AccountsPayable = () => {
         page: 1,
         page_size: 999999,
         search: searchTerm,
-        report_date: reportDate || undefined,
+        posting_date: postingDate || undefined,
         cost_center: selectedCostCenter || undefined,
         party: selectedSuppliers.length
           ? selectedSuppliers.join(",")
@@ -466,7 +478,7 @@ const AccountsPayable = () => {
         "Paid Amount": row.amounts?.paid ?? row.paid ?? 0,
         "Credit Note": row.amounts?.credit_note ?? row.credit_note ?? 0,
         "Outstanding Amount": row.amounts?.outstanding ?? row.outstanding ?? 0,
-        "Report Date": row.report_date || "",
+        "Posting Date": row.posting_date || "",
         "Due Date": row.due_date || "",
         "Age (Days)": row.age || 0,
         Currency: row.currency || currencySymbol || "-",
@@ -805,10 +817,10 @@ const AccountsPayable = () => {
           <div className="relative">
             <input
               type="date"
-              value={reportDate}
-              onChange={(e) => setReportDate(e.target.value)}
+              value={postingDate}
+onChange={(e) => setPostingDate(e.target.value)}
               className="px-3 py-2 border border-theme bg-app rounded-lg text-main text-sm h-[38px] w-full sm:w-auto cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              title="Report Date"
+              title="Posting Date"
             />
           </div>
 
@@ -1107,7 +1119,7 @@ const AccountsPayable = () => {
             selectedVoucherType !== "" ||
             filterStatus !== "all" ||
             searchTerm !== "" ||
-            reportDate !== getTodayDate()) && (
+            postingDate !== getTodayDate()) && (
             <button
               onClick={() => {
                 setSearchTerm("");
@@ -1116,7 +1128,7 @@ const AccountsPayable = () => {
                 setSelectedSuppliers([]);
                 setSelectedCostCenter("");
                 setSelectedPayableAccount("");
-                setReportDate(getTodayDate());
+                setPostingDate(getTodayDate());
                 setSelectedVoucherType("");
                 setActiveDropdown(null);
               }}

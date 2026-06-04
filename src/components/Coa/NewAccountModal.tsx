@@ -18,6 +18,7 @@ interface NewAccountModalProps {
   onClose: () => void;
   onSuccess: () => void;
   parentAccount?: COAAccount | null;
+  editAccount?: COAAccount | null;
 }
 
 const NewAccountModal: React.FC<NewAccountModalProps> = ({
@@ -25,6 +26,7 @@ const NewAccountModal: React.FC<NewAccountModalProps> = ({
   onClose,
   onSuccess,
   parentAccount,
+  editAccount,
 }) => {
   const {
     form,
@@ -35,10 +37,11 @@ const NewAccountModal: React.FC<NewAccountModalProps> = ({
     reset,
     companies,
     currencies,
+    isEditMode,
   } = useCoaLogic(() => {
     onSuccess();
     onClose();
-  }, parentAccount);
+  }, parentAccount, editAccount);
   const footer = (
     <>
       <Button variant="secondary" type="button" onClick={onClose}>
@@ -54,7 +57,8 @@ const NewAccountModal: React.FC<NewAccountModalProps> = ({
           loading={loading}
           onClick={handleSubmit}
         >
-          Create New Account
+          {isEditMode ? "Update Account" : "Create New Account"}
+
         </Button>
       </div>
     </>
@@ -64,11 +68,13 @@ const NewAccountModal: React.FC<NewAccountModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={parentAccount ? "Add Child Account" : "Create Account"}
+      title={isEditMode ? "Edit Account" : parentAccount ? "Add Child Account" : "Create Account"}
       subtitle={
-        parentAccount
-          ? `Creating under: ${parentAccount.account_name}`
-          : "Add a new account to the chart of accounts"
+        isEditMode
+          ? `Editing: ${editAccount?.account_name}`
+          : parentAccount
+            ? `Creating under: ${parentAccount.account_name}`
+            : "Add a new account to the chart of accounts"
       }
       icon={BookOpen}
       footer={footer}
@@ -81,11 +87,12 @@ const NewAccountModal: React.FC<NewAccountModalProps> = ({
           {/* Account Name */}
           <div className="flex flex-col gap-1">
             <ModalInput
-              label="New Account Name"
+              label="Account Name"
               name="accountName"
-              value={form.accountName}
+              value={isEditMode ? (editAccount?.account_name ?? "") : form.accountName}
               onChange={handleChange}
-              required
+              required={!isEditMode}
+              disabled={isEditMode}
               error={errors.accountName}
             />
             <p className="text-xs text-muted mt-1 leading-relaxed">

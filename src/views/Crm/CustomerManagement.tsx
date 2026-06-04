@@ -30,6 +30,7 @@ import {
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
 import { updateEntityStatus } from "../../hooks/statusManager";
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 type OutletContextType = {
   openCustomerCreate: () => void;
@@ -391,7 +392,7 @@ onEnable={
                 ? [
                     {
                       label: "Receive Payment",
-                        icon: <CreditCard className="w-4 h-4" />,
+                        icon: ACTION_ICONS.PAYMENT,
                       onClick: () => handleMakePayment(customer),
                     },
                   ]

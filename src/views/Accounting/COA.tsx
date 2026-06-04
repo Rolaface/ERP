@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import ExpandableTreeTable, { PortalDropdown } from "../../components/ui/Table/ExpandableTreeTable";
 import type { Column } from "../../components/ui/Table/type";
-import { getChartOfAccounts, deleteChartOfAccount } from "../../api/Accounting/AccountApi";
-import GLView from "./glview";
+import { getChartOfAccounts, deleteChartOfAccount , getCOAById} from "../../api/Accounting/AccountApi";
 import { useNavigate } from "react-router-dom";
 import { showConfirm, showLoading, showSuccess, showApiError, closeSwal } from "../../utils/alert";
-
 import {
   AlertCircle,
   Loader2,
@@ -18,10 +16,11 @@ import {
   Trash2,
   GitBranch,
   BookMarked,
-  Plus,
+  Eye
 } from "lucide-react";
 import NewAccountModal from "../../components/Coa/NewAccountModal";
 import type { COAAccount, COAResponse, COAResponseData } from "../../types/coa";
+import ViewAccountModal from "../../components/Coa/ViewAccountModal";
 
 export interface COATabProps {
   searchTerm: string;
@@ -122,9 +121,10 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
   const [error, setError] = useState<string | null>(null);
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [hideZero, setHideZero] = useState(false);
-
+  const [viewAccount, setViewAccount] = useState<COAAccount | null>(null);
   const [selectedParent, setSelectedParent] = useState<COAAccount | null>(null);
   const navigate = useNavigate();
+  const [editAccount, setEditAccount] = useState<COAAccount | null>(null);
 
   const fetchCOA = useCallback(async () => {
     setLoading(true);
@@ -196,7 +196,25 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
   const handleModalClose = () => {
     setShowNewAccount(false);
     setSelectedParent(null);
+    setEditAccount(null);
   };
+
+ const handleEditAccount = async (row: COAAccount) => {
+  try {
+    showLoading("Loading account details...");
+    const data = await getCOAById(row.name);
+    closeSwal();
+    if (!data) {
+      showApiError("Failed to load account details.");
+      return;
+    }
+    setEditAccount({ ...row, ...data });
+    setShowNewAccount(true);
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   if (loading) {
     return (
@@ -320,7 +338,12 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
           {
             label: "Edit",
             icon: <Pencil size={12} />,
-            onClick: () => console.log("Edit", row.name),
+            onClick: () => handleEditAccount(row),
+          },
+          {
+            label: "View",
+            icon: <Eye size={12} />,
+            onClick: () => setViewAccount(row),
           },
           ...(row.is_group === 1
             ? [
@@ -364,6 +387,12 @@ const COATab: React.FC<COATabProps> = ({ searchTerm, setSearchTerm }) => {
         onClose={handleModalClose}
         onSuccess={fetchCOA}
         parentAccount={selectedParent}
+        editAccount={editAccount}
+      />
+      <ViewAccountModal
+        isOpen={viewAccount !== null}
+        onClose={() => setViewAccount(null)}
+        account={viewAccount}
       />
       <ExpandableTreeTable<COAAccount>
         columns={coaColumns}

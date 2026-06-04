@@ -788,18 +788,36 @@ const fetchEmployees = useCallback(async (search: string) => {
                   type="button"
                   role="checkbox"
                   aria-checked={useAdvance}
-                  onClick={() => {
-                    const next = !useAdvance;
-                    setUseAdvance(next);
-                    if (!next) {
-                      // When toggling off, zero all allocations
-                      const cleared: Record<string, number> = {};
-                      employeeAdvances.forEach((a) => {
-                        cleared[a.id] = 0;
-                      });
-                      setAdvanceAllocations(cleared);
-                    }
-                  }}
+                  
+onClick={() => {
+  const next = !useAdvance;
+  setUseAdvance(next);
+  if (!next) {
+    const cleared: Record<string, number> = {};
+    employeeAdvances.forEach((a) => { cleared[a.id] = 0; });
+    setAdvanceAllocations(cleared);
+  } else {
+
+    const expAmt = form.amount === "" ? 0 : Number(form.amount);
+    const autoAlloc: Record<string, number> = {};
+    let remaining = expAmt;
+    const sorted = [...employeeAdvances].sort((a, b) =>
+      (a.advanceDate ?? "").localeCompare(b.advanceDate ?? "")
+    );
+    for (const adv of sorted) {
+      autoAlloc[adv.id] = 0;
+    }
+    for (const adv of sorted) {
+      if (remaining <= 0) break;
+      const available = adv.unclaimedAmount ?? 0;
+      const allocated = Math.min(available, remaining);
+      autoAlloc[adv.id] = allocated;
+      remaining -= allocated;
+    }
+    setAdvanceAllocations(autoAlloc);
+    setActiveTab("advance");
+  }
+}}
                   style={{
                     width: "16px",
                     height: "16px",
@@ -831,16 +849,30 @@ const fetchEmployees = useCallback(async (search: string) => {
                 <label
                   className="text-xs font-medium text-main cursor-pointer select-none"
                   onClick={() => {
-                    const next = !useAdvance;
-                    setUseAdvance(next);
-                    if (!next) {
-                      const cleared: Record<string, number> = {};
-                      employeeAdvances.forEach((a) => {
-                        cleared[a.id] = 0;
-                      });
-                      setAdvanceAllocations(cleared);
-                    }
-                  }}
+  const next = !useAdvance;
+  setUseAdvance(next);
+  if (!next) {
+    const cleared: Record<string, number> = {};
+    employeeAdvances.forEach((a) => { cleared[a.id] = 0; });
+    setAdvanceAllocations(cleared);
+  } else {
+    const expAmt = form.amount === "" ? 0 : Number(form.amount);
+    const sorted = [...employeeAdvances].sort((a, b) =>
+      (a.advanceDate ?? "").localeCompare(b.advanceDate ?? ""),
+    );
+    const autoAlloc: Record<string, number> = {};
+    for (const adv of sorted) { autoAlloc[adv.id] = 0; }
+    let remaining = expAmt;
+    for (const adv of sorted) {
+      if (remaining <= 0) break;
+      const allocated = Math.min(adv.unclaimedAmount ?? 0, remaining);
+      autoAlloc[adv.id] = allocated;
+      remaining -= allocated;
+    }
+    setAdvanceAllocations(autoAlloc);
+    setActiveTab("advance");
+  }
+}}
                 >
                   Settle Against Advance
                 </label>

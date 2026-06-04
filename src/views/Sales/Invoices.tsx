@@ -47,6 +47,10 @@ import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
 import SendEmailModal from "../../components/common/SendEmailModal";
 import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
+import {
+  ACTION_ICONS,
+  getStatusActionIcon,
+} from "../../components/UI_Utils/statusActionIcons";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -713,6 +717,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                   ? [
                     {
                       label: "Receive Payment",
+                      icon: ACTION_ICONS.PAYMENT,
                       onClick: () => handleReceivePayment(inv),
                     },
                   ]
@@ -721,6 +726,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                   ? [
                     {
                       label: "Compose Email",
+                      icon: ACTION_ICONS.EMAIL,
                       onClick: async () => {
                         setEmailInvoice(inv);
                         setEmailContactEmail(null);
@@ -745,6 +751,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                   : []),
                 {
                   label: "View PDF",
+                  icon: ACTION_ICONS.PDF,
                   onClick: () => handlePreviewPDF(inv),
                 },
                 // Status transitions — needs write
@@ -752,6 +759,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                   ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
                     (status) => ({
                       label: status === "Approved" ? "Approve" : status,
+                      icon: getStatusActionIcon(status),
                       danger: status === "Paid",
                       onClick: () =>
                         handleRowStatusChange(inv.invoiceNumber, status),

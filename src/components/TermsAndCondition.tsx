@@ -282,27 +282,24 @@ const TermsAndCondition: React.FC<Props> = ({
   const isOverLimit = totalPercentage > 100;
 
   const getDueDate = (days: number) => {
-    if (!days) return "";
     const today = new Date();
     today.setDate(today.getDate() + days);
     return today.toLocaleDateString("en-GB");
   };
 
-useEffect(() => {
-  const total = Math.max(
-    0,
-    ...currentPaymentPhases.map(
-      (p) => Number(p.credit_days || 0)
-    ),
-  );
+  useEffect(() => {
+    const total = Math.max(
+      0,
+      ...currentPaymentPhases.map((p) => Number(p.credit_days || 0)),
+    );
 
-  const current = ensurePayment(currentTerms).dueDates;
-  const next = total ? `Payment due within ${total} days` : "";
+    const current = ensurePayment(currentTerms).dueDates;
+    const next = total ? `Payment due within ${total} days` : "";
 
-  if (current !== next) {
-    updatePayment({ dueDates: next });
-  }
-}, [currentPaymentPhases]);
+    if (current !== next) {
+      updatePayment({ dueDates: next });
+    }
+  }, [currentPaymentPhases]);
 
   const updateTopField = (key: keyof TermSection, value: string) =>
     setTerms({ ...currentTerms, [key]: value });
@@ -332,12 +329,10 @@ useEffect(() => {
     updatePayment({ phases: next });
   };
 
-const totalCreditDays = Math.max(
-  0,
-  ...currentPaymentPhases.map(
-    (p) => Number(p.credit_days || 0)
-  ),
-);
+  const totalCreditDays = Math.max(
+    0,
+    ...currentPaymentPhases.map((p) => Number(p.credit_days || 0)),
+  );
   // ── Cell padding — tighter in compact mode ──────────────────────────────────
   const cellPy = compact ? "py-1" : "py-2.5";
 
@@ -364,10 +359,16 @@ const totalCreditDays = Math.max(
             <thead>
               <tr className="table-head">
                 <th className="px-2 py-1.5 text-left text-xs font-medium">#</th>
-                <th className="px-2 py-1.5 text-left text-xs font-medium">Phase</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">
+                  Phase
+                </th>
                 <th className="px-2 py-1.5 text-left text-xs font-medium">%</th>
-                <th className="px-2 py-1.5 text-left text-xs font-medium">Description</th>
-                <th className="px-2 py-1.5 text-left text-xs font-medium">Credit Days</th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">
+                  Description
+                </th>
+                <th className="px-2 py-1.5 text-left text-xs font-medium">
+                  Credit Days
+                </th>
                 {!isViewMode && <th style={{ width: 32 }} />}
               </tr>
             </thead>
@@ -379,7 +380,9 @@ const totalCreditDays = Math.max(
                     key={idx}
                     className="border-t border-theme row-hover align-middle"
                   >
-                    <td className={`px-2 ${cellPy} text-xs text-muted`}>{idx + 1}</td>
+                    <td className={`px-2 ${cellPy} text-xs text-muted`}>
+                      {idx + 1}
+                    </td>
 
                     <td className={`px-2 ${cellPy} overflow-hidden`}>
                       {isViewMode ? (
@@ -418,7 +421,10 @@ const totalCreditDays = Math.max(
 
                     <td className={`px-2 ${cellPy} overflow-hidden`}>
                       {isViewMode ? (
-                        <span className="block truncate text-xs" title={p.condition}>
+                        <span
+                          className="block truncate text-xs"
+                          title={p.condition}
+                        >
                           {p.condition || "—"}
                         </span>
                       ) : (
@@ -441,7 +447,9 @@ const totalCreditDays = Math.max(
                       ) : (
                         <NumericInput
                           name="credit_days"
-                          value={p.credit_days ? Number(p.credit_days) : null}
+                          value={
+                            p.credit_days !== "" ? Number(p.credit_days) : null
+                          }
                           placeholder="0"
                           onChange={(value) =>
                             updatePhase(idx, {
@@ -498,9 +506,7 @@ const totalCreditDays = Math.max(
               type="button"
               onClick={addPhase}
               className={`bg-primary text-white rounded-lg flex items-center gap-1.5 ${
-                compact
-                  ? "px-3 py-1 text-xs"
-                  : "px-4 py-1.5 text-sm"
+                compact ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm"
               }`}
             >
               <FaPlus size={compact ? 9 : 11} /> Add Phase
@@ -519,23 +525,29 @@ const totalCreditDays = Math.max(
         >
           {/* Due Dates — always read-only */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[24px]">
-            <span className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}>
+            <span
+              className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}
+            >
               Due Dates:
             </span>
             <TemplateField
               prefix="Payment due within"
               suffix="days"
               suffixKeyword="days"
-              value={`Payment due within ${totalCreditDays} days${
-                totalCreditDays ? ` (Due on ${getDueDate(totalCreditDays)})` : ""
-              }`}
+            value={
+  totalCreditDays > 0
+    ? `Payment due within ${totalCreditDays} days (Due on ${getDueDate(totalCreditDays)})`
+    : "Due today"
+}
               onChange={() => {}}
               disabled={true}
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[24px]">
-            <span className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}>
+            <span
+              className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}
+            >
               Late Payment Charges:
             </span>
             <TemplateField
@@ -618,7 +630,9 @@ const totalCreditDays = Math.max(
               onClick={() => setActiveTab(i)}
               className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
                 ${i === activeTab ? "text-white shadow-sm" : "text-muted hover:bg-theme"}`}
-              style={i === activeTab ? { background: "var(--primary-600)" } : {}}
+              style={
+                i === activeTab ? { background: "var(--primary-600)" } : {}
+              }
             >
               {tab.short}
             </button>
@@ -626,7 +640,9 @@ const totalCreditDays = Math.max(
         </div>
 
         {/* Content */}
-        <div className={`bg-card ${compact ? "p-2 sm:p-3" : "p-3 sm:p-5"} min-h-[80px]`}>
+        <div
+          className={`bg-card ${compact ? "p-2 sm:p-3" : "p-3 sm:p-5"} min-h-[80px]`}
+        >
           {activeKey === "payment"
             ? renderPaymentTable()
             : renderTextSection(activeKey, TABS[activeTab].label)}
@@ -653,7 +669,9 @@ const LabeledRow = ({
   compact?: boolean;
 }) => (
   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[24px]">
-    <span className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}>
+    <span
+      className={`flex-shrink-0 text-muted font-medium text-xs ${compact ? "w-28" : "w-44"}`}
+    >
       {label}
     </span>
     <input

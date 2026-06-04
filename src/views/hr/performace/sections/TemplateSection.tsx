@@ -218,15 +218,8 @@ export default function TemplateSection() {
           />
 
           <ActionMenu
-            customActions={[
-              {
-                label: "Delete",
-                onClick: () => deleteRow(row.id),
-                danger: true,
-                icon: <FaTrash className="w-4 h-4" />,
-              },
-            ]}
-          />
+  onDelete={() => deleteRow(row.id)}
+/>
         </ActionGroup>
       ),
     },

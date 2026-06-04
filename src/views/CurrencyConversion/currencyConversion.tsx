@@ -156,31 +156,40 @@ const CurrencyConversion: React.FC = () => {
           </PermissionGate>
           {can(CURRENCY_EXCHANGE_MODULE, "delete") && (
             <ActionMenu
-              customActions={[
-                {
-                  label: "Delete",
-                  onClick: async () => {
-                    if (actionLoading) return;
-                    const confirmed = await showConfirm("Do you want to delete this record?");
-                    if (!confirmed) return;
-                    try {
-                      showLoading("Deleting...");
-                      const res = await deleteConversion(row.id);
-                      closeSwal();
-                      const backend = res?.message;
-                      if (!backend || backend.status === "error" || backend.status_code >= 400) {
-                        showApiError(res);
-                        return;
-                      }
-                      showSuccess(backend.message);
-                    } catch (err) {
-                      closeSwal();
-                      showApiError(err);
-                    }
-                  },
-                },
-              ]}
-            />
+  onDelete={async () => {
+    if (actionLoading) return;
+
+    const confirmed = await showConfirm(
+      "Do you want to delete this record?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      showLoading("Deleting...");
+
+      const res = await deleteConversion(row.id);
+
+      closeSwal();
+
+      const backend = res?.message;
+
+      if (
+        !backend ||
+        backend.status === "error" ||
+        backend.status_code >= 400
+      ) {
+        showApiError(res);
+        return;
+      }
+
+      showSuccess(backend.message);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  }}
+/>
           )}
         </ActionGroup>
       ),
