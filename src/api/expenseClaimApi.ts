@@ -1,5 +1,6 @@
   import type { AxiosResponse } from "axios";
   import { createAxiosInstance } from "./axiosInstance";
+  import { buildListParams } from "../api/utils/queryBuilder";
 
   import { API, ERP_BASE } from "../config/api";
   const api = createAxiosInstance(ERP_BASE);
@@ -7,6 +8,7 @@
   export const ExpenseClaimAPI = API.ExpenseClaim;
   export const AccountApi=API.Account;
   export const FrappeUtilsAPI = API.frappeUtilsAPI;
+  
   
   interface AccountOption {
     label: string;
@@ -352,38 +354,31 @@ export async function updateEmployeeAdvance(
 }
 
 export async function getAllAdvances(
-  search?: string,
-  pageSize = 10
+  start: number,
+  pageSize: number,
+  search: string,
 ): Promise<{ data: any[]; pagination: { total_pages: number; total: number } }> {
+  try {
+    const query = buildListParams({
+      fields: [
+        "name",
+        "posting_date",
+        "employee_name",
+        "purpose",
+        "advance_amount",
+        "status",
+      ],
+      start,
+      pageSize,
+      search,
+      searchFields: ["employee_name", "purpose", "name"],
+    });
 
-  const params = new URLSearchParams();
-  params.append("fields", JSON.stringify(["name", "employee_name", "purpose", "advance_amount", "status", "posting_date"])); 
-  params.append("with_pagination", "1");
-
-  if (search?.trim()) {
-    params.append("txt", search.trim());
+    const resp = await api.get(`${ExpenseClaimAPI.advance}?${query}`);
+    return resp.data;
+  } catch (error) {
+    throw error;
   }
-
-  const resp: AxiosResponse = await api.get(
-    `${ExpenseClaimAPI.advance}?${params.toString()}`
-  );
-
-  const raw: any[] = resp?.data?.data ?? [];
-
-  return {
-    data: raw.map((item) => ({
-      name:           item.name,
-      posting_date:   item.posting_date,
-      employee_name:  item.employee_name,
-      purpose:        item.purpose,
-      advance_amount: item.advance_amount,
-      status:         item.status,
-    })),
-    pagination: {
-      total:       raw.length,
-      total_pages: Math.ceil(raw.length / pageSize) || 1,
-    },
-  };
 }
 export async function getAdvanceById(id: string): Promise<any> {
   const params = new URLSearchParams();

@@ -303,8 +303,7 @@ const ExpenseHistory: React.FC = () => {
     }
   };
 
-  const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleViewDetail = async (exp: ExpenseSummary) => {
     setIsDetailLoading(true);
     setDetailClaim({});
     try {
@@ -457,7 +456,7 @@ const ExpenseHistory: React.FC = () => {
           <div className="flex items-center justify-center gap-2">
             <ActionButton
               type="view"
-              onClick={(e) => handleViewDetail(exp, e)}
+              onClick={() => handleViewDetail(exp)}
               iconOnly
             />
             <PermissionGate module={EXPENSE_MODULE} action="write">

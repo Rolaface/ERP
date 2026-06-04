@@ -71,15 +71,17 @@ const fetchEmployeeAdvances = useCallback(async () => {
   if (!mountedRef.current) return;
   setIsFetching(true);
   try {
-    const res = await getAllAdvances(searchTerm, page, pageSize);
+    const start = (page - 1) * pageSize;                         
+    const res = await getAllAdvances(start, pageSize, searchTerm); 
+
     if (!mountedRef.current) return;
     setEmployeeAdvances(
-      res.data.map((item) => ({
+      res.data.map((item: any) => ({
         id:            item.name,
         posting_date:  item.posting_date,
         employee_name: item.employee_name,
         purpose:       item.purpose,
-        amount:        item.advance_amount, 
+        amount:        item.advance_amount,
         status:        item.status,
       }))
     );
