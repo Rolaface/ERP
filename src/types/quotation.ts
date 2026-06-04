@@ -16,15 +16,30 @@ export interface QuotationItem {
   tax: number;
 }
 
+// export interface QuotationSummary {
+//   quotationNumber: string;
+//   customerName: string;
+//   industryBases?: string;
+//   transactionDate: string;
+//   validTill: string;
+//   grandTotal: number;
+//   currency: string;
+//   status: string;
+// }
+
+export type QuotationStatus = "Draft" | "Paid" | "Cancelled" | "Approved" | "Open";
+
 export interface QuotationSummary {
   quotationNumber: string;
   customerName: string;
-  industryBases?: string;
-  transactionDate: string;
-  validTill: string;
-  grandTotal: number;
   currency: string;
-  status: string;
+  exchangeRate: string;
+  validTill: string | null;
+  totalAmount: number;
+  status: QuotationStatus;   
+  createdAt: Date;   
+  grandTotal: number;
+  proformaInvoiceStatus: QuotationStatus;
 }
 
 // export interface QuotationData {
@@ -101,12 +116,6 @@ export interface QuotationData {
   iban?: string;
   swiftCode?: string;
 }
-
-
-export type QuotationStatus =
-  | "Draft"
-  | "Sent"
-  | "Overdue";
 
 export const quotationStatusOptions = [
   { value: "Draft", label: "Draft" },

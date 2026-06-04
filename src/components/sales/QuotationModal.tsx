@@ -65,25 +65,28 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     initialData,
   );
 
-  const tabs: Array<"details" | "address" | "otherCharges" | "terms"> = [
+  const tabs: Array<"details" | "address" | "otherCharges" | "terms" | "otherDetails"> = [
     "details",
     "address",
     "otherCharges",
     "terms",
+    "otherDetails",
   ];
-  // const handleNext = () => {
-  //   if (ui.activeTab === "details" && !actions.validateDetails()) return;
 
-  //   const currentIndex = tabs.indexOf(ui.activeTab as any);
-  //   if (currentIndex < tabs.length - 1) {
-  //     ui.setActiveTab(tabs[currentIndex + 1]);
-  //   }
-  // };
+    // useEffect(() => {
+    //   if (isOpen) {
+    //     ui.setActiveTab("details");
+    //   }
+    // }, [isOpen]);
     useEffect(() => {
       if (isOpen) {
-        ui.setActiveTab("details");
+        if (initialData?._initialTab) {
+          ui.setActiveTab(initialData._initialTab);
+        } else {
+          ui.setActiveTab("details");
+        }
       }
-    }, [isOpen]);
+    }, [isOpen, initialData, ui]); // Added dependencies to satisfy React
  
    const handleNext = () => {
     const currentIndex = tabs.indexOf(ui.activeTab as any);
@@ -103,50 +106,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     };
 
   const symbol = currencySymbols[formData.currencyCode] || "";
-
-  // const handleSave = async (e?: React.FormEvent) => {
-  //   e?.preventDefault();
-
-  //   if (!actions.validateDetails()) {
-  //     ui.setActiveTab("details");
-  //     return false;
-  //   }
-
-  //   const didSubmit = await actions.handleSubmit({
-  //     preventDefault: () => { },
-  //   } as React.FormEvent);
-
-  //   if (didSubmit) {
-  //     resetDirty();
-  //     onClose();
-  //   }
-
-  //   return didSubmit;
-  // };
-
-  // const handleFormSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   if (ui.activeTab === "details") {
-  //     const isValid = actions.validateDetails();
-
-  //     if (!isValid) {
-  //       return;
-  //     }
-
-  //     handleNext();
-  //     return;
-  //   }
-
-  //   if (ui.activeTab === "address") {
-  //     handleNext();
-  //     return;
-  //   }
-
-  //   if (ui.activeTab === "terms") {
-  //     await handleSave(e);
-  //   }
-  // };
 
    const handleSave = async () => {
       if (!validateDetailsOrFocus()) return;
@@ -264,6 +223,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
               { key: "address", label: "Additional Details" },
               { key: "otherCharges", label: "Shipping & Other Charges" },
               { key: "terms", label: "Terms & Conditions" },
+              { key: "otherDetails", label: "More Info" },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -353,7 +313,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   </div>
 
                   {/* Status */}
-                  <div>
+                  {/* <div>
                     <ModalSelect
                       label="Status"
                       name="invoiceStatus"
@@ -363,7 +323,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                       disabled={mode === "edit"}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
-                  </div>
+                  </div> */}
 
                   <div className="max-w-[140px]">
                     <ModalSelect
@@ -584,6 +544,11 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                 type="selling"
                 compact={true}
               />
+            </div>
+          )}
+           {ui.activeTab === "otherDetails" && (
+            <div className="h-full w-full">
+             <p>Lost Reason</p>
             </div>
           )}
         </div>

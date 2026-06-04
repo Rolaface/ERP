@@ -174,9 +174,8 @@ useEffect(() => {
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
   const [page, setPage] = useState(0);
   const [chargePage, setChargePage] = useState(0);
-  const [activeTab, setActiveTab] = useState<
-    "details" | "address" | "otherCharges" | "terms"
-  >("details");
+  // Change it to this:
+const [activeTab, setActiveTab] = useState<"details" | "address" | "otherCharges" | "terms" | "otherDetails">("details");
 
   const [isShippingOpen, setIsShippingOpen] = useState(false);
   const [sameAsBilling, setSameAsBilling] = useState(true);
