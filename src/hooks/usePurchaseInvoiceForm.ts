@@ -462,15 +462,14 @@ useEffect(() => {
   useFieldDefault(isOpen, form.project, fetchProjects, (val) =>
     setForm((prev) => ({ ...prev, project: val })),
   );
-  useFieldDefault(
-    isOpen,
-    form.warehouse,
-    () =>
-      getAllWarehouses().then((list: string[]) =>
-        list.map((w) => ({ value: w, label: w })),
-      ),
-    (val) => setForm((prev) => ({ ...prev, warehouse: val })),
-  );
+useFieldDefault(
+  isOpen && !pId,  // only auto-default in create mode
+  form.warehouse,
+  () => getAllWarehouses().then((list: string[]) =>
+    list.map((w) => ({ value: w, label: w }))
+  ),
+  (val) => setForm((prev) => ({ ...prev, warehouse: val })),
+);
 
   // ─────────────────────────────────────────────
   // Handlers
