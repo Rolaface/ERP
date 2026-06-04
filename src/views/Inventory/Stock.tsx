@@ -55,7 +55,7 @@ const Items: React.FC = () => {
     setIsFetching(true);
 
     try {
-      const res = await getStockReport(page, pageSize, searchTerm);
+      const res = await getStockReport(page, pageSize, searchTerm,undefined, 1);
       if (!mountedRef.current) return;
 
       const list = res?.message?.data || [];
