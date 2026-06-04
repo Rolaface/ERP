@@ -36,12 +36,19 @@ type NestedSection =
 
 const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!invoiceDate) return "";
-  const match = terms?.match(/(\d+)/);
+  
+  
+  if (!terms) return dayjs(invoiceDate, ["DD-MMM-YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD");
+
+  const match = terms.match(/(\d+)/);
   const days = match ? Number(match[1]) : 0;
+
   let date = dayjs(invoiceDate, "DD-MMM-YYYY", true);
   if (!date.isValid()) date = dayjs(invoiceDate, "YYYY-MM-DD", true);
   if (!date.isValid()) return "";
+
   return date.add(days, "day").format("YYYY-MM-DD");
+  
 };
 
 const NUM_FIELDS = [
@@ -149,21 +156,26 @@ export const useInvoiceForm = (
 
   // Auto-calculate due date from payment terms
 useEffect(() => {
+  if (!formData.dateOfInvoice) return;
+
+  const dueDatesValue = formData.terms?.selling?.payment?.dueDates;
+
+  // If dueDates is explicitly set (even empty), use it
+  // If not set at all (null/undefined), fall back to paymentTerms
   const terms =
-    formData.terms?.selling?.payment?.dueDates ||
-    formData.paymentInformation?.paymentTerms;
+    dueDatesValue != null
+      ? dueDatesValue
+      : formData.paymentInformation?.paymentTerms ?? "";
 
-  if (!terms || !formData.dateOfInvoice) return;
+  // calculateDueDate handles "" → returns invoiceDate (today)
+  const due = calculateDueDate(formData.dateOfInvoice, terms);
 
-  const due = calculateDueDate(
-    formData.dateOfInvoice,
-    terms,
-  );
-
-  setFormData((prev) => ({
-    ...prev,
-    dueDate: due,
-  }));
+  if (due) {
+    setFormData((prev) => ({
+      ...prev,
+      dueDate: due,
+    }));
+  }
 }, [
   formData.dateOfInvoice,
   formData.terms?.selling?.payment?.dueDates,

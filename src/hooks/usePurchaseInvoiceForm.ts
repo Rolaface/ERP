@@ -82,25 +82,25 @@ const addressStub = (id: string, type: string): ApiAddress | null =>
 // Hook
 // ─────────────────────────────────────────────
 
-
 import dayjs from "dayjs";
 
-const calculateDueDate = (
-  invoiceDate: string,
-  terms: string,
-) => {
+const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!invoiceDate) return "";
 
-  const match = terms?.match(/(\d+)/);
+
+  if (!terms) {
+    const date = dayjs(invoiceDate, "YYYY-MM-DD", true);
+    return date.isValid() ? date.format("YYYY-MM-DD") : "";
+  }
+
+  const match = terms.match(/(\d+)/);
   const days = match ? Number(match[1]) : 0;
 
-  let date = dayjs(invoiceDate, "YYYY-MM-DD", true);
-
+  const date = dayjs(invoiceDate, "YYYY-MM-DD", true);
   if (!date.isValid()) return "";
 
   return date.add(days, "day").format("YYYY-MM-DD");
 };
-
 export const usePurchaseInvoiceForm = ({
   isOpen,
   onSuccess,
@@ -294,21 +294,17 @@ export const usePurchaseInvoiceForm = ({
 
     loadCompanyData();
   }, [isOpen, pId]);
-  useEffect(() => {
-  const terms =
-    form.terms?.buying?.payment?.dueDates;
+useEffect(() => {
+  if (!form.date) return;
 
-  if (!terms || !form.date) return;
+  const terms = form.terms?.buying?.payment?.dueDates ?? "";
 
-  const due = calculateDueDate(
-    form.date,
-    terms,
-  );
+  // calculateDueDate handles "" → returns form.date itself (due today)
+  const due = calculateDueDate(form.date, terms);
 
-  setForm((prev) => ({
-    ...prev,
-    dueDate: due,
-  }));
+  if (due) {
+    setForm((prev) => ({ ...prev, dueDate: due }));
+  }
 }, [
   form.date,
   form.terms?.buying?.payment?.dueDates,
@@ -629,14 +625,14 @@ export const usePurchaseInvoiceForm = ({
   );
 
   // ── Supplier ───────────────────────────────
-const handleSupplierChange = async (sup: any) => {
-  if (!sup) return;
-setForm((prev) => ({
-  ...prev,
-  supplierId: sup.id || sup.value || "",
-}));
+  const handleSupplierChange = async (sup: any) => {
+    if (!sup) return;
+    setForm((prev) => ({
+      ...prev,
+      supplierId: sup.id || sup.value || "",
+    }));
 
-  try {
+    try {
       const res = await getSupplierById(sup.id || sup.value);
       const supplier =
         res?.message?.data ||
@@ -1178,8 +1174,6 @@ setForm((prev) => ({
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (saving) return;
-
-
 
     const errors = validatePI(form);
     if (errors.length) {

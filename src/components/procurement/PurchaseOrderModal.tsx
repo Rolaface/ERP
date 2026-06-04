@@ -10,6 +10,7 @@ import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import type { POTab } from "../../types/Supply/purchaseOrder";
 import { showValidationError } from "../../utils/alert";
 import { MinimizableModal } from "../common/MinimizableModal";
+import ModalFooter from "../common/ModalFooter";
 
 interface PurchaseOrderModalProps {
   isOpen: boolean;
@@ -95,56 +96,46 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     setActiveTab(tabKey);
   }, [activeTab, validateTab, setActiveTab]);
 
-  const footer = useMemo(() => (
-    <>
-      <Button
-        variant="secondary"
-        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      >
-        Cancel
-      </Button>
-      <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          onClick={() => {
-            resetDirty();
-            reset();
-          }}
-        >
-          Reset
-        </Button>
-      <>
+const footer = (
+  <ModalFooter
+    onCancel={() =>
+      handleCloseWithConfirm(onClose, resolvedModalId)
+    }
+    onReset={() => {
+      resetDirty();
+      reset();
+    }}
+    onNext={() => {
+      const error = validateTab(activeTab);
+      if (error) {
+        showValidationError(error);
+        return;
+      }
+      handleNext();
+    }}
+    onSubmit={async () => {
+      const error = validateTab(activeTab);
+      if (error) {
+        showValidationError(error);
+        return;
+      }
 
-  {activeTab !== "terms" && (
-    <Button
-      variant="secondary"
-      onClick={(e) => {
-        e.preventDefault();
-        const error = validateTab(activeTab);
-        if (error) {
-          showValidationError(error);
-          return;
-        }
-        handleNext();
-      }}
-    >
-      Next
-    </Button>
-  )}
+      resetDirty();
 
+      const formEl = document.getElementById(
+        "purchaseOrderForm"
+      ) as HTMLFormElement | null;
 
-  <Button
-    variant="primary"
-    type="submit"
-    form="purchaseOrderForm"
-    disabled={saving}
-  >
-    {saving ? "Saving..." : "Save Purchase Order"}
-  </Button>
-</>
-      </div>
-    </>
-  ), [handleCloseWithConfirm, onClose, resolvedModalId, resetDirty, reset, activeTab, validateTab, handleNext, saving]);
+      if (formEl) {
+        formEl.requestSubmit();
+      }
+    }}
+    currentTab={tabOrder.indexOf(activeTab)}
+    totalTabs={tabOrder.length}
+    isSubmitting={saving}
+    submitLabel="Save Purchase Order"
+  />
+);
 
   // Memoized tab components - they stay mounted but hidden
   const tabContent = useMemo(() => (

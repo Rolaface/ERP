@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Building2, MapPin, FileText, Receipt } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
-import { Button } from "../ui/modal/formComponent";
+
 import { DetailsTab } from "../procurement/purchaseinvoice/DetailsTab";
 import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseInvoiceForm } from "../../hooks/usePurchaseInvoiceForm";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import type { POTab } from "../../types/Supply/purchaseInvoice";
+import ModalFooter from "../common/ModalFooter";
 import { showApiError, showValidationError } from "../../utils/alert";
 
 interface PurchaseInvoiceModalProps {
@@ -114,54 +115,21 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     [setActiveTab],
   );
 
-  const isLastTab = activeTab === "terms";
 
-  const footer = useMemo(
-    () => (
-      <>
-        <Button
-          variant="secondary"
-          onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-        >
-          Cancel
-        </Button>
-        <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              resetDirty();
-              reset();
-            }}
-          >
-            Reset
-          </Button>
-          {!isLastTab && (
-            <Button variant="secondary" onClick={handleNextClick}>
-              Next
-            </Button>
-          )}
-          <Button
-            variant="primary"
-            onClick={handleSubmitForm}
-            disabled={internalSaving}
-          >
-            {internalSaving ? "Saving..." : "Submit"}
-          </Button>
-        </div>
-      </>
-    ),
-    [
-      handleCloseWithConfirm,
-      onClose,
-      resolvedModalId,
-      resetDirty,
-      reset,
-      isLastTab,
-      handleNextClick,
-      handleSubmitForm,
-      internalSaving,
-    ],
-  );
+const footer = (
+  <ModalFooter
+    onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+    onReset={() => {
+      resetDirty();
+      reset();
+    }}
+    onSubmit={handleSubmitForm}
+    onNext={handleNextClick}
+    currentTab={tabOrder.indexOf(activeTab)}
+    totalTabs={tabOrder.length}
+    saving={internalSaving}
+  />
+);
 
   // Memoized tab content — stays mounted but hidden for perf
   const tabContent = useMemo(
