@@ -298,7 +298,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     />
                   </div>
 
-                  <div>
+                  {/* <div>
                     <ModalSelect
                       label="Invoice Status"
                       name="invoiceStatus"
@@ -308,7 +308,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       disabled={mode === "edit"}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <ModalSelect

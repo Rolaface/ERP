@@ -431,7 +431,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                                 e.target.value,
                               )
                             }
-                            disabled={actualIsReadOnly}
+                            disabled={actualIsReadOnly || entry.isRateMissing}
                             className="w-full"
                           />
                         </td>
