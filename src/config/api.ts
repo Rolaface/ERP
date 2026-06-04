@@ -183,6 +183,7 @@ export const API = {
     createCOA: `${ERP_BASE}/api/method/erpnext.accounts.utils.add_ac`,
     deleteCOA: `${ERP_BASE}/api/method/frappe.client.delete`,
     getCOA: `${ERP_BASE}/api/method/custom_api.api.chart_of_account.get_chart_of_accounts`,
+    getCOAbyId: `${ERP_BASE}/api/resource/Account`,
     getTB: `${ERP_BASE}/api/method/custom_api.api.trial_balance.get_trial_balance`,
     getPL: `${ERP_BASE}/api/method/custom_api.api.profit_loss.get_profit_and_loss`,
     getBalanceSheet: `${ERP_BASE}/api/method/custom_api.api.balance_sheet.get_balance_sheet`,

@@ -20,6 +20,7 @@ const DOC_TYPE_OPTIONS = [
     { label: "Sales Invoice", value: "Sales Invoice" },
     { label: "Purchase Order", value: "Purchase Order" },
     { label: "Payment Entry", value: "Payment Entry" },
+    { label: "Expense Claim", value: "Expense Claim" },
 ] as const;
 
 type DocType = (typeof DOC_TYPE_OPTIONS)[number]["value"];
@@ -45,6 +46,14 @@ function getVariableChips(docType: string): { label: string; value: string }[] {
                 { label: "{{ company }}", value: " {{ company }} " },
                 { label: "{{ party_name }}", value: " {{ party_name }} " },
             ];
+        case "Expense Claim":
+            return [
+                { label: "{{ name }}", value: " {{ name }} " },
+                { label: "{{ employee_name }}", value: " {{ employee_name }} " },
+                { label: "{{ company }}", value: " {{ company }} " },
+                { label: "{{ grand_total }}", value: " {{ grand_total }} " },
+
+            ]
         default:
             return [];
     }
@@ -346,7 +355,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                                         onChange={(html) => handleFieldChange("message", html)}
                                         onInsertRef={(fn) => { editorInsertRef.current = fn; }}
                                         minHeight={240}
-                                         editable={!isViewMode} 
+                                        editable={!isViewMode}
                                     />
                                 )}
                             </div>
@@ -432,7 +441,7 @@ interface RichTextEditorWithInsertProps {
     onChange: (html: string) => void;
     onInsertRef: (fn: (text: string) => void) => void;
     minHeight?: number;
-     editable?: boolean;
+    editable?: boolean;
 }
 
 
@@ -441,7 +450,7 @@ const RichTextEditorWithInsert: React.FC<RichTextEditorWithInsertProps> = ({
     onChange,
     onInsertRef,
     minHeight,
-     editable = true,
+    editable = true,
 }) => {
     useEffect(() => {
         const insertFn = (text: string) => {
@@ -467,7 +476,7 @@ const RichTextEditorWithInsert: React.FC<RichTextEditorWithInsertProps> = ({
             onChange={onChange}
             minHeight={minHeight}
             placeholder=""
-            editable={editable}  
+            editable={editable}
         />
     );
 };
