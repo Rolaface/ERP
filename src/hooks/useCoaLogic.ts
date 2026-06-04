@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { showApiError, showSuccess } from "../utils/alert";
 import type { NewAccountForm, NewAccountErrors, COAAccount } from "../types/coa";
-import { createChartOfAccount, type CreateCOAPayload } from "../api/Accounting/AccountApi";
+import { createChartOfAccount, updateChartOfAccount, type CreateCOAPayload } from "../api/Accounting/AccountApi";
 import { getBankAccounts } from "../api/BankAccountApi";
 
 const companyId = import.meta.env.VITE_COMPANY_ID;
@@ -22,38 +22,38 @@ const emptyForm = (): NewAccountForm => ({
 });
 
 export const ACCOUNT_TYPE_OPTIONS = [
-            "Accumulated Depreciation",
-            "Asset Received But Not Billed",
-            "Bank",
-            "Cash",
-            "Chargeable",
-            "Capital Work in Progress",
-            "Cost of Goods Sold",
-            "Current Asset",
-            "Current Liability",
-            "Depreciation",
-            "Direct Expense",
-            "Direct Income",
-            "Equity",
-            "Expense Account",
-            "Expenses Included In Asset Valuation",
-            "Expenses Included In Valuation",
-            "Fixed Asset",
-            "Income Account",
-            "Indirect Expense",
-            "Indirect Income",
-            "Liability",
-            "Payable",
-            "Receivable",
-            "Round Off",
-            "Round Off for Opening",
-            "Stock",
-            "Stock Adjustment",
-            "Stock Received But Not Billed",
-            "Service Received But Not Billed",
-            "Tax",
-            "Temporary",
-        ];
+  "Accumulated Depreciation",
+  "Asset Received But Not Billed",
+  "Bank",
+  "Cash",
+  "Chargeable",
+  "Capital Work in Progress",
+  "Cost of Goods Sold",
+  "Current Asset",
+  "Current Liability",
+  "Depreciation",
+  "Direct Expense",
+  "Direct Income",
+  "Equity",
+  "Expense Account",
+  "Expenses Included In Asset Valuation",
+  "Expenses Included In Valuation",
+  "Fixed Asset",
+  "Income Account",
+  "Indirect Expense",
+  "Indirect Income",
+  "Liability",
+  "Payable",
+  "Receivable",
+  "Round Off",
+  "Round Off for Opening",
+  "Stock",
+  "Stock Adjustment",
+  "Stock Received But Not Billed",
+  "Service Received But Not Billed",
+  "Tax",
+  "Temporary",
+];
 
 export const ROOT_TYPE_OPTIONS = [
   "Asset",
@@ -65,27 +65,46 @@ export const ROOT_TYPE_OPTIONS = [
 
 export const useCoaLogic = (
   onSuccess?: () => void,
-  parentAccount?: COAAccount | null
+  parentAccount?: COAAccount | null,
+  editAccount?: COAAccount | null,
 ) => {
   const [form, setForm] = useState<NewAccountForm>(emptyForm());
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<NewAccountErrors>({});
   const [companies, setCompanies] = useState<{ label: string; value: string }[]>([]);
   const [currencies, setCurrencies] = useState<{ label: string; value: string }[]>([]);
+  const isEditMode = !!editAccount;
+
 
   // When parentAccount changes, reset form and pre-fill parent
+
   useEffect(() => {
     if (parentAccount) {
       setForm(prev => ({
         ...emptyForm(),
         company: prev.company,
         parentAccount: parentAccount.name,
+        // Pre-fill account type from parent if available
+        accountType: parentAccount.account_type ?? "",
       }));
     } else {
       setForm(emptyForm());
     }
     setErrors({});
   }, [parentAccount]);
+
+  useEffect(() => {
+    if (!editAccount) return;
+    setForm(prev => ({
+      ...prev,
+      accountNumber: editAccount.account_number ?? "",
+      isGroup: editAccount.is_group === 1,
+      rootType: editAccount.root_type ?? "",
+      accountType: editAccount.account_type ?? "",
+      currency: editAccount.account_currency ?? "",
+    }));
+    setErrors({});
+  }, [editAccount]);
 
   // Load company and currency options from API
   useEffect(() => {
@@ -143,7 +162,8 @@ export const useCoaLogic = (
   const validate = (): boolean => {
     const newErrors: NewAccountErrors = {};
 
-    if (!form.accountName.trim()) {
+    // account name only required in create mode
+    if (!isEditMode && !form.accountName.trim()) {
       newErrors.accountName = "Account name is required";
     }
 
@@ -161,40 +181,69 @@ export const useCoaLogic = (
     try {
       setLoading(true);
 
-      const payload: CreateCOAPayload = {
-        doctype: "Account",
-        is_root: "false",
-        account_name: form.accountName.trim(),
-        company: form.company,
-        is_group: form.isGroup ? 1 : 0,
-        account_number: form.accountNumber.trim() || undefined,
-        account_currency: form.currency.trim() || undefined,
-        account_type: form.accountType || undefined,
-        root_type: form.isGroup ? form.rootType : undefined,
-        parent: form.parentAccount || undefined,
-      };
+      if (isEditMode && editAccount) {
+        const payload: CreateCOAPayload & { name: string } = {
+          doctype: "Account",
+          is_root: "false",
+          name: editAccount.name,
+          account_name: editAccount.account_name,
+          company: form.company,
+          is_group: form.isGroup ? 1 : 0,
+          account_number: form.accountNumber.trim() || undefined,
+          account_currency: form.currency.trim() || undefined,
+          account_type: form.accountType || undefined,
+          root_type: form.isGroup ? form.rootType : undefined,
+          parent: form.parentAccount || undefined,
+        };
 
-      const res = await createChartOfAccount(payload);
+        const res = await updateChartOfAccount(editAccount.name, payload);
+        const isSuccess = !!res?.data || !!res?.message;
 
-      const isSuccess = !!res?.message;
-      
-  
+        if (!res || !isSuccess) {
+          showApiError(res?.message ?? res);
+          return;
+        }
 
-  if (!res || !isSuccess) {
-  showApiError(res?.message ?? res);
-  return;
-}
+        const successMsg =
+          res?.message?.message ||
+          (typeof res?.message === "string" ? res.message : null) ||
+          "Account updated successfully";
 
-      // Extract success message from whichever shape is present
-      const successMsg =
-        res?.message?.message ||
-        (typeof res?.message === "string" ? res.message : null) ||
-        "Account created successfully";
+        showSuccess(successMsg);
+        reset();
+        onSuccess?.();
 
-      showSuccess(successMsg);
-       reset();
-      onSuccess?.(); 
-     
+      } else {
+        const payload: CreateCOAPayload = {
+          doctype: "Account",
+          is_root: "false",
+          account_name: form.accountName.trim(),
+          company: form.company,
+          is_group: form.isGroup ? 1 : 0,
+          account_number: form.accountNumber.trim() || undefined,
+          account_currency: form.currency.trim() || undefined,
+          account_type: form.accountType || undefined,
+          root_type: form.isGroup ? form.rootType : undefined,
+          parent: form.parentAccount || undefined,
+        };
+
+        const res = await createChartOfAccount(payload);
+        const isSuccess = !!res?.message;
+
+        if (!res || !isSuccess) {
+          showApiError(res?.message ?? res);
+          return;
+        }
+
+        const successMsg =
+          res?.message?.message ||
+          (typeof res?.message === "string" ? res.message : null) ||
+          "Account created successfully";
+
+        showSuccess(successMsg);
+        reset();
+        onSuccess?.();
+      }
 
     } catch (err: any) {
       showApiError(err);
@@ -204,7 +253,17 @@ export const useCoaLogic = (
   };
 
   const reset = () => {
-    if (parentAccount) {
+    if (isEditMode && editAccount) {
+      setForm(prev => ({
+        ...emptyForm(),
+        company: prev.company,
+        accountNumber: editAccount.account_number ?? "",
+        isGroup: editAccount.is_group === 1,
+        rootType: editAccount.root_type ?? "",
+        accountType: editAccount.account_type ?? "",
+        currency: editAccount.account_currency ?? "",
+      }));
+    } else if (parentAccount) {
       setForm(prev => ({
         ...emptyForm(),
         company: prev.company,
@@ -216,5 +275,5 @@ export const useCoaLogic = (
     setErrors({});
   };
 
-  return { form, loading, errors, handleChange, handleSubmit, reset, companies, currencies };
+  return { form, loading, errors, handleChange, handleSubmit, reset, companies, currencies, isEditMode };
 };

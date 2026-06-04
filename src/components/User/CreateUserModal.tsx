@@ -57,6 +57,7 @@ interface CreateUserModalProps {
   onSubmit: (data: CreateUserFormData) => Promise<void> | void;
   initialData?: CreateUserFormData | null;
   isEditMode?: boolean;
+  isViewMode?: boolean;
   modalId: string;
 }
 
@@ -135,6 +136,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
   onSubmit,
   initialData,
   isEditMode = false,
+  isViewMode = false,
   modalId,
 }) => {
   const resolvedModalId = useRef(modalId).current;
@@ -155,28 +157,28 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     handleSubmit,
     handleReset,
   } = useCreateUser({ onSubmit, onClose, initialData: initialData ?? null });
-  
+
   const [genderOptions, setGenderOptions] = useState<any[]>([]);
   const fetchGenderOptions = async () => {
-      try {
-        const response = await getAllGenders();
-        
-        const rawData = response?.data || [];
-  
-        const formattedOptions = rawData.map((item: { name: string }) => ({
-          label: item.name, 
-          value: item.name
-        }));
-  
-        setGenderOptions(formattedOptions);
-      } catch (error) {
-        showApiError(parseFrappeError(error) || "Failed to fetch Gender API");
-      }
-    };
-  
-    useEffect(() => {
-      fetchGenderOptions();
-    }, []);
+    try {
+      const response = await getAllGenders();
+
+      const rawData = response?.data || [];
+
+      const formattedOptions = rawData.map((item: { name: string }) => ({
+        label: item.name,
+        value: item.name
+      }));
+
+      setGenderOptions(formattedOptions);
+    } catch (error) {
+      showApiError(parseFrappeError(error) || "Failed to fetch Gender API");
+    }
+  };
+
+  useEffect(() => {
+    fetchGenderOptions();
+  }, []);
 
   useEffect(() => {
     if (!isOpen || !isEditMode || !initialData?.id) return;
@@ -232,7 +234,17 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     markDirty();
   };
 
-  const footer = (
+  const footer = isViewMode ? (
+    <div className="flex justify-end w-full">
+      <button
+        type="button"
+        onClick={onClose}
+        className="px-4 py-2 text-sm font-medium text-main border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
+      >
+        Close
+      </button>
+    </div>
+  ) : (
     <div className="flex items-center justify-between w-full">
       <button
         type="button"
@@ -267,8 +279,18 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={isEditMode ? "Edit User" : "Create New User"}
-      subtitle="Fill in the details to create a new user account"
+      title={
+        isViewMode
+          ? "View User"
+          : isEditMode
+            ? "Edit User"
+            : "Create New User"
+      }
+      subtitle={
+        isViewMode
+          ? "View user information"
+          : "Fill in the details to create a new user account"
+      }
       icon={UserPlus}
       footer={footer}
       maxWidth="4xl"
@@ -295,7 +317,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   required
                   error={errors.email}
                   autoComplete="off"
-                  disabled={isEditMode}
+                  disabled={isEditMode || isViewMode}
                 />
 
                 <ModalInput
@@ -306,13 +328,14 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   required
                   error={errors.username}
                   autoComplete="off"
+                  disabled={isViewMode}
                 />
 
 
                 <div>
-                  <span className="block text-[10px] font-medium text-main mb-1">Language</span>
+                  {/* <span className="block text-[10px] font-medium text-main mb-1">Language</span> */}
                   <SearchSelect2
-                    label=""
+                    label="Language"
                     value={languageLabel}
                     onChange={(val, opt) => {
                       dirty("language", val);                      // form stores "bs"
@@ -320,19 +343,21 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                     }}
                     fetchOptions={fetchLanguages}
                     placeholder="Search language..."
+                    disabled={isViewMode}
                   />
                 </div>
 
                 <div>
-                  <span className="block text-[10px] font-medium text-main mb-1">
+                  {/* <span className="block text-[10px] font-medium text-main mb-1">
                     Timezone
-                  </span>
+                  </span> */}
                   <SearchSelect2
-                    label=""
+                    label="Timezone"
                     value={form.timezone ?? ""}
                     onChange={(val) => dirty("timezone", val)}
                     fetchOptions={fetchTimezoneOptions}
                     placeholder="Search timezone..."
+                    disabled={isViewMode}
                   />
                 </div>
 
@@ -348,6 +373,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   onAdd={addRole}
                   onRemove={removeRole}
                   onDirty={markDirty}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -365,6 +391,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   value={form.firstName}
                   onChange={(e) => dirty("firstName", e.target.value)}
                   placeholder="First name"
+                  disabled={isViewMode}
                   required
                   error={errors.firstName}
                 />
@@ -375,6 +402,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   value={form.middleName ?? ""}
                   onChange={(e) => dirty("middleName", e.target.value)}
                   placeholder="Middle name"
+                  disabled={isViewMode}
                 />
 
                 <ModalInput
@@ -382,6 +410,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   type="text"
                   value={form.lastName ?? ""}
                   onChange={(e) => dirty("lastName", e.target.value)}
+                  disabled={isViewMode}
                   placeholder="Last name"
                 />
 
@@ -389,6 +418,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   label="Gender"
                   value={form.gender ?? ""}
                   onChange={(e) => dirty("gender", e.target.value)}
+                  disabled={isViewMode}
                   placeholder="Select gender"
                   options={genderOptions || []}
                 />
@@ -399,6 +429,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   name="dob"
                   value={form.dob ?? ""}
                   onChange={(_name, value) => dirty("dob", value)}
+                  disabled={isViewMode}
                 />
 
                 <ModalInput
@@ -406,6 +437,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   type="tel"
                   value={form.phone ?? ""}
                   onChange={(e) => dirty("phone", e.target.value)}
+                  disabled={isViewMode}
                   placeholder="Phone number"
                 />
 
@@ -415,6 +447,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   type="tel"
                   value={form.mobile_no ?? ""}
                   onChange={(e) => dirty("mobile_no", e.target.value)}
+                  disabled={isViewMode}
                   placeholder="Mobile number"
                 />
 
