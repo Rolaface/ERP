@@ -81,7 +81,7 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
     shipping_address: form.addresses?.shippingAddress?.id || "",
     dispatch_address: form.addresses?.dispatchAddress?.id || "",
     billing_address: form.addresses?.companyBillingAddress?.id || "",
-    set_warehouse: form.warehouse || "",
+    // set_warehouse: form.warehouse || "",
 
     terms: {
       buying: form.terms?.buying || {},

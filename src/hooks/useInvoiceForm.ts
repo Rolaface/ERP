@@ -101,7 +101,7 @@ export function buildInvoicePayload(
     tax_category: formData.taxCategory,
     updateStock: formData.updateStock ?? true,
     paymentMode: formData.mode,
-    warehouse: formData.warehouse ?? "",
+    // warehouse: formData.warehouse ?? "",
     billingAddress: formData.billingAddress ?? "",
     shippingAddress: formData.shippingAddress ?? "",
     ...(formData.taxCategory === "Export"
