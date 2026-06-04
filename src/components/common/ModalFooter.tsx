@@ -1,5 +1,7 @@
 import React from "react";
 import { Button } from "../ui/modal/formComponent";
+import { fireManagedSwal } from "../../utils/swalManager";
+
 
 export interface ModalFooterProps {
   onCancel: () => void;
@@ -55,6 +57,21 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
       await result;
     }
   };
+  const handleResetClick = async () => {
+  const result = await fireManagedSwal({
+    icon: "warning",
+    title: "Reset Form?",
+    text: "All entered data will be cleared. Do you want to continue?",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Reset",
+    cancelButtonText: "Cancel",
+    confirmButtonColor: "#ef4444",
+  });
+
+  if (result.isConfirmed) {
+    onReset?.();
+  }
+};
 
   return (
     <div className="flex w-full items-center justify-between gap-2">
@@ -72,13 +89,13 @@ const ModalFooter: React.FC<ModalFooterProps> = ({
       <div className="flex items-center gap-2">
         {onReset && (
           <Button
-            variant="danger"
-            type="button"
-            onClick={onReset}
-            disabled={resetDisabled || isSubmittingVal}
-          >
-            {resetLabel}
-          </Button>
+  variant="danger"
+  type="button"
+  onClick={handleResetClick}
+  disabled={resetDisabled || isSubmittingVal}
+>
+  {resetLabel}
+</Button>
         )}
 
         {/* Next is only shown when NOT on last tab */}
