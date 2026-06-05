@@ -62,7 +62,7 @@ const STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
   // Open: ["Approved", "Cancelled"],
   Paid: [],
   Cancelled: ["Draft"],
-  Approved: ["Paid", "Cancelled"],
+  Approved: ["Cancelled"],
 };
 
 const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refreshKey }) => {
@@ -260,7 +260,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
       showApiError(err);
     }
   };
-
+// Don't remove this
  const handleLost = async (quotationId: string, e?: React.MouseEvent) => {
   e?.stopPropagation();
 
@@ -279,11 +279,11 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
 
     closeSwal();
     // openQuotationEdit(quotationId, { ...data, _initialTab: "otherDetails" });
-    openQuotationEdit(quotationId, { 
-      ...data, 
-      status: "Lost", 
-      _initialTab: "otherDetails" 
-    });
+    // openQuotationEdit(quotationId, { 
+    //   ...data, 
+    //   status: "Lost", 
+    //   _initialTab: "otherDetails" 
+    // });
 
   } catch (err) {
     closeSwal();
@@ -573,73 +573,6 @@ const handlePreviewQuotationPDF = async (
             />
           </PermissionGate>
 
-          {/* <ActionMenu
-            // Delete — needs delete
-            {...(can(QUOTATION_MODULE, "delete")
-              ? { onDelete: (e) => handleDelete(q.quotationNumber, e) }
-              : {})}
-            showDownload
-            onDownload={(e) => handleDownload(q.quotationNumber, e)}
-            customActions={[
-              { label: "View PDF", onClick: () => handlePreviewQuotationPDF(q.quotationNumber) },
-              // Status transitions — needs write
-              ...(can(QUOTATION_MODULE, "write")
-                ? (STATUS_TRANSITIONS[q.status as QuotationStatus] ?? []).map((status) => ({
-                  label: `Mark as ${status}`,
-                  onClick: () => handleRowStatusChange(q.quotationNumber, status),
-                }))
-                : []),
-            ]}
-          /> */}
-           {/* <ActionMenu
-                      {...(q.status === "Cancelled" ? { onDelete: (e) => handleDelete(q.quotationNumber, e) } : {})}
-                      customActions={[    
-                        ...(q.status !== "Draft"
-                          ? [
-                              {
-                                label: "Compose Email",
-                                icon: ACTION_ICONS.EMAIL,
-                                onClick: async () => {
-                                  setEmailQuotation(q);
-                                  setEmailContactEmail(null);
-                                  setEmailQuotationAttachments([]); // clear stale attachments
-                                  setEmailModalOpen(true);
-                                  try {
-                                    const res = await getProformaInvoiceById(q.quotationNumber);
-                                    
-                                    // Handle both wrapped and unwrapped backend responses safely
-                                    const statusCode = res?.message?.status_code || res?.status_code;
-                                    const data = res?.message?.data || res?.data;
-          
-                                    if (statusCode === 200 && data) {
-                                      setEmailContactEmail(data.contact_email ?? null);
-                                      setEmailQuotationAttachments(data.attachments ?? []);
-                                    }
-                                  } catch {
-                                    // non-critical: modal opens with empty To/attachments if fetch fails
-                                  }
-                                },
-                              },
-                            ]
-                          : []),
-                          {
-                label: "Mark as Lost",
-                icon: ACTION_ICONS.CANCEL, // Use appropriate icon here
-                onClick: (e) => handleLost(q.quotationNumber, e),
-              },
-                        {
-                          label: "View PDF",
-                          icon: ACTION_ICONS.PDF,
-                          onClick: () => handlePreviewQuotationPDF(q.quotationNumber),
-                        },
-                        ...(STATUS_TRANSITIONS[q.status as keyof typeof STATUS_TRANSITIONS] ?? []).map((status) => ({
-                          label: status === "Cancelled" ? "Cancel" : `Mark as ${status}`,
-                          icon: getStatusActionIcon(status),
-                          danger: status === "Paid" || status === "Cancelled",
-                          onClick: () => handleRowStatusChange(q.quotationNumber, status),
-                        })),
-                      ]}
-                    /> */}
                     <ActionMenu
   {...(q.status === "Cancelled" ? { onDelete: (e) => handleDelete(q.quotationNumber, e) } : {})}
   customActions={[    
@@ -671,16 +604,16 @@ const handlePreviewQuotationPDF = async (
         ]
       : []),
     // Only show "Mark as Lost" if the status is NOT Cancelled
-    ...(q.status !== "Cancelled" 
-      ? [
-          {
-            label: "Mark as Lost",
-            icon: ACTION_ICONS.CANCEL, 
-            // FIXED: Removed the 'e' parameter to match () => void signature
-            onClick: () => handleLost(q.quotationNumber),
-          }
-        ] 
-      : []),
+    // ...(q.status !== "Cancelled" 
+    //   ? [
+    //       {
+    //         label: "Mark as Lost",
+    //         icon: ACTION_ICONS.CANCEL, 
+    //         // FIXED: Removed the 'e' parameter to match () => void signature
+    //         onClick: () => handleLost(q.quotationNumber),
+    //       }
+    //     ] 
+    //   : []),
     {
       label: "View PDF",
       icon: ACTION_ICONS.PDF,
