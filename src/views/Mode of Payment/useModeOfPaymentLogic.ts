@@ -14,6 +14,7 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
     enabled: true,
     company: "",
     defaultAccount: "",
+    defaultAccountDisplay: "",
   });
   const [fetchLoading, setFetchLoading] = useState(false);
   const [companies, setCompanies] = useState<Option[]>([]);
@@ -38,6 +39,7 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
           enabled: record.enabled === 1,
           company: record.company ?? "",
           defaultAccount: record.defaultAccount ?? "",
+          defaultAccountDisplay: record.defaultAccountName ?? record.defaultAccount ?? "",
         });
       } catch (err: any) {
         showApiError(err.message);
@@ -54,7 +56,7 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
         setCompanyLoading(true);
         const data = await getBankAccounts("Company");
         setCompanies(Array.isArray(data) ? data : []);
-      } catch(err) {
+      } catch (err) {
         showApiError(err);
       } finally {
         setCompanyLoading(false);

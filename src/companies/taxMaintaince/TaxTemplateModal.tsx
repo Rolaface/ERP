@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, Trash2, ReceiptText } from "lucide-react";
-
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
@@ -100,7 +99,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
   const fetchGlOptions = useCallback(async (search: string) => {
     try {
       const res = await getGlAccounts(search || undefined);
-      const data: { name: string; account_type: string ; account_name: string }[] = res?.data ?? [];
+      const data: { name: string; account_type: string; account_name: string }[] = res?.data ?? [];
       return data.map((opt) => ({
         value: opt.name,
         label: opt.account_name,
@@ -292,12 +291,22 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                       <td className="px-3 py-2">
                         <SearchSelect2
                           label=""
-                          value={row.tax_type}
-                          onChange={(val) => {
+                          value={row.tax_type_display || row.tax_type}
+
+                          onChange={(val, option) => {
                             markDirty();
-                            const newForm = { ...form };
-                            newForm.taxes[actualIdx].tax_type = val || "";
-                            setForm(newForm);
+                            setForm((prev) => ({
+                              ...prev,
+                              taxes: prev.taxes.map((row, i) =>
+                                i === actualIdx
+                                  ? {
+                                    ...row,
+                                    tax_type: val || "",
+                                    tax_type_display: option?.label || val || "",
+                                  }
+                                  : row
+                              ),
+                            }));
                           }}
                           fetchOptions={fetchGlOptions}
                           placeholder="Select tax type"
