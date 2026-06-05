@@ -114,8 +114,10 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
       onSubmit?.();
       onClose?.();
       setForm({ name: "", type: "", enabled: true, company: "", defaultAccount: "" });
+      return true;
     } catch (err: any) {
       showApiError(err);
+      return false;
     } finally {
       setLoading(false);
     }

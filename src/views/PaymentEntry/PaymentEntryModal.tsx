@@ -4,6 +4,7 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
 import PaymentTaxesTab from "../../components/Payment/PaymentTaxesTab";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import InvoiceList from "./invoicelist";
 import {
   createPaymentEntry,
@@ -229,6 +230,13 @@ const PaymentEntryModal: React.FC<Props> = ({
 
   // ── Track previous amountFrom to detect user-driven changes ──────────────
   const prevAmountRef = useRef<number>(0);
+  const { markDirty, resetDirty, handleCloseWithConfirm, activate, deactivate } = useUnsavedChanges();
+
+useEffect(() => {
+  if (!isOpen) return;
+  const cleanup = activate();
+  return () => { cleanup?.(); deactivate(); resetDirty(); };
+}, [isOpen]);
 
   const isAdvanceFromPO =
     defaultValues?.referenceType === "Purchase Order";
@@ -241,7 +249,8 @@ const PaymentEntryModal: React.FC<Props> = ({
     setIsAllocating(false);
     lastFetchedPartyKeyRef.current = "";
     prevAmountRef.current = 0;
-  }, []);
+    resetDirty();
+  }, [resetDirty]);
 
   const visibleTabs =
     isAdvanceFromPO || isInternalTransfer
@@ -381,6 +390,8 @@ const PaymentEntryModal: React.FC<Props> = ({
   const advance = isAllocating ? 0 : Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
+
+  
   const getResetPartyState = (prev: any, name: string, value: string) => ({
     ...prev,
     [name]: value,
@@ -428,6 +439,11 @@ const PaymentEntryModal: React.FC<Props> = ({
     return () => clearTimeout(timeoutId);
   }, [form?.amount, form?.amountFrom, form?.referenceName]);
 
+
+  const handleCloseRequest = useCallback(() => {
+  handleCloseWithConfirm(() => { resetModalState(); onClose(); }, modalId);
+}, [handleCloseWithConfirm, modalId, onClose, resetModalState]);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -447,11 +463,13 @@ const PaymentEntryModal: React.FC<Props> = ({
         return { ...prev, [name]: value };
       });
     },
-    []
+     [markDirty]
+     
   );
 
   const handleFormChange = useCallback(
     (updates: Record<string, any>) => {
+       markDirty();
        if (
       form.referenceType === "Employee Advance" &&
       form.glTo
@@ -509,7 +527,7 @@ const PaymentEntryModal: React.FC<Props> = ({
       });
       // setError((prev) => (prev ? null : prev));
     },
-    [form.referenceType, form.glTo]
+    [form.referenceType, form.glTo, markDirty]
   );
 
   const goToTab = useCallback((tab: TabType) => {
@@ -597,10 +615,8 @@ const PaymentEntryModal: React.FC<Props> = ({
     <>
       <Button
         variant="secondary"
-        onClick={() => {
-          resetModalState();
-          onClose();
-        }}
+        onClick={handleCloseRequest}
+
         disabled={isSaving}
       >
         Cancel
@@ -615,10 +631,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={() => {
-        resetModalState();
-        onClose();
-      }}
+      onClose={handleCloseRequest}
       title="Create Payment Entry"
       subtitle={
         isAdvanceFromPO
@@ -629,6 +642,7 @@ const PaymentEntryModal: React.FC<Props> = ({
       footer={footer}
       customWidth="62vw"
       height="95vh"
+      
     >
       <div className="flex flex-col h-full">
         {/* ── Tabs ── */}

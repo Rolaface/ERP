@@ -114,6 +114,8 @@ interface OverviewTabProps {
   onChange: (field: string, value: any) => void;
   /** Pass true when opening an existing record so defaults are not injected. */
   isEditMode?: boolean;
+   onDirty?: () => void; 
+
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -223,6 +225,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     (_name: string, value: string) => {
       onChange("endDate", value);
     },
+    
     [onChange]
   );
 
