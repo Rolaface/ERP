@@ -19,6 +19,7 @@ import AccountSelect from "../selects/AccountSelect";
 import { useModalStore } from "../../store/modalStore";
 import Tooltip from "../Tooltip";
 import DatePickerInput from "../calendar/DatePickerInput";
+import {useUnsavedChanges} from "../../hooks/useUnsavedChanges";;
 
 interface JournalEntryModalProps {
   isOpen: boolean;
@@ -45,6 +46,8 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   // 2. DETERMINE ACTUAL VALUES (Fallback to props if store data isn't present)
   const actualEntryId = (modalState?.initialData as string) || entryId;
   const actualIsReadOnly = modalState?.context?.isReadOnly || isReadOnly;
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+  const handleModalClose = () => handleCloseWithConfirm(onClose, modalId);
 
   const {
     form,
@@ -65,10 +68,18 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
     handleSubmit,
     reset,
   } = useJournalEntryLogic(
-    isOpen,
+  //   isOpen,
+  //   () => {
+  //     if (onSubmit) onSubmit({});
+  //     onClose();
+  //   },
+  //   actualEntryId || undefined, 
+  // );
+  isOpen,
     () => {
+      resetDirty();  
       if (onSubmit) onSubmit({});
-      onClose();
+      onClose();  
     },
     actualEntryId || undefined, 
   );
@@ -105,6 +116,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
             variant="secondary"
             type="button"
             onClick={() => {
+              resetDirty();
               reset();
               setCurrentPage(1);
             }}
@@ -128,7 +140,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleModalClose}
       title={
         actualIsReadOnly
           ? `View Entry: ${actualEntryId}`
@@ -148,7 +160,8 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
       customWidth="80vw"
       height="80vh"
     >
-<div className="flex flex-col gap-6 py-3 px-1">
+{/* <div className="flex flex-col gap-6 py-3 px-1"> */}
+<div className="flex flex-col gap-6 py-3 px-1" onChange={() => markDirty()}>
   {/* TOP SECTION */}
   <div className="grid grid-cols-4 gap-6 w-full items-start">
     
