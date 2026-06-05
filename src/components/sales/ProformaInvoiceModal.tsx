@@ -48,11 +48,18 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   mode = "create",
   modalId,
 }) => {
-  const resolvedModalId =
-    modalId ||
-    (mode === "edit" && initialData?.proformaId
-      ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
-      : `proforma-create-${Date.now()}`);
+  // const resolvedModalId =
+  //   modalId ||
+  //   (mode === "edit" && initialData?.proformaId
+  //     ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
+  //     : `proforma-create-${Date.now()}`);
+  const [resolvedModalId] = useState(
+    () =>
+      modalId ||
+      (mode === "edit" && initialData?.proformaId
+        ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
+        : `proforma-create-${Date.now()}`)
+  );
       
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
@@ -150,7 +157,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       onClose();
       
       // Refresh the table data in the background
-      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.PROFORMA_LIST);
       
     } catch (error: any) {
       showApiError(error);
@@ -207,7 +214,8 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       subtitle="Create and manage proforma invoice details"
       footer={
         <ModalFooter
-          onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          // onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
           onReset={async () => {
             resetDirty();
             await actions.handleReset();
