@@ -32,6 +32,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { HrTableFrame } from "../components/HrTabLayout";
 import { resolveLabel } from "../../../api/utils/labelResolver";
 import { getAllDepartments, getallbranches } from "../../../api/utils/frappeUtilsApi";
+import EmployeeDetailView from "./employeeDetailView";
 
 // ── Constants ────────────────────────────────────────────────────
 
