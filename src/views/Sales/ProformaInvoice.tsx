@@ -19,6 +19,7 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 import {
   showApiError,
   showSuccess,
@@ -156,18 +157,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       );
 
       if (!res || res.status_code !== 200) return;
-
-//       const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
-//   proformaId: inv.id,
-//   customerName: inv.customerName,
-//   currency: inv.currency,
-//   exchangeRate: inv.exchangeRate || 1,
-//   validTill: inv.validTill,
-//   totalAmount: Number(inv.baseGrandTotal || inv.total || 0), // Mapped from baseGrandTotal/total
-//   status: inv.status as ProformaInvoiceStatus,
-//   // Safely parse postingDate instead of createdAt
-//   createdAt: inv.postingDate ? new Date(inv.postingDate) : new Date(),
-// }));
 const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
   proformaId: inv.name || inv.proformaId || inv.id,
   customerName: inv.customerName,
@@ -191,7 +180,18 @@ const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
 
   useEffect(() => {
     fetchInvoices();
-  }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm]); // ← searchTerm included
+  }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm]); 
+
+  useEffect(() => {
+    const unsubscribe = useDataRefreshStore
+      .getState()
+      .subscribeToRefresh(REFRESH_KEYS.PROFORMA_LIST, () => {
+        // Replace this with the actual function you use to fetch your table data
+        fetchInvoices(); 
+      });
+      
+    return unsubscribe;
+  }, []);
 
 const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
