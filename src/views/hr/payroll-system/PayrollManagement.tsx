@@ -90,7 +90,7 @@ export default function PayrollManagement() {
   const loadPayrollEntries = async () => {
     try {
       setLoading(true);
-      const resp = await getAllPayrollEntries(page, 10);
+      const resp = await getAllPayrollEntries(page, 10,searchTerm);
       setPayrollRecords(resp?.data                || []);
       setTotalPages(resp?.pagination?.total_pages || 1);
     } catch (err) {
