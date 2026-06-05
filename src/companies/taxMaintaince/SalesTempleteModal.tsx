@@ -104,10 +104,11 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   const fetchGlOptions = useCallback(async (search: string) => {
     try {
       const res = await getGlAccounts(search || undefined);
-      const data: { name: string; description: string }[] = res?.data ?? [];
+      const data: { name: string; account_type: string , account_name : string }[] = res?.data ?? [];
       return data.map((opt) => ({
         value: opt.name,
-        label: opt.description ? `${opt.name} — ${opt.description}` : opt.name,
+        label: opt.account_name,
+        subLabel: opt.account_type || "",
       }));
     } catch {
       return [];

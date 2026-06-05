@@ -361,12 +361,7 @@ export async function getDefaultAccounts() {
       throw new Error(res?.message || "Failed to fetch default accounts");
     }
 
-    return (
-      res?.data?.map((item: any) => ({
-        label: item.value,
-        value: item.value,
-      })) || []
-    );
+    return res?.data ?? [];
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||

@@ -1,12 +1,12 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import {
   ModalInput,
   ModalSelect,
 } from "../../components/ui/modal/modalComponent";
-import SearchSelect2 from "../../components/ui/modal/SearchSelect";
-import { Wallet } from "lucide-react";
+import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
+import { getDefaultAccounts } from "../../api/BankAccountApi";
 import { useModeOfPaymentLogic } from "./useModeOfPaymentLogic";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 
@@ -35,12 +35,10 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
     handleSubmit,
     loading,
     companies,
-    accounts,
     fetchLoading,
-    accLoading,
     companyLoading,
   } = useModeOfPaymentLogic({
-    onSubmit, onClose, initialData,  // ← pass down
+    onSubmit, onClose, initialData,
     isEdit,
   });
 
@@ -53,6 +51,20 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
     const didSave = await handleSubmit();
     if (didSave) resetDirty();
   };
+  // AFTER — single call
+  const fetchGlOptions = useCallback(async (_search?: string) => {
+    try {
+      const data: { name: string; account_type: string; account_name: string }[] =
+        await getDefaultAccounts();
+      return data.map((opt) => ({
+        value: opt.name,
+        label: opt.account_name,
+        subLabel: opt.account_type || "",
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
 
   const footer = (
     <>
@@ -126,13 +138,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
                   defaultAccount: option?.value || "",
                 }));
               }}
-              fetchOptions={(q) => {
-                const query = q.toLowerCase();
-                return Promise.resolve(
-                  accounts.filter((a) => a.label.toLowerCase().includes(query)),
-                );
-              }}
-              loading={accLoading}
+              fetchOptions={fetchGlOptions}
               required
               placeholder="Select default account"
             />
