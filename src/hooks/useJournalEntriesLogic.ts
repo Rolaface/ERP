@@ -9,6 +9,7 @@ import {
 } from "../api/Accounting/JournalEntryApi";
 import { getSupplierList, getCustomerListJe } from "../api/lookupApi";
 import { getAllCurrencyExchanges } from "../api/currencyExchangeApi";
+import { useCompanyStore } from "../store/companyStore";
 
 export interface JournalEntryForm {
   postingDate: string;
@@ -123,6 +124,7 @@ export const useJournalEntryLogic = (isOpen: boolean, onSuccess?: () => void, en
   const [supplierOptions, setSupplierOptions] = useState<{label: string, value: string}[]>([]);
   const [currencyOptions, setCurrencyOptions] = useState<{label: string, value: string}[]>([]);
   const [missingExchanges, setMissingExchanges] = useState<string[]>([]);
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
 
 const reset = useCallback(() => {
     setForm(emptyForm());
@@ -412,8 +414,9 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
   let newEntries = [...currentEntries];
   const missingExchanges: Set<string> = new Set();
   
-   const BASE_CURRENCY = "INR"; 
-
+   const BASE_CURRENCY = baseCurrency; 
+   console.log("Base Currency", baseCurrency);
+   
   const processRow = async (index: number) => {
     const row = newEntries[index];
     const ccy = row.ccy;
