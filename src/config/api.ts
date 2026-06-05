@@ -31,8 +31,8 @@ const getApiBaseUrl = (): string => {
   return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
 };
 
-// export const ERP_BASE = getApiBaseUrl();
-export const ERP_BASE = "";
+export const ERP_BASE = getApiBaseUrl();
+// export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -58,6 +58,11 @@ export const API = {
     get_email_template_by_id: `${ERP_BASE}/api/method/custom_api.api.email_template.api.get_by_id`,
     update_email_template: `${ERP_BASE}/api/method/custom_api.api.email_template.api.update`,
     delete_email_template: `${ERP_BASE}/api/method/frappe.client.delete`
+  },
+
+ NamingSeries: {
+    create_naming_series: `${ERP_BASE}/api/method/custom_api.api.document_naming_series.api.update_company_naming_settings`,
+    get_naming_series: `${ERP_BASE}/api/method/custom_api.api.document_naming_series.api.get_company_naming_settings`
   },
   
 
@@ -162,7 +167,7 @@ export const API = {
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
-    getBankAccountById: `${ERP_BASE}api/method/custom_api.api.bank_account.get_by_id`,
+    getBankAccountById: `${ERP_BASE}/api/method/custom_api.api.bank_account.get_by_id`,
     getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.bank_account.set_bank_account_status`,
     ModeOfPayment: `${ERP_BASE}/api/method/custom_api.api.mode_of_payment.create`,
@@ -290,6 +295,7 @@ export const API = {
     updateSalesTaxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_template`,
     updateSalesTaxTemplateStatus: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_status`,
   },
+
 
   /* =========================
    * ITEM GROUP
