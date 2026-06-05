@@ -167,6 +167,7 @@ const WarehouseModal: React.FC<{
   };
 
   const handleClose = () => {
+    resetDirty();
     setForm(emptyForm);
     setLoading(false);
     onClose();

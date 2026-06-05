@@ -27,7 +27,7 @@ import {
 import EmployeeNameCell from "../../../components/ui/Table/Employeenamecell";
 import type { Column } from "../../../components/ui/Table/type";
 import type { EmployeeSummary } from "../../../types/employee";
-import EmployeeDetailView from "./employeeDetailView";
+import EmployaeeDetailView from "./employeeDetailView";
 import { useAuth } from "../../../context/AuthContext";
 import { HrTableFrame } from "../components/HrTabLayout";
 import { resolveLabel } from "../../../api/utils/labelResolver";

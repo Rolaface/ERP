@@ -4,6 +4,7 @@ import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import { useCustomerGroupModal } from "../../hooks/useCustomerGroupModal";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import type { CustomerGroupPayload } from "../../api/customerGroupApi";
 import ItemRestrictionSelect from "../selects/customer group/ItemRescritionSelect";
 import { showValidationError } from "../../utils/alert";
@@ -27,6 +28,7 @@ const CustomerGroupModal: React.FC<Props> = ({
   onClose,
   onSubmit,
 }) => {
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     form,
     restrictionMode,
@@ -55,8 +57,18 @@ const CustomerGroupModal: React.FC<Props> = ({
         : "View Customer Group";
 
   const handleClose = () => {
+    resetDirty();
     resetModal();
     onClose();
+  };
+
+  const handleCloseRequest = () => {
+    if (isView) {
+      handleClose();
+      return;
+    }
+
+    handleCloseWithConfirm(handleClose);
   };
 
   const handleSave = () => {
@@ -67,12 +79,13 @@ const CustomerGroupModal: React.FC<Props> = ({
     }
 
     onSubmit(buildPayload());
+    resetDirty();
     resetModal();
   };
 
   const footer = (
     <div className="flex justify-between w-full">
-      <Button variant="secondary" onClick={handleClose}>
+      <Button variant="secondary" onClick={handleCloseRequest}>
         {isView ? "Close" : "Cancel"}
       </Button>
       {!isView && (
@@ -91,7 +104,7 @@ const CustomerGroupModal: React.FC<Props> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={handleCloseRequest}
       title={title}
       subtitle="Manage customer group details"
       footer={footer}
@@ -99,7 +112,7 @@ const CustomerGroupModal: React.FC<Props> = ({
       customWidth="50vw"
       height="82vh"
     >
-      <div className="p-6 space-y-8 bg-app">
+      <div className="p-6 space-y-8 bg-app" onChange={() => !isView && markDirty()}>
         {/* ── Top form row ── */}
         <div className="grid grid-cols-2 gap-6">
           <ModalInput
@@ -165,7 +178,14 @@ const CustomerGroupModal: React.FC<Props> = ({
             {/* ── Pill toggle ── */}
             <button
               type="button"
-              onClick={isView ? undefined : toggleRestrictionMode}
+              onClick={
+                isView
+                  ? undefined
+                  : () => {
+                      markDirty();
+                      toggleRestrictionMode();
+                    }
+              }
               disabled={isView}
               aria-label="Toggle restriction mode"
               style={{
@@ -243,7 +263,10 @@ const CustomerGroupModal: React.FC<Props> = ({
           {!isView && (
             <ItemRestrictionSelect
               selectedIds={selectedIds}
-              onSelect={addRestrictedItem}
+              onSelect={(item) => {
+                markDirty();
+                addRestrictedItem(item);
+              }}
             />
           )}
 
@@ -288,7 +311,10 @@ const CustomerGroupModal: React.FC<Props> = ({
                             <td className="px-2 py-2 text-center">
                               <button
                                 type="button"
-                                onClick={() => removeRestrictedItem(item.id)}
+                                onClick={() => {
+                                  markDirty();
+                                  removeRestrictedItem(item.id);
+                                }}
                                 className="text-red-400 hover:text-red-400 transition-colors"
                                 aria-label={`Remove ${item.itemName}`}
                               >

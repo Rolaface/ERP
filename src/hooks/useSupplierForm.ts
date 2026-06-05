@@ -326,7 +326,7 @@ export const useSupplierForm = ({
           ? `Please fill in required fields: ${emptyFields.join(", ")}`
           : "Please fix validation errors in Supplier tab";
       showValidationError(message);
-      return;
+      return false;
     }
 
     if (!paymentValid) {
@@ -343,7 +343,7 @@ export const useSupplierForm = ({
           ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
           : "Please fix validation errors in Payment tab";
       showValidationError(message);
-      return;
+      return false;
     }
 
     if (!addressValid) {
@@ -360,7 +360,7 @@ export const useSupplierForm = ({
           ? `Please fill the following required fields:\n• ${emptyFields.join("\n• ")}`
           : "Please fix validation errors in Address tab";
       showValidationError(message);
-      return;
+      return false;
     }
 
     try {
@@ -377,7 +377,7 @@ export const useSupplierForm = ({
       if (isEditMode) {
         if (!initialData?.supplierId) {
           showApiError("Supplier ID is required for update");
-          return;
+          return false;
         }
         res = await updateSupplier(initialData.supplierId, payload);
       } else {
@@ -389,7 +389,7 @@ export const useSupplierForm = ({
 
       if (!res || ![200, 201].includes(statusCode)) {
         showApiError(res?.message || "Supplier creation failed");
-        return;
+        return false;
       }
 
       // Only success case comes here
@@ -441,8 +441,10 @@ export const useSupplierForm = ({
 
       res?.message?.message;
       res?.message || (isEditMode ? "Supplier Updated" : "Supplier Created");
+      return true;
     } catch (err) {
       showApiError(err);
+      return false;
     } finally {
       setLoading(false);
     }

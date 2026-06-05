@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useModalStore } from "../store/modalStore";
 import { showConfirm } from "../utils/alert";
 
@@ -19,7 +19,10 @@ export const useUnsavedChangesGuard = (
   options: UnsavedChangesGuardOptions = {}
 ) => {
   const [isDirty, setIsDirty] = useState(false);
+  const isDirtyRef = useRef(false);
+  const readyRef = useRef(false);
   const pendingConfirmationRef = useRef(false);
+  const containerRef = useRef<HTMLElement | null>(null);
 
   const modals = useModalStore((state) => state.modals);
   const { bringToFront, restoreModal } = useModalStore();
@@ -31,33 +34,66 @@ export const useUnsavedChangesGuard = (
   }, [modals]);
 
   const isMinimized = useCallback(
-    (id: string) => {
-      const modal = modals.find((m) => m.id === id);
-      return modal?.minimized ?? false;
-    },
+    (id: string) => modals.find((m) => m.id === id)?.minimized ?? false,
     [modals]
   );
 
   const markDirty = useCallback(() => {
+    if (!readyRef.current) return;
+    if (isDirtyRef.current) return;
+    isDirtyRef.current = true;
     setIsDirty(true);
   }, []);
 
   const resetDirty = useCallback(() => {
+    isDirtyRef.current = false;
     setIsDirty(false);
   }, []);
 
+  const activate = useCallback(() => {
+    const t = setTimeout(() => {
+      readyRef.current = true;
+    }, 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  const deactivate = useCallback(() => {
+    readyRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    const cleanup = activate();
+
+    return () => {
+      cleanup();
+      deactivate();
+      resetDirty();
+    };
+  }, [activate, deactivate, resetDirty]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    el.addEventListener("input", markDirty);
+    el.addEventListener("change", markDirty);
+
+    return () => {
+      el.removeEventListener("input", markDirty);
+      el.removeEventListener("change", markDirty);
+    };
+  }, [markDirty]);
+
   const restoreModalFocus = useCallback(
     (modalId?: string) => {
-      const targetModalId = modalId || topModalId;
-      if (!targetModalId) {
-        return;
-      }
+      const target = modalId ?? topModalId;
+      if (!target) return;
 
       window.requestAnimationFrame(() => {
-        if (isMinimized(targetModalId)) {
-          restoreModal(targetModalId);
+        if (isMinimized(target)) {
+          restoreModal(target);
         } else {
-          bringToFront(targetModalId);
+          bringToFront(target);
         }
       });
     },
@@ -73,9 +109,7 @@ export const useUnsavedChangesGuard = (
         return true;
       }
 
-      if (pendingConfirmationRef.current) {
-        return false;
-      }
+      if (pendingConfirmationRef.current) return false;
 
       pendingConfirmationRef.current = true;
       restoreModalFocus(modalId);
@@ -119,6 +153,9 @@ export const useUnsavedChangesGuard = (
     resetDirty,
     confirmClose,
     handleCloseWithConfirm,
+    containerRef,
+    activate,
+    deactivate,
   };
 };
 
