@@ -5,6 +5,7 @@ import {
   showSuccess,
   showLoading,
   closeSwal,
+  showConfirm
 } from "../../utils/alert";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { QuotationSummary } from "../../types/quotation";
@@ -31,6 +32,7 @@ import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError
 import SendEmailModal from "../../components/common/SendEmailModal";
 import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/statusActionIcons";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 type OutletContextType = {
@@ -229,6 +231,19 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
     quotationNumber: string,
     newStatus: QuotationStatus
   ) => {
+    if(newStatus === "Cancelled") {
+    const isConfirmed = await showConfirm(
+          `Are you sure you want to cancel entry ${quotationNumber}?`,
+          {
+            title: "Cancel Entry",
+            confirmButtonText: "Yes, Cancel",
+            confirmButtonColor: "#ef4444",
+            cancelButtonText: "No, Keep",
+          }
+        );
+        if (!isConfirmed) return;
+    }
+
     try {
       showLoading("Updating quotation status...");
 
@@ -383,7 +398,7 @@ const handlePreviewQuotationPDF = async (
       if (statusCode !== 200) {
         closeSwal();
         // FIX: Safely extract the message text. Removed the uncalled parseFrappeError function.
-        showApiError(res?.message?.message || res?.message || "Failed to delete quotation");
+        showApiError(parseFrappeError || res?.message?.message || res?.message || "Failed to delete quotation");
         return;
       }
 

@@ -25,6 +25,7 @@ import {
   showSuccess,
   showLoading,
   closeSwal,
+  showConfirm
 } from "../../utils/alert";
 import Swal from "sweetalert2";
 import { generateProformaInvoicePDF } from "../../components/template/proformatemplete/ProformaInvoiceTemplate";
@@ -41,16 +42,6 @@ type OutletContextType = {
   openProformaEdit: (proformaId: string, data: any) => void;
 };
 
-// Constants
-
-// type ProformaInvoiceStatus = "Draft" | "Paid" | "Cancelled" | "Approved";
-
-// const STATUS_TRANSITIONS: Record<ProformaInvoiceStatus, ProformaInvoiceStatus[]> = {
-//   Draft: ["Approved"],
-//   Paid: [],
-//   Cancelled: ["Draft"],
-//   Approved: ["Paid", "Cancelled"],
-// };
 type ProformaInvoiceStatus = "Draft" | "Paid" | "Cancelled" | "Approved" | "Open";
 
 const STATUS_TRANSITIONS: Record<ProformaInvoiceStatus, ProformaInvoiceStatus[]> = {
@@ -63,9 +54,6 @@ const STATUS_TRANSITIONS: Record<ProformaInvoiceStatus, ProformaInvoiceStatus[]>
 
 const CRITICAL_STATUSES: ProformaInvoiceStatus[] = ["Paid"];
 
-// Column key → backend field mapping
-// All keys are identical here so the map is 1:1,
-// but keeping it explicit makes future changes safe
 const SORT_FIELD_MAP: Record<string, string> = {
   proformaId: "proformaId",
   customerName: "customerName",
@@ -392,6 +380,18 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
     invoiceNumber: string,
     status: ProformaInvoiceStatus,
   ) => {
+     if(status === "Cancelled") {
+        const isConfirmed = await showConfirm(
+              `Are you sure you want to cancel entry ${invoiceNumber}?`,
+              {
+                title: "Cancel Entry",
+                confirmButtonText: "Yes, Cancel",
+                confirmButtonColor: "#ef4444",
+                cancelButtonText: "No, Keep",
+              }
+            );
+            if (!isConfirmed) return;
+        }
     if (CRITICAL_STATUSES.includes(status)) {
       const result = await fireManagedSwal({
         icon: "warning",
