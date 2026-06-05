@@ -61,22 +61,23 @@ const resolvedModalId = useMemo(
     return true;
   };
 
-  const handleSave = async () => {
-    if (!validate()) return false;
-    setSubmitting(true);
-    try {
-      const result = await onSubmit({ title: title.trim(), disabled: !enabled });
-      if (result) {
-        resetDirty();
-        onClose();
-      }
-      return result;
-    } catch {
-      return false;
-    } finally {
-      setSubmitting(false);
+const handleSave = async () => {
+  if (!validate()) return false;
+  setSubmitting(true);
+  try {
+    const result = await onSubmit({ title: title.trim(), disabled: !enabled });
+    
+    if (result !== false) {
+      resetDirty();
+      onClose();
     }
-  };
+    return result ?? true;
+  } catch {
+    return false;
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const footer = (
     <>

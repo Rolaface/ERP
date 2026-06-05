@@ -17,6 +17,7 @@ import {
   type SalaryComponent,
   type StructureComponentRow,
 } from "../../../api/payrollConfigApi";
+import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
 import {
   ModalInput,
   ModalSelect,
@@ -345,6 +346,8 @@ export const SalaryStructureModal: React.FC<Props> = ({
   const [rows, setRows] = useState<UnifiedRow[]>(INITIAL_ROWS);
   const [saving, setSaving] = useState(false);
   const [payroll_frequency, setPayrollFrequency] = useState("Monthly");
+  const { markDirty, resetDirty, handleCloseWithConfirm, containerRef, activate, deactivate } =
+  useUnsavedChangesGuard();
   // const handleFrequencyChange = (
   //   e: React.ChangeEvent<HTMLSelectElement>,
   // ) => {
@@ -361,31 +364,33 @@ export const SalaryStructureModal: React.FC<Props> = ({
   }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
-    setStructureName(initialData?.name ?? "");
-    setIsActive(initialData?.is_active ?? "Yes");
-    setDescription(initialData?.description ?? "");
-    setPayrollFrequency(initialData?.payroll_frequency ?? "Monthly");
-    const unified = toUnified(
-      initialData?.earnings ?? [],
-      initialData?.deductions ?? [],
-    );
-    const initial = unified.length > 0 ? unified : [...INITIAL_ROWS];
-    setRows(initial);
-    unified.forEach((row, idx) => {
-      if (!row.salary_component) return;
-      getSalaryComponent(row.salary_component)
-        .then((d) =>
-          setRows((prev) => {
-            const next = [...prev];
-            if (!next[idx]) return prev;
-            next[idx] = { ...next[idx], _details: d, _loading: false };
-            return next;
-          }),
-        )
-        .catch(() => {});
-    });
-  }, [isOpen, initialData]);
+  if (!isOpen) {
+    deactivate();
+    resetDirty();
+    return;
+  }
+  setStructureName(initialData?.name ?? "");
+  setIsActive(initialData?.is_active ?? "Yes");
+  setDescription(initialData?.description ?? "");
+  setPayrollFrequency(initialData?.payroll_frequency ?? "Monthly");
+  const unified = toUnified(initialData?.earnings ?? [], initialData?.deductions ?? []);
+  const initial = unified.length > 0 ? unified : [...INITIAL_ROWS];
+  setRows(initial);
+  unified.forEach((row, idx) => {
+    if (!row.salary_component) return;
+    getSalaryComponent(row.salary_component)
+      .then((d) =>
+        setRows((prev) => {
+          const next = [...prev];
+          if (!next[idx]) return prev;
+          next[idx] = { ...next[idx], _details: d, _loading: false };
+          return next;
+        }),
+      )
+      .catch(() => {});
+  });
+  return activate();
+}, [isOpen, initialData]);
 
   const fetchDetails = useCallback(async (idx: number, name: string) => {
     if (!name) return;
@@ -424,32 +429,36 @@ export const SalaryStructureModal: React.FC<Props> = ({
     }
   }, []);
 
-  const updateRow = (idx: number, patch: Partial<UnifiedRow>) =>
-    setRows((prev) => {
-      const n = [...prev];
-      n[idx] = { ...n[idx], ...patch };
-      return n;
-    });
+  const updateRow = (idx: number, patch: Partial<UnifiedRow>) => {
+  markDirty();
+  setRows((prev) => {
+    const n = [...prev];
+    n[idx] = { ...n[idx], ...patch };
+    return n;
+  });
+};
 
-  const changeComponent = (idx: number, value: string) => {
-    setRows((prev) => {
-      const n = [...prev];
-      n[idx] = {
-        ...n[idx],
-        salary_component: value,
-        _details: null,
-        formula: undefined,
-        amount: undefined,
-        amount_based_on_formula: undefined,
-        depends_on_payment_days: undefined,
-        is_income_tax_component: undefined,
-        variable_based_on_taxable_salary: undefined,
-        is_tax_applicable: undefined,
-      };
-      return n;
-    });
-    if (value) setTimeout(() => fetchDetails(idx, value), 0);
-  };
+const changeComponent = (idx: number, value: string) => {
+  markDirty();
+  setRows((prev) => {
+    const n = [...prev];
+    n[idx] = {
+      ...n[idx],
+      salary_component: value,
+      _details: null,
+      formula: undefined,
+      amount: undefined,
+      amount_based_on_formula: undefined,
+      depends_on_payment_days: undefined,
+      is_income_tax_component: undefined,
+      variable_based_on_taxable_salary: undefined,
+      is_tax_applicable: undefined,
+    };
+    return n;
+  });
+  if (value) setTimeout(() => fetchDetails(idx, value), 0);
+};
+
 
   const changeType = (idx: number, type: UnifiedRow["type"]) =>
     setRows((prev) => {
@@ -458,11 +467,15 @@ export const SalaryStructureModal: React.FC<Props> = ({
       return n;
     });
 
-  const addRow = (type: UnifiedRow["type"] = "Earning") =>
-    setRows((prev) => [...prev, { salary_component: "", type }]);
+ const addRow = (type: UnifiedRow["type"] = "Earning") => {
+  markDirty();
+  setRows((prev) => [...prev, { salary_component: "", type }]);
+};
 
-  const removeRow = (idx: number) =>
-    setRows((prev) => prev.filter((_, i) => i !== idx));
+const removeRow = (idx: number) => {
+  markDirty();
+  setRows((prev) => prev.filter((_, i) => i !== idx));
+}
 
   const handleSave = async () => {
     if (!structureName.trim()) {
@@ -492,6 +505,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
         showSuccess("Salary structure created");
       }
       onSuccess?.();
+      resetDirty();
       onClose();
     } catch (err) {
       showApiError(err);
@@ -557,7 +571,7 @@ export const SalaryStructureModal: React.FC<Props> = ({
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => handleCloseWithConfirm(onClose, modalId)}
           className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]"
         >
           <X className="h-3.5 w-3.5" /> Cancel
@@ -583,13 +597,14 @@ export const SalaryStructureModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEdit ? "Edit Salary Structure" : "New Salary Structure"}
       subtitle="Build your payroll structure component by component"
       icon={LayoutList}
       customWidth="70vw"
       height="78vh"
       footer={footer}
+      formContainerRef={containerRef}
     >
       <div
         style={{

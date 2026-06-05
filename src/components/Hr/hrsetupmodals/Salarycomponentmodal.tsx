@@ -3,6 +3,7 @@ import { Layers, Save, X,  } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
 import { useAccountSearch } from "../../../api/apiHooks";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
+import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
 import {
   createSalaryComponent,
   updateSalaryComponent,
@@ -354,7 +355,8 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const [saving, setSaving] = useState(false);
   const [, setLoadingData] = useState(false);
   const { fetchAccounts } = useAccountSearch();
-
+const { markDirty, resetDirty, handleCloseWithConfirm, containerRef, activate, deactivate } =
+  useUnsavedChangesGuard();
   /* inject styles once */
   useEffect(() => {
     const id = "sc-styles-v9";
@@ -367,12 +369,16 @@ export const SalaryComponentModal: React.FC<Props> = ({
   }, []);
 
   /* reset / load on open */
-  useEffect(() => {
-    if (!isOpen) return;
-    if (isEdit && initialData?.name) loadSalaryComponent(initialData.name);
-    else setForm({ ...EMPTY, accounts: [{ account: "" }] });
-  }, [isOpen, isEdit, initialData?.name]);
-
+useEffect(() => {
+  if (!isOpen) {
+    deactivate();
+    resetDirty();
+    return;
+  }
+  if (isEdit && initialData?.name) loadSalaryComponent(initialData.name);
+  else setForm({ ...EMPTY, accounts: [{ account: "" }] });
+  return activate();
+}, [isOpen, isEdit, initialData?.name]);
   const loadSalaryComponent = async (name: string) => {
     try {
       setLoadingData(true);
@@ -411,38 +417,46 @@ export const SalaryComponentModal: React.FC<Props> = ({
     }
   };
 
-  const set = useCallback(
-    <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
-      setForm((prev) => ({ ...prev, [key]: value })),
-    [],
-  );
-  const tog = (key: keyof Omit<SalaryComponent, "name">) => (val: boolean) =>
-    setForm((prev) => ({ ...prev, [key]: val ? 1 : 0 }));
+const set = useCallback(
+  <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
+    markDirty();
+    setForm((prev) => ({ ...prev, [key]: value }));
+  },
+  [markDirty],
+);
+ const tog = (key: keyof Omit<SalaryComponent, "name">) => (val: boolean) => {
+  markDirty();
+  setForm((prev) => ({ ...prev, [key]: val ? 1 : 0 }));
+};
 
-  const handleTypeChange = (newType: SalaryComponentType) =>
-    setForm((prev) => ({
-      ...prev,
-      type: newType,
-      depends_on_payment_days: 1,
-      is_tax_applicable: newType === "Earning" ? 1 : 0,
-      is_flexible_benefit: 0,
-      remove_if_zero_valued: 1,
-      pay_against_benefit_claim: 0,
-      max_benefit_amount: 0,
-      only_tax_impact: 0,
-      create_separate_payment_entry_against_benefit_claim: 0,
-      payout_method: "",
-      variable_based_on_taxable_salary: 0,
-      is_income_tax_component: 0,
-    }));
+const handleTypeChange = (newType: SalaryComponentType) => {
+  markDirty();
+  setForm((prev) => ({
+    ...prev,
+    type: newType,
+    depends_on_payment_days: 1,
+    is_tax_applicable: newType === "Earning" ? 1 : 0,
+    is_flexible_benefit: 0,
+    remove_if_zero_valued: 1,
+    pay_against_benefit_claim: 0,
+    max_benefit_amount: 0,
+    only_tax_impact: 0,
+    create_separate_payment_entry_against_benefit_claim: 0,
+    payout_method: "",
+    variable_based_on_taxable_salary: 0,
+    is_income_tax_component: 0,
+  }));
+};
 
 
-  const updateAccount = (idx: number, value: string) =>
-    setForm((prev) => {
-      const accounts = [...(prev.accounts ?? [])];
-      accounts[idx] = { account: value };
-      return { ...prev, accounts };
-    });
+ const updateAccount = (idx: number, value: string) => {
+  markDirty();
+  setForm((prev) => {
+    const accounts = [...(prev.accounts ?? [])];
+    accounts[idx] = { account: value };
+    return { ...prev, accounts };
+  });
+};
 
 
   const handleSave = async () => {
@@ -503,6 +517,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
         showSuccess("Salary component created");
       }
       onSuccess?.();
+      resetDirty();
       onClose();
     } catch (err) {
       showApiError(err);
@@ -523,7 +538,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
-        onClick={onClose}
+        onClick={() => handleCloseWithConfirm(onClose, modalId)}
         className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]"
       >
         <X className="h-3.5 w-3.5" /> Cancel
@@ -544,13 +559,14 @@ export const SalaryComponentModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+     onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEdit ? "Edit Salary Component" : "New Salary Component"}
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
       customWidth="55vw"
       height="70vh"
       footer={footer}
+      formContainerRef={containerRef}
     >
       <div
         className="sc-body space-y-5 pb-2 px-1"

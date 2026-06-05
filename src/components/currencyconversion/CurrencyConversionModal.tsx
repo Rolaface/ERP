@@ -7,6 +7,7 @@ import { showApiError } from "../../utils/alert";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { Repeat } from "lucide-react";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 
 // ─────────────────────────────────────────────
 // Types
@@ -75,6 +76,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
   actionLoading = false,
   modalId,
 }) => {
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -104,6 +106,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
 
   const handleCurrencyChange =
     (field: "fromCurrency" | "toCurrency") => (value: string) => {
+      markDirty();
       setForm((prev) => ({ ...prev, [field]: value }));
       clearError(field);
       if (field === "toCurrency" && value && value === form.fromCurrency) {
@@ -115,12 +118,14 @@ const CurrencyConversionModal: React.FC<Props> = ({
     };
 
   const handleExchangeRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    markDirty();
     setForm((prev) => ({ ...prev, exchangeRate: e.target.value }));
     clearError("exchangeRate");
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
+    markDirty();
     setForm((prev) => ({ ...prev, [name]: checked }));
     // Clear purpose error as soon as user ticks either checkbox
     clearError("purpose");
@@ -167,6 +172,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
         isBuying:     form.isBuying,
         isSelling:    form.isSelling,
       });
+      resetDirty();
       onClose();
     } catch (err) {
       showApiError(err);
@@ -177,10 +183,19 @@ const CurrencyConversionModal: React.FC<Props> = ({
 
   const isSaving = submitting || actionLoading;
 
+  const handleClose = () => {
+    resetDirty();
+    onClose();
+  };
+
   // ── Footer ────────────────────────────────────
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose} disabled={isSaving}>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(handleClose, modalId)}
+        disabled={isSaving}
+      >
         Cancel
       </Button>
       <Button
@@ -201,7 +216,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(handleClose, modalId)}
       icon={Repeat}
       title="Create Currency Exchange"
       subtitle={editData ? "Edit exchange rate" : "Add exchange rate"}
@@ -209,7 +224,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
       customWidth="58vw"
       height="auto"
     >
-      <div className="p-4">
+      <div className="p-4" onChange={markDirty}>
         <div className="flex flex-wrap gap-4 items-start">
 
           {/* DATE */}
@@ -219,6 +234,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
               name="date"
               value={form.date}
               onChange={(name, value) => {
+                markDirty();
                 setForm((prev) => ({ ...prev, [name]: value }));
                 clearError("date");
               }}

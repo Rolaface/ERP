@@ -3,6 +3,8 @@ import { Percent, Save, Trash2, X } from "lucide-react";
 
 import { MinimizableModal } from "../../common/MinimizableModal";
 import DatePickerInput from "../../calendar/DatePickerInput";
+import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
+
 import {
   ModalInput,
   YesNoCheckbox,
@@ -129,6 +131,8 @@ export const TaxConfigModal: React.FC<Props> = ({
   const [saving, setSaving] = useState(false);
   const [slabPage, setSlabPage] = useState(0);
   const [chargePage, setChargePage] = useState(0);
+  const { markDirty, resetDirty, handleCloseWithConfirm, containerRef, activate, deactivate } =
+  useUnsavedChangesGuard();
 
   useEffect(() => {
     if (isOpen) {
@@ -164,52 +168,49 @@ export const TaxConfigModal: React.FC<Props> = ({
       );
       setSlabPage(0);
       setChargePage(0);
+       return activate();  } else {
+       deactivate();        // ADD
+    resetDirty();  
     }
   }, [isOpen, initialData]);
 
-  const set = <K extends keyof TaxConfigDraft>(
-    key: K,
-    value: TaxConfigDraft[K],
-  ) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+const set = <K extends keyof TaxConfigDraft>(key: K, value: TaxConfigDraft[K]) => {
+  markDirty();
+  setForm((prev) => ({ ...prev, [key]: value }));
+};
 
-  const addSlab = () => {
-    const newTotal = totalSlabs + 1;
-    const lastSlab = form.slabs?.[form.slabs.length - 1];
+const addSlab = () => {
+  markDirty();
+  const newTotal = totalSlabs + 1;
+  const lastSlab = form.slabs?.[form.slabs.length - 1];
   const lastTo = lastSlab ? numberForPayload(lastSlab.to_amount) : 0;
-    setForm((prev) => ({
-      ...prev,
-      // slabs: [...(prev.slabs ?? []), makeEmptySlab()],
-      slabs: [...(prev.slabs ?? []), { ...makeEmptySlab(), from_amount: lastTo + 1 }],
+  setForm((prev) => ({
+    ...prev,
+    slabs: [...(prev.slabs ?? []), { ...makeEmptySlab(), from_amount: lastTo + 1 }],
+  }));
+  setSlabPage(Math.max(0, Math.ceil(newTotal / ITEMS_PER_PAGE) - 1));
+};
 
-    }));
-
-    setSlabPage(Math.max(0, Math.ceil(newTotal / ITEMS_PER_PAGE) - 1));
-  };
-
- const updateSlab = <K extends keyof TaxSlabDraftRow>(
-  idx: number,
-  key: K,
-  value: TaxSlabDraftRow[K],
-) =>
+ const updateSlab = <K extends keyof TaxSlabDraftRow>(idx: number, key: K, value: TaxSlabDraftRow[K]) => {
+  markDirty();
   setForm((prev) => {
     const slabs = [...(prev.slabs ?? [])];
     slabs[idx] = { ...slabs[idx], [key]: value };
-
-    // Auto-update next slab's from_amount when to_amount changes
     if (key === "to_amount" && idx + 1 < slabs.length) {
       const nextFrom = value === "" ? "" : Number(value) + 1;
       slabs[idx + 1] = { ...slabs[idx + 1], from_amount: nextFrom };
     }
-
     return { ...prev, slabs };
   });
+};
 
-  const removeSlab = (idx: number) =>
+  const removeSlab = (idx: number) => {
+  markDirty();
     setForm((prev) => ({
       ...prev,
       slabs: (prev.slabs ?? []).filter((_, i) => i !== idx),
     }));
+  };
   const totalSlabs = form.slabs?.length || 0;
 
   const totalSlabPages = Math.max(1, Math.ceil(totalSlabs / ITEMS_PER_PAGE));
@@ -306,6 +307,7 @@ export const TaxConfigModal: React.FC<Props> = ({
       }
 
       onSuccess?.();
+      resetDirty();
       onClose();
     } catch (err) {
       showApiError(err);
@@ -314,44 +316,41 @@ export const TaxConfigModal: React.FC<Props> = ({
     }
   };
 
-  const updateCharge = <K extends keyof TaxChargeDraftRow>(
-    idx: number,
-    key: K,
-    value: TaxChargeDraftRow[K],
-  ) =>
-    setForm((prev) => {
-      const rows = [...(prev.other_taxes_and_charges ?? [])];
-      rows[idx] = { ...rows[idx], [key]: value };
-      return { ...prev, other_taxes_and_charges: rows };
-    });
+const updateCharge = <K extends keyof TaxChargeDraftRow>(idx: number, key: K, value: TaxChargeDraftRow[K]) => {
+  markDirty();
+  setForm((prev) => {
+    const rows = [...(prev.other_taxes_and_charges ?? [])];
+    rows[idx] = { ...rows[idx], [key]: value };
+    return { ...prev, other_taxes_and_charges: rows };
+  });
+};
+
 
   const addCharge = () => {
-    const newTotal = totalCharges + 1;
+  markDirty();
+  const newTotal = totalCharges + 1;
+  setForm((prev) => ({
+    ...prev,
+    other_taxes_and_charges: [...(prev.other_taxes_and_charges ?? []), makeEmptyCharge()],
+  }));
+  setChargePage(Math.max(0, Math.ceil(newTotal / ITEMS_PER_PAGE) - 1));
+};
 
-    setForm((prev) => ({
-      ...prev,
-      other_taxes_and_charges: [
-        ...(prev.other_taxes_and_charges ?? []),
-        makeEmptyCharge(),
-      ],
+  const removeCharge = (idx: number) => {
+  markDirty();
+  setForm((prev) => ({
+    ...prev,
+    other_taxes_and_charges: (prev.other_taxes_and_charges ?? []).filter(
+      (_, i) => i !== idx,
+    ),
     }));
-
-    setChargePage(Math.max(0, Math.ceil(newTotal / ITEMS_PER_PAGE) - 1));
-  };
-
-  const removeCharge = (idx: number) =>
-    setForm((prev) => ({
-      ...prev,
-      other_taxes_and_charges: (prev.other_taxes_and_charges ?? []).filter(
-        (_, i) => i !== idx,
-      ),
-    }));
+  }
 
   const footer = !isEdit ?(
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
-        onClick={onClose}
+        onClick={() => handleCloseWithConfirm(onClose, modalId)}
         className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]"
       >
         <X className="h-3.5 w-3.5" />
@@ -373,13 +372,16 @@ export const TaxConfigModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
+
       title={isEdit ? "Edit Tax Configuration" : "New Tax Configuration"}
       subtitle="Configure income tax slabs and exemptions"
       icon={Percent}
       customWidth="60vw"
       height="84vh"
       footer={footer}
+      formContainerRef={containerRef}
+
     >
       <div className="bg-app">
         <div className="flex items-end gap-3 flex-nowrap overflow-x-auto">
@@ -711,4 +713,5 @@ export const TaxConfigModal: React.FC<Props> = ({
       </div>
     </MinimizableModal>
   );
-};
+
+  };

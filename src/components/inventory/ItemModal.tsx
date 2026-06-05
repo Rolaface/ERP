@@ -391,6 +391,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   const handleFormSubmit = async () => {
     const result = await handleSave(undefined, taxRows);
+    if (result !== false) resetDirty();
     return result !== false;
   };
 
@@ -432,7 +433,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
         id={itemFormId}
         onChange={markDirty}
         onSubmit={(event) => {
-          resetDirty();
           void handleSubmit(event, taxRows);
         }}
         noValidate

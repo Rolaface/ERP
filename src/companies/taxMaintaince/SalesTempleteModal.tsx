@@ -18,6 +18,7 @@ import {
   CHARGE_TYPE_OPTIONS,
 } from "../../types/tax/salesTemplate";
 import { getGlAccounts } from "../../api/salesTaxTemplateApi";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   );
 
   const modalData = modal?.initialData as SalesTaxTemplateFormData | undefined;
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const [form, setForm] = useState<SalesTaxTemplateFormData>(
     modalData ?? defaultSalesTaxForm,
@@ -70,6 +72,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
     setForm(initialData ?? defaultSalesTaxForm);
     setErrors({});
     setPage(0);
+    resetDirty();
   };
 
   // ── Field handlers ────────────────────────────────────────────────────────
@@ -113,6 +116,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
   // ── Row management ────────────────────────────────────────────────────────
   const addRow = () => {
+    markDirty();
     setForm((prev) => ({
       ...prev,
       taxes: [...prev.taxes, { ...defaultSalesTaxRow }],
@@ -123,6 +127,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
   const removeRow = (index: number) => {
     if (form.taxes.length === 1) return;
+    markDirty();
     setForm((prev) => ({
       ...prev,
       taxes: prev.taxes.filter((_, i) => i !== index),
@@ -179,6 +184,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
         await modal.context.callback(payload);
       }
 
+      resetDirty();
       reset();
       onClose();
     } finally {
@@ -189,7 +195,10 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   // ── Footer ────────────────────────────────────────────────────────────────
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose}>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(onClose, modalId)}
+      >
         Cancel
       </Button>
       <div className="flex gap-3">
@@ -214,7 +223,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Sales Tax Template" : "Add Sales Tax Template"}
       subtitle="Configure charges and tax rates"
       icon={FileSpreadsheet}
@@ -223,6 +232,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
       height="72vh"
     >
       <form
+        onChange={markDirty}
         onSubmit={(e) => e.preventDefault()}
         className="h-full flex flex-col"
       >
@@ -247,11 +257,12 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
               <TaxCategorySelect
                 label="Tax Category"
                 value={form.tax_category}
-                onChange={(value) =>
+                onChange={(value) => {
+                  markDirty();
                   handleChange({
                     target: { name: "tax_category", value },
-                  } as React.ChangeEvent<HTMLSelectElement>)
-                }
+                  } as React.ChangeEvent<HTMLSelectElement>);
+                }}
                 error={errors.taxcategory}
                 required
               />
@@ -352,13 +363,14 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                         <SearchSelect2
                           label=""
                           value={row.account_head}
-                          onChange={(val) =>
+                          onChange={(val) => {
+                            markDirty();
                             handleRowChange(
                               actualIdx,
                               "account_head",
                               val || "",
                             )
-                          }
+                          }}
                           fetchOptions={fetchGlOptions}
                           placeholder="Select account"
                         />
@@ -375,11 +387,14 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                             name="rate"
                             value={row.rate || null}
                             onChange={(value) =>
+                              {
+                              markDirty();
                               handleRowChange(
                                 actualIdx,
                                 "rate",
                                 value ?? 0,
                               )
+                              }
                             }
                             className="w-full"
                             placeholder="0.00"
