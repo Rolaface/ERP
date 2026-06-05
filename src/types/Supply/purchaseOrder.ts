@@ -147,6 +147,7 @@ export interface PurchaseOrderFormData {
   date: string;
   name: string;
   supplier: string;
+  company: string;
   supplierId: string;
   supplierEmail?: string;
   supplierPhone?: string;
@@ -252,6 +253,7 @@ export const emptyPOForm: PurchaseOrderFormData = {
   poNumber: "",
   date: "",
   supplier: "",
+  company: "",
   supplierContact: "",
   supplierContactDisplay: "",
   taxCategory: "",

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { FileText, Users, Settings } from "lucide-react";
 import type { PayrollEntry } from "../../../types/payrolltypes";
 import {
@@ -15,6 +15,7 @@ import { AccountingTab } from "./Accountingtab";
 import { getAllEmployees } from "../../../api/employeeapi";
 import ModalFooter from "../../../components/common/ModalFooter";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
+import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
 
 interface Props {
   modalId: string;
@@ -75,14 +76,36 @@ const NewPayrollEntry: React.FC<Props> = ({
   });
   const [employees, setEmployees] = useState<any[]>([]);
 
+  // ✅ Pull activate + deactivate from the hook — removes the need for a local readyRef
+  const {
+    resetDirty,
+    handleCloseWithConfirm,
+    containerRef,
+    markDirty,
+    activate,
+    deactivate,
+  } = useUnsavedChangesGuard();
+
   const isLastStep = step === TABS.length - 1;
 
   const handleClose = () => {
     if (submitting) return;
-    onBack();
+    handleCloseWithConfirm(onBack, modalId);
   };
 
+  // ✅ Use the hook's own activate/deactivate instead of a local readyRef
+  useEffect(() => {
+    if (!isOpen) {
+      deactivate();
+      resetDirty();
+    } else {
+      return activate(); // activate() returns a cleanup fn that clears its own timeout
+    }
+  }, [isOpen]);
+
+  // ✅ markDirty is now guarded by the hook's internal readyRef, so no local check needed
   const update = (field: string, value: unknown) => {
+    markDirty();
     setFormData((p) => ({ ...p, [field]: value }));
     setSubmitError(null);
   };
@@ -96,6 +119,7 @@ const NewPayrollEntry: React.FC<Props> = ({
 
     try {
       await onSuccess(formData.selectedEmployees, formData);
+      resetDirty();
       return true;
     } catch (err: unknown) {
       setSubmitError(
@@ -130,7 +154,6 @@ const NewPayrollEntry: React.FC<Props> = ({
     })();
   }, []);
 
-
   return (
     <MinimizableModal
       modalId={modalId}
@@ -140,6 +163,7 @@ const NewPayrollEntry: React.FC<Props> = ({
       subtitle="Create payroll entries"
       maxWidth="6xl"
       height="90vh"
+      formContainerRef={containerRef}
     >
       <div className="flex flex-col h-full -mx-4 -my-3 overflow-hidden">
         {/* Tabs */}

@@ -151,6 +151,7 @@ const ItemsCategoryModal: React.FC<{
     };
 
     const handleClose = () => {
+      resetDirty();
       setForm(emptyForm);
       setLoading(false);
       onClose();
@@ -162,7 +163,11 @@ const ItemsCategoryModal: React.FC<{
       <MinimizableModal
         modalId={resolvedModalId}
         isOpen={isOpen}
-        onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+        onClose={() =>
+          isViewMode
+            ? handleClose()
+            : handleCloseWithConfirm(handleClose, resolvedModalId)
+        }
         title={isViewMode ? "View Item Group" : isEditMode ? "Edit Item Group" : "Create Item Group"}
         subtitle={isViewMode ? "Read-only view of this item group" : "Create a new item group"}
         icon={Layers}
@@ -170,7 +175,7 @@ const ItemsCategoryModal: React.FC<{
         height="auto"
       >
         <form
-          onChange={() => markDirty()}
+          onChange={() => !isViewMode && markDirty()}
           onSubmit={handleSubmit}
           noValidate
           className="h-full flex flex-col"

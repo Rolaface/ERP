@@ -8,11 +8,8 @@ import {
   updateEmployeeType,
   type EmployeeType,
 } from "../../api/employeeConfigApi";
-import {
-  showApiError,
-  showSuccess,
-  showValidationError,
-} from "../../utils/alert";
+import { showApiError, showSuccess, showValidationError } from "../../utils/alert";
+import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
 
 interface Props {
   modalId: string;
@@ -37,6 +34,9 @@ export const EmployeeTypeModal: React.FC<Props> = ({
   const [form, setForm] = useState<Omit<EmployeeType, "name">>(EMPTY);
   const [saving, setSaving] = useState(false);
 
+  const { resetDirty, handleCloseWithConfirm, containerRef, activate, deactivate } =
+    useUnsavedChangesGuard();
+
   useEffect(() => {
     if (isOpen) {
       setForm(
@@ -44,6 +44,10 @@ export const EmployeeTypeModal: React.FC<Props> = ({
           ? { employee_type_name: initialData.employee_type_name ?? initialData.name ?? "" }
           : { ...EMPTY },
       );
+      return activate();
+    } else {
+      deactivate();
+      resetDirty();
     }
   }, [isOpen, initialData]);
 
@@ -67,6 +71,7 @@ export const EmployeeTypeModal: React.FC<Props> = ({
         await createEmployeeType(form);
         showSuccess("Employee type created");
       }
+      resetDirty();
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -78,11 +83,20 @@ export const EmployeeTypeModal: React.FC<Props> = ({
 
   const footer = (
     <div className="flex w-full items-center justify-end gap-3">
-      <button type="button" onClick={onClose} className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]">
+      <button
+        type="button"
+        onClick={() => handleCloseWithConfirm(onClose, modalId)}
+        className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]"
+      >
         <X className="h-3.5 w-3.5" />
         Cancel
       </button>
-      <button type="button" onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60">
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving}
+        className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+      >
         <Save className="h-3.5 w-3.5" />
         {saving ? "Saving..." : isEdit ? "Update Employee Type" : "Create Employee Type"}
       </button>
@@ -90,9 +104,26 @@ export const EmployeeTypeModal: React.FC<Props> = ({
   );
 
   return (
-    <MinimizableModal modalId={modalId} isOpen={isOpen} onClose={onClose} title={isEdit ? "Edit Employee Type" : "New Employee Type"} subtitle="Configure employment categories" icon={UserRoundCog} maxWidth="xl" height="auto" footer={footer}>
+    <MinimizableModal
+      modalId={modalId}
+      isOpen={isOpen}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
+      title={isEdit ? "Edit Employee Type" : "New Employee Type"}
+      subtitle="Configure employment categories"
+      icon={UserRoundCog}
+      maxWidth="xl"
+      height="auto"
+      footer={footer}
+      formContainerRef={containerRef}
+    >
       <div className="space-y-5 pb-2">
-        <ModalInput label="Employee Type" value={form.employee_type_name} disabled={isEdit} onChange={(e) => set("employee_type_name", e.target.value)} required />
+        <ModalInput
+          label="Employee Type"
+          value={form.employee_type_name}
+          disabled={isEdit}
+          onChange={(e) => set("employee_type_name", e.target.value)}
+          required
+        />
       </div>
     </MinimizableModal>
   );

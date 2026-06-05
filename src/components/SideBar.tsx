@@ -253,13 +253,6 @@ const settingsItems: SettingsItem[] = [
     hideInEmployeeView: true,
   },
   {
-    to: "/Expense-Management",
-    label: "Expense Management",
-    icon: <CreditCard {...iconProps} />,
-    modules: ["Expense Claim", "Expense Claim Type", "Employee Advance"],
-    hideInEmployeeView: true,
-  },
-  {
     to: "/Email-Template",
     label: "Email Template",
     icon: <Mail {...iconProps} />,
@@ -644,6 +637,29 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 {!open && <Tooltip label="Human Resource" />}
               </NavLink>
             ))}
+
+            {!isEmployeeView && canAccessAnyOf(["Expense Claim", "Expense Claim Type", "Employee Advance"]) && (
+            <NavLink
+              to="/Expense-Management"
+              className={({ isActive }) =>
+                `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
+                ${
+                  isActive
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted hover:bg-row-hover hover:text-main"
+                }`
+              }
+            >
+              <span className={`flex h-10 shrink-0 items-center justify-center text-[17px] transition-all duration-300 ${open ? "w-10" : "w-full"}`}>
+                <CreditCard {...iconProps} />
+              </span>
+              <span className={`truncate text-[14px] font-semibold tracking-tight transition-all duration-200 pr-3 ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
+                Expense Management
+              </span>
+              {!open && <Tooltip label="Expense Management" />}
+            </NavLink>
+          )}
+
 
           {/* ── Settings ── */}
           {showSettingsSection && (
