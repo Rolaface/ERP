@@ -104,10 +104,11 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   const fetchGlOptions = useCallback(async (search: string) => {
     try {
       const res = await getGlAccounts(search || undefined);
-      const data: { name: string; description: string }[] = res?.data ?? [];
+      const data: { name: string; account_type: string, account_name: string }[] = res?.data ?? [];
       return data.map((opt) => ({
         value: opt.name,
-        label: opt.description ? `${opt.name} — ${opt.description}` : opt.name,
+        label: opt.account_name,
+        subLabel: opt.account_type || "",
       }));
     } catch {
       return [];
@@ -360,16 +361,14 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
                       {/* Account Head */}
                       <td className="px-3 py-2">
+
                         <SearchSelect2
                           label=""
-                          value={row.account_head}
-                          onChange={(val) => {
+                          value={row.account_head_display || row.account_head}
+                          onChange={(val, option) => {
                             markDirty();
-                            handleRowChange(
-                              actualIdx,
-                              "account_head",
-                              val || "",
-                            )
+                            handleRowChange(actualIdx, "account_head", val || "");
+                            handleRowChange(actualIdx, "account_head_display", option?.label || val || "");
                           }}
                           fetchOptions={fetchGlOptions}
                           placeholder="Select account"
@@ -383,29 +382,28 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
                       {/* Rate */}
                       <td className="px-3 py-2">
-                          <NumericInput
-                            name="rate"
-                            value={row.rate || null}
-                            onChange={(value) =>
-                              {
-                              markDirty();
-                              handleRowChange(
-                                actualIdx,
-                                "rate",
-                                value ?? 0,
-                              )
-                              }
-                            }
-                            className="w-full"
-                            placeholder="0.00"
-                            disabled={row.charge_type === "Actual"}
-                          />
-                          {errors[`rate_${actualIdx}`] && (
-                            <p className="text-xs text-danger mt-1">
-                              {errors[`rate_${actualIdx}`]}
-                            </p>
-                          )}
-                        </td>
+                        <NumericInput
+                          name="rate"
+                          value={row.rate || null}
+                          onChange={(value) => {
+                            markDirty();
+                            handleRowChange(
+                              actualIdx,
+                              "rate",
+                              value ?? 0,
+                            )
+                          }
+                          }
+                          className="w-full"
+                          placeholder="0.00"
+                          disabled={row.charge_type === "Actual"}
+                        />
+                        {errors[`rate_${actualIdx}`] && (
+                          <p className="text-xs text-danger mt-1">
+                            {errors[`rate_${actualIdx}`]}
+                          </p>
+                        )}
+                      </td>
 
 
                       {/* Tax Amount */}
@@ -477,8 +475,8 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                   type="button"
                   onClick={() => setPage(i)}
                   className={`w-6 h-6 rounded text-xs transition-colors ${page === i
-                      ? "bg-primary text-white"
-                      : "bg-[var(--border)] text-muted hover:bg-primary/20"
+                    ? "bg-primary text-white"
+                    : "bg-[var(--border)] text-muted hover:bg-primary/20"
                     }`}
                 >
                   {i + 1}
