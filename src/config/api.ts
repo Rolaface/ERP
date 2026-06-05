@@ -59,6 +59,11 @@ export const API = {
     update_email_template: `${ERP_BASE}/api/method/custom_api.api.email_template.api.update`,
     delete_email_template: `${ERP_BASE}/api/method/frappe.client.delete`
   },
+
+ NamingSeries: {
+    create_naming_series: `${ERP_BASE}/api/method/custom_api.api.document_naming_series.api.update_company_naming_settings`,
+    get_naming_series: `${ERP_BASE}/api/method/custom_api.api.document_naming_series.api.get_company_naming_settings`
+  },
   
 
   /* =========================
@@ -290,6 +295,7 @@ export const API = {
     updateSalesTaxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_template`,
     updateSalesTaxTemplateStatus: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_status`,
   },
+
 
   /* =========================
    * ITEM GROUP

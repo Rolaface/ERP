@@ -35,8 +35,6 @@ import { useCompanyStore } from "../../store/companyStore";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 type PayableVoucherType =
   | "Purchase Invoice"
-  | "Purchase Order"
-  | "Purchase Receipt"
   | "Payment Entry"
   | "Journal Entry"
   | "Expense Claim";
@@ -117,8 +115,6 @@ const AccountsPayable = () => {
   >("");
   const voucherTypeOptions: PayableVoucherType[] = [
     "Purchase Invoice",
-    "Purchase Order",
-    "Purchase Receipt",
     "Payment Entry",
     "Journal Entry",
     "Expense Claim",

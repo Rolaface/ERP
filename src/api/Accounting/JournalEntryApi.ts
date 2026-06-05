@@ -46,6 +46,7 @@ export async function getJournalEntries(
   limitStart: number = 0,
   limitPageLength: number = 20,
   search?: string,
+  orderBy?: string
 ): Promise<any> {
   const queryString = buildListParams({
     fields: fields ?? [],
@@ -55,12 +56,19 @@ export async function getJournalEntries(
     searchFields: search ? ["name", "user_remark"] : undefined,
   });
 
-  const params: any = {};
-  if (filters) params.filters = JSON.stringify(filters);
+  const searchParams = new URLSearchParams(queryString);
 
+  if (filters && filters.length > 0) {
+    searchParams.set("filters", JSON.stringify(filters));
+  }
+  
+  if (orderBy) {
+    searchParams.set("order_by", orderBy); // This forces ONLY one order_by
+  }
+
+  // Pass the unified string directly, avoiding Axios 'params' duplication
   const resp: AxiosResponse = await api.get(
-    `${JournalEntryAPI.getAll}?${queryString}`,
-    { params }
+    `${JournalEntryAPI.getAll}?${searchParams.toString()}`
   );
   return resp.data;
 }

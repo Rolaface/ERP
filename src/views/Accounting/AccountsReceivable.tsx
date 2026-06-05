@@ -41,8 +41,6 @@ import { useCompanyStore } from "../../store/companyStore";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 type ReceivableVoucherType =
   | "Sales Invoice"
-  | "Sales Order"
-  | "Delivery Note"
   | "Payment Entry"
   | "Journal Entry";
 
@@ -134,8 +132,6 @@ const AccountsReceivable = () => {
   >("");
   const voucherTypeOptions: ReceivableVoucherType[] = [
     "Sales Invoice",
-    "Sales Order",
-    "Delivery Note",
     "Payment Entry",
     "Journal Entry",
   ];

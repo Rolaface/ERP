@@ -5,6 +5,7 @@ type Option = {
   label: string;
   value: string;
   swiftCode?: string;
+  subLabel?: string;
 };
 
 interface SearchSelectProps {
@@ -177,9 +178,8 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                   setOptions(data);
                 }
               }}
-              className={`py-1 px-2 pr-6 border rounded text-[11px] text-main bg-card transition-all w-full ${
-                error ? "border-danger" : "border-theme"
-              }`}
+              className={`py-1 px-2 pr-6 border rounded text-[11px] text-main bg-card transition-all w-full ${error ? "border-danger" : "border-theme"
+                }`}
             />
 
             {/* Clear button — only show when user is actively typing */}
@@ -221,6 +221,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
               className="bg-white border rounded shadow-lg max-h-52 overflow-auto"
             >
               {options.map((opt) => (
+                // AFTER
                 <div
                   key={opt.value || opt.label}
                   onMouseDown={(e) => e.preventDefault()}
@@ -228,12 +229,17 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                     onChange(opt.value, opt);
                     setSearch(opt.label);
                     setIsCustom(false);
-                    userEditingRef.current = false; // ← CHANGED: selection done, allow future sync
+                    userEditingRef.current = false;
                     setOpen(false);
                   }}
-                  className="px-3 py-2 cursor-pointer text-[13px] hover:bg-gray-100"
+                  className="px-3 py-2 cursor-pointer hover:bg-gray-100"
                 >
-                  {opt.label}
+                  <span className="block text-[13px] text-main">{opt.label}</span>
+                  {opt.subLabel && (
+                    <span className="block text-[11px] text-muted leading-tight">
+                      {opt.subLabel}
+                    </span>
+                  )}
                 </div>
               ))}
               {options.length === 0 && (

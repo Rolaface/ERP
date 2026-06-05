@@ -15,9 +15,9 @@ import type { Column } from "../../components/ui/Table/type";
 import Tooltip from "../../components/Tooltip";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { getAllTaxCategories } from "../../api/taxCategoryApi";
+import { TaxCategoryFormData } from "../../types/tax/taxTemplate";
 import { useTaxCategory } from "../../hooks/useTaxCategory";
-import TaxCategoryModal from "../../components/inventory/TaxCategoryModal";
-import type { TaxCategoryFormData } from "../../hooks/useTaxCategory";
+import { openTaxCategoryModal } from "../../store/modalStore";
 import { usePermission } from "../../hooks/permission/usePermission";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -108,19 +108,6 @@ const TaxCategory: React.FC = () => {
   }, [page, pageSize, searchTerm, isInitialLoad]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
-
-  const handleCreate = useCallback(
-    async (formData: TaxCategoryFormData) => {
-      try {
-        await createTaxCategoryEntry(formData);
-        await fetchCategories();
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    [createTaxCategoryEntry, fetchCategories],
-  );
 
   const handleToggleStatus = useCallback(
     async (row: TaxCategorySummary) => {
@@ -270,7 +257,18 @@ const TaxCategory: React.FC = () => {
         }}
         enableAdd={can(TAX_CATEGORY_MODULE, "create")}
         addLabel="Add Tax Category"
-        onAdd={() => setIsModalOpen(true)}
+       onAdd={() =>
+  openTaxCategoryModal(null, false, {
+    onSuccess: async (data) => {
+      try {
+        await createTaxCategoryEntry(data as TaxCategoryFormData);
+        await fetchCategories();
+      } catch {
+        // error hook ke andar show hoga
+      }
+    },
+  })
+}
         enableColumnSelector
         currentPage={page}
         totalPages={totalPages}
@@ -279,12 +277,7 @@ const TaxCategory: React.FC = () => {
         onPageChange={setPage}
       />
 
-      {/* Create Modal — no edit modal needed since only status toggle is supported */}
-      <TaxCategoryModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreate}
-      />
+  
     </>
   );
 };

@@ -5,21 +5,15 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { getAllDepartments } from "../../api/utils/frappeUtilsApi";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { getalluser } from "../../api/utils/frappeUtilsApi";
-import {
-  ModalInput,
-  YesNoCheckbox,
-} from "../../components/ui/modal/modalComponent";
+import { ModalInput, YesNoCheckbox } from "../../components/ui/modal/modalComponent";
 import {
   createDepartment,
   updateDepartment,
   type Department,
   type DepartmentApprover,
 } from "../../api/employeeConfigApi";
-import {
-  showApiError,
-  showSuccess,
-  showValidationError,
-} from "../../utils/alert";
+import { showApiError, showSuccess, showValidationError } from "../../utils/alert";
+import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
 
 interface Props {
   modalId: string;
@@ -34,7 +28,6 @@ type DepartmentForm = Omit<Department, "name">;
 const EMPTY: DepartmentForm = {
   parent_department: "All Departments",
   department_name: "",
-
   is_group: 0,
   leave_block_list: "",
   leave_approvers: [],
@@ -48,7 +41,7 @@ const approversToText = (rows?: DepartmentApprover[]) =>
 const textToApprovers = (value: string): DepartmentApprover[] =>
   value
     .split(",")
-    .map((approver) => approver.trim())
+    .map((a) => a.trim())
     .filter(Boolean)
     .map((approver) => ({ approver }));
 
@@ -60,23 +53,23 @@ export const DepartmentModal: React.FC<Props> = ({
   onSuccess,
 }) => {
   const isEdit = Boolean(initialData?.name);
+
   const [form, setForm] = useState<DepartmentForm>(EMPTY);
   const [leaveApprovers, setLeaveApprovers] = useState("");
   const [expenseApprovers, setExpenseApprovers] = useState("");
   const [shiftApprovers, setShiftApprovers] = useState("");
   const [saving, setSaving] = useState(false);
-  const [departmentOptions, setDepartmentOptions] = useState<any[]>([]);
+
+  const { markDirty, resetDirty, handleCloseWithConfirm, containerRef, activate, deactivate } =
+    useUnsavedChangesGuard();
 
   useEffect(() => {
     if (isOpen) {
       setForm(
         initialData
           ? {
-              parent_department:
-                initialData.parent_department ?? "All Departments",
-              department_name:
-                initialData.department_name ?? initialData.name ?? "",
-
+              parent_department: initialData.parent_department ?? "All Departments",
+              department_name: initialData.department_name ?? initialData.name ?? "",
               is_group: initialData.is_group ?? 0,
               leave_block_list: initialData.leave_block_list ?? "",
               leave_approvers: initialData.leave_approvers ?? [],
@@ -88,32 +81,19 @@ export const DepartmentModal: React.FC<Props> = ({
       setLeaveApprovers(approversToText(initialData?.leave_approvers));
       setExpenseApprovers(approversToText(initialData?.expense_approvers));
       setShiftApprovers(approversToText(initialData?.shift_request_approver));
+      return activate();
+    } else {
+      deactivate();
+      resetDirty();
     }
   }, [isOpen, initialData]);
 
-  useEffect(() => {
-    const loadDepartments = async () => {
-      try {
-        const res = await getAllDepartments();
-
-        setDepartmentOptions(
-          (res || []).map((d: any) => ({
-            label: d.department_name || d.name,
-            value: d.name,
-          })),
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    loadDepartments();
-  }, []);
-
   const set = useCallback(
-    <K extends keyof DepartmentForm>(key: K, value: DepartmentForm[K]) =>
-      setForm((prev) => ({ ...prev, [key]: value })),
-    [],
+    <K extends keyof DepartmentForm>(key: K, value: DepartmentForm[K]) => {
+      markDirty();
+      setForm((prev) => ({ ...prev, [key]: value }));
+    },
+    [markDirty],
   );
 
   const handleSave = async () => {
@@ -138,6 +118,8 @@ export const DepartmentModal: React.FC<Props> = ({
         await createDepartment(payload);
         showSuccess("Department created");
       }
+
+      resetDirty();
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -151,7 +133,7 @@ export const DepartmentModal: React.FC<Props> = ({
     <div className="flex w-full items-center justify-end gap-2">
       <button
         type="button"
-        onClick={onClose}
+        onClick={() => handleCloseWithConfirm(onClose, modalId)}
         className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-3.5 py-1.5 text-sm font-medium text-main transition hover:bg-[var(--border)]"
       >
         <X className="h-3.5 w-3.5" />
@@ -164,11 +146,7 @@ export const DepartmentModal: React.FC<Props> = ({
         className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving
-          ? "Saving..."
-          : isEdit
-            ? "Update Department"
-            : "Create Department"}
+        {saving ? "Saving..." : isEdit ? "Update Department" : "Create Department"}
       </button>
     </div>
   );
@@ -177,13 +155,14 @@ export const DepartmentModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEdit ? "Edit Department" : "New Department"}
       subtitle="Configure department hierarchy and approvers"
       icon={Building2}
       customWidth="52vw"
       height="45vh"
       footer={footer}
+      formContainerRef={containerRef}
     >
       <div className="bg-app">
         <div className="flex items-end gap-3 flex-nowrap overflow-x-auto">
@@ -201,15 +180,12 @@ export const DepartmentModal: React.FC<Props> = ({
               value={form.parent_department ?? ""}
               fetchOptions={async (search: string) => {
                 const res = await getAllDepartments(search);
-
                 return res || [];
               }}
-              onChange={(val: any) =>
-                set(
-                  "parent_department",
-                  typeof val === "string" ? val : val?.value || "",
-                )
-              }
+              onChange={(val: any) => {
+                markDirty();
+                set("parent_department", typeof val === "string" ? val : val?.value || "");
+              }}
             />
             <ModalInput
               label="Leave Block List"
@@ -218,7 +194,7 @@ export const DepartmentModal: React.FC<Props> = ({
             />
           </div>
 
-          <div className="">
+          <div>
             <YesNoCheckbox
               name="is_group"
               label="Is Group"
@@ -235,9 +211,8 @@ export const DepartmentModal: React.FC<Props> = ({
             placeholder="Search user..."
             fetchOptions={getalluser}
             onChange={(val: any) => {
-              setLeaveApprovers(
-                typeof val === "string" ? val : val?.value || "",
-              );
+              markDirty();
+              setLeaveApprovers(typeof val === "string" ? val : val?.value || "");
             }}
           />
           <SearchSelect2
@@ -246,9 +221,8 @@ export const DepartmentModal: React.FC<Props> = ({
             placeholder="Search user..."
             fetchOptions={getalluser}
             onChange={(val: any) => {
-              setExpenseApprovers(
-                typeof val === "string" ? val : val?.value || "",
-              );
+              markDirty();
+              setExpenseApprovers(typeof val === "string" ? val : val?.value || "");
             }}
           />
           <SearchSelect2
@@ -257,9 +231,8 @@ export const DepartmentModal: React.FC<Props> = ({
             placeholder="Search user..."
             fetchOptions={getalluser}
             onChange={(val: any) => {
-              setShiftApprovers(
-                typeof val === "string" ? val : val?.value || "",
-              );
+              markDirty();
+              setShiftApprovers(typeof val === "string" ? val : val?.value || "");
             }}
           />
         </div>

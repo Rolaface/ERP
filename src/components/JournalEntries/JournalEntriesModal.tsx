@@ -46,7 +46,6 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   const actualEntryId = (modalState?.initialData as string) || entryId;
   const actualIsReadOnly = modalState?.context?.isReadOnly || isReadOnly;
 
-  // 3. PASS THE ACTUAL ID TO YOUR HOOK SO IT FETCHES THE DATA
   const {
     form,
     entries,
@@ -167,21 +166,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
       />
     </div>
 
-    {/* Type: Always Row 1, Column 2 */}
     <div className="flex flex-col gap-1 w-full col-start-2 row-start-1">
-      {/* <ModalSelect
-        label="Type"
-        name="voucher_type"
-        value={form.voucher_type || "Company"}
-        onChange={handleChange}
-        required
-        error={errors.voucher_type}
-        placeholder="Select Type"
-        disabled={actualIsReadOnly}
-      >
-        <option value="Individual">Bank Entry</option>
-        <option value="Company">Journal Entry</option>
-      </ModalSelect> */}
       <ModalSelect
   label="Type"
   name="voucher_type"
@@ -369,6 +354,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                         className="border-b border-gray-100 last:border-none"
                       >
                         <td className="px-2 py-1">
+                          <div className="w-[280px]">
                           <AccountSelect
                             label=""
                             value={entry.account}
@@ -386,6 +372,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                             disabled={actualIsReadOnly}
                             className="w-full"
                           />
+                          </div>
                         </td>
 
                         <td className="px-2 py-1">
@@ -431,7 +418,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                                 e.target.value,
                               )
                             }
-                            disabled={actualIsReadOnly}
+                            disabled={actualIsReadOnly || entry.isRateMissing}
                             className="w-full"
                           />
                         </td>
