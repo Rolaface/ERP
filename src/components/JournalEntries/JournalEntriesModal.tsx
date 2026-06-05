@@ -45,7 +45,8 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
   
   // 2. DETERMINE ACTUAL VALUES (Fallback to props if store data isn't present)
   const actualEntryId = (modalState?.initialData as string) || entryId;
-  const actualIsReadOnly = modalState?.context?.isReadOnly || isReadOnly;
+  // const actualIsReadOnly = modalState?.context?.isReadOnly || isReadOnly;
+  const actualIsReadOnly = (modalState?.context as { isReadOnly?: boolean })?.isReadOnly || isReadOnly;
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const handleModalClose = () => handleCloseWithConfirm(onClose, modalId);
 
