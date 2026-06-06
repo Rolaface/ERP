@@ -5,6 +5,7 @@ import {
   showSuccess,
   showLoading,
   closeSwal,
+  showConfirm
 } from "../../utils/alert";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { QuotationSummary } from "../../types/quotation";
@@ -31,6 +32,7 @@ import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError
 import SendEmailModal from "../../components/common/SendEmailModal";
 import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/statusActionIcons";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 type OutletContextType = {
@@ -67,10 +69,8 @@ const STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
 
 const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refreshKey }) => {
   const { openQuotationEdit } = useOutletContext<OutletContextType>();
-  const mountedRef = useRef(true);
 
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [company, setCompany] = useState<any>(null);
   const { can } = usePermission();
@@ -87,12 +87,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
   const [sortBy, setSortBy] = useState("quotationNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // ── Filter state (server) 
-  const [status] = useState("");
-  const [fromDate] = useState("");
-  const [toDate] = useState("");
-
-
   // ── Reset page when search changes 
   useEffect(() => { setPage(1); }, [searchTerm]);
   //_____quotation details modal state _____
@@ -107,8 +101,9 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
+  const [previewPdfBlob, setPreviewPdfBlob] = useState<Blob | null>(null);
+  const [previewPdfId, setPreviewPdfId] = useState<string | null>(null);
 
-  const [quotation, setQuotation] = useState<QuotationSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [initialLoad, setInitialLoad] = useState(true);
 
@@ -229,6 +224,19 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
     quotationNumber: string,
     newStatus: QuotationStatus
   ) => {
+    if(newStatus === "Cancelled") {
+    const isConfirmed = await showConfirm(
+          `Are you sure you want to cancel entry ${quotationNumber}?`,
+          {
+            title: "Cancel Entry",
+            confirmButtonText: "Yes, Cancel",
+            confirmButtonColor: "#ef4444",
+            cancelButtonText: "No, Keep",
+          }
+        );
+        if (!isConfirmed) return;
+    }
+
     try {
       showLoading("Updating quotation status...");
 
@@ -348,6 +356,8 @@ const handlePreviewQuotationPDF = async (
         const blobUrl = URL.createObjectURL(blob);
         closeSwal();
         setPdfUrl(blobUrl);
+        setPreviewPdfBlob(blob);         
+      setPreviewPdfId(quotationId);
         setSelectedQuotation(null); 
         setPdfOpen(true);
       } catch (err: any) {
@@ -383,7 +393,7 @@ const handlePreviewQuotationPDF = async (
       if (statusCode !== 200) {
         closeSwal();
         // FIX: Safely extract the message text. Removed the uncalled parseFrappeError function.
-        showApiError(res?.message?.message || res?.message || "Failed to delete quotation");
+        showApiError(parseFrappeError || res?.message?.message || res?.message || "Failed to delete quotation");
         return;
       }
 
@@ -499,25 +509,35 @@ const handlePreviewQuotationPDF = async (
     }
   };
 
-  const handleDownload = async (quotationNumber: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Preparing download...");
-      if (!company) { closeSwal(); return; }
+   const handleDrawerDownload = () => {
+    if (!drawerPdfBlob || !detailData) return;
 
-      const res = await getProformaInvoiceById(quotationNumber);
-      if (!res || res.status_code !== 200) { closeSwal(); return; }
+    const url = URL.createObjectURL(drawerPdfBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${detailData.id || "quotation"}.pdf`;
 
-      await generateQuotationPDF(res.data, company, "save");
-      closeSwal();
-      showSuccess("Quotation downloaded");
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
   };
 
+   const handlePreviewDownload = () => {
+    if (!previewPdfBlob || !previewPdfId) return;
 
+    const url = URL.createObjectURL(previewPdfBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${previewPdfId}.pdf`;
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
+  };
 
 
   const columns: Column<QuotationSummary>[] = [
@@ -674,13 +694,16 @@ const handlePreviewQuotationPDF = async (
         onClose={() => {
           if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
           setPdfUrl(null);
+          setPreviewPdfBlob(null); 
+          setPreviewPdfId(null);   
           setSelectedQuotation(null);
           setPdfOpen(false);
         }}
-        onDownload={() =>
-          selectedQuotation && company &&
-          generateQuotationPDF(selectedQuotation, company, "save")
-        }
+        // onDownload={() =>
+        //   selectedQuotation && company &&
+        //   generateQuotationPDF(selectedQuotation, company, "save")
+        // }
+        onDownload={handlePreviewDownload}
       />
      <QuotationDetailModal
         open={detailDrawerOpen}
@@ -694,11 +717,12 @@ const handlePreviewQuotationPDF = async (
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
         onViewPdf={() => detailData?.id && handleDrawerPdf(detailData.id)}
-        onDownload={() =>
-          detailData &&
-          company &&
-          generateQuotationPDF(detailData, company, "save")
-        }
+        // onDownload={() =>
+        //   detailData &&
+        //   company &&
+        //   generateQuotationPDF(detailData, company, "save")
+        // }
+        onDownload={handleDrawerDownload}
         onClosePdf={() => {
           if (drawerPdfUrl?.startsWith("blob:")) {
             URL.revokeObjectURL(drawerPdfUrl);

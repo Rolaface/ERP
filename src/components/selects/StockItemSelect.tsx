@@ -101,6 +101,7 @@ export default function StockItemSelect({
   onClear,
   taxCategory,
   disabled = false,
+  isQuotation = false,
 }: any) {
   const [flatRows, setFlatRows]       = useState<any[]>([]);
   const [open, setOpen]               = useState(false);
@@ -419,9 +420,8 @@ export default function StockItemSelect({
                 <tbody>
                   {filtered.map((row) => {
                     const qty        = Number(row.qty ?? 0);
-                    const isDisabled = qty <= 0 && !row.isServiceItem;
+                    const isDisabled = !isQuotation && qty <= 0 && !row.isServiceItem;
                     const exStatus   = getExpiryStatus(row.expiryDate);
-
                     const accentCls =
                       exStatus === "expired" ? "border-l-2 border-l-danger"  :
                       exStatus === "soon"    ? "border-l-2 border-l-warning" : "";

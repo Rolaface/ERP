@@ -6,13 +6,9 @@ import {
   Loader2,
   RefreshCw,
   MoreHorizontal,
-  Pencil,
   Trash2,
-  Plus,
-  Eye,
   FileText,
-  ChevronLeft,
-  ChevronRight,
+  Ban,
   CheckCircle
 } from "lucide-react";
 
@@ -197,15 +193,17 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   };
 
   const handleCancelEntry = async (id: string) => {
-    const isConfirmed = await showConfirm(
-      `Are you sure you want to cancel entry ${id}?`,
-      {
-        title: "Cancel Entry",
-        confirmButtonText: "Yes, Cancel",
-        confirmButtonColor: "#ef4444"
-      }
-    );
-    if (!isConfirmed) return;
+
+        const isConfirmed = await showConfirm(
+              `Are you sure you want to cancel entry ${id}?`,
+              {
+                title: "Cancel Entry",
+                confirmButtonText: "Yes, Cancel",
+                confirmButtonColor: "#ef4444",
+                cancelButtonText: "No, Keep",
+              }
+            );
+            if (!isConfirmed) return;
 
     try {
       setLoading(true);
@@ -382,9 +380,9 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         if (isSubmitted) {
           customMenuActions.push({
             label: "Cancel Entry",
-            icon: <Trash2 size={14} />,
+            icon: <Ban size={14} />,
             danger: true,
-            dividerBefore: isDraft, // Add divider if there are items above it
+            dividerBefore: isDraft, 
             onClick: () => handleCancelEntry(row.name),
           });
         } else {
