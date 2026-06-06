@@ -506,7 +506,82 @@ const paymentInformation = {
     }
   };
 
-  const handleItemChange = (
+//   const handleItemChange = (
+//     idx: number,
+//     e: React.ChangeEvent<
+//       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+//     >,
+//   ) => {
+//     const { name, value } = e.target;
+//     const isNum = NUM_FIELDS.includes(name);
+
+//     setFormData((prev) => {
+//       const items = [...prev.items];
+//       let nextValue: any = value;
+//       if (isNum) {
+//         nextValue =
+//           value === "" || value === null
+//             ? null
+//             : Number.isFinite(Number(value))
+//               ? Number(value)
+//               : null;
+//       }
+//   if (name === "quantity" && nextValue !== null) {
+//       const item = items[idx];
+//       if (!item._skipCap) {
+//         if (!item.isServiceItem) {
+//         const stockAvailable = item.availableQty ?? item.qty ?? 0;
+// const thisRowOriginal = Number(item.originalQty ?? 0);
+
+// // Total pool = actual stock remaining + what this invoice already reserved
+// const available = stockAvailable + thisRowOriginal;
+
+// // How much other rows of same batch are using
+// const usedByOthers = items
+//   .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
+//   .reduce((sum, x) => {
+//     const qty = Number(x.quantity || 0);
+//     const orig = Number(x.originalQty || 0);
+//     // Net consumption = current qty - what was already allocated
+//     // (original was already counted in stockAvailable pool)
+//     return sum + Math.max(0, qty - orig);
+//   }, 0);
+
+// const maxAllowed = Math.max(0, available - usedByOthers);
+//           if (nextValue > maxAllowed) {
+//             nextValue = maxAllowed;
+//             showValidationError(
+//               `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
+//             );
+//           }
+//         }
+//       }
+//     }
+//       // ─────────────────────────────────────────────────────
+
+//       const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
+//       const start = Number(updatedItem.boxStart || 0);
+//       const end = Number(updatedItem.boxEnd || 0);
+
+//       if (idx > 0 && name === "boxStart") {
+//         const prevEnd = Number(items[idx - 1]?.boxEnd || 0);
+//         const expected = prevEnd + 1;
+//         if (prevEnd > 0 && start !== expected && start > expected) {
+//           showValidationError(
+//             `Row ${idx + 1}: Box must start from ${expected}`,
+//           );
+//           return prev;
+//         }
+//       }
+
+//       items[idx] = updatedItem;
+//       if (name === "boxEnd" && end >= start && items[idx + 1]) {
+//         items[idx + 1] = { ...items[idx + 1], boxStart: end + 1 };
+//       }
+//       return { ...prev, items };
+//     });
+//   };
+const handleItemChange = (
     idx: number,
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -526,37 +601,9 @@ const paymentInformation = {
               ? Number(value)
               : null;
       }
-  if (name === "quantity" && nextValue !== null) {
-      const item = items[idx];
-      if (!item._skipCap) {
-        if (!item.isServiceItem) {
-        const stockAvailable = item.availableQty ?? item.qty ?? 0;
-const thisRowOriginal = Number(item.originalQty ?? 0);
 
-// Total pool = actual stock remaining + what this invoice already reserved
-const available = stockAvailable + thisRowOriginal;
-
-// How much other rows of same batch are using
-const usedByOthers = items
-  .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
-  .reduce((sum, x) => {
-    const qty = Number(x.quantity || 0);
-    const orig = Number(x.originalQty || 0);
-    // Net consumption = current qty - what was already allocated
-    // (original was already counted in stockAvailable pool)
-    return sum + Math.max(0, qty - orig);
-  }, 0);
-
-const maxAllowed = Math.max(0, available - usedByOthers);
-          if (nextValue > maxAllowed) {
-            nextValue = maxAllowed;
-            showValidationError(
-              `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
-            );
-          }
-        }
-      }
-    }
+      // ─────────────────────────────────────────────────────
+      // (Stock quantity validation block removed for Quotations)
       // ─────────────────────────────────────────────────────
 
       const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
