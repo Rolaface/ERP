@@ -391,6 +391,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   ui={ui}
                   actions={actions}
                   formData={formData}
+                  isQuotation={true}
                   symbol={symbol}
                   ITEMS_PER_PAGE={ITEMS_PER_PAGE}
                   isSalesInvoice={false}
