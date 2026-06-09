@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import CustomerDetailView from "./CustomerDetailView";
 import { openPaymentEntryModal } from "../../store/modalStore";
-import { CreditCard } from "lucide-react";
+
 import {
   showLoading,
   showApiError,
@@ -382,7 +382,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 }
 
 onEnable={
-  customer.status === "Disabled"
+  customer.status === "Inactive"
     ? (e) => handleEnableCustomer(customer.id, e as any)
     : undefined
 }
