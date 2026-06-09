@@ -89,6 +89,17 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
 
+  const topRowGridCols = [
+    "220px",
+    "130px",
+    "130px",
+    "100px",
+    ...(showExchangeRate ? ["110px"] : []),
+    "200px",
+    "120px",
+    ...(ui.isLocal ? ["120px"] : []),
+  ].join(" ");
+
   const handleModeFetchOptions = async (q: string) => {
     const res = await getAllModeOfPayment(1, 10, q || "", 1);
     return res.data.map((item: any) => ({
@@ -225,18 +236,19 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
 
-              {/* ── Top fields — fixed 8-column grid, columns never shift ── */}
-              {/* Col order: Customer | Invoice Date | Due Date | Currency | Exchange Rate | Mode of Payment | Update Stock | LPO Number */}
-              <div className="grid gap-3 items-start grid-cols-[220px_130px_130px_100px_110px_200px_120px_120px]">
-
-                {/* 1 — Customer */}
+              {/* ── Top fields row — dynamic columns, no phantom gaps ── */}
+              <div
+                className="grid gap-3 items-start"
+                style={{ gridTemplateColumns: topRowGridCols }}
+              >
+                {/* Customer */}
                 <CustomerSelect
                   value={customerNameDisplay}
                   onChange={actions.handleCustomerSelect}
                   className="w-full"
                 />
 
-                {/* 2 — Date of Invoice */}
+                {/* Date of Invoice */}
                 <DatePickerInput
                   label="Date of Invoice"
                   name="dateOfInvoice"
@@ -247,7 +259,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   }
                 />
 
-                {/* 3 — Due Date */}
+                {/* Due Date */}
                 <DatePickerInput
                   label="Due Date"
                   name="dueDate"
@@ -259,7 +271,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   }
                 />
 
-                {/* 4 — Currency */}
+                {/* Currency */}
                 <ModalSelect
                   label="Currency"
                   name="currencyCode"
@@ -274,31 +286,40 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   className="w-full border border-theme rounded text-[11px] text-main bg-card"
                 />
 
-                {/* 5 — Exchange Rate (always occupies column, invisible when not needed) */}
-                <div className={!showExchangeRate ? "invisible pointer-events-none" : ""}>
-                  <ModalInput
-                    label={ui.exchangeRateLoading ? "Exchange Rate (Loading...)" : "Exchange Rate"}
-                    name="exchangeRt"
-                    value={formData.exchangeRt || "1"}
-                    onChange={actions.handleInputChange}
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    disabled
-                  />
-                  {!!ui.exchangeRateError && (
-                    <div className="mt-1 text-[10px] text-danger">{ui.exchangeRateError}</div>
-                  )}
-                </div>
+                {/* Exchange Rate — only rendered when foreign currency selected */}
+                {showExchangeRate && (
+                  <div>
+                    <ModalInput
+                      label={
+                        ui.exchangeRateLoading
+                          ? "Exchange Rate (Loading...)"
+                          : "Exchange Rate"
+                      }
+                      name="exchangeRt"
+                      value={formData.exchangeRt || "1"}
+                      onChange={actions.handleInputChange}
+                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                      disabled
+                    />
+                    {!!ui.exchangeRateError && (
+                      <div className="mt-1 text-[10px] text-danger">
+                        {ui.exchangeRateError}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                {/* 6 — Mode of Payment */}
+                {/* Mode of Payment */}
                 <SearchSelect2
                   label="Mode of Payment"
                   value={formData.mode ?? ""}
                   onChange={handleModeChange}
                   fetchOptions={handleModeFetchOptions}
-                  placeholder="search.."
+                  placeholder="search mode of payment"
+                  required
                 />
 
-                {/* 7 — Update Stock */}
+                {/* Update Stock */}
                 <div className="flex flex-col justify-end">
                   <label className="text-[11px] text-transparent select-none">‎</label>
                   <label className="flex items-center gap-2 h-[30px]">
@@ -313,8 +334,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   </label>
                 </div>
 
-                {/* 8 — LPO Number (always occupies column, invisible when not needed) */}
-                <div className={!ui.isLocal ? "invisible pointer-events-none" : ""}>
+                {/* LPO Number — only rendered when LPO tax category */}
+                {ui.isLocal && (
                   <ModalInput
                     label="LPO Number"
                     name="lpoNumber"
@@ -325,8 +346,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     placeholder="Enter 10 digits"
                     className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                   />
-                </div>
-
+                )}
               </div>
 
               {/* ── Items + Summary ── */}
@@ -347,7 +367,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
                   {/* Customer Details */}
                   <div className="bg-card rounded-lg p-2 w-[220px]">
-                    <h3 className="text-[12px] font-semibold text-main mb-2">Customer Details</h3>
+                    <h3 className="text-[12px] font-semibold text-main mb-2">
+                      Customer Details
+                    </h3>
                     <div className="flex flex-col gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted" />
@@ -386,11 +408,15 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-muted">Subtotal</span>
-                        <span className="font-medium text-main">{totals.subTotal.toFixed(2)}</span>
+                        <span className="font-medium text-main">
+                          {totals.subTotal.toFixed(2)}
+                        </span>
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-muted">Total Tax</span>
-                        <span className="font-medium text-main">{totals.totalTax.toFixed(2)}</span>
+                        <span className="font-medium text-main">
+                          {totals.totalTax.toFixed(2)}
+                        </span>
                       </div>
                       <div className="mt-2 p-2 bg-primary rounded-lg">
                         <div className="flex justify-between items-center">
