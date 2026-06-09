@@ -3,7 +3,7 @@ import { FileSpreadsheet, Plus, Trash2 } from "lucide-react";
 
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
-import { Button } from "../../components/ui/modal/formComponent";
+import ModalFooter from "../../components/common/ModalFooter"
 import { ModalInput, NumericInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import TaxCategorySelect from "../../components/selects/TaxCategorySelect";
@@ -33,6 +33,7 @@ interface SalesTaxTemplateModalProps {
   onSubmit?: (data: SalesTaxTemplateFormData) => void;
   initialData?: SalesTaxTemplateFormData | null;
   isEditMode?: boolean;
+    isViewMode?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -44,6 +45,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   onSubmit,
   initialData,
   isEditMode = false,
+  isViewMode = false, 
 }) => {
   const modals = useModalStore((state) => state.modals);
   const modal = useMemo(
@@ -194,48 +196,52 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   };
 
   // ── Footer ────────────────────────────────────────────────────────────────
-  const footer = (
-    <>
-      <Button
-        variant="secondary"
-        onClick={() => handleCloseWithConfirm(onClose, modalId)}
-      >
-        Cancel
-      </Button>
-      <div className="flex gap-3">
-        <Button variant="secondary" onClick={reset}>
-          Reset
-        </Button>
-        <Button
-          variant="primary"
-          loading={loading}
-          onClick={handleSubmitInternal}
-        >
-          {isEditMode ? "Update" : "Save"}
-        </Button>
-      </div>
-    </>
+// ── Footer ────────────────────────────────────────────────────────────────
+  const footer = isViewMode ? (
+    <ModalFooter
+      onCancel={onClose}
+      cancelLabel="Close"
+    />
+  ) : (
+    <ModalFooter
+      onCancel={() => handleCloseWithConfirm(onClose, modalId)}
+      onReset={reset}
+      onSubmit={handleSubmitInternal}
+      isSubmitting={loading}
+      submitLabel={isEditMode ? "Update" : "Save"}
+      resetLabel="Reset"
+    />
   );
 
   if (!modal) return null;
 
   // ─────────────────────────────────────────────────────────────────────────
-  return (
+ return (
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEditMode ? "Edit Sales Tax Template" : "Add Sales Tax Template"}
-      subtitle="Configure charges and tax rates"
+      onClose={isViewMode ? onClose : () => handleCloseWithConfirm(onClose, modalId)}
+      title={
+        isViewMode
+          ? "View Sales Tax Template"
+          : isEditMode
+          ? "Edit Sales Tax Template"
+          : "Add Sales Tax Template"
+      }
+      subtitle={
+        isViewMode
+          ? "Read-only view of this sales tax template"
+          : "Configure charges and tax rates"
+      }
       icon={FileSpreadsheet}
       footer={footer}
       customWidth="56vw"
       height="72vh"
     >
-      <form
-        onChange={markDirty}
+     <form
+        onChange={isViewMode ? undefined : markDirty}
         onSubmit={(e) => e.preventDefault()}
-        className="h-full flex flex-col"
+        className={`h-full flex flex-col ${isViewMode ? "pointer-events-none select-none" : ""}`}
       >
         <div className="p-4 flex flex-col gap-4">
           {/* ── Header fields ─────────────────────────────────────────── */}
@@ -249,6 +255,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                 onChange={handleChange}
                 error={errors.title}
                 required
+                disabled={isViewMode} 
                 placeholder="e.g. Standard Sales Tax"
               />
             </div>
@@ -265,6 +272,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                   } as React.ChangeEvent<HTMLSelectElement>);
                 }}
                 error={errors.taxcategory}
+                disabled={isViewMode} 
                 required
               />
             </div>
@@ -277,6 +285,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                 id="sttemplate-enabled"
                 checked={form.disabled === 0}
                 onChange={handleChange}
+                disabled={isViewMode} 
                 className="w-4 h-4"
               />
               <label
@@ -289,17 +298,19 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
           </div>
 
           {/* ── Tax rows header ───────────────────────────────────────── */}
-          <div className="flex items-center justify-between">
+         <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-main">
               Tax / Charge Rows
             </span>
-            <button
-              type="button"
-              onClick={addRow}
-              className="flex items-center gap-1 text-xs text-primary hover:opacity-80 transition-opacity"
-            >
-              <Plus size={14} /> Add Row
-            </button>
+            {!isViewMode && (   
+              <button
+                type="button"
+                onClick={addRow}
+                className="flex items-center gap-1 text-xs text-primary hover:opacity-80 transition-opacity"
+              >
+                <Plus size={14} /> Add Row
+              </button>
+            )}
           </div>
 
           {/* ── Table ─────────────────────────────────────────────────── */}
@@ -310,7 +321,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted w-[18%]">
                     Charge Type
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted w-[22%]">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-muted w-[33%]">
                     Account Head
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted w-[10%]">
@@ -319,7 +330,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted w-[12%]">
                     Tax Amount
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-muted w-[80%]">
                     Description
                   </th>
                   <th className="px-3 py-2 w-8" />
@@ -344,6 +355,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                               e.target.value,
                             )
                           }
+                           disabled={isViewMode} 
                           className="w-full text-xs bg-transparent border border-[var(--border)] rounded px-2 py-1.5 text-main focus:outline-none focus:border-primary"
                         >
                           {CHARGE_TYPE_OPTIONS.map((opt) => (
@@ -361,7 +373,6 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
                       {/* Account Head */}
                       <td className="px-3 py-2">
-
                         <SearchSelect2
                           label=""
                           value={row.account_head_display || row.account_head}
@@ -372,6 +383,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                           }}
                           fetchOptions={fetchGlOptions}
                           placeholder="Select account"
+                           disabled={isViewMode} 
                         />
                         {errors[`account_head_${actualIdx}`] && (
                           <p className="text-xs text-danger mt-1">
@@ -396,7 +408,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                           }
                           className="w-full"
                           placeholder="0.00"
-                          disabled={row.charge_type === "Actual"}
+                           disabled={isViewMode || row.charge_type === "Actual"}
                         />
                         {errors[`rate_${actualIdx}`] && (
                           <p className="text-xs text-danger mt-1">
@@ -423,7 +435,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                           error={errors[`tax_amount_${actualIdx}`]}
                           className="w-full no-spinner"
                           placeholder="0.00"
-                          disabled={row.charge_type !== "Actual"}
+                          disabled={isViewMode || row.charge_type !== "Actual"} 
                         />
                       </td>
 
@@ -442,12 +454,13 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                           }
                           className="w-full"
                           placeholder="e.g. Shipping flat 200"
+                           disabled={isViewMode}
                         />
                       </td>
 
                       {/* Delete */}
                       <td className="px-3 py-2 text-center">
-                        {totalRows > 1 && (
+                        {!isViewMode && totalRows > 1 && ( 
                           <button
                             type="button"
                             onClick={() => removeRow(actualIdx)}
