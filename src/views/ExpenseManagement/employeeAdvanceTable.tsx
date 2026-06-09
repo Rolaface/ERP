@@ -14,11 +14,21 @@ import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/a
 import { fireManagedSwal } from "../../utils/swalManager";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openEmployeeAdvanceModal } from "../../store/modalStore";  
 import {getAllAdvances,getAdvanceById,deleteEmployeeAdvance, updateAdvanceStatus} from "../../api/expenseClaimApi";
 import EmployeeAdvanceDetailModal, { EmployeeAdvanceDetail } from "../../views/ExpenseManagement/advanceDetailView";
+import { FilterSelect } from "../../components/ui/modal/modalComponent";
 
-const EMPLOYEE_ADVANCE_MODULE = "Employee Advance";
+
+const EMPLOYEE_ADVANCE_MODULE = "Employee Advance";4
+const statusOptions = [
+  { label: "Draft",     value: "Draft" },
+  { label: "Unpaid",    value: "Unpaid" },
+  { label: "Paid",      value: "Paid" },
+  { label: "Cancelled", value: "Cancelled" },
+];
+
 
 interface EmployeeAdvance {
   id: string;
@@ -62,17 +72,18 @@ const handleViewClick = async (ea: EmployeeAdvance, e?: React.MouseEvent<HTMLBut
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<{ status?: string }>({});
   const [sortBy,     setSortBy]     = useState("posting_date");
   const [sortOrder,  setSortOrder]  = useState<"asc" | "desc">("desc");
 
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  useEffect(() => { setPage(1); }, [searchTerm, filters]);
 
 const fetchEmployeeAdvances = useCallback(async () => {
   if (!mountedRef.current) return;
   setIsFetching(true);
   try {
     const start = (page - 1) * pageSize;                         
-    const res = await getAllAdvances(start, pageSize, searchTerm); 
+   const res = await getAllAdvances(start, pageSize, searchTerm, filters.status);
 
     if (!mountedRef.current) return;
     setEmployeeAdvances(
@@ -98,7 +109,7 @@ const fetchEmployeeAdvances = useCallback(async () => {
       setIsInitialLoad(false);
     }
   }
-}, [page, pageSize, sortBy, sortOrder, searchTerm]);
+}, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -109,7 +120,7 @@ const fetchEmployeeAdvances = useCallback(async () => {
   useEffect(() => {
     if (isInitialLoad) return;
     fetchEmployeeAdvances();
-  }, [page, pageSize, sortBy, sortOrder, searchTerm]);
+  }, [page, pageSize, sortBy, sortOrder, searchTerm, filters]);
 
   const handleDelete = async (id: string) => {
     const result = await fireManagedSwal({
@@ -347,16 +358,10 @@ const handleOpenEdit = async (ea: EmployeeAdvance) => {
         header: "Status",
         align:  "center",
         render: (ea) => (
-          <div className="py-1.5 flex justify-center">
-            <span
-              className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${getStatusBadgeClass(
-                ea.status
-              )}`}
-            >
-              {ea.status}
-            </span>
-          </div>
-        ),
+  <div className="py-1.5">
+    <StatusBadge status={ea.status} />
+  </div>
+),
         tooltip: (ea) => `Status: ${ea.status}`,
       },
 {
@@ -425,6 +430,18 @@ const handleOpenEdit = async (ea: EmployeeAdvance) => {
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        extraFilters={
+  <FilterSelect
+    value={filters.status ?? ""}
+    options={statusOptions}
+    onChange={(e) =>
+      setFilters((prev) => ({
+        ...prev,
+        status: e.target.value || undefined,
+      }))
+    }
+  />
+}
         enableAdd={can(EMPLOYEE_ADVANCE_MODULE, "create")}
         addLabel="Add Employee Advance"
         onAdd={() =>

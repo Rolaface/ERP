@@ -108,11 +108,13 @@ export async function getExpenseClaims(
   search?: string,
   page = 1,
   pageSize = 10,
-  employeeId?: string,                                    
+  employeeId?: string,
+   approvalStatus?: string,                                    
 ): Promise<{ data: ExpenseClaimRecord[]; pagination: { total_pages: number; total: number } }> {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
   if (employeeId)  params.append("employee",  employeeId); 
+  if (approvalStatus) params.append("approval_status", approvalStatus);
   params.append("page", String(page));
   params.append("page_size", String(pageSize));
   const resp: AxiosResponse = await api.get(`${ExpenseClaimAPI.getExpenseClaims}?${params.toString()}`);
@@ -357,6 +359,8 @@ export async function getAllAdvances(
   start: number,
   pageSize: number,
   search: string,
+  status?: string,
+  
 ): Promise<{ data: any[]; pagination: { total_pages: number; total: number } }> {
   try {
     const query = buildListParams({
@@ -372,6 +376,7 @@ export async function getAllAdvances(
       pageSize,
       search,
       searchFields: ["employee_name", "purpose", "name"],
+      status: status,
     });
 
     const resp = await api.get(`${ExpenseClaimAPI.advance}?${query}`);

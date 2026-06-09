@@ -32,7 +32,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useHRView } from "../../hooks/permission/useHRView";
 
 const EXPENSE_MODULE = "Expense Claim";
-const PAYMENT_MODULE = "Payment Entry";  // ++
+const PAYMENT_MODULE = "Payment Entry";  
 
 interface ExpenseSummary {
   id: string;
@@ -50,9 +50,9 @@ interface ExpenseSummary {
 
 const statusOptions = [
   { label: "Draft", value: "Draft" },
-  { label: "Approved", value: "Approved" },
   { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
+  { label: "Unpaid", value: "Unpaid" },
 ];
 
 const formatDate = (date: string) => {
@@ -103,6 +103,7 @@ const ExpenseHistory: React.FC = () => {
         page,
         pageSize,
         isEmployeeView ? (user?.employeeId ?? undefined) : undefined,
+         filters.status,  
       );
       if (!mountedRef.current) return;
       setExpenses(
@@ -577,13 +578,6 @@ const ExpenseHistory: React.FC = () => {
                   ...prev,
                   status: e.target.value || undefined,
                 }))
-              }
-            />
-            <DateRangeFilter
-              from={filters.from_date}
-              to={filters.to_date}
-              onChange={(range) =>
-                setFilters((prev) => ({ ...prev, ...range }))
               }
             />
           </>
