@@ -6,7 +6,7 @@ import {
   getPayrollEntryDetail,
   updatePayrollEntry,
   deletePayrollEntry,
-  getPayrollVerificationDetail,
+  getPayrollVerificationDetail,cancelPayrollEntry
 } from "../../../api/payroll/payrollEntryApi";
 import type { CreatePayrollEntryPayload } from "../../../api/payroll/payrollEntryApi";
 
@@ -136,6 +136,21 @@ export default function PayrollManagement() {
       showApiError(error);
     }
   };
+const handleCancelPayroll = async (record: PayrollRecord) => {
+  try {
+    showLoading("Reverting Payroll");
+
+    await cancelPayrollEntry((record as any).name);
+
+    closeSwal();
+    showSuccess("Payroll reverted successfully");
+
+    await loadPayrollEntries();
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
 
   const handleDeletePayroll = async (id: string) => {
     try {
@@ -274,6 +289,7 @@ export default function PayrollManagement() {
         onDeleteRecord={(r) => handleDeletePayroll((r as any).name)}
         onEditRecord={handleEditPayroll}
         onVerify={handleVerify}
+        onCancelPayroll={handleCancelPayroll}
         onViewDetails={(r) => setDetailRecord(r)}
       />
 

@@ -1,16 +1,17 @@
-import React, { useState, useMemo } from "react";
-import { ShieldCheck } from "lucide-react";
+import React, { useState } from "react";
+
 import type { PayrollRecord } from "../../../types/payrolltypes";
 
 import Table from "../../../components/ui/Table/Table";
 import type { Column } from "../../../components/ui/Table/type";
-import { Play } from "lucide-react";
+
 import {
   ActionButton,
   ActionGroup,
   ActionMenu,
 } from "../../../components/ui/Table/ActionButton";
 import PayrollEntryDetail from "./payrolldetail/payrollentrydetail";
+import { ACTION_ICONS } from "../../../components/UI_Utils/statusActionIcons";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ interface Props {
   onEditRecord: (r: PayrollRecord) => void;
   onVerify: (r: PayrollRecord) => void;         // ← NEW
   currentPage: number;
+  onCancelPayroll: (r: PayrollRecord) => void;      // ← NEW
   totalPages: number;
   onPageChange: (page: number) => void;
   canCreate?: boolean;
@@ -50,7 +52,8 @@ export const PayrollDashboard: React.FC<Props> = ({
   onNewPayroll,
   onRunPayroll,
   onEditRecord,
-  onVerify,                                     
+  onVerify,           
+  onCancelPayroll,                          
   currentPage,
   totalPages,
   onDeleteRecord,
@@ -148,29 +151,42 @@ export const PayrollDashboard: React.FC<Props> = ({
               : {})}
             onDelete={() => onDeleteRecord?.(row)}
             deleteLabel="Delete"
-            customActions={[
-              ...(row.status === "Draft"
-                ? [
-                    {
-                      label: " preview Entry",
-                      icon: <ShieldCheck className="w-4 h-4" />,
-                      onClick: () => onVerify(row),
-                    },
-                    { divider: true, label: "", onClick: () => {} },
-                  ]
-                : []),
-              ...(canCreate
-                ? [
-                    {
-                      label:
-                        row.status === "Failed" ? "Re-Run Payroll" : "Run Payroll",
-                      icon: <Play className="w-4 h-4" />,
-                      onClick: () => onRunPayroll(row.name),
-                      disabled: !["Draft", "Failed"].includes(row.status),
-                    },
-                  ]
-                : []),
-            ]}
+           customActions={[
+  ...(row.status === "Draft"
+    ? [
+        {
+          label: "Preview Entry",
+icon: ACTION_ICONS.PAYROLL_PREVIEW ,
+           onClick: () => onVerify(row),
+        },
+        { divider: true, label: "", onClick: () => {} },
+      ]
+    : []),
+
+  ...(row.status === "Submitted"
+    ? [
+        {
+          label: "Revert Payroll",
+          icon: ACTION_ICONS.PAYROLL_REVERT,
+          onClick: () => onCancelPayroll(row),
+        },
+      ]
+    : []),
+
+  ...(canCreate
+    ? [
+        {
+          label:
+            row.status === "Failed"
+              ? "Re-Run Payroll"
+              : "Run Payroll",
+          icon: ACTION_ICONS.PAYROLL_RUN,
+          onClick: () => onRunPayroll(row.name),
+          disabled: !["Draft", "Failed"].includes(row.status),
+        },
+      ]
+    : []),
+]}
           />
         </ActionGroup>
       ),
