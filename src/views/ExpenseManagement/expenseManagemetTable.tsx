@@ -26,13 +26,14 @@ import {
   getExpenseClaimById,
   deleteExpenseClaim,
   approveExpenseClaim,
+  addComment,
 } from "../../api/expenseClaimApi";
 import ExpenseClaimDetailView from "../../views/ExpenseManagement/expenseClaimDetailView";
 import { useAuth } from "../../context/AuthContext";
 import { useHRView } from "../../hooks/permission/useHRView";
 
 const EXPENSE_MODULE = "Expense Claim";
-const PAYMENT_MODULE = "Payment Entry";  // ++
+const PAYMENT_MODULE = "Payment Entry";  
 
 interface ExpenseSummary {
   id: string;
@@ -50,9 +51,9 @@ interface ExpenseSummary {
 
 const statusOptions = [
   { label: "Draft", value: "Draft" },
-  { label: "Approved", value: "Approved" },
   { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
+  { label: "Unpaid", value: "Unpaid" },
 ];
 
 const formatDate = (date: string) => {
@@ -89,6 +90,10 @@ const ExpenseHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [rejectTarget, setRejectTarget] = useState<{ id: string } | null>(null);
+const [rejectComment, setRejectComment] = useState("");
+const [rejectLoading, setRejectLoading] = useState(false);
+
 
   useEffect(() => {
     setPage(1);
@@ -103,6 +108,7 @@ const ExpenseHistory: React.FC = () => {
         page,
         pageSize,
         isEmployeeView ? (user?.employeeId ?? undefined) : undefined,
+         filters.status,  
       );
       if (!mountedRef.current) return;
       setExpenses(
@@ -281,30 +287,34 @@ const ExpenseHistory: React.FC = () => {
     }
   };
 
-  const handleReject = async (id: string) => {
-    const result = await fireManagedSwal({
-      icon: "error",
-      title: "Reject Expense?",
-      text: `Reject expense ${id}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, reject",
-      reverseButtons: true,
-    });
-    if (!result.isConfirmed) return;
-    try {
-      await approveExpenseClaim(id, "Rejected");
-      showSuccess("Expense rejected successfully");
-      fetchExpenses();
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
+ const handleReject = (id: string) => {
+  setRejectComment("");
+  setRejectTarget({ id });
+};
 
-  const handleViewDetail = async (exp: ExpenseSummary, e: React.MouseEvent) => {
-    e.stopPropagation();
+const handleRejectConfirm = async () => {
+  if (!rejectTarget) return;
+  setRejectLoading(true);
+  try {
+    await addComment({
+      content: rejectComment,
+      reference_name: rejectTarget.id,
+      reference_doctype: "Expense Claim",
+      comment_email: user?.email ?? "",
+      comment_by: user?.fullName ?? user?.username ?? ""
+    });
+    await approveExpenseClaim(rejectTarget.id, "Rejected");
+    showSuccess("Expense rejected successfully");
+    setRejectTarget(null);
+    fetchExpenses();
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setRejectLoading(false);
+  }
+};
+
+  const handleViewDetail = async (exp: ExpenseSummary) => {
     setIsDetailLoading(true);
     setDetailClaim({});
     try {
@@ -457,7 +467,7 @@ const ExpenseHistory: React.FC = () => {
           <div className="flex items-center justify-center gap-2">
             <ActionButton
               type="view"
-              onClick={(e) => handleViewDetail(exp, e)}
+              onClick={() => handleViewDetail(exp)}
               iconOnly
             />
             <PermissionGate module={EXPENSE_MODULE} action="write">
@@ -465,7 +475,7 @@ const ExpenseHistory: React.FC = () => {
                 type="edit"
                 onClick={() => handleOpenEdit(exp)}
                 iconOnly
-                disabled={exp.approvalStatus !== "Draft"}
+                disabled={exp.approvalStatus !== "Draft"  && exp.approvalStatus !== "Rejected"}
                 title={
                   exp.approvalStatus !== "Draft"
                     ? "Only Draft expenses can be edited"
@@ -492,7 +502,7 @@ const ExpenseHistory: React.FC = () => {
                       ]
                       : []),
 
-                    ...(exp.approvalStatus === "Draft"
+                    ...(isEmployeeView &&exp.approvalStatus === "Draft"
                       ? [
                         {
                           label: "Delete",
@@ -580,13 +590,6 @@ const ExpenseHistory: React.FC = () => {
                 }))
               }
             />
-            <DateRangeFilter
-              from={filters.from_date}
-              to={filters.to_date}
-              onChange={(range) =>
-                setFilters((prev) => ({ ...prev, ...range }))
-              }
-            />
           </>
         }
       />
@@ -599,6 +602,82 @@ const ExpenseHistory: React.FC = () => {
           onBack={() => setDetailClaim(null)}
         />
       )}
+      {rejectTarget !== null && (
+  <div
+    style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      background: "rgba(0,0,0,0.4)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}
+    onClick={() => setRejectTarget(null)}
+  >
+    <div
+      style={{
+        background: "var(--bg-surface, #fff)",
+        borderRadius: "10px",
+        padding: "24px",
+        width: "420px",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: 600 }}>
+        Reject Expense
+      </h3>
+      <p style={{ margin: "0 0 16px", fontSize: "13px", color: "var(--color-muted)" }}>
+        <strong>{rejectTarget.id}</strong>
+      </p>
+      <label style={{ display: "block", fontSize: "12px", fontWeight: 500, marginBottom: "6px" }}>
+        Comment <span style={{ color: "#ef4444" }}>*</span>
+      </label>
+      <textarea
+        value={rejectComment}
+        onChange={(e) => setRejectComment(e.target.value)}
+        rows={4}
+        placeholder="Reason for rejection…"
+        autoFocus
+        style={{
+          width: "100%", boxSizing: "border-box",
+          border: "1px solid var(--border, #d1d5db)",
+          borderRadius: "8px",
+          padding: "8px 10px",
+          fontSize: "13px",
+          background: "transparent",
+          color: "var(--color-main, inherit)",
+          resize: "vertical",
+          outline: "none",
+        }}
+      />
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+        <button
+          type="button"
+          onClick={() => setRejectTarget(null)}
+          style={{
+            padding: "7px 16px", borderRadius: "6px", fontSize: "13px",
+            background: "transparent", border: "1px solid var(--border, #d1d5db)",
+            cursor: "pointer", color: "var(--color-muted)",
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleRejectConfirm}
+          disabled={!rejectComment.trim() || rejectLoading}
+          style={{
+            padding: "7px 16px", borderRadius: "6px", fontSize: "13px",
+            background: !rejectComment.trim() || rejectLoading ? "#f3a0a0" : "#ef4444",
+            border: "none",
+            cursor: rejectComment.trim() && !rejectLoading ? "pointer" : "not-allowed",
+            color: "#fff", fontWeight: 500,
+          }}
+        >
+          {rejectLoading ? "Rejecting…" : "Reject"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

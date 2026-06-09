@@ -78,6 +78,9 @@ const statusOptions = [
   { label: "Approved", value: "Approved" },
   { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
+  { label: "Unpaid", value: "Unpaid" },
+  { label: "Overdue", value: "Overdue" },
+  { label: "Returned", value: "Return" },
 ];
 
 interface InvoiceTableProps {
