@@ -5,6 +5,7 @@ import {
   showSuccess,
   showLoading,
   closeSwal,
+  showConfirm
 } from "../../utils/alert";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { QuotationSummary } from "../../types/quotation";
@@ -28,6 +29,10 @@ import { deleteProformaInvoiceById, getAllQuotation, getProformaInvoiceById, upd
 import { ProformaInvoice, ProformaInvoiceStatus, ProformaInvoiceSummary } from "../../types/proformaInvoice";
 import { getPdf } from "../../api/PDF/pdfUtilApi";
 import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
+import SendEmailModal from "../../components/common/SendEmailModal";
+import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/statusActionIcons";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 type OutletContextType = {
@@ -48,21 +53,24 @@ interface QuotationTableProps {
   onExportQuotation?: () => void;
    refreshKey: number;
 }
-type QuotationStatus = "Draft" | "Approved" | "Paid" | "Overdue";
-const QUOTATION_MODULE = "Sales Invoice";
+ const QUOTATION_MODULE = "Quotation";
+ 
+
+type QuotationStatus = "Draft" | "Paid" | "Cancelled" | "Approved" | "Open";
+
 const STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
   Draft: ["Approved"],
-  Approved: ["Paid", "Overdue"],
+  Open: ["Cancelled"],
+  // Open: ["Approved", "Cancelled"],
   Paid: [],
-  Overdue: ["Paid"],
-
+  Cancelled: ["Draft"],
+  Approved: ["Cancelled"],
 };
+
 const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refreshKey }) => {
   const { openQuotationEdit } = useOutletContext<OutletContextType>();
-  const mountedRef = useRef(true);
 
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [company, setCompany] = useState<any>(null);
   const { can } = usePermission();
@@ -79,12 +87,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
   const [sortBy, setSortBy] = useState("quotationNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // ── Filter state (server) 
-  const [status] = useState("");
-  const [fromDate] = useState("");
-  const [toDate] = useState("");
-
-
   // ── Reset page when search changes 
   useEffect(() => { setPage(1); }, [searchTerm]);
   //_____quotation details modal state _____
@@ -99,10 +101,22 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
+  const [previewPdfBlob, setPreviewPdfBlob] = useState<Blob | null>(null);
+  const [previewPdfId, setPreviewPdfId] = useState<string | null>(null);
 
-  const [quotation, setQuotation] = useState<ProformaInvoiceSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [initialLoad, setInitialLoad] = useState(true);
+
+  //email
+     const [emailModalOpen, setEmailModalOpen] = useState(false);
+      // const [emailQuotation, setEmailQuotation] = useState<ProformaInvoiceSummary | null>(null);
+      const [emailQuotation, setEmailQuotation] = useState<QuotationSummary | null>(null);
+      const [emailContactEmail, setEmailContactEmail] = useState<string | null>(
+        null,
+      );
+      const [emailQuotationAttachments, setEmailQuotationAttachments] = useState<
+        { name: string; file_name: string }[]
+      >([]);
 
   // ── Fetch company once 
   useEffect(() => {
@@ -153,6 +167,15 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
     fetchQuotations();
   }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm]);
 
+// Auto-refresh when a quotation is created or edited
+  useEffect(() => {
+    const unsubscribe = useDataRefreshStore
+      .getState()
+      .subscribeToRefresh(REFRESH_KEYS.QUOTATION_LIST, () => {
+        fetchQuotations();
+      });
+    return unsubscribe;
+  }, []); 
 
   // ── Sort handler — store column key in state, map to backend at call site ─
   const handleSortChange = ({
@@ -201,6 +224,19 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
     quotationNumber: string,
     newStatus: QuotationStatus
   ) => {
+    if(newStatus === "Cancelled") {
+    const isConfirmed = await showConfirm(
+          `Are you sure you want to cancel entry ${quotationNumber}?`,
+          {
+            title: "Cancel Entry",
+            confirmButtonText: "Yes, Cancel",
+            confirmButtonColor: "#ef4444",
+            cancelButtonText: "No, Keep",
+          }
+        );
+        if (!isConfirmed) return;
+    }
+
     try {
       showLoading("Updating quotation status...");
 
@@ -232,30 +268,36 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
       showApiError(err);
     }
   };
+// Don't remove this
+ const handleLost = async (quotationId: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
 
-  // const handleEdit = async (quotationNumber: string, e?: React.MouseEvent) => {
-  //   e?.stopPropagation();
+  try {
+    showLoading("Loading quotation...");
 
-  //   try {
-  //     showLoading("Loading quotation...");
+    const res = await getProformaInvoiceById(quotationId); 
+    const statusCode = res?.message?.status_code || res?.status_code;
+    const data = res?.message?.data || res?.data;
 
-  //     const res = await getProformaInvoiceById(quotationNumber);
+    if (statusCode !== 200 || !data) {
+      closeSwal();
+      showApiError("Failed to load quotation");
+      return;
+    }
 
-  //     if (!res || res.status_code !== 200) {
-  //       closeSwal();
-  //       showApiError("Failed to load quotation");
-  //       return;
-  //     }
+    closeSwal();
+    // openQuotationEdit(quotationId, { ...data, _initialTab: "otherDetails" });
+    // openQuotationEdit(quotationId, { 
+    //   ...data, 
+    //   status: "Lost", 
+    //   _initialTab: "otherDetails" 
+    // });
 
-  //     closeSwal();
-
-  //     openQuotationEdit(quotationNumber, res.data);
-
-  //   } catch (err) {
-  //     closeSwal();
-  //     showApiError(err);
-  //   }
-  // };
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
   const handleEdit = async (quotationId: string, e?: React.MouseEvent) => {
       e?.stopPropagation();
   
@@ -288,7 +330,7 @@ const handleDrawerPdf = async (quotationId: string) => {
       setDrawerPdfUrl(null);
   
       try {
-        const blob = await getPdf(quotationId, "Proforma Invoice");
+        const blob = await getPdf(quotationId, "Quotation");
         console.log("PDF blob response for drawer:", blob);
         console.log("Proforma Id", quotationId);
         setDrawerPdfBlob(blob);
@@ -302,19 +344,20 @@ const handleDrawerPdf = async (quotationId: string) => {
     };
   
     // ── PDF preview modal (table row action — kept, do not remove)
-    const handlePreviewQuotationPDF = async (
-      inv: ProformaInvoiceSummary,
-      e?: React.MouseEvent,
-    ) => {
-      e?.stopPropagation();
-      try {
-        showLoading("Preparing invoice preview...");
-        const blob = await getPdf(inv.proformaId, "Proforma Invoice");
-        console.log("PDF blob response for drawer handlePreviewPDF:", blob);
-        console.log("Proforma Id handlePreviewPDF", inv.proformaId);
+const handlePreviewQuotationPDF = async (
+  quotationId: string,
+  e?: React.MouseEvent,
+) => {
+  e?.stopPropagation();
+  try {
+    showLoading("Preparing preview...");
+    const blob = await getPdf(quotationId, "Quotation");
+
         const blobUrl = URL.createObjectURL(blob);
         closeSwal();
         setPdfUrl(blobUrl);
+        setPreviewPdfBlob(blob);         
+      setPreviewPdfId(quotationId);
         setSelectedQuotation(null); 
         setPdfOpen(true);
       } catch (err: any) {
@@ -350,7 +393,7 @@ const handleDrawerPdf = async (quotationId: string) => {
       if (statusCode !== 200) {
         closeSwal();
         // FIX: Safely extract the message text. Removed the uncalled parseFrappeError function.
-        showApiError(res?.message?.message || res?.message || "Failed to delete quotation");
+        showApiError(parseFrappeError || res?.message?.message || res?.message || "Failed to delete quotation");
         return;
       }
 
@@ -466,25 +509,35 @@ const handleDrawerPdf = async (quotationId: string) => {
     }
   };
 
-  const handleDownload = async (quotationNumber: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    try {
-      showLoading("Preparing download...");
-      if (!company) { closeSwal(); return; }
+   const handleDrawerDownload = () => {
+    if (!drawerPdfBlob || !detailData) return;
 
-      const res = await getProformaInvoiceById(quotationNumber);
-      if (!res || res.status_code !== 200) { closeSwal(); return; }
+    const url = URL.createObjectURL(drawerPdfBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${detailData.id || "quotation"}.pdf`;
 
-      await generateQuotationPDF(res.data, company, "save");
-      closeSwal();
-      showSuccess("Quotation downloaded");
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
   };
 
+   const handlePreviewDownload = () => {
+    if (!previewPdfBlob || !previewPdfId) return;
 
+    const url = URL.createObjectURL(previewPdfBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${previewPdfId}.pdf`;
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
+  };
 
 
   const columns: Column<QuotationSummary>[] = [
@@ -509,13 +562,15 @@ const handleDrawerPdf = async (quotationId: string) => {
         </code>
       ),
     },
-    {
-      key: "status",
-      header: "Status",
-      align: "left",
-      // This uses the same component as your Invoice table
-      render: (q: any) => <StatusBadge status={q.status || "Draft"} />,
-    },
+   {
+  key: "status",
+  header: "Status",
+  align: "left",
+  render: (q: any) => {
+    const displayStatus = q.status === "Open" ? "Approved" : (q.status || "Draft");
+    return <StatusBadge status={displayStatus} />;
+  },
+},
     {
       key: "actions",
       header: "Actions",
@@ -538,24 +593,62 @@ const handleDrawerPdf = async (quotationId: string) => {
             />
           </PermissionGate>
 
-          <ActionMenu
-            // Delete — needs delete
-            {...(can(QUOTATION_MODULE, "delete")
-              ? { onDelete: (e) => handleDelete(q.quotationNumber, e) }
-              : {})}
-            showDownload
-            onDownload={(e) => handleDownload(q.quotationNumber, e)}
-            customActions={[
-              { label: "View PDF", onClick: () => handlePreviewQuotationPDF(q.quotationNumber) },
-              // Status transitions — needs write
-              ...(can(QUOTATION_MODULE, "write")
-                ? (STATUS_TRANSITIONS[q.status as QuotationStatus] ?? []).map((status) => ({
-                  label: `Mark as ${status}`,
-                  onClick: () => handleRowStatusChange(q.quotationNumber, status),
-                }))
-                : []),
-            ]}
-          />
+                    <ActionMenu
+  {...(q.status === "Cancelled" ? { onDelete: (e) => handleDelete(q.quotationNumber, e) } : {})}
+  customActions={[    
+    ...(q.status !== "Draft"
+      ? [
+          {
+            label: "Compose Email",
+            icon: ACTION_ICONS.EMAIL,
+            onClick: () => {
+              setEmailQuotation(q);
+              setEmailContactEmail(null);
+              setEmailQuotationAttachments([]); // clear stale attachments
+              setEmailModalOpen(true);
+              
+              // We wrap the async call inside the void function to keep TS happy
+              getProformaInvoiceById(q.quotationNumber).then((res) => {
+                const statusCode = res?.message?.status_code || res?.status_code;
+                const data = res?.message?.data || res?.data;
+
+                if (statusCode === 200 && data) {
+                  setEmailContactEmail(data.contact_email ?? null);
+                  setEmailQuotationAttachments(data.attachments ?? []);
+                }
+              }).catch(() => {
+                // non-critical: modal opens with empty To/attachments if fetch fails
+              });
+            },
+          },
+        ]
+      : []),
+    // Only show "Mark as Lost" if the status is NOT Cancelled
+    // ...(q.status !== "Cancelled" 
+    //   ? [
+    //       {
+    //         label: "Mark as Lost",
+    //         icon: ACTION_ICONS.CANCEL, 
+    //         // FIXED: Removed the 'e' parameter to match () => void signature
+    //         onClick: () => handleLost(q.quotationNumber),
+    //       }
+    //     ] 
+    //   : []),
+    {
+      label: "View PDF",
+      icon: ACTION_ICONS.PDF,
+      onClick: () => handlePreviewQuotationPDF(q.quotationNumber),
+    },
+   ...(STATUS_TRANSITIONS[q.status as keyof typeof STATUS_TRANSITIONS] ?? [])
+      .filter((status) => status !== "Draft") 
+      .map((status) => ({
+        label: status === "Cancelled" ? "Cancel" : `Mark as ${status}`,
+        icon: getStatusActionIcon(status),
+        danger: status === "Cancelled",
+        onClick: () => handleRowStatusChange(q.quotationNumber, status),
+      })),
+  ]}
+/>
         </ActionGroup>
       ),
     },
@@ -601,13 +694,16 @@ const handleDrawerPdf = async (quotationId: string) => {
         onClose={() => {
           if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
           setPdfUrl(null);
+          setPreviewPdfBlob(null); 
+          setPreviewPdfId(null);   
           setSelectedQuotation(null);
           setPdfOpen(false);
         }}
-        onDownload={() =>
-          selectedQuotation && company &&
-          generateQuotationPDF(selectedQuotation, company, "save")
-        }
+        // onDownload={() =>
+        //   selectedQuotation && company &&
+        //   generateQuotationPDF(selectedQuotation, company, "save")
+        // }
+        onDownload={handlePreviewDownload}
       />
      <QuotationDetailModal
         open={detailDrawerOpen}
@@ -621,16 +717,31 @@ const handleDrawerPdf = async (quotationId: string) => {
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
         onViewPdf={() => detailData?.id && handleDrawerPdf(detailData.id)}
-        onDownload={() =>
-          detailData &&
-          company &&
-          generateQuotationPDF(detailData, company, "save")
-        }
+        // onDownload={() =>
+        //   detailData &&
+        //   company &&
+        //   generateQuotationPDF(detailData, company, "save")
+        // }
+        onDownload={handleDrawerDownload}
         onClosePdf={() => {
           if (drawerPdfUrl?.startsWith("blob:")) {
             URL.revokeObjectURL(drawerPdfUrl);
           }
           setDrawerPdfUrl(null);
+        }}
+      />
+       <SendEmailModal
+        open={emailModalOpen}
+        docType="Proforma Invoice"
+        invoiceNumber={emailQuotation?.quotationNumber}
+        contactEmail={emailContactEmail}
+        customerName={emailQuotation?.customerName}
+        invoiceAttachments={emailQuotationAttachments}
+        onClose={() => {
+          setEmailModalOpen(false);
+          setEmailQuotation(null);
+          setEmailContactEmail(null);
+          setEmailQuotationAttachments([]);
         }}
       />
     </div>

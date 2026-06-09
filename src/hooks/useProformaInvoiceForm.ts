@@ -325,7 +325,7 @@ useEffect(() => {
       throw new Error("Please select date of Proforma Invoice");
     }
     if (!formData.validTill) {
-      throw new Error("Please select valid till date");
+      throw new Error("Please select due date");
     }
     if (!formData.items.length) {
       throw new Error("Please add at least one item");

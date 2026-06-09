@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { showApiError, showSuccess } from "../utils/alert";
+import { showApiError, showSuccess, showValidationError } from "../utils/alert";
 import {
   createJournalEntry,
   updateJournalEntryById,
@@ -9,6 +9,7 @@ import {
 } from "../api/Accounting/JournalEntryApi";
 import { getSupplierList, getCustomerListJe } from "../api/lookupApi";
 import { getAllCurrencyExchanges } from "../api/currencyExchangeApi";
+import { useCompanyStore } from "../store/companyStore";
 
 export interface JournalEntryForm {
   postingDate: string;
@@ -30,6 +31,7 @@ export interface JournalEntryLine {
   exchange_rate: string;
   voucher_type: string;
   remark: string;
+  isRateMissing?: boolean;
 }
 
 export type JournalEntryErrors = Partial<Record<keyof JournalEntryForm, string>>;
@@ -122,6 +124,7 @@ export const useJournalEntryLogic = (isOpen: boolean, onSuccess?: () => void, en
   const [supplierOptions, setSupplierOptions] = useState<{label: string, value: string}[]>([]);
   const [currencyOptions, setCurrencyOptions] = useState<{label: string, value: string}[]>([]);
   const [missingExchanges, setMissingExchanges] = useState<string[]>([]);
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
 
 const reset = useCallback(() => {
     setForm(emptyForm());
@@ -178,7 +181,7 @@ useEffect(() => {
           voucher_type: doc.voucher_type || doc.voucherType || "Journal Entry",
           cheque_date: doc.cheque_date || doc.chequeDate || "",
           cheque_no: doc.cheque_no || doc.chequeNo || "",
-          remarks: doc.remark || doc.user_remark || "",
+          remarks: doc.user_remark || "",
         });
 
         if (doc.accounts && Array.isArray(doc.accounts)) {
@@ -232,20 +235,40 @@ useEffect(() => {
     }
   }, [isOpen, entryId, loadEntry, reset]);
 
-const totals = useMemo(() => {
-    let debit = 0;
-    let credit = 0;
-    entries.forEach((entry) => {
-      const val = Math.abs(parseFloat(entry.amount)) || 0;
-      // Fallback to 1 if the exchange rate is blank/missing
-      const rate = parseFloat(entry.exchange_rate) || 1; 
-      const baseValue = val * rate;
+// const totals = useMemo(() => {
+//     let debit = 0;
+//     let credit = 0;
+//     entries.forEach((entry) => {
+//       const val = Math.abs(parseFloat(entry.amount)) || 0;
+//       // Fallback to 1 if the exchange rate is blank/missing
+//       const rate = parseFloat(entry.exchange_rate) || 1; 
+//       const baseValue = val * rate;
       
-      if (entry.entryType === "Dr") debit += baseValue;
-      else if (entry.entryType === "Cr") credit += baseValue;
-    });
-    return { debit, credit };
-  }, [entries]);
+//       if (entry.entryType === "Dr") debit += baseValue;
+//       else if (entry.entryType === "Cr") credit += baseValue;
+//     });
+//     return { debit, credit };
+//   }, [entries]);
+const totals = useMemo(() => {
+  let debit = 0;
+  let credit = 0;
+  entries.forEach((entry) => {
+    const val = Math.abs(parseFloat(entry.amount)) || 0;
+    const rate = parseFloat(entry.exchange_rate) || 1;
+    
+    // Round each row's base value strictly to 2 decimal places
+    const baseValue = Math.round((val * rate) * 100) / 100;
+    
+    if (entry.entryType === "Dr") debit += baseValue;
+    else if (entry.entryType === "Cr") credit += baseValue;
+  });
+  
+  // Return cleanly rounded totals to prevent JS float math errors (e.g., 999.99999999999)
+  return { 
+    debit: Math.round(debit * 100) / 100, 
+    credit: Math.round(credit * 100) / 100 
+  };
+}, [entries]);
 
 const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -289,46 +312,152 @@ const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: numbe
   return newEntries;
 };
 
+// const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: string, triggerIndex?: number) => {
+//   let newEntries = [...currentEntries];
+//   const missingExchanges: Set<string> = new Set();
+//   const processPair = async (index: number) => {
+//     const isEven = index % 2 === 0;
+//     const idx1 = isEven ? index : index - 1;
+//     const idx2 = isEven ? index + 1 : index;
+
+//     if (!newEntries[idx1] || !newEntries[idx2]) return;
+
+//     const ccy1 = newEntries[idx1].ccy;
+//     const ccy2 = newEntries[idx2].ccy;
+
+//     if (!ccy1 || !ccy2) return;
+
+//     if (ccy1 === ccy2) {
+//   newEntries[idx1].exchange_rate = ccy1 ? "1" : "";
+//   newEntries[idx2].exchange_rate = ccy2 ? "1" : "";
+//     newEntries[idx1].isRateMissing = false;
+//   newEntries[idx2].isRateMissing = false;
+  
+//   return;
+// }
+
+// try {
+//        const fetchRate = async (dateFilter?: string) => {
+//         // Try direct: ccy1 to ccy2
+//         let res = await getAllCurrencyExchanges(1, 10, undefined, ccy1, ccy2, dateFilter);
+//         let data = res?.message?.data?.data || [];
+//         if (data.length > 0) return { rate1: data[0].exchange_rate.toString(), rate2: "1" };
+
+//         // Try reverse: ccy2 to ccy1
+//         res = await getAllCurrencyExchanges(1, 10, undefined, ccy2, ccy1, dateFilter);
+//         data = res?.message?.data?.data || [];
+//         if (data.length > 0) return { rate1: "1", rate2: data[0].exchange_rate.toString() };
+
+//         return null; // Nothing found in either direction
+//       };
+
+//       // 1. Try finding a match for the specific posting date
+//       let todayRate = await fetchRate(date);
+
+//       if (todayRate) {
+//         // Found for today -> Normal behavior
+//         newEntries[idx1].exchange_rate = todayRate.rate1;
+//         newEntries[idx2].exchange_rate = todayRate.rate2;
+//         newEntries[idx1].isRateMissing = false;
+//         newEntries[idx2].isRateMissing = false;
+//       } else {
+//         // 2. Fallback: Fetch WITHOUT the date to see if ANY record exists historically
+//         let fallbackRate = await fetchRate(undefined);
+
+//         if (fallbackRate) {
+//           // Record exists, but not for today -> WARNING ONLY
+//           newEntries[idx1].exchange_rate = fallbackRate.rate1;
+//           newEntries[idx2].exchange_rate = fallbackRate.rate2;
+//           newEntries[idx1].isRateMissing = false;
+//           newEntries[idx2].isRateMissing = false;
+          
+//           showApiError(`Warning: Please maintain the latest currency exchange for ${ccy1} and ${ccy2}. Using older rate.`);
+//         } else {
+//           newEntries[idx1].exchange_rate = "";
+//           newEntries[idx2].exchange_rate = ""; 
+          
+//           newEntries[idx1].isRateMissing = true; 
+//           newEntries[idx2].isRateMissing = true; 
+          
+//           missingExchanges.add(`${ccy1} and ${ccy2}`);
+//         }
+//       }
+//  }catch (error) {
+//    showApiError(parseFrappeError || "Exchange rate fetch failed:");
+// }
+//   };
+
+//   // If a specific row triggered this, only update its pair
+//   if (triggerIndex !== undefined) {
+//     await processPair(triggerIndex);
+//     newEntries = calculateAmounts(newEntries, triggerIndex);
+//   } else {
+//     // If the Date changed, loop through and update ALL pairs
+//     for (let i = 0; i < newEntries.length; i += 2) {
+//       await processPair(i);
+//       newEntries = calculateAmounts(newEntries, i);
+//     }
+//   }
+
+//   setEntries(newEntries);
+//   const missingArray = Array.from(missingExchanges);
+//   setMissingExchanges(missingArray);
+//   if (missingExchanges.size > 0) {
+//     const missingList = Array.from(missingExchanges).join(", ");
+//     showApiError(`Please maintain the currency exchange first for: ${missingList}`);
+//   }
+// };
+  
+// Add `extraUpdates` as a 4th optional parameter
+
 const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: string, triggerIndex?: number) => {
   let newEntries = [...currentEntries];
   const missingExchanges: Set<string> = new Set();
-  const processPair = async (index: number) => {
-    const isEven = index % 2 === 0;
-    const idx1 = isEven ? index : index - 1;
-    const idx2 = isEven ? index + 1 : index;
+  
+   const BASE_CURRENCY = baseCurrency; 
+   console.log("Base Currency", baseCurrency);
+   
+  const processRow = async (index: number) => {
+    const row = newEntries[index];
+    const ccy = row.ccy;
 
-    if (!newEntries[idx1] || !newEntries[idx2]) return;
+    if (!ccy) return;
 
-    const ccy1 = newEntries[idx1].ccy;
-    const ccy2 = newEntries[idx2].ccy;
-
-    if (!ccy1 || !ccy2) return;
-
-    if (ccy1 === ccy2) {
-      newEntries[idx1].exchange_rate = ccy1 ? "1" : "";
-      newEntries[idx2].exchange_rate = ccy2 ? "1" : "";
+    if (ccy === BASE_CURRENCY) {
+      row.exchange_rate = "1";
+      row.isRateMissing = false;
       return;
     }
 
     try {
-      let res = await getAllCurrencyExchanges(1, 10, undefined, ccy1, ccy2, date);
-      let data = res?.message?.data?.data || [];
+      const fetchRate = async (dateFilter?: string) => {
+        let res = await getAllCurrencyExchanges(1, 10, undefined, ccy, BASE_CURRENCY, dateFilter);
+        let data = res?.message?.data?.data || [];
+        if (data.length > 0) return data[0].exchange_rate.toString();
 
-      if (data.length > 0) {
-        newEntries[idx1].exchange_rate = data[0].exchange_rate.toString();
-        newEntries[idx2].exchange_rate = "1";
-      } else {
-        res = await getAllCurrencyExchanges(1, 10, undefined, ccy2, ccy1, date);
+        res = await getAllCurrencyExchanges(1, 10, undefined, BASE_CURRENCY, ccy, dateFilter);
         data = res?.message?.data?.data || [];
-        if (data.length > 0) {
-          newEntries[idx2].exchange_rate = data[0].exchange_rate.toString();
-          newEntries[idx1].exchange_rate = "1";
-        }
-        else {
-          missingExchanges.add(`${ccy1} to ${ccy2}`);
-          
-          newEntries[idx1].exchange_rate = "";
-          newEntries[idx2].exchange_rate = "";
+        if (data.length > 0) return data[0].exchange_rate.toString(); 
+
+        return null; // Nothing found in either direction
+      };
+
+      let todayRate = await fetchRate(date);
+
+      if (todayRate) {
+        row.exchange_rate = todayRate;
+        row.isRateMissing = false;
+      } else {
+        let fallbackRate = await fetchRate(undefined);
+
+        if (fallbackRate) {
+          row.exchange_rate = fallbackRate;
+          row.isRateMissing = false;
+          showApiError(`Warning: Please maintain the latest currency exchange for ${ccy}. Using older rate.`);
+        } else {
+          row.exchange_rate = "";
+          row.isRateMissing = true;
+          missingExchanges.add(`${ccy} to ${BASE_CURRENCY}`);
         }
       }
     } catch (error) {
@@ -336,28 +465,19 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
     }
   };
 
-  // If a specific row triggered this, only update its pair
   if (triggerIndex !== undefined) {
-    await processPair(triggerIndex);
-    newEntries = calculateAmounts(newEntries, triggerIndex);
+    await processRow(triggerIndex);
   } else {
-    // If the Date changed, loop through and update ALL pairs
-    for (let i = 0; i < newEntries.length; i += 2) {
-      await processPair(i);
-      newEntries = calculateAmounts(newEntries, i);
+    for (let i = 0; i < newEntries.length; i++) {
+      await processRow(i);
     }
   }
 
   setEntries(newEntries);
   const missingArray = Array.from(missingExchanges);
   setMissingExchanges(missingArray);
-  if (missingExchanges.size > 0) {
-    const missingList = Array.from(missingExchanges).join(", ");
-    showApiError(`Please maintain the currency exchange first for: ${missingList}`);
-  }
 };
-  
-// Add `extraUpdates` as a 4th optional parameter
+
 const handleEntryChange = (
   index: number,
   field: keyof JournalEntryLine,
@@ -381,19 +501,18 @@ const handleEntryChange = (
 
   updatedEntries[index] = updatedRow;
 
-  if (field === "entryType") {
-    const isEven = index % 2 === 0;
-    const pairIndex = isEven ? index + 1 : index - 1;
+  // if (field === "entryType") {
+  //   const isEven = index % 2 === 0;
+  //   const pairIndex = isEven ? index + 1 : index - 1;
     
-    // Make sure the partner row exists
-    if (updatedEntries[pairIndex]) {
-      updatedEntries[pairIndex].entryType = value === "Dr" ? "Cr" : "Dr";
-    }
-  }
+  //   if (updatedEntries[pairIndex]) {
+  //     updatedEntries[pairIndex].entryType = value === "Dr" ? "Cr" : "Dr";
+  //   }
+  // }
   
-  if (field === "amount") {
-    updatedEntries = calculateAmounts(updatedEntries, index);
-  }
+  // if (field === "amount") {
+  //   updatedEntries = calculateAmounts(updatedEntries, index);
+  // }
 
   // 3. Update UI state
   setEntries(updatedEntries);
@@ -417,7 +536,7 @@ const handleEntryChange = (
   setEntries((prev) => [
     ...prev, 
     { ...emptyEntry(), entryType: "Dr" }, 
-    { ...emptyEntry(), entryType: "Cr" }
+    // { ...emptyEntry(), entryType: "Cr" }
   ]);
 };
   const handleRemoveRow = (index: number) => setEntries((prev) => prev.filter((_, i) => i !== index));
@@ -426,6 +545,22 @@ const handleEntryChange = (
     const newErrors: JournalEntryErrors = {};
     if (!form.postingDate) newErrors.postingDate = "Posting Date is required";
     setErrors(newErrors);
+
+//     const diff = Math.abs(totals.debit - totals.credit);
+//  if (diff > 0.01) { 
+//   showApiError(`Total Debit (${totals.debit.toFixed(2)}) must equal Total Credit (${totals.credit.toFixed(2)}).`);
+//   return false;
+// }
+const diff = Math.round(Math.abs(totals.debit - totals.credit) * 100) / 100;
+
+if (diff > 0.01) { 
+  showApiError(`Total Debit (${totals.debit.toFixed(2)}) must equal Total Credit (${totals.credit.toFixed(2)}). Difference is ${diff.toFixed(2)}`);
+  return false;
+}
+if (missingExchanges.length > 0) {
+  showApiError(`Cannot proceed. No currency exchange record exists at all for: ${missingExchanges.join(", ")}`);
+  return false;
+}
 
     if (missingExchanges.length > 0) {
       showApiError(`Please maintain the currency exchange first for: ${missingExchanges.join(", ")}`);
@@ -442,17 +577,6 @@ const handleEntryChange = (
         return false;
       }
     }
-
-    // if (totals.debit === 0 && totals.credit === 0) {
-    //   showApiError("Total Debit and Credit cannot be zero.");
-    //   return false;
-    // }
-    
-    // if (Math.abs(totals.debit - totals.credit) > 0.01) { 
-    //   showApiError(`Entries do not balance. Difference: ${Math.abs(totals.debit - totals.credit).toFixed(2)}`);
-    //   return false;
-    // }
-
     return Object.keys(newErrors).length === 0;
   };
 

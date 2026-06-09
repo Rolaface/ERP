@@ -48,11 +48,18 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   mode = "create",
   modalId,
 }) => {
-  const resolvedModalId =
-    modalId ||
-    (mode === "edit" && initialData?.proformaId
-      ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
-      : `proforma-create-${Date.now()}`);
+  // const resolvedModalId =
+  //   modalId ||
+  //   (mode === "edit" && initialData?.proformaId
+  //     ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
+  //     : `proforma-create-${Date.now()}`);
+  const [resolvedModalId] = useState(
+    () =>
+      modalId ||
+      (mode === "edit" && initialData?.proformaId
+        ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
+        : `proforma-create-${Date.now()}`)
+  );
       
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
@@ -150,7 +157,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       onClose();
       
       // Refresh the table data in the background
-      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.PROFORMA_LIST);
       
     } catch (error: any) {
       showApiError(error);
@@ -207,7 +214,8 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       subtitle="Create and manage proforma invoice details"
       footer={
         <ModalFooter
-          onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          // onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
           onReset={async () => {
             resetDirty();
             await actions.handleReset();
@@ -298,7 +306,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     />
                   </div>
 
-                  <div>
+                  {/* <div>
                     <ModalSelect
                       label="Invoice Status"
                       name="invoiceStatus"
@@ -308,7 +316,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       disabled={mode === "edit"}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <ModalSelect

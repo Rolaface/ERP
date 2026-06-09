@@ -43,9 +43,16 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   mode = "create",
   modalId,
 }) => {
-  const resolvedModalId = modalId || (mode === "edit" && initialData?.id
-    ? `quotation-edit-${initialData.id}-${Date.now()}`
-    : `quotation-create-${Date.now()}`);
+  // const resolvedModalId = modalId || (mode === "edit" && initialData?.id
+  //   ? `quotation-edit-${initialData.id}-${Date.now()}`
+  //   : `quotation-create-${Date.now()}`);
+  const [resolvedModalId] = useState(
+  () =>
+    modalId ||
+    (mode === "edit" && initialData?.id
+      ? `quotation-edit-${initialData.id}-${Date.now()}`
+      : `quotation-create-${Date.now()}`)
+);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
 
@@ -65,25 +72,30 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     initialData,
   );
 
-  const tabs: Array<"details" | "address" | "otherCharges" | "terms"> = [
+  const tabs: Array<"details" | "address" | "otherCharges" | "terms" 
+  // | "otherDetails"
+  > = [
     "details",
     "address",
     "otherCharges",
     "terms",
+    // "otherDetails",
   ];
-  // const handleNext = () => {
-  //   if (ui.activeTab === "details" && !actions.validateDetails()) return;
 
-  //   const currentIndex = tabs.indexOf(ui.activeTab as any);
-  //   if (currentIndex < tabs.length - 1) {
-  //     ui.setActiveTab(tabs[currentIndex + 1]);
-  //   }
-  // };
     useEffect(() => {
       if (isOpen) {
         ui.setActiveTab("details");
       }
     }, [isOpen]);
+    // useEffect(() => {
+    //   if (isOpen) {
+    //     if (initialData?._initialTab) {
+    //       ui.setActiveTab(initialData._initialTab);
+    //     } else {
+    //       ui.setActiveTab("details");
+    //     }
+    //   }
+    // }, [isOpen, initialData, ui]); // Added dependencies to satisfy React
  
    const handleNext = () => {
     const currentIndex = tabs.indexOf(ui.activeTab as any);
@@ -103,50 +115,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     };
 
   const symbol = currencySymbols[formData.currencyCode] || "";
-
-  // const handleSave = async (e?: React.FormEvent) => {
-  //   e?.preventDefault();
-
-  //   if (!actions.validateDetails()) {
-  //     ui.setActiveTab("details");
-  //     return false;
-  //   }
-
-  //   const didSubmit = await actions.handleSubmit({
-  //     preventDefault: () => { },
-  //   } as React.FormEvent);
-
-  //   if (didSubmit) {
-  //     resetDirty();
-  //     onClose();
-  //   }
-
-  //   return didSubmit;
-  // };
-
-  // const handleFormSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   if (ui.activeTab === "details") {
-  //     const isValid = actions.validateDetails();
-
-  //     if (!isValid) {
-  //       return;
-  //     }
-
-  //     handleNext();
-  //     return;
-  //   }
-
-  //   if (ui.activeTab === "address") {
-  //     handleNext();
-  //     return;
-  //   }
-
-  //   if (ui.activeTab === "terms") {
-  //     await handleSave(e);
-  //   }
-  // };
 
    const handleSave = async () => {
       if (!validateDetailsOrFocus()) return;
@@ -196,8 +164,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
         // actions.handleReset();
         onClose();
         
-        // Refresh the table data in the background
-        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.QUOTATION_LIST);
         
       } catch (error: any) {
         showApiError(error);
@@ -230,7 +197,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+      // onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={
         mode === "edit" ? "Edit Quotation" : "Create Quotation"
       }
@@ -238,7 +206,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       icon={FileSignature}
       footer={
         <ModalFooter
-          onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          // onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
+          onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
           onReset={async () => {
             resetDirty();
             await actions.handleReset();
@@ -264,6 +233,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
               { key: "address", label: "Additional Details" },
               { key: "otherCharges", label: "Shipping & Other Charges" },
               { key: "terms", label: "Terms & Conditions" },
+              // { key: "otherDetails", label: "More Info" },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -353,7 +323,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   </div>
 
                   {/* Status */}
-                  <div>
+                  {/* <div>
                     <ModalSelect
                       label="Status"
                       name="invoiceStatus"
@@ -363,9 +333,9 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                       disabled={mode === "edit"}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
-                  </div>
+                  </div> */}
 
-                  <div className="max-w-[140px]">
+                  {/* <div className="max-w-[140px]">
                     <ModalSelect
                       label="Payment Method"
                       name="paymentMethod"
@@ -378,7 +348,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                       options={[...paymentMethodOptions]}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
-                  </div>
+                  </div> */}
 
                   {ui.isExport && (
                     <div >
@@ -421,6 +391,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   ui={ui}
                   actions={actions}
                   formData={formData}
+                  isQuotation={true}
                   symbol={symbol}
                   ITEMS_PER_PAGE={ITEMS_PER_PAGE}
                   isSalesInvoice={false}
@@ -586,6 +557,11 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
               />
             </div>
           )}
+           {/* {ui.activeTab === "otherDetails" && (
+            <div className="h-full w-full">
+             <p>Lost Reason</p>
+            </div>
+          )} */}
         </div>
       </form>
     </MinimizableModal>

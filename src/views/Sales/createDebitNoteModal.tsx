@@ -31,7 +31,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
   initialData,
   isEdit = false,
 }) => {
-  // Stable modal ID — computed once per mount, same strategy as Asset modal
+  // Stable modal ID — computed once per mount, same stratminiegy as Asset modal
   const resolvedModalId = useRef(
     modalId ??
       (isEdit && initialData?.name

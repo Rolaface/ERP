@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, Trash2, ReceiptText } from "lucide-react";
-
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
@@ -12,6 +11,7 @@ import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import type { TaxCategoryFormData } from "../../types/tax/taxTemplate";
 import { defaultForm, defaultTaxRow } from "../../types/tax/taxTemplate";
 import { getGlAccounts } from "../../api/TaxTemplateApi";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 
 const ROWS_PER_PAGE = 4;
 
@@ -39,6 +39,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
   );
 
   const resolvedModalId = modalId;
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const [form, setForm] = useState<TaxCategoryFormData>(
     initialData ?? defaultForm
@@ -59,6 +60,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
     setForm(initialData ?? defaultForm);
     setErrors({});
     setPage(0);
+    resetDirty();
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -97,10 +99,11 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
   const fetchGlOptions = useCallback(async (search: string) => {
     try {
       const res = await getGlAccounts(search || undefined);
-      const data: { name: string; description: string }[] = res?.data ?? [];
+      const data: { name: string; account_type: string; account_name: string }[] = res?.data ?? [];
       return data.map((opt) => ({
         value: opt.name,
-        label: opt.description ? `${opt.name} — ${opt.description}` : opt.name,
+        label: opt.account_name,
+        subLabel: opt.account_type || "",
       }));
     } catch {
       return [];
@@ -108,6 +111,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
   }, []);
 
   const addRow = () => {
+    markDirty();
     setForm((prev) => ({
       ...prev,
       taxes: [...prev.taxes, { ...defaultTaxRow }],
@@ -118,6 +122,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
 
   const removeRow = (index: number) => {
     if (form.taxes.length === 1) return;
+    markDirty();
     setForm((prev) => ({
       ...prev,
       taxes: prev.taxes.filter((_, i) => i !== index),
@@ -167,6 +172,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
         await modal.context.callback(payload);
       }
 
+      resetDirty();
       reset();
       onClose();
     } finally {
@@ -176,7 +182,10 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
 
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose}>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+      >
         Cancel
       </Button>
       <div className="flex gap-3">
@@ -201,7 +210,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
     <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={isEditMode ? "Edit Tax Template" : "Create Tax Template"}
       subtitle="Create tax template"
       icon={ReceiptText}
@@ -210,6 +219,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
       height="66vh"
     >
       <form
+        onChange={markDirty}
         onSubmit={(e) => e.preventDefault()}
         className="h-full flex flex-col"
       >
@@ -281,11 +291,22 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                       <td className="px-3 py-2">
                         <SearchSelect2
                           label=""
-                          value={row.tax_type}
-                          onChange={(val) => {
-                            const newForm = { ...form };
-                            newForm.taxes[actualIdx].tax_type = val || "";
-                            setForm(newForm);
+                          value={row.tax_type_display || row.tax_type}
+
+                          onChange={(val, option) => {
+                            markDirty();
+                            setForm((prev) => ({
+                              ...prev,
+                              taxes: prev.taxes.map((row, i) =>
+                                i === actualIdx
+                                  ? {
+                                    ...row,
+                                    tax_type: val || "",
+                                    tax_type_display: option?.label || val || "",
+                                  }
+                                  : row
+                              ),
+                            }));
                           }}
                           fetchOptions={fetchGlOptions}
                           placeholder="Select tax type"

@@ -248,10 +248,11 @@ const calculateLeaveDays = (fromDateStr: string, toDateStr: string, isHalfDay: n
       render: (e) => (e.half_day === 1 ? "Half Day" : e.to_date || "—"),
     },
     {
-    key: "no_of_days",
+    key: "total_leave_days",
     header: "No of Days",
     align: "left",
-    render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
+    // render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
+    render: (e) => <span className="font-medium">{e.total_leave_days || "—"}</span>,
   },
     {
       key:    "description",

@@ -6,13 +6,9 @@ import {
   Loader2,
   RefreshCw,
   MoreHorizontal,
-  Pencil,
   Trash2,
-  Plus,
-  Eye,
   FileText,
-  ChevronLeft,
-  ChevronRight,
+  Ban,
   CheckCircle
 } from "lucide-react";
 
@@ -26,6 +22,7 @@ import {
 } from "../../api/Accounting/JournalEntryApi";
 import { showApiError, showSuccess, showConfirm } from "../../utils/alert";
 import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 
 export interface JETabProps {
   searchTerm: string;
@@ -37,7 +34,7 @@ export interface JournalEntry {
   posting_date?: string;
   total_debit?: number;
   total_credit?: number;
-  docstatus?: number; // 0 = Draft, 1 = Submitted, 2 = Cancelled
+  docstatus?: number; 
   user_remark?: string;
 }
 
@@ -104,6 +101,11 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [hasMore, setHasMore] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+    const [filters, setFilters] = useState({
+  from_date: "",
+  to_date: "", 
+  orderBy: "creation desc"
+});
 
   const fetchJE = useCallback(async () => {
     setLoading(true);
@@ -115,12 +117,33 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         "total_debit",
         "total_credit",
         "docstatus",
-        "user_remark"
+        "user_remark",
       ];
 
       const limitStart = (currentPage - 1) * pageSize;
+    
 
-      const res = await getJournalEntries(fields, undefined, limitStart, pageSize, searchTerm || undefined);
+      // let apiFilters: any = undefined;
+      // if (filters.from_date && filters.to_date) {
+      //   const filterField = filters.orderBy.startsWith("posting_date") ? "posting_date" : "creation";
+      //   apiFilters = [[filterField, "between", [filters.from_date, filters.to_date]]];
+      // }
+      let apiFilters: any[][] = [];
+      
+      if (filters.from_date && filters.to_date) {
+        const filterField = filters.orderBy.startsWith("posting_date") ? "posting_date" : "creation";
+        
+        if (filterField === "creation") {
+          apiFilters.push([filterField, ">=", `${filters.from_date} 00:00:00`]);
+          apiFilters.push([filterField, "<=", `${filters.to_date} 23:59:59`]);
+        } else {
+          // Standard Date fields (like posting_date) work perfectly just like your Leave App code!
+          apiFilters.push([filterField, ">=", filters.from_date]);
+          apiFilters.push([filterField, "<=", filters.to_date]);
+        }
+      }
+
+      const res = await getJournalEntries(fields,apiFilters, limitStart, pageSize, searchTerm || undefined, filters.orderBy);
       const entriesData = res?.data || res?.message?.data;
       const pagination = res?.pagination || res?.message?.pagination;
 
@@ -147,7 +170,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageSize, searchTerm]);
+  }, [currentPage, pageSize, searchTerm, filters]);
 
   useEffect(() => {
     fetchJE();
@@ -170,15 +193,17 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   };
 
   const handleCancelEntry = async (id: string) => {
-    const isConfirmed = await showConfirm(
-      `Are you sure you want to cancel entry ${id}?`,
-      {
-        title: "Cancel Entry",
-        confirmButtonText: "Yes, Cancel",
-        confirmButtonColor: "#ef4444"
-      }
-    );
-    if (!isConfirmed) return;
+
+        const isConfirmed = await showConfirm(
+              `Are you sure you want to cancel entry ${id}?`,
+              {
+                title: "Cancel Entry",
+                confirmButtonText: "Yes, Cancel",
+                confirmButtonColor: "#ef4444",
+                cancelButtonText: "No, Keep",
+              }
+            );
+            if (!isConfirmed) return;
 
     try {
       setLoading(true);
@@ -355,9 +380,9 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         if (isSubmitted) {
           customMenuActions.push({
             label: "Cancel Entry",
-            icon: <Trash2 size={14} />,
+            icon: <Ban size={14} />,
             danger: true,
-            dividerBefore: isDraft, // Add divider if there are items above it
+            dividerBefore: isDraft, 
             onClick: () => handleCancelEntry(row.name),
           });
         } else {
@@ -405,6 +430,29 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   return (
     <div className="flex flex-col gap-4">
       <Table
+      extraFilters={ 
+          <>
+            <DateRangeFilter
+              from={filters.from_date}
+              to={filters.to_date}
+              onChange={(range: any) => {
+                setFilters((prev) => ({ ...prev, ...range }));
+                setCurrentPage(1); // Fixed from setPage(1)
+              }}
+            />
+            <select
+              value={filters.orderBy}
+              onChange={(e) => {
+                setFilters((prev) => ({ ...prev, orderBy: e.target.value }));
+                setCurrentPage(1); 
+              }}
+              className="border-gray-300 rounded-md text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 px-2 border outline-none"
+            >
+              <option value="posting_date desc">Posting Date </option>
+              <option value="creation desc">Creation Date </option>
+            </select>
+          </>
+        }
         columns={jeColumns}
         data={jeData}
         rowKey={(row) => row.name}

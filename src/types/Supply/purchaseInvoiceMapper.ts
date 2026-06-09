@@ -124,7 +124,7 @@ dueDate: form.dueDate,
 
 
     lpoNumber: form.poNumber || "",
-    ...(form.updateStock && form.warehouse && { warehouse: form.warehouse }),
+    // ...(form.updateStock && form.warehouse && { warehouse: form.warehouse }),
     ...(form.costCenter && { costCenter: form.costCenter }),
     ...(form.project && { project: form.project }),
     ...(form.shippingRule && { shippingRule: form.shippingRule }),

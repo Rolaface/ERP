@@ -10,6 +10,7 @@ import { LeaveSetupTab } from "./LeaveSetupTab";
 import WorkScheduleTab from "./WorkScheduletab";
 import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
+import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
 
 import {
   getAllDesignations,
@@ -115,7 +116,8 @@ const AddEmployeeModal: React.FC<Props> = ({
   // ── People dropdowns ────────────────────────────────────────────────────
   const [reportingManagers, setReportingManagers] = useState<any[]>([]);
   const [hrManagers, setHrManagers] = useState<any[]>([]);
-
+const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
+  useUnsavedChangesGuard();
   // ── Documents ───────────────────────────────────────────────────────────
   const [, setDocuments] = useState<Record<string, DocumentUpload>>({
     "NRC Copy": { uploaded: false },
@@ -382,6 +384,7 @@ const AddEmployeeModal: React.FC<Props> = ({
         }
 
         showSuccess(msg);
+        resetDirty();   
         onSubmit(payload);
         onClose();
       } catch (err) {
@@ -485,6 +488,7 @@ const AddEmployeeModal: React.FC<Props> = ({
 
     // Only after user clicks "Done" on the result Swal do we close everything
     onSubmit(payload);
+    resetDirty();   
     onClose();
   };
 
@@ -549,7 +553,8 @@ const AddEmployeeModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}  
+  formContainerRef={containerRef}      
       title={editData ? "Edit Employee" : "New Employee"}
       subtitle="Employee Management"
       customWidth="77vw"

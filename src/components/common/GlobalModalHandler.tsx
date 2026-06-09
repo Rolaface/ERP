@@ -496,18 +496,19 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-      case "taxCategory":
-        return wrappedModal(
-          <TaxCategoryModalComponent
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            onSubmit={async (data) => {
-              await handleSubmit(data);
-            }}
-          />,
-        );
+case "taxCategory":
+  return wrappedModal(
+    <TaxCategoryModalComponent
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={async (data) => {
+        await handleSubmit(data);
+        return true; // ← was missing
+      }}
+    />,
+  );
       case "salesTax":
         return wrappedModal(
           <SalesTaxTemplateModalComponent
