@@ -295,18 +295,20 @@ export const usePurchaseInvoiceForm = ({
     loadCompanyData();
   }, [isOpen, pId]);
 useEffect(() => {
-  if (!form.date) return;
+  if (!form.supplierInvoiceDate) return;
 
   const terms = form.terms?.buying?.payment?.dueDates ?? "";
 
-  // calculateDueDate handles "" → returns form.date itself (due today)
-  const due = calculateDueDate(form.date, terms);
+  const due = calculateDueDate(
+    form.supplierInvoiceDate,
+    terms
+  );
 
   if (due) {
     setForm((prev) => ({ ...prev, dueDate: due }));
   }
 }, [
-  form.date,
+  form.supplierInvoiceDate,
   form.terms?.buying?.payment?.dueDates,
 ]);
 
