@@ -296,7 +296,7 @@ const handleItemChangeWithDirty = useCallback(
           </div>
         </div>
 
-        <section className="overflow-y-auto p-1">
+        <section className="overflow-y-auto px-2 py-2">
           {tabContent}
         </section>
       </form>

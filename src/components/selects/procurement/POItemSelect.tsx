@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { getAllItems } from "../../../api/itemApi";
 import { showApiError } from "../../../utils/alert";
+import { Package, ChevronDown, Search, X, Loader2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,8 +27,35 @@ interface POItemSelectProps {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DROPDOWN_MAX_HEIGHT = 224; // max-h-56
 const DROPDOWN_OFFSET = 4;
+const DROP_H = 260;
+const DEBOUNCE_MS = 350;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getDropStyle(
+  dropRect: DOMRect,
+  vw: number,
+  vh: number,
+): React.CSSProperties {
+  const PADDING = 8;
+  const minW = dropRect.width;
+  const maxW = vw <= 480 ? vw - PADDING * 2 : Math.min(420, vw - PADDING * 2);
+  const width = Math.max(minW, maxW);
+
+  let left = dropRect.left;
+  if (left + width > vw - PADDING) left = Math.max(PADDING, vw - width - PADDING);
+
+  const spaceBelow = vh - dropRect.bottom - PADDING;
+  const spaceAbove = dropRect.top - PADDING;
+  const flipUp = spaceBelow < DROP_H && spaceAbove > spaceBelow;
+
+  const vertPos = flipUp
+    ? { bottom: vh - dropRect.top + DROPDOWN_OFFSET, top: "auto" as const }
+    : { top: dropRect.bottom + DROPDOWN_OFFSET, bottom: "auto" as const };
+
+  return { position: "fixed", ...vertPos, left, width, zIndex: 9999 };
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -40,168 +68,261 @@ export default function POItemSelect({
 }: POItemSelectProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState(value);
+  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [dropRect, setDropRect] = useState<DOMRect | null>(null);
+  const [displayName, setDisplayName] = useState(value);
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
+  const loadedRef = useRef(false);
 
-  // ── Load items ───────────────────────────────────────────────────────────────
+  // ── API fetch ────────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await getAllItems(1, 1000, taxCategory ?? undefined);
-        if (!cancelled) {
-          const rawList = Array.isArray(res?.data?.data)
-            ? res.data.data
-            : Array.isArray(res?.data)
-              ? res.data
-              : [];
-          setItems(rawList);
-        }
-      } catch(err) {
-        if (!cancelled) setItems([]);
-        showApiError(err)
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    load();
-    return () => { cancelled = true; };
+  const fetchItems = useCallback(async (q: string) => {
+    const id = ++requestIdRef.current;
+    setLoading(true);
+    try {
+      const res = await getAllItems(1, 50, taxCategory ?? undefined, q || undefined);
+      if (id !== requestIdRef.current) return;
+      const rawList = Array.isArray(res?.data?.data)
+        ? res.data.data
+        : Array.isArray(res?.data)
+          ? res.data
+          : [];
+      setItems(rawList);
+    } catch (err) {
+      if (id !== requestIdRef.current) return;
+      setItems([]);
+      showApiError(err);
+    } finally {
+      if (id === requestIdRef.current) setLoading(false);
+    }
   }, [taxCategory]);
 
-  // ── Sync selected item name ──────────────────────────────────────────────────
+  // ── Debounced search ─────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!open) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchItems(search);
+    }, search ? DEBOUNCE_MS : 0);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search, open, fetchItems]);
+
+  // ── Sync display name ────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!selectedId || items.length === 0) return;
     const match = items.find((x) => x.id === selectedId);
-    if (match) setSearch(match.itemName);
+    if (match) setDisplayName(match.itemName);
   }, [selectedId, items]);
 
-  // ── Reset on taxCategory / value clear ──────────────────────────────────────
+  // ── Reset ────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!value) setSearch("");
+    if (!value) {
+      setDisplayName("");
+    } else {
+      setDisplayName(value);
+    }
     setOpen(false);
+    loadedRef.current = false;
   }, [taxCategory, value]);
 
-  // ── Outside click handler ────────────────────────────────────────────────────
+  // ── Outside click ────────────────────────────────────────────────────────────
 
   useEffect(() => {
+    if (!open) return;
     const handler = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        inputRef.current?.contains(target) ||
-        dropdownRef.current?.contains(target)
-      ) return;
+      const t = e.target as Node;
+      if (dropdownRef.current?.contains(t) || triggerRef.current?.contains(t)) return;
       setOpen(false);
+      setSearch("");
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
 
-  // ── Open dropdown & capture position ────────────────────────────────────────
+  // ── Reposition on scroll/resize ──────────────────────────────────────────────
 
-  const openDropdown = useCallback(() => {
-    if (!inputRef.current) return;
-    setRect(inputRef.current.getBoundingClientRect());
+  useEffect(() => {
+    if (!open) return;
+    const update = () => setDropRect(triggerRef.current?.getBoundingClientRect() ?? null);
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open]);
+
+  // ── Open ─────────────────────────────────────────────────────────────────────
+
+  const handleOpen = useCallback(() => {
+    setDropRect(triggerRef.current?.getBoundingClientRect() ?? null);
     setOpen(true);
-  }, []);
+    setTimeout(() => inputRef.current?.focus(), 0);
+    if (!loadedRef.current) {
+      loadedRef.current = true;
+      fetchItems("");
+    }
+  }, [fetchItems]);
 
-  // ── Filter ───────────────────────────────────────────────────────────────────
+  // ── Dropdown style ───────────────────────────────────────────────────────────
 
-  const filtered = items.filter((item) =>
-    item.itemName.toLowerCase().includes(search.toLowerCase()),
-  );
+  const dropStyle = useMemo((): React.CSSProperties => {
+    if (!dropRect) return {};
+    return getDropStyle(dropRect, window.innerWidth, window.innerHeight);
+  }, [dropRect]);
 
-  // ── Select handler ───────────────────────────────────────────────────────────
+  // ── Select ───────────────────────────────────────────────────────────────────
 
-  const handleSelect = (item: Item) => {
-    setSearch(item.itemName);
+  const handleSelect = useCallback((item: Item) => {
+    setDisplayName(item.itemName);
     setOpen(false);
+    setSearch("");
     onChange(item);
-  };
+  }, [onChange]);
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className={`w-full ${className}`}>
-      <input
-        ref={inputRef}
-        className="w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main
-            focus:outline-none focus:ring-1 focus:ring-primary"
-        placeholder={loading ? "Loading items..." : "Search item..."}
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          openDropdown();
-        }}
-        onFocus={openDropdown}
-        autoComplete="off"
-      />
 
-      {open && rect && !loading &&
-        createPortal(
-          (() => {
-            // Smart horizontal positioning — don't overflow viewport
-            const dropdownWidth = Math.max(rect.width, 260);
-            const maxLeft = Math.max(8, window.innerWidth - dropdownWidth - 8);
-            const left = Math.min(rect.left, maxLeft);
+      {/* ── TRIGGER — matches PO style: flat, wraps naturally ── */}
+      <div
+        ref={triggerRef}
+        role="combobox"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        tabIndex={0}
+        onClick={handleOpen}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleOpen(); }}
+        className="flex items-center gap-1.5 px-2 py-1 border border-theme rounded
+          bg-card text-main text-[11px] cursor-pointer select-none w-full
+          hover:border-primary focus:outline-none focus:border-primary
+          transition-colors duration-150"
+      >
+        <Package className="w-3 h-3 text-muted shrink-0" />
+        <span
+          className={`flex-1 min-w-0 break-words leading-snug ${displayName ? "text-main" : "text-muted"}`}
+        >
+          {loading ? "Loading…" : displayName || "Select item…"}
+        </span>
+        {loading
+          ? <Loader2 className="w-3 h-3 text-muted shrink-0 animate-spin" />
+          : <ChevronDown className={`w-3 h-3 text-muted shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+        }
+      </div>
 
-            // Smart vertical positioning — show above if not enough space below
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const top =
-              spaceBelow < DROPDOWN_MAX_HEIGHT
-                ? rect.top - DROPDOWN_MAX_HEIGHT - DROPDOWN_OFFSET
-                : rect.bottom + DROPDOWN_OFFSET;
+      {/* ── DROPDOWN PORTAL ── */}
+      {open && dropRect && createPortal(
+        <div
+          ref={dropdownRef}
+          role="listbox"
+          style={dropStyle}
+          className="bg-card border border-theme rounded-lg shadow-xl flex flex-col overflow-hidden"
+        >
 
-            return (
-              <div
-                ref={dropdownRef}
-                style={{
-                  position: "fixed",
-                  top,
-                  left,
-                  width: dropdownWidth,
-                  zIndex: 9999,
-                }}
-                className="bg-card border border-theme rounded shadow-lg"
-              >
-                <ul className="max-h-56 overflow-y-auto text-sm">
-                  {filtered.map((item) => (
-                    <li
-                      key={item.id}
-                      className="px-4 py-2 cursor-pointer hover:bg-row-hover text-main"
-                      onClick={() => handleSelect(item)}
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold leading-snug whitespace-normal break-words">
-                          {item.itemName}
-                        </span>
-                        <span className="text-xs text-muted leading-snug whitespace-normal break-words">
-                          Code: {item.id}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
+          {/* Search bar */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-theme bg-app">
+            <Search className="w-3.5 h-3.5 text-muted shrink-0" />
+            <input
+              ref={inputRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setOpen(false); setSearch(""); }
+              }}
+              placeholder="Search by name or code…"
+              className="flex-1 min-w-0 bg-transparent text-main text-[11px] outline-none placeholder:text-muted"
+            />
+            {loading && <Loader2 className="w-3.5 h-3.5 text-muted shrink-0 animate-spin" />}
+            {search && !loading && (
+              <button type="button" onClick={() => setSearch("")} className="shrink-0">
+                <X className="w-3.5 h-3.5 text-muted hover:text-danger transition-colors" />
+              </button>
+            )}
+          </div>
 
-                  {filtered.length === 0 && (
-                    <li className="px-4 py-3 text-center text-muted text-sm">
-                      No items found
-                    </li>
-                  )}
-                </ul>
+          {/* Table */}
+          <div className="overflow-y-auto" style={{ maxHeight: "min(200px, 45vh)" }}>
+            {loading && items.length === 0 ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-muted text-[11px]">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading items…
               </div>
-            );
-          })(),
-          document.body,
-        )}
+            ) : items.length === 0 ? (
+              <div className="py-6 text-center text-muted text-[11px]">No items found</div>
+            ) : (
+              <table className="w-full table-fixed border-collapse text-[11px]">
+                <colgroup>
+                  <col style={{ width: "65%" }} />
+                  <col style={{ width: "35%" }} />
+                </colgroup>
+                <thead className="sticky top-0 z-10 bg-app">
+                  <tr className="border-b border-theme">
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-muted tracking-wide uppercase">
+                      Item Name
+                    </th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-muted tracking-wide uppercase">
+                      Code
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr
+                      key={item.id}
+                      role="option"
+                      aria-selected={item.id === selectedId}
+                      onClick={() => handleSelect(item)}
+                      className={[
+                        "border-b border-theme last:border-none cursor-pointer transition-colors duration-100",
+                        item.id === selectedId
+                          ? "bg-primary/10"
+                          : "hover:bg-primary/5 active:bg-primary/10",
+                      ].join(" ")}
+                    >
+                      <td className="px-3 py-2 align-middle">
+                        <p className="font-medium text-main text-[11px] leading-snug break-words whitespace-normal">
+                          {item.itemName}
+                        </p>
+                      </td>
+                      <td className="px-3 py-2 align-middle">
+                        <p className="text-[10px] text-muted break-all">
+                          {item.id}
+                        </p>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between px-3 py-1.5 border-t border-theme bg-app text-[10px] text-muted">
+            <span>{items.length} item{items.length !== 1 ? "s" : ""}</span>
+            {search && (
+              <button
+                type="button"
+                className="text-primary hover:underline font-medium"
+                onClick={() => setSearch("")}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

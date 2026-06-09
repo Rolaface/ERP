@@ -612,7 +612,7 @@ useBarcodeScanner(async (barcode) => {
       )}
 
       <div className="mt-2 overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse text-[10px] leading-tight">
+       <table className="w-full min-w-[900px] border-collapse text-[10px] leading-tight">
           <thead>
   {columnHeaders || (
     <InvoiceHeaders isSalesInvoice={isSalesInvoice} />
