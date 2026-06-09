@@ -146,14 +146,17 @@ export async function getExpenseClaimTypes(
       return resp.data?.message?.data || null;
   }
 
-  export async function updateExpenseClaim(
-    id: string,
-    payload: CreateExpenseClaimPayload
-  ): Promise<any> {
-    const url = `${ExpenseClaimAPI.Expense_Claim}/${encodeURIComponent(id)}`;
-    const resp: AxiosResponse = await api.put(url, payload);
-    return resp.data || null;
-  }
+ export async function updateExpenseClaim(
+  id: string,
+  payload: CreateExpenseClaimPayload
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    ExpenseClaimAPI.updateExpenseClaim,
+    payload,
+    { params: { id } }
+  );
+  return resp.data || null;
+}
   export async function deleteExpenseClaim(id: string): Promise<any> {
     const url = `${ExpenseClaimAPI.Expense_Claim}/${encodeURIComponent(id)}`;
     const resp: AxiosResponse = await api.delete(url);

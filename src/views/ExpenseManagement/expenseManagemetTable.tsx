@@ -471,17 +471,22 @@ const handleRejectConfirm = async () => {
               iconOnly
             />
             <PermissionGate module={EXPENSE_MODULE} action="write">
+               {isEmployeeView && (
               <ActionButton
                 type="edit"
                 onClick={() => handleOpenEdit(exp)}
                 iconOnly
-                disabled={exp.approvalStatus !== "Draft"  && exp.approvalStatus !== "Rejected"}
+                disabled={
+    !isEmployeeView ||
+    (exp.approvalStatus !== "Draft" && exp.approvalStatus !== "Rejected")
+  }
                 title={
                   exp.approvalStatus !== "Draft"
                     ? "Only Draft expenses can be edited"
                     : "Edit Expense"
                 }
               />
+              )}
             </PermissionGate>
 
             <ActionMenu
@@ -502,7 +507,7 @@ const handleRejectConfirm = async () => {
                       ]
                       : []),
 
-                    ...(isEmployeeView &&exp.approvalStatus === "Draft"
+                    ...(isEmployeeView && exp.approvalStatus === "Draft"
                       ? [
                         {
                           label: "Delete",
