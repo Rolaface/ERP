@@ -229,7 +229,7 @@ useEffect(() => {
 
     const base = getBaseCurrencyFromStorage();
 
-    console.log("Base Currency:", base);
+   
 
     setBaseCurrency(base);
     lastCurrencyRef.current = base;
