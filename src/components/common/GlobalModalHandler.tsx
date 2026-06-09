@@ -375,7 +375,7 @@ const GlobalModalHandler: React.FC = () => {
             onClose={handleClose}
             onSubmit={handleSubmit}
             initialData={modal.initialData}
-             mode={modal.isEdit ? "edit" : "create"}
+            mode={modal.isEdit ? "edit" : "create"}
           />,
         );
 
@@ -479,6 +479,7 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
             initialData={getInitialData<TaxTemplateFormData>(modal.initialData)}
             isEditMode={modal.isEdit}
+            isViewMode={context?.isViewMode ?? false}
           />,
         );
 
@@ -496,19 +497,28 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-case "taxCategory":
-  return wrappedModal(
-    <TaxCategoryModalComponent
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={async (data) => {
-        await handleSubmit(data);
-        return true; // ← was missing
-      }}
-    />,
-  );
+      case "taxCategory":
+        return wrappedModal(
+          <TaxCategoryModalComponent
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            isViewMode={context?.isViewMode ?? false}
+            initialData={
+              isRecord(modal.initialData)
+                ? {
+                  title: modal.initialData.title as string,
+                  disabled: modal.initialData.disabled as boolean,
+                }
+                : null
+            }
+            onSubmit={async (data) => {
+              await handleSubmit(data);
+              return true;
+            }}
+          />,
+        );
       case "salesTax":
         return wrappedModal(
           <SalesTaxTemplateModalComponent
@@ -521,6 +531,7 @@ case "taxCategory":
               modal.initialData,
             )}
             isEditMode={modal.isEdit}
+            isViewMode={context?.isViewMode ?? false} 
           />,
         );
       case "bankAccount": {

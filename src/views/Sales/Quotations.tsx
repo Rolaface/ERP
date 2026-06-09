@@ -732,7 +732,7 @@ const handlePreviewQuotationPDF = async (
       />
        <SendEmailModal
         open={emailModalOpen}
-        docType="Proforma Invoice"
+        docType="Quotation"
         invoiceNumber={emailQuotation?.quotationNumber}
         contactEmail={emailContactEmail}
         customerName={emailQuotation?.customerName}

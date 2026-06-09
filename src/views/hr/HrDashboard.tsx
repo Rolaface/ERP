@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { 
+  HrDashboardSummaryResponse,
   getEmployeeStatusCount, 
   getEmployeeTrend, 
   getHrDashboardData 
 } from "../../api/hrDashboardApi";
 import { parseFrappeError } from "./tabs/leave-config/hooks/parseFrappeError";
 import { EmployeeTrendChart, DepartmentPayrollChart, AttendancePatternChart } from "../../components/charts/HrDashboardCharts";
-import { CalendarRange, Gavel, HandCoins, Icon, NotebookPen, UserCheck, Users } from "lucide-react";
+import { CalendarRange, Gavel, HandCoins, Cake, NotebookPen, UserCheck, Users, FileText, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 
@@ -14,18 +15,7 @@ const HrDashboard: React.FC = () => {
   // Existing Summary State
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
-  const [summaryData, setSummaryData] = useState<{
-    total: number;
-    active: number;
-    inactive: number;
-    onLeave: number;
-    totalLeaveTypes: number;
-    activeWorking: number;
-    pendingLeaves: number;
-    presentToday: number;
-    approvedLeaves: number;
-    rejectedLeaves: number;
-  } | null>(null);
+ const [summaryData, setSummaryData] = useState<HrDashboardSummaryResponse['data'] | null>(null);
 
   // New Trend State
   const [trendLoading, setTrendLoading] = useState(false);
@@ -48,18 +38,7 @@ const HrDashboard: React.FC = () => {
         if (!mounted) return;
         
         const data = resp.data;
-        setSummaryData({
-          total: (data?.total_active || 0) + (data?.inactive || 0),  
-          active: data?.total_active || 0,
-          inactive: data?.inactive || 0,
-          onLeave: data?.on_leave || 0,
-          totalLeaveTypes: data?.total_leave_types || 0,
-          activeWorking: data?.active_working || 0,
-          pendingLeaves: data?.pending_leaves || 0,
-          presentToday: data?.present_today || 0,
-          approvedLeaves: data?.approved_leaves || 0,
-          rejectedLeaves: data?.rejected_leaves || 0,
-        });
+       setSummaryData(data);
       } catch (e: any) {
         if (!mounted) return;
         setSummaryError(parseFrappeError(e) || "Failed to load HR dashboard summary");
@@ -137,18 +116,28 @@ const currentY = new Date().getFullYear();
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-2 mb-6">
-        <div className="bg-white rounded-2xl shadow p-4">
+
+        {/* <div className="bg-white rounded-2xl shadow p-4"> */}
+         <Link 
+          to="?tab=management"
+          className="block bg-white rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200"
+        >
           <div className="flex items-center gap-3">
           <Users size={16} className="text-black-500" />
           <p className="text-gray-500 text-sm">Employees</p>
           </div>
           <h2 className="text-2xl font-bold mt-2">
-            {summaryLoading ? "..." : summaryData?.active || "0"}
+            {summaryLoading ? "..." : summaryData?.active_working || "0"}
           </h2>
-          <p className="text-green-500 text-sm mt-1">+{summaryLoading ? "..." : summaryData?.active || "0"} this month</p>
-        </div>
+          <p className="text-green-500 text-sm mt-1">+{summaryLoading ? "..." : summaryData?.active_working || "0"} this month</p>
+        {/* </div> */}
+        </Link>
 
-        <div className="bg-white rounded-2xl shadow p-4">
+        {/* <div className="bg-white rounded-2xl shadow p-4"> */}
+           <Link 
+          to="?tab=attendance"
+          className="block bg-white rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200"
+        > 
            <div className="flex items-center gap-3">
           <CalendarRange size={16} className="text-blue-500" />
           <p className="text-gray-500 text-sm">Attendance</p>
@@ -156,27 +145,18 @@ const currentY = new Date().getFullYear();
           <h2 className="text-2xl font-bold mt-2">
             {summaryLoading 
               ? "..." 
-              : `${summaryData?.active ? Math.round((summaryData.presentToday / summaryData.active) * 100) : 0}%`
+              : `${summaryData?.active_working ? Math.round((summaryData.present_today / summaryData.active_working) * 100) : 0}%`
             }
           </h2>
           <p className="text-blue-500 text-sm mt-1">
             {summaryLoading 
               ? "Loading..." 
-              : `${summaryData?.presentToday || 0} / ${summaryData?.active || 0} Present Today`
+              : `${summaryData?.present_today || 0} / ${summaryData?.active_working || 0} Present Today`
             }
           </p>
-        </div>
+        {/* </div> */}
+        </Link>
 
-        {/* <div className="bg-white rounded-2xl shadow p-4">
-           <div className="flex items-center gap-3">
-          <NotebookPen size={16} className="text-red-500" />
-          <p className="text-gray-500 text-sm">Pending Leaves</p>
-          </div>
-          <h2 className="text-2xl font-bold mt-2">
-            {summaryLoading ? "..." : summaryData?.pendingLeaves || "0"}
-          </h2>
-          <p className="text-orange-500 text-sm mt-1">Need Approval</p>
-        </div> */}
         <Link 
           to="?tab=leave"
           className="block bg-white rounded-2xl shadow p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200"
@@ -186,7 +166,7 @@ const currentY = new Date().getFullYear();
             <p className="text-gray-500 text-sm">Pending Leaves</p>
           </div>
           <h2 className="text-2xl font-bold mt-2">
-            {summaryLoading ? "..." : summaryData?.pendingLeaves || "0"}
+            {summaryLoading ? "..." : summaryData?.pending_leaves || "0"}
           </h2>
           <p className="text-orange-500 text-sm mt-1">Need Approval</p>
         </Link>
@@ -358,29 +338,117 @@ const currentY = new Date().getFullYear();
         {/* RIGHT SECTION */}
         <div className="space-y-6">
 
-          {/* Birthdays */}
+           {/* Birthdays */}
           <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Birthdays & Events</h2>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-pink-200"></div>
-                <div>
-                  <p className="font-medium">Rahul Sharma</p>
-                  <p className="text-sm text-gray-500">Birthday Today 🎂</p>
+            <div className="flex items-center gap-2 mb-4">
+              <Cake size={20} className="text-pink-500" />
+              <h2 className="text-xl font-semibold">Upcoming Birthdays</h2>
+            </div>
+            
+            <div className="pb-3">
+              {summaryLoading ? (
+                <div className="space-y-2">
+                  <div className="h-10 w-full bg-gray-100 animate-pulse rounded-xl" />
+                  <div className="h-10 w-full bg-gray-100 animate-pulse rounded-xl" />
                 </div>
-              </div>
+              ) : !summaryData?.upcoming_birthdays || summaryData.upcoming_birthdays.length === 0 ? (
+                <p className="text-sm text-gray-500">No upcoming birthdays</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {summaryData.upcoming_birthdays.map((b, i) => {
+                    const isToday = b.daysLeft === 0;
+                    return (
+                      <div
+                        key={`${b.employeeName}-${i}`}
+                        className={`flex items-center gap-2 rounded-xl px-2.5 py-2 ${
+                          isToday
+                            ? "bg-pink-50 border border-pink-200/60"
+                            : "border border-gray-100 bg-gray-50/50"
+                        }`}
+                      >
+                        {/* Compact Avatar */}
+                        <div className="w-7 h-7 rounded-full bg-pink-200 flex items-center justify-center font-bold text-xs text-pink-700 shrink-0">
+                          {b.employeeName.charAt(0)}
+                        </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-200"></div>
-                <div>
-                  <p className="font-medium">Priya Singh</p>
-                  <p className="text-sm text-gray-500">5 Year Anniversary 🎉</p>
+                        {/* Name and Date */}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-semibold text-gray-800 capitalize truncate leading-tight">
+                            {b.employeeName}
+                          </p>
+                          <p className="text-[9px] text-gray-400">
+                            {new Date(b.dateOfBirth).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                            })}
+                          </p>
+                        </div>
+
+                        {/* Birthday Label Counter */}
+                        <span
+                          className={`shrink-0 text-[10px] font-semibold whitespace-nowrap ${
+                            isToday ? "text-pink-500" : "text-gray-400"
+                          }`}
+                        >
+                          {isToday ? "Today 🎂" : `In ${b.daysLeft} day${b.daysLeft > 1 ? 's' : ''} 🎈`}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Appraisals */}
+             {/* Leaves Summary */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText size={20} className="text-indigo-500" />
+              <h2 className="text-xl font-semibold">Leave Summary</h2>
+            </div>
+
+            <div className="space-y-2.5">
+              {/* Pending Row */}
+              <div className="flex items-center justify-between border border-gray-100 bg-orange-50/20 rounded-xl px-3 py-2.5 hover:bg-orange-50/40 transition-colors duration-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-orange-100 text-orange-600 shrink-0">
+                    <Clock size={16} />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Pending Requests</span>
+                </div>
+                <span className="bg-orange-100 text-orange-700 font-bold px-3 py-0.5 rounded-full text-xs min-w-[2.5rem] text-center">
+                  {summaryLoading ? "..." : summaryData?.pending_leaves || "0"}
+                </span>
+              </div>
+
+              {/* Approved Row */}
+              <div className="flex items-center justify-between border border-gray-100 bg-green-50/20 rounded-xl px-3 py-2.5 hover:bg-green-50/40 transition-colors duration-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-green-100 text-green-600 shrink-0">
+                    <CheckCircle2 size={16} />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Approved Leaves</span>
+                </div>
+                <span className="bg-green-100 text-green-700 font-bold px-3 py-0.5 rounded-full text-xs min-w-[2.5rem] text-center">
+                  {summaryLoading ? "..." : summaryData?.approved_leaves || "0"}
+                </span>
+              </div>
+
+              {/* Rejected Row */}
+              <div className="flex items-center justify-between border border-gray-100 bg-red-50/20 rounded-xl px-3 py-2.5 hover:bg-red-50/40 transition-colors duration-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-red-100 text-red-600 shrink-0">
+                    <XCircle size={16} />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Rejected Leaves</span>
+                </div>
+                <span className="bg-red-100 text-red-700 font-bold px-3 py-0.5 rounded-full text-xs min-w-[2.5rem] text-center">
+                  {summaryLoading ? "..." : summaryData?.rejected_leaves || "0"}
+                </span>
+              </div>
+            </div>
+          </div>
+                    {/* Appraisals */}
           <div className="bg-white rounded-2xl shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Appraisals</h2>
             <div className="space-y-4">
@@ -397,31 +465,6 @@ const currentY = new Date().getFullYear();
               </div>
             </div>
           </div>
-
-          {/* Leaves */}
-            <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Leave Summary</h2>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span>Pending</span>
-                  <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-sm">
-                    {summaryLoading ? "..." : summaryData?.pendingLeaves || "0"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Approved</span>
-                  <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-sm">
-                    {summaryLoading ? "..." : summaryData?.approvedLeaves || "0"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Rejected</span>
-                  <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm">
-                    {summaryLoading ? "..." : summaryData?.rejectedLeaves || "0"}
-                  </span>
-                </div>
-              </div>
-            </div>
           {/* Reimbursement */}
             <div className="bg-white rounded-2xl shadow p-6">
               <h2 className="text-xl font-semibold mb-4">Reimbursements</h2>

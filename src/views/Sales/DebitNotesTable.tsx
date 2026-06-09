@@ -3,23 +3,37 @@ import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openDebitNoteModal } from "../../store/modalStore";
-import { getAllDebitNotes } from "../../api/DebitNoteapi";
+import {
+  getAllDebitNotes,
+  deleteDebitNote,
+  submitDebitNote,
+  cancelDebitNote,
+} from "../../api/DebitNoteapi";
+import { getPurchaseInvoiceById } from "../../api/procurement/PurchaseInvoiceApi";
+import { generatePurchaseInvoicePDF } from "../../components/template/purchaseinvoicetemplete";
+import { getCompanyById } from "../../api/companySetupApi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { showLoading, closeSwal, showSuccess, showApiError } from "../../utils/alert";
-import InvoiceDetailsModal from "./InvoiceDetailsModal";
-import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
-import { deleteDebitNote, submitDebitNote, cancelDebitNote } from "../../api/DebitNoteapi";
+import {
+  showLoading,
+  closeSwal,
+  showSuccess,
+  showApiError,
+} from "../../utils/alert";
+import PurchaseInvoiceDetailModal, {
+  type PurchaseInvoiceDetail,
+} from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
+import ActionButton, {
+  ActionGroup,
+  ActionMenu,
+} from "../../components/ui/Table/ActionButton";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { getDebitNotebyId } from "../../api/DebitNoteapi";
 import { DebitNote } from "../../types/sales/Debitnotes";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-import {
-  ACTION_ICONS,
-  getStatusActionIcon,
-} from "../../components/UI_Utils/statusActionIcons";
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
+const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 const mapItem = (item: any): DebitNote => ({
   noteNo: item.name,
@@ -37,22 +51,36 @@ const DebitNotesTable: React.FC = () => {
   const [data, setData] = useState<DebitNote[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
-const { can } = usePermission();
+  const { can } = usePermission();
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [editData, setEditData] = useState<any | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const [createModals, setCreateModals] = useState<{ id: string }[]>([]);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsId, setDetailsId] = useState<string | null>(null);
+  const [company, setCompany] = useState<any | null>(null);
 
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerData, setDrawerData] = useState<PurchaseInvoiceDetail | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+  const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    getCompanyById(COMPANY_ID)
+      .then((res) => {
+        if (res?.status_code === 200) setCompany(res.data);
+      })
+      .catch((err) => showApiError(err));
+  }, []);
 
   const fetchDebitNotes = async () => {
     try {
@@ -61,9 +89,7 @@ const { can } = usePermission();
       setData(resp.data.map(mapItem));
       setTotalPages(resp.pagination.total_pages);
       setTotalItems(resp.pagination.total);
-      
     } catch (error: any) {
-      console.error("Failed to load debit notes", error);
       showApiError(error);
     } finally {
       setLoading(false);
@@ -85,74 +111,6 @@ const { can } = usePermission();
     setSortBy(colKey);
     setSortOrder(order);
     setPage(1);
-  };
-
-  const handleOpenReceipt = (receiptUrl: string) => {
-    const normalizedUrl = receiptUrl.startsWith("http://")
-      ? receiptUrl.replace(/^http:\/\//i, "https://")
-      : receiptUrl;
-
-    const urlWithoutPort = (() => {
-      try {
-        const u = new URL(normalizedUrl);
-        u.port = "";
-        return u.toString();
-      } catch {
-        return normalizedUrl.replace(/^(https?:\/\/[^\/]+):\d+(\/.*)?$/i, "$1$2");
-      }
-    })();
-
-    const a = document.createElement("a");
-    a.href = urlWithoutPort;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
-  const fetchAllDebitNotesForExport = async (): Promise<DebitNote[]> => {
-    try {
-      let allData: DebitNote[] = [];
-      let current = 1;
-      let total = 1;
-      do {
-        const resp = await getAllDebitNotes(current, 100, searchTerm);
-        allData = [...allData, ...resp.data.map(mapItem)];
-        total = resp.pagination.total_pages;
-        current++;
-      } while (current <= total);
-      return allData;
-    } catch (error) {
-      showApiError(error);
-      return [];
-    }
-  };
-
-  const handleDelete = async (noteNo: string) => {
-    const result = await fireManagedSwal({
-      icon: "warning",
-      title: "Are you sure?",
-      text: `Delete debit note ${noteNo}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete",
-      reverseButtons: true,
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-      showLoading("Deleting debit note...");
-      await deleteDebitNote(noteNo);
-      closeSwal();
-      setData((prev) => prev.filter((item) => item.noteNo !== noteNo));
-      showSuccess("Debit note deleted successfully");
-    } catch (error) {
-      closeSwal();
-      showApiError(error);
-    }
   };
 
   const handleSubmit = async (noteNo: string) => {
@@ -207,21 +165,108 @@ const { can } = usePermission();
     }
   };
 
+  const fetchAllDebitNotesForExport = async (): Promise<DebitNote[]> => {
+    try {
+      let allData: DebitNote[] = [];
+      let current = 1;
+      let total = 1;
+
+      do {
+        const resp = await getAllDebitNotes(current, 100, searchTerm);
+        allData = [...allData, ...resp.data.map(mapItem)];
+        total = resp.pagination.total_pages;
+        current++;
+      } while (current <= total);
+
+      return allData;
+    } catch (error) {
+      showApiError(error);
+      return [];
+    }
+  };
+
+  const handleDelete = async (noteNo: string) => {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Are you sure?",
+      text: `Delete debit note ${noteNo}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      showLoading("Deleting debit note...");
+      await deleteDebitNote(noteNo);
+      closeSwal();
+      setData((prev) => prev.filter((item) => item.noteNo !== noteNo));
+      showSuccess("Debit note deleted successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
+
   const handleEdit = async (note: DebitNote, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
       showLoading("Loading Debit Note...");
-      const res = await getDebitNotebyId(note.noteNo);
-      closeSwal();
-      const doc = res?.data;
-      if (!doc) {
+      const res = await getPurchaseInvoiceById(note.noteNo);
+      if (!res || res.status !== "success") {
+        closeSwal();
         showApiError("Debit Note data could not be loaded");
         return;
       }
-      openDebitNoteModal(doc,true);
+      closeSwal();
+      openDebitNoteModal(res.data, true);
     } catch (err) {
       closeSwal();
       showApiError(err);
+    }
+  };
+
+  const handleView = async (noteNo: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDrawerOpen(true);
+    setDrawerLoading(true);
+    setDrawerData(null);
+    try {
+      const res = await getPurchaseInvoiceById(noteNo);
+      if (res?.status === "success") {
+        setDrawerData(res.data as PurchaseInvoiceDetail);
+      } else {
+        showApiError(res);
+      }
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      setDrawerLoading(false);
+    }
+  };
+
+  const handleDrawerPdf = async (noteNo: string) => {
+    setDrawerPdfLoading(true);
+    setDrawerPdfUrl(null);
+    try {
+      if (!company) {
+        showApiError("Company data not loaded");
+        return;
+      }
+      const res = await getPurchaseInvoiceById(noteNo);
+      if (!res || res.status !== "success") {
+        showApiError(res);
+        return;
+      }
+      const blobUrl = await generatePurchaseInvoicePDF(res.data, company, "bloburl");
+      setDrawerPdfUrl(blobUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerPdfLoading(false);
     }
   };
 
@@ -242,7 +287,7 @@ const { can } = usePermission();
           Date: r.date,
           Amount: r.amount,
           Status: r.status,
-          currency: r.currency,
+          Currency: r.currency,
         }))
       );
       const workbook = XLSX.utils.book_new();
@@ -261,44 +306,42 @@ const { can } = usePermission();
       showApiError(error);
     }
   };
- const formatDate = (date: string | Date) => {
-  if (!date) return "";
 
-  const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
-  if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
-  }
-
-  // Date object — use local methods
-  return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-};
   const columns: Column<DebitNote>[] = [
-    { key: "noteNo", header: "Debit Invoice No",
-       render: (o) => (
+    {
+      key: "noteNo",
+      header: "Debit Invoice No",
+      render: (o) => (
         <div className="py-1.5">
-        <span className="block">
-          {o.noteNo || "—"}
-        </span>
+          <span className="block">{o.noteNo || "—"}</span>
         </div>
       ),
-     },
-    { key: "purchase_invoiceNo", header: "Receipt No",
-       render: (o) => (
+    },
+    {
+      key: "purchase_invoiceNo",
+      header: "Receipt No",
+      render: (o) => (
         <div className="py-1.5">
-        <span className="block">
-          {o.purchase_invoiceNo || "—"}
-        </span>
+          <span className="block">{o.purchase_invoiceNo || "—"}</span>
         </div>
       ),
-     },
-    { key: "supplier", header: "Supplier" ,
-       render: (o) => (
+    },
+    {
+      key: "supplier",
+      header: "Supplier",
+      render: (o) => (
         <div className="py-1.5">
-        <span className="block">
-          {o.supplier || "—"}
-        </span>
+          <span className="block">{o.supplier || "—"}</span>
         </div>
       ),
     },
@@ -307,31 +350,32 @@ const { can } = usePermission();
       header: "Amount",
       align: "right",
       render: (r) => (
-      <div className="py-1.5">
-        <code className="block whitespace-nowrap">
-          {r.amount.toLocaleString()}  {r.currency}
-        </code>
+        <div className="py-1.5">
+          <code className="block whitespace-nowrap">
+            {r.amount.toLocaleString()} {r.currency}
+          </code>
         </div>
       ),
     },
-    { key: "date", header: "Date" ,  render: (o) => (
-      <div className="py-1.5">
-        <span className="block">
-          {formatDate(o.date) || "—"}
-        </span>
+    {
+      key: "date",
+      header: "Date",
+      render: (o) => (
+        <div className="py-1.5">
+          <span className="block">{formatDate(o.date) || "—"}</span>
         </div>
-      ),   
+      ),
     },
     {
       key: "status",
       header: "Status",
-       render: (r) => (
+      render: (r) => (
         <div className="py-1.5">
           <StatusBadge status={r.status} />
         </div>
       ),
     },
-     {
+    {
       key: "actions",
       header: "Actions",
       align: "center",
@@ -340,22 +384,20 @@ const { can } = usePermission();
           <ActionButton
             type="view"
             iconOnly
-            onClick={() => { setDetailsId(r.noteNo); setDetailsOpen(true); }}
+            onClick={(e) => handleView(r.noteNo, e)}
           />
 
-          {/* Edit — needs write + Draft */}
           <PermissionGate module={DEBIT_NOTE_MODULE} action="write">
             <ActionButton
               type="edit"
               onClick={(e) => handleEdit(r, e)}
               iconOnly
               disabled={r.status !== "Draft"}
-              title={r.status !== "Draft" ? "Only Draft invoices can be edited" : "Edit DebitNote"}
+              title={r.status !== "Draft" ? "Only Draft invoices can be edited" : "Edit Debit Note"}
             />
           </PermissionGate>
 
           <ActionMenu
-            // Delete — needs delete
             {...(can(DEBIT_NOTE_MODULE, "delete")
               ? { onDelete: (e) => { e?.stopPropagation(); handleDelete(r.noteNo); } }
               : {})}
@@ -373,7 +415,6 @@ const { can } = usePermission();
     },
   ];
 
-
   return (
     <div className="h-full min-h-0">
       <Table
@@ -385,12 +426,12 @@ const { can } = usePermission();
         showToolbar
         searchValue={searchTerm}
         onSearch={(q) => { setSearchTerm(q); setPage(1); }}
-        enableAdd={can(DEBIT_NOTE_MODULE, "create")} 
+        enableAdd={can(DEBIT_NOTE_MODULE, "create")}
         addLabel="Add Debit Note"
         onAdd={() => openDebitNoteModal()}
         emptyMessage="No debit notes found"
         enableColumnSelector
-       enableExport={can(DEBIT_NOTE_MODULE, "export")}
+        enableExport={can(DEBIT_NOTE_MODULE, "export")}
         onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}
@@ -404,13 +445,28 @@ const { can } = usePermission();
         onSortChange={handleSortChange}
       />
 
-      <InvoiceDetailsModal
-        open={detailsOpen}
-        invoiceId={detailsId}
-        onClose={() => { setDetailsOpen(false); setDetailsId(null); }}
-        onOpenReceiptPdf={handleOpenReceipt}
+      <PurchaseInvoiceDetailModal
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerData(null);
+          setDrawerPdfUrl(null);
+        }}
+        pdfUrl={drawerPdfUrl}
+        pdfLoading={drawerPdfLoading}
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.piId)}
+        onDownload={() =>
+          drawerData &&
+          company &&
+          generatePurchaseInvoicePDF(drawerData, company, "save")
+        }
+        onClosePdf={() => {
+          if (drawerPdfUrl?.startsWith("blob:")) URL.revokeObjectURL(drawerPdfUrl);
+          setDrawerPdfUrl(null);
+        }}
       />
-
     </div>
   );
 };

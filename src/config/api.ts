@@ -1,4 +1,5 @@
 
+import { autoUpdate } from "@floating-ui/react";
 import { ENV } from "./env";
 
 const getApiBaseUrl = (): string => {
@@ -277,6 +278,7 @@ export const API = {
   tax: {
     getTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get`,
     taxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.create_or_update_tax_template`,
+    getTaxTemplateById: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_item_tax_template_by_id`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
     getTemplateGl: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
     updatestatus: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.update_item_template_tax_status`,
@@ -434,6 +436,7 @@ export const API = {
     attachDocument:`${ERP_BASE}/api/method/upload_file`,
     advance: `${ERP_BASE}/api/resource/Employee Advance`,
     changeAdvanceStatus: `${ERP_BASE}/api/method/frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs`,
+    addComment: `${ERP_BASE}/api/method/frappe.desk.form.utils.add_comment`,
     
   },
   /* =========================
@@ -632,11 +635,17 @@ export const API = {
       salaryslip: `${ERP_BASE}/api/resource/Salary Slip`,
       salaryslip_pdf: `${ERP_BASE}/api/method/frappe.utils.print_format.download_pdf`,
       getpayrollpreview:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
+      cancelpayrollentry: `${ERP_BASE}/api/resource/Payroll Entry`,
 
       SalarystructureAssignment: {
         getAll: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.get_salary_structure_assignment_list`,
       },
     },
+    
+  autoUpdatesalarycomp: {
+   
+    performUpdate: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.sync_condition_and_formula`,
+  },
 
   },
 
@@ -728,6 +737,7 @@ export const API = {
   salaryPreviewAPI: {
     getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
   },  
+
 
 
 
