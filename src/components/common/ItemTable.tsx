@@ -58,10 +58,12 @@ interface ItemTableProps {
 
 interface InvoiceHeadersProps {
   isSalesInvoice: boolean;
+  isQuotation: boolean;
 }
 
 const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
   isSalesInvoice,
+  isQuotation,
 }) => (
   <tr className="border-b border-theme">
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">
@@ -99,9 +101,11 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[40px] whitespace-nowrap">
       Unit Price <span className="text-danger">*</span>
     </th>
+    {!isQuotation && (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
       Dis(%)
     </th>
+    )}
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
       Tax(%)
     </th>
@@ -491,6 +495,7 @@ useBarcodeScanner(async (barcode) => {
         </td>
 
         {/* Discount */}
+        {!isQuotation && (
         <td className="px-1 py-1">
           <NumericInput
             name="discount"
@@ -507,6 +512,7 @@ useBarcodeScanner(async (barcode) => {
             }
           />
         </td>
+        )}
 
         {/* VAT Rate */}
         <td className="px-1 py-1">
@@ -617,9 +623,15 @@ useBarcodeScanner(async (barcode) => {
       <div className="mt-2 overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-[10px] leading-tight">
           <thead>
-  {columnHeaders || (
-    <InvoiceHeaders isSalesInvoice={isSalesInvoice} />
+  {/* {columnHeaders || ( */}
+    {/* // <InvoiceHeaders isSalesInvoice={isSalesInvoice} />  */}
+    {columnHeaders || (
+    <InvoiceHeaders 
+      isSalesInvoice={isSalesInvoice} 
+      isQuotation={isQuotation} 
+    />
   )}
+    
 </thead>
           <tbody>
             {paginatedItems.map((it, idx) => {
