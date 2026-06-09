@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Layers, Save, X,  } from "lucide-react";
+import { Layers, Save, X } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
 import { useAccountSearch } from "../../../api/apiHooks";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
@@ -8,13 +8,13 @@ import {
   createSalaryComponent,
   updateSalaryComponent,
   getSalaryComponent,
+  syncSalaryComponentFormula,
   type SalaryComponent,
   type SalaryComponentType,
 } from "../../../api/payrollConfigApi";
 import {
   ModalInput,
   ModalSelect,
-  
 } from "../../../components/ui/modal/modalComponent";
 import {
   showApiError,
@@ -355,8 +355,14 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const [saving, setSaving] = useState(false);
   const [, setLoadingData] = useState(false);
   const { fetchAccounts } = useAccountSearch();
-const { markDirty, resetDirty, handleCloseWithConfirm, containerRef, activate, deactivate } =
-  useUnsavedChangesGuard();
+  const {
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
+    containerRef,
+    activate,
+    deactivate,
+  } = useUnsavedChangesGuard();
   /* inject styles once */
   useEffect(() => {
     const id = "sc-styles-v9";
@@ -369,16 +375,16 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef, activate, d
   }, []);
 
   /* reset / load on open */
-useEffect(() => {
-  if (!isOpen) {
-    deactivate();
-    resetDirty();
-    return;
-  }
-  if (isEdit && initialData?.name) loadSalaryComponent(initialData.name);
-  else setForm({ ...EMPTY, accounts: [{ account: "" }] });
-  return activate();
-}, [isOpen, isEdit, initialData?.name]);
+  useEffect(() => {
+    if (!isOpen) {
+      deactivate();
+      resetDirty();
+      return;
+    }
+    if (isEdit && initialData?.name) loadSalaryComponent(initialData.name);
+    else setForm({ ...EMPTY, accounts: [{ account: "" }] });
+    return activate();
+  }, [isOpen, isEdit, initialData?.name]);
   const loadSalaryComponent = async (name: string) => {
     try {
       setLoadingData(true);
@@ -417,47 +423,45 @@ useEffect(() => {
     }
   };
 
-const set = useCallback(
-  <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
+  const set = useCallback(
+    <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
+      markDirty();
+      setForm((prev) => ({ ...prev, [key]: value }));
+    },
+    [markDirty],
+  );
+  const tog = (key: keyof Omit<SalaryComponent, "name">) => (val: boolean) => {
     markDirty();
-    setForm((prev) => ({ ...prev, [key]: value }));
-  },
-  [markDirty],
-);
- const tog = (key: keyof Omit<SalaryComponent, "name">) => (val: boolean) => {
-  markDirty();
-  setForm((prev) => ({ ...prev, [key]: val ? 1 : 0 }));
-};
+    setForm((prev) => ({ ...prev, [key]: val ? 1 : 0 }));
+  };
 
-const handleTypeChange = (newType: SalaryComponentType) => {
-  markDirty();
-  setForm((prev) => ({
-    ...prev,
-    type: newType,
-    depends_on_payment_days: 1,
-    is_tax_applicable: newType === "Earning" ? 1 : 0,
-    is_flexible_benefit: 0,
-    remove_if_zero_valued: 1,
-    pay_against_benefit_claim: 0,
-    max_benefit_amount: 0,
-    only_tax_impact: 0,
-    create_separate_payment_entry_against_benefit_claim: 0,
-    payout_method: "",
-    variable_based_on_taxable_salary: 0,
-    is_income_tax_component: 0,
-  }));
-};
+  const handleTypeChange = (newType: SalaryComponentType) => {
+    markDirty();
+    setForm((prev) => ({
+      ...prev,
+      type: newType,
+      depends_on_payment_days: 1,
+      is_tax_applicable: newType === "Earning" ? 1 : 0,
+      is_flexible_benefit: 0,
+      remove_if_zero_valued: 1,
+      pay_against_benefit_claim: 0,
+      max_benefit_amount: 0,
+      only_tax_impact: 0,
+      create_separate_payment_entry_against_benefit_claim: 0,
+      payout_method: "",
+      variable_based_on_taxable_salary: 0,
+      is_income_tax_component: 0,
+    }));
+  };
 
-
- const updateAccount = (idx: number, value: string) => {
-  markDirty();
-  setForm((prev) => {
-    const accounts = [...(prev.accounts ?? [])];
-    accounts[idx] = { account: value };
-    return { ...prev, accounts };
-  });
-};
-
+  const updateAccount = (idx: number, value: string) => {
+    markDirty();
+    setForm((prev) => {
+      const accounts = [...(prev.accounts ?? [])];
+      accounts[idx] = { account: value };
+      return { ...prev, accounts };
+    });
+  };
 
   const handleSave = async () => {
     if (!form.salary_component.trim())
@@ -511,6 +515,15 @@ const handleTypeChange = (newType: SalaryComponentType) => {
       };
       if (isEdit && initialData?.name) {
         await updateSalaryComponent(initialData.name, payload);
+
+        try {
+          await syncSalaryComponentFormula(
+            payload.salary_component || form.salary_component,
+          );
+        } catch (error) {
+          console.error("Salary structure sync failed", error);
+        }
+
         showSuccess("Salary component updated");
       } else {
         await createSalaryComponent(payload);
@@ -559,7 +572,7 @@ const handleTypeChange = (newType: SalaryComponentType) => {
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-     onClose={() => handleCloseWithConfirm(onClose, modalId)}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEdit ? "Edit Salary Component" : "New Salary Component"}
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}

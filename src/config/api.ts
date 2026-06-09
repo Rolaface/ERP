@@ -1,4 +1,5 @@
 
+import { autoUpdate } from "@floating-ui/react";
 import { ENV } from "./env";
 
 const getApiBaseUrl = (): string => {
@@ -639,6 +640,11 @@ export const API = {
         getAll: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.get_salary_structure_assignment_list`,
       },
     },
+    
+  autoUpdatesalarycomp: {
+   
+    performUpdate: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.sync_condition_and_formula`,
+  },
 
   },
 
@@ -730,6 +736,7 @@ export const API = {
   salaryPreviewAPI: {
     getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
   },  
+
 
 
 
