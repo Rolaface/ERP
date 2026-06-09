@@ -13,9 +13,9 @@ import PaymentInfoBlock from "./PaymentInfoBlock";
 import { quotationStatusOptions } from "../../types/quotation";
 import DatePickerInput from "../calendar/DatePickerInput";
 import {
-  currencySymbols,
+
   paymentMethodOptions,
-  currencyOptions,
+  
   ITEMS_PER_PAGE,
 } from "../../constants/invoice.constants";
 import ModalFooter from "../common/ModalFooter";
@@ -102,7 +102,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       }
     };
 
-  const symbol = currencySymbols[formData.currencyCode] || "";
+  const symbol = "";
 
   // const handleSave = async (e?: React.FormEvent) => {
   //   e?.preventDefault();
@@ -342,14 +342,18 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   {/* Currency */}
                   <div className="min-w-[120px]">
                     <ModalSelect
-                      label="Currency "
-                      name="currencyCode"
-                      value={formData.currencyCode}
-                      onChange={actions.handleInputChange}
-                      options={[...currencyOptions]}
-                      disabled
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    ></ModalSelect>
+                                      label="Currency"
+                                      name="currencyCode"
+                                      value={formData.currencyCode}
+                                      onChange={actions.handleInputChange}
+                                      options={
+                                        formData.currencyCode
+                                          ? [{ value: formData.currencyCode, label: formData.currencyCode }]
+                                          : []
+                                      }
+                                      disabled
+                                      className="w-full border border-theme rounded text-[11px] text-main bg-card"
+                                    />
                   </div>
 
                   {/* Status */}
