@@ -8,6 +8,7 @@ import {
   deletePayrollEntry,
   getPayrollVerificationDetail,cancelPayrollEntry
 } from "../../../api/payroll/payrollEntryApi";
+import { fireManagedSwal } from "../../../utils/swalManager";
 import type { CreatePayrollEntryPayload } from "../../../api/payroll/payrollEntryApi";
 
 import { openPayrollModal, openPayrollPreviewModal } from "../../../store/modalStore";
@@ -137,12 +138,27 @@ export default function PayrollManagement() {
     }
   };
 const handleCancelPayroll = async (record: PayrollRecord) => {
+  const confirm = await fireManagedSwal({
+    icon: "warning",
+    title: "Revert Payroll?",
+    text: `Are you sure you want to revert payroll ${(record as any).name}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, Revert",
+  });
+
+  if (!confirm.isConfirmed) {
+    return;
+  }
+
   try {
     showLoading("Reverting Payroll");
 
     await cancelPayrollEntry((record as any).name);
 
     closeSwal();
+
     showSuccess("Payroll reverted successfully");
 
     await loadPayrollEntries();
@@ -151,20 +167,36 @@ const handleCancelPayroll = async (record: PayrollRecord) => {
     showApiError(error);
   }
 };
+const handleDeletePayroll = async (id: string) => {
+  const confirm = await fireManagedSwal({
+    icon: "warning",
+    title: "Delete Payroll?",
+    text: `Are you sure you want to delete payroll ${id}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, Delete",
+  });
 
-  const handleDeletePayroll = async (id: string) => {
-    try {
-      showLoading("Deleting Payroll");
-      await deletePayrollEntry(id);
-      closeSwal();
-      showSuccess("Payroll deleted successfully");
-      await loadPayrollEntries();
-    } catch (error) {
-      closeSwal();
-      showApiError(error);
-    }
-  };
+  if (!confirm.isConfirmed) {
+    return;
+  }
 
+  try {
+    showLoading("Deleting Payroll");
+
+    await deletePayrollEntry(id);
+
+    closeSwal();
+
+    showSuccess("Payroll deleted successfully");
+
+    await loadPayrollEntries();
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
   const handleEditPayroll = async (r: PayrollRecord) => {
     try {
       showLoading("Loading Payroll");
