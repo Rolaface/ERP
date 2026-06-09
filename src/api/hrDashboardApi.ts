@@ -22,6 +22,7 @@ export type HrDashboardSummaryResponse = {
     approved_leaves: number;
     rejected_leaves: number;
     present_today: number;
+    upcoming_birthdays?: Array<{employeeName: string, dateOfBirth: string, daysLeft: number}>;
   };
 };
 
