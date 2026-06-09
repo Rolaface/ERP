@@ -9,7 +9,7 @@ const features = [
   { icon: Users, label: "Team Collaboration" },
 ];
 
-const LoginPage = () => {
+const Login = () => {
   const {
     email,
     setEmail,
@@ -353,5 +353,5 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default Login;
 
