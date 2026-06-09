@@ -512,3 +512,16 @@ export async function deletePayrollPeriod(name: string): Promise<void> {
     );
   }
 }
+export async function syncSalaryComponentFormula(
+  salaryComponent: string,
+) {
+  const resp = await api({
+    method: "POST",
+    url: Payroll.autoUpdatesalarycomp.performUpdate,
+    params: {
+      salary_component: salaryComponent,
+    },
+  });
+
+  return resp.data;
+}
