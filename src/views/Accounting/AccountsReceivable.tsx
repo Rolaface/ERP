@@ -29,10 +29,20 @@ import { getPaymentById } from "../../api/CustomerPayment";
 import PaymentEntryDetailModal, {
   type PaymentEntryDetail,
 } from "../../components/PaymentEntryDetailModal";
+
+import JournalEntryDetailModal, {
+  type JournalEntryDetail,
+} from "../../components/JournalEntryDetailModal";
+
+import { getJournalEntryById } from "../../api/Accounting/JournalEntryApi";
 import { showApiError } from "../../utils/alert";
+import { useCompanyStore } from "../../store/companyStore";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
-type ReceivableVoucherType = "Sales Invoice" | "Payment Entry";
+type ReceivableVoucherType =
+  | "Sales Invoice"
+  | "Payment Entry"
+  | "Journal Entry";
 
 type ReceivableRecord = {
   posting_date?: string;
@@ -90,23 +100,31 @@ type Receivable = {
   actions?: string;
 };
 
+type LookupOption = {
+  label: string;
+  value: string;
+};
+
 const AccountsReceivable = () => {
   const getTodayDate = () => new Date().toISOString().split("T")[0];
 
+  const { currencySymbol } = useCompanyStore();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [currency, setCurrency] = useState("");
-  const [reportDate, setReportDate] = useState(getTodayDate());
+  const [postingDate, setPostingDate] = useState(getTodayDate());
 
   const [selectedGroupBy, setSelectedGroupBy] = useState<string[]>([]);
 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [costCenterOptions, setCostCenterOptions] = useState<string[]>([]);
-  const [customerOptions, setCustomerOptions] = useState<string[]>([]);
+  const [costCenterOptions, setCostCenterOptions] = useState<LookupOption[]>(
+    [],
+  );
+  const [customerOptions, setCustomerOptions] = useState<LookupOption[]>([]);
   const [receivableAccountOptions, setReceivableAccountOptions] = useState<
-    string[]
+    LookupOption[]
   >([]);
 
   const [selectedVoucherType, setSelectedVoucherType] = useState<
@@ -115,6 +133,7 @@ const AccountsReceivable = () => {
   const voucherTypeOptions: ReceivableVoucherType[] = [
     "Sales Invoice",
     "Payment Entry",
+    "Journal Entry",
   ];
   const [selectedCostCenter, setSelectedCostCenter] = useState<string>("");
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
@@ -147,6 +166,11 @@ const AccountsReceivable = () => {
     useState<PaymentEntryDetail | null>(null);
   const [paymentDrawerLoading, setPaymentDrawerLoading] = useState(false);
 
+  const [journalDrawerOpen, setJournalDrawerOpen] = useState(false);
+  const [journalDrawerData, setJournalDrawerData] =
+    useState<JournalEntryDetail | null>(null);
+  const [journalDrawerLoading, setJournalDrawerLoading] = useState(false);
+
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
@@ -176,9 +200,15 @@ const AccountsReceivable = () => {
           getCustomerList(),
           getCompanyRecievableAccounts(),
         ]);
-        setCostCenterOptions(cc.map((c: any) => c.value));
-        setCustomerOptions(cust.map((c: any) => c.value));
-        setReceivableAccountOptions(acc.map((a: any) => a.value));
+        setCostCenterOptions(
+          cc.map((c: any) => ({ label: c.label || c.value, value: c.value })),
+        );
+        setCustomerOptions(
+          cust.map((c: any) => ({ label: c.label || c.value, value: c.value })),
+        );
+        setReceivableAccountOptions(
+          acc.map((a: any) => ({ label: a.label || a.value, value: a.value })),
+        );
       } catch (error) {
         console.error(error);
       }
@@ -191,7 +221,7 @@ const AccountsReceivable = () => {
   }, [
     searchTerm,
     filterStatus,
-    reportDate,
+    postingDate,
     selectedGroupBy,
     selectedCostCenter,
     selectedCustomers,
@@ -209,7 +239,7 @@ const AccountsReceivable = () => {
         ...(filterStatus && filterStatus !== "all"
           ? { status: filterStatus }
           : {}),
-        report_date: reportDate || undefined,
+        posting_date: postingDate || undefined,
         cost_center: selectedCostCenter || undefined,
         party: selectedCustomers.length
           ? selectedCustomers.join(",")
@@ -225,7 +255,6 @@ const AccountsReceivable = () => {
         const payload = response.message.data;
         const backendKpis = payload.kpis;
         const backendData = payload.rows || payload.data || [];
-        setCurrency(backendData?.[0]?.currency ?? "-");
 
         setKpis(backendKpis);
 
@@ -241,13 +270,30 @@ const AccountsReceivable = () => {
 
             if (!isSummary) {
               if (row.due_date) {
-                const dueDate = new Date(row.due_date);
-                const timeDiff = dueDate.getTime() - today.getTime();
-                daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                dueDisplay = row.due_date;
+                const safeDateStr = row.due_date.includes(" ") 
+                  ? row.due_date.replace(" ", "T") 
+                  : row.due_date;
+                
+                const dueDateObj = new Date(safeDateStr);
+                
+                if (!isNaN(dueDateObj.getTime())) {
+                  const timeDiff = dueDateObj.getTime() - today.getTime();
+                  daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                }
+                
+                dueDisplay = formatDate(row.due_date);
+                
+              } else if (row.posting_date) {
+                daysLeft = -(row.age || 0);
+                dueDisplay = formatDate(row.posting_date);
+                
+              } else if ((row as any).report_date) {
+                daysLeft = -(row.age || 0);
+                dueDisplay = formatDate((row as any).report_date);
+                
               } else {
                 daysLeft = -(row.age || 0);
-                dueDisplay = `Posted: ${row.posting_date}`;
+                dueDisplay = "—";
               }
 
               status = "Pending";
@@ -303,7 +349,7 @@ const AccountsReceivable = () => {
     pageSize,
     searchTerm,
     filterStatus,
-    reportDate,
+    postingDate,
     selectedGroupBy,
     sortBy,
     sortOrder,
@@ -322,7 +368,10 @@ const AccountsReceivable = () => {
       setDrawerData(null);
       try {
         const res = await getSalesInvoiceById(row.id);
-        if (res?.message?.status_code === 200 || res?.message?.status === "success") {
+        if (
+          res?.message?.status_code === 200 ||
+          res?.message?.status === "success"
+        ) {
           setDrawerData(res?.message?.data as InvoiceDetail);
         }
       } catch (err) {
@@ -343,6 +392,23 @@ const AccountsReceivable = () => {
         showApiError(err);
       } finally {
         setPaymentDrawerLoading(false);
+      }
+    } else if (row.voucherType === "Journal Entry") {
+      setJournalDrawerOpen(true);
+      setJournalDrawerLoading(true);
+      setJournalDrawerData(null);
+      try {
+        const res = await getJournalEntryById(row.id);
+
+        const journalData = res?.message?.data || res?.data;
+
+        if (journalData) {
+          setJournalDrawerData(journalData as JournalEntryDetail);
+        }
+      } catch (err) {
+        showApiError(err);
+      } finally {
+        setJournalDrawerLoading(false);
       }
     } else {
       console.log(`View detail is not supported for ${row.voucherType}.`);
@@ -377,7 +443,7 @@ const AccountsReceivable = () => {
         page: 1,
         page_size: 999999,
         search: searchTerm,
-        report_date: reportDate || undefined,
+        posting_date: postingDate || undefined,
         cost_center: selectedCostCenter || undefined,
         party: selectedCustomers.length
           ? selectedCustomers.join(",")
@@ -417,7 +483,7 @@ const AccountsReceivable = () => {
         "Posting Date": row.posting_date || "",
         "Due Date": row.due_date || "",
         "Age (Days)": row.age || 0,
-        Currency: row.currency || "INR",
+        Currency: row.currency || currencySymbol || "-",
         "PO No": row.po_no || "",
       }));
 
@@ -471,19 +537,19 @@ const AccountsReceivable = () => {
   const stats = [
     {
       label: "Total Outstanding",
-      value: `${currency} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currencySymbol || "-"} ${(kpis?.total_outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
       label: "Overdue Amount",
-      value: `${currency} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      value: `${currencySymbol || "-"} ${(kpis?.overdue_amount || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
     {
       label: "Total Customers",
       value: ` ${kpis?.total_customers || 0}`,
     },
     {
-      label: "Total Invoiced",
-      value: `${currency} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+      label: "Total Amount",
+      value: `${currencySymbol || "-"} ${(kpis?.total_invoiced || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
     },
   ];
 
@@ -509,18 +575,37 @@ const AccountsReceivable = () => {
     { label: "91-120 Days", key: "91_120" },
     { label: "121+ Days", key: "121_above" },
   ];
-  const formatDate = (date?: string | Date) => {
-    if (!date) return "";
+  const formatDate = (date?: string | Date | null): string => {
+  if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  try {
+    let d: Date;
 
-    if (typeof date === "string") {
-      const [year, month, day] = date.split("T")[0].split("-").map(Number);
-      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    if (date instanceof Date) {
+      d = date;
+    } else {
+      let safeDateStr = String(date).trim();
+      if (safeDateStr.includes(" ")) {
+        safeDateStr = safeDateStr.replace(" ", "T");
+      }
+      d = new Date(safeDateStr);
     }
 
-    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
-  };
+    if (isNaN(d.getTime())) return "";
+
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+      .format(d)
+      .replace(/ /g, "-")
+      .toUpperCase();
+      
+  } catch (error) {
+    return "";
+  }
+};
 
   const columns: Column<Receivable>[] = [
     {
@@ -552,10 +637,10 @@ const AccountsReceivable = () => {
     },
     {
       key: "invoicedAmount",
-      header: "Invoiced",
+      header: "Total",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-
+          {currencySymbol || "-"}{" "}
           {row.invoicedAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
@@ -567,8 +652,8 @@ const AccountsReceivable = () => {
       header: "Paid",
       render: (row) => (
         <span className={row.isSummary ? "font-bold text-main" : ""}>
-
-          {currency} {row.paidAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"}{" "}
+          {row.paidAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -581,8 +666,8 @@ const AccountsReceivable = () => {
         <span
           className={`text-main ${row.isSummary ? "font-bold" : "font-semibold"}`}
         >
-
-          {currency} {row.outstandingAmount.toLocaleString(undefined, {
+          {currencySymbol || "-"}{" "}
+          {row.outstandingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 0,
           })}
         </span>
@@ -591,7 +676,8 @@ const AccountsReceivable = () => {
     {
       key: "due",
       header: "Due/Posted Date",
-      render: (row) => (row.isSummary ? null : <span>{formatDate(row.due)}</span>),
+      render: (row) =>
+        row.isSummary ? null : <span>{formatDate(row.due)}</span>,
     },
     {
       key: "days",
@@ -605,8 +691,9 @@ const AccountsReceivable = () => {
               <FaClock className="text-muted text-xs" />
             )}
             <span
-              className={`text-xs font-medium ${row.overdue ? "text-danger" : "text-muted"
-                }`}
+              className={`text-xs font-medium ${
+                row.overdue ? "text-danger" : "text-muted"
+              }`}
             >
               {Math.abs(row.days)} days {row.overdue ? "overdue" : "left"}
             </span>
@@ -621,14 +708,15 @@ const AccountsReceivable = () => {
         const s = row.status.toLowerCase();
         return (
           <span
-            className={`px-3 py-1 rounded-full text-[10px] font-bold ${s === "paid"
-              ? "bg-success text-success"
-              : s === "overdue"
-                ? "bg-danger text-white"
-                : s === "pending"
-                  ? "bg-warning text-warning"
-                  : "bg-primary text-white"
-              }`}
+            className={`px-3 py-1 rounded-full text-[10px] font-bold ${
+              s === "paid"
+                ? "bg-success text-success"
+                : s === "overdue"
+                  ? "bg-danger text-white"
+                  : s === "pending"
+                    ? "bg-warning text-warning"
+                    : "bg-primary text-white"
+            }`}
           >
             {row.status}
           </span>
@@ -676,15 +764,13 @@ const AccountsReceivable = () => {
           ref={dropdownRef}
           className="flex flex-wrap gap-3 items-center w-full lg:w-auto"
         >
-
-
           <div className="relative">
             <input
               type="date"
-              value={reportDate}
-              onChange={(e) => setReportDate(e.target.value)}
+              value={postingDate}
+              onChange={(e) => setPostingDate(e.target.value)}
               className="px-3 py-2 border border-theme bg-app rounded-lg text-main text-sm h-[38px] w-full sm:w-auto cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              title="Report Date"
+              title="Posting Date"
             />
           </div>
 
@@ -693,10 +779,11 @@ const AccountsReceivable = () => {
               onClick={() =>
                 setActiveDropdown(activeDropdown === "status" ? null : "status")
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${filterStatus !== "all"
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
+                filterStatus !== "all"
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               <FaFilter className="text-xs" /> {filterStatus}
             </button>
@@ -709,10 +796,11 @@ const AccountsReceivable = () => {
                       setFilterStatus(s);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${filterStatus === s
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={`block w-full text-left px-4 py-2 text-sm capitalize transition-colors ${
+                      filterStatus === s
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     {s}
                   </button>
@@ -727,10 +815,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "voucherType" ? null : "voucherType",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedVoucherType !== ""
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedVoucherType !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Voucher Type
             </button>
@@ -742,10 +831,11 @@ const AccountsReceivable = () => {
                     setSelectedVoucherType("");
                     setActiveDropdown(null);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${selectedVoucherType === ""
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-main hover:bg-app"
-                    }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    selectedVoucherType === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
                 >
                   All Types
                 </button>
@@ -757,10 +847,11 @@ const AccountsReceivable = () => {
                       setSelectedVoucherType(opt);
                       setActiveDropdown(null);
                     }}
-                    className={`block w-full text-left px-4 py-2 text-sm ${selectedVoucherType === opt
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={`block w-full text-left px-4 py-2 text-sm ${
+                      selectedVoucherType === opt
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
                     {opt}
                   </button>
@@ -776,10 +867,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "groupBy" ? null : "groupBy",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${selectedGroupBy.length > 0
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 capitalize transition-all ${
+                selectedGroupBy.length > 0
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Group By{" "}
               {selectedGroupBy.length > 0 && `(${selectedGroupBy.length})`}
@@ -817,10 +909,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "customer" ? null : "customer",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedCustomers.length > 0
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedCustomers.length > 0
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Customer{" "}
               {selectedCustomers.length > 0 && `(${selectedCustomers.length})`}
@@ -829,22 +922,22 @@ const AccountsReceivable = () => {
               <div className="absolute top-full left-0 mt-2 bg-card border border-theme rounded-lg z-20 w-64 shadow-xl max-h-64 overflow-y-auto py-1">
                 {customerOptions.map((opt) => (
                   <label
-                    key={opt}
+                    key={opt.value}
                     className="flex items-center gap-3 px-4 py-2 hover:bg-app cursor-pointer text-sm text-main transition-colors"
                   >
                     <input
                       type="checkbox"
-                      checked={selectedCustomers.includes(opt)}
+                      checked={selectedCustomers.includes(opt.value)}
                       onChange={() =>
                         handleMultiSelect(
-                          opt,
+                          opt.value,
                           selectedCustomers,
                           setSelectedCustomers,
                         )
                       }
                       className="rounded border-theme bg-app text-primary focus:ring-primary/50 cursor-pointer"
                     />
-                    <span className="truncate">{opt}</span>
+                    <span className="truncate">{opt.label}</span>
                   </label>
                 ))}
                 {customerOptions.length === 0 && (
@@ -863,10 +956,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "costCenter" ? null : "costCenter",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedCostCenter !== ""
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedCostCenter !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Cost Center
             </button>
@@ -877,10 +971,11 @@ const AccountsReceivable = () => {
                     setSelectedCostCenter("");
                     setActiveDropdown(null);
                   }}
-                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === ""
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-main hover:bg-app"
-                    }`}
+                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                    selectedCostCenter === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
                 >
                   All Cost Centers
                   {selectedCostCenter === "" && (
@@ -889,18 +984,19 @@ const AccountsReceivable = () => {
                 </button>
                 {costCenterOptions.map((opt) => (
                   <button
-                    key={opt}
+                    key={opt.value}
                     onClick={() => {
-                      setSelectedCostCenter(opt);
+                      setSelectedCostCenter(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedCostCenter === opt
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                      selectedCostCenter === opt.value
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
-                    <span className="truncate pr-2">{opt}</span>
-                    {selectedCostCenter === opt && (
+                    <span className="truncate pr-2">{opt.label}</span>
+                    {selectedCostCenter === opt.value && (
                       <FaCheck className="text-[10px] shrink-0" />
                     )}
                   </button>
@@ -916,10 +1012,11 @@ const AccountsReceivable = () => {
                   activeDropdown === "account" ? null : "account",
                 )
               }
-              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${selectedReceivableAccount !== ""
-                ? "border-primary bg-primary/10 text-primary font-medium"
-                : "border-theme bg-app text-main hover:bg-theme/50"
-                }`}
+              className={`px-4 py-2 border rounded-lg text-sm h-[38px] flex items-center gap-2 transition-all ${
+                selectedReceivableAccount !== ""
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-theme bg-app text-main hover:bg-theme/50"
+              }`}
             >
               Account
             </button>
@@ -930,10 +1027,11 @@ const AccountsReceivable = () => {
                     setSelectedReceivableAccount("");
                     setActiveDropdown(null);
                   }}
-                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedReceivableAccount === ""
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-main hover:bg-app"
-                    }`}
+                  className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                    selectedReceivableAccount === ""
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-main hover:bg-app"
+                  }`}
                 >
                   All Accounts
                   {selectedReceivableAccount === "" && (
@@ -942,18 +1040,19 @@ const AccountsReceivable = () => {
                 </button>
                 {receivableAccountOptions.map((opt) => (
                   <button
-                    key={opt}
+                    key={opt.value}
                     onClick={() => {
-                      setSelectedReceivableAccount(opt);
+                      setSelectedReceivableAccount(opt.value);
                       setActiveDropdown(null);
                     }}
-                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${selectedReceivableAccount === opt
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-main hover:bg-app"
-                      }`}
+                    className={` w-full text-left px-4 py-2 text-sm transition-colors flex justify-between items-center ${
+                      selectedReceivableAccount === opt.value
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-main hover:bg-app"
+                    }`}
                   >
-                    <span className="truncate pr-2">{opt}</span>
-                    {selectedReceivableAccount === opt && (
+                    <span className="truncate pr-2">{opt.label}</span>
+                    {selectedReceivableAccount === opt.value && (
                       <FaCheck className="text-[10px] shrink-0" />
                     )}
                   </button>
@@ -969,24 +1068,24 @@ const AccountsReceivable = () => {
             selectedGroupBy.length > 0 ||
             filterStatus !== "all" ||
             searchTerm !== "" ||
-            reportDate !== getTodayDate()) && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setFilterStatus("all");
-                  setSelectedVoucherType("");
-                  setSelectedGroupBy([]);
-                  setSelectedCustomers([]);
-                  setSelectedCostCenter("");
-                  setSelectedReceivableAccount("");
-                  setReportDate(getTodayDate());
-                  setActiveDropdown(null);
-                }}
-                className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
-              >
-                Clear All
-              </button>
-            )}
+            postingDate !== getTodayDate()) && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setFilterStatus("all");
+                setSelectedVoucherType("");
+                setSelectedGroupBy([]);
+                setSelectedCustomers([]);
+                setSelectedCostCenter("");
+                setSelectedReceivableAccount("");
+                setPostingDate(getTodayDate());
+                setActiveDropdown(null);
+              }}
+              className="px-3 py-2 text-xs text-danger hover:bg-danger/10 rounded-lg transition-colors h-[38px] font-medium"
+            >
+              Clear All
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 w-full lg:w-auto justify-end">
@@ -1011,7 +1110,10 @@ const AccountsReceivable = () => {
         showToolbar={true}
         tableId="accounts-receivable"
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         toolbarPlaceholder="Search receivables..."
         enableColumnSelector
         totalItems={totalItems}
@@ -1041,13 +1143,12 @@ const AccountsReceivable = () => {
                 <div className="h-8 w-20 bg-theme rounded mx-auto mt-1 animate-pulse"></div>
               ) : (
                 <p className="text-2xl font-bold text-main">
-
                   {kpis?.ageing_summary[
                     item.key as keyof typeof kpis.ageing_summary
                   ]
                     ? kpis.ageing_summary[
-                      item.key as keyof typeof kpis.ageing_summary
-                    ].toLocaleString(undefined, { maximumFractionDigits: 0 })
+                        item.key as keyof typeof kpis.ageing_summary
+                      ].toLocaleString(undefined, { maximumFractionDigits: 0 })
                     : "0"}
                 </p>
               )}
@@ -1089,6 +1190,15 @@ const AccountsReceivable = () => {
         onClose={() => {
           setPaymentDrawerOpen(false);
           setPaymentDrawerData(null);
+        }}
+      />
+      <JournalEntryDetailModal
+        open={journalDrawerOpen}
+        data={journalDrawerData}
+        loading={journalDrawerLoading}
+        onClose={() => {
+          setJournalDrawerOpen(false);
+          setJournalDrawerData(null);
         }}
       />
     </div>

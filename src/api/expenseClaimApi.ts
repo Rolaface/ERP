@@ -3,8 +3,11 @@
 
   import { API, ERP_BASE } from "../config/api";
   const api = createAxiosInstance(ERP_BASE);
+
   export const ExpenseClaimAPI = API.ExpenseClaim;
   export const AccountApi=API.Account;
+  export const FrappeUtilsAPI = API.frappeUtilsAPI;
+  
   interface AccountOption {
     label: string;
     value: string;
@@ -350,12 +353,12 @@ export async function updateEmployeeAdvance(
 
 export async function getAllAdvances(
   search?: string,
-  page = 1,
   pageSize = 10
 ): Promise<{ data: any[]; pagination: { total_pages: number; total: number } }> {
 
   const params = new URLSearchParams();
   params.append("fields", JSON.stringify(["name", "employee_name", "purpose", "advance_amount", "status", "posting_date"])); 
+  params.append("with_pagination", "1");
 
   if (search?.trim()) {
     params.append("txt", search.trim());
@@ -414,3 +417,27 @@ export async function updateAdvanceStatus(
   );
   return resp.data || null;
 }
+
+export async function getAllEmployees(
+  search?: string,
+): Promise<any[]> {
+  try {
+    const params = new URLSearchParams();
+
+    if (search) {
+      params.append("search", search);
+    }
+    const resp: AxiosResponse = await api.get(
+      `${FrappeUtilsAPI.getemployeeforAssetMovement}?${params.toString()}`
+    );
+
+    return resp.data?.data ?? [];
+
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to fetch employees",
+    );
+  }
+} 

@@ -465,23 +465,25 @@ export const usePurchaseOrderForm = ({
     setForm((prev) => ({ ...prev, project: val })),
   );
 
-  useFieldDefault(
-    isOpen,
-    form.warehouse,
-    () =>
-      getAllWarehouses().then((list: string[]) =>
-        list.map((w) => ({ value: w, label: w })),
-      ),
-    (val) =>
-      setForm((prev) => ({
-        ...prev,
-        warehouse: val,
-        items: prev.items.map((item) => ({
-          ...item,
-          warehouse: item.warehouse?.trim() ? item.warehouse : val,
-        })),
+ // usePurchaseOrderForm.ts
+
+useFieldDefault(
+  isOpen && !poId,  
+  form.warehouse,
+  () =>
+    getAllWarehouses().then((list: string[]) =>
+      list.map((w) => ({ value: w, label: w })),
+    ),
+  (val) =>
+    setForm((prev) => ({
+      ...prev,
+      warehouse: val,
+      items: prev.items.map((item) => ({
+        ...item,
+        warehouse: item.warehouse?.trim() ? item.warehouse : val,
       })),
-  );
+    })),
+);
 
   type AddressKey = keyof PurchaseOrderFormData["addresses"];
 
@@ -1031,6 +1033,7 @@ export const usePurchaseOrderForm = ({
     validateTab,
     setForm,
     customShippingRule,
+    
     setCustomShippingRule,
     customIncoterm,
     setCustomIncoterm,

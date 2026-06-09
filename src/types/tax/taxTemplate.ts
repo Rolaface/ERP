@@ -1,6 +1,7 @@
 export interface TaxRow {
   tax_type: string;
   tax_rate: number;
+  tax_type_display?: string;
 }
 
 export interface TaxCategoryFormData {

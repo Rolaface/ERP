@@ -145,7 +145,7 @@ const menuItems: MenuItem[] = [
     name: "Customer",
     to: "/crm",
     icon: <Users {...iconProps} />,
-    modules: ["Customer", "Payment Entry","Customer Group"],
+    modules: ["Customer", "Payment Entry", "Customer Group"],
     hideInEmployeeView: true,
   },
   {
@@ -187,7 +187,7 @@ const menuItems: MenuItem[] = [
   //   to: "/performance",
   //   icon: <BarChart2 {...iconProps} />,
   //   modules: ["Performance"],
-  //   hideInEmployeeView: false, 
+  //   hideInEmployeeView: false,
   // },
 ];
 
@@ -210,7 +210,7 @@ const settingsItems: SettingsItem[] = [
     to: "/bank-management",
     label: "Bank Management",
     icon: <Landmark {...iconProps} />,
-    modules: ["Bank", "Bank Account" , "Mode of Payment","Currency Exchange"],
+    modules: ["Bank", "Bank Account", "Mode of Payment", "Currency Exchange"],
     hideInEmployeeView: true,
   },
   // {
@@ -250,13 +250,6 @@ const settingsItems: SettingsItem[] = [
       "Tax Category",
       "Sales Taxes and Charges Template",
     ],
-    hideInEmployeeView: true,
-  },
-  {
-    to: "/Expense-Management",
-    label: "Expense Management",
-    icon: <CreditCard {...iconProps} />,
-    modules: ["Expense Claim", "Expense Claim Type"],
     hideInEmployeeView: true,
   },
   {
@@ -416,6 +409,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     "/currency-conversion",
     "/customer-group",
     "/Tax-Maintenance",
+    "/Expense-Management",
+    "/Email-Template",
   ].some((p) => location.pathname.startsWith(p));
 
   useEffect(() => {
@@ -498,9 +493,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 }
               `}
             >
-              <span className="truncate text-sm font-bold text-main leading-tight">
-                {company?.name ?? "Loading…"}
-              </span>
+              {open && (
+                <span className="text-sm font-bold text-main break-words">
+                  {company?.name ?? "Loading…"}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -640,6 +637,29 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 {!open && <Tooltip label="Human Resource" />}
               </NavLink>
             ))}
+
+            {!isEmployeeView && canAccessAnyOf(["Expense Claim", "Expense Claim Type", "Employee Advance"]) && (
+            <NavLink
+              to="/Expense-Management"
+              className={({ isActive }) =>
+                `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
+                ${
+                  isActive
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted hover:bg-row-hover hover:text-main"
+                }`
+              }
+            >
+              <span className={`flex h-10 shrink-0 items-center justify-center text-[17px] transition-all duration-300 ${open ? "w-10" : "w-full"}`}>
+                <CreditCard {...iconProps} />
+              </span>
+              <span className={`truncate text-[14px] font-semibold tracking-tight transition-all duration-200 pr-3 ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
+                Expense Management
+              </span>
+              {!open && <Tooltip label="Expense Management" />}
+            </NavLink>
+          )}
+
 
           {/* ── Settings ── */}
           {showSettingsSection && (

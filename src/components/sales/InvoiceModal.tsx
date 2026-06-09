@@ -347,7 +347,7 @@ const handleModeFetchOptions = async (q: string) => {
                         }
                         label="Warehouse"
                         onDefaultLoad={(firstWarehouse) => {
-                          if (!formData.warehouse) {
+                            if (!formData.warehouse && mode !== "edit") {
                             actions.handleBulkItemChange(
                               "warehouse",
                               firstWarehouse,

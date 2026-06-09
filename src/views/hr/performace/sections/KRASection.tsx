@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { FaTrash } from "react-icons/fa";
+
 import type { Column } from "../../../../components/ui/Table/type";
 import ModalTable from "../../../../components/ui/Table/ModalTableInside";
 import type { SetupRow } from "../types";
@@ -149,15 +149,8 @@ export default function KRASection() {
             onClick={() => openDetail(row.id, "edit")}
           />
           <ActionMenu
-            customActions={[
-              {
-                label: "Delete",
-                onClick: () => deleteRow(row.id),
-                danger: true,
-                icon: <FaTrash className="w-4 h-4" />,
-              },
-            ]}
-          />
+  onDelete={() => deleteRow(row.id)}
+/>
         </ActionGroup>
       ),
     },

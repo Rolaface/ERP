@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { Eye, Edit, Trash2, Download, MoreVertical, Play } from "lucide-react";
-import { Ban } from "lucide-react";
+import { Ban, ToggleLeft, ToggleRight } from "lucide-react";
 import { CheckCircle } from "lucide-react";
 
 
@@ -15,6 +15,8 @@ type ActionType =
   | "delete"
   | "download"
   | "run-payroll"
+  | "enable"
+  | "disable"
   | "custom";
 
 interface ActionButtonProps {
@@ -51,6 +53,10 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
         return <Download className="w-4 h-4" />;
       case "run-payroll":
         return <Play className="w-4 h-4" />;
+      case "enable":
+        return <ToggleRight className="w-4 h-4" />;
+      case "disable":
+        return <ToggleLeft className="w-4 h-4" />;
       default:
         return <MoreVertical className="w-4 h-4" />;
     }
@@ -289,7 +295,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
               role="menuitem"
             >
               <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">
-                <Ban className="w-4 h-4" />
+                <ToggleLeft className="w-4 h-4" />
               </span>
               <span>Disable</span>
             </button>
@@ -304,7 +310,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
               role="menuitem"
             >
               <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">
-                <CheckCircle className="w-4 h-4" />
+                <ToggleRight className="w-4 h-4" />
               </span>
               <span>Enable</span>
             </button>

@@ -1,19 +1,23 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import { openBankAccountModal } from "../../store/modalStore";
-import { Copy } from "lucide-react"
+import { Copy } from "lucide-react";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
-import { getAllBankAccounts, updateBankAccountStatus } from "../../api/BankAccountApi";
+import {
+  getAllBankAccounts,
+  updateBankAccountStatus,
+} from "../../api/BankAccountApi";
 import {
   AppPage,
   AppPageHeader,
   AppPageBody,
 } from "../../components/ui/app-shell";
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 import { showApiError, showSuccess } from "../../utils/alert";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
@@ -58,53 +62,68 @@ const BankAccountSetup: React.FC = () => {
     }
   }, [page, pageSize, search]);
 
-
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
 
+  const handleToggleDisable = useCallback(
+    async (row: BankAccount) => {
+      try {
+        setActionLoadingId(String(row.id));
 
-  const handleToggleDisable = useCallback(async (row: BankAccount) => {
-    try {
-      setActionLoadingId(String(row.id));
+        await updateBankAccountStatus({
+          bankAccountId: String(row.id),
+          isDisabled: row.isDisabled ? 0 : 1,
+          isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
+        });
 
-      await updateBankAccountStatus({
-        bankAccountId: String(row.id),
-        isDisabled: row.isDisabled ? 0 : 1,
-        isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
-      });
+        await fetchAccounts();
+      } catch (err) {
+        showApiError(err);
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [fetchAccounts],
+  );
 
-      await fetchAccounts();
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setActionLoadingId(null);
-    }
-  }, [fetchAccounts]);
+  const handleSetDefault = useCallback(
+    async (row: BankAccount) => {
+      try {
+        setActionLoadingId(String(row.id));
 
+        await updateBankAccountStatus({
+          bankAccountId: String(row.id),
+          isDefault: 1,
+          isDisabled: 0,
+        });
 
-
-  const handleSetDefault = useCallback(async (row: BankAccount) => {
-    try {
-      setActionLoadingId(String(row.id));
-
-      await updateBankAccountStatus({
-        bankAccountId: String(row.id),
-        isDefault: 1,
-        isDisabled: 0,
-      });
-
-      await fetchAccounts();
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setActionLoadingId(null);
-    }
-  }, [fetchAccounts]);
+        await fetchAccounts();
+      } catch (err) {
+        showApiError(err);
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [fetchAccounts],
+  );
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
 
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
@@ -120,10 +139,12 @@ const BankAccountSetup: React.FC = () => {
       key: "dateAdded",
       header: "Date Added",
       align: "center",
-      tooltip: (row) => row.dateAdded ? formatDate(row.dateAdded) : "—",
+      tooltip: (row) => (row.dateAdded ? formatDate(row.dateAdded) : "—"),
       render: (row) => (
         <div className="py-1.5">
-          <span className="block">{row.dateAdded ? formatDate(row.dateAdded) : "—"}</span>
+          <span className="block">
+            {row.dateAdded ? formatDate(row.dateAdded) : "—"}
+          </span>
         </div>
       ),
     },
@@ -136,7 +157,9 @@ const BankAccountSetup: React.FC = () => {
       render: (row) => (
         <div className="py-1.5">
           <span className="block">
-            {Number(row.isCompanyAccount) === 1 ? "Company" : row.accountFor || "—"}
+            {Number(row.isCompanyAccount) === 1
+              ? "Company"
+              : row.accountFor || "—"}
           </span>
         </div>
       ),
@@ -160,7 +183,9 @@ const BankAccountSetup: React.FC = () => {
       render: (row) => (
         <div className="py-1.5">
           <span className="inline-flex items-center gap-1.5">
-            <code className="tracking-widest text-xs">{mask(row.accountNo)}</code>
+            <code className="tracking-widest text-xs">
+              {mask(row.accountNo)}
+            </code>
             {row.accountNo && (
               <button
                 type="button"
@@ -196,7 +221,7 @@ const BankAccountSetup: React.FC = () => {
       tooltip: (row) => row.sortCode || "—",
       render: (row) => (
         <div className="py-1.5">
-          <span className="block">{(row.sortCode)}</span>
+          <span className="block">{row.sortCode}</span>
         </div>
       ),
     },
@@ -262,17 +287,21 @@ const BankAccountSetup: React.FC = () => {
             customActions={
               can(BANK_ACCOUNT_MODULE, "write")
                 ? [
-                  {
-                    label: "Set Default",
-                    onClick: () => handleSetDefault(row),
-                    disabled: actionLoadingId === String(row.id),
-                  },
-                  {
-                    label: row.isDisabled ? "Enable" : "Disable",
-                    onClick: () => handleToggleDisable(row),
-                    disabled: actionLoadingId === String(row.id),
-                  },
-                ]
+                    {
+                      label: "Set Default",
+                      icon: ACTION_ICONS.APPROVE,
+                      onClick: () => handleSetDefault(row),
+                      disabled: actionLoadingId === String(row.id),
+                    },
+                    {
+                      label: row.isDisabled ? "Enable" : "Disable",
+                      icon: row.isDisabled
+                        ? ACTION_ICONS.ENABLE
+                        : ACTION_ICONS.DISABLE,
+                      onClick: () => handleToggleDisable(row),
+                      disabled: actionLoadingId === String(row.id),
+                    },
+                  ]
                 : []
             }
           />
@@ -283,8 +312,6 @@ const BankAccountSetup: React.FC = () => {
 
   return (
     <AppPage>
-
-
       {/* TABLE */}
       <AppPageBody>
         <Table
@@ -303,17 +330,19 @@ const BankAccountSetup: React.FC = () => {
           pageSize={pageSize}
           totalItems={totalItems}
           pageSizeOptions={[10, 25, 50, 100]}
-          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
           onPageChange={setPage}
           addLabel="Add Bank Account"
-          onAdd={() => openBankAccountModal(null, false, {
-            onSuccess: () => fetchAccounts(),
-          })}
+          onAdd={() =>
+            openBankAccountModal(null, false, {
+              onSuccess: () => fetchAccounts(),
+            })
+          }
         />
       </AppPageBody>
-
-
-
     </AppPage>
   );
 };

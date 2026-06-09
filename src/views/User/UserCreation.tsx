@@ -7,7 +7,7 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import { openUserModal } from "../../store/modalStore";
 import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 import { showConfirm, showSuccess, showApiError } from "../../utils/alert";
-import { getUsers, updateUser, deleteUser ,createUser } from "../../api/RoleManagement/CreateUserApi";
+import { getUsers, updateUser, deleteUser, createUser } from "../../api/RoleManagement/CreateUserApi";
 import type { UserRow } from "../../api/RoleManagement/CreateUserApi";
 import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
 
@@ -57,13 +57,13 @@ const CreateUserPage: React.FC = () => {
   }, [subscribeToRefresh]);
 
   const handleAdd = () => {
-  openUserModal(null, false, {
-    onSuccess: () => fetchUsers(searchQuery, page, pageSize),
-    onSubmit: async (data: unknown) => {
-      await createUser(data as CreateUserFormData);
-    },
-  });
-};
+    openUserModal(null, false, {
+      onSuccess: () => fetchUsers(searchQuery, page, pageSize),
+      onSubmit: async (data: unknown) => {
+        await createUser(data as CreateUserFormData);
+      },
+    });
+  };
 
   const handleEdit = (row: UserRow, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -73,6 +73,21 @@ const CreateUserPage: React.FC = () => {
         await updateUser(row.id, data as CreateUserFormData);
       },
     });
+  };
+
+  const handleView = (
+    row: UserRow,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+
+    openUserModal(
+      row,
+      true,
+      {
+        isViewMode: true
+      }
+    );
   };
 
   const handleDelete = async (userId: string, e: React.MouseEvent) => {
@@ -116,11 +131,10 @@ const CreateUserPage: React.FC = () => {
       header: "Status",
       render: (row) => (
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-            row.enabled
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-              : "bg-red-50 text-red-600 border-red-200"
-          }`}
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${row.enabled
+            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+            : "bg-red-50 text-red-600 border-red-200"
+            }`}
         >
           {row.enabled ? "Active" : "Inactive"}
         </span>
@@ -132,8 +146,17 @@ const CreateUserPage: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
+
+          <ActionButton
+            type="view"
+            onClick={(e) => handleView(row, e as React.MouseEvent)}
+            iconOnly
+            title="View User"
+          />
           {/* ── EDIT button — only if user has `write` on User module ── */}
           <PermissionGate module={USER_MODULE} action="write">
+
+
             <ActionButton
               type="edit"
               onClick={(e) => handleEdit(row, e as React.MouseEvent)}
@@ -142,7 +165,7 @@ const CreateUserPage: React.FC = () => {
             />
           </PermissionGate>
 
-{/* 
+          {/* 
           <ActionMenu
             customActions={[
               // Delete — only if user has `delete`

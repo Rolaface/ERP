@@ -110,7 +110,9 @@ const RfqModal: React.FC<RfqModalProps> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={() => handleCloseWithConfirm(onClose, modalId)}
+      onClose={() =>
+        isViewMode ? onClose() : handleCloseWithConfirm(onClose, modalId)
+      }
       title={isViewMode ? `View RFQ` : isEdit ? `Edit RFQ` : "Create Request For Quotation"}
       subtitle={isViewMode ? `${initialData}` : isEdit ? `${initialData}` : "Create and send RFQ to suppliers"}
       icon={FileText}
@@ -126,8 +128,8 @@ const RfqModal: React.FC<RfqModalProps> = ({
         onSubmit={async (e) => {
           e.preventDefault();
           if (isViewMode) return;
-          resetDirty();
-          await handleSubmit();
+          const didSave = await handleSubmit();
+          if (didSave) resetDirty();
         }}
         className="h-full flex flex-col"
       >

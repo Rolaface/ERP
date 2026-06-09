@@ -3,7 +3,6 @@ import { showApiError, showSuccess } from "../../utils/alert";
 import {
   createModeOfPayment,
   updateModeOfPayment,
-  getDefaultAccounts,
   getBankAccounts,
   getModeOfPaymentByName,
 } from "../../api/BankAccountApi";
@@ -15,12 +14,11 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
     enabled: true,
     company: "",
     defaultAccount: "",
+    defaultAccountDisplay: "",
   });
   const [fetchLoading, setFetchLoading] = useState(false);
   const [companies, setCompanies] = useState<Option[]>([]);
-  const [accounts, setAccounts] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
-  const [accLoading, setAccLoading] = useState(false);
   const [companyLoading, setCompanyLoading] = useState(false);
 
   /* ───────── FETCH & POPULATE FORM ON EDIT ───────── */
@@ -41,6 +39,7 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
           enabled: record.enabled === 1,
           company: record.company ?? "",
           defaultAccount: record.defaultAccount ?? "",
+          defaultAccountDisplay: record.defaultAccountName ?? record.defaultAccount ?? "",
         });
       } catch (err: any) {
         showApiError(err.message);
@@ -57,7 +56,7 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
         setCompanyLoading(true);
         const data = await getBankAccounts("Company");
         setCompanies(Array.isArray(data) ? data : []);
-      } catch(err) {
+      } catch (err) {
         showApiError(err);
       } finally {
         setCompanyLoading(false);
@@ -65,20 +64,7 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
     })();
   }, []);
 
-  /* ───────────── LOAD DEFAULT ACCOUNTS ───────────── */
-  useEffect(() => {
-    (async () => {
-      try {
-        setAccLoading(true);
-        const data = await getDefaultAccounts();
-        setAccounts(Array.isArray(data) ? data : []);
-      } catch(err) {
-        showApiError(err);
-      } finally {
-        setAccLoading(false);
-      }
-    })();
-  }, []);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -114,8 +100,10 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
       onSubmit?.();
       onClose?.();
       setForm({ name: "", type: "", enabled: true, company: "", defaultAccount: "" });
+      return true;
     } catch (err: any) {
       showApiError(err);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -128,8 +116,6 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
     handleSubmit,
     loading: loading || fetchLoading,  // ← block save while fetching too
     companies,
-    accounts,
-    accLoading,
     companyLoading,
     fetchLoading,
   };

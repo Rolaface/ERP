@@ -18,8 +18,10 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
-import { getAllEmployees, getEmployeeById } from "../../api/employeeapi";
+import {  getEmployeeById } from "../../api/employeeapi";
 import EmployeeAdvanceList from "../../views/ExpenseManagement/advanceList";
+import { useHRView } from "../../hooks/permission/useHRView";
+import { useAuth } from "../../context/AuthContext";
 import {
   createExpenseClaim,
   CreateExpenseClaimPayload,
@@ -29,6 +31,7 @@ import {
   getExpenseClaimById,
   type MappedEmployeeAdvance,
   attachDocumentToExpenseClaim,
+  getAllEmployees,
 } from "../../api/expenseClaimApi";
 import { showApiError } from "../../utils/alert";
 import DatePickerInput from "../calendar/DatePickerInput";
@@ -304,6 +307,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     [modals, modalId],
   );
   const isEditMode = modal?.isEdit ?? false;
+  const { viewMode } = useHRView();
+  const { user } = useAuth();
+  const isEmployeeView = viewMode === "employee";
+
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("expense");
   const [useAdvance, setUseAdvance] = useState(false);
@@ -358,11 +365,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       const data = modal?.initialData as any;
 
       setForm(data ? {
-  ...defaultExpenseForm,
-  ...data,
-  receipts: data.receipts ?? [],
-  existingAttachments: data.existingAttachments ?? [],
-} : defaultExpenseForm);
+        ...defaultExpenseForm,
+        ...data,
+        receipts: data.receipts ?? [],
+        existingAttachments: data.existingAttachments ?? [],
+      } : defaultExpenseForm);
       setAdvanceForm(defaultAdvanceForm);
       setErrors({});
       setSelectedEmployee(null);
@@ -386,6 +393,20 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       }
       if (data?.employee) {
         fetchAdvancesForEmployee(data.employee);
+
+        if (isEmployeeView) {
+          getEmployeeById(data.employee)
+            .then((employee) => {
+              setSelectedEmployee(employee);
+
+              setForm((prev) => ({
+                ...prev,
+                expense_approver:
+                  employee?.message?.data?.expense_approver ?? "",
+              }));
+            })
+            .catch(() => { });
+        }
       }
     }
   }, [isOpen]);
@@ -487,21 +508,19 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     }
   }, []);
 
-  const fetchEmployees = useCallback(async (search: string) => {
-    try {
-      const res = await getAllEmployees(1, 50, search);
-      const data = res?.results ?? res?.data ?? [];
-      return data.map((emp: any) => ({
-        value: emp.name,
-        label: emp.employee_name,
-      }));
-    } catch (err) {
-      showApiError(err);
-      return [];
-    }
-  }, []);
+const fetchEmployees = useCallback(async (search: string) => {
+  try {
+    const data = await getAllEmployees(search);
+    return data.map((emp: any) => ({
+      value: emp.value,
+      label: emp.label,
+    }));
+  } catch (err) {
+    showApiError(err);
+    return [];
+  }
+}, []);
 
-  // ── validation ────────────────────────────────────────────────────────────
   const validateExpense = () => {
     const newErrors: Record<string, string> = {};
     if (!form.claim_title.trim()) newErrors.claim_title = "Title is required";
@@ -531,9 +550,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             employee_advance,
             allocated_amount,
             base_allocated_amount: allocated_amount,
-            unclaimed_amount: advRow?.unclaimedAmount ,
+            unclaimed_amount: advRow?.unclaimedAmount,
             advance_paid: advRow?.allocatedAmount ?? allocated_amount,
-            posting_date: advRow?.advanceDate ?? "",   
+            posting_date: advRow?.advanceDate ?? "",
             parentfield: "advances",
             parenttype: "Expense Claim",
             doctype: "Expense Claim Advance",
@@ -557,7 +576,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           },
         ],
         ...(useAdvance &&
-          activeAdvances.length > 0 && { advances: activeAdvances  as any[] }),
+          activeAdvances.length > 0 && { advances: activeAdvances as any[] }),
         remark: form.remarks,
       };
 
@@ -690,47 +709,63 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
             <div className="grid grid-cols-12 gap-4 items-start">
               <div className="col-span-6">
-                <SearchSelect2
-                  label="Employee"
-                  required
-                  value={employeeDisplayName}
-                  onChange={async (val, option) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      employee: val || "",
-                      expense_approver: "",
-                    }));
-                    setEmployeeDisplayName(option?.label || "");
-                    if (errors.employee)
-                      setErrors((prev) => ({ ...prev, employee: "" }));
-                    setEmployeeAdvances([]);
-                    setAdvanceAllocations({});
-                    setAdvancesFetchError(undefined);
+                {isEmployeeView ? (
+                  <ModalInput
+                    label="Employee"
+                    value={employeeDisplayName}
+                    disabled
+                  />
+                ) : (
+                  <SearchSelect2
+                    label="Employee"
+                    required
+                    value={employeeDisplayName}
+                    onChange={async (val, option) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        employee: val || "",
+                        expense_approver: "",
+                      }));
 
-                    if (val) {
-                      try {
-                        const [employee] = await Promise.all([
-                          getEmployeeById(val),
-                          fetchAdvancesForEmployee(val),
-                        ]);
-                        setSelectedEmployee(employee);
-                        setForm((prev) => ({
+                      setEmployeeDisplayName(option?.label || "");
+
+                      if (errors.employee)
+                        setErrors((prev) => ({
                           ...prev,
-                          expense_approver:
-                            employee?.message?.data?.expense_approver ?? "",
+                          employee: "",
                         }));
-                      } catch (err) {
-                        showApiError(err);
+
+                      setEmployeeAdvances([]);
+                      setAdvanceAllocations({});
+                      setAdvancesFetchError(undefined);
+
+                      if (val) {
+                        try {
+                          const [employee] = await Promise.all([
+                            getEmployeeById(val),
+                            fetchAdvancesForEmployee(val),
+                          ]);
+
+                          setSelectedEmployee(employee);
+
+                          setForm((prev) => ({
+                            ...prev,
+                            expense_approver:
+                              employee?.message?.data?.expense_approver ?? "",
+                          }));
+                        } catch (err) {
+                          showApiError(err);
+                          setSelectedEmployee(null);
+                        }
+                      } else {
                         setSelectedEmployee(null);
                       }
-                    } else {
-                      setSelectedEmployee(null);
-                    }
-                  }}
-                  fetchOptions={fetchEmployees}
-                  placeholder="Select the employee"
-                  error={errors.employee}
-                />
+                    }}
+                    fetchOptions={fetchEmployees}
+                    placeholder="Select the employee"
+                    error={errors.employee}
+                  />
+                )}
               </div>
               <div className="col-span-6">
                 <ModalInput
@@ -753,18 +788,36 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   type="button"
                   role="checkbox"
                   aria-checked={useAdvance}
-                  onClick={() => {
-                    const next = !useAdvance;
-                    setUseAdvance(next);
-                    if (!next) {
-                      // When toggling off, zero all allocations
-                      const cleared: Record<string, number> = {};
-                      employeeAdvances.forEach((a) => {
-                        cleared[a.id] = 0;
-                      });
-                      setAdvanceAllocations(cleared);
-                    }
-                  }}
+                  
+onClick={() => {
+  const next = !useAdvance;
+  setUseAdvance(next);
+  if (!next) {
+    const cleared: Record<string, number> = {};
+    employeeAdvances.forEach((a) => { cleared[a.id] = 0; });
+    setAdvanceAllocations(cleared);
+  } else {
+
+    const expAmt = form.amount === "" ? 0 : Number(form.amount);
+    const autoAlloc: Record<string, number> = {};
+    let remaining = expAmt;
+    const sorted = [...employeeAdvances].sort((a, b) =>
+      (a.advanceDate ?? "").localeCompare(b.advanceDate ?? "")
+    );
+    for (const adv of sorted) {
+      autoAlloc[adv.id] = 0;
+    }
+    for (const adv of sorted) {
+      if (remaining <= 0) break;
+      const available = adv.unclaimedAmount ?? 0;
+      const allocated = Math.min(available, remaining);
+      autoAlloc[adv.id] = allocated;
+      remaining -= allocated;
+    }
+    setAdvanceAllocations(autoAlloc);
+    setActiveTab("advance");
+  }
+}}
                   style={{
                     width: "16px",
                     height: "16px",
@@ -796,16 +849,30 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 <label
                   className="text-xs font-medium text-main cursor-pointer select-none"
                   onClick={() => {
-                    const next = !useAdvance;
-                    setUseAdvance(next);
-                    if (!next) {
-                      const cleared: Record<string, number> = {};
-                      employeeAdvances.forEach((a) => {
-                        cleared[a.id] = 0;
-                      });
-                      setAdvanceAllocations(cleared);
-                    }
-                  }}
+  const next = !useAdvance;
+  setUseAdvance(next);
+  if (!next) {
+    const cleared: Record<string, number> = {};
+    employeeAdvances.forEach((a) => { cleared[a.id] = 0; });
+    setAdvanceAllocations(cleared);
+  } else {
+    const expAmt = form.amount === "" ? 0 : Number(form.amount);
+    const sorted = [...employeeAdvances].sort((a, b) =>
+      (a.advanceDate ?? "").localeCompare(b.advanceDate ?? ""),
+    );
+    const autoAlloc: Record<string, number> = {};
+    for (const adv of sorted) { autoAlloc[adv.id] = 0; }
+    let remaining = expAmt;
+    for (const adv of sorted) {
+      if (remaining <= 0) break;
+      const allocated = Math.min(adv.unclaimedAmount ?? 0, remaining);
+      autoAlloc[adv.id] = allocated;
+      remaining -= allocated;
+    }
+    setAdvanceAllocations(autoAlloc);
+    setActiveTab("advance");
+  }
+}}
                 >
                   Settle Against Advance
                 </label>
@@ -911,10 +978,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 onClick={() => fileInputRef.current?.click()}
                 className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed
                   py-6 cursor-pointer transition-colors
-                  ${
-                    isDragOver
-                      ? "border-primary bg-primary/5"
-                      : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"
+                  ${isDragOver
+                    ? "border-primary bg-primary/5"
+                    : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"
                   }`}
               >
                 <Upload size={22} className="text-muted" />

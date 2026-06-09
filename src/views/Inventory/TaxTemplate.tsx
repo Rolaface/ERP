@@ -17,6 +17,7 @@ import { fireManagedSwal } from "../../utils/swalManager";
 import { getAllTemplates, deleteTemplate } from "../../api/TaxTemplateApi";
 import { useTaxTemplate } from "../../hooks/useTaxTemplate";
 import { openTaxTemplateModal } from "../../store/modalStore";
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 import type {
   TaxCategoryFormData,
   TaxRow,
@@ -325,14 +326,17 @@ const TaxTemplate: React.FC<Props> = () => {
                   can(TAX_TEMPLATE_MODULE, "write")
                     ? [
                       {
-                        label: tc.disabled ? "Enable" : "Disable",
-                        onClick: () =>
-                          handleToggleStatus(
-                            tc,
-                            { stopPropagation: () => { } } as React.MouseEvent
-                          ),
-                        danger: !tc.disabled, // Disable option = red, Enable = normal
-                      },
+  label: tc.disabled ? "Enable" : "Disable",
+  icon: tc.disabled
+    ? ACTION_ICONS.ENABLE
+    : ACTION_ICONS.DISABLE,
+  onClick: () =>
+    handleToggleStatus(
+      tc,
+      { stopPropagation: () => {} } as React.MouseEvent
+    ),
+  danger: !tc.disabled,
+}
                     ]
                     : []
                 }

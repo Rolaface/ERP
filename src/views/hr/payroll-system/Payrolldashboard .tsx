@@ -50,7 +50,7 @@ export const PayrollDashboard: React.FC<Props> = ({
   onNewPayroll,
   onRunPayroll,
   onEditRecord,
-  onVerify,                                      // ← NEW
+  onVerify,                                     
   currentPage,
   totalPages,
   onDeleteRecord,
