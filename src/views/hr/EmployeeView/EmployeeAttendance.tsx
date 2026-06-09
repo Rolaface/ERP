@@ -15,7 +15,9 @@ const SUMMARY_STATS = [
   { label: "Absent", value: "2", diff: "0 vs last month", diffColor: "text-gray-400" },
 ];
 
-const segmentColors = {
+type SegmentType = "checked_in" | "checked_in_active" | "checked_out" | "overtime" | "overtime_active";
+
+const segmentColors: Record<SegmentType, string> = {
   checked_in:        "bg-[#2578C5]",
   checked_in_active: "bg-[#2578C5]",   
   checked_out:       "bg-[#F58B1E]",
@@ -23,21 +25,20 @@ const segmentColors = {
   overtime_active:   "bg-red-500",
 };
 
-// --- Subcomponents ---
 const TimelineScale = () => (
   <div className="relative flex justify-between text-[#9BA3AF] text-[10px] font-medium px-1 mb-2">
-    <span>09:00</span>
-    <span>11:00</span>
-    <span>13:00</span>
-    <span>15:00</span>
-    <span>17:00</span>
-    <span>19:00</span>
-    <span>21:00</span>
+    <span>00:00</span>
+    <span>04:00</span>
+    <span>08:00</span>
+    <span>12:00</span>
+    <span>16:00</span>
+    <span>20:00</span>
     <span>23:59</span>
   </div>
 );
 
-const TimelineRow = ({ data }) => (
+// const TimelineRow = ({ data }) => (
+const TimelineRow = ({ data }: { data: TimelineRowData }) => (
   <div className="bg-white border border-gray-100 rounded-xl p-5 mb-4 shadow-sm">
     <div className="flex justify-between items-center mb-3">
       <h3 className="text-[15px] font-bold text-gray-900">{data.title}</h3>
@@ -99,7 +100,8 @@ const TimelineRow = ({ data }) => (
 // --- Helper for formatting date to "YYYY-MM-DD HH:mm:ss" ---
 const getCurrentFormattedTime = () => {
   const now = new Date();
-  const pad = (n) => n.toString().padStart(2, '0');
+  // const pad = (n) => n.toString().padStart(2, '0');
+  const pad = (n: number) => n.toString().padStart(2, '0');
   
   const YYYY = now.getFullYear();
   const MM = pad(now.getMonth() + 1);
@@ -112,18 +114,19 @@ const getCurrentFormattedTime = () => {
 };
 
 
-const timeToPercent = (timeStr) => {
+const timeToPercent = (timeStr: string) => {
   if (!timeStr) return 0;
   const [hh, mm] = timeStr.split(':').map(Number);
-  const totalMinutes = (hh * 60 + mm) - (9 * 60); // minutes since 09:00
-  const scaleMinutes = 15 * 60; // 09:00 to 24:00 is 15 hours
+  const totalMinutes = (hh * 60 + mm);  
+  const scaleMinutes = 24 * 60; // Total 24 hours
   const percent = (totalMinutes / scaleMinutes) * 100;
   return Math.max(0, Math.min(100, percent));
 };
+
 interface TimelineSegment {
   start: number;
   end: number;
-  type: string;
+  type: SegmentType;
   label: string;
 }
 interface TimelineRowData {
@@ -135,16 +138,207 @@ interface TimelineRowData {
   duration: string;
   segments: TimelineSegment[];
 }
+// const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
+//   if (!apiData || !apiData.length) return [];
+
+//   // Sort logs chronologically
+//   const sortedLogs = [...apiData].sort(
+//     (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
+//   );
+  
+//   // Group by Date (YYYY-MM-DD)
+//   const groupedByDate: Record<string, any[]> = sortedLogs.reduce((acc, log) => {
+//     const [date, time] = log.time.split(" ");
+//     if (!acc[date]) acc[date] = [];
+//     acc[date].push({ ...log, timeOnly: time.substring(0, 5) });
+//     return acc;
+//   }, {});
+
+//   const timelineRows: TimelineRowData[] = [];
+
+//   Object.entries(groupedByDate).forEach(([dateStr, logs]) => {
+//     const ins = logs.filter((l: any) => l.log_type === "IN");
+//     const outs = logs.filter((l: any) => l.log_type === "OUT");
+
+//     // For the text display on the left/right of the bar
+//     const firstIn = ins.length > 0 ? ins[0] : null;
+//     const lastOut = outs.length > 0 ? outs[outs.length - 1] : null;
+
+//     const clockIn = firstIn ? firstIn.timeOnly : "--:--";
+//     const clockOut = lastOut ? lastOut.timeOnly : "--:--";
+    
+//     const segments: TimelineSegment[] = [];
+//     let currentIn: any = null;
+//     let totalDurationMs = 0;
+//     let lastStartPct: number = 0;
+
+//     const addSegments = (segmentsArr: any[], start: number, end: number, shiftEnd: number, isActive: boolean) => {
+//       if (start >= shiftEnd) {
+//         // Entirely overtime
+//         segmentsArr.push({ start, end, type: isActive ? "overtime_active" : "overtime", label: "" });
+//       } else if (end > shiftEnd) {
+//         // Split segment at shift end
+//         segmentsArr.push({ start, end: shiftEnd, type: isActive ? "checked_in_active" : "checked_in", label: "" });
+//         segmentsArr.push({ start: shiftEnd, end, type: isActive ? "overtime_active" : "overtime", label: "" });
+//       } else {
+//         // Entirely normal hours
+//         segmentsArr.push({ start, end, type: isActive ? "checked_in_active" : "checked_in", label: "" });
+//       }
+//     };
+
+//     // Loop through all logs for this day to pair INs and OUTs
+//     logs.forEach((log) => {
+//       if (log.log_type === "IN") {
+//         if (!currentIn) {
+//           currentIn = log;
+//           lastStartPct = timeToPercent(log.timeOnly);
+//          } 
+//       } else if (log.log_type === "OUT" && currentIn) {
+//         // Close the segment
+//         const startPct = timeToPercent(currentIn.timeOnly);
+//         const endPct = timeToPercent(log.timeOnly);
+//         const endPctClamped = Math.max(startPct + 0.5, endPct);
+
+//         // segments.push({
+//         //   start: startPct,
+//         //    end: Math.max(startPct + 0.5, endPct), 
+//         //   type: "checked_in",
+//         //   label: "" 
+//         // });
+
+//         const shiftEndStr = currentIn.shift_end 
+//           ? currentIn.shift_end.split(" ")[1].substring(0, 5) 
+//           : "17:00";
+//         const shiftEndPct = timeToPercent(shiftEndStr);
+
+//         addSegments(segments, startPct, endPctClamped, shiftEndPct, false);
+
+//         totalDurationMs += new Date(log.time).getTime() - new Date(currentIn.time).getTime();
+//         currentIn = null; // Reset for the next pair
+//       }
+//     });
+
+// //   if (currentIn) {
+// //   const now = new Date();
+// //   const nowPct = timeToPercent(
+// //     `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
+// //   );
+
+// //   segments.push({
+// //     start: lastStartPct,
+// //     end: Math.max(lastStartPct + 0.5, nowPct),
+// //     type: "checked_in_active",   // ← new type
+// //     label: ""
+// //   });
+
+// //    totalDurationMs += now.getTime() - new Date(currentIn.time).getTime();
+// // }
+// if (currentIn) {
+//       const now = new Date();
+//       const checkInTime = new Date(currentIn.time).getTime();
+//       const diffMs = now.getTime() - checkInTime;
+
+//       const shiftEndStr = currentIn.shift_end 
+//         ? currentIn.shift_end.split(" ")[1].substring(0, 5) 
+//         : "17:00";
+//       const shiftEndPct = timeToPercent(shiftEndStr);
+
+//       if (diffMs >= 24 * 60 * 60 * 1000) {
+//         // --- AUTO CHECKOUT AFTER 24 HOURS ---
+//         const endPct = timeToPercent("23:59"); 
+//         addSegments(segments, lastStartPct, endPct, shiftEndPct, false);
+        
+//         totalDurationMs += (24 * 60 * 60 * 1000); 
+//         currentIn = null; 
+//       } else {
+//         // --- NORMAL ACTIVE CHECK-IN ---
+//         const nowPct = timeToPercent(
+//           `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
+//         );
+//         const endPct = Math.max(lastStartPct + 0.5, nowPct);
+        
+//         addSegments(segments, lastStartPct, endPct, shiftEndPct, true);
+//         totalDurationMs += diffMs;
+//       }
+//     }
+
+//     // Format Duration
+//     let duration = "--h --m";
+//     if (totalDurationMs > 0) {
+//       const hours = Math.floor(totalDurationMs / 3600000);
+//       const mins = Math.floor((totalDurationMs % 3600000) / 60000);
+//       duration = `${hours}h ${mins}m`;
+//     }
+
+//     // Format date for title
+//     const dateObj = new Date(dateStr);
+//     const title = dateObj.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
+
+//     timelineRows.push({
+//       id: dateStr,
+//       title: title,
+//       status: (!currentIn && firstIn) ? "Completed" : "Active",
+//       clockIn,
+//       clockOut: currentIn ? "--:--" : clockOut, 
+//       duration,
+//       segments
+//     });
+//   });
+
+//   // Return newest dates first
+//   return timelineRows.sort((a, b) => new Date(b.id).getTime() - new Date(a.id).getTime());
+// };
+
 const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
   if (!apiData || !apiData.length) return [];
 
-  // Sort logs chronologically
+  // 1. Sort logs chronologically
   const sortedLogs = [...apiData].sort(
     (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
   );
-  
-  // Group by Date (YYYY-MM-DD)
-  const groupedByDate: Record<string, any[]> = sortedLogs.reduce((acc, log) => {
+
+  // 2. NORMALIZE LOGS (Split cross-midnight sessions)
+  const normalizedLogs: any[] = [];
+  let activeIn: any = null;
+
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const getYYYYMMDD = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  for (const log of sortedLogs) {
+    if (log.log_type === "IN") {
+      activeIn = log;
+      normalizedLogs.push(log);
+    } else if (log.log_type === "OUT" && activeIn) {
+      const inDate = activeIn.time.split(" ")[0];
+      const outDate = log.time.split(" ")[0];
+
+      if (inDate !== outDate) {
+        // Split: End previous day exactly at 23:59:59
+        normalizedLogs.push({ ...activeIn, log_type: "OUT", time: `${inDate} 23:59:59` });
+        // Split: Start next day exactly at 00:00:00
+        normalizedLogs.push({ ...log, log_type: "IN", time: `${outDate} 00:00:00` });
+      }
+      normalizedLogs.push(log);
+      activeIn = null;
+    } else {
+      normalizedLogs.push(log); // Standalone OUT
+    }
+  }
+
+  // Handle if user is STILL actively checked in and crossed midnight into today
+  if (activeIn) {
+    const now = new Date();
+    const inDate = activeIn.time.split(" ")[0];
+    const nowDate = getYYYYMMDD(now);
+
+    if (inDate !== nowDate) {
+      normalizedLogs.push({ ...activeIn, log_type: "OUT", time: `${inDate} 23:59:59` });
+      normalizedLogs.push({ ...activeIn, log_type: "IN", time: `${nowDate} 00:00:00` });
+    }
+  }
+
+  // 3. Group by Date using NORMALIZED logs
+  const groupedByDate: Record<string, any[]> = normalizedLogs.reduce((acc, log) => {
     const [date, time] = log.time.split(" ");
     if (!acc[date]) acc[date] = [];
     acc[date].push({ ...log, timeOnly: time.substring(0, 5) });
@@ -157,7 +351,6 @@ const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
     const ins = logs.filter((l: any) => l.log_type === "IN");
     const outs = logs.filter((l: any) => l.log_type === "OUT");
 
-    // For the text display on the left/right of the bar
     const firstIn = ins.length > 0 ? ins[0] : null;
     const lastOut = outs.length > 0 ? outs[outs.length - 1] : null;
 
@@ -171,19 +364,15 @@ const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
 
     const addSegments = (segmentsArr: any[], start: number, end: number, shiftEnd: number, isActive: boolean) => {
       if (start >= shiftEnd) {
-        // Entirely overtime
         segmentsArr.push({ start, end, type: isActive ? "overtime_active" : "overtime", label: "" });
       } else if (end > shiftEnd) {
-        // Split segment at shift end
         segmentsArr.push({ start, end: shiftEnd, type: isActive ? "checked_in_active" : "checked_in", label: "" });
         segmentsArr.push({ start: shiftEnd, end, type: isActive ? "overtime_active" : "overtime", label: "" });
       } else {
-        // Entirely normal hours
         segmentsArr.push({ start, end, type: isActive ? "checked_in_active" : "checked_in", label: "" });
       }
     };
 
-    // Loop through all logs for this day to pair INs and OUTs
     logs.forEach((log) => {
       if (log.log_type === "IN") {
         if (!currentIn) {
@@ -191,17 +380,9 @@ const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
           lastStartPct = timeToPercent(log.timeOnly);
          } 
       } else if (log.log_type === "OUT" && currentIn) {
-        // Close the segment
         const startPct = timeToPercent(currentIn.timeOnly);
         const endPct = timeToPercent(log.timeOnly);
         const endPctClamped = Math.max(startPct + 0.5, endPct);
-
-        // segments.push({
-        //   start: startPct,
-        //    end: Math.max(startPct + 0.5, endPct), 
-        //   type: "checked_in",
-        //   label: "" 
-        // });
 
         const shiftEndStr = currentIn.shift_end 
           ? currentIn.shift_end.split(" ")[1].substring(0, 5) 
@@ -211,55 +392,28 @@ const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
         addSegments(segments, startPct, endPctClamped, shiftEndPct, false);
 
         totalDurationMs += new Date(log.time).getTime() - new Date(currentIn.time).getTime();
-        currentIn = null; // Reset for the next pair
+        currentIn = null; 
       }
     });
 
-//   if (currentIn) {
-//   const now = new Date();
-//   const nowPct = timeToPercent(
-//     `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
-//   );
-
-//   segments.push({
-//     start: lastStartPct,
-//     end: Math.max(lastStartPct + 0.5, nowPct),
-//     type: "checked_in_active",   // ← new type
-//     label: ""
-//   });
-
-//    totalDurationMs += now.getTime() - new Date(currentIn.time).getTime();
-// }
-if (currentIn) {
+    if (currentIn) {
       const now = new Date();
       const checkInTime = new Date(currentIn.time).getTime();
-      const diffMs = now.getTime() - checkInTime;
-
       const shiftEndStr = currentIn.shift_end 
         ? currentIn.shift_end.split(" ")[1].substring(0, 5) 
         : "17:00";
       const shiftEndPct = timeToPercent(shiftEndStr);
 
-      if (diffMs >= 24 * 60 * 60 * 1000) {
-        // --- AUTO CHECKOUT AFTER 24 HOURS ---
-        const endPct = timeToPercent("23:59"); 
-        addSegments(segments, lastStartPct, endPct, shiftEndPct, false);
-        
-        totalDurationMs += (24 * 60 * 60 * 1000); 
-        currentIn = null; 
-      } else {
-        // --- NORMAL ACTIVE CHECK-IN ---
-        const nowPct = timeToPercent(
-          `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
-        );
-        const endPct = Math.max(lastStartPct + 0.5, nowPct);
-        
-        addSegments(segments, lastStartPct, endPct, shiftEndPct, true);
-        totalDurationMs += diffMs;
-      }
+      // Active day logic (no longer needs the hardcoded 24-hr override because normalization handles it)
+      const nowPct = timeToPercent(
+        `${pad(now.getHours())}:${pad(now.getMinutes())}`
+      );
+      const endPct = Math.max(lastStartPct + 0.5, nowPct);
+      
+      addSegments(segments, lastStartPct, endPct, shiftEndPct, true);
+      totalDurationMs += now.getTime() - checkInTime;
     }
 
-    // Format Duration
     let duration = "--h --m";
     if (totalDurationMs > 0) {
       const hours = Math.floor(totalDurationMs / 3600000);
@@ -267,7 +421,6 @@ if (currentIn) {
       duration = `${hours}h ${mins}m`;
     }
 
-    // Format date for title
     const dateObj = new Date(dateStr);
     const title = dateObj.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
 
@@ -282,10 +435,8 @@ if (currentIn) {
     });
   });
 
-  // Return newest dates first
   return timelineRows.sort((a, b) => new Date(b.id).getTime() - new Date(a.id).getTime());
 };
-
 const EmployeeAttendance = () => {
   const { user } = useAuth();
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -295,9 +446,8 @@ const EmployeeAttendance = () => {
   const [filters, setFilters] = useState(() => {
     const today = new Date();
     const from = new Date(today);
-    from.setDate(today.getDate() - 3);
-    const to = new Date(today);
-    to.setDate(today.getDate() + 3);
+    from.setDate(today.getDate() - 5); 
+    const to = new Date(today);        
     
     const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
     

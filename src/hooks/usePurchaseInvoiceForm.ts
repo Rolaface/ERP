@@ -82,6 +82,25 @@ const addressStub = (id: string, type: string): ApiAddress | null =>
 // Hook
 // ─────────────────────────────────────────────
 
+import dayjs from "dayjs";
+
+const calculateDueDate = (invoiceDate: string, terms: string) => {
+  if (!invoiceDate) return "";
+
+
+  if (!terms) {
+    const date = dayjs(invoiceDate, "YYYY-MM-DD", true);
+    return date.isValid() ? date.format("YYYY-MM-DD") : "";
+  }
+
+  const match = terms.match(/(\d+)/);
+  const days = match ? Number(match[1]) : 0;
+
+  const date = dayjs(invoiceDate, "YYYY-MM-DD", true);
+  if (!date.isValid()) return "";
+
+  return date.add(days, "day").format("YYYY-MM-DD");
+};
 export const usePurchaseInvoiceForm = ({
   isOpen,
   onSuccess,
@@ -275,6 +294,21 @@ export const usePurchaseInvoiceForm = ({
 
     loadCompanyData();
   }, [isOpen, pId]);
+useEffect(() => {
+  if (!form.date) return;
+
+  const terms = form.terms?.buying?.payment?.dueDates ?? "";
+
+  // calculateDueDate handles "" → returns form.date itself (due today)
+  const due = calculateDueDate(form.date, terms);
+
+  if (due) {
+    setForm((prev) => ({ ...prev, dueDate: due }));
+  }
+}, [
+  form.date,
+  form.terms?.buying?.payment?.dueDates,
+]);
 
   // ── Load PI in edit mode ───────────────────
   useEffect(() => {
@@ -428,15 +462,14 @@ export const usePurchaseInvoiceForm = ({
   useFieldDefault(isOpen, form.project, fetchProjects, (val) =>
     setForm((prev) => ({ ...prev, project: val })),
   );
-  useFieldDefault(
-    isOpen,
-    form.warehouse,
-    () =>
-      getAllWarehouses().then((list: string[]) =>
-        list.map((w) => ({ value: w, label: w })),
-      ),
-    (val) => setForm((prev) => ({ ...prev, warehouse: val })),
-  );
+useFieldDefault(
+  isOpen && !pId,  // only auto-default in create mode
+  form.warehouse,
+  () => getAllWarehouses().then((list: string[]) =>
+    list.map((w) => ({ value: w, label: w }))
+  ),
+  (val) => setForm((prev) => ({ ...prev, warehouse: val })),
+);
 
   // ─────────────────────────────────────────────
   // Handlers
@@ -593,6 +626,10 @@ export const usePurchaseInvoiceForm = ({
   // ── Supplier ───────────────────────────────
   const handleSupplierChange = async (sup: any) => {
     if (!sup) return;
+    setForm((prev) => ({
+      ...prev,
+      supplierId: sup.id || sup.value || "",
+    }));
 
     try {
       const res = await getSupplierById(sup.id || sup.value);
@@ -1136,8 +1173,6 @@ export const usePurchaseInvoiceForm = ({
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (saving) return;
-
-
 
     const errors = validatePI(form);
     if (errors.length) {

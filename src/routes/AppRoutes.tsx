@@ -211,44 +211,44 @@ const AppRoutes: React.FC = () => {
 
 
             {/* Mode of Payment */}
-            <Route
+            {/* <Route
               path="/mode-of-payment-setup"
               element={
                 <PermissionRoute modules={["Mode of Payment"]}>
                   <ModeOfPaymentPage />
                 </PermissionRoute>
               }
-            />
+            /> */}
 
             {/* Payment Entry */}
-            <Route
+            {/* <Route
               path="/payment-entry"
               element={
                 <PermissionRoute modules={["Payment Entry"]}>
                   <PaymentEntry />
                 </PermissionRoute>
               }
-            />
+            /> */}
 
             {/* Currency Exchange */}
-            <Route
+            {/* <Route
               path="/currency-conversion"
               element={
                 <PermissionRoute modules={["Currency Exchange"]}>
                   <CurrencyConversion />
                 </PermissionRoute>
               }
-            />
+            /> */}
 
             {/* Customer Group */}
-            <Route
+            {/* <Route
               path="/customer-group"
               element={
                 <PermissionRoute modules={["Customer Group"]}>
                   <CustomerGroup />
                 </PermissionRoute>
               }
-            />
+            /> */}
 
             {/* Tax Maintenance */}
             <Route
@@ -262,7 +262,7 @@ const AppRoutes: React.FC = () => {
               <Route
               path="/Expense-Management"
               element={
-                <PermissionRoute modules={["Expense Claim","Expense Claim Type"]}>
+                <PermissionRoute modules={["Expense Claim","Expense Claim Type","Employee Advance"]}>
                   <ExpenseManagement />
                 </PermissionRoute>
               }
@@ -270,7 +270,7 @@ const AppRoutes: React.FC = () => {
              <Route
               path="/Email-Template"
               element={
-                <PermissionRoute modules={["Expense History"]}>
+                <PermissionRoute modules={["Email Template"]}>
                   <EmailTemplate />
                 </PermissionRoute>
               }
@@ -278,7 +278,7 @@ const AppRoutes: React.FC = () => {
              <Route
               path="/performance"
               element={
-                <PermissionRoute modules={["Expense History"]}>
+                <PermissionRoute modules={["Appraisal"]}>
                   <Performance />
                 </PermissionRoute>
               }

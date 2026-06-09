@@ -160,15 +160,9 @@ export function SalaryComponentSetup() {
               }
               disabled={actionLoadingId === row.name}
             />
-            <ActionMenu
-              customActions={[
-                {
-                  label: "Delete",
-                  onClick: () => handleDelete(row),
-                  disabled: actionLoadingId === row.name,
-                },
-              ]}
-            />
+           <ActionMenu
+  onDelete={() => handleDelete(row)}
+/>
           </ActionGroup>
         ),
       },

@@ -256,7 +256,7 @@ setRfqId(id);
   /*  SUBMIT  */
 
   const handleSubmit = async () => {
-    if (saving) return;
+    if (saving) return false;
 
     try {
       setSaving(true);
@@ -297,7 +297,7 @@ setRfqId(id);
 
       if (![200, 201].includes(statusCode)) {
         showApiError(apiResponse);
-        return;
+        return false;
       }
 
      showSuccess(apiResponse?.message || (isEditMode ? "RFQ updated successfully!" : "RFQ created successfully!"));
@@ -305,9 +305,11 @@ setRfqId(id);
       onSuccess?.(form);
       reset();
       onClose?.();
+      return true;
     } catch (err: any) {
       closeSwal();
       showApiError(err);
+      return false;
     } finally {
       setSaving(false);
     }

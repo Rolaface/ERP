@@ -1,13 +1,14 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import {
   ModalInput,
   ModalSelect,
 } from "../../components/ui/modal/modalComponent";
-import SearchSelect2 from "../../components/ui/modal/SearchSelect";
-import { Wallet } from "lucide-react";
+import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
+import { getDefaultAccounts } from "../../api/BankAccountApi";
 import { useModeOfPaymentLogic } from "./useModeOfPaymentLogic";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 
 interface Props {
   isOpen: boolean;
@@ -26,6 +27,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
   initialData,
   isEdit,
 }) => {
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     form,
     setForm,
@@ -33,22 +35,52 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
     handleSubmit,
     loading,
     companies,
-    accounts,
     fetchLoading,
-    accLoading,
     companyLoading,
   } = useModeOfPaymentLogic({
-    onSubmit, onClose, initialData,  // ← pass down
+    onSubmit, onClose, initialData,
     isEdit,
   });
 
+  const handleClose = () => {
+    resetDirty();
+    onClose();
+  };
+
+  const handleSubmitWithDirtyReset = async () => {
+    const didSave = await handleSubmit();
+    if (didSave) resetDirty();
+  };
+  // AFTER — single call
+  const fetchGlOptions = useCallback(async (_search?: string) => {
+    try {
+      const data: { name: string; account_type: string; account_name: string }[] =
+        await getDefaultAccounts();
+      return data.map((opt) => ({
+        value: opt.name,
+        label: opt.account_name,
+        subLabel: opt.account_type || "",
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
+
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose} disabled={loading}>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(handleClose, modalId)}
+        disabled={loading}
+      >
         Cancel
       </Button>
 
-      <Button variant="primary" onClick={handleSubmit} disabled={loading}>
+      <Button
+        variant="primary"
+        onClick={handleSubmitWithDirtyReset}
+        disabled={loading}
+      >
         {loading ? "Saving..." : "Save"}
       </Button>
     </>
@@ -58,7 +90,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(handleClose, modalId)}
       title={isEdit ? "Edit Mode of Payment" : "Add Mode of Payment"}
       subtitle="Configure mode of payment"
       footer={footer}
@@ -70,7 +102,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       ) : (
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6" onChange={markDirty}>
           {/* FORM */}
           <div className="grid grid-cols-3 gap-4">
             <ModalInput
@@ -98,20 +130,16 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
 
             <SearchSelect2
               label="Default Account"
-              value={form.defaultAccount}
-              onChange={(_, option) =>
-                setForm((p) => ({
-                  ...p,
-                  defaultAccount: option?.value || "",
-                }))
-              }
-              fetchOptions={(q) => {
-                const query = q.toLowerCase();
-                return Promise.resolve(
-                  accounts.filter((a) => a.label.toLowerCase().includes(query)),
-                );
-              }}
-              loading={accLoading}
+                value={form.defaultAccountDisplay || form.defaultAccount}
+onChange={(val, option) => {
+  markDirty();
+  setForm((p) => ({
+    ...p,
+    defaultAccount: val || "",           
+    defaultAccountDisplay: option?.label || "", 
+  }));
+}}
+              fetchOptions={fetchGlOptions}
               required
               placeholder="Select default account"
             />
@@ -120,9 +148,10 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
               <input
                 type="checkbox"
                 checked={form.enabled}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, enabled: e.target.checked }))
-                }
+                onChange={(e) => {
+                  markDirty();
+                  setForm((p) => ({ ...p, enabled: e.target.checked }));
+                }}
                 className="w-4 h-4 accent-primary"
               />
               <span className="text-sm">Enabled</span>

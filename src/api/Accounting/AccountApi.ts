@@ -58,16 +58,36 @@ export async function deleteChartOfAccount(
   return resp.data;
 }
 
-export interface getChartOfAccountsPayload{
-  balance_filter? : string;
+export interface getChartOfAccountsPayload {
+  balance_filter?: string;
 }
 
 export async function getChartOfAccounts(
-  payload:getChartOfAccountsPayload
+  payload: getChartOfAccountsPayload
 ): Promise<any> {
-  const resp: AxiosResponse = await api.get(AccountingAPI.getCOA,{
-    params:payload
+  const resp: AxiosResponse = await api.get(AccountingAPI.getCOA, {
+    params: payload
   });
+  return resp.data;
+}
+
+
+export async function getCOAById(accountName: string): Promise<any> {
+  const resp: AxiosResponse = await api.get(
+    `${AccountingAPI.getCOAbyId}/${encodeURIComponent(accountName)}`,
+  );
+  return resp.data?.data ?? null;
+}
+
+
+export async function updateChartOfAccount(
+  accountName: string,
+  payload: CreateCOAPayload & { name: string },
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${AccountingAPI.getCOAbyId}/${encodeURIComponent(accountName)}`,
+    payload,
+  );
   return resp.data;
 }
 
@@ -128,7 +148,7 @@ export async function getProfitAndLoss(
 
 export interface AccountsPayableFilters {
   company?: string;
-  report_date?: string;
+  posting_date?: string;
   currency?:string;
   cost_center?: string;
   payable_account?: string;
@@ -140,7 +160,10 @@ export interface AccountsPayableFilters {
   range?: string;
   group_by?: "supplier" | "voucher" | "none";
   search?: any;
-  voucher_type?: "Purchase Invoice" | "Payment Entry";
+  voucher_type?: "Purchase Invoice"
+  | "Payment Entry"
+  | "Journal Entry"
+  | "Expense Claim";
   // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
   status?: any;
   page?: number;
@@ -159,7 +182,7 @@ export async function getAllPayables(
 
 export interface AccountsReceivableFilters {
   company?: string;
-  report_date?: string;
+  posting_date?: string;
   currency?:string;
   cost_center?: string;
   receivable_account?: string;
@@ -171,7 +194,9 @@ export interface AccountsReceivableFilters {
   range?: string;
   group_by?: "customer" | "voucher" | "none";
   search?: any;
-  voucher_type?: "Sales Invoice" | "Payment Entry";
+  voucher_type?: "Sales Invoice"
+  | "Payment Entry"
+  | "Journal Entry";
   // status?: "Paid" | "Pending" | "Overdue" | "Partially Paid";
   status?: any;
   page?: number;
@@ -221,7 +246,7 @@ export async function getLedgerDetails(
   filters: LedgerFilters
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(
-    AccountingAPI.getLedger, 
+    AccountingAPI.getLedger,
     {
       params: filters,
     }

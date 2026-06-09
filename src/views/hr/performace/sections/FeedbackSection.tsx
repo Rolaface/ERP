@@ -147,15 +147,8 @@ export default function FeedbackSection() {
             onClick={() => openDetail(row.id, "edit")}
           />
           <ActionMenu
-            customActions={[
-              {
-                label: "Delete",
-                onClick: () => deleteRow(row.id),
-                danger: true,
-                icon: <FaTrash className="w-4 h-4" />,
-              },
-            ]}
-          />
+  onDelete={() => deleteRow(row.id)}
+/>
         </ActionGroup>
       ),
     },

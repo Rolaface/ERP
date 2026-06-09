@@ -21,6 +21,7 @@ interface AccountingTabProps {
   data: PayrollEntry;
   onChange: (field: string, value: any) => void;
   employees: Employee[];
+  onDirty?: () => void;
 }
 
 export const AccountingTab: React.FC<AccountingTabProps> = ({

@@ -1,29 +1,73 @@
 import React from "react";
+import Tooltip from "../../components/Tooltip"; // Ensure this path is correct
 
 // ─── Types (mapped exactly to API response) ───────────────────────────────────
 export interface ProformaDetail {
-  proformaId: string;
+  id?: string;
+  proformaId?: string;
   customerName: string;
   customerTpin?: string;
-  currencyCode: string;         // "INR"
-  exchangeRt?: string;          // "1"
-  dateofinvoice: string;        // "2026-03-03"
-  dueDate?: string;             // "2026-03-28"
-  invoiceStatus: string;        // "Rejected"
-  totalAmount: number;
+  currency?: string;
+  currencyCode?: string;         
+  exchangeRate?: number;
+  exchangeRt?: string | number;          
+  postingDate?: string;
+  dateofinvoice?: string;        
+  validTill?: string;            
+  status?: string;
+  invoiceStatus?: string;    
+  grandTotal?: number;
+  netTotal?: number;
   invoiceType?: string;
+  taxCategory?: string;
   destnCountryCd?: string;
   lpoNumber?: string | null;
-  billingAddress?: { line1?: string; line2?: string; postalCode?: string; city?: string; state?: string; country?: string };
-  shippingAddress?: { line1?: string; line2?: string; postalCode?: string; city?: string; state?: string; country?: string };
-  paymentInformation?: { paymentTerms?: string; paymentMethod?: string; bankName?: string; accountNumber?: string; routingNumber?: string; swiftCode?: string };
+  billingAddress?: any;
+  shippingAddress?: any;
+  paymentInformation?: { 
+    paymentTerms?: string; 
+    paymentMethod?: string; 
+    bankName?: string; 
+    accountNumber?: string; 
+    routingNumber?: string; 
+    swiftCode?: string 
+  };
   items?: Array<{
-    itemCode?: string; itemName?: string; description?: string;
-    quantity?: string | number; price?: string | number;
-    discount?: string | number; tax?: string | number;
-    itemTotal?: string | number; packingUnit?: string; packingSize?: string;
+    itemCode?: string; 
+    itemName?: string; 
+    description?: string;
+    quantity?: string | number; 
+    rate?: string | number; 
+    price?: string | number;
+    discountAmount?: string | number; 
+    discount?: string | number; 
+    tax?: string | number;
+    amount?: string | number; 
+    itemTotal?: string | number; 
+    packingUnit?: string | number; 
+    packingSize?: string | number;
+    batchNo?: string;
+    expDate?: string;
+    vatCode?: string | null;
   }>;
-  terms?: { selling?: { general?: string; delivery?: string; cancellation?: string; warranty?: string; liability?: string; payment?: { dueDates?: string; lateCharges?: string; taxes?: string; notes?: string; phases?: Array<{ name: string; percentage: string; condition: string }> } } };
+  terms?: { 
+    selling?: { 
+      general?: string; 
+      delivery?: string; 
+      cancellation?: string; 
+      warranty?: string; 
+      liability?: string; 
+      payment?: { 
+        dueDates?: string; 
+        lateCharges?: string; 
+        taxes?: string; 
+        notes?: string; 
+        phases?: Array<{ name: string; percentage: string; condition: string }> 
+      } 
+    } 
+  };
+  invoiceCharges?: any[];
+  charges?: any[];
 }
 
 interface Props {
@@ -39,26 +83,83 @@ interface Props {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (n?: number, currency = "USD") =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(n ?? 0);
+const fmt = (n?: number, currency = "USD") => {
+  if (n == null) return "—";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${currency} ${n.toFixed(2)}`;
+  }
+};
 
 const fmtDate = (d?: string) =>
-  d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  d
+    ? new Date(d).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
 
 const STATUS_MAP: Record<string, string> = {
-  Draft: "bg-draft", Approved: "bg-success", Rejected: "bg-danger",
-  Paid: "bg-success", Cancelled: "bg-danger",
+  Draft: "bg-draft",
+  Approved: "bg-success",
+  Rejected: "bg-danger",
+  Paid: "bg-success",
+  Cancelled: "bg-danger",
 };
 
 // Compact label+value field
-const F: React.FC<{ label: string; value?: string | null; mono?: boolean }> = ({ label, value, mono }) => (
+const F: React.FC<{ label: string; value?: string | null; mono?: boolean }> = ({
+  label,
+  value,
+  mono,
+}) => (
   <div>
-    <p style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 1 }}>{label}</p>
+    <p style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 1 }}>
+      {label}
+    </p>
     <p style={{ fontSize: 13, color: value ? "var(--text)" : "var(--muted)", fontWeight: 500, fontFamily: mono ? "monospace" : undefined, lineHeight: 1.3 }}>
       {value || "—"}
     </p>
   </div>
 );
+
+/** Strip HTML tags from address display strings returned by the API */
+const stripHtml = (html?: string | null): string[] => {
+  if (!html) return [];
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+};
+
+// Address card from display HTML string
+const AddressCard: React.FC<{
+  label: string;
+  html?: string | null;
+  name?: string;
+}> = ({ label, html, name }) => {
+  const lines = stripHtml(html);
+  if (!lines.length && !name) return null;
+  return (
+    <div style={{ padding: "7px 9px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)" }}>
+      <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>
+        {label}
+      </p>
+      {name && <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>{name}</p>}
+      {lines.map((l, i) => (
+        <p key={i} style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>{l}</p>
+      ))}
+    </div>
+  );
+};
 
 // Section divider
 const S: React.FC<{ title: string }> = ({ title }) => (
@@ -75,13 +176,21 @@ const ProformaDetailModal: React.FC<Props> = ({
 }) => {
   if (!open) return null;
 
-  const items     = data?.items ?? [];
-  // API returns quantity/price/discount as strings — parse them
-  const subtotal  = items.reduce((s, it) => s + Number(it.price ?? 0) * Number(it.quantity ?? 0), 0);
-  const totalDisc = items.reduce((s, it) => s + Number(it.discount ?? 0), 0);
-  const grandTotal = subtotal - totalDisc;
-  const currency  = data?.currencyCode ?? "USD";
-  const statusCls = STATUS_MAP[data?.invoiceStatus ?? "Draft"] ?? "bg-draft";
+  const hasAddresses = data?.billingAddress || data?.shippingAddress;
+  const items = data?.items ?? [];
+  
+  // Safe math handling strings & missing fields
+  const subtotal = items.reduce((s, it) => s + Number(it.rate ?? it.price ?? 0) * Number(it.quantity ?? 0), 0);
+  const totalDisc = items.reduce((s, it) => s + Number(it.discountAmount ?? it.discount ?? 0), 0);
+  const grandTotal = data?.grandTotal ?? data?.netTotal ?? (subtotal - totalDisc);
+  const currency = data?.currency ?? data?.currencyCode ?? "USD";
+  
+  const currentStatus = data?.status ?? data?.invoiceStatus ?? "Draft";
+  const statusCls = STATUS_MAP[currentStatus] ?? "bg-draft";
+  const proformaDisplayId = data?.id ?? data?.proformaId ?? "—";
+  
+  const phases = data?.terms?.selling?.payment?.phases?.filter((p) => p?.percentage)?.slice(0, 3) ?? [];
+  const exchangeRateDisplay = data?.exchangeRate ?? data?.exchangeRt != null ? String(data?.exchangeRate ?? data?.exchangeRt) : null;
 
   return (
     <>
@@ -129,10 +238,10 @@ const ProformaDetailModal: React.FC<Props> = ({
             </div>
             <div style={{ lineHeight: 1 }}>
               <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>Proforma Invoice</p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{data?.proformaId ?? "—"}</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}>{proformaDisplayId}</p>
             </div>
             <span className={`pdm-btn ${statusCls}`} style={{ cursor: "default", padding: "2px 9px", fontSize: 10, borderRadius: 20 }}>
-              {data?.invoiceStatus ?? "Draft"}
+              {currentStatus}
             </span>
           </div>
 
@@ -171,53 +280,42 @@ const ProformaDetailModal: React.FC<Props> = ({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 2 }}>
               <div style={{ padding: "9px 11px", borderRadius: 7, background: "var(--primary)" }}>
                 <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.7)", marginBottom: 2 }}>Total Amount</p>
-                <p style={{ fontSize: 16, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>{fmt(data.totalAmount, currency)}</p>
+                <p style={{ fontSize: 16, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>{fmt(grandTotal, currency)}</p>
               </div>
               <div style={{ padding: "9px 11px", borderRadius: 7, background: "var(--bg)", border: "1px solid var(--border)" }}>
                 <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Issue Date</p>
-                {/* API field: dateofinvoice */}
-                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.dateofinvoice)}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.postingDate ?? data.dateofinvoice)}</p>
               </div>
               <div style={{ padding: "9px 11px", borderRadius: 7, background: "var(--bg)", border: "1px solid var(--border)" }}>
-                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Due Date</p>
-                {/* API field: dueDate */}
-                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.dueDate)}</p>
+                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 2 }}>Valid Till</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{fmtDate(data.validTill)}</p>
               </div>
             </div>
 
             {/* ── CUSTOMER ── */}
-            <S title="Customer & Invoice Info" />
+            <S title="Customer & Transaction Info" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginBottom: 7 }}>
-              {/* API field: customerName */}
               <F label="Customer" value={data.customerName} />
-              {/* API field: customerTpin */}
               <F label="TPIN" value={data.customerTpin} mono />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-              {/* API field: currencyCode + exchangeRt */}
-              <F label="Currency"     value={`${data.currencyCode} · Rate: ${data.exchangeRt ?? 1}`} />
-              {/* API field: invoiceType (may not always be present) */}
-              <F label="Invoice Type" value={data.invoiceType} />
-              <F label="Destination"  value={data.destnCountryCd?.toUpperCase()} />
+              <F label="Currency" value={currency} />
+              <F label="Exchange Rate" value={exchangeRateDisplay} />
+              <F label="Destination" value={data.destnCountryCd?.toUpperCase()} />
             </div>
-            {data.lpoNumber && (
-              <div style={{ marginTop: 7 }}><F label="LPO Number" value={data.lpoNumber} /></div>
+            {(data.lpoNumber || data.invoiceType || data.taxCategory) && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginTop: 7 }}>
+                <F label="Invoice Type" value={data.invoiceType ?? data.taxCategory} />
+                {data.lpoNumber && <F label="LPO Number" value={data.lpoNumber} />}
+              </div>
             )}
 
             {/* ── ADDRESSES ── */}
-            {(data.billingAddress || data.shippingAddress) && (<>
+            {hasAddresses && (<>
               <S title="Addresses" />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                {[{ label: "Billing", addr: data.billingAddress }, { label: "Shipping", addr: data.shippingAddress }].map(({ label, addr }) =>
-                  addr ? (
-                    <div key={label} style={{ padding: "7px 9px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)" }}>
-                      <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{label}</p>
-                      {[addr.line1, addr.city, [addr.state, addr.postalCode].filter(Boolean).join(", "), addr.country?.toUpperCase()]
-                        .filter(Boolean)
-                        .map((l, i) => <p key={i} style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>{l}</p>)}
-                    </div>
-                  ) : <div key={label} />
-                )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 6 }}>
+                <AddressCard label="Billing Address" html={data.billingAddress} />
+                <AddressCard label="Shipping Address" html={data.shippingAddress} />
               </div>
             </>)}
 
@@ -225,41 +323,113 @@ const ProformaDetailModal: React.FC<Props> = ({
             <S title="Line Items" />
             <div style={{ borderRadius: 7, overflow: "hidden", border: "1px solid var(--border)" }}>
               {/* Head */}
-              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 80px 60px 60px 90px", padding: "6px 10px", background: "var(--table-head)", color: "var(--table-head-text)", fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", gap: 4 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 90px 90px 96px", padding: "6px 10px", background: "var(--table-head)", color: "var(--table-head-text)", fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", gap: 4 }}>
                 <span>Item</span>
                 <span style={{ textAlign: "right" }}>Qty</span>
                 <span style={{ textAlign: "right" }}>Price</span>
                 <span style={{ textAlign: "right" }}>Disc.</span>
-                <span style={{ textAlign: "right" }}>Tax</span>
                 <span style={{ textAlign: "right" }}>Total</span>
               </div>
-              {/* Rows — note: API returns quantity/price/discount/tax/itemTotal as strings */}
-              {items.map((it, i) => (
-                <div key={i} className="pdm-irow" style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 80px 60px 60px 90px", padding: "7px 10px", gap: 4, borderTop: "1px solid var(--border)", alignItems: "center" }}>
+              
+              {/* Rows */}
+              {items.map((it, i) => {
+                const qty = Math.abs(Number(it.quantity ?? 0));
+                const rate = Number(it.rate ?? it.price ?? 0);
+                const baseTotal = qty * rate;
+                
+                // If API provides discount amount use it, else calculate from percentage if that's how it's sent
+                let discountAmount = Number(it.discountAmount ?? it.discount ?? 0);
+                let discountPercent = 0;
+                
+                // If it's stored as percentage in the API (like InvoiceModal does):
+                if (discountAmount > 0 && discountAmount <= 100 && (it.discountAmount == null && it.discount != null)) {
+                  discountPercent = discountAmount;
+                  discountAmount = (baseTotal * discountPercent) / 100;
+                } else if (baseTotal > 0 && discountAmount > 0) {
+                  discountPercent = (discountAmount / baseTotal) * 100;
+                }
+
+                const rowTotal = it.amount != null ? Number(it.amount) : it.itemTotal != null ? Number(it.itemTotal) : (baseTotal - discountAmount);
+
+                const displayName = it.itemName || it.description || it.itemCode || "—";
+                const showCodeSubtitle = it.itemCode && it.itemCode !== displayName;
+
+                return (
+                <div key={i} className="pdm-irow" style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 60px 90px 90px 96px", padding: "7px 10px", gap: 4, borderTop: "1px solid var(--border)", alignItems: "start" }}>
                   <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.itemName || it.itemCode}</p>
-                    {it.description && <p style={{ fontSize: 10, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.description}</p>}
-                    {it.itemCode && it.itemName && <p style={{ fontSize: 9, color: "var(--muted)", fontFamily: "monospace" }}>{it.itemCode}</p>}
-                    {(it.packingSize || it.packingUnit) && (
-                      <p style={{ fontSize: 9, color: "var(--muted)" }}>Pack: {it.packingSize} × {it.packingUnit}</p>
-                    )}
+                    <Tooltip content={displayName}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{displayName}</p>
+                    </Tooltip>
+                    {showCodeSubtitle && <p style={{ fontSize: 9, color: "var(--muted)", fontFamily: "monospace" }}>{it.itemCode}</p>}
+                    
+                    {/* Item Badges */}
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 3 }}>
+                      {it.vatCode && (
+                        <span style={{ fontSize: 9, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 5px", color: "var(--muted)", fontFamily: "monospace" }}>
+                          Tax: {it.vatCode}
+                        </span>
+                      )}
+                      {it.batchNo && (
+                        <span style={{ fontSize: 9, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 5px", color: "var(--muted)", fontFamily: "monospace" }}>
+                          Batch: {it.batchNo}
+                        </span>
+                      )}
+                      {(it.packingSize != null || it.packingUnit != null) && (
+                        <span style={{ fontSize: 9, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 5px", color: "var(--muted)" }}>
+                          Pack {it.packingSize}/{it.packingUnit}
+                        </span>
+                      )}
+                      {it.expDate && (
+                        <span style={{ fontSize: 9, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 5px", color: "var(--muted)" }}>
+                          Exp: {fmtDate(it.expDate)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{Number(it.quantity ?? 0).toLocaleString()}</p>
-                  <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmt(Number(it.price), currency)}</p>
-                  <p style={{ fontSize: 12, textAlign: "right", color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{Number(it.discount) > 0 ? fmt(Number(it.discount), currency) : "—"}</p>
-                  <p style={{ fontSize: 12, textAlign: "right", color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{Number(it.tax) > 0 ? fmt(Number(it.tax), currency) : "—"}</p>
-                  {/* Use itemTotal from API if available, otherwise compute */}
-                  <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>
-                    {fmt(it.itemTotal != null ? Number(it.itemTotal) : Number(it.price ?? 0) * Number(it.quantity ?? 0) - Number(it.discount ?? 0), currency)}
-                  </p>
+                  
+                  {/* Qty */}
+                  <Tooltip content={`Quantity: ${qty.toLocaleString()}`}>
+                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums", paddingTop: 1 }}>{qty.toLocaleString()}</p>
+                  </Tooltip>
+
+                  {/* Price */}
+                  <Tooltip content={`Unit price: ${fmt(rate, currency)}`}>
+                    <p style={{ fontSize: 12, textAlign: "right", color: "var(--text)", fontVariantNumeric: "tabular-nums", paddingTop: 1 }}>{fmt(rate, currency)}</p>
+                  </Tooltip>
+
+                  {/* Disc */}
+                  <Tooltip content={discountAmount > 0 ? `Discount: ${fmt(discountAmount, currency)}` : "No discount"}>
+                    <div style={{ textAlign: "right" }}>
+                      {discountAmount > 0 ? (
+                        <>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: "var(--danger)", fontVariantNumeric: "tabular-nums", lineHeight: 1.3 }}>
+                            {discountPercent > 0 ? `${discountPercent.toFixed(1)}%` : "DISC."}
+                          </p>
+                          <p style={{ fontSize: 10, color: "var(--muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1.3 }}>
+                            -{discountAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </>
+                      ) : (
+                        <p style={{ fontSize: 12, color: "var(--muted)" }}>—</p>
+                      )}
+                    </div>
+                  </Tooltip>
+
+                  {/* Row total */}
+                  <Tooltip content={`Row total: ${fmt(rowTotal, currency)}`}>
+                    <p style={{ fontSize: 12, textAlign: "right", fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums", paddingTop: 1 }}>
+                      {fmt(rowTotal, currency)}
+                    </p>
+                  </Tooltip>
                 </div>
-              ))}
+              )})}
+
               {/* Totals footer */}
               <div style={{ background: "var(--bg)", borderTop: "2px solid var(--border)", padding: "7px 10px", display: "flex", flexDirection: "column", gap: 3 }}>
                 {[
                   { label: "Subtotal",    val: fmt(subtotal, currency),              big: false, red: false },
-                  ...(totalDisc > 0 ? [{ label: "Discount", val: `- ${fmt(totalDisc, currency)}`, big: false, red: true }] : []),
-                  { label: "Total Amount", val: fmt(data.totalAmount, currency),     big: true,  red: false },
+                  ...(totalDisc > 0 ? [{ label: "Total Discount", val: `- ${fmt(totalDisc, currency)}`, big: false, red: true }] : []),
+                  { label: "Total Amount", val: fmt(grandTotal, currency),     big: true,  red: false },
                 ].map(({ label, val, big, red }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</span>
@@ -273,7 +443,7 @@ const ProformaDetailModal: React.FC<Props> = ({
             {data.paymentInformation && (<>
               <S title="Payment Information" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-                <F label="Payment Terms"  value={data.paymentInformation.paymentTerms} />
+                <F label="Payment Terms"  value={data.paymentInformation.paymentTerms ?? data.terms?.selling?.payment?.notes ?? null} />
                 <F label="Method"         value={data.paymentInformation.paymentMethod} />
                 <F label="Bank"           value={data.paymentInformation.bankName} />
                 {data.paymentInformation.accountNumber && <F label="Account No." value={data.paymentInformation.accountNumber} mono />}
@@ -283,14 +453,14 @@ const ProformaDetailModal: React.FC<Props> = ({
             </>)}
 
             {/* ── PAYMENT SCHEDULE ── */}
-            {(data.terms?.selling?.payment?.phases?.length ?? 0) > 0 && (<>
+            {phases.length > 0 && (<>
               <S title="Payment Schedule" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-                {data.terms!.selling!.payment!.phases!.map((phase, i) => (
+                {phases.map((phase, i) => (
                   <div key={i} style={{ padding: "7px 9px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)" }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 3 }}>
                       <span style={{ fontSize: 14, fontWeight: 800, color: "var(--primary)" }}>{phase.percentage}%</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)" }}>{phase.name}</span>
+                      {phase.name && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)" }}>{phase.name}</span>}
                     </div>
                     <p style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.4 }}>{phase.condition}</p>
                   </div>
@@ -311,6 +481,7 @@ const ProformaDetailModal: React.FC<Props> = ({
                 { label: "Warranty",     value: s.warranty },
                 { label: "Liability",    value: s.liability },
                 { label: "Late Charges", value: s.payment?.lateCharges },
+                { label: "Due Dates",    value: s.payment?.dueDates },
                 { label: "General",      value: s.general },
               ].filter(r => r.value);
               if (!rows.length) return null;
@@ -341,7 +512,7 @@ const ProformaDetailModal: React.FC<Props> = ({
                 </button>
                 <div style={{ lineHeight: 1 }}>
                   <p style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>PDF Preview</p>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{data?.proformaId}</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{proformaDisplayId}</p>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 5 }}>

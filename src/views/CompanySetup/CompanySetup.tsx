@@ -7,7 +7,7 @@ import {
   Repeat,
   Layers,
   FileText,
-  UploadCloud
+  UploadCloud, Hash
 } from "lucide-react";
 import {
   AppPage,
@@ -22,6 +22,7 @@ import BuyingSelling from "./BuyingSelling";
 import SubscribedModules from "./subscribedmodule";
 import BankDetails from "./BankDetails";
 import Upload from "./upload";
+import NamingSeries from "./NamingSeries";
 import Templates from "./Templates";
 import type {
   CompanyDocuments,
@@ -50,27 +51,27 @@ const navTabs = [
   {
     id: "basic",
     label: "Basic Details",
-    icon: <IdCard {...iconProps} />, 
+    icon: <IdCard {...iconProps} />,
   },
   {
     id: "bank",
     label: "Bank Details",
-    icon: <Landmark {...iconProps} />, 
+    icon: <Landmark {...iconProps} />,
   },
   {
     id: "accounting",
     label: "Accounting Details",
-    icon: <Wallet {...iconProps} />, 
+    icon: <Wallet {...iconProps} />,
   },
   {
     id: "buyingSelling",
     label: "Buying & Selling",
-    icon: <Repeat {...iconProps} />, 
+    icon: <Repeat {...iconProps} />,
   },
   {
     id: "subscribed",
     label: "Subscription",
-    icon: <Layers {...iconProps} />, 
+    icon: <Layers {...iconProps} />,
   },
   {
     id: "Templates",
@@ -80,8 +81,14 @@ const navTabs = [
   {
     id: "logo",
     label: "Logo & Signature",
-    icon: <UploadCloud {...iconProps} />, 
+    icon: <UploadCloud {...iconProps} />,
   },
+  // {
+  //   id: "naming",
+  //   label: "Naming Series",
+  //   icon: <Hash {...iconProps} />,
+  // },
+
 ];
 
 const CompanySetup: React.FC = () => {
@@ -213,6 +220,9 @@ const CompanySetup: React.FC = () => {
     buyingSelling: (
       <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
     ),
+    // naming: (
+    //   <NamingSeries onSaveSuccess={fetchCompanyDetail} />
+    // ),
     subscribed: <SubscribedModules />,
     Templates: <Templates templates={companytemplates} />,
     logo: (
@@ -239,7 +249,7 @@ const CompanySetup: React.FC = () => {
     <AppPage viewportLocked={isBasicTab}>
       <AppPageHeader
         title="Company Setup"
-        icon={<Building2  />}
+        icon={<Building2 />}
       />
       <AppTabs
         tabs={navTabs}

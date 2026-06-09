@@ -43,6 +43,7 @@ interface ItemTableProps {
   taxCategory?: string;
   isSalesInvoice?:boolean;
   title?: string;
+  isQuotation?: boolean;
 
   columnHeaders?: React.ReactNode;
   renderRow?: (
@@ -131,6 +132,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
   columnHeaders,
   renderRow,
   isSalesInvoice = false,
+  isQuotation = false,
 }) => {
 
 useBarcodeScanner(async (barcode) => {
@@ -274,6 +276,7 @@ useBarcodeScanner(async (barcode) => {
             batchNo={it.batchNo}
             itemName={it.itemName}
             taxCategory={taxCategory}
+            isQuotation={isQuotation}
             onChange={(item: SelectedStockItem) => {
               actions.updateItemDirectly?.(i, {
                 itemCode: item.itemCode,

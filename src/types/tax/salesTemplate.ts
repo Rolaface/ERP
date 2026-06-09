@@ -1,25 +1,24 @@
-// ─── Sales Tax Template Types ────────────────────────────────────────────────
-
 export type ChargeType = "Actual" | "On Net Total" | "On Previous Row Amount" | "On Previous Row Total"|"On Item Quantity";
 
 export interface SalesTaxRow {
-  name?: string;                   // auto-generated / returned by API
+  name?: string;                   
   charge_type: ChargeType;
   account_head: string;
   rate: number;
   tax_amount: number;
   description: string;
+  account_head_display?: string;
 }
 
 export interface SalesTaxTemplateFormData {
-  name?: string;                   // read-only in edit mode (docname)
+  name?: string;                  
   title: string;
-  disabled: 0 | 1;                 // 0 = enabled, 1 = disabled  (API uses int)
+  disabled: 0 | 1;                 
   tax_category: string;
   taxes: SalesTaxRow[];
 }
 
-// ─── Defaults ────────────────────────────────────────────────────────────────
+
 
 export const defaultSalesTaxRow: SalesTaxRow = {
   charge_type: "On Net Total",
@@ -36,7 +35,7 @@ export const defaultSalesTaxForm: SalesTaxTemplateFormData = {
   taxes: [{ ...defaultSalesTaxRow }],
 };
 
-// ─── Summary (list view) ─────────────────────────────────────────────────────
+
 
 export interface SalesTaxTemplateSummary {
   name: string;
@@ -47,7 +46,7 @@ export interface SalesTaxTemplateSummary {
   taxes: SalesTaxRow[];
 }
 
-// ─── API Response wrappers ───────────────────────────────────────────────────
+
 
 export interface SalesTaxTemplatePagination {
   total: number;
@@ -61,7 +60,7 @@ export interface SalesTaxTemplateListResponse {
   pagination: SalesTaxTemplatePagination;
 }
 
-// ─── Charge type options (for select) ────────────────────────────────────────
+
 
 export const CHARGE_TYPE_OPTIONS: { value: ChargeType; label: string }[] = [
   { value: "Actual", label: "Actual" },

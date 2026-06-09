@@ -1,13 +1,14 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Building2, MapPin, FileText, Receipt } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
-import { Button } from "../ui/modal/formComponent";
+
 import { DetailsTab } from "../procurement/purchaseinvoice/DetailsTab";
 import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
 import { usePurchaseInvoiceForm } from "../../hooks/usePurchaseInvoiceForm";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import type { POTab } from "../../types/Supply/purchaseInvoice";
+import ModalFooter from "../common/ModalFooter";
 import { showApiError, showValidationError } from "../../utils/alert";
 
 interface PurchaseInvoiceModalProps {
@@ -37,8 +38,20 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
   const resolvedModalId =
     modalId ||
     (pId ? `purchase-invoice-edit-${pId}` : `purchase-invoice-create`);
-  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+
+  const { markDirty, resetDirty, handleCloseWithConfirm, activate, deactivate } =
+    useUnsavedChanges();
+
   const [internalSaving, setInternalSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      deactivate();
+      resetDirty();
+    } else {
+      return activate();
+    }
+  }, [isOpen]);
 
   const {
     form,
@@ -75,13 +88,35 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     loading,
     setLoading,
     handleAddressSelect,
-      handleAddressRemove, 
+    handleAddressRemove,
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
-  // ── Submit: runs full validatePI via handleSubmit ──────────
+  // ── Wrapped handlers so select/dropdown changes also mark dirty ──
+  const handleFormChangeWithDirty = useCallback(
+    (e: any) => { markDirty(); handleFormChange(e); },
+    [markDirty, handleFormChange],
+  );
+
+  const handleSupplierChangeWithDirty = useCallback(
+    (val: any) => { markDirty(); handleSupplierChange(val); },
+    [markDirty, handleSupplierChange],
+  );
+
+  const handlePOSelectWithDirty = useCallback(
+    (val: any) => { markDirty(); handlePOSelect(val); },
+    [markDirty, handlePOSelect],
+  );
+const handleItemChangeWithDirty = useCallback(
+  (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+    markDirty();
+    handleItemChange(e, idx);
+  },
+  [markDirty, handleItemChange],
+);
+  // ────────────────────────────────────────────────────────────────
+
   const handleSubmitForm = useCallback(async () => {
     if (internalSaving) return;
-
     setInternalSaving(true);
     try {
       resetDirty();
@@ -93,7 +128,6 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     }
   }, [internalSaving, resetDirty, handleSubmit]);
 
-  // ── Next: validates CURRENT tab before advancing ───────────
   const handleNextClick = useCallback(() => {
     const error = validateTab(activeTab);
     if (error) {
@@ -106,7 +140,6 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     }
   }, [activeTab, validateTab, setActiveTab]);
 
-  // ── Tab click: freely navigable — NO validation ────────────
   const handleTabClick = useCallback(
     (tabKey: POTab) => {
       setActiveTab(tabKey);
@@ -114,56 +147,21 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     [setActiveTab],
   );
 
-  const isLastTab = activeTab === "terms";
-
-  const footer = useMemo(
-    () => (
-      <>
-        <Button
-          variant="secondary"
-          onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-        >
-          Cancel
-        </Button>
-        <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              resetDirty();
-              reset();
-            }}
-          >
-            Reset
-          </Button>
-          {!isLastTab && (
-            <Button variant="secondary" onClick={handleNextClick}>
-              Next
-            </Button>
-          )}
-          <Button
-            variant="primary"
-            onClick={handleSubmitForm}
-            disabled={internalSaving}
-          >
-            {internalSaving ? "Saving..." : "Submit"}
-          </Button>
-        </div>
-      </>
-    ),
-    [
-      handleCloseWithConfirm,
-      onClose,
-      resolvedModalId,
-      resetDirty,
-      reset,
-      isLastTab,
-      handleNextClick,
-      handleSubmitForm,
-      internalSaving,
-    ],
+  const footer = (
+    <ModalFooter
+      onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+      onReset={() => {
+        resetDirty();
+        reset();
+      }}
+      onSubmit={handleSubmitForm}
+      onNext={handleNextClick}
+      currentTab={tabOrder.indexOf(activeTab)}
+      totalTabs={tabOrder.length}
+      saving={internalSaving}
+    />
   );
 
-  // Memoized tab content — stays mounted but hidden for perf
   const tabContent = useMemo(
     () => (
       <>
@@ -171,9 +169,9 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           <DetailsTab
             form={form}
             items={form.items}
-            onFormChange={handleFormChange}
-            onSupplierChange={handleSupplierChange}
-            onItemChange={handleItemChange}
+            onFormChange={handleFormChangeWithDirty}
+            onSupplierChange={handleSupplierChangeWithDirty}
+            onItemChange={handleItemChangeWithDirty}
             onAddItem={addItem}
             onRemoveItem={removeItem}
             isEditMode={!!pId}
@@ -182,7 +180,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             onItemSelect={handleItemSelect}
             poList={poList}
             poLoading={poLoading}
-            onPOSelect={handlePOSelect}
+            onPOSelect={handlePOSelectWithDirty}
             usePO={usePO}
             onTogglePO={handleTogglePO}
             onBulkItemChange={handleBulkItemChange}
@@ -192,14 +190,14 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         <div style={{ display: activeTab === "address" ? "block" : "none" }}>
           <AddressTab
             form={form}
-            onFormChange={(e: any) => handleFormChange(e)}
+            onFormChange={(e: any) => handleFormChangeWithDirty(e)}
             customShippingRule={customShippingRule}
-            isEditMode={!!pId}    
+            isEditMode={!!pId}
             setCustomShippingRule={setCustomShippingRule}
             customIncoterm={customIncoterm}
             setCustomIncoterm={setCustomIncoterm}
             supplierId={form.supplierId}
-           removedBoxes={new Set()}     
+            removedBoxes={new Set()}
             selected={selected}
             setSelected={setSelected}
             selectedIds={selectedIds}
@@ -208,10 +206,10 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
             setAddresses={setAddresses}
             loading={loading}
             setLoading={setLoading}
-            handleAddressRemove={handleAddressRemove} 
+            handleAddressRemove={handleAddressRemove}
             handleAddressSelect={handleAddressSelect}
-            handleCopyBillingToShipping={() => { }}
-            handleCopySupplierToDispatch={() => { }}
+            handleCopyBillingToShipping={() => {}}
+            handleCopySupplierToDispatch={() => {}}
           />
         </div>
 
@@ -230,9 +228,9 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     [
       activeTab,
       form,
-      handleFormChange,
-      handleSupplierChange,
-      handleItemChange,
+      handleFormChangeWithDirty,
+      handleSupplierChangeWithDirty,
+      handleItemChangeWithDirty,
       addItem,
       removeItem,
       duplicateItem,
@@ -240,7 +238,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
       handleItemSelect,
       poList,
       poLoading,
-      handlePOSelect,
+      handlePOSelectWithDirty,
       usePO,
       handleTogglePO,
       handleBulkItemChange,
@@ -279,7 +277,6 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
         onChange={() => markDirty()}
         className="h-full flex flex-col"
       >
- 
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
             {tabs.map(({ key, icon: Icon, label }) => (
@@ -287,10 +284,11 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
                 key={key}
                 type="button"
                 onClick={() => handleTabClick(key)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === key
-                  ? "text-primary border-b-[3px] border-primary"
-                  : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
+                  activeTab === key
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                }`}
               >
                 {label}
               </button>
@@ -298,7 +296,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           </div>
         </div>
 
-        <section className=" overflow-y-auto p-1 ">
+        <section className="overflow-y-auto p-1">
           {tabContent}
         </section>
       </form>

@@ -27,6 +27,8 @@ interface PaymentDetailsTabProps {
   islocked?: boolean;
   isPartyLocked?: boolean;
   partyFetchKeyRef: React.MutableRefObject<string>;
+  isGlToLocked?: boolean;
+  isModeOfPaymentLocked?: boolean;
 }
 
 const PARTY_FILLED_FIELDS = {
@@ -50,6 +52,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   islocked = false,
   isPartyLocked = false,
   partyFetchKeyRef,
+  isGlToLocked = false,
+  isModeOfPaymentLocked = false,
 }) => {
   const isMountedRef = useRef(false);
   const {
@@ -267,8 +271,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           companyDefaultCurrency: details.companyDefaultCurrency,
           glFrom: details.companyLedgerAccount,
           currencyFrom: details.companyLedgerCurrency,
-          glTo: details.partyLedgerAccount,
-          currencyTo: details.partyAccountCurrency,
+          glTo: isGlToLocked ? form.glTo : details.partyLedgerAccount,
+          currencyTo: isGlToLocked ? form.currencyTo : details.partyAccountCurrency,
         });
       } else {
         // Receive: Paid From = party, Paid To = company
@@ -359,8 +363,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           partyBankAccountName: details.partyBankAccountName,
           glFrom: details.companyLedgerAccount,
           currencyFrom: details.companyLedgerCurrency,
-          glTo: details.partyLedgerAccount,
-          currencyTo: details.partyAccountCurrency,
+          glTo: isGlToLocked ? form.glTo : details.partyLedgerAccount,
+          currencyTo: isGlToLocked ? form.currencyTo : details.partyAccountCurrency,
         });
       } else {
         // Receive: Paid From = party bank, Paid To = company bank
@@ -748,13 +752,23 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
         {/* Row 2 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <SearchSelect2
-            label="Mode of Payment"
-            value={form.mode ?? ""}
-            disabled={modesLoading}
-            onChange={handleModeChange}
-            fetchOptions={handleModeFetchOptions}
-          />
+          {isModeOfPaymentLocked ? (
+            <ModalInput
+              label="Mode of Payment"
+              name="mode"
+              value={form.mode ?? ""}
+              onChange={() => { }}
+              disabled
+            />
+          ) : (
+            <SearchSelect2
+              label="Mode of Payment"
+              value={form.mode ?? ""}
+              disabled={modesLoading}
+              onChange={handleModeChange}
+              fetchOptions={handleModeFetchOptions}
+            />
+          )}
           <ModalInput
             label="Cheque / Reference No"
             name="referenceNo"
@@ -845,12 +859,22 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                 />
               )}
               <div className="grid grid-cols-[1fr_100px] gap-2">
-                <SearchSelect2
-                  label="Account (GL)"
-                  value={form.glTo ?? ""}
-                  onChange={handleGlToChange}
-                  fetchOptions={handleGlToFetchOptions}
-                />
+                {isGlToLocked ? (
+                  <ModalInput
+                    label="Account (GL)"
+                    name="glTo"
+                    value={form.glTo ?? ""}
+                    onChange={() => { }}
+                    disabled
+                  />
+                ) : (
+                  <SearchSelect2
+                    label="Account (GL)"
+                    value={form.glTo ?? ""}
+                    onChange={handleGlToChange}
+                    fetchOptions={handleGlToFetchOptions}
+                  />
+                )}
                 <ModalInput
                   label="Currency"
                   name="currencyTo"

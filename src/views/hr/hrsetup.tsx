@@ -41,6 +41,14 @@ const ALL_SETUP_TABS = [
     label:  "Employee",
     icon:   <Settings2 size={15} />,
     module: "Employee" as const,
+    action: "create" as const,  
+    customGuard: false,
+  },
+   {
+    id:     "leave",
+    label:  "Leave",
+    icon:   <CalendarDays size={15} />,
+    module: "Leave Application" as const,
     action: "create" as const,   // ← create gates the setup tab
     customGuard: false,
   },
@@ -52,14 +60,7 @@ const ALL_SETUP_TABS = [
     action: "create" as const,   // ← create gates the setup tab
     customGuard: false,
   },
-  {
-    id:     "leave",
-    label:  "Leave",
-    icon:   <CalendarDays size={15} />,
-    module: "Leave Application" as const,
-    action: "create" as const,   // ← create gates the setup tab
-    customGuard: false,
-  },
+ 
   // Salary Slip tab — NOT gated per requirement, keep existing behaviour
   // {
   //   id:     "slip",

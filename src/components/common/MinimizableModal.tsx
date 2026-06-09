@@ -41,6 +41,7 @@ export interface MinimizableModalProps {
     | "full";
   height?: string;
   customWidth?: string;
+  formContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
 export const MinimizableModal: React.FC<MinimizableModalProps> = ({
@@ -56,26 +57,26 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   height = "520px",
   customWidth,
   summaryBar,
+  formContainerRef,
 }) => {
   const modalMeta = useModalStore((state) =>
-    state.modals.find((m) => m.id === modalId),
+    state.modals.find((m) => m.id === modalId)
   );
   const { minimizeModal } = useModalStore();
 
-  // ── FIX: use useRef to track if we've already registered, and call
-  //    getState() directly so registerModalMeta never enters the dep array ──
   const registeredRef = useRef(false);
 
   React.useEffect(() => {
     if (isOpen && !registeredRef.current) {
       registeredRef.current = true;
-      useModalStore.getState().registerModalMeta(modalId, { title, subtitle, icon });
+      useModalStore
+        .getState()
+        .registerModalMeta(modalId, { title, subtitle, icon });
     }
     if (!isOpen) {
       registeredRef.current = false;
     }
   }, [isOpen, modalId, title, subtitle, icon]);
-  // ─────────────────────────────────────────────────────────────────────────
 
   const modals = useModalStore((state) => state.modals);
   const layer = useMemo(() => {
@@ -84,7 +85,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
       .sort((a, b) => a.focusOrder - b.focusOrder);
     const rank = Math.max(
       visible.findIndex((m) => m.id === modalId),
-      0,
+      0
     );
     const backdrop =
       MODAL_LAYER.modalBackdropBase + rank * MODAL_LAYER.modalStep;
@@ -116,6 +117,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
             onClose={onClose}
             onMinimize={() => minimizeModal(modalId)}
             summaryBar={summaryBar}
+            formContainerRef={formContainerRef}
           >
             {children}
           </ModalShell>
@@ -139,6 +141,7 @@ interface ModalShellProps {
   onClose: () => void;
   onMinimize: () => void;
   summaryBar?: React.ReactNode;
+  formContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
 const ModalShell: React.FC<ModalShellProps> = ({
@@ -155,6 +158,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
   onClose,
   onMinimize,
   summaryBar,
+  formContainerRef,
 }) => {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -254,7 +258,16 @@ const ModalShell: React.FC<ModalShellProps> = ({
             {summaryBar && <div className="relative mt-1">{summaryBar}</div>}
           </header>
 
-          <section className="min-h-0 flex-1 overflow-x-auto overflow-y-auto bg-app px-4 py-3 text-sm text-main">
+          <section
+            ref={(node) => {
+              if (formContainerRef) {
+                (
+                  formContainerRef as React.MutableRefObject<HTMLElement | null>
+                ).current = node;
+              }
+            }}
+            className="min-h-0 flex-1 overflow-x-auto overflow-y-auto bg-app px-4 py-3 text-sm text-main"
+          >
             {children}
           </section>
 
@@ -266,6 +279,6 @@ const ModalShell: React.FC<ModalShellProps> = ({
         </motion.div>
       </div>
     </>,
-    document.body,
+    document.body
   );
 };

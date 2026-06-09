@@ -6,7 +6,10 @@ import { DateRangeFilter } from "../../components/ui/modal/DateRangeFilter";
 import type { Column } from "../../components/ui/Table/type";
 import { getAssets } from "../../api/assetapi";
 import { openFixedAssetModal } from "../../store/modalStore";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../store/dataRefreshStore";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -16,8 +19,7 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import Swal from "sweetalert2";
 
-
-
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 type Asset = {
   id: string;
@@ -61,7 +63,9 @@ const AssetRegister: React.FC = () => {
 
       // 3. exception fallback
       if (err?.response?.data?.exception) {
-        const match = err.response.data.exception.match(/ValidationError:\s(.+)/);
+        const match = err.response.data.exception.match(
+          /ValidationError:\s(.+)/,
+        );
         if (match) return match[1];
       }
 
@@ -84,9 +88,8 @@ const AssetRegister: React.FC = () => {
   const [sortBy, setSortBy] = useState<keyof Asset | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const refreshKey = useDataRefreshStore(
-    (state) => state.refreshFlags[REFRESH_KEYS.FIXED_ASSET_LIST]
+    (state) => state.refreshFlags[REFRESH_KEYS.FIXED_ASSET_LIST],
   );
-
 
   // ─── Add Asset ───
   const handleAddAsset = (asset: Omit<Asset, "id">) => {
@@ -99,7 +102,6 @@ const AssetRegister: React.FC = () => {
   const handleDelete = (id: string) => {
     setAssets((prev) => prev.filter((a) => a.id !== id));
   };
-
 
   const handleSubmitAsset = async (id: string) => {
     try {
@@ -140,12 +142,9 @@ const AssetRegister: React.FC = () => {
     }
   };
 
-
   // ─── FILTER ───
   const filteredData = useMemo(() => {
     return assets.filter((a) => {
-
-
       const matchesDate =
         (!filters.from_date ||
           new Date(a.purchaseDate) >= new Date(filters.from_date)) &&
@@ -170,13 +169,8 @@ const AssetRegister: React.FC = () => {
     });
   }, [filteredData, sortBy, sortOrder]);
 
-
-
   const paginatedData = useMemo(() => {
-    return sortedData.slice(
-      (page - 1) * pageSize,
-      page * pageSize
-    );
+    return sortedData.slice((page - 1) * pageSize, page * pageSize);
   }, [sortedData, page, pageSize]);
 
   // ─── SORT HANDLER ───
@@ -207,7 +201,6 @@ const AssetRegister: React.FC = () => {
         page,
         page_size: pageSize,
         search: searchTerm,
-
       });
 
       setAssets(
@@ -218,12 +211,11 @@ const AssetRegister: React.FC = () => {
           location: item.location,
           purchaseDate: item.available_for_use_date,
           value: item.net_purchase_amount || 0,
-        }))
+        })),
       );
 
       setTotalPages(1); // ERP basic API
       setTotalItems(data.length);
-
     } catch (err) {
       console.error(err);
     } finally {
@@ -234,22 +226,14 @@ const AssetRegister: React.FC = () => {
     fetchAssets();
   }, [fetchAssets, refreshKey]);
 
-
   const handleView = (row: Asset) => {
-    openFixedAssetModal(
-      { assetName: row.id },
-      true,
-    );
+    openFixedAssetModal({ assetName: row.id }, true);
   };
 
   const handleEdit = (row: Asset, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    openFixedAssetModal(
-      { assetName: row.id },
-      true,
-
-    );
+    openFixedAssetModal({ assetName: row.id }, true);
   };
 
   const handleDeleteAsset = async (id: string, e: React.MouseEvent) => {
@@ -259,7 +243,6 @@ const AssetRegister: React.FC = () => {
       await deleteAsset(id);
       fetchAssets();
     } catch (err) {
-
       Swal.fire({
         icon: "error",
         title: "Operation Failed",
@@ -270,7 +253,20 @@ const AssetRegister: React.FC = () => {
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
 
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
@@ -309,11 +305,7 @@ const AssetRegister: React.FC = () => {
       header: "Actions",
       render: (row) => (
         <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={() => handleView(row)}
-            iconOnly
-          />
+          <ActionButton type="view" onClick={() => handleView(row)} iconOnly />
 
           {can(ASSET_MODULE, "write") && (
             <ActionButton
@@ -327,28 +319,24 @@ const AssetRegister: React.FC = () => {
           <ActionMenu
             {...(can(ASSET_MODULE, "delete")
               ? {
-                onDelete: (e) =>
-                  handleDeleteAsset(row.id, e as any),
-              }
+                  onDelete: (e) => handleDeleteAsset(row.id, e as any),
+                }
               : {})}
             customActions={[
               ...(can(ASSET_MODULE, "write")
                 ? [
-                  {
-                    label: "Submit for Approval",
-                    onClick: () => handleSubmitAsset(row.id),
-                  },
-                  {
-                    label: "Cancel Submission",
-                    onClick: () => handleCancelAsset(row.id),
-                  },
-                ]
+                    {
+                      label: "Approve",
+                      icon: ACTION_ICONS.APPROVE,
+                      onClick: () => handleSubmitAsset(row.id),
+                    },
+                    {
+                      label: "Cancel",
+                      icon: ACTION_ICONS.CANCEL,
+                      onClick: () => handleCancelAsset(row.id),
+                    },
+                  ]
                 : []),
-
-              {
-                label: "View Details",
-                onClick: () => handleView(row),
-              },
             ]}
           />
         </ActionGroup>
@@ -371,27 +359,20 @@ const AssetRegister: React.FC = () => {
           setSearchTerm(q);
           setPage(1);
         }}
-
         enableAdd={can(ASSET_MODULE, "create")}
         addLabel="Add Asset"
-        onAdd={() => openFixedAssetModal(null, false, {
-
-        })}
-
+        onAdd={() => openFixedAssetModal(null, false, {})}
         enableColumnSelector
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-
         pageSizeOptions={[10, 25, 50, 100]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
         }}
-
         onPageChange={setPage}
-
         sortBy={sortBy ?? ""}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
@@ -407,8 +388,6 @@ const AssetRegister: React.FC = () => {
         //   />
         // }
       />
-
-
     </div>
   );
 };

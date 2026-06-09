@@ -18,6 +18,7 @@ import {
   CHARGE_TYPE_OPTIONS,
 } from "../../types/tax/salesTemplate";
 import { getGlAccounts } from "../../api/salesTaxTemplateApi";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   );
 
   const modalData = modal?.initialData as SalesTaxTemplateFormData | undefined;
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const [form, setForm] = useState<SalesTaxTemplateFormData>(
     modalData ?? defaultSalesTaxForm,
@@ -70,6 +72,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
     setForm(initialData ?? defaultSalesTaxForm);
     setErrors({});
     setPage(0);
+    resetDirty();
   };
 
   // ── Field handlers ────────────────────────────────────────────────────────
@@ -101,10 +104,11 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   const fetchGlOptions = useCallback(async (search: string) => {
     try {
       const res = await getGlAccounts(search || undefined);
-      const data: { name: string; description: string }[] = res?.data ?? [];
+      const data: { name: string; account_type: string, account_name: string }[] = res?.data ?? [];
       return data.map((opt) => ({
         value: opt.name,
-        label: opt.description ? `${opt.name} — ${opt.description}` : opt.name,
+        label: opt.account_name,
+        subLabel: opt.account_type || "",
       }));
     } catch {
       return [];
@@ -113,6 +117,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
   // ── Row management ────────────────────────────────────────────────────────
   const addRow = () => {
+    markDirty();
     setForm((prev) => ({
       ...prev,
       taxes: [...prev.taxes, { ...defaultSalesTaxRow }],
@@ -123,6 +128,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
   const removeRow = (index: number) => {
     if (form.taxes.length === 1) return;
+    markDirty();
     setForm((prev) => ({
       ...prev,
       taxes: prev.taxes.filter((_, i) => i !== index),
@@ -179,6 +185,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
         await modal.context.callback(payload);
       }
 
+      resetDirty();
       reset();
       onClose();
     } finally {
@@ -189,7 +196,10 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
   // ── Footer ────────────────────────────────────────────────────────────────
   const footer = (
     <>
-      <Button variant="secondary" onClick={onClose}>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(onClose, modalId)}
+      >
         Cancel
       </Button>
       <div className="flex gap-3">
@@ -214,7 +224,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Sales Tax Template" : "Add Sales Tax Template"}
       subtitle="Configure charges and tax rates"
       icon={FileSpreadsheet}
@@ -223,6 +233,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
       height="72vh"
     >
       <form
+        onChange={markDirty}
         onSubmit={(e) => e.preventDefault()}
         className="h-full flex flex-col"
       >
@@ -247,11 +258,12 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
               <TaxCategorySelect
                 label="Tax Category"
                 value={form.tax_category}
-                onChange={(value) =>
+                onChange={(value) => {
+                  markDirty();
                   handleChange({
                     target: { name: "tax_category", value },
-                  } as React.ChangeEvent<HTMLSelectElement>)
-                }
+                  } as React.ChangeEvent<HTMLSelectElement>);
+                }}
                 error={errors.taxcategory}
                 required
               />
@@ -349,16 +361,15 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
                       {/* Account Head */}
                       <td className="px-3 py-2">
+
                         <SearchSelect2
                           label=""
-                          value={row.account_head}
-                          onChange={(val) =>
-                            handleRowChange(
-                              actualIdx,
-                              "account_head",
-                              val || "",
-                            )
-                          }
+                          value={row.account_head_display || row.account_head}
+                          onChange={(val, option) => {
+                            markDirty();
+                            handleRowChange(actualIdx, "account_head", val || "");
+                            handleRowChange(actualIdx, "account_head_display", option?.label || val || "");
+                          }}
                           fetchOptions={fetchGlOptions}
                           placeholder="Select account"
                         />
@@ -371,26 +382,28 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
 
                       {/* Rate */}
                       <td className="px-3 py-2">
-                          <NumericInput
-                            name="rate"
-                            value={row.rate || null}
-                            onChange={(value) =>
-                              handleRowChange(
-                                actualIdx,
-                                "rate",
-                                value ?? 0,
-                              )
-                            }
-                            className="w-full"
-                            placeholder="0.00"
-                            disabled={row.charge_type === "Actual"}
-                          />
-                          {errors[`rate_${actualIdx}`] && (
-                            <p className="text-xs text-danger mt-1">
-                              {errors[`rate_${actualIdx}`]}
-                            </p>
-                          )}
-                        </td>
+                        <NumericInput
+                          name="rate"
+                          value={row.rate || null}
+                          onChange={(value) => {
+                            markDirty();
+                            handleRowChange(
+                              actualIdx,
+                              "rate",
+                              value ?? 0,
+                            )
+                          }
+                          }
+                          className="w-full"
+                          placeholder="0.00"
+                          disabled={row.charge_type === "Actual"}
+                        />
+                        {errors[`rate_${actualIdx}`] && (
+                          <p className="text-xs text-danger mt-1">
+                            {errors[`rate_${actualIdx}`]}
+                          </p>
+                        )}
+                      </td>
 
 
                       {/* Tax Amount */}
@@ -462,8 +475,8 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                   type="button"
                   onClick={() => setPage(i)}
                   className={`w-6 h-6 rounded text-xs transition-colors ${page === i
-                      ? "bg-primary text-white"
-                      : "bg-[var(--border)] text-muted hover:bg-primary/20"
+                    ? "bg-primary text-white"
+                    : "bg-[var(--border)] text-muted hover:bg-primary/20"
                     }`}
                 >
                   {i + 1}

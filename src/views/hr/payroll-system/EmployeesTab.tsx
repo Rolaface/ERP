@@ -51,6 +51,7 @@ interface EmployeesTabProps {
   data: PayrollEntry;
   onChange: (field: string, value: any) => void;
   onEditEmployee?: (emp: RichEmployee) => void;
+  onDirty?: () => void;
   /**
    * When true the tab is seeded from data.selectedEmployees (the IDs that came
    * back from the edit API) instead of calling getPayrollEmployees.

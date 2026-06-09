@@ -10,6 +10,7 @@ import { BankAccount } from "../../types/BankAccount/bank";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
 import { getBankAccountById } from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 
 interface Props {
   isOpen: boolean;
@@ -48,6 +49,8 @@ const AddBankAccountModal: React.FC<Props> = ({
 
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
+    useUnsavedChanges();
   const {
     form,
     setForm,
@@ -61,6 +64,11 @@ const AddBankAccountModal: React.FC<Props> = ({
     isSubmitting,
     handleAccountForChange,
   } = useBankAccLogic({ onSubmit, onClose, isEdit: !!initialData });
+
+  const handleClose = () => {
+    resetDirty();
+    onClose();
+  };
 
   useEffect(() => {
     if (!initialData && defaultAccountFor) {
@@ -168,17 +176,26 @@ const AddBankAccountModal: React.FC<Props> = ({
   };
 
   const footer = isViewMode ? (
-    <Button variant="secondary" onClick={onClose}>
+    <Button variant="secondary" onClick={handleClose}>
       Close
     </Button>
   ) : (
     <>
-      <Button variant="secondary" onClick={onClose}>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(handleClose, modalId)}
+      >
         Cancel
       </Button>
 
       <div className="flex gap-3">
-        <Button variant="secondary" onClick={handleReset}>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            handleReset();
+            resetDirty();
+          }}
+        >
           Reset
         </Button>
 
@@ -198,17 +215,21 @@ const AddBankAccountModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() =>
+        isViewMode ? handleClose() : handleCloseWithConfirm(handleClose, modalId)
+      }
       title="Create Bank Account"
       subtitle="Configure bank account for Companies or parties"
       icon={Landmark}
       footer={footer}
       customWidth="60vw"
       height="65vh"
+      formContainerRef={containerRef}
     >
       <form
         id="bankForm"
         onSubmit={handleSubmit}
+        onChange={() => !isViewMode && markDirty()}
         className="h-full overflow-hidden"
       >
         <div className="h-full overflow-y-auto p-8">
@@ -222,7 +243,10 @@ const AddBankAccountModal: React.FC<Props> = ({
 
                 value={form.dateAdded}
                 onChange={(name, value) =>
-                  setForm((prev) => ({ ...prev, [name]: value }))
+                  {
+                    markDirty();
+                    setForm((prev) => ({ ...prev, [name]: value }));
+                  }
                 }
               />
             </div>
@@ -260,6 +284,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                   !!defaultAccountFor
                 }
                 onChange={(_, option: Option) => {
+                  markDirty();
                   setForm((prev) => ({
                     ...prev,
                     partyId: option?.value || "",
@@ -295,6 +320,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                 disabled={isViewMode}
 
                 onChange={(_: string, option: Option) => {
+                  markDirty();
                   setForm((prev) => ({
                     ...prev,
                     bank: option?.value || "",
@@ -332,6 +358,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                 disabled={isViewMode || !!defaultAccountFor}
 
                 onChange={(_: string, option: Option) => {
+                  markDirty();
                   setForm((prev) => ({
                     ...prev,
                     currency: option?.value || "",
@@ -412,10 +439,13 @@ const AddBankAccountModal: React.FC<Props> = ({
                 value={form.reportingAccount}
                 required
                 onChange={(_: string, option: Option) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    reportingAccount: option?.value || "",
-                  }))
+                  {
+                    markDirty();
+                    setForm((prev) => ({
+                      ...prev,
+                      reportingAccount: option?.value || "",
+                    }));
+                  }
                 }
                 fetchOptions={(q): Promise<Option[]> => {
                   const query = q.toLowerCase();
@@ -434,7 +464,10 @@ const AddBankAccountModal: React.FC<Props> = ({
                 type="checkbox"
                 checked={form.isDefault}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, isDefault: e.target.checked }))
+                  {
+                    markDirty();
+                    setForm((p) => ({ ...p, isDefault: e.target.checked }));
+                  }
                 }
                 className="w-4 h-4 accent-primary"
               />
