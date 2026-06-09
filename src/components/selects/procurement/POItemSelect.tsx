@@ -194,7 +194,7 @@ export default function POItemSelect({
   return (
     <div className={`w-full ${className}`}>
 
-      {/* ── TRIGGER — matches PO style: flat, wraps naturally ── */}
+      
       <div
         ref={triggerRef}
         role="combobox"
