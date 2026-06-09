@@ -11,6 +11,7 @@ export interface DebitNotePayload {
   supplier: string;
   company: string;
   update_stock: 0 | 1;
+  conversion_rate: number;
   items: {
     item_code: string;
     qty: number;          
