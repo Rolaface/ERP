@@ -66,7 +66,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
-  const [taxCategory, ] = useState<string>("");
+  const [taxCategory,] = useState<string>("");
 
 
   const fetchCustomers = async () => {
@@ -125,6 +125,43 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const handleAddCustomer = () => {
     openCustomerCreate();
   };
+
+  const handleExport = async () => {
+  try {
+    showLoading("Exporting customers...");
+    const response = await getAllCustomers(1, 10000, taxCategory || undefined, searchTerm || undefined);
+    const rows: CustomerSummary[] = response?.data || [];
+
+    const headers = ["Customer ID", "Name", "Type", "TPIN", "Tax Category", "Currency", "Status"];
+    const csvRows = [
+      headers.join(","),
+      ...rows.map((c) =>
+        [
+          c.id,
+          `"${c.name}"`,
+          c.type ?? "",
+          c.tpin ?? "",
+          c.customerTaxCategory ?? "",
+          c.currency,
+          c.status,
+        ].join(",")
+      ),
+    ];
+
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `customers_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    closeSwal();
+    showSuccess("Customers exported successfully");
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
 
   const handleMakePayment = (customer: CustomerSummary) => {
     openPaymentEntryModal(
@@ -336,8 +373,8 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
         <div className="py-1.5">
           <span
             className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-gray-600"
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-gray-600"
               }`}
           >
             {customer.status}
@@ -375,27 +412,27 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
             {...(can(CUSTOMER_MODULE, "delete")
               ? { onDelete: (e) => handleDelete(customer.id, e as any) }
               : {})}
-           onDisable={
-  customer.status === "Active"
-    ? (e) => handleDisableCustomer(customer.id, e as any)
-    : undefined
-}
+            onDisable={
+              customer.status === "Active"
+                ? (e) => handleDisableCustomer(customer.id, e as any)
+                : undefined
+            }
 
-onEnable={
-  customer.status === "Disabled"
-    ? (e) => handleEnableCustomer(customer.id, e as any)
-    : undefined
-}
+            onEnable={
+              customer.status === "Disabled"
+                ? (e) => handleEnableCustomer(customer.id, e as any)
+                : undefined
+            }
             customActions={[
               // Receive Payment only if user has Payment Entry create
               ...(can(PAYMENT_MODULE, "create")
                 ? [
-                    {
-                      label: "Receive Payment",
-                        icon: ACTION_ICONS.PAYMENT,
-                      onClick: () => handleMakePayment(customer),
-                    },
-                  ]
+                  {
+                    label: "Receive Payment",
+                    icon: ACTION_ICONS.PAYMENT,
+                    onClick: () => handleMakePayment(customer),
+                  },
+                ]
                 : []),
             ]}
           />
@@ -425,6 +462,7 @@ onEnable={
           onAdd={handleAddCustomer}
           enableColumnSelector
           enableExport={can(CUSTOMER_MODULE, "export")}
+          onExport={handleExport}  
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}
