@@ -152,27 +152,27 @@ export const DetailsTab = ({
       },
     } as any);
   };
-  useEffect(() => {
-    if (isEditMode) return; // ← edit mode: don't set default, value comes from saved PI
-    const setDefaultMode = async () => {
-      try {
-        const res = await getAllModeOfPayment(1, 10, "", 1);
-        const list = res?.data?.modeOfPayments || res?.data || [];
-        if (list.length && !form.paymentType) {
-          const first = list[0];
-          onFormChange({
-            target: {
-              name: "paymentType",
-              value: first.name || first.modeOfPayment,
-            },
-          } as any);
-        }
-      } catch (err) {
-        console.error("Default mode fetch failed", err);
-      }
-    };
-    setDefaultMode();
-  }, [isEditMode]);
+  // useEffect(() => {
+  //   if (isEditMode) return; // ← edit mode: don't set default, value comes from saved PI
+  //   const setDefaultMode = async () => {
+  //     try {
+  //       const res = await getAllModeOfPayment(1, 10, "", 1);
+  //       const list = res?.data?.modeOfPayments || res?.data || [];
+  //       if (list.length && !form.paymentType) {
+  //         const first = list[0];
+  //         onFormChange({
+  //           target: {
+  //             name: "paymentType",
+  //             value: first.name || first.modeOfPayment,
+  //           },
+  //         } as any);
+  //       }
+  //     } catch (err) {
+  //       console.error("Default mode fetch failed", err);
+  //     }
+  //   };
+  //   setDefaultMode();
+  // }, [isEditMode]);
 
   const handleTopWarehouseChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -719,6 +719,7 @@ export const DetailsTab = ({
                 value={form.paymentType ?? ""}
                 onChange={handleModeChange}
                 fetchOptions={handleModeFetchOptions}
+                required
               />
             </Tooltip>
           </div>

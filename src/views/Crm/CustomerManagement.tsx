@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import CustomerDetailView from "./CustomerDetailView";
 import { openPaymentEntryModal } from "../../store/modalStore";
-import { CreditCard } from "lucide-react";
+
 import {
   showLoading,
   showApiError,
@@ -127,41 +127,41 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   };
 
   const handleExport = async () => {
-  try {
-    showLoading("Exporting customers...");
-    const response = await getAllCustomers(1, 10000, taxCategory || undefined, searchTerm || undefined);
-    const rows: CustomerSummary[] = response?.data || [];
+    try {
+      showLoading("Exporting customers...");
+      const response = await getAllCustomers(1, 10000, taxCategory || undefined, searchTerm || undefined);
+      const rows: CustomerSummary[] = response?.data || [];
 
-    const headers = ["Customer ID", "Name", "Type", "TPIN", "Tax Category", "Currency", "Status"];
-    const csvRows = [
-      headers.join(","),
-      ...rows.map((c) =>
-        [
-          c.id,
-          `"${c.name}"`,
-          c.type ?? "",
-          c.tpin ?? "",
-          c.customerTaxCategory ?? "",
-          c.currency,
-          c.status,
-        ].join(",")
-      ),
-    ];
+      const headers = ["Customer ID", "Name", "Type", "TPIN", "Tax Category", "Currency", "Status"];
+      const csvRows = [
+        headers.join(","),
+        ...rows.map((c) =>
+          [
+            c.id,
+            `"${c.name}"`,
+            c.type ?? "",
+            c.tpin ?? "",
+            c.customerTaxCategory ?? "",
+            c.currency,
+            c.status,
+          ].join(",")
+        ),
+      ];
 
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `customers_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    closeSwal();
-    showSuccess("Customers exported successfully");
-  } catch (error) {
-    closeSwal();
-    showApiError(error);
-  }
-};
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `customers_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      closeSwal();
+      showSuccess("Customers exported successfully");
+    } catch (error) {
+      closeSwal();
+      showApiError(error);
+    }
+  };
 
   const handleMakePayment = (customer: CustomerSummary) => {
     openPaymentEntryModal(
@@ -419,7 +419,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
             }
 
             onEnable={
-              customer.status === "Disabled"
+              customer.status === "Inactive"
                 ? (e) => handleEnableCustomer(customer.id, e as any)
                 : undefined
             }
@@ -462,7 +462,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
           onAdd={handleAddCustomer}
           enableColumnSelector
           enableExport={can(CUSTOMER_MODULE, "export")}
-          onExport={handleExport}  
+          onExport={handleExport}
           currentPage={page}
           totalPages={totalPages}
           pageSize={pageSize}
