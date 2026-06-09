@@ -21,7 +21,7 @@ import EmployeeAdvanceDetailModal, { EmployeeAdvanceDetail } from "../../views/E
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 
 
-const EMPLOYEE_ADVANCE_MODULE = "Employee Advance";4
+const EMPLOYEE_ADVANCE_MODULE = "Employee Advance";
 const statusOptions = [
   { label: "Draft",     value: "Draft" },
   { label: "Unpaid",    value: "Unpaid" },
@@ -290,18 +290,6 @@ const handleOpenEdit = async (ea: EmployeeAdvance) => {
       showApiError(error);
     }
   };
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "approved":   return "bg-green-100 text-green-700";
-      case "pending":    return "bg-yellow-100 text-yellow-700";
-      case "rejected":   return "bg-red-100 text-red-700";
-      case "paid":       return "bg-blue-100 text-blue-700";
-      case "cancelled":  return "bg-gray-100 text-gray-600";
-      default:           return "bg-gray-100 text-gray-600";
-    }
-  };
-
   const columns: Column<EmployeeAdvance>[] = useMemo(
     () => [
       {

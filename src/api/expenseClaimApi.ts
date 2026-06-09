@@ -34,6 +34,7 @@
     posting_date: string;
     currency: string;
     exchange_rate: number;
+    approval_status?: string;
     expenses: ExpenseItem[];
     advances?: ExpenseClaimAdvanceItem[];
     remark: string;
@@ -441,3 +442,13 @@ export async function getAllEmployees(
     );
   }
 } 
+export const addComment = async (payload: {
+  content: string;
+  reference_name: string;
+  reference_doctype: string;
+  comment_email: string;
+  comment_by: string;
+}) => {
+  const res = await api.post(ExpenseClaimAPI.addComment, payload);
+  return res.data;
+};

@@ -566,6 +566,7 @@ const fetchEmployees = useCallback(async (search: string) => {
         posting_date: new Date().toISOString().split("T")[0],
         currency: getCurrencyFromStorage(),
         exchange_rate: 1,
+        approval_status: "Draft",
         expenses: [
           {
             expense_date: form.date_incurred,
