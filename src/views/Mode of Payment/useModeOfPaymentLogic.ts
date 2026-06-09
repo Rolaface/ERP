@@ -7,7 +7,7 @@ import {
   getModeOfPaymentByName,
 } from "../../api/BankAccountApi";
 
-export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }: any) => {
+export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit, isViewMode }: any) => {
   const [form, setForm] = useState({
     name: "",
     type: "",
@@ -72,6 +72,8 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
   };
 
   const handleSubmit = async () => {
+    if (isViewMode) return false;   // ← guard: no-op in view mode
+
     try {
       if (!form.name.trim()) throw new Error("Mode of Payment name is required");
       if (!form.type) throw new Error("Type is required");
@@ -97,9 +99,9 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit }
         showSuccess("Mode of Payment created successfully");
       }
 
-      onSubmit?.();
+      await onSubmit?.();
       onClose?.();
-      setForm({ name: "", type: "", enabled: true, company: "", defaultAccount: "" });
+      setForm({ name: "", type: "", enabled: true, company: "", defaultAccount: "", defaultAccountDisplay: "" });
       return true;
     } catch (err: any) {
       showApiError(err);

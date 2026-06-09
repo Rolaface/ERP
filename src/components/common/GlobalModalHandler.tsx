@@ -546,18 +546,19 @@ case "taxCategory":
           />,
         );
       }
-      case "modeOfPayment":
-        return wrappedModal(
-          <AddModeOfPaymentModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            onSubmit={handleSubmit}
-            initialData={getRecordInitialData(modal.initialData)}
-            isEdit={modal.isEdit}
-          />,
-        );
+     case "modeOfPayment":
+  return wrappedModal(
+    <AddModeOfPaymentModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+      initialData={getRecordInitialData(modal.initialData)}
+      isEdit={modal.isEdit}
+      isViewMode={context?.isViewMode ?? false}  // ← read from context
+    />,
+  );
 
       case "paymentEntry":
         return wrappedModal(
@@ -581,6 +582,9 @@ case "taxCategory":
             onSubmit={handleSubmit}
             editData={getInitialData(modal.initialData) as any}
             actionLoading={false}
+                  isViewMode={context?.isViewMode ?? false}  // ← add this
+
+
           />,
         );
       case "fixedAsset":

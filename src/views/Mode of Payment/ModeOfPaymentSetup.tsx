@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
-import { Wallet } from "lucide-react";
 import {
   getAllModeOfPayment,
-  getModeOfPaymentByName,
   updateModeOfPaymentStatus,
 } from "../../api/BankAccountApi";
 import {
-  closeSwal,
   showApiError,
-  showLoading,
   showSuccess,
 } from "../../utils/alert";
 import ActionButton, {
@@ -38,6 +34,8 @@ const ModeOfPaymentSetup: React.FC = () => {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const { can } = usePermission();
+
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -61,6 +59,16 @@ const ModeOfPaymentSetup: React.FC = () => {
       onSuccess: () => fetchData(),
     });
   };
+
+const handleView = (name:string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+
+  openModeOfPaymentModal({ name }, true, {
+    onSuccess: () => fetchData(),
+    isViewMode:true
+  });
+};
+
   const handleToggle = async (row: any) => {
     const previous = row.enabled;
     try {
@@ -101,6 +109,13 @@ const ModeOfPaymentSetup: React.FC = () => {
       align: "center",
       render: (row: any) => (
         <div className="flex items-center justify-center gap-2">
+           
+           
+  <ActionButton
+  type="view"
+  iconOnly
+  onClick={(e) => handleView(row.id, e)}   
+/>
           <ActionButton
             type="edit"
             onClick={(e) => handleEdit(row.id, e)}
