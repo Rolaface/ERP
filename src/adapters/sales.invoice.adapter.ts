@@ -1,4 +1,4 @@
-import { getAllSalesInvoices } from "../api/salesApi"
+import { getAllSalesInvoices,getSalesInvoiceById  } from "../api/salesApi"
 import type {
   InvoiceAdapter,
   NormalizedInvoice,
@@ -80,4 +80,22 @@ export const salesInvoiceAdapter: InvoiceAdapter = {
       .filter((inv) => inv.outstanding > 0)
       .sort((a, b) => a.dueDateRaw.localeCompare(b.dueDateRaw));
   },
+
+    async fetchById(invoiceId): Promise<NormalizedInvoice | null> {
+    const res = await getSalesInvoiceById(invoiceId);
+
+    const raw =
+      res?.message?.data ??
+      res?.data;
+
+    if (!raw) return null;
+
+    return normalizeSalesInvoice({
+      ...raw,
+      invoiceNumber: raw.id ?? raw.invoiceNumber,
+      totalAmount: raw.total ?? raw.totalAmount,
+      dateOfInvoice: raw.invoiceDate ?? raw.dateOfInvoice,
+    });
+  },
+  
 };
