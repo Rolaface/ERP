@@ -148,8 +148,11 @@ export const PayrollDashboard: React.FC<Props> = ({
             title="View details"
           />
           <ActionMenu
-            {...(canWrite && row.status !== "Submitted"
-              ? { onEdit: () => onEditRecord(row), editLabel: "Edit Record" }
+            {...(canWrite && ["Draft", "Failed"].includes(row.status)
+              ? {
+                  onEdit: () => onEditRecord(row),
+                  editLabel: "Edit Record",
+                }
               : {})}
             {...((row.status === "Draft" || row.status === "Cancelled") &&
             onDeleteRecord
