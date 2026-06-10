@@ -159,7 +159,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
               disabled={isViewMode}
 
               required
-              placeholder="Select default account"
+              placeholder="Select GL Account"
             />
 
             <label className="flex items-center gap-2 mt-6">
