@@ -94,8 +94,8 @@ export function HolidayListSetup() {
                 openHolidayListModal(
                   row,
                   true,
-                  { onSuccess: fetchAll },
-                  { isViewMode: true, title: "" },
+                  { onSuccess: fetchAll, isViewMode: true },
+                  { title: "" },
                 )
               }
             />
