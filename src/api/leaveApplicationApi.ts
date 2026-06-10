@@ -57,7 +57,8 @@ export interface LeaveApplication {
 export async function getAllLeaveApplications(
   filters?: any[][],
   limit_start: number = 0,
-  limit_page_length: number = 10
+  limit_page_length: number = 10,
+   search = ""
 ): Promise<LeaveApplication[]> {
   try {
     const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> =
@@ -69,6 +70,14 @@ export async function getAllLeaveApplications(
           limit_start: limit_start,
           limit_page_length: limit_page_length,
           filters: filters ? JSON.stringify(filters) : undefined,
+          or_filters: search
+            ? JSON.stringify([
+                ["employee_name", "like", `%${search}%`],
+                ["employee", "like", `%${search}%`],
+                ["leave_type", "like", `%${search}%`],
+                ["status", "like", `%${search}%`],
+              ])
+            : undefined,
         },
       });
 
