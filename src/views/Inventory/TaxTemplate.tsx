@@ -423,7 +423,7 @@ const TaxTemplate: React.FC<Props> = () => {
                 <thead>
                   <tr style={{ borderBottom: "1px solid rgba(201,125,46,0.2)" }}>
                     <th className="text-left py-2 px-3 font-bold text-muted uppercase tracking-widest text-[10px] w-[60%]">
-                      Tax Type
+                      GL Account
                     </th>
                     <th className="text-left py-2 px-3 font-bold text-muted uppercase tracking-widest text-[10px]">
                       Rate

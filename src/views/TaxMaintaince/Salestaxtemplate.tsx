@@ -428,7 +428,7 @@ const SalesTaxTemplate: React.FC = () => {
             <tr style={{ borderBottom: "1px solid rgba(201,125,46,0.2)" }}>
               {[
                 "Charge Type",
-                "Account Head",
+                "GL Account",
                 "Rate",
                 "Tax Amount",
                 "Description",

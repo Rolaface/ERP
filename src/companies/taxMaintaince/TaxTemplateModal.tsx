@@ -316,7 +316,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                             }));
                           }}
                           fetchOptions={fetchGlOptions}
-                          placeholder="Select tax type"
+                          placeholder="Select GL Account"
                         />
                         {errors[`tax_type_${actualIdx}`] && (
                           <p className="text-xs text-danger mt-1">{errors[`tax_type_${actualIdx}`]}</p>

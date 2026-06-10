@@ -90,8 +90,8 @@ const handleView = (name:string, e?: React.MouseEvent) => {
     { key: "type", header: "Type" },
     {
       key: "defaultAccount",
-      header: "Default Account",
-      render: (row: any) => row.defaultAccount || "—",
+      header: "GL Account",
+      render: (row: any) => row.accountName || "—",
     },
     {
       key: "enabled",

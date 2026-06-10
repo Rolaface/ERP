@@ -382,7 +382,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                             handleRowChange(actualIdx, "account_head_display", option?.label || val || "");
                           }}
                           fetchOptions={fetchGlOptions}
-                          placeholder="Select account"
+                          placeholder="Select GL Account"
                            disabled={isViewMode} 
                         />
                         {errors[`account_head_${actualIdx}`] && (
