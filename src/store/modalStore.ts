@@ -66,7 +66,7 @@ export interface ModalContext {
   onSuccess?: ModalCallback;
   onSubmit?: (data: unknown) => Promise<void> | void;
   isViewMode?: boolean;
-   loading?: boolean;
+  loading?: boolean;
 
 }
 
@@ -75,6 +75,7 @@ export interface ModalMeta {
   subtitle?: string;
   icon?: LucideIcon;
   onRequestClose?: () => void;
+  isViewMode?: boolean;
 }
 
 export interface ModalInstance {
@@ -829,7 +830,7 @@ export const openExpenseTypeModal = (
     .getState()
     .openModal("expenseType", initialData, isEdit, context, meta);
 
- export const openEmployeeAdvanceModal = (
+export const openEmployeeAdvanceModal = (
   initialData?: unknown,
   isEdit = false,
   context?: ModalContext,
@@ -838,7 +839,7 @@ export const openExpenseTypeModal = (
   useModalStore
     .getState()
     .openModal("employeeAdvance", initialData, isEdit, context, meta);
-   
+
 
 
 export const openEmailTemplateModal = (

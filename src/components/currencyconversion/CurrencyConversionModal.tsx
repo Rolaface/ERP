@@ -30,6 +30,7 @@ interface Props {
   editData?: EditData | null;
   actionLoading?: boolean;
   modalId: string;
+    isViewMode?: boolean;  
 }
 
 interface FormState {
@@ -75,6 +76,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
   editData = null,
   actionLoading = false,
   modalId,
+  isViewMode = false,   // ← added
+
 }) => {
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -189,25 +192,29 @@ const CurrencyConversionModal: React.FC<Props> = ({
   };
 
   // ── Footer ────────────────────────────────────
-  const footer = (
-    <>
-      <Button
-        variant="secondary"
-        onClick={() => handleCloseWithConfirm(handleClose, modalId)}
-        disabled={isSaving}
-      >
-        Cancel
-      </Button>
-      <Button
-        variant="primary"
-        onClick={handleSubmit}
-        disabled={isSaving}
-        className={isSaving ? "opacity-60 cursor-not-allowed" : ""}
-      >
-        {isSaving ? "Saving..." : editData ? "Update" : "Save"}
-      </Button>
-    </>
-  );
+  const footer = isViewMode ? (
+  <Button variant="secondary" onClick={handleClose}>
+    Close
+  </Button>
+) : (
+  <>
+    <Button
+      variant="secondary"
+      onClick={() => handleCloseWithConfirm(handleClose, modalId)}
+      disabled={isSaving}
+    >
+      Cancel
+    </Button>
+    <Button
+      variant="primary"
+      onClick={handleSubmit}
+      disabled={isSaving}
+      className={isSaving ? "opacity-60 cursor-not-allowed" : ""}
+    >
+      {isSaving ? "Saving..." : editData ? "Update" : "Save"}
+    </Button>
+  </>
+);
 
   // ─────────────────────────────────────────────
   // Render
@@ -219,8 +226,13 @@ const CurrencyConversionModal: React.FC<Props> = ({
       onClose={() => handleCloseWithConfirm(handleClose, modalId)}
       icon={Repeat}
       title="Create Currency Exchange"
-      subtitle={editData ? "Edit exchange rate" : "Add exchange rate"}
-      footer={footer}
+subtitle={
+  isViewMode
+    ? "View exchange rate"
+    : editData
+    ? "Edit exchange rate"
+    : "Add exchange rate"
+}      footer={footer}
       customWidth="58vw"
       height="auto"
     >
@@ -238,6 +250,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
                 setForm((prev) => ({ ...prev, [name]: value }));
                 clearError("date");
               }}
+                disabled={isViewMode}       // ← add
+
             />
             {errors.date && (
               <span className="text-danger text-[10px]">{errors.date}</span>
@@ -254,6 +268,9 @@ const CurrencyConversionModal: React.FC<Props> = ({
               placeholder="Search currency..."
               error={errors.fromCurrency}
               required
+              
+  disabled={isViewMode}       // ← add
+
             />
           </div>
 
@@ -267,6 +284,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
               placeholder="Search currency..."
               error={errors.toCurrency}
               required
+                disabled={isViewMode}       // ← add
+
             />
           </div>
 
@@ -279,6 +298,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
               value={form.exchangeRate}
               onChange={handleExchangeRateChange}
               placeholder="e.g. 83.25"
+                disabled={isViewMode}       // ← add
+
             />
             {errors.exchangeRate && (
               <span className="text-danger text-[10px]">{errors.exchangeRate}</span>
@@ -295,6 +316,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
                   checked={form.isBuying}
                   onChange={handleCheckboxChange}
                   className="w-3.5 h-3.5 accent-primary"
+                    disabled={isViewMode}       // ← add
+
                 />
                 Buying
               </label>
@@ -305,6 +328,9 @@ const CurrencyConversionModal: React.FC<Props> = ({
                   checked={form.isSelling}
                   onChange={handleCheckboxChange}
                   className="w-3.5 h-3.5 accent-primary"
+                    disabled={isViewMode}       // ← add
+
+                    
                 />
                 Selling
               </label>

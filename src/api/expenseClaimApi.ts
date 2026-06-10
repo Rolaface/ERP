@@ -1,5 +1,6 @@
   import type { AxiosResponse } from "axios";
   import { createAxiosInstance } from "./axiosInstance";
+  import { buildListParams } from "../api/utils/queryBuilder";
 
   import { API, ERP_BASE } from "../config/api";
   const api = createAxiosInstance(ERP_BASE);
@@ -7,6 +8,7 @@
   export const ExpenseClaimAPI = API.ExpenseClaim;
   export const AccountApi=API.Account;
   export const FrappeUtilsAPI = API.frappeUtilsAPI;
+  
   
   interface AccountOption {
     label: string;
@@ -32,6 +34,7 @@
     posting_date: string;
     currency: string;
     exchange_rate: number;
+    approval_status?: string;
     expenses: ExpenseItem[];
     advances?: ExpenseClaimAdvanceItem[];
     remark: string;
@@ -106,11 +109,13 @@ export async function getExpenseClaims(
   search?: string,
   page = 1,
   pageSize = 10,
-  employeeId?: string,                                    
+  employeeId?: string,
+   approvalStatus?: string,                                    
 ): Promise<{ data: ExpenseClaimRecord[]; pagination: { total_pages: number; total: number } }> {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
   if (employeeId)  params.append("employee",  employeeId); 
+  if (approvalStatus) params.append("approval_status", approvalStatus);
   params.append("page", String(page));
   params.append("page_size", String(pageSize));
   const resp: AxiosResponse = await api.get(`${ExpenseClaimAPI.getExpenseClaims}?${params.toString()}`);
@@ -141,14 +146,17 @@ export async function getExpenseClaimTypes(
       return resp.data?.message?.data || null;
   }
 
-  export async function updateExpenseClaim(
-    id: string,
-    payload: CreateExpenseClaimPayload
-  ): Promise<any> {
-    const url = `${ExpenseClaimAPI.Expense_Claim}/${encodeURIComponent(id)}`;
-    const resp: AxiosResponse = await api.put(url, payload);
-    return resp.data || null;
-  }
+ export async function updateExpenseClaim(
+  id: string,
+  payload: CreateExpenseClaimPayload
+): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    ExpenseClaimAPI.updateExpenseClaim,
+    payload,
+    { params: { id } }
+  );
+  return resp.data || null;
+}
   export async function deleteExpenseClaim(id: string): Promise<any> {
     const url = `${ExpenseClaimAPI.Expense_Claim}/${encodeURIComponent(id)}`;
     const resp: AxiosResponse = await api.delete(url);
@@ -352,38 +360,34 @@ export async function updateEmployeeAdvance(
 }
 
 export async function getAllAdvances(
-  search?: string,
-  pageSize = 10
+  start: number,
+  pageSize: number,
+  search: string,
+  status?: string,
+  
 ): Promise<{ data: any[]; pagination: { total_pages: number; total: number } }> {
+  try {
+    const query = buildListParams({
+      fields: [
+        "name",
+        "posting_date",
+        "employee_name",
+        "purpose",
+        "advance_amount",
+        "status",
+      ],
+      start,
+      pageSize,
+      search,
+      searchFields: ["employee_name", "purpose", "name"],
+      status: status,
+    });
 
-  const params = new URLSearchParams();
-  params.append("fields", JSON.stringify(["name", "employee_name", "purpose", "advance_amount", "status", "posting_date"])); 
-  params.append("with_pagination", "1");
-
-  if (search?.trim()) {
-    params.append("txt", search.trim());
+    const resp = await api.get(`${ExpenseClaimAPI.advance}?${query}`);
+    return resp.data;
+  } catch (error) {
+    throw error;
   }
-
-  const resp: AxiosResponse = await api.get(
-    `${ExpenseClaimAPI.advance}?${params.toString()}`
-  );
-
-  const raw: any[] = resp?.data?.data ?? [];
-
-  return {
-    data: raw.map((item) => ({
-      name:           item.name,
-      posting_date:   item.posting_date,
-      employee_name:  item.employee_name,
-      purpose:        item.purpose,
-      advance_amount: item.advance_amount,
-      status:         item.status,
-    })),
-    pagination: {
-      total:       raw.length,
-      total_pages: Math.ceil(raw.length / pageSize) || 1,
-    },
-  };
 }
 export async function getAdvanceById(id: string): Promise<any> {
   const params = new URLSearchParams();
@@ -441,3 +445,13 @@ export async function getAllEmployees(
     );
   }
 } 
+export const addComment = async (payload: {
+  content: string;
+  reference_name: string;
+  reference_doctype: string;
+  comment_email: string;
+  comment_by: string;
+}) => {
+  const res = await api.post(ExpenseClaimAPI.addComment, payload);
+  return res.data;
+};

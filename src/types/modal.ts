@@ -12,6 +12,7 @@ export interface StandardModalProps<TData = unknown, TInitialData = unknown> {
   onSubmit?: ModalSubmitHandler<TData>;
   initialData?: TInitialData | null;
   isEditMode?: boolean;
+  isViewMode?: boolean;
   modalId?: string;
 }
 

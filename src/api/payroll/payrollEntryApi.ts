@@ -622,3 +622,18 @@ return {
     );
   }
 }
+
+export async function cancelPayrollEntry(id: string): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${API.payroll.payrollentry.createpayrollentry}/${encodeURIComponent(id)}`,
+    {
+      docstatus: 2,
+    },
+  );
+
+  if (resp.data?.success === false) {
+    throw new Error(resp.data?.message || "Failed to cancel payroll");
+  }
+
+  return resp.data?.data || resp.data;
+}
