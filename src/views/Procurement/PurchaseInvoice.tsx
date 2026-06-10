@@ -74,8 +74,6 @@ interface PurchaseinvoicesTableProps {
   onAdd?: () => void;
 }
 
-
-
 export type PIStatus =
   | "Draft"
   | "Return"
@@ -237,7 +235,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
             partyName: data.supplierName,
             partyId: data.supplierId ?? data.pId,
             amount: data.grandTotal,
-            referenceName: data.pId,
+            referenceName: data.piId,
             referenceType: "Purchase Invoice",
           },
           false,
@@ -667,7 +665,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               ? { onDelete: (e) => handleDelete(o, e as any) }
               : {})}
             customActions={[
-              { label: "View PDF", icon: ACTION_ICONS.PDF, onClick: () => handleOpenPDF(o) },
+              {
+                label: "View PDF",
+                icon: ACTION_ICONS.PDF,
+                onClick: () => handleOpenPDF(o),
+              },
               {
                 label: "Scan PI",
                 icon: ACTION_ICONS.SCAN,
@@ -686,24 +688,24 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
                 : []),
 
               ...(can(PI_MODULE, "write")
-  ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-      (status) => ({
-        label:
-          status === "Submitted"
-            ? "Approve"
-            : status === "Cancelled"
-              ? "Cancel"
-              : status,
+                ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
+                    (status) => ({
+                      label:
+                        status === "Submitted"
+                          ? "Approve"
+                          : status === "Cancelled"
+                            ? "Cancel"
+                            : status,
 
-icon: getStatusActionIcon(status),
-        danger:
-          status === "Cancelled" ||
-          status === "Debit Note Issued",
+                      icon: getStatusActionIcon(status),
+                      danger:
+                        status === "Cancelled" ||
+                        status === "Debit Note Issued",
 
-        onClick: () => handleStatusChange(o.pId, status),
-      }),
-    )
-  : [])
+                      onClick: () => handleStatusChange(o.pId, status),
+                    }),
+                  )
+                : []),
             ]}
           />
         </ActionGroup>
