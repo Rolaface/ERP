@@ -3,7 +3,14 @@ import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openCreditNoteModal } from "../../store/modalStore";
-import { getAllCreditNotes, deleteCreditNote } from "../../api/CreditNoteapi";
+import {
+  getAllCreditNotes,
+  deleteCreditNote,
+  submitCreditNote,
+  cancelCreditNote,
+} from "../../api/CreditNoteapi";
+import { getSalesInvoiceById } from "../../api/salesApi";
+import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import {
@@ -12,61 +19,50 @@ import {
   showSuccess,
   showApiError,
 } from "../../utils/alert";
-import InvoiceDetailsModal from "./InvoiceDetailsModal";
+import InvoiceDetailsModal, { type InvoiceDetail } from "./InvoiceDetailsModal";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import { fireManagedSwal } from "../../utils/swalManager";
-import {
-  getCreditNoteById,
-  submitCreditNote,
-  cancelCreditNote,
-} from "../../api/CreditNoteapi";
 import { CreditNote } from "../../types/sales/Creditnotes";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-import {
-  ACTION_ICONS,
-  
-} from "../../components/UI_Utils/statusActionIcons";
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 const CREDIT_NOTE_MODULE = "Sales Invoice";
+
 const CreditNotesTable: React.FC = () => {
   const [data, setData] = useState<CreditNote[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const { can } = usePermission();
-  // ── Pagination (server) ───────────────────────────────────────────────────
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Search (server) ───────────────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ── Sort (server) ─────────────────────────────────────────────────────────
   const [sortBy, setSortBy] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // ── Modals ────────────────────────────────────────────────────────────────
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerData, setDrawerData] = useState<InvoiceDetail | null>(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+  const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
+  const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
 
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsId, setDetailsId] = useState<string | null>(null);
-
-  // ── Reset page when search changes ───────────────────────────────────────
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
 
-  // ── Fetch credit notes ────────────────────────────────────────────────────
   const fetchCreditNotes = async () => {
     try {
       setLoading(true);
-
       const resp = await getAllCreditNotes(page, pageSize, searchTerm);
-
       const mappedData: CreditNote[] = resp.data.map((item: any) => ({
         noteNo: item.name,
         invoiceNo: item.return_against || "-",
@@ -76,12 +72,10 @@ const CreditNotesTable: React.FC = () => {
         status: item.status ?? "-",
         currency: item.currency,
       }));
-
       setData(mappedData);
       setTotalPages(resp.pagination.total_pages);
       setTotalItems(resp.pagination.total);
     } catch (error: any) {
-      console.error("Failed to load credit notes", error);
       showApiError(error);
     } finally {
       setLoading(false);
@@ -155,33 +149,6 @@ const CreditNotesTable: React.FC = () => {
     }
   };
 
-  const handleOpenReceipt = (receiptUrl: string) => {
-    const normalizedUrl = receiptUrl.startsWith("http://")
-      ? receiptUrl.replace(/^http:\/\//i, "https://")
-      : receiptUrl;
-
-    const urlWithoutPort = (() => {
-      try {
-        const u = new URL(normalizedUrl);
-        u.port = "";
-        return u.toString();
-      } catch {
-        return normalizedUrl.replace(
-          /^(https?:\/\/[^\/]+):\d+(\/.*)?$/i,
-          "$1$2",
-        );
-      }
-    })();
-
-    const a = document.createElement("a");
-    a.href = urlWithoutPort;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
   const fetchAllCreditNotesForExport = async (): Promise<CreditNote[]> => {
     try {
       let allData: CreditNote[] = [];
@@ -190,7 +157,6 @@ const CreditNotesTable: React.FC = () => {
 
       do {
         const resp = await getAllCreditNotes(current, 100, searchTerm);
-
         const mappedData: CreditNote[] = resp.data.map((item: any) => ({
           noteNo: item.name,
           invoiceNo: item.return_against || "-",
@@ -200,7 +166,6 @@ const CreditNotesTable: React.FC = () => {
           status: item.status ?? "Draft",
           currency: item.currency,
         }));
-
         allData = [...allData, ...mappedData];
         total = resp.pagination.total_pages;
         current++;
@@ -231,7 +196,7 @@ const CreditNotesTable: React.FC = () => {
       showLoading("Deleting credit note...");
       await deleteCreditNote(noteNo);
       closeSwal();
-      setData((prev) => prev.filter((item) => item.noteNo !== noteNo)); // optimistic remove
+      setData((prev) => prev.filter((item) => item.noteNo !== noteNo));
       showSuccess("Credit note deleted successfully");
     } catch (error) {
       closeSwal();
@@ -241,38 +206,75 @@ const CreditNotesTable: React.FC = () => {
 
   const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
     e?.stopPropagation();
-
     try {
       showLoading("Loading Credit Note...");
-      const res = await getCreditNoteById(note.noteNo);
-      closeSwal();
-
-      const doc = res?.data;
-
-      if (!doc) {
+      const res = await getSalesInvoiceById(note.noteNo);
+      if (!res.message || res.message.status_code !== 200) {
+        closeSwal();
         showApiError("Credit Note data could not be loaded");
         return;
       }
-
-      openCreditNoteModal(doc, true);
+      closeSwal();
+      openCreditNoteModal(res.message.data, true);
     } catch (err) {
       closeSwal();
       showApiError(err);
     }
   };
 
+  const handleView = async (noteNo: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDrawerOpen(true);
+    setDrawerLoading(true);
+    setDrawerData(null);
+    try {
+      const res = await getSalesInvoiceById(noteNo);
+      if (res?.message?.status_code === 200) {
+        setDrawerData(res.message.data as InvoiceDetail);
+      }
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      setDrawerLoading(false);
+    }
+  };
+
+  const handleDrawerPdf = async (noteNo: string) => {
+    setDrawerPdfLoading(true);
+    setDrawerPdfUrl(null);
+    try {
+      const blob = await getSalesInvoicePdf(noteNo);
+      setDrawerPdfBlob(blob);
+      const blobUrl = URL.createObjectURL(blob);
+      setDrawerPdfUrl(blobUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerPdfLoading(false);
+    }
+  };
+
+  const handleDrawerDownload = () => {
+    if (!drawerPdfBlob || !drawerData) return;
+    const url = URL.createObjectURL(drawerPdfBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${drawerData.id || "credit-note"}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportExcel = async () => {
     try {
       showLoading("Exporting Credit Notes...");
-
       const dataToExport = await fetchAllCreditNotesForExport();
-
       if (!dataToExport.length) {
         closeSwal();
         showApiError("No credit notes to export");
         return;
       }
-
       const worksheet = XLSX.utils.json_to_sheet(
         dataToExport.map((r) => ({
           "Credit Note No": r.noteNo,
@@ -284,17 +286,14 @@ const CreditNotesTable: React.FC = () => {
           Currency: r.currency,
         })),
       );
-
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Credit Notes");
-
       saveAs(
         new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
         "Credit_Notes.xlsx",
       );
-
       closeSwal();
       showSuccess("Credit notes exported successfully");
     } catch (error) {
@@ -302,9 +301,9 @@ const CreditNotesTable: React.FC = () => {
       showApiError(error);
     }
   };
+
   const formatDate = (date: string | Date) => {
     if (!date) return "";
-
     const months = [
       "JAN",
       "FEB",
@@ -319,13 +318,10 @@ const CreditNotesTable: React.FC = () => {
       "NOV",
       "DEC",
     ];
-
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
       return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
     }
-
-    // Date object — use local methods
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
 
@@ -397,13 +393,8 @@ const CreditNotesTable: React.FC = () => {
           <ActionButton
             type="view"
             iconOnly
-            onClick={() => {
-              setDetailsId(r.noteNo);
-              setDetailsOpen(true);
-            }}
+            onClick={(e) => handleView(r.noteNo, e)}
           />
-
-          {/* Edit — needs write + Draft */}
           <PermissionGate module={CREDIT_NOTE_MODULE} action="write">
             <ActionButton
               type="edit"
@@ -417,9 +408,7 @@ const CreditNotesTable: React.FC = () => {
               }
             />
           </PermissionGate>
-
           <ActionMenu
-            // Delete — needs delete
             {...(can(CREDIT_NOTE_MODULE, "delete")
               ? {
                   onDelete: (e) => {
@@ -429,7 +418,6 @@ const CreditNotesTable: React.FC = () => {
                 }
               : {})}
             customActions={[
-              // Submit — needs write + Draft
               ...(r.status === "Draft" && can(CREDIT_NOTE_MODULE, "write")
                 ? [
                     {
@@ -439,7 +427,6 @@ const CreditNotesTable: React.FC = () => {
                     },
                   ]
                 : []),
-              // Cancel — needs write
               ...(!["Draft", "Cancelled"].includes(r.status) &&
               can(CREDIT_NOTE_MODULE, "write")
                 ? [
@@ -492,6 +479,26 @@ const CreditNotesTable: React.FC = () => {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+      />
+
+      <InvoiceDetailsModal
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerData(null);
+          setDrawerPdfUrl(null);
+        }}
+        pdfUrl={drawerPdfUrl}
+        pdfLoading={drawerPdfLoading}
+        onViewPdf={() => drawerData && handleDrawerPdf(drawerData.id)}
+        onDownload={handleDrawerDownload}
+        onClosePdf={() => {
+          if (drawerPdfUrl?.startsWith("blob:"))
+            URL.revokeObjectURL(drawerPdfUrl);
+          setDrawerPdfUrl(null);
+        }}
       />
     </div>
   );

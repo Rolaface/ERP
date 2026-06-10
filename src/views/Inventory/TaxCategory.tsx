@@ -135,6 +135,18 @@ const TaxCategory: React.FC = () => {
     [updateStatus, fetchCategories],
   );
 
+  const handleView = useCallback(
+    (tc: TaxCategorySummary, e: React.MouseEvent) => {
+      e.stopPropagation();
+      openTaxCategoryModal(
+        { title: tc.title, disabled: tc.disabled === 1 },
+        false,
+        { isViewMode: true }
+      );
+    },
+    []
+  );
+
   const handleDelete = useCallback(
     async (name: string, e: React.MouseEvent) => {
       e.stopPropagation();
@@ -202,18 +214,25 @@ const TaxCategory: React.FC = () => {
         align: "center",
         render: (tc) => (
           <ActionGroup>
+            {/* View — always visible */}
+            <ActionButton
+              type="view"
+              onClick={(e) => handleView(tc, e)}
+              iconOnly
+            />
+
             {(can(TAX_CATEGORY_MODULE, "delete") ||
               can(TAX_CATEGORY_MODULE, "write")) && (
-              <ActionMenu
-                {...(can(TAX_CATEGORY_MODULE, "delete")
-                  ? {
+                <ActionMenu
+                  {...(can(TAX_CATEGORY_MODULE, "delete")
+                    ? {
                       onDelete: (e) =>
                         handleDelete(tc.name, e as React.MouseEvent),
                     }
-                  : {})}
-                customActions={
-                  can(TAX_CATEGORY_MODULE, "write")
-                    ? [
+                    : {})}
+                  customActions={
+                    can(TAX_CATEGORY_MODULE, "write")
+                      ? [
                         {
                           label: tc.disabled ? "Enable" : "Disable",
                           icon: tc.disabled
@@ -223,10 +242,10 @@ const TaxCategory: React.FC = () => {
                           danger: !tc.disabled,
                         },
                       ]
-                    : []
-                }
-              />
-            )}
+                      : []
+                  }
+                />
+              )}
           </ActionGroup>
         ),
       },
@@ -257,18 +276,18 @@ const TaxCategory: React.FC = () => {
         }}
         enableAdd={can(TAX_CATEGORY_MODULE, "create")}
         addLabel="Add Tax Category"
-       onAdd={() =>
-  openTaxCategoryModal(null, false, {
-    onSuccess: async (data) => {
-      try {
-        await createTaxCategoryEntry(data as TaxCategoryFormData);
-        await fetchCategories();
-      } catch {
-        // error hook ke andar show hoga
-      }
-    },
-  })
-}
+        onAdd={() =>
+          openTaxCategoryModal(null, false, {
+            onSuccess: async (data) => {
+              try {
+                await createTaxCategoryEntry(data as TaxCategoryFormData);
+                await fetchCategories();
+              } catch {
+                // error hook ke andar show hoga
+              }
+            },
+          })
+        }
         enableColumnSelector
         currentPage={page}
         totalPages={totalPages}
@@ -277,7 +296,7 @@ const TaxCategory: React.FC = () => {
         onPageChange={setPage}
       />
 
-  
+
     </>
   );
 };

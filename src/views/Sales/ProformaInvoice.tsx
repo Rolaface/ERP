@@ -84,6 +84,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [company, setCompany] = useState<any>(null);
+   const [detailData, setDetailData] = useState<ProformaDetail | null>(null);
 
   // ── Pagination (server)
   const [page, setPage] = useState(1);
@@ -104,6 +105,8 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
     const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
     const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+  const [previewPdfBlob, setPreviewPdfBlob] = useState<Blob | null>(null);
+    const [previewPdfId, setPreviewPdfId] = useState<string | null>(null);
 //email
    const [emailModalOpen, setEmailModalOpen] = useState(false);
     const [emailProforma, setEmailProforma] = useState<ProformaInvoiceSummary | null>(null);
@@ -231,7 +234,8 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
       setDrawerPdfUrl(null);
   
       try {
-        const blob = await getPdf(proformId, "Proforma Invoice");
+        // const blob = await getPdf(proformId, "Proforma Invoice");
+        const blob = await getPdf(proformId, "Quotation");
         console.log("PDF blob response for drawer:", blob);
         console.log("Proforma Id", proformId);
         setDrawerPdfBlob(blob);
@@ -245,26 +249,50 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
     };
   
     // ── PDF preview modal (table row action — kept, do not remove)
-    const handlePreviewPDF = async (
-      inv: ProformaInvoiceSummary,
-      e?: React.MouseEvent,
-    ) => {
-      e?.stopPropagation();
-      try {
-        showLoading("Preparing invoice preview...");
-        const blob = await getPdf(inv.proformaId, "Proforma Invoice");
-        console.log("PDF blob response for drawer handlePreviewPDF:", blob);
-        console.log("Proforma Id handlePreviewPDF", inv.proformaId);
-        const blobUrl = URL.createObjectURL(blob);
-        closeSwal();
-        setPdfUrl(blobUrl);
-        setSelectedProformaInvoice(null); 
-        setPdfOpen(true);
-      } catch (err: any) {
-        closeSwal();
-        showApiError(err);
-      }
-    };
+    // const handlePreviewPDF = async (
+    //   inv: ProformaInvoiceSummary,
+    //   e?: React.MouseEvent,
+    // ) => {
+    //   e?.stopPropagation();
+    //   try {
+    //     showLoading("Preparing invoice preview...");
+    //     // const blob = await getPdf(inv.proformaId, "Proforma Invoice");
+    //     const blob = await getPdf(inv.proformaId, "Quotation");
+    //     const blobUrl = URL.createObjectURL(blob);
+    //     closeSwal();
+    //     setPdfUrl(blobUrl);
+    //     setSelectedProformaInvoice(null); 
+    //     setPdfOpen(true);
+    //   } catch (err: any) {
+    //     closeSwal();
+    //     showApiError(err);
+    //   }
+    // };
+    // ── PDF preview modal (table row action)
+const handlePreviewPDF = async (
+    inv: ProformaInvoiceSummary,
+    e?: React.MouseEvent,
+  ) => {
+    e?.stopPropagation();
+    try {
+      showLoading("Preparing invoice preview...");
+      
+      // Make sure this is fetching the PDF correctly
+      const blob = await getPdf(inv.proformaId, "Quotation"); 
+      const blobUrl = URL.createObjectURL(blob);
+      
+      closeSwal();
+      
+      setPdfUrl(blobUrl);
+      setPreviewPdfBlob(blob);
+      setPreviewPdfId(inv.proformaId);
+      
+      setPdfOpen(true);
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
   const handleSortChange = ({
     sortBy: colKey,
@@ -482,6 +510,57 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
     }
   };
 
+  const handleDrawerDownload = () => {
+    // FIX: Changed 'detailData' to 'drawerData' so it stops failing silently
+    if (!drawerPdfBlob || !drawerData) {
+      // showApiError("The PDF file is not ready for download.");
+      return;
+    }
+
+    try {
+      const url = URL.createObjectURL(drawerPdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      
+      // FIX: Dynamically grab the correct ID for the filename
+      const fileNameId = drawerData.proformaId || drawerData.id || "Proforma_Invoice";
+      a.download = `${fileNameId}.pdf`;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showApiError("Something went wrong while downloading the PDF.");
+    }
+  };
+const handlePreviewDownload = () => {
+     if (!previewPdfBlob) {
+      // showApiError("The PDF file is not ready for download.");
+      return;
+    }
+    if (!previewPdfId) {
+      showApiError("The Document ID is missing.");
+      return;
+    }
+
+    try {
+      const url = URL.createObjectURL(previewPdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Proforma_${previewPdfId}.pdf`;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showApiError("Something went wrong while downloading the PDF.");
+    }
+  };
+
   // ── Columns ───────────────────────────────────────────────────────────────
 
   const columns: Column<ProformaInvoiceSummary>[] = [
@@ -687,11 +766,12 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
         pdfLoading={drawerPdfLoading}
         // onViewPdf={() => drawerData && handleDrawerPdf(drawerData.proformaId)}
         onViewPdf={() => drawerData?.id && handleDrawerPdf(drawerData.id)}
-        onDownload={() =>
-          drawerData &&
-          company &&
-          generateProformaInvoicePDF(drawerData, company, "save")
-        }
+        // onDownload={() =>
+        //   drawerData &&
+        //   company &&
+        //   generateProformaInvoicePDF(drawerData, company, "save")
+        // }
+        onDownload={handleDrawerDownload}
         onClosePdf={() => {
           if (drawerPdfUrl?.startsWith("blob:"))
             URL.revokeObjectURL(drawerPdfUrl);
@@ -704,19 +784,17 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
         pdfUrl={pdfUrl}
         onClose={() => {
           if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
-          setPdfUrl(null);
-          setSelectedProforma(null);
+           setPdfUrl(null);
+          setPreviewPdfBlob(null);
+          setPreviewPdfId(null);
           setPdfOpen(false);
         }}
-        onDownload={() =>
-          selectedProforma &&
-          company &&
-          generateProformaInvoicePDF(selectedProforma, company, "save")
-        }
+        onDownload={handlePreviewDownload}
       />
       <SendEmailModal
         open={emailModalOpen}
-        docType="Proforma Invoice"
+        docType="Quotation"
+        isProforma={true}
         invoiceNumber={emailProforma?.proformaId}
         contactEmail={emailContactEmail}
         customerName={emailProforma?.customerName}

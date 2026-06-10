@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-type Option = {
+export type Option = {
   label: string;
   value: string;
   swiftCode?: string;
   subLabel?: string;
+  meta?: Record<string, any>;
 };
 
 interface SearchSelectProps {

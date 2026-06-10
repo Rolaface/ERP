@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Trash2, Copy, User, Mail, Phone } from "lucide-react";
 import type {
   ItemRow,
@@ -6,12 +6,7 @@ import type {
 } from "../../../types/Supply/purchaseOrder";
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
-
-import {
-  
-  ModalSelect,
-  NumericInput,
-} from "../../ui/modal/modalComponent";
+import { NumericInput } from "../../ui/modal/modalComponent";
 import WarehouseSelect from "../../selects/WarehouseSelect";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import CostCenterSelect from "../../selects/CostCenterSelect";
@@ -36,57 +31,33 @@ interface DetailsTabProps {
   ) => void;
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
-  onDuplicateItem: (idx: number) => void; // ← new, wired from hook
+  onDuplicateItem: (idx: number) => void;
   getCurrencySymbol: () => string;
   onBulkItemChange?: (field: keyof ItemRow, value: string) => void;
-
   fromPO?: boolean;
   setFromPO?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-// ─── PO-specific column headers ───────────────────────────────────────────────
+// ─── PO column headers ────────────────────────────────────────────────────────
 
 const POColumnHeaders: React.FC = () => (
   <tr className="border-b border-theme">
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">
-      #
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
-      Item Name
-    </th>
-    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px]">
-      Description
-    </th> */}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[10px]">
-      Pkg(UxS)
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[150px]">
-      Required By
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[110px]">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] w-[25px]">#</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] min-w-[150px]">Item Name</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] w-[60px]">Pkg(UxS)</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] w-[110px]">Required By</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] w-[120px]">
       Warehouse <span className="text-danger">*</span>
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px]">
-      Qty
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px]">
-      UOM
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] w-[70px]">Qty</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] w-[55px]">UOM</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] w-[65px] whitespace-nowrap">
       Rate <span className="text-danger">*</span>
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px]">
-      Tax(%)
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[65px] whitespace-nowrap">
-      Tax Name
-    </th>
-    <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[70px]">
-      Amount
-    </th>
-    <th className="px-2 py-1 text-center text-muted font-medium text-[11px] w-[50px]">
-      -
-    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] w-[50px]">Tax(%)</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[10px] w-[55px] whitespace-nowrap">Tax Name</th>
+    <th className="px-2 py-1 text-right text-muted font-medium text-[10px] w-[65px]">Amount</th>
+    <th className="px-2 py-1 text-center text-muted font-medium text-[10px] w-[50px]">-</th>
   </tr>
 );
 
@@ -127,9 +98,7 @@ export const DetailsTab = ({
     onBulkItemChange?.("requiredBy", (e.target as HTMLInputElement).value);
   };
 
-  const handleTopWarehouseChange = (
-    e: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
+  const handleTopWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onFormChange(e);
     onBulkItemChange?.("warehouse", e.target.value);
   };
@@ -157,95 +126,43 @@ export const DetailsTab = ({
   ) => {
     const amount = (it.quantity ?? 0) * (it.rate ?? 0);
     return (
-      <tr key={i} className="border-b border-theme bg-card row-hover">
-        <td className="px-2 py-1 text-[10px]">{i + 1}</td>
+      <tr key={i} className="border-b border-theme bg-card hover:bg-primary/5 transition-colors">
 
-        {/* Item Name */}
-        <td className="px-2 py-1">
-          <div className="w-[153px]">
-            <Tooltip
-              content={it.itemName ? `Item: ${it.itemName}` : "Select an item"}
-            >
-              <POItemSelect
-                value={it.itemName}
-                selectedId={it.itemCode}
-                onChange={(item: any) => onItemSelect(item.id, i)}
-              />
-            </Tooltip>
-          </div>
-        </td>
+        {/* # */}
+        <td className="px-2 py-1.5 text-[10px] text-muted">{i + 1}</td>
 
-        {/* Description */}
-        {/* <td className="px-2 py-1">
-          <Tooltip
-            content={
-              it.description
-                ? `Description: ${it.description}`
-                : "Enter description"
-            }
-          >
-            <input
-              name="description"
-              value={it.description || ""}
-              onChange={(e) => onItemChange(e, i)}
-              className="w-[90px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+        {/* Item Name — truncates in row, full name shown in dropdown */}
+        <td className="px-2 py-1.5 min-w-[150px]">
+          <Tooltip content={it.itemName ? `Item: ${it.itemName}` : "Select an item"}>
+            <POItemSelect
+              value={it.itemName}
+              selectedId={it.itemCode}
+              onChange={(item: any) => onItemSelect(item.id, i)}
             />
           </Tooltip>
-        </td> */}
+        </td>
 
         {/* Packing */}
-        <td className="px-2 py-[2px]">
-          <div className="flex items-center justify-center w-[70px]">
-            <Tooltip
-              content={`Packing: ${it.packingUnit || ""} × ${it.packingSize || ""}`}
-            >
-              <input
-                type="text"
-                value={
-                  it.itemCode
-                    ? `${it.packingUnit || ""}x${it.packingSize || ""}`
-                    : ""
-                }
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const [unit, size] = value.split("x");
-
-                  onItemChange(
-                    {
-                      target: {
-                        name: "packingUnit",
-                        value: unit || "",
-                      },
-                    } as any,
-                    i,
-                  );
-
-                  onItemChange(
-                    {
-                      target: {
-                        name: "packingSize",
-                        value: size || "",
-                      },
-                    } as any,
-                    i,
-                  );
-                }}
-                className="w-[60px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm "
-              />
-            </Tooltip>
-          </div>
+        <td className="px-2 py-1.5">
+          <Tooltip content={`Packing: ${it.packingUnit || ""} × ${it.packingSize || ""}`}>
+            <input
+              type="text"
+              value={it.itemCode ? `${it.packingUnit || ""}x${it.packingSize || ""}` : ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                const [unit, size] = value.split("x");
+                onItemChange({ target: { name: "packingUnit", value: unit || "" } } as any, i);
+                onItemChange({ target: { name: "packingSize", value: size || "" } } as any, i);
+              }}
+              className="w-[52px] h-[24px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+            />
+          </Tooltip>
         </td>
 
         {/* Required By */}
-        <td className="px-2 py-1">
-          <div className="w-[100px]">
-            <Tooltip
-              content={
-                it.requiredBy
-                  ? `Required By: ${it.requiredBy}`
-                  : "Select a date"
-              }
-            >
+        <td className="px-2 py-1.5">
+          <div className="w-[105px]">
+            <Tooltip content={it.requiredBy ? `Required By: ${it.requiredBy}` : "Select a date"}>
               <DatePickerInput
                 name="requiredBy"
                 value={it.requiredBy || ""}
@@ -258,12 +175,8 @@ export const DetailsTab = ({
         </td>
 
         {/* Warehouse */}
-        <td className="px-2 py-1">
-          <Tooltip
-            content={
-              it.warehouse ? `Warehouse: ${it.warehouse}` : "Select a warehouse"
-            }
-          >
+        <td className="px-2 py-1.5">
+          <Tooltip content={it.warehouse ? `Warehouse: ${it.warehouse}` : "Select a warehouse"}>
             <WarehouseSelect
               compact
               value={it.warehouse || ""}
@@ -273,123 +186,87 @@ export const DetailsTab = ({
         </td>
 
         {/* Qty */}
-        <td className="px-2 py-1">
-          <Tooltip
-            content={
-              it.quantity ? `Quantity: ${it.quantity}` : "Enter quantity"
-            }
-          >
-           <NumericInput
-  name="quantity"
-  placeholder="1"
-  value={it.quantity ?? ""}
-  onChange={(value) =>
-    onItemChange(
-      {
-        target: {
-          name: "quantity",
-          value,
-        },
-      } as any,
-      i,
-    )
-  }
-  className="w-[80px]"
-/>
+        <td className="px-2 py-1.5">
+          <Tooltip content={it.quantity ? `Quantity: ${it.quantity}` : "Enter quantity"}>
+            <NumericInput
+              name="quantity"
+              placeholder="1"
+              value={it.quantity ?? ""}
+              onChange={(value) =>
+                onItemChange({ target: { name: "quantity", value } } as any, i)
+              }
+              className="w-[60px]"
+            />
           </Tooltip>
         </td>
 
         {/* UOM */}
-        <td className="px-2 py-1">
+        <td className="px-2 py-1.5">
           <Tooltip content={it.uom ? `UOM: ${it.uom}` : "Unit of measure"}>
             <input
               name="uom"
               value={it.uom}
               disabled
               onChange={(e) => onItemChange(e, i)}
-              className="w-[60px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main"
+              className="w-[50px] py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
             />
           </Tooltip>
         </td>
 
         {/* Rate */}
-        <td className="px-2 py-1">
-          <Tooltip
-            content={it.rate ? `Rate: ${symbol} ${it.rate}` : "Enter rate"}
-          >
-           <NumericInput
-  name="rate"
-  placeholder="0"
-  value={it.rate ?? ""}
-  decimalScale={4}
-  onChange={(value) =>
-    onItemChange(
-      {
-        target: {
-          name: "rate",
-          value,
-        },
-      } as any,
-      i,
-    )
-  }
-  className="w-[55px]"
-/>
+        <td className="px-2 py-1.5">
+          <Tooltip content={it.rate ? `Rate: ${symbol} ${it.rate}` : "Enter rate"}>
+            <NumericInput
+              name="rate"
+              placeholder="0"
+              value={it.rate ?? ""}
+              decimalScale={4}
+              onChange={(value) =>
+                onItemChange({ target: { name: "rate", value } } as any, i)
+              }
+              className="w-[55px]"
+            />
           </Tooltip>
         </td>
 
         {/* VAT Rate */}
-        <td className="px-2 py-1">
+        <td className="px-2 py-1.5">
           <Tooltip content={`VAT Rate: ${it.vatRate || "N/A"}`}>
-           <NumericInput
-  name="vatRate"
-  placeholder="0"
-  value={it.vatRate ?? ""}
-  onChange={(value) =>
-    onItemChange(
-      {
-        target: {
-          name: "vatRate",
-          value,
-        },
-      } as any,
-      i,
-    )
-  }
-  className="w-[40px]"
-  disabled
-/>
+            <NumericInput
+              name="vatRate"
+              placeholder="0"
+              value={it.vatRate ?? ""}
+              onChange={(value) =>
+                onItemChange({ target: { name: "vatRate", value } } as any, i)
+              }
+              className="w-[40px]"
+              disabled
+            />
           </Tooltip>
         </td>
 
         {/* VAT Code */}
-        <td className="px-2 py-1">
-          <Tooltip
-            content={
-              it.taxTypes?.length
-                ? `Tax Types: ${it.taxTypes.join(", ")}`
-                : "No Tax Types"
-            }
-          >
+        <td className="px-2 py-1.5">
+          <Tooltip content={it.taxTypes?.length ? `Tax Types: ${it.taxTypes.join(", ")}` : "No Tax Types"}>
             <input
               name="vatCd"
               value={it.vatCd || ""}
               onChange={(e) => onItemChange(e, i)}
               disabled
-              className="w-[46px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-[46px] py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
             />
           </Tooltip>
         </td>
 
         {/* Amount */}
-        <td className="px-2 py-1 text-right">
+        <td className="px-2 py-1.5 text-right">
           <span className="text-[10px] font-medium text-main">
             {symbol} {amount.toFixed(2)}
           </span>
         </td>
 
-        {/* Actions — copy + delete */}
-        <td className="px-2 py-1 text-center">
+        {/* Actions */}
+        <td className="px-2 py-1.5 text-center">
           <div className="flex items-center justify-center gap-1">
             <Tooltip content="Duplicate row below">
               <button
@@ -397,7 +274,7 @@ export const DetailsTab = ({
                 onClick={() => helpers.handleCopyRow(i)}
                 className="p-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition"
               >
-                <Copy className="w-4 h-4" />
+                <Copy className="w-3.5 h-3.5" />
               </button>
             </Tooltip>
             <button
@@ -405,7 +282,7 @@ export const DetailsTab = ({
               onClick={() => helpers.handleRemoveRow(i)}
               className="p-0.5 rounded bg-danger/10 text-danger hover:bg-danger/20 transition"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </td>
@@ -415,17 +292,13 @@ export const DetailsTab = ({
 
   return (
     <div className="flex flex-col gap-4 max-h-screen overflow-auto p-4 bg-app text-main">
-      {/* ── Top fields ────────────────────────────────────────────────────── */}
+
+      {/* ── Top fields ── */}
       <div className="bg-app">
-        <div className="flex flex-wrap gap-x-2 gap-y-3 items-end mb-3">
-          <div className="w-[240px]">
-            <Tooltip
-              content={
-                form.supplier
-                  ? `Supplier: ${form.supplier}`
-                  : "Select a supplier"
-              }
-            >
+        <div className="flex gap-x-2 items-end mb-3 overflow-x-auto pb-1">
+
+          <div className="w-[200px] shrink-0">
+            <Tooltip content={form.supplier ? `Supplier: ${form.supplier}` : "Select a supplier"}>
               <SupplierSelect
                 className="w-full"
                 selectedId={form.supplierId}
@@ -435,7 +308,7 @@ export const DetailsTab = ({
             </Tooltip>
           </div>
 
-          <div className="w-[142px]">
+          <div className="w-[125px] shrink-0">
             <DatePickerInput
               label="Date"
               name="date"
@@ -447,45 +320,29 @@ export const DetailsTab = ({
             />
           </div>
 
-          
-
-          <div className="w-[135px]">
-            <Tooltip
-              content={
-                form.costCenter
-                  ? `Cost Center: ${form.costCenter}`
-                  : "Select a cost center"
-              }
-            >
+          <div className="w-[120px] shrink-0">
+            <Tooltip content={form.costCenter ? `Cost Center: ${form.costCenter}` : "Select a cost center"}>
               <CostCenterSelect
                 value={form.costCenter}
                 onChange={(val) =>
-                  onFormChange({
-                    target: { name: "costCenter", value: val },
-                  } as React.ChangeEvent<HTMLInputElement>)
+                  onFormChange({ target: { name: "costCenter", value: val } } as React.ChangeEvent<HTMLInputElement>)
                 }
               />
             </Tooltip>
           </div>
 
-          <div className="w-[130px]">
-            <Tooltip
-              content={
-                form.project ? `Project: ${form.project}` : "Select a project"
-              }
-            >
+          <div className="w-[115px] shrink-0">
+            <Tooltip content={form.project ? `Project: ${form.project}` : "Select a project"}>
               <ProjectSelect
                 value={form.project}
                 onChange={(val) =>
-                  onFormChange({
-                    target: { name: "project", value: val },
-                  } as React.ChangeEvent<HTMLInputElement>)
+                  onFormChange({ target: { name: "project", value: val } } as React.ChangeEvent<HTMLInputElement>)
                 }
               />
             </Tooltip>
           </div>
 
-          <div className="w-[135px]">
+          <div className="w-[120px] shrink-0">
             <DatePickerInput
               label="Required By"
               name="requiredBy"
@@ -496,14 +353,8 @@ export const DetailsTab = ({
             />
           </div>
 
-          <div className="w-[175px]">
-            <Tooltip
-              content={
-                form.warehouse
-                  ? `Warehouse: ${form.warehouse}`
-                  : "Select a warehouse"
-              }
-            >
+          <div className="w-[150px] shrink-0">
+            <Tooltip content={form.warehouse ? `Warehouse: ${form.warehouse}` : "Select a warehouse"}>
               <WarehouseSelect
                 value={form.warehouse || ""}
                 onChange={handleTopWarehouseChange}
@@ -511,10 +362,11 @@ export const DetailsTab = ({
               />
             </Tooltip>
           </div>
+
         </div>
       </div>
 
-      {/* ── Main body ─────────────────────────────────────────────────────── */}
+      {/* ── Main body ── */}
       <div className="grid grid-cols-[4fr_1fr] gap-4">
         <ItemTable
           title="Order Items"
@@ -528,12 +380,10 @@ export const DetailsTab = ({
           renderRow={renderPORow}
         />
 
-        {/* ── Right panel: supplier details + summary ──────────────────── */}
+        {/* ── Right panel ── */}
         <div className="flex flex-col gap-2">
           <div className="bg-card rounded-lg p-2 w-[220px]">
-            <h3 className="text-[12px] font-semibold text-main mb-2">
-              Supplier Details
-            </h3>
+            <h3 className="text-[12px] font-semibold text-main mb-2">Supplier Details</h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5 text-xs text-main">
                 <User size={16} className="text-muted" />
@@ -549,21 +399,15 @@ export const DetailsTab = ({
               </div>
               {form.taxCategory && (
                 <div className="bg-card rounded-lg mt-1">
-                  <h3 className="text-[11px] font-semibold text-main mb-1">
-                    Order Information
-                  </h3>
+                  <h3 className="text-[11px] font-semibold text-main mb-1">Order Information</h3>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Tax Category</span>
-                      <span className="font-medium text-main">
-                        {form.taxCategory}
-                      </span>
+                      <span className="font-medium text-main">{form.taxCategory}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted">Currency</span>
-                      <span className="font-medium text-main">
-                        {form.currency || "-"}
-                      </span>
+                      <span className="font-medium text-main">{form.currency || "-"}</span>
                     </div>
                   </div>
                 </div>
@@ -572,9 +416,7 @@ export const DetailsTab = ({
           </div>
 
           <div className="bg-card rounded-lg p-3 w-[220px]">
-            <h3 className="text-[13px] font-semibold text-main mb-2">
-              Summary
-            </h3>
+            <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
             <div className="flex flex-col gap-2">
               <div className="flex justify-between text-xs">
                 <span className="text-muted">Total Items</span>
@@ -582,9 +424,7 @@ export const DetailsTab = ({
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted">Total Quantity</span>
-                <span className="font-medium text-main">
-                  {form.totalQuantity}
-                </span>
+                <span className="font-medium text-main">{form.totalQuantity}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted">Subtotal</span>

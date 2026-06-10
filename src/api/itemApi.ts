@@ -14,6 +14,7 @@ export async function getAllItems(
   page = 1,
   page_size = 10,
   filters?: ItemFilters,
+  search = "",
 ): Promise<any> {
   const cleanedFilters = Object.fromEntries(
     Object.entries(filters || {}).filter(
@@ -25,6 +26,7 @@ export async function getAllItems(
     params: {
       page,
       page_size,
+      search,
       ...cleanedFilters,
     },
   });

@@ -33,6 +33,7 @@ export interface DebitNoteFormState {
   supplier: SupplierMeta | null;
   update_stock: boolean;
   items: DebitNoteItem[];
+  exchange_rate: number;
 }
 
 const EMPTY_FORM: DebitNoteFormState = {
@@ -40,6 +41,7 @@ const EMPTY_FORM: DebitNoteFormState = {
   supplier: null,
   update_stock: true,
   items: [],
+  exchange_rate: 1, 
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -59,9 +61,8 @@ export function useDebitNoteForm(
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
-  useEffect(() => {
+useEffect(() => {
     if (!initialData) return;
-
     setForm({
       return_against: initialData.return_against || "",
       supplier: {
@@ -77,8 +78,8 @@ export function useDebitNoteForm(
         batch_no: it.batch_no || "",
         warehouse: it.warehouse || "",
       })),
+      exchange_rate: Number(initialData.exchange_rate) || 1,  
     });
-    // initialData hydration is not a user edit — do NOT markDirty here
   }, [initialData]);
 
   // ── Invoice search ───────────────────────────────────────────────────────
@@ -102,14 +103,15 @@ export function useDebitNoteForm(
 
   // ── Invoice select → fetch full details & populate form ─────────────────
 
-  const handleInvoiceSelect = useCallback(async (opt: PurchaseInvoiceOption) => {
+const handleInvoiceSelect = useCallback(async (opt: PurchaseInvoiceOption) => {
     setForm((prev) => ({
       ...prev,
       return_against: opt.value,
       supplier: { id: opt.supplierId, name: opt.supplierName },
       items: [],
+      exchange_rate: 1,  
     }));
-    markDirty(); // user explicitly chose an invoice — mark dirty
+    markDirty();
 
     setInvoiceLoading(true);
     try {
@@ -135,6 +137,7 @@ export function useDebitNoteForm(
           name: data.supplierName ?? opt.supplierName,
         },
         items: mappedItems,
+        exchange_rate: Number(data.exchangeRate) || 1,  
       }));
     } catch (err) {
       console.error("Failed to load invoice details", err);
@@ -198,7 +201,7 @@ export function useDebitNoteForm(
 
   // ── Reset ────────────────────────────────────────────────────────────────
 
-  const reset = useCallback(() => {
+const reset = useCallback(() => {
     setForm(EMPTY_FORM);
     resetDirty();
   }, [resetDirty]);
@@ -230,12 +233,13 @@ export function useDebitNoteForm(
         return;
       }
 
-      const payload = {
+const payload = {
         is_return: 1 as const,
         return_against: form.return_against,
         supplier: form.supplier!.id,
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
+        conversion_rate: form.exchange_rate,  
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),

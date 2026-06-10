@@ -13,9 +13,9 @@ import PaymentInfoBlock from "./PaymentInfoBlock";
 import { quotationStatusOptions } from "../../types/quotation";
 import DatePickerInput from "../calendar/DatePickerInput";
 import {
-  currencySymbols,
+
   paymentMethodOptions,
-  currencyOptions,
+  
   ITEMS_PER_PAGE,
 } from "../../constants/invoice.constants";
 import ModalFooter from "../common/ModalFooter";
@@ -72,6 +72,11 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     initialData,
   );
 
+   const primaryContact =
+    customerDetails?.contacts?.find((c: any) => c.isPrimary) || {};
+  const billingAddress =
+    customerDetails?.addresses?.find((a: any) => a.type === "Billing") || {};
+
   const tabs: Array<"details" | "address" | "otherCharges" | "terms" 
   // | "otherDetails"
   > = [
@@ -114,7 +119,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       }
     };
 
-  const symbol = currencySymbols[formData.currencyCode] || "";
+  const symbol = "";
 
    const handleSave = async () => {
       if (!validateDetailsOrFocus()) return;
@@ -216,8 +221,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
           onNext={ui.activeTab === "terms" ? undefined : handleNext}
         />
       }
-      customWidth="82vw"
-      height="82vh"
+      customWidth="125vw"
+      height="81vh"
     >
       <form
         id="quotationForm"
@@ -312,60 +317,21 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   {/* Currency */}
                   <div className="min-w-[120px]">
                     <ModalSelect
-                      label="Currency "
-                      name="currencyCode"
-                      value={formData.currencyCode}
-                      onChange={actions.handleInputChange}
-                      options={[...currencyOptions]}
-                      disabled
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    ></ModalSelect>
+                                      label="Currency"
+                                      name="currencyCode"
+                                      value={formData.currencyCode}
+                                      onChange={actions.handleInputChange}
+                                      options={
+                                        formData.currencyCode
+                                          ? [{ value: formData.currencyCode, label: formData.currencyCode }]
+                                          : []
+                                      }
+                                      disabled
+                                      className="w-full border border-theme rounded text-[11px] text-main bg-card"
+                                    />
                   </div>
 
-                  {/* Status */}
-                  {/* <div>
-                    <ModalSelect
-                      label="Status"
-                      name="invoiceStatus"
-                      value={formData.invoiceStatus}
-                      options={[...quotationStatusOptions]}
-                      onChange={actions.handleInputChange}
-                      disabled={mode === "edit"}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  </div> */}
-
-                  {/* <div className="max-w-[140px]">
-                    <ModalSelect
-                      label="Payment Method"
-                      name="paymentMethod"
-                      value={formData.paymentInformation?.paymentMethod}
-                      onChange={(
-                        e: React.ChangeEvent<
-                          HTMLInputElement | HTMLSelectElement
-                        >,
-                      ) => actions.handleInputChange(e, "paymentInformation")}
-                      options={[...paymentMethodOptions]}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  </div> */}
-
-                  {ui.isExport && (
-                    <div >
-                      <ModalInput
-                        label="Export To Country"
-                        name="destnCountryCd"
-                        type="text"
-                        value={formData.destnCountryCd}
-                        onChange={actions.handleInputChange}
-                        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                      />
-                    </div>
-                  )}
-
-
-                  {/* LPO Number */}
-                  {ui.isLocal && (
+                    {/* {ui.isLocal && (
                     <div>
                       <label className="block text-[10px] font-medium text-main mb-1">
                         LPO Number
@@ -378,7 +344,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                         className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       />
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
 
@@ -399,7 +365,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                 />
 
                 {/* RIGHT: CUSTOMER DETAILS + SUMMARY (STACKED) */}
-                <div className="flex flex-col gap-2">
+                {/* <div className="flex flex-col gap-2"> */}
+                <div className="col-span-1 sticky top-0 flex flex-col items-center gap-4 px-3 lg:px-4 h-fit">
                   <div className="flex flex-col gap-2">
                     {/* Customer Details */}
                     <div className="bg-card rounded-lg p-2 w-[220px]">
@@ -412,50 +379,44 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                           <span className="flex items-center gap-2">
                             <User size={16} className="text-muted" />
                             <span className="text-xs text-main">
-                              {customerDetails?.name ?? "Customer Name"}
+                              {customerDetails?.name ?? ""}
                             </span>
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-[10px] text-muted">
+                        {/* <div className="flex items-center gap-2 text-[10px] text-muted">
                           <Mail size={14} className="text-muted" />
                           <span>
-                            {customerDetails?.email ?? "customer@gmail.com"}
+                            {customerDetails?.email ?? ""}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2 text-[10px] text-muted">
                           <Phone size={14} className="text-muted" />
                           <span>
-                            {customerDetails?.mobile_no ?? "+123 4567890"}
+                            {customerDetails?.mobile_no ?? ""}
                           </span>
+                        </div> */}
+                        <div className="flex items-center gap-2 text-[10px] text-muted">
+                          <Mail size={12} />
+                          {primaryContact?.email || customerDetails?.email || ""}
                         </div>
-                        {customerDetails && (
-                          <div className="bg-card rounded-lg ">
-
-                            <div className="flex flex-col gap-1">
-                              {/* Invoice Type */}
-                              <div className="flex items-center gap-19 text-xs">
-                                <span className="text-muted">Invoice Type</span>
-                                <span className="font-medium text-main">
-                                  {formData.invoiceType}
-                                </span>
-                              </div>
-
-                              {/* Destination Country – only for Export */}
-                              {formData.invoiceType === "Export" && (
-                                <div className="flex items-center gap-15 text-xs">
-                                  <span className="text-muted">
-                                    Destination Country
-                                  </span>
-                                  <span className="font-medium text-main">
-                                    {formData.destnCountryCd || "-"}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2 text-[10px] text-muted">
+                          <Phone size={12} />
+                          {primaryContact?.mobile || customerDetails?.mobile || ""}
+                        </div>
+                        <div className="flex justify-between text-[10px] mt-1">
+                        <span className="text-muted">Tax</span>
+                        <span className="text-main font-medium">
+                          {customerDetails?.customerTaxCategory || "-"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-muted">Country</span>
+                        <span className="text-main font-medium">
+                          {billingAddress?.country || "-"}
+                        </span>
+                      </div> 
                       </div>
                     </div>
 

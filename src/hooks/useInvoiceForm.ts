@@ -229,7 +229,7 @@ useEffect(() => {
 
     const base = getBaseCurrencyFromStorage();
 
-    console.log("Base Currency:", base);
+   
 
     setBaseCurrency(base);
     lastCurrencyRef.current = base;
@@ -329,9 +329,13 @@ useEffect(() => {
     if (!formData.dateOfInvoice) {
       throw new Error("Please select date of invoice");
     }
+      if (!formData.mode) {
+      throw new Error("Please select mode of payment");
+    }
     if (!formData.dueDate) {
       throw new Error("Please select due date");
     }
+    
     if (!formData.items.length) {
       throw new Error("Please add at least one item");
     }

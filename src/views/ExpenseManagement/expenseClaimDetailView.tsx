@@ -59,6 +59,7 @@ interface ExpenseClaim {
   taxes?: any[];
   advances?: any[];
   attachments?: ExpenseAttachment[];
+  comments?: string;
 }
 
 interface Props {
@@ -101,7 +102,11 @@ const fmtSize = (bytes?: number) => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
-
+const stripHtml = (html: string) => {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return tmp.textContent ?? tmp.innerText ?? html;
+};
 const resolveFileUrl = (url: string) => {
   if (!url) return "#";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -192,7 +197,7 @@ const S: React.FC<{ title: string }> = ({ title }) => (
   </div>
 );
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+
 const ExpenseClaimDetailView: React.FC<Props> = ({
   open,
   expenseData,
@@ -208,7 +213,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
     const a = document.createElement("a");
     a.href = resolveFileUrl(fileUrl);
     a.download = fileName;
-    a.target = "_blank";
+    // a.target = "_blank";
     a.rel = "noopener noreferrer";
     document.body.appendChild(a);
     a.click();
@@ -221,6 +226,13 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
   const taxes = claim.taxes ?? [];
   const advances = claim.advances ?? [];
   const attachments = claim.attachments ?? [];
+  const comments: { comment: string; by: string; name: string }[] = (() => {
+  try {
+    return JSON.parse((claim as any).comments ?? "[]");
+  } catch {
+    return [];
+  }
+})();
   const approvalStatus = claim.approval_status ?? claim.status ?? "Draft";
   const approvalLabel = STATUS_LABEL[approvalStatus] ?? approvalStatus;
   const statusColor = STATUS_MAP[approvalStatus] ?? STATUS_MAP["Draft"];
@@ -1066,6 +1078,33 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                   </div>
                 </>
               )}
+              {comments.length > 0 && (
+  <>
+    <S title={`Comments (${comments.length})`} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {comments.map((c) => (
+        <div
+          key={c.name}
+          style={{
+            padding: "8px 10px",
+            borderRadius: 7,
+            border: "1px solid var(--border)",
+            background: "var(--bg)",
+          }}
+        >
+          <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5 }}>
+             {stripHtml(c.comment)}
+          </p>
+          <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>
+            {c.by}
+          </p>
+        </div>
+      ))}
+    </div>
+  </>
+)}
+
+<div style={{ height: 12 }} />
 
               <div style={{ height: 12 }} />
             </>

@@ -13,7 +13,9 @@ import {
   ReceiptText,
   Scan,
   ToggleRight,
-  ToggleLeft,
+  ToggleLeft,Eye,
+  Play,
+  RotateCcw,
 } from "lucide-react";
 
 export const ACTION_ICONS = {
@@ -32,6 +34,9 @@ export const ACTION_ICONS = {
   PAYMENT: <CreditCard size={16} />,
   ADVANCE_PAYMENT: <Banknote size={16} />,
   PURCHASE_INVOICE: <ReceiptText size={16} />,
+  PAYROLL_PREVIEW: <Eye size={16} />,
+PAYROLL_RUN: <Play size={16} />,
+PAYROLL_REVERT: <RotateCcw size={16} />,
 } as const;
 
 export const getStatusActionIcon = (status: string): ReactNode | undefined => {

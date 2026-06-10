@@ -51,14 +51,23 @@ const CurrencyConversion: React.FC = () => {
         await addConversion(payload);
       },
     });
+const handleView = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
+  e?.stopPropagation();
 
-  const handleEdit = (row: CurrencyConversionPayload) =>
-    openCurrencyExchangeModal(row, true, {
-      onSuccess: async (payload: any) => {
-        await updateConversion(payload);
-      },
-    });
+  openCurrencyExchangeModal(row, true, {
+    isViewMode: true,
+  });
+};
 
+const handleEdit = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+
+  openCurrencyExchangeModal(row, true, {
+    onSuccess: async (payload: any) => {
+      await updateConversion(payload);
+    },
+  });
+};
   const handleSearch = (q: string) => {
     setSearch(q);
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -148,6 +157,11 @@ const CurrencyConversion: React.FC = () => {
             module={CURRENCY_EXCHANGE_MODULE}
             action="write"
           >
+            <ActionButton
+  type="view"
+  iconOnly
+  onClick={() => handleView(row)}
+/>
             <ActionButton
               type="edit"
               onClick={() => handleEdit(row)}
