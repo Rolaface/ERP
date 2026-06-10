@@ -75,7 +75,6 @@ const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
 
 const statusOptions = [
   { label: "Draft", value: "Draft" },
-  { label: "Approved", value: "Approved" },
   { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
   { label: "Unpaid", value: "Unpaid" },
