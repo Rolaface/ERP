@@ -18,6 +18,7 @@ export type ModeOfPaymentOption = {
   value: string;
   defaultAccount: string;
   currency: string;
+  accountName: string;
 };
 
 export type PartyOption = {
@@ -59,6 +60,7 @@ export function usePaymentModes(): UseModeOfPaymentReturn {
         label: item.name,
         value: item.id,
         defaultAccount: item.defaultAccount ?? "",
+        accountName: item.accountName ?? "",
         currency: item.currency ?? "",
       }));
       setOptions(mapped);
@@ -104,10 +106,10 @@ export function usePartyOptions(
           undefined,
           search,
         );
-       const mapped = opts.map((o: any) => ({
-  label: o.label || o.name,
-  value: o.partyName || o.id || o.value,  
-}));
+        const mapped = opts.map((o: any) => ({
+          label: o.label || o.name,
+          value: o.partyName || o.id || o.value,
+        }));
 
         setPartyOptions(mapped);
         return mapped; // ← return fresh data
@@ -197,10 +199,6 @@ export function usePartyBankAccounts() {
 
   const fetchPartyBanks = useCallback(
     async (party_type: string, party: string, search?: string) => {
-      console.log("STEP 5 👉 Hook received:", {
-        party_type,
-        party,
-      });
       setIsLoading(true);
       try {
         const data = await getBankAccountOptions({ party_type, party, search });
@@ -253,7 +251,7 @@ export function useLedgerAccounts(
         if (!cancelled) {
           setOptions(
             data.map((item) => ({
-              label: item.name,
+              label: item.account_name,
               value: item.name,
               currency: item.account_currency,
             })),
@@ -313,8 +311,8 @@ export function useLedgerOptions(
   useEffect(() => {
     const fetchableType =
       paymentType === "Pay" ||
-      paymentType === "Receive" ||
-      paymentType === "Internal Transfer"
+        paymentType === "Receive" ||
+        paymentType === "Internal Transfer"
         ? paymentType
         : null;
 
@@ -349,14 +347,14 @@ export function useLedgerOptions(
         if (cancelled) return;
         setFromOptions(
           from.map((i) => ({
-            label: i.name,
+            label: i.account_name,
             value: i.name,
             currency: i.account_currency,
           })),
         );
         setToOptions(
           to.map((i) => ({
-            label: i.name,
+            label: i.account_name,
             value: i.name,
             currency: i.account_currency,
           })),
@@ -381,8 +379,8 @@ export function useLedgerOptions(
     async (search?: string) => {
       const fetchableType =
         paymentType === "Pay" ||
-        paymentType === "Receive" ||
-        paymentType === "Internal Transfer"
+          paymentType === "Receive" ||
+          paymentType === "Internal Transfer"
           ? paymentType
           : null;
       if (!fetchableType) return [];
@@ -396,7 +394,7 @@ export function useLedgerOptions(
           search,
         );
         const mapped = data.map((i) => ({
-          label: i.name,
+          label: i.account_name,
           value: i.name,
           currency: i.account_currency,
         }));
@@ -413,8 +411,8 @@ export function useLedgerOptions(
     async (search?: string) => {
       const fetchableType =
         paymentType === "Pay" ||
-        paymentType === "Receive" ||
-        paymentType === "Internal Transfer"
+          paymentType === "Receive" ||
+          paymentType === "Internal Transfer"
           ? paymentType
           : null;
       if (!fetchableType) return [];
@@ -428,7 +426,7 @@ export function useLedgerOptions(
           search,
         );
         const mapped = data.map((i) => ({
-          label: i.name,
+          label: i.account_name,
           value: i.name,
           currency: i.account_currency,
         }));
