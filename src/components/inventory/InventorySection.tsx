@@ -137,7 +137,7 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
                 className="h-[28px] w-14 shrink-0 rounded border border-[var(--border)] bg-card px-1 text-[11px] text-main focus:outline-none focus:ring-1 focus:ring-primary hover:border-primary/40 transition-all"
               >
                 <option value="" disabled>
-                  UOM
+                  select
                 </option>
                 <option value="cm">cm</option>
                 <option value="in">in</option>
