@@ -284,7 +284,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
               <thead className="bg-[var(--border)]/20">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted">
-                    Tax Type <span className="text-danger">*</span>
+                    GL Accounts <span className="text-danger">*</span>
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted">Rate (%)</th>
                   <th className="px-3 py-2 w-10"></th>

@@ -5,10 +5,11 @@ import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
 import { Landmark } from "lucide-react";
 import { useBankAccLogic } from "./Usebankacclogic";
 import DatePickerInput from "../calendar/DatePickerInput";
-import SearchSelect2 from "../ui/modal/SearchSelect";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
+import { Option } from "../ui/modal/SearchSelect2"
 import { BankAccount } from "../../types/BankAccount/bank";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
-import { getBankAccountById } from "../../api/BankAccountApi";
+import { getBankAccountById ,getBankAccounts } from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 
@@ -27,11 +28,6 @@ interface Props {
 
 }
 
-type Option = {
-  label: string;
-  value: string;
-  meta?: Record<string, any>;
-};
 
 type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Employee";
 
@@ -59,7 +55,6 @@ const AddBankAccountModal: React.FC<Props> = ({
     handleReset,
     banks,
     entities,
-    reportingAccounts,
     isCompany,
     isSubmitting,
     handleAccountForChange,
@@ -229,7 +224,6 @@ const AddBankAccountModal: React.FC<Props> = ({
       <form
         id="bankForm"
         onSubmit={handleSubmit}
-        onChange={() => !isViewMode && markDirty()}
         className="h-full overflow-hidden"
       >
         <div className="h-full overflow-y-auto p-8">
@@ -242,35 +236,51 @@ const AddBankAccountModal: React.FC<Props> = ({
                 disabled={isViewMode}
 
                 value={form.dateAdded}
-                onChange={(name, value) =>
-                  {
-                    markDirty();
-                    setForm((prev) => ({ ...prev, [name]: value }));
-                  }
+                onChange={(name, value) => {
+                  markDirty();
+                  setForm((prev) => ({ ...prev, [name]: value }));
+                }
                 }
               />
             </div>
 
-            {/* Account For */}
-            <ModalSelect
-              label="Account For"
-              name="accountFor"
-              disabled={isViewMode || !!defaultAccountFor}
 
-              value={form.accountFor}
-              onChange={(e) => {
-                handleAccountForChange(e.target.value as AccountType);
-                clearError("accountFor");
-              }}
-              options={[
-                { label: "Supplier", value: "Supplier" },
-                { label: "Customer", value: "Customer" },
-                { label: "Company", value: "Company" },
-                { label: "Employee", value: "Employee" },
-              ]}
-              required
-              error={errors.accountFor}
-            />
+
+            {/* Account For */}
+            <div className="flex flex-col text-sm min-w-0">
+              <span className="block text-[10px] font-medium text-main mb-1">
+                Account For
+                <span className="text-danger">*</span>
+              </span>
+              <select
+                name="accountFor"
+                disabled={isViewMode || !!defaultAccountFor}
+                value={form.accountFor}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  console.log("[plain select] onChange value:", value);
+                  if (!value) return;
+                  markDirty();
+                  handleAccountForChange(value as AccountType);
+                  clearError("accountFor");
+                }}
+                className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0 ${errors.accountFor
+                  ? "border-danger"
+                  : isViewMode || !!defaultAccountFor
+                    ? "bg-app cursor-not-allowed opacity-60 border-theme"
+                    : "border-[var(--border)] hover:border-primary/40"
+                  }`}
+              >
+                <option value="" disabled>Select</option>
+                <option value="Supplier">Supplier</option>
+                <option value="Customer">Customer</option>
+                <option value="Company">Company</option>
+                <option value="Employee">Employee</option>
+              </select>
+              {errors.accountFor && (
+                <span className="text-danger text-[10px] mt-1">{errors.accountFor}</span>
+              )}
+            </div>
 
             {/* Name */}
             <div className="flex flex-col gap-1">
@@ -438,21 +448,19 @@ const AddBankAccountModal: React.FC<Props> = ({
                 label="Reporting Account"
                 value={form.reportingAccount}
                 required
-                onChange={(_: string, option: Option) =>
-                  {
-                    markDirty();
-                    setForm((prev) => ({
-                      ...prev,
-                      reportingAccount: option?.value || "",
-                    }));
-                  }
-                }
-                fetchOptions={(q): Promise<Option[]> => {
-                  const query = q.toLowerCase();
-                  return Promise.resolve(
-                    reportingAccounts.filter((acc) =>
-                      acc.label.toLowerCase().includes(query),
-                    ),
+                onChange={(_: string, option: Option) => {
+                  markDirty();
+                  setForm((prev) => ({
+                    ...prev,
+                    reportingAccount: option?.value || "",
+                  }));
+                }}
+                fetchOptions={async (q): Promise<Option[]> => {
+                  const data = await getBankAccounts("Account");
+                  const list = Array.isArray(data) ? data : [];
+                  if (!q) return list;
+                  return list.filter((acc) =>
+                    acc.label.toLowerCase().includes(q.toLowerCase())
                   );
                 }}
               />
@@ -463,11 +471,10 @@ const AddBankAccountModal: React.FC<Props> = ({
               <input
                 type="checkbox"
                 checked={form.isDefault}
-                onChange={(e) =>
-                  {
-                    markDirty();
-                    setForm((p) => ({ ...p, isDefault: e.target.checked }));
-                  }
+                onChange={(e) => {
+                  markDirty();
+                  setForm((p) => ({ ...p, isDefault: e.target.checked }));
+                }
                 }
                 className="w-4 h-4 accent-primary"
               />

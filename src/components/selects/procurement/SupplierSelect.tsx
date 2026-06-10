@@ -252,7 +252,7 @@ export default function SupplierSelect({
         )}
       </div>
 
-      {/* ── PORTAL DROPDOWN — always on top, never clipped ── */}
+     
       {open &&
         dropRect &&
         createPortal(

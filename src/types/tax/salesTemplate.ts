@@ -8,6 +8,7 @@ export interface SalesTaxRow {
   tax_amount: number;
   description: string;
   account_head_display?: string;
+  account_head_name?: string;
 }
 
 export interface SalesTaxTemplateFormData {

@@ -17,7 +17,6 @@ import type {
   SalesTaxTemplateFormData,
 } from "../../types/tax/salesTemplate";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 const SALES_TAX_TEMPLATE_MODULE = "Sales Taxes and Charges Template";
@@ -460,7 +459,7 @@ const SalesTaxTemplate: React.FC = () => {
                   </span>
                 </td>
                 <td className="py-2 px-3 text-main font-medium text-xs">
-                  {row.account_head}
+                  {row.account_head_name}
                 </td>
                 <td className="py-2 px-3 text-xs">
                   {row.charge_type === "Actual" ? (
