@@ -437,7 +437,7 @@ const TaxTemplate: React.FC<Props> = () => {
                       className="transition-colors"
                       style={{ borderBottom: "1px solid rgba(0,0,0,0.04)", background: i % 2 !== 0 ? "rgba(201,125,46,0.03)" : "transparent" }}
                     >
-                      <td className="py-2 px-3 text-main font-medium text-xs">{row.tax_type}</td>
+                      <td className="py-2 px-3 text-main font-medium text-xs">{row.tax_type_name}</td>
                       <td className="py-2 px-3 text-xs">
                         <span className="font-semibold" style={{ color: "var(--primary, #c97d2e)" }}>
                           {Number(row.tax_rate).toFixed(2)}

@@ -145,16 +145,16 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
             />
 
             <SearchSelect2
-              label="Default Account"
-                value={form.defaultAccountDisplay || form.defaultAccount}
-onChange={(val, option) => {
-  markDirty();
-  setForm((p) => ({
-    ...p,
-    defaultAccount: val || "",           
-    defaultAccountDisplay: option?.label || "", 
-  }));
-}}
+              label="GL Accounts"
+              value={form.defaultAccountDisplay || form.defaultAccount}
+              onChange={(val, option) => {
+                markDirty();
+                setForm((p) => ({
+                  ...p,
+                  defaultAccount: val || "",
+                  defaultAccountDisplay: option?.label || "",
+                }));
+              }}
               fetchOptions={fetchGlOptions}
               disabled={isViewMode}
 
