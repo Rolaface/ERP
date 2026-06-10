@@ -69,7 +69,8 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">
       #
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
+    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap"> */}
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-full min-w-[200px] whitespace-nowrap">
       Item
     </th>
     {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[140px] whitespace-nowrap">
@@ -89,7 +90,8 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
       Qty
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] whitespace-nowrap">
+    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] whitespace-nowrap"> */}
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
       Mfg Date
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
@@ -274,7 +276,8 @@ useBarcodeScanner(async (barcode) => {
         <td className="px-2 py-1 text-center text-[10px]">{i + 1}</td>
 
         {/* Item */}
-        <td className="px-0.5 py-1 min-w-[135px]">
+        {/* <td className="px-0.5 py-1 min-w-[135px]"> */}
+        <td className="px-0.5 py-1 w-full min-w-[200px]">
           <StockItemSelect
             value={it.itemCode}
             batchNo={it.batchNo}

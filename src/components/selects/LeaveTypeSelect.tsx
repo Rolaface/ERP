@@ -4,16 +4,19 @@ import { getAllLeaveTypes } from "../../api/leaveConfigApi";
 
 type LeaveType = {
   name: string;
+  include_holiday?: number;
 };
 
 interface LeaveTypeSelectProps {
   value?: string;
-  onChange: (leaveType: { name: string }) => void;
+  // onChange: (leaveType: { name: string }) => void;
+  onChange: (leaveType: LeaveType) => void;
   className?: string;
   label?: string;
   required?: boolean;
   disabled?: boolean;
   leaveBalances?: any[];
+  excludeTypes?: string[];
 }
 
 export default function LeaveTypeSelect({
@@ -24,6 +27,7 @@ export default function LeaveTypeSelect({
   required = false,
   disabled = false,
   leaveBalances = [],
+  excludeTypes = [],
 }: LeaveTypeSelectProps) {
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,6 +57,7 @@ export default function LeaveTypeSelect({
         setLeaveTypes(
           rawTypes.map((t: any) => ({
             name: t.name,
+            include_holiday: t.include_holiday,
           }))
         );
       }
@@ -124,7 +129,8 @@ export default function LeaveTypeSelect({
 
   // Filter based on name
   const filteredTypes = leaveTypes.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase())
+    t.name.toLowerCase().includes(search.toLowerCase()) &&
+  !excludeTypes.includes(t.name)
   );
 
   const handleInteraction = () => {
@@ -214,7 +220,9 @@ export default function LeaveTypeSelect({
       onClick={() => {
         setSearch(type.name); 
         setOpen(false);
-        onChange({ name: type.name });
+        onChange({ name: type.name,
+          include_holiday: type.include_holiday
+         });
       }}
     >
       <div className="flex justify-between items-center">
