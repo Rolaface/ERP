@@ -76,6 +76,7 @@ interface Props {
   onClose: () => void;
   initialData?: HolidayList | null;
   onSuccess?: () => void;
+  isViewMode?: boolean;
 }
 
 interface HolidayRow {
@@ -123,11 +124,12 @@ export const HolidayListModal: React.FC<Props> = ({
   onClose,
   initialData,
   onSuccess,
+  isViewMode = false,
 }) => {
   const isEdit = Boolean(initialData?.name);
   const [saving, setSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [name, setName] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -176,7 +178,7 @@ export const HolidayListModal: React.FC<Props> = ({
     try {
       setIsLoading(true);
       const res = await getHolidayListByName(idName);
-      
+
       const data = res?.data || res?.message || res;
 
       setName(data.holiday_list_name || "");
@@ -216,6 +218,7 @@ export const HolidayListModal: React.FC<Props> = ({
   };
 
   const handleAddHolidayRow = () => {
+    if (isViewMode) return;
     setHolidays([
       ...holidays,
       {
@@ -228,6 +231,7 @@ export const HolidayListModal: React.FC<Props> = ({
   };
 
   const handleRemoveHolidayRow = (id: string) => {
+    if (isViewMode) return;
     setHolidays(holidays.filter((h) => h.id !== id));
   };
 
@@ -236,12 +240,14 @@ export const HolidayListModal: React.FC<Props> = ({
     field: keyof HolidayRow,
     value: string | boolean,
   ) => {
+    if (isViewMode) return;
     setHolidays(
       holidays.map((h) => (h.id === id ? { ...h, [field]: value } : h)),
     );
   };
 
   const toggleWeeklyOff = (index: number) => {
+    if (isViewMode) return;
     const updated = [...weeklyOffs];
     updated[index].selected = !updated[index].selected;
     if (!updated[index].selected) updated[index].is_half_day = false;
@@ -249,12 +255,14 @@ export const HolidayListModal: React.FC<Props> = ({
   };
 
   const toggleWeeklyOffHalfDay = (index: number) => {
+    if (isViewMode) return;
     const updated = [...weeklyOffs];
     updated[index].is_half_day = !updated[index].is_half_day;
     setWeeklyOffs(updated);
   };
 
   const handleSave = async () => {
+    if (isViewMode) return;
     if (!name.trim())
       return showValidationError("Holiday List Name is required");
     if (!fromDate) return showValidationError("From Date is required");
@@ -307,21 +315,23 @@ export const HolidayListModal: React.FC<Props> = ({
         disabled={isLoading || saving}
         className="px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50"
       >
-        Cancel
+        {isViewMode ? "Close" : "Cancel"}
       </button>
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving || isLoading}
-        className="rounded-lg bg-[#3F25C8] px-5 py-1.5 text-sm font-medium text-white transition hover:bg-[#321ca1] disabled:opacity-60 flex items-center gap-2"
-      >
-        {saving && <Loader2 size={16} className="animate-spin text-white" />}
-        {saving
-          ? "Saving…"
-          : isEdit
-            ? "Update Holiday List"
-            : "Create Holiday List"}
-      </button>
+      {!isViewMode && (
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || isLoading}
+          className="rounded-lg bg-[#3F25C8] px-5 py-1.5 text-sm font-medium text-white transition hover:bg-[#321ca1] disabled:opacity-60 flex items-center gap-2"
+        >
+          {saving && <Loader2 size={16} className="animate-spin text-white" />}
+          {saving
+            ? "Saving…"
+            : isEdit
+              ? "Update Holiday List"
+              : "Create Holiday List"}
+        </button>
+      )}
     </div>
   );
 
@@ -330,7 +340,13 @@ export const HolidayListModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? "Edit Holiday List" : "Add Holiday List"}
+      title={
+        isViewMode
+          ? "View Holiday List"
+          : isEdit
+            ? "Edit Holiday List"
+            : "Add Holiday List"
+      }
       icon={Calendar}
       maxWidth="5xl"
       height="80vh"
@@ -364,8 +380,9 @@ export const HolidayListModal: React.FC<Props> = ({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  disabled={isViewMode}
                   placeholder="e.g. India Holidays 2026"
-                  className="w-full h-[28px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
+                  className="w-full h-[28px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8] disabled:bg-gray-50 disabled:text-gray-500"
                 />
               </div>
 
@@ -375,6 +392,7 @@ export const HolidayListModal: React.FC<Props> = ({
                   name="fromDate"
                   value={fromDate}
                   onChange={(_, v) => setFromDate(v)}
+                  disabled={isViewMode}
                 />
               </div>
 
@@ -384,6 +402,7 @@ export const HolidayListModal: React.FC<Props> = ({
                   name="toDate"
                   value={toDate}
                   onChange={(_, v) => setToDate(v)}
+                  disabled={isViewMode}
                 />
               </div>
             </div>
@@ -401,7 +420,7 @@ export const HolidayListModal: React.FC<Props> = ({
                     day.selected
                       ? "border-[#D6D0F9] bg-[#F7F5FF]"
                       : "border-gray-200 bg-white"
-                  }`}
+                  } ${isViewMode ? "opacity-80" : ""}`}
                 >
                   <div className="flex items-center justify-between">
                     <span
@@ -415,22 +434,31 @@ export const HolidayListModal: React.FC<Props> = ({
                       type="checkbox"
                       checked={day.selected}
                       onChange={() => toggleWeeklyOff(idx)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-[#3F25C8] focus:ring-[#3F25C8] cursor-pointer"
+                      disabled={isViewMode}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-[#3F25C8] focus:ring-[#3F25C8] cursor-pointer disabled:cursor-not-allowed"
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <span
-                      className={`text-[9px] font-bold leading-none ${day.selected ? "text-[#3F25C8]" : "text-gray-400"}`}
+                      className={`text-[9px] font-bold leading-none ${
+                        day.selected ? "text-[#3F25C8]" : "text-gray-400"
+                      }`}
                     >
                       HALF DAY
                     </span>
-                    <label className="relative inline-flex cursor-pointer items-center">
+                    <label
+                      className={`relative inline-flex items-center ${
+                        !day.selected || isViewMode
+                          ? "cursor-not-allowed"
+                          : "cursor-pointer"
+                      }`}
+                    >
                       <input
                         type="checkbox"
                         className="peer sr-only"
                         checked={day.is_half_day}
                         onChange={() => toggleWeeklyOffHalfDay(idx)}
-                        disabled={!day.selected}
+                        disabled={!day.selected || isViewMode}
                       />
                       <div className="peer h-3.5 w-6 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-2.5 after:w-2.5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none peer-disabled:opacity-50"></div>
                     </label>
@@ -470,6 +498,9 @@ export const HolidayListModal: React.FC<Props> = ({
                   background: "#f9fafb",
                   borderBottom: "1px solid #e5e7eb",
                   minHeight: 32,
+                  gridTemplateColumns: isViewMode
+                    ? "160px 1fr 100px"
+                    : "160px 1fr 100px 50px",
                 }}
               >
                 <div className="hl-cell hl-cell-border hl-col-header">Date</div>
@@ -477,17 +508,19 @@ export const HolidayListModal: React.FC<Props> = ({
                   Description
                 </div>
                 <div
-                  className="hl-cell hl-cell-border hl-col-header"
+                  className={`hl-cell hl-col-header ${!isViewMode ? "hl-cell-border" : ""}`}
                   style={{ justifyContent: "center" }}
                 >
                   Is Half Day
                 </div>
-                <div
-                  className="hl-cell hl-col-header"
-                  style={{ justifyContent: "center" }}
-                >
-                  Action
-                </div>
+                {!isViewMode && (
+                  <div
+                    className="hl-cell hl-col-header"
+                    style={{ justifyContent: "center" }}
+                  >
+                    Action
+                  </div>
+                )}
               </div>
 
               <div
@@ -495,7 +528,15 @@ export const HolidayListModal: React.FC<Props> = ({
                 style={{ flex: 1, minHeight: "150px" }}
               >
                 {holidays.map((row) => (
-                  <div key={row.id} className="hl-row">
+                  <div
+                    key={row.id}
+                    className="hl-row"
+                    style={{
+                      gridTemplateColumns: isViewMode
+                        ? "160px 1fr 100px"
+                        : "160px 1fr 100px 50px",
+                    }}
+                  >
                     <div
                       className="hl-cell hl-cell-border"
                       style={{ padding: "0 8px" }}
@@ -506,6 +547,7 @@ export const HolidayListModal: React.FC<Props> = ({
                         onChange={(_, v) =>
                           updateHoliday(row.id, "holiday_date", v)
                         }
+                        disabled={isViewMode}
                       />
                     </div>
 
@@ -517,56 +559,71 @@ export const HolidayListModal: React.FC<Props> = ({
                         onChange={(e) =>
                           updateHoliday(row.id, "description", e.target.value)
                         }
-                        className="w-full h-[26px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8]"
+                        disabled={isViewMode}
+                        className="w-full h-[26px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8] disabled:bg-gray-50 disabled:text-gray-500"
                       />
                     </div>
 
                     <div
-                      className="hl-cell hl-cell-border"
+                      className={`hl-cell ${!isViewMode ? "hl-cell-border" : ""}`}
                       style={{ justifyContent: "center" }}
                     >
-                      <label className="relative inline-flex cursor-pointer items-center">
+                      <label
+                        className={`relative inline-flex items-center ${
+                          isViewMode ? "cursor-not-allowed" : "cursor-pointer"
+                        }`}
+                      >
                         <input
                           type="checkbox"
                           className="peer sr-only"
                           checked={row.is_half_day}
                           onChange={(e) =>
-                            updateHoliday(row.id, "is_half_day", e.target.checked)
+                            updateHoliday(
+                              row.id,
+                              "is_half_day",
+                              e.target.checked,
+                            )
                           }
+                          disabled={isViewMode}
                         />
-                        <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
+                        <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none peer-disabled:opacity-50"></div>
                       </label>
                     </div>
 
-                    <div className="hl-cell" style={{ justifyContent: "center" }}>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveHolidayRow(row.id)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          width: 22,
-                          height: 22,
-                          borderRadius: 4,
-                          border: "none",
-                          background: "transparent",
-                          cursor: "pointer",
-                          color: "#9ca3af",
-                          transition: "all 0.15s",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = "#ef4444";
-                          e.currentTarget.style.background = "#fef2f2";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = "#9ca3af";
-                          e.currentTarget.style.background = "transparent";
-                        }}
+                    {!isViewMode && (
+                      <div
+                        className="hl-cell"
+                        style={{ justifyContent: "center" }}
                       >
-                        <Trash2 style={{ width: 13, height: 13 }} />
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveHolidayRow(row.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 22,
+                            height: 22,
+                            borderRadius: 4,
+                            border: "none",
+                            background: "transparent",
+                            cursor: "pointer",
+                            color: "#9ca3af",
+                            transition: "all 0.15s",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = "#ef4444";
+                            e.currentTarget.style.background = "#fef2f2";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = "#9ca3af";
+                            e.currentTarget.style.background = "transparent";
+                          }}
+                        >
+                          <Trash2 style={{ width: 13, height: 13 }} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
 
@@ -579,48 +636,51 @@ export const HolidayListModal: React.FC<Props> = ({
                       color: "#6b7280",
                     }}
                   >
-                    No holidays added yet. Click Add Row to start.
+                    No holidays added yet.
+                    {!isViewMode && " Click Add Row to start."}
                   </div>
                 )}
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "6px 10px",
-                  borderTop: "1px solid #e5e7eb",
-                  background: "#fff",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={handleAddHolidayRow}
+              {!isViewMode && (
+                <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 4,
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 6,
-                    background: "#F7F5FF",
-                    padding: "4px 10px",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#3F25C8",
-                    cursor: "pointer",
-                    transition: "background 0.15s",
+                    padding: "6px 10px",
+                    borderTop: "1px solid #e5e7eb",
+                    background: "#fff",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "#ebe6ff")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "#F7F5FF")
-                  }
                 >
-                  <Plus style={{ width: 12, height: 12 }} />
-                  Add Row
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={handleAddHolidayRow}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 6,
+                      background: "#F7F5FF",
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#3F25C8",
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "#ebe6ff")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "#F7F5FF")
+                    }
+                  >
+                    <Plus style={{ width: 12, height: 12 }} />
+                    Add Row
+                  </button>
+                </div>
+              )}
             </div>
           </section>
         </div>
