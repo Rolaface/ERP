@@ -1024,19 +1024,19 @@ const GlobalModalHandler: React.FC = () => {
   );
 
       case "shiftType":
-        return wrappedModal(
-          <ShiftTypeModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            initialData={getInitialData(modal.initialData)}
-            onSuccess={() => {
-              if (context?.onSuccess) context.onSuccess(undefined);
-
-            }}
-          />,
-        );
+  return wrappedModal(
+    <ShiftTypeModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      isViewMode={context?.isViewMode ?? false}  // ← add this
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+    />,
+  );
 
       case "scanPI":
         return wrappedModal(

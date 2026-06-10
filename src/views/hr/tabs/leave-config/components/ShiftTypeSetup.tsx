@@ -80,10 +80,15 @@ export function ShiftTypeSetup() {
         render: (row) => (
           <ActionGroup>
             <ActionButton
-              type="view"
-              iconOnly
-              onClick={() => openShiftTypeModal(row, true, { onSuccess: fetchAll }, { isViewMode: true, title: "" })}
-            />
+  type="view"
+  iconOnly
+  onClick={() => openShiftTypeModal(
+    row,
+    true,
+    { onSuccess: fetchAll, isViewMode: true },  
+    { title: "" },                             
+  )}
+/>
             <ActionButton
               type="edit"
               iconOnly
