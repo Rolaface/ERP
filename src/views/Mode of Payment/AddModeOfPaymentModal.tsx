@@ -17,7 +17,7 @@ interface Props {
   modalId: string;
   initialData?: any;
   isEdit?: boolean;
-  isViewMode?:boolean
+  isViewMode?: boolean
 }
 
 const AddModeOfPaymentModal: React.FC<Props> = ({
@@ -27,7 +27,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
   modalId,
   initialData,
   isEdit,
-  isViewMode=false,
+  isViewMode = false,
 }) => {
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
@@ -41,7 +41,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
     companyLoading,
   } = useModeOfPaymentLogic({
     onSubmit, onClose, initialData,
-    isEdit,isViewMode
+    isEdit, isViewMode
   });
 
   const handleClose = () => {
@@ -78,7 +78,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
         Cancel
       </Button>
 
-     {!isViewMode && (
+      {!isViewMode && (
         <Button
           variant="primary"
           onClick={handleSubmitWithDirtyReset}
@@ -99,7 +99,13 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
       onClose={() => handleCloseWithConfirm(handleClose, modalId)}
       // title={isEdit ? "Edit Mode of Payment" : "Add Mode of Payment"}
       title={isViewMode ? "View Mode of Payment" : isEdit ? "Edit Mode of Payment" : "Add Mode of Payment"}
-      subtitle="Configure mode of payment"
+      subtitle={
+        isViewMode
+          ? "Review payment details"
+          : isEdit
+            ? "Edit payment configuration"
+            : "Configure a new payment method"
+      }
       footer={footer}
       customWidth="60vw"
       height="48vh"
