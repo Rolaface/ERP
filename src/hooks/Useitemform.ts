@@ -148,6 +148,7 @@ export const emptyForm: ItemFormData = {
   purchaseAccount: "",
   countryCode: "",
   dimensionUnit: "",
+  dimensionUOM: "", 
   weight: "",
   weightUnit: "",
   dimensionLength: "",
@@ -194,6 +195,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   dimensionLength: form.dimensionLength,
   dimensionWidth: form.dimensionWidth,
   dimensionHeight: form.dimensionHeight,
+  dimensionUOM: form.dimensionUnit, 
   brand: form.brand,
   countryOfOrigin: form.originNationCode,
   is_stock_item: form.trackInventory,
@@ -253,6 +255,7 @@ const mapApiToForm = (item: any) => {
     // PACKING 
     packingUnit: String(item.packingUnit || 1),
     packingSize: String(item.packingSize || 1),
+    
 
     // INVENTORY
     brand: item.brand || "",
@@ -265,7 +268,7 @@ const mapApiToForm = (item: any) => {
 
     // COUNTRY
     originNationCode: item.countryOfOrigin || "",
-
+dimensionUnit: item.dimensionUOM || "cm",
     // VENDOR
     preferredVendor: item.vendorInfo?.preferredVendor || "",
     preferredVendorName: item.vendorInfo?.preferredVendorName || "",
