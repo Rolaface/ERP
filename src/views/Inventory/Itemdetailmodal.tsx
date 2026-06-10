@@ -22,7 +22,6 @@ import {
   BookOpen,
 } from "lucide-react";
 
-// Import your app shell components
 import {
   AppPage,
   AppPageBody,
@@ -726,15 +725,24 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                       />
                       <DetailField
                         label="Length"
-                        value={dimensionDisplay(item.dimensionLength)}
+                        value={dimensionDisplay(
+                          item.dimensionLength,
+                          (item as any).dimensionUOM,
+                        )}
                       />
                       <DetailField
                         label="Width"
-                        value={dimensionDisplay(item.dimensionWidth)}
+                        value={dimensionDisplay(
+                          item.dimensionWidth,
+                          (item as any).dimensionUOM,
+                        )}
                       />
                       <DetailField
                         label="Height"
-                        value={dimensionDisplay(item.dimensionHeight)}
+                        value={dimensionDisplay(
+                          item.dimensionHeight,
+                          (item as any).dimensionUOM,
+                        )}
                       />
                       <DetailField label="INS" value={item.ins} />
                     </div>
