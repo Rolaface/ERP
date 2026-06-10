@@ -197,7 +197,7 @@ const S: React.FC<{ title: string }> = ({ title }) => (
   </div>
 );
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+
 const ExpenseClaimDetailView: React.FC<Props> = ({
   open,
   expenseData,

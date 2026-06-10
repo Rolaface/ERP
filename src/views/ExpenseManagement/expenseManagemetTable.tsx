@@ -50,10 +50,11 @@ interface ExpenseSummary {
 }
 
 const statusOptions = [
-  { label: "Draft", value: "Draft" },
+  { label: "Pending for Approval", value: "Draft" },
   { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
   { label: "Unpaid", value: "Unpaid" },
+  { label: "Rejected", value: "Rejected" },
 ];
 
 const formatDate = (date: string) => {
