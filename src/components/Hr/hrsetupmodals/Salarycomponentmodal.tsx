@@ -15,253 +15,18 @@ import {
 import {
   ModalInput,
   ModalSelect,
+  NumericInput,
 } from "../../../components/ui/modal/modalComponent";
 import {
   showApiError,
   showSuccess,
   showValidationError,
 } from "../../../utils/alert";
-import { NumericInput } from "../../../components/ui/modal/modalComponent";
+import { STYLES, AttrRow, BenefitCb } from "./Salarycomponentmodal.styles";
 
-const STYLES = `
-@keyframes sc-fadein {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.sc-fadein { animation: sc-fadein 0.15s ease forwards; }
-
-/* ── Scrollable body ── */
-.sc-body { overflow-y: auto; overflow-x: hidden; }
-.sc-body::-webkit-scrollbar { width: 4px; }
-.sc-body::-webkit-scrollbar-track { background: transparent; }
-.sc-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-
-/* ── Middle two-column grid: [7fr 3fr] ── */
-.sc-mid {
-  display: grid;
-  grid-template-columns: 7fr 3fr;
-  gap: 20px;
-  align-items: stretch;
-}
-
-/* LEFT column stacks Amount + Ledger vertically */
-.sc-left { display: flex; flex-direction: column; gap: 20px; }
-
-/* ── Amount Configuration section — gray bg ── */
-.sc-amount-section {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  display: flex;
-  flex-direction: column;
-}
-.sc-amount-section h3 {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #111827;
-  margin: 0 0 14px 0;
-}
-
-/* ── Toggle row inside amount section ── */
-.sc-toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.sc-toggle-pill {
-  display: flex;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 4px;
-  gap: 0;
-  flex-shrink: 0;
-}
-.sc-toggle-pill button {
-  padding: 4px 11px;
-  border-radius: 6px;
-  border: none;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  background: transparent;
-  color: #6b7280;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-.sc-toggle-pill button.active {
-  background: #1e3a8a;
-  color: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-}
-.sc-toggle-input {
-  flex: 1; min-width: 120px;
-  font-size: 13px;
-  background: #fff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 8px 10px;
-  outline: none;
-  color: #111827;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  box-sizing: border-box;
-  height: 38px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
-}
-.sc-toggle-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
-}
-.sc-toggle-input::placeholder { color: #9ca3af; }
-
-/* ── Ledger section — white bg ── */
-.sc-ledger-section {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.sc-ledger-section .sc-sec-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f3f4f6;
-}
-.sc-ledger-section h3 {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #111827;
-  margin: 0;
-}
-.sc-ledger-row { display: flex; align-items: flex-end; gap: 8px; }
-.sc-ledger-row + .sc-ledger-row {
-  margin-top: 10px; padding-top: 10px;
-  border-top: 1px solid #f3f4f6;
-}
-
-/* ── RIGHT column — Attributes section (blue-tinted, h-full) ── */
-.sc-right { display: flex; flex-direction: column; }
-.sc-attrs-section {
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.sc-attrs-section h3 {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #1e3a8a;
-  margin: 0 0 14px 0;
-}
-
-/* ── Attribute checkbox rows ── */
-.sc-attr-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-height: 28px;
-  padding: 4px 0;
-}
-.sc-attr-spacer { min-height: 28px; padding: 4px 0; }
-
-.sc-attr-row input[type="checkbox"] {
-  width: 16px; height: 16px;
-  flex-shrink: 0; margin-top: 1px;
-  border-radius: 3px;
-  border: 1.5px solid #d1d5db;
-  background: #fff;
-  appearance: none; -webkit-appearance: none;
-  cursor: pointer; position: relative;
-  transition: border-color 0.1s, background 0.1s;
-}
-.sc-attr-row input[type="checkbox"]:checked {
-  background: #2563eb;
-  border-color: #2563eb;
-}
-.sc-attr-row input[type="checkbox"]:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
-}
-.sc-attr-row input[type="checkbox"]:checked::after {
-  content: '';
-  position: absolute; left: 3px; top: 0px;
-  width: 5px; height: 9px;
-  border: 2px solid #fff; border-top: none; border-left: none;
-  transform: rotate(45deg);
-}
-.sc-attr-row label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1f2937;
-  cursor: pointer;
-  line-height: 1.4;
-}
-
-/* ── Benefit config section ── */
-.sc-benefit-section {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-}
-.sc-benefit-section h3 {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #111827;
-  margin: 0 0 14px 0;
-}
-.sc-benefit-check-row {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 5px 0;
-  border-bottom: 1px solid #f3f4f6;
-}
-.sc-benefit-check-row:last-child { border-bottom: none; }
-.sc-benefit-check-row input[type="checkbox"] {
-  width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px;
-  border-radius: 3px; border: 1.5px solid #d1d5db; background: #fff;
-  appearance: none; -webkit-appearance: none;
-  cursor: pointer; position: relative;
-  transition: border-color 0.1s, background 0.1s;
-}
-.sc-benefit-check-row input[type="checkbox"]:checked {
-  background: #2563eb; border-color: #2563eb;
-}
-.sc-benefit-check-row input[type="checkbox"]:checked::after {
-  content: ''; position: absolute; left: 3px; top: 0px;
-  width: 5px; height: 9px;
-  border: 2px solid #fff; border-top: none; border-left: none;
-  transform: rotate(45deg);
-}
-.sc-benefit-check-row label {
-  font-size: 13px; font-weight: 500; color: #1f2937;
-  cursor: pointer; line-height: 1.4;
-}
-`;
-
+/* ─────────────────────────────────────────────
+   CONSTANTS
+───────────────────────────────────────────── */
 const PAYOUT_METHODS = [
   {
     label: "Accrue and payout at end of payroll period",
@@ -276,14 +41,6 @@ const PAYOUT_METHODS = [
     value: "Allow claim for full benefit amount",
   },
 ];
-
-interface Props {
-  modalId: string;
-  isOpen: boolean;
-  onClose: () => void;
-  initialData?: SalaryComponent | null;
-  onSuccess?: () => void;
-}
 
 const EMPTY: Omit<SalaryComponent, "name"> = {
   salary_component: "",
@@ -307,42 +64,20 @@ const EMPTY: Omit<SalaryComponent, "name"> = {
   is_income_tax_component: 0,
 };
 
-/* ── Attribute checkbox (right blue panel) ── */
-const Attr: React.FC<{
-  id: string;
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}> = ({ id, label, checked, onChange }) => (
-  <div className="sc-attr-row">
-    <input
-      type="checkbox"
-      id={id}
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-    />
-    <label htmlFor={id}>{label}</label>
-  </div>
-);
+/* ─────────────────────────────────────────────
+   PROPS
+───────────────────────────────────────────── */
+interface Props {
+  modalId: string;
+  isOpen: boolean;
+  onClose: () => void;
+  initialData?: SalaryComponent | null;
+  onSuccess?: () => void;
+}
 
-/* ── Benefit checkbox (white benefit panel) ── */
-const BenefitCb: React.FC<{
-  id: string;
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}> = ({ id, label, checked, onChange }) => (
-  <div className="sc-benefit-check-row">
-    <input
-      type="checkbox"
-      id={id}
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-    />
-    <label htmlFor={id}>{label}</label>
-  </div>
-);
-
+/* ─────────────────────────────────────────────
+   COMPONENT
+───────────────────────────────────────────── */
 export const SalaryComponentModal: React.FC<Props> = ({
   modalId,
   isOpen,
@@ -363,9 +98,10 @@ export const SalaryComponentModal: React.FC<Props> = ({
     activate,
     deactivate,
   } = useUnsavedChangesGuard();
+
   /* inject styles once */
   useEffect(() => {
-    const id = "sc-styles-v9";
+    const id = "sc-styles-v10";
     if (!document.getElementById(id)) {
       const s = document.createElement("style");
       s.id = id;
@@ -383,8 +119,11 @@ export const SalaryComponentModal: React.FC<Props> = ({
     }
     if (isEdit && initialData?.name) loadSalaryComponent(initialData.name);
     else setForm({ ...EMPTY, accounts: [{ account: "" }] });
-    return activate();
+    // activate returns a cleanup (clears the 300ms timer)
+    const cleanup = activate();
+    return cleanup;
   }, [isOpen, isEdit, initialData?.name]);
+
   const loadSalaryComponent = async (name: string) => {
     try {
       setLoadingData(true);
@@ -430,10 +169,14 @@ export const SalaryComponentModal: React.FC<Props> = ({
     },
     [markDirty],
   );
-  const tog = (key: keyof Omit<SalaryComponent, "name">) => (val: boolean) => {
-    markDirty();
-    setForm((prev) => ({ ...prev, [key]: val ? 1 : 0 }));
-  };
+
+  const tog = useCallback(
+    (key: keyof Omit<SalaryComponent, "name">) => (val: boolean) => {
+      markDirty();
+      setForm((prev) => ({ ...prev, [key]: val ? 1 : 0 }));
+    },
+    [markDirty],
+  );
 
   const handleTypeChange = (newType: SalaryComponentType) => {
     markDirty();
@@ -483,6 +226,10 @@ export const SalaryComponentModal: React.FC<Props> = ({
 
     try {
       setSaving(true);
+      const isEarning = form.type === "Earning";
+      const isDeduction = form.type === "Deduction";
+      const isFlexible = Boolean(form.is_flexible_benefit);
+
       const payload: Omit<SalaryComponent, "name"> = {
         salary_component: form.salary_component,
         salary_component_abbr: form.salary_component_abbr,
@@ -513,9 +260,9 @@ export const SalaryComponentModal: React.FC<Props> = ({
           is_income_tax_component: form.is_income_tax_component,
         }),
       };
+
       if (isEdit && initialData?.name) {
         await updateSalaryComponent(initialData.name, payload);
-
         try {
           await syncSalaryComponentFormula(
             payload.salary_component || form.salary_component,
@@ -523,7 +270,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
         } catch (error) {
           console.error("Salary structure sync failed", error);
         }
-
         showSuccess("Salary component updated");
       } else {
         await createSalaryComponent(payload);
@@ -539,6 +285,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
     }
   };
 
+  /* ── derived state ── */
   const isEarning = form.type === "Earning";
   const isDeduction = form.type === "Deduction";
   const isFlexible = Boolean(form.is_flexible_benefit);
@@ -547,6 +294,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const showPayoutUnclaimed =
     payoutMethod === "Accrue per cycle, pay only on claim";
 
+  /* ── footer ── */
   const footer = (
     <div className="flex w-full items-center justify-end gap-3">
       <button
@@ -568,6 +316,9 @@ export const SalaryComponentModal: React.FC<Props> = ({
     </div>
   );
 
+  /* ─────────────────────────────────────────────
+     RENDER
+  ───────────────────────────────────────────── */
   return (
     <MinimizableModal
       modalId={modalId}
@@ -576,67 +327,57 @@ export const SalaryComponentModal: React.FC<Props> = ({
       title={isEdit ? "Edit Salary Component" : "New Salary Component"}
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
-      customWidth="55vw"
       height="70vh"
+      customWidth="70vw"
       footer={footer}
       formContainerRef={containerRef}
     >
-      <div
-        className="sc-body space-y-5 pb-2 px-1"
-        style={{ maxHeight: "calc(80vh - 160px)" }}
-      >
-        {/* ══ ROW 1: Type | Component Name | Abbreviation | Description ══ */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.2fr 4fr 1.8fr 4fr",
-            gap: 16,
-            alignItems: "end",
-          }}
-        >
-          <ModalSelect
-            label="Type"
-            value={form.type}
-            onChange={(e) =>
-              handleTypeChange(e.target.value as SalaryComponentType)
-            }
-            options={[
-              { label: "Earning", value: "Earning" },
-              { label: "Deduction", value: "Deduction" },
-            ]}
-          />
-          <ModalInput
-            label="Component Name"
-            value={form.salary_component}
-            required
-            placeholder="e.g. Basic Salary"
-            onChange={(e) => set("salary_component", e.target.value)}
-          />
-          <ModalInput
-            label="Abbreviation"
-            placeholder="e.g. BS"
-            maxLength={8}
-            value={form.salary_component_abbr}
-            required
-            onChange={(e) =>
-              set("salary_component_abbr", e.target.value.toUpperCase())
-            }
-          />
-          <ModalInput
-            label="Description"
-            placeholder="Optional description…"
-            value={form.description ?? ""}
-            onChange={(e) => set("description", e.target.value)}
-          />
-        </div>
-
-        {/* ══ MIDDLE: Left col [7fr] + Right col [3fr] ══ */}
-        <div className="sc-mid">
-          {/* ── LEFT column: Amount Config + Ledger stacked ── */}
+      <div className="sc-body pb-2 px-1.5">
+        <div className="sc-layout">
+          {/* ══ LEFT: fields + amount + ledger ══ */}
           <div className="sc-left">
-            {/* Amount Configuration — gray section */}
+            {/* Row 1: Type | Name | Abbr | Description */}
+            <div className="sc-row1">
+              <ModalSelect
+                label="Type"
+                value={form.type}
+                onChange={(e) => {
+                  console.log("SELECT CHANGED:", e.target.value);
+                  handleTypeChange(e.target.value as SalaryComponentType);
+                }}
+                options={[
+                  { label: "Earning", value: "Earning" },
+                  { label: "Deduction", value: "Deduction" },
+                ]}
+              />
+              <ModalInput
+                label="Component Name"
+                value={form.salary_component}
+                required
+                placeholder="e.g. Basic Salary"
+                onChange={(e) => set("salary_component", e.target.value)}
+              />
+              <ModalInput
+                label="Abbreviation"
+                placeholder="e.g. BS"
+                maxLength={8}
+                value={form.salary_component_abbr}
+                required
+                onChange={(e) =>
+                  set("salary_component_abbr", e.target.value.toUpperCase())
+                }
+              />
+              <ModalInput
+                label="Description"
+                placeholder="Optional description…"
+                value={form.description ?? ""}
+                onChange={(e) => set("description", e.target.value)}
+              />
+            </div>
+
+            {/* Amount Configuration */}
             <div className="sc-amount-section">
-              <h3>Amount Configuration</h3>
+              <h3 className="sc-section-title">Amount Configuration</h3>
               <div className="sc-toggle-row">
                 <div className="sc-toggle-pill">
                   <button
@@ -661,22 +402,24 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     className="sc-toggle-input"
                   />
                 ) : (
-                  <input
-                    type="text"
-                    className="sc-toggle-input"
-                    placeholder="e.g. base * 0.4 + DA"
+                  <textarea
+                    className="sc-toggle-input sc-formula-input"
+                    placeholder={`e.g.base_salary * 0.4`}
                     value={form.formula ?? ""}
                     onChange={(e) => set("formula", e.target.value)}
                     spellCheck={false}
+                    rows={4}
                   />
                 )}
               </div>
             </div>
 
-            {/* Ledger Accounts — white section */}
+            {/* Ledger Account */}
             <div className="sc-ledger-section">
               <div className="sc-sec-header">
-                <h3>Ledger Account</h3>
+                <h3 className="sc-section-title" style={{ margin: 0 }}>
+                  Ledger Account
+                </h3>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                 {(form.accounts ?? []).map((acc, idx) => (
@@ -695,127 +438,137 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 ))}
               </div>
             </div>
+
+            {/* Flexible Benefit Configuration */}
+            {isEarning && isFlexible && (
+              <div className="sc-fadein sc-benefit-section">
+                <h3 className="sc-section-title">Benefit Configuration</h3>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                    marginBottom: 14,
+                  }}
+                >
+                  <ModalSelect
+                    label="Payout Method *"
+                    value={payoutMethod}
+                    onChange={(e) =>
+                      set(
+                        "payout_method",
+                        e.target.value as SalaryComponent["payout_method"],
+                      )
+                    }
+                    options={[
+                      { label: "Select method…", value: "" },
+                      ...PAYOUT_METHODS,
+                    ]}
+                  />
+                  <ModalInput
+                    label="Max Benefit Amount (Yearly)"
+                    type="number"
+                    className="no-spinner"
+                    value={form.max_benefit_amount}
+                    placeholder="0"
+                    onChange={(e) =>
+                      set("max_benefit_amount", parseFloat(e.target.value))
+                    }
+                  />
+                </div>
+                {showPayoutUnclaimed && (
+                  <BenefitCb
+                    id="ben-payout-unclaimed"
+                    label="Payout Unclaimed Amount in Final Payroll Cycle"
+                    checked={Boolean(form.pay_against_benefit_claim)}
+                    onChange={tog("pay_against_benefit_claim")}
+                  />
+                )}
+                <BenefitCb
+                  id="ben-tax-impact"
+                  label="Only Tax Impact"
+                  checked={Boolean(form.only_tax_impact)}
+                  onChange={tog("only_tax_impact")}
+                />
+                <BenefitCb
+                  id="ben-separate-entry"
+                  label="Separate Payment Entry Against Benefit Claim"
+                  checked={Boolean(
+                    form.create_separate_payment_entry_against_benefit_claim,
+                  )}
+                  onChange={tog(
+                    "create_separate_payment_entry_against_benefit_claim",
+                  )}
+                />
+              </div>
+            )}
           </div>
           {/* /sc-left */}
 
-          {/* ── RIGHT column: Attributes (blue-tinted, full height) ── */}
+          {/* ══ RIGHT: Attributes panel (sticky, never scrolls away) ══ */}
           <div className="sc-right">
             <div className="sc-attrs-section">
-              <h3>Attributes</h3>
+              <h3 className="sc-attrs-title">Attributes</h3>
 
-              <Attr
+              {/* common — always shown */}
+              <AttrRow
                 id="attr-pay-days"
                 label="Depends on Payment Days"
+                description="Prorates the amount based on employee attendance. Formula: (Amount / Total Days) * Working Days."
                 checked={Boolean(form.depends_on_payment_days)}
                 onChange={tog("depends_on_payment_days")}
               />
-              <Attr
-                id="attr-variable-amt"
+              <AttrRow
+                id="attr-remove-zero"
                 label="Remove If Zero Valued"
+                description="Hides this component from the salary slip if the calculated value is ₹0."
                 checked={Boolean(form.remove_if_zero_valued)}
                 onChange={tog("remove_if_zero_valued")}
               />
 
-              {isEarning ? (
-                <Attr
+              {/* Earning-only */}
+              {isEarning && (
+                <AttrRow
                   id="attr-tax"
                   label="Tax Applicable"
+                  description="Includes this earning in the taxable income calculation for income tax."
                   checked={Boolean(form.is_tax_applicable)}
                   onChange={tog("is_tax_applicable")}
                 />
-              ) : (
-                <Attr
-                  id="attr-variable"
-                  label="Variable Based on Taxable Salary"
-                  checked={Boolean(form.variable_based_on_taxable_salary)}
-                  onChange={tog("variable_based_on_taxable_salary")}
-                />
               )}
 
-              {isDeduction ? (
-                <Attr
-                  id="attr-income-tax"
-                  label="Income Tax Component"
-                  checked={Boolean(form.is_income_tax_component)}
-                  onChange={(checked) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      is_income_tax_component: checked ? 1 : 0,
-                      variable_based_on_taxable_salary: checked
-                        ? 1
-                        : prev.variable_based_on_taxable_salary,
-                    }))
-                  }
-                />
-              ) : null}
+              {/* Deduction-only */}
+              {isDeduction && (
+                <>
+                  <AttrRow
+                    id="attr-variable"
+                    label="Variable Based on Taxable Salary"
+                    description="Calculates the amount as a percentage of the employee's total taxable earnings."
+                    checked={Boolean(form.variable_based_on_taxable_salary)}
+                    onChange={tog("variable_based_on_taxable_salary")}
+                  />
+                  <AttrRow
+                    id="attr-income-tax"
+                    label="Income Tax Component"
+                    description="Marks this deduction specifically as the employee's monthly income tax payment."
+                    checked={Boolean(form.is_income_tax_component)}
+                    onChange={(checked) => {
+                      markDirty();
+                      setForm((prev) => ({
+                        ...prev,
+                        is_income_tax_component: checked ? 1 : 0,
+                        variable_based_on_taxable_salary: checked
+                          ? 1
+                          : prev.variable_based_on_taxable_salary,
+                      }));
+                    }}
+                  />
+                </>
+              )}
             </div>
           </div>
+          {/* /sc-right */}
         </div>
-        {/* /sc-mid */}
-
-        {/* ══ Flexible Benefit Configuration (Earning + flexible enabled) ══ */}
-        {isEarning && isFlexible && (
-          <div className="sc-fadein sc-benefit-section">
-            <h3>Benefit Configuration</h3>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 16,
-                marginBottom: 14,
-              }}
-            >
-              <ModalSelect
-                label="Payout Method *"
-                value={payoutMethod}
-                onChange={(e) =>
-                  set(
-                    "payout_method",
-                    e.target.value as SalaryComponent["payout_method"],
-                  )
-                }
-                options={[
-                  { label: "Select method…", value: "" },
-                  ...PAYOUT_METHODS,
-                ]}
-              />
-              <ModalInput
-                label="Max Benefit Amount (Yearly)"
-                type="number"
-                className="no-spinner"
-                value={form.max_benefit_amount}
-                placeholder="0"
-                onChange={(e) =>
-                  set("max_benefit_amount", parseFloat(e.target.value))
-                }
-              />
-            </div>
-            {showPayoutUnclaimed && (
-              <BenefitCb
-                id="ben-payout-unclaimed"
-                label="Payout Unclaimed Amount in Final Payroll Cycle"
-                checked={Boolean(form.pay_against_benefit_claim)}
-                onChange={tog("pay_against_benefit_claim")}
-              />
-            )}
-            <BenefitCb
-              id="ben-tax-impact"
-              label="Only Tax Impact"
-              checked={Boolean(form.only_tax_impact)}
-              onChange={tog("only_tax_impact")}
-            />
-            <BenefitCb
-              id="ben-separate-entry"
-              label="Separate Payment Entry Against Benefit Claim"
-              checked={Boolean(
-                form.create_separate_payment_entry_against_benefit_claim,
-              )}
-              onChange={tog(
-                "create_separate_payment_entry_against_benefit_claim",
-              )}
-            />
-          </div>
-        )}
       </div>
     </MinimizableModal>
   );
