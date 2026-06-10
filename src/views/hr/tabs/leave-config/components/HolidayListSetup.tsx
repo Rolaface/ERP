@@ -1,7 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 
 import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
-import ActionButton, { ActionGroup } from "../../../../../components/ui/Table/ActionButton";
+import ActionButton, {
+  ActionGroup,
+  ActionMenu,
+} from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
 
 import { deleteHolidayListByName } from "../../../../../api/holidayListApi";
@@ -27,7 +30,6 @@ export function HolidayListSetup() {
 
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  // ─── Delete Handler ────────────────────────────────────────────────────────
   const handleDelete = useCallback(
     async (row: HolidayList) => {
       if (!row.name) return;
@@ -68,12 +70,16 @@ export function HolidayListSetup() {
       {
         key: "from_date",
         header: "From Date",
-        render: (row) => <span className="text-sm text-sub">{row.from_date}</span>,
+        render: (row) => (
+          <span className="text-sm text-sub">{row.from_date}</span>
+        ),
       },
       {
         key: "to_date",
         header: "To Date",
-        render: (row) => <span className="text-sm text-sub">{row.to_date}</span>,
+        render: (row) => (
+          <span className="text-sm text-sub">{row.to_date}</span>
+        ),
       },
       {
         key: "actions",
@@ -82,17 +88,26 @@ export function HolidayListSetup() {
         render: (row) => (
           <ActionGroup>
             <ActionButton
-              type="edit"
+              type="view"
               iconOnly
-              onClick={() => openHolidayListModal(row, true, { onSuccess: fetchAll })}
-              disabled={actionLoadingId === row.name}
+              onClick={() =>
+                openHolidayListModal(
+                  row,
+                  true,
+                  { onSuccess: fetchAll, isViewMode: true },
+                  { title: "" },
+                )
+              }
             />
             <ActionButton
-              type="delete"
+              type="edit"
               iconOnly
-              onClick={() => handleDelete(row)}
+              onClick={() =>
+                openHolidayListModal(row, true, { onSuccess: fetchAll })
+              }
               disabled={actionLoadingId === row.name}
             />
+            <ActionMenu onDelete={() => handleDelete(row)} />
           </ActionGroup>
         ),
       },
@@ -107,8 +122,6 @@ export function HolidayListSetup() {
       loading={loading}
       rowKey={(row) => row.name!}
       tableId="holiday-lists-table"
-
-      // Toolbar
       showToolbar
       toolbarPlaceholder="Search holiday lists..."
       searchValue={search}
@@ -120,9 +133,12 @@ export function HolidayListSetup() {
       addLabel="+ Add Holiday List"
       onAdd={() => openHolidayListModal(null, false, { onSuccess: fetchAll })}
       enableColumnSelector
-      defaultVisibleKeys={["holiday_list_name", "from_date", "to_date", "actions"]}
-
-      // Pagination
+      defaultVisibleKeys={[
+        "holiday_list_name",
+        "from_date",
+        "to_date",
+        "actions",
+      ]}
       currentPage={page}
       totalPages={totalPages}
       totalItems={totalItems}
@@ -133,8 +149,6 @@ export function HolidayListSetup() {
         setPageSize(s);
         setPage(1);
       }}
-
-      // Optional: constrain body height since it's a modal context
       bodyMaxHeight={400}
     />
   );

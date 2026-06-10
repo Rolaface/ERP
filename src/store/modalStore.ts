@@ -801,6 +801,7 @@ export const openLeavePolicyAssignmentModal = (
 export const openHolidayListModal = (
   initialData?: unknown,
   isEdit = false,
+  
   context?: ModalContext,
   meta?: ModalMeta,
 ) => {

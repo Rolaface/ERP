@@ -72,7 +72,7 @@ type Option = {
 
 type BankAccountFilters = {
   company?: boolean;
-  party_type?: "Supplier" | "Customer"|"Employee";
+  party_type?: "Supplier" | "Customer" | "Employee";
   party?: string;
   search?: string;
   page?: number;
@@ -138,13 +138,14 @@ const mapBankResponse = (
 
     case "Account":
       return raw.map((item: any) => ({
-        label: item.name,
+        label: item.account_number
+          ? `${item.account_number} - ${item.account_name}`
+          : item.account_name,
         value: item.name,
         meta: {
           accountNumber: item.account_number,
         },
       }));
-
     case "Shareholder":
       return raw.map((item: any) => ({
         label: item.shareholder_name || item.name,
@@ -614,11 +615,11 @@ export type PaymentTax = {
 export type CreatePaymentEntryPayload = {
   payment_type: "Pay" | "Receive" | "Internal Transfer";
   party_type: string;
-  party_id: string; 
+  party_id: string;
   mode_of_payment: string;
-  payment_date: string; 
+  payment_date: string;
   reference_no?: string;
-  reference_date?: string; 
+  reference_date?: string;
 
   project?: string;
   cost_center?: string;
@@ -630,7 +631,7 @@ export type CreatePaymentEntryPayload = {
   paid_from_account_currency: string;
   paid_from_amount: number;
 
-  paid_to: string; 
+  paid_to: string;
   paid_to_bank_account?: string;
   paid_to_account_currency: string;
   paid_to_amount: number;
