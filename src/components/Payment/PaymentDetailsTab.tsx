@@ -197,6 +197,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
     if (paymentType === "Pay") {
       onFormChange({
         glFrom: selectedMode.defaultAccount ?? "",
+        glFromDisplay: selectedMode.accountName ?? "",
         currencyFrom: selectedMode.currency ?? "",
       });
     } else if (paymentType === "Receive") {
@@ -341,10 +342,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         fetchPartyBanks(partyType, option.value),
       ]);
 
-      console.log("Details received:", details);
       if (!details) return;
-
-      console.log("Calling onFormChange with:", { glFrom: details.companyLedgerAccount });
 
       const base = { partyName: details.partyName || option.label };
       const companyDefaultCurrency = {
@@ -362,8 +360,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           partyBankAccountId: details.partyBankAccountId,
           partyBankAccountName: details.partyBankAccountName,
           glFrom: details.companyLedgerAccount,
+          glFromDisplay: details.companyLedgerAccountName,
           currencyFrom: details.companyLedgerCurrency,
           glTo: isGlToLocked ? form.glTo : details.partyLedgerAccount,
+          glToDisplay: isGlToLocked ? form.glToDisplay : details.partyLedgerAccountName,
           currencyTo: isGlToLocked ? form.currencyTo : details.partyAccountCurrency,
         });
       } else {
@@ -377,8 +377,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           partyBankAccountId: details.partyBankAccountId,
           partyBankAccountName: details.partyBankAccountName,
           glFrom: details.partyLedgerAccount,
+          glFromDisplay: details.partyLedgerAccountName,
           currencyFrom: details.partyAccountCurrency,
           glTo: details.companyLedgerAccount,
+          glToDisplay: details.companyLedgerAccountName,
           currencyTo: details.companyLedgerCurrency,
         });
       }
@@ -554,6 +556,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           companyBankAccountId: option.value,       // item.id → payload
           companyBankAccountName: option.label,     // item.name → display
           glFrom: selected?.ledgerAccount ?? "",
+          glFromDisplay: selected?.ledgerAccountName ?? selected?.ledgerAccount ?? "",
           currencyFrom: selected?.currency ?? "",
         });
       } else {
@@ -563,6 +566,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           partyBankAccountId: option.value,
           partyBankAccountName: option.label,
           glFrom: selected?.ledgerAccount ?? "",
+          glFromDisplay: selected?.ledgerAccountName ?? selected?.ledgerAccount ?? "",
           currencyFrom: selected?.currency ?? "",
         });
       }
@@ -588,6 +592,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           partyBankAccountId: option.value,
           partyBankAccountName: option.label,
           glTo: selected?.ledgerAccount ?? "",
+          glToDisplay: selected?.ledgerAccountName ?? selected?.ledgerAccount ?? "",
           currencyTo: selected?.currency ?? "",
         });
       } else {
@@ -599,6 +604,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
           companyBankAccountId: option.value,
           companyBankAccountName: option.label,
           glTo: selected?.ledgerAccount ?? "",
+          glToDisplay: selected?.ledgerAccountName ?? selected?.ledgerAccount ?? "",
           currencyTo: selected?.currency ?? "",
         });
       }
@@ -628,6 +634,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       const selected = ledgerFromOptions.find((o) => o.value === option.value);
       onFormChange({
         glFrom: option.value ?? "",
+        glFromDisplay: option.label ?? "",
         currencyFrom: selected?.currency ?? "",
       });
     },
@@ -639,6 +646,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
       const selected = ledgerToOptions.find((o) => o.value === option.value);
       onFormChange({
         glTo: option.value ?? "",
+        glToDisplay: option.label ?? "",
         currencyTo: selected?.currency ?? "",
       });
     },
@@ -826,10 +834,10 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                   fetchOptions={handleFromBankFetchOptions}
                 />
               )}
-              <div className="grid grid-cols-[1fr_100px] gap-2">
+              <div className="grid grid-cols-[1fr_90px] gap-2">
                 <SearchSelect2
                   label="Account (GL)"
-                  value={form.glFrom ?? ""}
+                  value={form.glFromDisplay ?? form.glFrom ?? ""}
                   onChange={handleGlFromChange}
                   fetchOptions={handleGlFromFetchOptions}
                 />
@@ -858,7 +866,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                   fetchOptions={handleToBankFetchOptions}
                 />
               )}
-              <div className="grid grid-cols-[1fr_100px] gap-2">
+              <div className="grid grid-cols-[1fr_90px] gap-2">
                 {isGlToLocked ? (
                   <ModalInput
                     label="Account (GL)"
@@ -870,7 +878,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                 ) : (
                   <SearchSelect2
                     label="Account (GL)"
-                    value={form.glTo ?? ""}
+                    value={form.glToDisplay ?? form.glTo ?? ""}
                     onChange={handleGlToChange}
                     fetchOptions={handleGlToFetchOptions}
                   />

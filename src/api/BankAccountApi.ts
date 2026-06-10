@@ -332,6 +332,7 @@ export async function getAllModeOfPayment(
           type: item.type,
           enabled: item.enabled === 1,
           defaultAccount: item.defaultAccount,
+          accountName: item.accountName,
           currency: item.currency ?? "",
         })) || [],
       pagination: raw?.pagination || {
@@ -403,6 +404,7 @@ export async function updateModeOfPaymentStatus(payload: {
 
 export type PartyDetails = {
   partyLedgerAccount: string;
+  partyLedgerAccountName: string;
   partyName: string;
   partyAccountCurrency: string;
   partyBankAccountId: string;      // id → payload
@@ -410,6 +412,7 @@ export type PartyDetails = {
   companyBankAccountId: string;    // id → payload
   companyBankAccountName: string;  // name → UI display
   companyLedgerAccount: string;
+  companyLedgerAccountName: string;
   companyLedgerCurrency: string;
   companyDefaultCurrency: string;
   total_outstanding_amount?: number;
@@ -435,6 +438,7 @@ export async function getPartyDetails(
 
     return {
       partyLedgerAccount: d?.party_ledger_account ?? "",
+      partyLedgerAccountName: d?.party_ledger_account_name ?? "", //UI display
       partyName: d?.party_name ?? "",
       partyAccountCurrency: d?.party_account_currency ?? "",
       partyBankAccountId: d?.party?.id ?? "",           // id → payload
@@ -442,6 +446,7 @@ export async function getPartyDetails(
       companyBankAccountId: d?.company?.id ?? "",        // id → payload
       companyBankAccountName: d?.company?.name ?? "",    // name → UI display
       companyLedgerAccount: d?.company_account_ledger ?? "",
+      companyLedgerAccountName: d?.company_account_ledger_name ?? "",   // UI display
       companyLedgerCurrency: d?.company_account_ledger_currency ?? "",
       companyDefaultCurrency: d?.company_default_currency ?? "",
       total_outstanding_amount: d?.total_outstanding_amount ?? null,
@@ -461,6 +466,7 @@ export type BankAccountOption = {
   label: string;
   value: string;
   ledgerAccount: string;
+  ledgerAccountName: string;
   currency: string;
 };
 
@@ -496,6 +502,7 @@ export async function getBankAccountOptions(filters: {
         label: item.name,
         value: item.id,
         ledgerAccount: item.ledgerAccount ?? "",
+        ledgerAccountName: item.ledgerAccountName ?? "",
         currency: item.currency ?? "",
       }));
   } catch {
@@ -508,6 +515,7 @@ export type LedgerAccountOption = {
   name: string;
   account_currency: string;
   account_number: string;
+  account_name: string;
 };
 
 
@@ -534,6 +542,7 @@ export async function getLedgerAccount(
 
     return raw.map((item) => ({
       name: item.name,
+      account_name: item.account_name ?? "",
       account_currency: item.account_currency ?? "",
       account_number: item.account_number ?? "",
     }));
