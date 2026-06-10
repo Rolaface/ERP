@@ -13,6 +13,7 @@ import {
 import PayrollEntryDetail from "./payrolldetail/payrollentrydetail";
 import { ACTION_ICONS } from "../../../components/UI_Utils/statusActionIcons";
 import { DateRangeFilter } from "../../../components/ui/modal/DateRangeFilter";
+import { DateDisplay } from "../../../components/UI_Utils/Datedisplay";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,7 +101,7 @@ export const PayrollDashboard: React.FC<Props> = ({
   width: "130px",
   minWidth: "130px",
   render: (row) => (
-    <span className="text-sm text-sub whitespace-nowrap pl-2">{row.start_date ?? "—"}</span>
+    <DateDisplay date={row.start_date} className="text-sm text-main" />
   ),
 },
 {
@@ -109,7 +110,7 @@ export const PayrollDashboard: React.FC<Props> = ({
   width: "130px",
   minWidth: "130px",
   render: (row) => (
-    <span className="text-sm text-sub whitespace-nowrap">{row.end_date ?? "—"}</span>
+    <DateDisplay date={row.end_date} className="text-sm text-main" />
   ),
 },
     {
