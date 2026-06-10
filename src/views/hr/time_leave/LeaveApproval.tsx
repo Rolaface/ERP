@@ -100,7 +100,7 @@ export default function LeaveApproval() {
   // }, [showHistory, filters.from_date, filters.to_date, filters.status]);
   useEffect(() => {
     getAllLeaveApplied();
-  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize]);
+  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm]);
 
   const getAllLeaveApplied = async () => {
     try {
@@ -138,7 +138,7 @@ export default function LeaveApproval() {
       const limit_page_length = pageSize;
 
       // Pass the pagination params to your API call
-      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length);
+      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length, searchTerm);
       console.log("API Response:", response);
       setData(response || []);
     } catch (err) {
@@ -359,7 +359,10 @@ if (canApproveReject && !isActionDone) {
         data={data}
         showToolbar
         searchValue={searchTerm}
-        onSearch={setSearchTerm}
+        onSearch={(val) => {
+  setSearchTerm(val);
+  setPage(1);
+}}
         enableColumnSelector
         currentPage={page}
         pageSize={pageSize}
