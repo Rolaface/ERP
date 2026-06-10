@@ -16,11 +16,11 @@ import {
 import BarChart from '../components/charts/BarChart';
 import { useHRView } from '../hooks/permission/useHRView';
 import { useCompanyStore } from '../store/companyStore';
+import { Link } from "react-router-dom";
 
 const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
 
 const Dashboard = () => {
-  // HR view mode — only used to render the switch button
   const { viewMode, canSwitchView, toggleViewMode } = useHRView();
   const isEmployeeView = viewMode === "employee";
 
@@ -197,6 +197,7 @@ const Dashboard = () => {
         <div className="flex flex-1 flex-col gap-4 min-w-0">
 
           <div className="grid grid-cols-4 gap-4 shrink-0 h-[100px]">
+          <Link to="/sales?tab=invoices" >
             <InfoBox title="Sales" loading={loadingSummary}
               icon={<Users size={16} className="text-blue-500" />}>
               <div className="text-lg font-bold text-blue-600">{currencyFormatter.format(summaryData?.sales?.totalSales || 0)}</div>
@@ -205,7 +206,9 @@ const Dashboard = () => {
                 <span className="text-red-500">Overdue: {currencyFormatter.format(summaryData?.sales?.totalOverdue || 0)}</span>
               </div>
             </InfoBox>
+            </Link>
 
+            <Link to="/procurement?tab=orders" >
             <InfoBox title="Purchase" loading={loadingSummary}
               icon={<Banknote size={16} className="text-green-500" />}>
               <div className="text-lg font-bold text-amber-600">{currencyFormatter.format(summaryData?.purchase?.totalPurchase || 0)}</div>
@@ -214,7 +217,9 @@ const Dashboard = () => {
                 <span className="text-red-500">Overdue: {currencyFormatter.format(summaryData?.purchase?.totalOverdue || 0)}</span>
               </div>
             </InfoBox>
+            </Link>
 
+            <Link to="/crm?tab=customer-managment" >
             <InfoBox title="Customer" loading={loadingSummary}
               icon={<Users size={16} className="text-blue-500" />}>
               <div className="text-lg font-bold text-emerald-600">{summaryData?.customer?.totalCustomers || 0}</div>
@@ -223,7 +228,9 @@ const Dashboard = () => {
                 <span>Inactive: {summaryData?.customer?.inactiveCustomers || 0}</span>
               </div>
             </InfoBox>
+            </Link>
 
+             <Link to="/procurement?tab=supplier" >
             <InfoBox title="Supplier" loading={loadingSummary}
               icon={<FileText size={16} className="text-amber-500" />}>
               <div className="text-lg font-bold text-purple-600">{summaryData?.supplier?.totalSuppliers || 0}</div>
@@ -232,6 +239,7 @@ const Dashboard = () => {
                 <span>Inactive: {summaryData?.supplier?.inactiveSuppliers || 0}</span>
               </div>
             </InfoBox>
+            </Link>
           </div>
 
           {/* 4 Charts (2x2 Grid) */}

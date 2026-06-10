@@ -7,6 +7,7 @@ import {
   createLeaveApplication,
   getLeaveApplicationById,
   updateLeaveApplication,
+  getAllHolidayLists,
   type LeaveApplication,
 } from "../../../api/leaveApplicationApi";
 import { getEmployeeById, getEmployeeDetailsById } from "../../../api/employeeapi";
@@ -76,34 +77,38 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
   const [empDetails, setEmpDetails] = useState<any>(null);
   const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
   const [leaveApproverName, setLeaveApproverName] = useState<string>("");
+  const [holidayDates, setHolidayDates] = useState<Date[]>([]);
+  const [includeHolidayFlag, setIncludeHolidayFlag] = useState<boolean>(false);
 
-  // useEffect(() => {
-  //   if (!isOpen || !user?.employeeId) return;
+  useEffect(() => {
+  if (!isOpen) return;
 
-  //   const fetchEmployeeData = async () => {
-  //     try {
-  //       const res = await getEmployeeById(user.employeeId!);
-  //       const data = res?.message?.data ?? res?.data ?? res;
-  //       const approver = data?.leave_approver ?? "";
-  //       const approver_name = data?.leave_approver_name ?? "";
-  //       setLeaveApproverName(approver_name);
-  //       setLeaveApprover(approver);
-  //       setLeaveApproverId(approver);
+  const fetchHolidays = async () => {
+    try {
+      const targetYear = calendarMonth.getFullYear();
+      const holidayLists = await getAllHolidayLists(targetYear);
+      
+      // Flatten out all holiday dates from the backend response structure
+      const dates: Date[] = [];
+      holidayLists.forEach((list: any) => {
+        if (list.holidays) {
+          list.holidays.forEach((h: any) => {
+            if (h.holiday_date) {
+               const [y, m, d] = h.holiday_date.split("-").map(Number);
+              dates.push(new Date(y, m - 1, d));
+            }
+          });
+        }
+      });
+      setHolidayDates(dates);
+    } catch (err) {
+      showApiError(parseFrappeError(err) || "Failed to fetch holidays:");
+    }
+  };
 
-  //       const detailsRes = await getEmployeeDetailsById(user.employeeId!);
-  //       const detailsData = detailsRes?.message?.data ?? detailsRes?.data ?? detailsRes;
-        
-  //       if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
-  //       if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
-  //     } catch {
-  //       setLeaveApproverName("");
-  //       setLeaveApprover("");
-  //       setLeaveApproverId("");
-  //     }
-  //   };
+  fetchHolidays();
+}, [isOpen, calendarMonth]);
 
-  //   fetchEmployeeData();
-  // }, [isOpen, user?.employeeId]);
 useEffect(() => {
   if (!isOpen) return;
 
@@ -188,19 +193,50 @@ useEffect(() => {
     return day === 0 || day === 6;
   };
 
-  // ── Day calculation ──────────────────────────────────────────────────────
-  let totalDays  = 0;
-  let workDays   = 0;
-  let dayOffDays = 0;
+// ── Day calculation ──────────────────────────────────────────────────────
+  let totalDays     = 0;
+  let workDays      = 0; 
+  let dayOffDays    = 0; 
+  let holidaysCount = 0; 
 
   if (formData.startDate && formData.endDate) {
     const start   = new Date(formData.startDate + "T00:00:00");
     const end     = new Date(formData.endDate   + "T00:00:00");
     const current = new Date(start);
+
+     const isHoliday = (date: Date) => {
+      return holidayDates.some(
+        (h) =>
+          h.getDate() === date.getDate() &&
+          h.getMonth() === date.getMonth() &&
+          h.getFullYear() === date.getFullYear()
+      );
+    };
+
     while (current <= end) {
       totalDays++;
-      isWeekend(current) ? dayOffDays++ : workDays++;
+      
+      const isWknd = isWeekend(current);
+      const isHol = isHoliday(current);
+
+      // Track stats for the UI
+      if (isWknd) {
+        dayOffDays++;
+      } else if (isHol) {
+        holidaysCount++;
+      }
+
+      if (includeHolidayFlag || (!isWknd && !isHol)) {
+        workDays++;
+      }
+      console.log("includeHolidayFlag",includeHolidayFlag);
+      
       current.setDate(current.getDate() + 1);
+    }
+
+    // Adjust work days if it's a half-day request
+    if (formData.isHalfDay && workDays > 0) {
+      workDays -= 0.5;
     }
   }
 
@@ -364,6 +400,7 @@ title={
             <AdvancedCalendar
               leaves={[]}
               selectedRange={selectedRange}
+              holidays={holidayDates}
               onRangeSelect={handleRangeSelect}
               month={calendarMonth}            
               onMonthChange={setCalendarMonth}
@@ -397,7 +434,8 @@ title={
                     label="Leave Type"
                     required
                     value={formData.type}
-                    onChange={(lt) => setFormData((p) => ({ ...p, type: lt.name }))}
+                    onChange={(lt) => { setFormData((p) => ({ ...p, type: lt.name }));
+                  setIncludeHolidayFlag(lt.include_holiday === 1);}}
                     disabled={isEditMode}
                     leaveBalances={leaveBalances}
                   />
@@ -452,8 +490,8 @@ title={
                   />
                 </div>
 
-                {showSummary && (
-                  <div className="flex items-center gap-3 rounded-lg bg-[var(--border)]/30 px-3 py-2 text-xs text-main">
+               {showSummary && (
+                  <div className="flex flex-wrap items-center gap-3 rounded-lg bg-[var(--border)]/30 px-3 py-2 text-xs text-main">
                     <div className="flex items-center gap-1.5">
                       <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
                       <span className="font-bold text-primary text-sm">{workDays}</span>
@@ -470,9 +508,20 @@ title={
                     <div className="h-3 w-px bg-[var(--border)]" />
 
                     <div className="flex items-center gap-1 text-muted">
-                      <span>Day Off:</span>
+                      <span>Weekends:</span>
                       <span className="font-semibold text-main">{dayOffDays}</span>
                     </div>
+
+                    {/* Dynamically show holidays if the range includes them */}
+                    {holidaysCount > 0 && (
+                      <>
+                        <div className="h-3 w-px bg-[var(--border)]" />
+                        <div className="flex items-center gap-1 text-muted">
+                          <span className="text-indigo-500 font-medium">Holidays:</span>
+                          <span className="font-semibold text-main">{holidaysCount}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -494,58 +543,6 @@ title={
           </div>
 
         </div>
-         {/* <div className="w-full lg:w-[220px] flex-shrink-0 space-y-4 order-1 lg:order-2"> */}
-      
-      {/* Employee Details */}
-      {/* <div className="bg-card rounded-lg p-3 border border-[var(--border)]">
-        <h3 className="text-[12px] font-semibold text-main mb-2">Employee Details</h3>
-        <div className="flex flex-col gap-2 text-xs">
-          <div className="flex items-center gap-2 text-main font-medium">
-            <User size={14} className="text-muted shrink-0" />
-            <span className="truncate">{empDetails?.employee_name ?? "Loading..."}</span>
-          </div>
-          <div className="flex items-center gap-2 text-[11px] text-muted mt-1">
-            <CalendarDays size={12} className="shrink-0" />
-            Joined: {empDetails?.date_of_joining || "-"}
-          </div>
-        </div>
-      </div> */}
-
-      {/* Leave Balances Summary */}
-      {/* <div className="bg-card rounded-lg p-3 border border-[var(--border)]">
-        <h3 className="text-[13px] font-semibold text-main mb-2">Leave Balances</h3>
-        <div className="flex flex-col gap-3">
-          {leaveBalances.length > 0 ? (
-            leaveBalances.map((leave, idx) => (
-              <div key={idx} className="flex flex-col gap-1 border-b border-[var(--border)] pb-2 last:border-0 last:pb-0">
-                <span className="text-[11px] font-semibold text-main truncate" title={leave.leave_type}>
-                  {leave.leave_type}
-                </span>
-                <div className="flex justify-between text-[10px]">
-                  <span className="text-muted">Total Allocated</span>
-                  <span className="font-medium text-main">
-                    {(leave.new_leaves_allocated + leave.opening_balance).toFixed(1)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-[10px]">
-                  <span className="text-muted">Taken</span>
-                  <span className="font-medium text-main">{leave.leaves_taken.toFixed(1)}</span>
-                </div>
-                <div className="mt-1 p-1.5 bg-primary/10 rounded flex justify-between items-center">
-                  <span className="text-[10px] font-semibold text-primary">Balance</span>
-                  <span className="text-[11px] font-bold text-primary">
-                    {leave.balance.toFixed(1)}
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <span className="text-xs text-muted">No balances found.</span>
-          )}
-        </div>
-      </div> */}
-    {/* </div> */}
-
   </div>
 </div>
     </MinimizableModal>
