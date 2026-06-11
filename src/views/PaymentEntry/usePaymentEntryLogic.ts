@@ -199,6 +199,7 @@ export function usePartyBankAccounts() {
 
   const fetchPartyBanks = useCallback(
     async (party_type: string, party: string, search?: string) => {
+      
       setIsLoading(true);
       try {
         const data = await getBankAccountOptions({ party_type, party, search });

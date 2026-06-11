@@ -47,7 +47,7 @@ const ITEMS_PER_PAGE = 5;
 const PIColGroup: React.FC<{ hasRequiresBatch: boolean }> = ({ hasRequiresBatch }) => (
   <colgroup>
     <col style={{ width: "24px" }} />          {/* # */}
-    <col style={{ width: "18%" }} />           {/* Item Name */}
+    <col style={{ width: "15%" }} />           {/* Item Name */}
     <col style={{ width: "52px" }} />          {/* Pkg */}
     <col style={{ width: "82px" }} />          {/* Batch No */}
     <col style={{ width: "56px" }} />          {/* Qty */}
@@ -299,11 +299,11 @@ export const DetailsTab = ({
         </td>
 
         {/* Amount */}
-        <td className="px-1 py-1.5 text-right overflow-hidden">
-          <span className="text-[10px] font-medium text-main whitespace-nowrap">
-            {symbol} {amount.toFixed(2)}
-          </span>
-        </td>
+        <td className="px-1 py-1.5 overflow-hidden">
+  <span className="text-[10px] font-medium text-main whitespace-nowrap block text-right">
+    {symbol} {amount.toFixed(2)}
+  </span>
+</td>
 
         {/* Actions */}
         <td className="px-1 py-1.5 overflow-hidden">

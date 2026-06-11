@@ -89,17 +89,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
 
-  const topRowGridCols = [
-    "220px",
-    "130px",
-    "130px",
-    "100px",
-    ...(showExchangeRate ? ["110px"] : []),
-    "200px",
-    "120px",
-    ...(ui.isLocal ? ["120px"] : []),
-  ].join(" ");
-
   const handleModeFetchOptions = async (q: string) => {
     const res = await getAllModeOfPayment(1, 10, q || "", 1);
     return res.data.map((item: any) => ({
@@ -197,8 +186,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       subtitle="Create and manage invoice details"
       icon={Receipt}
       footer={footerContent}
-      customWidth="125vw"
-      height="81vh"
+      maxWidth="full"
+      height="600px"
     >
       <form
         id="invoiceForm"
@@ -207,14 +196,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         onChange={() => markDirty()}
       >
         {/* ── Tabs ── */}
-        <div className="bg-app border-b border-theme px-8 shrink-0">
-          <div className="flex gap-8">
+        <div className="bg-app border-b border-theme px-4 sm:px-8 shrink-0">
+          <div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-none">
             {(["details", "address", "otherCharges", "terms"] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => ui.setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
                   ui.activeTab === tab
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
@@ -230,65 +219,71 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </div>
 
         {/* ── Tab Content ── */}
-        <div className="overflow-y-auto px-3 py-2">
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
 
           {/* ──────────── DETAILS ──────────── */}
           {ui.activeTab === "details" && (
-            <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
+            <div className="flex flex-col gap-4">
 
-              {/* ── Top fields row — dynamic columns, no phantom gaps ── */}
-              <div
-                className="grid gap-3 items-start"
-                style={{ gridTemplateColumns: topRowGridCols }}
-              >
-                {/* Customer */}
-                <CustomerSelect
-                  value={customerNameDisplay}
-                  onChange={actions.handleCustomerSelect}
-                  className="w-full"
-                />
+              {/* ── Top fields row — flex-wrap so they flow on any width ── */}
+              <div className="flex flex-wrap gap-3 items-end">
+
+                {/* Customer — full width on mobile, fixed on sm+ */}
+                <div className="w-full sm:w-[220px]">
+                  <CustomerSelect
+                    value={customerNameDisplay}
+                    onChange={actions.handleCustomerSelect}
+                    className="w-full"
+                  />
+                </div>
 
                 {/* Date of Invoice */}
-                <DatePickerInput
-                  label="Date of Invoice"
-                  name="dateOfInvoice"
-                  value={formData.dateOfInvoice}
-                  required
-                  onChange={(name, value) =>
-                    actions.handleInputChange({ target: { name, value } } as any)
-                  }
-                />
+                <div className="w-full sm:w-[130px]">
+                  <DatePickerInput
+                    label="Date of Invoice"
+                    name="dateOfInvoice"
+                    value={formData.dateOfInvoice}
+                    required
+                    onChange={(name, value) =>
+                      actions.handleInputChange({ target: { name, value } } as any)
+                    }
+                  />
+                </div>
 
                 {/* Due Date */}
-                <DatePickerInput
-                  label="Due Date"
-                  name="dueDate"
-                  value={formData.dueDate}
-                  required
-                  disabled
-                  onChange={(name, value) =>
-                    actions.handleInputChange({ target: { name, value } } as any)
-                  }
-                />
+                <div className="w-full sm:w-[130px]">
+                  <DatePickerInput
+                    label="Due Date"
+                    name="dueDate"
+                    value={formData.dueDate}
+                    required
+                    disabled
+                    onChange={(name, value) =>
+                      actions.handleInputChange({ target: { name, value } } as any)
+                    }
+                  />
+                </div>
 
                 {/* Currency */}
-                <ModalSelect
-                  label="Currency"
-                  name="currencyCode"
-                  value={formData.currencyCode}
-                  onChange={actions.handleInputChange}
-                  options={
-                    formData.currencyCode
-                      ? [{ value: formData.currencyCode, label: formData.currencyCode }]
-                      : []
-                  }
-                  disabled
-                  className="w-full border border-theme rounded text-[11px] text-main bg-card"
-                />
+                <div className="w-full sm:w-[100px]">
+                  <ModalSelect
+                    label="Currency"
+                    name="currencyCode"
+                    value={formData.currencyCode}
+                    onChange={actions.handleInputChange}
+                    options={
+                      formData.currencyCode
+                        ? [{ value: formData.currencyCode, label: formData.currencyCode }]
+                        : []
+                    }
+                    disabled
+                    className="w-full border border-theme rounded text-[11px] text-main bg-card"
+                  />
+                </div>
 
-                {/* Exchange Rate — only rendered when foreign currency selected */}
+                {/* Exchange Rate — only when foreign currency selected */}
                 {showExchangeRate && (
-                  <div>
+                  <div className="w-full sm:w-[110px]">
                     <ModalInput
                       label={
                         ui.exchangeRateLoading
@@ -310,17 +305,19 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 )}
 
                 {/* Mode of Payment */}
-                <SearchSelect2
-                  label="Mode of Payment"
-                  value={formData.mode ?? ""}
-                  onChange={handleModeChange}
-                  fetchOptions={handleModeFetchOptions}
-                  placeholder="search mode of payment"
-                  required
-                />
+                <div className="w-full sm:w-[200px]">
+                  <SearchSelect2
+                    label="Mode of Payment"
+                    value={formData.mode ?? ""}
+                    onChange={handleModeChange}
+                    fetchOptions={handleModeFetchOptions}
+                    placeholder="search mode of payment"
+                    required
+                  />
+                </div>
 
                 {/* Update Stock */}
-                <div className="flex flex-col justify-end">
+                <div className="w-full sm:w-auto flex flex-col justify-end">
                   <label className="text-[11px] text-transparent select-none">‎</label>
                   <label className="flex items-center gap-2 h-[30px]">
                     <input
@@ -334,72 +331,82 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   </label>
                 </div>
 
-                {/* LPO Number — only rendered when LPO tax category */}
+                {/* LPO Number — only when LPO tax category */}
                 {ui.isLocal && (
-                  <ModalInput
-                    label="LPO Number"
-                    name="lpoNumber"
-                    value={formData.lpoNumber}
-                    onChange={actions.handleInputChange}
-                    inputMode="numeric"
-                    pattern="\d{10}"
-                    placeholder="Enter 10 digits"
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  />
+                  <div className="w-full sm:w-[120px]">
+                    <ModalInput
+                      label="LPO Number"
+                      name="lpoNumber"
+                      value={formData.lpoNumber}
+                      onChange={actions.handleInputChange}
+                      inputMode="numeric"
+                      pattern="\d{10}"
+                      placeholder="Enter 10 digits"
+                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                    />
+                  </div>
                 )}
               </div>
 
-              {/* ── Items + Summary ── */}
-              <div className="grid grid-cols-[4fr_1fr] gap-4 items-start">
-                <ItemTable
-                  paginatedItems={paginatedItems}
-                  ui={ui}
-                  actions={actions}
-                  formData={formData}
-                  symbol=""
-                  ITEMS_PER_PAGE={ITEMS_PER_PAGE}
-                  isSalesInvoice={true}
-                  taxCategory={formData.taxCategory || customerDetails?.customerTaxCategory}
-                />
+              {/* ── Items table + sidebar ──
+                  - Mobile/tablet (< xl): single column, sidebar stacks below table
+                  - Desktop (xl+): table takes remaining space, sidebar is 220px
+                  - minmax(0, 1fr) prevents the table from pushing the grid wider
+                    than the modal container                                       ── */}
+              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_160px] gap-4 items-start">
 
-                {/* Right panel */}
-                <div className="col-span-1 sticky top-0 flex flex-col items-center gap-4 px-3 lg:px-4 h-fit">
+                {/* Table column — min-w-0 so it can shrink below natural content width */}
+                <div className="min-w-0">
+                  <ItemTable
+                    paginatedItems={paginatedItems}
+                    ui={ui}
+                    actions={actions}
+                    formData={formData}
+                    symbol=""
+                    ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                    isSalesInvoice={true}
+                    taxCategory={formData.taxCategory || customerDetails?.customerTaxCategory}
+                  />
+                </div>
 
-                  {/* Customer Details */}
-                  <div className="bg-card rounded-lg p-2 w-[220px]">
+                {/* Sidebar — full width on mobile, 220px column on xl+ */}
+                <div className="flex flex-row xl:flex-col gap-4 xl:sticky xl:top-0 h-fit">
+
+                  {/* Customer Details card */}
+                  <div className="bg-card rounded-lg p-2 flex-1 xl:flex-none w-full">
                     <h3 className="text-[12px] font-semibold text-main mb-2">
                       Customer Details
                     </h3>
                     <div className="flex flex-col gap-2 text-xs">
                       <div className="flex items-center gap-2">
-                        <User size={14} className="text-muted" />
-                        {customerDetails?.name ?? "Customer Name"}
+                        <User size={14} className="text-muted shrink-0" />
+                        <span className="truncate">{customerDetails?.name ?? "Customer Name"}</span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted">
-                        <Mail size={12} />
-                        {primaryContact?.email || customerDetails?.email || ""}
+                        <Mail size={12} className="shrink-0" />
+                        <span className="truncate">{primaryContact?.email || customerDetails?.email || "—"}</span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted">
-                        <Phone size={12} />
-                        {primaryContact?.mobile || customerDetails?.mobile || ""}
+                        <Phone size={12} className="shrink-0" />
+                        <span className="truncate">{primaryContact?.mobile || customerDetails?.mobile || "—"}</span>
                       </div>
                       <div className="flex justify-between text-[10px] mt-1">
                         <span className="text-muted">Tax</span>
                         <span className="text-main font-medium">
-                          {customerDetails?.customerTaxCategory || "-"}
+                          {customerDetails?.customerTaxCategory || "—"}
                         </span>
                       </div>
                       <div className="flex justify-between text-[10px]">
                         <span className="text-muted">Country</span>
                         <span className="text-main font-medium">
-                          {billingAddress?.country || "-"}
+                          {billingAddress?.country || "—"}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Summary */}
-                  <div className="bg-card rounded-lg p-3 w-[220px]">
+                  {/* Summary card */}
+                  <div className="bg-card rounded-lg p-3 flex-1 xl:flex-none w-full">
                     <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
                     <div className="flex flex-col gap-2">
                       <div className="flex justify-between text-xs">
@@ -436,7 +443,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
           {/* ──────────── ADDITIONAL DETAILS ──────────── */}
           {ui.activeTab === "address" && (
-            <div className="space-y-6 overflow-hidden">
+            <div className="space-y-6">
               <PaymentInfoBlock
                 data={formData.paymentInformation}
                 onChange={(e) => actions.handleInputChange(e, "paymentInformation")}

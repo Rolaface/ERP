@@ -224,8 +224,8 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           onNext={ui.activeTab === "terms" ? undefined : handleNext}
         />
       }
-      customWidth="83vw"
-      height="82vh"
+      maxWidth="full"
+     height="650px"
     >
       <form
         id="proforma-form"
