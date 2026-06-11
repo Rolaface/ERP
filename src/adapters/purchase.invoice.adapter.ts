@@ -1,4 +1,4 @@
-import { getPurchaseInvoices } from "../api/procurement/PurchaseInvoiceApi";
+import { getPurchaseInvoices , getPurchaseInvoiceById} from "../api/procurement/PurchaseInvoiceApi";
 import type {
   InvoiceAdapter,
   NormalizedInvoice,
@@ -48,6 +48,27 @@ function normalizePurchaseInvoice(raw: PurchaseInvoiceRaw): NormalizedInvoice {
 // ─── Adapter 
 
 export const purchaseInvoiceAdapter: InvoiceAdapter = {
+async fetchById(invoiceId: string): Promise<NormalizedInvoice | null> {
+  const res = await getPurchaseInvoiceById(invoiceId);
+
+  if (!res?.data) return null;
+
+  const raw = res.data;
+
+  return {
+    invoiceNumber: raw.piId,
+    partyName: raw.supplierName ?? "",
+    invoiceDate: formatDate(raw.piDate),
+    dueDate: formatDate(raw.dueDate),
+    dueDateRaw: raw.dueDate ?? "-",
+    totalAmount: Number(raw.grandTotal ?? 0),
+    paid:
+      Number(raw.grandTotal ?? 0) -
+      Number(raw.outstanding_amount ?? 0),
+    outstanding: Number(raw.outstanding_amount ?? 0),
+    status: raw.status ?? "Unknown",
+  };
+},
   async fetchPage({ page, pageSize, partyId }: FetchParams): Promise<NormalizedPage> {
     console.log("API supplier param:", partyId);
     const res = await getPurchaseInvoices(page, pageSize, {

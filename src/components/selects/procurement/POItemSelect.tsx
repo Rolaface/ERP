@@ -192,7 +192,7 @@ export default function POItemSelect({
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`w-full min-w-0 ${className}`}>
 
       
       <div
@@ -209,11 +209,13 @@ export default function POItemSelect({
           transition-colors duration-150"
       >
         <Package className="w-3 h-3 text-muted shrink-0" />
-        <span
-          className={`flex-1 min-w-0 break-words leading-snug ${displayName ? "text-main" : "text-muted"}`}
-        >
-          {loading ? "Loading…" : displayName || "Select item…"}
-        </span>
+     <span
+  className={`flex-1 min-w-0 break-words leading-snug ${
+    displayName ? "text-main" : "text-muted"
+  }`}
+>
+  {loading ? "Loading…" : displayName || "Select item…"}
+</span>
         {loading
           ? <Loader2 className="w-3 h-3 text-muted shrink-0 animate-spin" />
           : <ChevronDown className={`w-3 h-3 text-muted shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />

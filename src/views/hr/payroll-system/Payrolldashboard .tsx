@@ -12,6 +12,8 @@ import {
 } from "../../../components/ui/Table/ActionButton";
 import PayrollEntryDetail from "./payrolldetail/payrollentrydetail";
 import { ACTION_ICONS } from "../../../components/UI_Utils/statusActionIcons";
+import { DateRangeFilter } from "../../../components/ui/modal/DateRangeFilter";
+import { DateDisplay } from "../../../components/UI_Utils/Datedisplay";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,14 +26,17 @@ interface Props {
   onViewPayslip: (r: PayrollRecord) => void;
   onDeleteRecord?: (r: PayrollRecord) => void;
   onEditRecord: (r: PayrollRecord) => void;
-  onVerify: (r: PayrollRecord) => void; // ← NEW
+  onVerify: (r: PayrollRecord) => void;
   currentPage: number;
-  onCancelPayroll: (r: PayrollRecord) => void; // ← NEW
+  onCancelPayroll: (r: PayrollRecord) => void;
   totalPages: number;
   onPageChange: (page: number) => void;
   canCreate?: boolean;
   canWrite?: boolean;
   searchTerm: string;
+  fromDate?: string;
+  toDate?: string;
+  onDateRangeChange: (range: { from_date?: string; to_date?: string }) => void;
   setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
 }
 
@@ -62,6 +67,9 @@ export const PayrollDashboard: React.FC<Props> = ({
   canWrite = false,
   searchTerm,
   setSearchTerm,
+  fromDate,
+  toDate,
+  onDateRangeChange,
 }) => {
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
 
@@ -77,14 +85,34 @@ export const PayrollDashboard: React.FC<Props> = ({
   }
 
   const payrollColumns: Column<any>[] = [
-    {
-      key: "name",
-      header: "Payroll Entry",
-      sortable: true,
-      render: (row) => (
-        <span className="font-medium whitespace-nowrap">{row.name ?? "—"}</span>
-      ),
-    },
+   {
+  key: "name",
+  header: "Payroll Entry",
+  sortable: true,
+  width: "180px",
+  minWidth: "180px",
+  render: (row) => (
+    <span className="font-medium whitespace-nowrap">{row.name ?? "—"}</span>
+  ),
+},
+   {
+  key: "start_date",
+  header: "Start Date",
+  width: "130px",
+  minWidth: "130px",
+  render: (row) => (
+    <DateDisplay date={row.start_date} className="text-sm text-main" />
+  ),
+},
+{
+  key: "end_date",
+  header: "End Date",
+  width: "130px",
+  minWidth: "130px",
+  render: (row) => (
+    <DateDisplay date={row.end_date} className="text-sm text-main" />
+  ),
+},
     {
       key: "employee_count",
       header: "Total Employees",
@@ -148,8 +176,11 @@ export const PayrollDashboard: React.FC<Props> = ({
             title="View details"
           />
           <ActionMenu
-            {...(canWrite && row.status !== "Submitted"
-              ? { onEdit: () => onEditRecord(row), editLabel: "Edit Record" }
+            {...(canWrite && ["Draft", "Failed"].includes(row.status)
+              ? {
+                  onEdit: () => onEditRecord(row),
+                  editLabel: "Edit Record",
+                }
               : {})}
             {...((row.status === "Draft" || row.status === "Cancelled") &&
             onDeleteRecord
@@ -221,6 +252,13 @@ export const PayrollDashboard: React.FC<Props> = ({
         setSearchTerm(q);
         onPageChange(1);
       }}
+      extraFilters={
+        <DateRangeFilter
+          from={fromDate}
+          to={toDate}
+          onChange={onDateRangeChange}
+        />
+      }
     />
   );
 };

@@ -1,6 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
-import ModalTable from "../../../../../components/ui//Table/ModalTableInside";
-import ActionButton, { ActionGroup } from "../../../../../components/ui/Table/ActionButton";
+import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
+import ActionButton, { 
+  ActionGroup, 
+  ActionMenu 
+} from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
 import { deleteShiftType } from "../../../../../api/shiftTypeApi";
 import { showApiError } from "../../../../../utils/alert";
@@ -77,16 +80,23 @@ export function ShiftTypeSetup() {
         render: (row) => (
           <ActionGroup>
             <ActionButton
+  type="view"
+  iconOnly
+  onClick={() => openShiftTypeModal(
+    row,
+    true,
+    { onSuccess: fetchAll, isViewMode: true },  
+    { title: "" },                             
+  )}
+/>
+            <ActionButton
               type="edit"
               iconOnly
               onClick={() => openShiftTypeModal(row, true, { onSuccess: fetchAll })}
               disabled={actionLoadingId === row.name}
             />
-            <ActionButton
-              type="delete"
-              iconOnly
-              onClick={() => handleDelete(row)}
-              disabled={actionLoadingId === row.name}
+            <ActionMenu 
+              onDelete={() => handleDelete(row)} 
             />
           </ActionGroup>
         ),
@@ -102,8 +112,6 @@ export function ShiftTypeSetup() {
       loading={loading}
       rowKey={(row) => row.name!}
       tableId="shift-types-table"
-
-      // Toolbar
       showToolbar
       toolbarPlaceholder="Search shift types..."
       searchValue={search}
@@ -116,8 +124,6 @@ export function ShiftTypeSetup() {
       onAdd={() => openShiftTypeModal(null, false, { onSuccess: fetchAll })}
       enableColumnSelector
       defaultVisibleKeys={["name", "start_time", "end_time", "actions"]}
-
-      // Pagination
       currentPage={page}
       totalPages={totalPages}
       totalItems={totalItems}
@@ -128,7 +134,6 @@ export function ShiftTypeSetup() {
         setPageSize(s);
         setPage(1);
       }}
-
       bodyMaxHeight={400}
     />
   );

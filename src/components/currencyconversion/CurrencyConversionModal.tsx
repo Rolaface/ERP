@@ -30,7 +30,7 @@ interface Props {
   editData?: EditData | null;
   actionLoading?: boolean;
   modalId: string;
-    isViewMode?: boolean;  
+  isViewMode?: boolean;
 }
 
 interface FormState {
@@ -61,7 +61,7 @@ const EMPTY_FORM: FormState = {
   fromCurrency: "",
   toCurrency: "",
   exchangeRate: "",
- isBuying: true,
+  isBuying: true,
   isSelling: true,
 };
 
@@ -89,12 +89,12 @@ const CurrencyConversionModal: React.FC<Props> = ({
     if (!isOpen) return;
     if (editData) {
       setForm({
-        date:         editData.date,
+        date: editData.date,
         fromCurrency: editData.fromCurrency,
-        toCurrency:   editData.toCurrency,
+        toCurrency: editData.toCurrency,
         exchangeRate: String(editData.exchangeRate),
-        isBuying:     editData.isBuying,
-        isSelling:    editData.isSelling,
+        isBuying: editData.isBuying,
+        isSelling: editData.isSelling,
       });
     } else {
       setForm(EMPTY_FORM);
@@ -168,12 +168,12 @@ const CurrencyConversionModal: React.FC<Props> = ({
     try {
       await onSubmit?.({
         ...(editData?.id ? { id: editData.id } : {}),
-        date:         form.date,
+        date: form.date,
         fromCurrency: form.fromCurrency,
-        toCurrency:   form.toCurrency,
+        toCurrency: form.toCurrency,
         exchangeRate: Number(form.exchangeRate),
-        isBuying:     form.isBuying,
-        isSelling:    form.isSelling,
+        isBuying: form.isBuying,
+        isSelling: form.isSelling,
       });
       resetDirty();
       onClose();
@@ -193,28 +193,28 @@ const CurrencyConversionModal: React.FC<Props> = ({
 
   // ── Footer ────────────────────────────────────
   const footer = isViewMode ? (
-  <Button variant="secondary" onClick={handleClose}>
-    Close
-  </Button>
-) : (
-  <>
-    <Button
-      variant="secondary"
-      onClick={() => handleCloseWithConfirm(handleClose, modalId)}
-      disabled={isSaving}
-    >
-      Cancel
+    <Button variant="secondary" onClick={handleClose}>
+      Close
     </Button>
-    <Button
-      variant="primary"
-      onClick={handleSubmit}
-      disabled={isSaving}
-      className={isSaving ? "opacity-60 cursor-not-allowed" : ""}
-    >
-      {isSaving ? "Saving..." : editData ? "Update" : "Save"}
-    </Button>
-  </>
-);
+  ) : (
+    <>
+      <Button
+        variant="secondary"
+        onClick={() => handleCloseWithConfirm(handleClose, modalId)}
+        disabled={isSaving}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="primary"
+        onClick={handleSubmit}
+        disabled={isSaving}
+        className={isSaving ? "opacity-60 cursor-not-allowed" : ""}
+      >
+        {isSaving ? "Saving..." : editData ? "Update" : "Save"}
+      </Button>
+    </>
+  );
 
   // ─────────────────────────────────────────────
   // Render
@@ -225,14 +225,19 @@ const CurrencyConversionModal: React.FC<Props> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(handleClose, modalId)}
       icon={Repeat}
-      title="Create Currency Exchange"
-subtitle={
-  isViewMode
-    ? "View exchange rate"
-    : editData
-    ? "Edit exchange rate"
-    : "Add exchange rate"
-}      footer={footer}
+      title={
+        isViewMode
+          ? "View Currency Exchange"
+          : editData
+            ? "Edit Currency Exchange"
+            : "Create Currency Exchange"
+      } subtitle={
+        isViewMode
+          ? "View exchange rate"
+          : editData
+            ? "Edit exchange rate"
+            : "Add exchange rate"
+      } footer={footer}
       customWidth="58vw"
       height="auto"
     >
@@ -250,7 +255,7 @@ subtitle={
                 setForm((prev) => ({ ...prev, [name]: value }));
                 clearError("date");
               }}
-                disabled={isViewMode}       // ← add
+              disabled={isViewMode}       // ← add
 
             />
             {errors.date && (
@@ -268,8 +273,8 @@ subtitle={
               placeholder="Search currency..."
               error={errors.fromCurrency}
               required
-              
-  disabled={isViewMode}       // ← add
+
+              disabled={isViewMode}       // ← add
 
             />
           </div>
@@ -284,7 +289,7 @@ subtitle={
               placeholder="Search currency..."
               error={errors.toCurrency}
               required
-                disabled={isViewMode}       // ← add
+              disabled={isViewMode}       // ← add
 
             />
           </div>
@@ -298,7 +303,7 @@ subtitle={
               value={form.exchangeRate}
               onChange={handleExchangeRateChange}
               placeholder="e.g. 83.25"
-                disabled={isViewMode}       // ← add
+              disabled={isViewMode}       // ← add
 
             />
             {errors.exchangeRate && (
@@ -316,7 +321,7 @@ subtitle={
                   checked={form.isBuying}
                   onChange={handleCheckboxChange}
                   className="w-3.5 h-3.5 accent-primary"
-                    disabled={isViewMode}       // ← add
+                  disabled={isViewMode}       // ← add
 
                 />
                 Buying
@@ -328,9 +333,9 @@ subtitle={
                   checked={form.isSelling}
                   onChange={handleCheckboxChange}
                   className="w-3.5 h-3.5 accent-primary"
-                    disabled={isViewMode}       // ← add
+                  disabled={isViewMode}       // ← add
 
-                    
+
                 />
                 Selling
               </label>

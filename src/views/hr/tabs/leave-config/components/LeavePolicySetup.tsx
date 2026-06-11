@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import ModalTable from "../../../../../components/ui/Table/ModalTableInside";
+import { confirmCancel } from "../../../../../api/utils/confirmCancel";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -60,19 +61,35 @@ export function LeavePolicySetup() {
 
   const handleStatusChange = useCallback(
     async (row: LeavePolicy, newStatus: 1 | 2) => {
-      if (!row.name) return;
-      const actionText = newStatus === 1 ? "submit" : "cancel";
+      const policyName = row.name;
+      if (!policyName) return;
+
       try {
-        setActionLoadingId(row.name);
-        await updateLeavePolicy(row.name, { docstatus: newStatus });
-        showSuccess(
-          `Leave policy ${newStatus === 1 ? "submitted" : "cancelled"} successfully`,
-        );
+        setActionLoadingId(policyName);
+
+        if (newStatus === 2) {
+          const cancelled = await confirmCancel({
+            text: `Cancel leave policy "${row.title || policyName}"?`,
+            loadingText: "Cancelling Leave Policy...",
+            successMessage: "Leave policy cancelled",
+            action: async () => {
+              await updateLeavePolicy(policyName, { docstatus: 2 });
+            },
+          });
+
+          if (cancelled) {
+            fetchAll();
+          }
+
+          return;
+        }
+
+        await updateLeavePolicy(policyName, { docstatus: 1 });
+
+        showSuccess("Leave policy submitted successfully");
         fetchAll();
       } catch (err: any) {
-        showApiError(
-          parseFrappeError(err) || `Failed to ${actionText} leave policy`,
-        );
+        showApiError(parseFrappeError(err) || "Failed to update leave policy");
       } finally {
         setActionLoadingId(null);
       }
@@ -152,17 +169,15 @@ export function LeavePolicySetup() {
           }
           return (
             <ActionGroup>
-             <ActionButton
-               type="view"
-               iconOnly
-               onClick={() => 
-                 openLeavePolicyModal(
-                   { ...row, _isView: true } as any,  
-                   true,                             
-                   { onSuccess: fetchAll }           
-                 )
-               }
-             />
+              <ActionButton
+                type="view"
+                iconOnly
+                onClick={() =>
+                  openLeavePolicyModal({ ...row, _isView: true } as any, true, {
+                    onSuccess: fetchAll,
+                  })
+                }
+              />
               {dropdownActions.length > 0 && (
                 <ActionMenu customActions={dropdownActions} />
               )}

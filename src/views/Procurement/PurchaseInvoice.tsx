@@ -74,8 +74,6 @@ interface PurchaseinvoicesTableProps {
   onAdd?: () => void;
 }
 
-
-
 export type PIStatus =
   | "Draft"
   | "Return"
@@ -237,8 +235,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
             partyName: data.supplierName,
             partyId: data.supplierId ?? data.pId,
             amount: data.grandTotal,
-            referenceName: data.pId,
+            referenceName: data.piId,
             referenceType: "Purchase Invoice",
+            glTo: data.gl_account ?? "",
+            glToDisplay: data.gl_account_name ?? "",
+            currencyTo: data.gl_account_currency ?? "",
+            modeOfPayment: data.paymentType ?? "",
           },
           false,
           {
@@ -667,7 +669,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               ? { onDelete: (e) => handleDelete(o, e as any) }
               : {})}
             customActions={[
-              { label: "View PDF", icon: ACTION_ICONS.PDF, onClick: () => handleOpenPDF(o) },
+              {
+                label: "View PDF",
+                icon: ACTION_ICONS.PDF,
+                onClick: () => handleOpenPDF(o),
+              },
               {
                 label: "Scan PI",
                 icon: ACTION_ICONS.SCAN,
@@ -675,35 +681,35 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               },
 
               ...(can(PAYMENT_MODULE, "create") &&
-              Number(o.outstanding_amount || 0) > 0
+                Number(o.outstanding_amount || 0) > 0
                 ? [
-                    {
-                      label: "Make Payment",
-                      icon: ACTION_ICONS.PAYMENT,
-                      onClick: () => handleMakePayment(o.pId),
-                    },
-                  ]
+                  {
+                    label: "Make Payment",
+                    icon: ACTION_ICONS.PAYMENT,
+                    onClick: () => handleMakePayment(o.pId),
+                  },
+                ]
                 : []),
 
               ...(can(PI_MODULE, "write")
-  ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-      (status) => ({
-        label:
-          status === "Submitted"
-            ? "Approve"
-            : status === "Cancelled"
-              ? "Cancel"
-              : status,
+                ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
+                  (status) => ({
+                    label:
+                      status === "Submitted"
+                        ? "Approve"
+                        : status === "Cancelled"
+                          ? "Cancel"
+                          : status,
 
-icon: getStatusActionIcon(status),
-        danger:
-          status === "Cancelled" ||
-          status === "Debit Note Issued",
+                    icon: getStatusActionIcon(status),
+                    danger:
+                      status === "Cancelled" ||
+                      status === "Debit Note Issued",
 
-        onClick: () => handleStatusChange(o.pId, status),
-      }),
-    )
-  : [])
+                    onClick: () => handleStatusChange(o.pId, status),
+                  }),
+                )
+                : []),
             ]}
           />
         </ActionGroup>

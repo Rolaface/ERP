@@ -56,33 +56,63 @@ const StatusChip: React.FC<{ status: string }> = ({ status }) => {
 
 const CARD_COLORS = ["#3b82f6","#22c55e","#f59e0b","#8b5cf6","#ec4899","#14b8a6","#f97316","#6366f1"];
 
+// const BalanceCard: React.FC<{ balance: LeaveBalance; color: string }> = ({ balance, color }) => {
+//   const pct = balance.total > 0
+//     ? Math.round(((balance.total - balance.used) / balance.total) * 100)
+//     : 100;
+//   return (
+//     <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 flex flex-col gap-2">
+//       <div className="flex items-start justify-between gap-2">
+//         <p className="text-sm font-semibold text-[var(--text)] leading-tight">{balance.leaveType}</p>
+//         <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+//           style={{ background: `${color}18`, color }}>
+//           {balance.remaining} left
+//         </span>
+//       </div>
+//       <div className="h-1.5 rounded-full bg-[var(--row-hover)] overflow-hidden">
+//         <div className="h-full rounded-full transition-all duration-500"
+//           style={{ width: `${pct}%`, background: color }} />
+//       </div>
+//       <div className="flex justify-between text-[11px] text-[var(--muted)]">
+//         <span>{balance.used} used</span>
+//         <span>{balance.total} total</span>
+//       </div>
+//     </div>
+//   );
+// };
+
+// ─── Employee leave section (balance + recent + apply table) ──────────────────
 const BalanceCard: React.FC<{ balance: LeaveBalance; color: string }> = ({ balance, color }) => {
-  const pct = balance.total > 0
-    ? Math.round(((balance.total - balance.used) / balance.total) * 100)
-    : 100;
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 flex flex-col gap-2">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-[var(--text)] leading-tight">{balance.leaveType}</p>
-        <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
-          style={{ background: `${color}18`, color }}>
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-2.5 flex items-center justify-between gap-3 min-w-0 w-full shadow-sm">
+      {/* Left: Indicator & Text details */}
+      <div className="flex items-center gap-2 min-w-0">
+        <div 
+          className="w-1 h-7 rounded-full shrink-0" 
+          style={{ backgroundColor: color }} 
+        />
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-[var(--text)] truncate leading-tight" title={balance.leaveType}>
+            {balance.leaveType}
+          </p>
+          <p className="text-[10px] text-[var(--muted)] mt-0.5 whitespace-nowrap">
+            {balance.used} Used / {balance.total} Total
+          </p>
+        </div>
+      </div>
+
+      {/* Right: Balance Count Pill */}
+      <div className="shrink-0 text-right">
+        <span 
+          className="text-xs font-bold px-2 py-1 rounded-md whitespace-nowrap"
+          style={{ background: `${color}12`, color }}
+        >
           {balance.remaining} left
         </span>
-      </div>
-      <div className="h-1.5 rounded-full bg-[var(--row-hover)] overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pct}%`, background: color }} />
-      </div>
-      <div className="flex justify-between text-[11px] text-[var(--muted)]">
-        <span>{balance.used} used</span>
-        <span>{balance.total} total</span>
       </div>
     </div>
   );
 };
-
-// ─── Employee leave section (balance + recent + apply table) ──────────────────
-
 const EmployeeLeaveSection: React.FC = () => {
   const { user } = useAuth();
   const [balances,       setBalances]       = useState<LeaveBalance[]>([]);
@@ -179,13 +209,17 @@ const EmployeeLeaveSection: React.FC = () => {
         </div>
         
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[1, 2, 3, 4].map((i) => (
+          // <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          //   {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+  {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-24 rounded-xl bg-[var(--row-hover)] animate-pulse" />
             ))}
+   
           </div>
         ) : leaveBalances.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          // <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
             {leaveBalances.map((leave, idx) => {
               // Map the getEmployeeDetailsById response to the BalanceCard props
               const balanceData = {

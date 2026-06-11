@@ -57,6 +57,8 @@ packingSize: number | null;
   dimensionLength: string | number;
   dimensionWidth: string | number;
   dimensionHeight: string | number;
+  dimensionUOM: string;
+ 
   valuationMethod: string;
   trackingMethod: string;
   reorderLevel: string | number;

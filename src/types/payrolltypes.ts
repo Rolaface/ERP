@@ -141,6 +141,7 @@ export interface PayrollEntry {
   currency: string;
   company: string;
   payrollPayableAccount: string;
+  payrollPayableAccountLabel: string;
   status: string;
   salarySlipTimesheet: boolean;
   deductTaxForProof: boolean;
@@ -151,6 +152,7 @@ export interface PayrollEntry {
 
   endDate: string;
   paymentAccount: string;
+  paymentAccountLabel: string;
   costCenter: string;
   project: string;
   letterHead: string;

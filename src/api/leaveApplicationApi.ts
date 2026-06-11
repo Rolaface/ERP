@@ -34,26 +34,6 @@ export interface LeaveApplication {
   status?: string; // e.g., Open, Approved, Rejected
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// API METHODS
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * GET /api/resource/Leave Application
- * Gets all leave applications.
- */
-// export async function getAllLeaveApplications(filters?: any[][]): Promise<LeaveApplication[]> {
-//   try {
-//     const resp: AxiosResponse<FrappeListResponse<LeaveApplication>> = await api.get(
-//       LEAVE_APP_RESOURCE.getAll,
-//       { params: { fields: '["*"]', limit_page_length: 0, filters: JSON.stringify(filters) } }
-//     );
-
-//     return resp.data?.data || [];
-//   } catch (error: any) {
-//     throw error;
-//   }
-// }
 export async function getAllLeaveApplications(
   filters?: any[][],
   limit_start: number = 0,
@@ -150,6 +130,18 @@ export async function deleteLeaveApplication(name: string): Promise<void> {
     const url = `${LEAVE_APP_RESOURCE.delete}/${encodeURIComponent(name)}`;
     await api.delete(url);
   } catch (error: any) {
+    throw error;
+  }
+}
+
+
+export async function getAllHolidayLists(year?: number): Promise<any[]> {
+  try {
+    const resp = await api.get(LEAVE_APP_RESOURCE.getAllHolidayList, {
+      params: { year },
+    });
+    return resp.data?.data || [];
+  } catch (error) {
     throw error;
   }
 }

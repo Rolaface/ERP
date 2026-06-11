@@ -509,6 +509,6 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
   );
 };
 
-// Memoized table - prevents re-render when props haven't changed
+
 const Table = memo(TableInner) as typeof TableInner;
 export default Table;

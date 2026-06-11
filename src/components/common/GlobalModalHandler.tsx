@@ -1009,33 +1009,34 @@ const GlobalModalHandler: React.FC = () => {
 
 
       case "holidayList":
-        return wrappedModal(
-          <HolidayListModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            initialData={getInitialData(modal.initialData)}
-            onSuccess={() => {
-              if (context?.onSuccess) context.onSuccess(undefined);
-            }}
-          />,
-        );
+  return wrappedModal(
+    <HolidayListModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      isViewMode={context?.isViewMode ?? false}  // ← add this
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+    />,
+  );
 
       case "shiftType":
-        return wrappedModal(
-          <ShiftTypeModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            initialData={getInitialData(modal.initialData)}
-            onSuccess={() => {
-              if (context?.onSuccess) context.onSuccess(undefined);
-
-            }}
-          />,
-        );
+  return wrappedModal(
+    <ShiftTypeModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      isViewMode={context?.isViewMode ?? false}  // ← add this
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+    />,
+  );
 
       case "scanPI":
         return wrappedModal(
@@ -1066,7 +1067,7 @@ const GlobalModalHandler: React.FC = () => {
             }}
           />,
         );
-      // Add case in renderModal switch:
+    
       case "feedback":
         return wrappedModal(
           <AddFeedbackModal

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { showApiError, showSuccess, showValidationError } from "../utils/alert";
+import { showApiError, showSuccess, showValidationError, showWarningError } from "../utils/alert";
 import {
   createJournalEntry,
   updateJournalEntryById,
@@ -453,7 +453,7 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
         if (fallbackRate) {
           row.exchange_rate = fallbackRate;
           row.isRateMissing = false;
-          showApiError(`Warning: Please maintain the latest currency exchange for ${ccy}. Using older rate.`);
+          showWarningError(`Please maintain the latest currency exchange for ${ccy}. Using older rate.`);
         } else {
           row.exchange_rate = "";
           row.isRateMissing = true;

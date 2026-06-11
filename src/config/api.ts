@@ -693,6 +693,7 @@ export const API = {
     create: `${ERP_BASE}/api/resource/Leave Application`,
     update: `${ERP_BASE}/api/resource/Leave Application`,
     delete: `${ERP_BASE}/api/resource/Leave Application`,
+    getAllHolidayList:`${ERP_BASE}/api/method/custom_hrms.api.holiday_list.api.get_all_holiday_lists`
   },
 
   performance: {

@@ -1,36 +1,36 @@
 // ─── Raw API shapes (exact fields from server, no assumptions) ────────────────
 
 export interface SalesInvoiceRaw {
-  id: string; 
+  id: string;
   invoiceNumber: string;
   customerName: string;
   customerTpin: string | null;
   receiptNumber: string | null;
   currency: string | null;
   exchangeRate: string | null;
-  dateOfInvoice: string;         // "YYYY-MM-DD"
-  dueDate: string | null;        // "YYYY-MM-DD" | null
+  dateOfInvoice: string; 
+  dueDate: string | null; 
   totalAmount: number;
   totalTax: number | null;
   status: string | null;
-  outstandingAmount: number;     // lowercase — use this one
-  OutStandingAmount: number;     // PascalCase — backend duplicate, ignore
+  outstandingAmount: number;
+  OutStandingAmount: number; 
   invoiceTypeParent: string;
   invoiceType: string | null;
 }
 
 export interface PurchaseInvoiceRaw {
-  pId: string;                   // invoice number — different field name!
+  pId: string; 
   supplierName: string;
-  status: string;                // "Submitted" | "Draft" | "Paid"
-  poDate: string;                // "YYYY-MM-DD" — creation date
-  deliveryDate: string;          // "YYYY-MM-DD" — closest thing to dueDate
-  grandTotal: number;            // total amount
+  status: string; 
+  poDate: string; 
+  deliveryDate: string; 
+  grandTotal: number; 
   registrationType: string;
   syncStatus: string | null;
   shippingRule: string;
-  outstanding_amount:number
-  paidAmount:number
+  outstanding_amount: number;
+  paidAmount: number;
 }
 
 export interface ApiPagination {
@@ -58,16 +58,16 @@ export interface PurchaseInvoiceListResponse {
   pagination: ApiPagination;
 }
 
-// ─── Normalized shape — what every adapter must produce ──────────────────────
+
 
 export interface NormalizedInvoice {
-  invoiceNumber: string;      // unified ID field
+  invoiceNumber: string; 
   partyName: string;
-  invoiceDate: string;        // display string "DD/MM/YYYY"
-  dueDate: string;            // display string "DD/MM/YYYY" | "—"
-  dueDateRaw: string;         // ISO "YYYY-MM-DD" for FIFO sort, "9999-12-31" if missing
+  invoiceDate: string; 
+  dueDate: string; 
+  dueDateRaw: string; 
   totalAmount: number;
-  paid: number;               // totalAmount - outstanding
+  paid: number; 
   outstanding: number;
   status: string;
 }
@@ -104,7 +104,10 @@ export interface InvoiceAdapter {
    * Fetch ALL outstanding invoices in one call for FIFO allocation.
    * Use a large pageSize (1000). Sorted by dueDateRaw ASC by adapter.
    */
-  fetchAllForFifo: (partyId: string | undefined) => Promise<NormalizedInvoice[]>;
+  fetchAllForFifo: (
+    partyId: string | undefined,
+  ) => Promise<NormalizedInvoice[]>;
+  fetchById(invoiceId: string): Promise<NormalizedInvoice | null>;
 }
 
 // ─── Allocation types ─────────────────────────────────────────────────────────
