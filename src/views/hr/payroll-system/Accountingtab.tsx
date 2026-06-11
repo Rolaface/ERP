@@ -43,7 +43,7 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
         <div>
           <SearchSelect2
             label="Payment Account"
-            value={data.paymentAccount}
+            value={data.paymentAccountLabel || data.paymentAccount}
             placeholder="Search payment account..."
             fetchOptions={(q) =>
               getPayrollPaymentAccounts(
@@ -52,10 +52,10 @@ export const AccountingTab: React.FC<AccountingTabProps> = ({
                 q,
               )
             }
-            onChange={(val: any) => {
+            onChange={(val: any, option: any) => {
               const value = typeof val === "string" ? val : val?.value;
-
               onChange("paymentAccount", value);
+              onChange("paymentAccountLabel", option?.label ?? value);
             }}
           />
         </div>

@@ -44,6 +44,7 @@ const EMPTY_FORM: PayrollEntry = {
   exchangeRate: DEFAULT_EXCHANGE_RATE,
   company: DEFAULT_COMPANY,
   payrollPayableAccount: DEFAULT_PAYROLL_PAYABLE_ACCOUNT,
+  payrollPayableAccountLabel:"",
   status: "Draft",
   salarySlipTimesheet: false,
   deductTaxForProof: false,
@@ -51,6 +52,7 @@ const EMPTY_FORM: PayrollEntry = {
   startDate: "",
   endDate: "",
   paymentAccount: DEFAULT_PAYMENT_ACCOUNT,
+  paymentAccountLabel:"",
   bankAccount: DEFAULT_BANK_ACCOUNT,
   costCenter: "",
   project: "",
@@ -76,7 +78,7 @@ const NewPayrollEntry: React.FC<Props> = ({
   });
   const [employees, setEmployees] = useState<any[]>([]);
 
-  // ✅ Pull activate + deactivate from the hook — removes the need for a local readyRef
+
   const {
     resetDirty,
     handleCloseWithConfirm,
@@ -93,17 +95,17 @@ const NewPayrollEntry: React.FC<Props> = ({
     handleCloseWithConfirm(onBack, modalId);
   };
 
-  // ✅ Use the hook's own activate/deactivate instead of a local readyRef
+
   useEffect(() => {
     if (!isOpen) {
       deactivate();
       resetDirty();
     } else {
-      return activate(); // activate() returns a cleanup fn that clears its own timeout
+      return activate();
     }
   }, [isOpen]);
 
-  // ✅ markDirty is now guarded by the hook's internal readyRef, so no local check needed
+ 
   const update = (field: string, value: unknown) => {
     markDirty();
     setFormData((p) => ({ ...p, [field]: value }));
