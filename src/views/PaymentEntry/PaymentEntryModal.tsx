@@ -46,8 +46,12 @@ interface Props {
     referenceType?: "Purchase Order" | "Purchase Invoice" | "Sales Invoice";
     date?: string;
     glTo?: string;
+    glToDisplay?: string;
     modeOfPayment?: string;
     currencyTo?: string;
+    glFrom?: string;
+    glFromDisplay?: string;
+    currencyFrom?: string;
   };
 }
 
@@ -232,14 +236,16 @@ const PaymentEntryModal: React.FC<Props> = ({
   const prevAmountRef = useRef<number>(0);
   const { markDirty, resetDirty, handleCloseWithConfirm, activate, deactivate } = useUnsavedChanges();
 
-useEffect(() => {
-  if (!isOpen) return;
-  const cleanup = activate();
-  return () => { cleanup?.(); deactivate(); resetDirty(); };
-}, [isOpen]);
+  useEffect(() => {
+    if (!isOpen) return;
+    const cleanup = activate();
+    return () => { cleanup?.(); deactivate(); resetDirty(); };
+  }, [isOpen]);
 
   const isAdvanceFromPO =
     defaultValues?.referenceType === "Purchase Order";
+  const isGlFromLocked = defaultValues?.referenceType === "Sales Invoice" && Boolean(defaultValues?.glFrom);
+  const isGlToLocked_PI = defaultValues?.referenceType === "Purchase Invoice" && Boolean(defaultValues?.glTo);
   const isInternalTransfer = form?.paymentType === "Internal Transfer";
   const resetModalState = useCallback(() => {
     setForm(getInitialForm());
@@ -298,14 +304,27 @@ useEffect(() => {
     if (defaultValues?.glTo) {
       base.glTo = defaultValues.glTo;
     }
+    if (defaultValues?.glToDisplay) {
+      base.glToDisplay = defaultValues.glToDisplay;
+    }
 
-    if (defaultValues?.currencyTo){
-       base.currencyTo = defaultValues.currencyTo;
+    if (defaultValues?.currencyTo) {
+      base.currencyTo = defaultValues.currencyTo;
     }
 
     if (defaultValues?.modeOfPayment) {
-  base.mode = defaultValues.modeOfPayment;   
-}
+      base.mode = defaultValues.modeOfPayment;
+    }
+
+    if (defaultValues?.glFrom) {
+      base.glFrom = defaultValues.glFrom;
+    }
+    if (defaultValues?.glFromDisplay) {
+      base.glFromDisplay = defaultValues.glFromDisplay;
+    }
+    if (defaultValues?.currencyFrom) {
+      base.currencyFrom = defaultValues.currencyFrom;
+    }
 
     if (defaultValues?.referenceName) {
       const lockedAmount = Math.max(
@@ -391,7 +410,7 @@ useEffect(() => {
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
 
-  
+
   const getResetPartyState = (prev: any, name: string, value: string) => ({
     ...prev,
     [name]: value,
@@ -441,8 +460,8 @@ useEffect(() => {
 
 
   const handleCloseRequest = useCallback(() => {
-  handleCloseWithConfirm(() => { resetModalState(); onClose(); }, modalId);
-}, [handleCloseWithConfirm, modalId, onClose, resetModalState]);
+    handleCloseWithConfirm(() => { resetModalState(); onClose(); }, modalId);
+  }, [handleCloseWithConfirm, modalId, onClose, resetModalState]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleChange = useCallback(
@@ -463,20 +482,26 @@ useEffect(() => {
         return { ...prev, [name]: value };
       });
     },
-     [markDirty]
-     
+    [markDirty]
+
   );
 
   const handleFormChange = useCallback(
     (updates: Record<string, any>) => {
-       markDirty();
-       if (
-      form.referenceType === "Employee Advance" &&
-      form.glTo
-    ) {
-      delete updates.glTo;
-      delete updates.currencyTo;
-    }
+      markDirty();
+      if (
+        (form.referenceType === "Employee Advance" && form.glTo) ||
+        (isGlToLocked_PI && form.glTo)
+      ) {
+        delete updates.glTo;
+        delete updates.glToDisplay;
+        delete updates.currencyTo;
+      }
+      if (isGlFromLocked && form.glFrom) {
+        delete updates.glFrom;
+        delete updates.glFromDisplay;
+        delete updates.currencyFrom;
+      }
       setForm((prev) => {
         if (prev.referenceName) {
           const referenceName = prev.referenceName;
@@ -642,7 +667,7 @@ useEffect(() => {
       footer={footer}
       customWidth="62vw"
       height="95vh"
-      
+
     >
       <div className="flex flex-col h-full">
         {/* ── Tabs ── */}
@@ -685,12 +710,14 @@ useEffect(() => {
                 onFormChange={handleFormChange}
                 onAllocate={isAdvanceFromPO ? undefined : handleAllocateLink}
                 islocked={Boolean(form?.referenceName)}
+                isGlFromLocked={isGlFromLocked}
                 isGlToLocked={
-                  form.referenceType === "Employee Advance" && Boolean(form.glTo)
+                  (form.referenceType === "Employee Advance" && Boolean(form.glTo)) ||
+                  isGlToLocked_PI
                 }
                 isModeOfPaymentLocked={
-    form.referenceType === "Employee Advance" && Boolean(form.mode)  
-  }
+                  form.referenceType === "Employee Advance" && Boolean(form.mode)
+                }
                 isPartyLocked={Boolean(
                   form?.referenceName && form?.partyName && form?.partyType,
                 )}
