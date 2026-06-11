@@ -86,6 +86,13 @@ interface HolidayRow {
   is_half_day: boolean;
 }
 
+interface WeeklyHolidayRow {
+  id: string;
+  holiday_date: string;
+  description: string;
+  is_half_day?: boolean;
+}
+
 interface WeeklyOffDay {
   weekday: string;
   label: string;
@@ -118,6 +125,9 @@ const DEFAULT_WEEKDAYS: WeeklyOffDay[] = [
   { weekday: "Sunday", label: "Sunday", selected: false, is_half_day: false },
 ];
 
+// Helper to generate IDs safely (crypto.randomUUID fails in non-HTTPS local dev)
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
 export const HolidayListModal: React.FC<Props> = ({
   modalId,
   isOpen,
@@ -133,9 +143,11 @@ export const HolidayListModal: React.FC<Props> = ({
   const [name, setName] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [weeklyOffs, setWeeklyOffs] =
-    useState<WeeklyOffDay[]>(DEFAULT_WEEKDAYS);
+  const [weeklyOffs, setWeeklyOffs] = useState<WeeklyOffDay[]>(DEFAULT_WEEKDAYS);
   const [holidays, setHolidays] = useState<HolidayRow[]>([]);
+  const [weeklyHolidays, setWeeklyHolidays] = useState<WeeklyHolidayRow[]>([]);
+  
+  const [activeTab, setActiveTab] = useState<"public" | "weekly">("public");
 
   useEffect(() => {
     const id = "hl-styles";
@@ -156,6 +168,7 @@ export const HolidayListModal: React.FC<Props> = ({
       setName("");
       setFromDate("");
       setToDate("");
+      setActiveTab("public");
       setWeeklyOffs(
         DEFAULT_WEEKDAYS.map((day) => ({
           ...day,
@@ -163,9 +176,10 @@ export const HolidayListModal: React.FC<Props> = ({
           is_half_day: day.weekday === "Saturday",
         })),
       );
+      setWeeklyHolidays([]);
       setHolidays([
         {
-          id: crypto.randomUUID(),
+          id: generateId(),
           holiday_date: "",
           description: "",
           is_half_day: false,
@@ -204,7 +218,17 @@ export const HolidayListModal: React.FC<Props> = ({
       const fetchedHolidays = data.holidays || [];
       setHolidays(
         fetchedHolidays.map((h: any) => ({
-          id: crypto.randomUUID(),
+          id: generateId(),
+          holiday_date: h.holiday_date,
+          description: h.description,
+          is_half_day: !!h.is_half_day,
+        })),
+      );
+
+      const fetchedWeeklyHolidays = data.weekly_holidays || [];
+      setWeeklyHolidays(
+        fetchedWeeklyHolidays.map((h: any) => ({
+          id: generateId(),
           holiday_date: h.holiday_date,
           description: h.description,
           is_half_day: !!h.is_half_day,
@@ -219,10 +243,10 @@ export const HolidayListModal: React.FC<Props> = ({
 
   const handleAddHolidayRow = () => {
     if (isViewMode) return;
-    setHolidays([
-      ...holidays,
+    setHolidays((prev) => [
+      ...prev,
       {
-        id: crypto.randomUUID(),
+        id: generateId(),
         holiday_date: "",
         description: "",
         is_half_day: false,
@@ -232,7 +256,12 @@ export const HolidayListModal: React.FC<Props> = ({
 
   const handleRemoveHolidayRow = (id: string) => {
     if (isViewMode) return;
-    setHolidays(holidays.filter((h) => h.id !== id));
+    setHolidays((prev) => prev.filter((h) => h.id !== id));
+  };
+
+  const handleRemoveWeeklyHolidayRow = (id: string) => {
+    if (isViewMode) return;
+    setWeeklyHolidays((prev) => prev.filter((h) => h.id !== id));
   };
 
   const updateHoliday = (
@@ -241,24 +270,43 @@ export const HolidayListModal: React.FC<Props> = ({
     value: string | boolean,
   ) => {
     if (isViewMode) return;
-    setHolidays(
-      holidays.map((h) => (h.id === id ? { ...h, [field]: value } : h)),
+    setHolidays((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, [field]: value } : h)),
     );
   };
 
   const toggleWeeklyOff = (index: number) => {
     if (isViewMode) return;
-    const updated = [...weeklyOffs];
-    updated[index].selected = !updated[index].selected;
-    if (!updated[index].selected) updated[index].is_half_day = false;
-    setWeeklyOffs(updated);
+
+    const dayName = weeklyOffs[index].weekday;
+    const willBeSelected = !weeklyOffs[index].selected;
+
+    setWeeklyOffs((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        selected: willBeSelected,
+        is_half_day: willBeSelected ? updated[index].is_half_day : false,
+      };
+      return updated;
+    });
+
+    // If a day is unchecked, automatically remove it from the weekly holidays list payload
+    if (!willBeSelected) {
+      setWeeklyHolidays((prev) => prev.filter((h) => h.description !== dayName));
+    }
   };
 
   const toggleWeeklyOffHalfDay = (index: number) => {
     if (isViewMode) return;
-    const updated = [...weeklyOffs];
-    updated[index].is_half_day = !updated[index].is_half_day;
-    setWeeklyOffs(updated);
+    setWeeklyOffs((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        is_half_day: !updated[index].is_half_day,
+      };
+      return updated;
+    });
   };
 
   const handleSave = async () => {
@@ -282,6 +330,13 @@ export const HolidayListModal: React.FC<Props> = ({
             ...(w.is_half_day ? { is_half_day: true } : {}),
           })),
         holidays: holidays
+          .filter((h) => h.holiday_date && h.description)
+          .map((h) => ({
+            holiday_date: h.holiday_date,
+            description: h.description,
+            ...(h.is_half_day ? { is_half_day: true } : {}),
+          })),
+        weekly_holidays: weeklyHolidays
           .filter((h) => h.holiday_date && h.description)
           .map((h) => ({
             holiday_date: h.holiday_date,
@@ -476,10 +531,29 @@ export const HolidayListModal: React.FC<Props> = ({
               minHeight: 0,
             }}
           >
-            <div className="mb-2.5 flex items-center justify-between">
-              <h3 className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
-                Holidays List
-              </h3>
+            <div className="mb-2.5 flex items-center border-b border-gray-200">
+              <button
+                type="button"
+                className={`py-2 px-4 text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                  activeTab === "public"
+                    ? "border-b-2 border-[#3F25C8] text-[#3F25C8]"
+                    : "text-gray-500 hover:text-gray-800"
+                }`}
+                onClick={() => setActiveTab("public")}
+              >
+                Public Holidays
+              </button>
+              <button
+                type="button"
+                className={`py-2 px-4 text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                  activeTab === "weekly"
+                    ? "border-b-2 border-[#3F25C8] text-[#3F25C8]"
+                    : "text-gray-500 hover:text-gray-800"
+                }`}
+                onClick={() => setActiveTab("weekly")}
+              >
+                Weekly Off Dates
+              </button>
             </div>
 
             <div
@@ -490,196 +564,318 @@ export const HolidayListModal: React.FC<Props> = ({
                 display: "flex",
                 flexDirection: "column",
                 flex: 1,
+                borderTopLeftRadius: 0,
               }}
             >
-              <div
-                className="hl-row"
-                style={{
-                  background: "#f9fafb",
-                  borderBottom: "1px solid #e5e7eb",
-                  minHeight: 32,
-                  gridTemplateColumns: isViewMode
-                    ? "160px 1fr 100px"
-                    : "160px 1fr 100px 50px",
-                }}
-              >
-                <div className="hl-cell hl-cell-border hl-col-header">Date</div>
-                <div className="hl-cell hl-cell-border hl-col-header">
-                  Description
-                </div>
-                <div
-                  className={`hl-cell hl-col-header ${!isViewMode ? "hl-cell-border" : ""}`}
-                  style={{ justifyContent: "center" }}
-                >
-                  Is Half Day
-                </div>
-                {!isViewMode && (
+              {activeTab === "public" ? (
+                <>
                   <div
-                    className="hl-cell hl-col-header"
-                    style={{ justifyContent: "center" }}
-                  >
-                    Action
-                  </div>
-                )}
-              </div>
-
-              <div
-                className="hl-table-wrap"
-                style={{ flex: 1, minHeight: "150px" }}
-              >
-                {holidays.map((row) => (
-                  <div
-                    key={row.id}
                     className="hl-row"
                     style={{
+                      background: "#f9fafb",
+                      borderBottom: "1px solid #e5e7eb",
+                      minHeight: 32,
                       gridTemplateColumns: isViewMode
                         ? "160px 1fr 100px"
                         : "160px 1fr 100px 50px",
                     }}
                   >
-                    <div
-                      className="hl-cell hl-cell-border"
-                      style={{ padding: "0 8px" }}
-                    >
-                      <DatePickerInput
-                        name={`date-${row.id}`}
-                        value={row.holiday_date}
-                        onChange={(_, v) =>
-                          updateHoliday(row.id, "holiday_date", v)
-                        }
-                        disabled={isViewMode}
-                      />
+                    <div className="hl-cell hl-cell-border hl-col-header">Date</div>
+                    <div className="hl-cell hl-cell-border hl-col-header">
+                      Description
                     </div>
-
-                    <div className="hl-cell hl-cell-border">
-                      <input
-                        type="text"
-                        placeholder="E.g. Diwali Eve"
-                        value={row.description}
-                        onChange={(e) =>
-                          updateHoliday(row.id, "description", e.target.value)
-                        }
-                        disabled={isViewMode}
-                        className="w-full h-[26px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8] disabled:bg-gray-50 disabled:text-gray-500"
-                      />
-                    </div>
-
                     <div
-                      className={`hl-cell ${!isViewMode ? "hl-cell-border" : ""}`}
+                      className={`hl-cell hl-col-header ${!isViewMode ? "hl-cell-border" : ""}`}
                       style={{ justifyContent: "center" }}
                     >
-                      <label
-                        className={`relative inline-flex items-center ${
-                          isViewMode ? "cursor-not-allowed" : "cursor-pointer"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="peer sr-only"
-                          checked={row.is_half_day}
-                          onChange={(e) =>
-                            updateHoliday(
-                              row.id,
-                              "is_half_day",
-                              e.target.checked,
-                            )
-                          }
-                          disabled={isViewMode}
-                        />
-                        <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none peer-disabled:opacity-50"></div>
-                      </label>
+                      Is Half Day
                     </div>
-
                     {!isViewMode && (
                       <div
-                        className="hl-cell"
+                        className="hl-cell hl-col-header"
                         style={{ justifyContent: "center" }}
                       >
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveHolidayRow(row.id)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            width: 22,
-                            height: 22,
-                            borderRadius: 4,
-                            border: "none",
-                            background: "transparent",
-                            cursor: "pointer",
-                            color: "#9ca3af",
-                            transition: "all 0.15s",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = "#ef4444";
-                            e.currentTarget.style.background = "#fef2f2";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = "#9ca3af";
-                            e.currentTarget.style.background = "transparent";
-                          }}
-                        >
-                          <Trash2 style={{ width: 13, height: 13 }} />
-                        </button>
+                        Action
                       </div>
                     )}
                   </div>
-                ))}
 
-                {holidays.length === 0 && (
                   <div
-                    style={{
-                      padding: "24px 0",
-                      textAlign: "center",
-                      fontSize: 12,
-                      color: "#6b7280",
-                    }}
+                    className="hl-table-wrap"
+                    style={{ flex: 1, minHeight: "150px" }}
                   >
-                    No holidays added yet.
-                    {!isViewMode && " Click Add Row to start."}
-                  </div>
-                )}
-              </div>
+                    {holidays.map((row) => (
+                      <div
+                        key={row.id}
+                        className="hl-row"
+                        style={{
+                          gridTemplateColumns: isViewMode
+                            ? "160px 1fr 100px"
+                            : "160px 1fr 100px 50px",
+                        }}
+                      >
+                        <div
+                          className="hl-cell hl-cell-border"
+                          style={{ padding: "0 8px" }}
+                        >
+                          <DatePickerInput
+                            name={`date-${row.id}`}
+                            value={row.holiday_date}
+                            onChange={(_, v) =>
+                              updateHoliday(row.id, "holiday_date", v)
+                            }
+                            disabled={isViewMode}
+                          />
+                        </div>
 
-              {!isViewMode && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "6px 10px",
-                    borderTop: "1px solid #e5e7eb",
-                    background: "#fff",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={handleAddHolidayRow}
+                        <div className="hl-cell hl-cell-border">
+                          <input
+                            type="text"
+                            placeholder="E.g. Diwali Eve"
+                            value={row.description}
+                            onChange={(e) =>
+                              updateHoliday(row.id, "description", e.target.value)
+                            }
+                            disabled={isViewMode}
+                            className="w-full h-[26px] rounded-md border border-gray-200 bg-white px-2.5 text-[11px] font-medium text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-[#3F25C8] focus:ring-1 focus:ring-[#3F25C8] disabled:bg-gray-50 disabled:text-gray-500"
+                          />
+                        </div>
+
+                        <div
+                          className={`hl-cell ${!isViewMode ? "hl-cell-border" : ""}`}
+                          style={{ justifyContent: "center" }}
+                        >
+                          <label
+                            className={`relative inline-flex items-center ${
+                              isViewMode ? "cursor-not-allowed" : "cursor-pointer"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="peer sr-only"
+                              checked={row.is_half_day}
+                              onChange={(e) =>
+                                updateHoliday(
+                                  row.id,
+                                  "is_half_day",
+                                  e.target.checked,
+                                )
+                              }
+                              disabled={isViewMode}
+                            />
+                            <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none peer-disabled:opacity-50"></div>
+                          </label>
+                        </div>
+
+                        {!isViewMode && (
+                          <div
+                            className="hl-cell"
+                            style={{ justifyContent: "center" }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveHolidayRow(row.id)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 22,
+                                height: 22,
+                                borderRadius: 4,
+                                border: "none",
+                                background: "transparent",
+                                cursor: "pointer",
+                                color: "#9ca3af",
+                                transition: "all 0.15s",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = "#ef4444";
+                                e.currentTarget.style.background = "#fef2f2";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = "#9ca3af";
+                                e.currentTarget.style.background = "transparent";
+                              }}
+                            >
+                              <Trash2 style={{ width: 13, height: 13 }} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {holidays.length === 0 && (
+                      <div
+                        style={{
+                          padding: "24px 0",
+                          textAlign: "center",
+                          fontSize: 12,
+                          color: "#6b7280",
+                        }}
+                      >
+                        No public holidays added yet.
+                        {!isViewMode && " Click Add Row to start."}
+                      </div>
+                    )}
+                  </div>
+
+                  {!isViewMode && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "6px 10px",
+                        borderTop: "1px solid #e5e7eb",
+                        background: "#fff",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={handleAddHolidayRow}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 6,
+                          background: "#F7F5FF",
+                          padding: "4px 10px",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "#3F25C8",
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = "#ebe6ff")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "#F7F5FF")
+                        }
+                      >
+                        <Plus style={{ width: 12, height: 12 }} />
+                        Add Row
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div
+                    className="hl-row"
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 6,
-                      background: "#F7F5FF",
-                      padding: "4px 10px",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "#3F25C8",
-                      cursor: "pointer",
-                      transition: "background 0.15s",
+                      background: "#f9fafb",
+                      borderBottom: "1px solid #e5e7eb",
+                      minHeight: 32,
+                      gridTemplateColumns: isViewMode
+                        ? "160px 1fr 100px"
+                        : "160px 1fr 100px 50px",
                     }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#ebe6ff")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "#F7F5FF")
-                    }
                   >
-                    <Plus style={{ width: 12, height: 12 }} />
-                    Add Row
-                  </button>
-                </div>
+                    <div className="hl-cell hl-cell-border hl-col-header">Date</div>
+                    <div className="hl-cell hl-cell-border hl-col-header">
+                      Description
+                    </div>
+                    <div
+                      className={`hl-cell hl-col-header ${!isViewMode ? "hl-cell-border" : ""}`}
+                      style={{ justifyContent: "center" }}
+                    >
+                      Is Half Day
+                    </div>
+                    {!isViewMode && (
+                      <div
+                        className="hl-cell hl-col-header"
+                        style={{ justifyContent: "center" }}
+                      >
+                        Action
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    className="hl-table-wrap"
+                    style={{ flex: 1, minHeight: "150px" }}
+                  >
+                    {weeklyHolidays.map((row) => (
+                      <div
+                        key={row.id}
+                        className="hl-row hover:bg-gray-50"
+                        style={{
+                          gridTemplateColumns: isViewMode
+                            ? "160px 1fr 100px"
+                            : "160px 1fr 100px 50px",
+                        }}
+                      >
+                        <div className="hl-cell hl-cell-border px-4 py-2 text-[11px] font-medium text-gray-800">
+                          {row.holiday_date}
+                        </div>
+                        <div className="hl-cell hl-cell-border px-4 py-2 text-[11px] font-medium text-gray-800">
+                          {row.description}
+                        </div>
+                        <div
+                          className={`hl-cell ${!isViewMode ? "hl-cell-border" : ""}`}
+                          style={{ justifyContent: "center" }}
+                        >
+                          <label className="relative inline-flex items-center cursor-default">
+                            <input
+                              type="checkbox"
+                              className="peer sr-only"
+                              checked={!!row.is_half_day}
+                              readOnly
+                            />
+                            <div className="peer h-4 w-7 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#3F25C8] peer-checked:after:translate-x-full peer-focus:outline-none opacity-80"></div>
+                          </label>
+                        </div>
+                        {!isViewMode && (
+                          <div
+                            className="hl-cell"
+                            style={{ justifyContent: "center" }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveWeeklyHolidayRow(row.id)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 22,
+                                height: 22,
+                                borderRadius: 4,
+                                border: "none",
+                                background: "transparent",
+                                cursor: "pointer",
+                                color: "#9ca3af",
+                                transition: "all 0.15s",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = "#ef4444";
+                                e.currentTarget.style.background = "#fef2f2";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = "#9ca3af";
+                                e.currentTarget.style.background = "transparent";
+                              }}
+                            >
+                              <Trash2 style={{ width: 13, height: 13 }} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {weeklyHolidays.length === 0 && (
+                      <div
+                        style={{
+                          padding: "24px 0",
+                          textAlign: "center",
+                          fontSize: 12,
+                          color: "#6b7280",
+                        }}
+                      >
+                        No weekly holidays generated yet.
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </section>
