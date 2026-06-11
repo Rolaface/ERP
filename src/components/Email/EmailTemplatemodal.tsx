@@ -130,12 +130,27 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
             setLoading(true);
             getEmailTemplateById({ id: templateId })
                 .then((data) => {
+                    // Reverse map: payloadValue → display value for editor
+                    const chips = getVariableChips(data.id ?? "");
+                    const reverseMap = chips
+                        .filter((chip) => chip.payloadValue)
+                        .reduce<Record<string, string>>((acc, chip) => {
+                            acc[chip.payloadValue!.trim()] = chip.value.trim();
+                            return acc;
+                        }, {});
+
+                    const displayMessage = Object.entries(reverseMap).reduce(
+                        (msg, [payload, display]) => msg.replaceAll(payload, display),
+                        data.message ?? "",
+                    );
+
                     setForm({
                         name: data.id ?? "",
                         subject: data.subject ?? "",
-                        message: data.message ?? "",
+                        message: displayMessage,
                     });
                 })
+
                 .catch(showApiError)
                 .finally(() => setLoading(false));
         } else {
