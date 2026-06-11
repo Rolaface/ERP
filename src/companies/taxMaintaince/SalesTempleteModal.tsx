@@ -322,7 +322,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
                     Charge Type
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted w-[33%]">
-                    GL Accounts
+                    GL Account
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted w-[10%]">
                     Rate (%)
