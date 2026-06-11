@@ -419,7 +419,7 @@ const rounding =
                 PDF
               </button>
             )}
-            {onDownload && (
+            {/* {onDownload && (
               <button
                 className="pidm-btn"
                 onClick={onDownload}
@@ -445,7 +445,7 @@ const rounding =
                 </svg>
                 Download
               </button>
-            )}
+            )} */}
             <button
               onClick={onClose}
               style={{
