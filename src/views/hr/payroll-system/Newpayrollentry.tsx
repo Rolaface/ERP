@@ -76,7 +76,6 @@ const NewPayrollEntry: React.FC<Props> = ({
   });
   const [employees, setEmployees] = useState<any[]>([]);
 
-  // ✅ Pull activate + deactivate from the hook — removes the need for a local readyRef
   const {
     resetDirty,
     handleCloseWithConfirm,
@@ -93,17 +92,15 @@ const NewPayrollEntry: React.FC<Props> = ({
     handleCloseWithConfirm(onBack, modalId);
   };
 
-  // ✅ Use the hook's own activate/deactivate instead of a local readyRef
   useEffect(() => {
     if (!isOpen) {
       deactivate();
       resetDirty();
     } else {
-      return activate(); // activate() returns a cleanup fn that clears its own timeout
+      return activate();
     }
   }, [isOpen]);
 
-  // ✅ markDirty is now guarded by the hook's internal readyRef, so no local check needed
   const update = (field: string, value: unknown) => {
     markDirty();
     setFormData((p) => ({ ...p, [field]: value }));
@@ -154,6 +151,29 @@ const NewPayrollEntry: React.FC<Props> = ({
     })();
   }, []);
 
+  // ─── Footer — passed as prop so MinimizableModal pins it to the bottom ───
+  const footer = (
+    <ModalFooter
+      onCancel={handleClose}
+      onNext={
+        !isLastStep
+          ? () => setStep((p) => Math.min(TABS.length - 1, p + 1))
+          : undefined
+      }
+      onSubmit={isLastStep ? handleSubmit : undefined}
+      currentTab={step}
+      totalTabs={TABS.length}
+      isSubmitting={submitting}
+      nextLabel="Next"
+      submitLabel={
+        isEdit
+          ? "Update Payroll"
+          : `Create Payroll (${formData.selectedEmployees.length})`
+      }
+      submitDisabled={!formData.selectedEmployees.length}
+    />
+  );
+
   return (
     <MinimizableModal
       modalId={modalId}
@@ -163,80 +183,55 @@ const NewPayrollEntry: React.FC<Props> = ({
       subtitle="Create payroll entries"
       maxWidth="6xl"
       height="90vh"
+      footer={footer}
       formContainerRef={containerRef}
     >
-      <div className="flex flex-col h-full -mx-4 -my-3 overflow-hidden">
-        {/* Tabs */}
-        <div className="bg-app border-b border-theme px-8 shrink-0">
-          <div className="flex gap-8 overflow-x-auto">
-            {TABS.map((t, i) => {
-              const isActive = i === step;
-              return (
-                <button
-                  key={t.label}
-                  type="button"
-                  onClick={() => setStep(i)}
-                  className={`py-2.5 bg-transparent border-none text-xs font-medium whitespace-nowrap cursor-pointer transition-all flex items-center gap-2
-                    ${
-                      isActive
-                        ? "text-primary border-b-[3px] border-primary"
-                        : "text-muted border-b-[3px] border-transparent hover:text-main"
-                    }`}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
+      {/* ── Tabs ── */}
+      <div className="bg-app border-b border-theme px-8 shrink-0">
+        <div className="flex gap-8 overflow-x-auto scrollbar-none">
+          {TABS.map((t, i) => {
+            const isActive = i === step;
+            return (
+              <button
+                key={t.label}
+                type="button"
+                onClick={() => setStep(i)}
+                className={`py-2.5 bg-transparent border-none text-xs font-medium whitespace-nowrap cursor-pointer transition-all flex items-center gap-2 ${
+                  isActive
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Tab content ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto bg-app p-5">
+        <div style={{ display: step === 0 ? "block" : "none" }}>
+          <OverviewTab
+            data={formData}
+            onChange={update}
+            isEditMode={!!isEdit}
+          />
         </div>
 
-        {/* Tab content — all three stay mounted; only active one is visible */}
-        <div className="flex-1 min-h-0 overflow-y-auto bg-app p-5">
-          <div style={{ display: step === 0 ? "block" : "none" }}>
-            <OverviewTab
-              data={formData}
-              onChange={update}
-              isEditMode={!!isEdit}
-            />
-          </div>
-
-          <div style={{ display: step === 1 ? "block" : "none" }}>
-            <EmployeesTab
-              data={formData}
-              onChange={update}
-              isEditMode={!!isEdit}
-            />
-          </div>
-
-          <div style={{ display: step === 2 ? "block" : "none" }}>
-            <AccountingTab
-              data={formData}
-              onChange={update}
-              employees={employees}
-            />
-          </div>
+        <div style={{ display: step === 1 ? "block" : "none" }}>
+          <EmployeesTab
+            data={formData}
+            onChange={update}
+            isEditMode={!!isEdit}
+          />
         </div>
 
-        {/* Footer */}
-        <div className="shrink-0 border-t border-theme bg-app px-5 py-3">
-          <ModalFooter
-            onCancel={handleClose}
-            onNext={
-              !isLastStep
-                ? () => setStep((p) => Math.min(TABS.length - 1, p + 1))
-                : undefined
-            }
-            onSubmit={isLastStep ? handleSubmit : undefined}
-            currentTab={step}
-            totalTabs={TABS.length}
-            isSubmitting={submitting}
-            nextLabel="Next"
-            submitLabel={
-              isEdit
-                ? "Update Payroll"
-                : `Create Payroll (${formData.selectedEmployees.length})`
-            }
-            submitDisabled={!formData.selectedEmployees.length}
+        <div style={{ display: step === 2 ? "block" : "none" }}>
+          <AccountingTab
+            data={formData}
+            onChange={update}
+            employees={employees}
           />
         </div>
       </div>
