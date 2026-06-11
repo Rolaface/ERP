@@ -1,5 +1,4 @@
 
-import { autoUpdate } from "@floating-ui/react";
 import { ENV } from "./env";
 
 const getApiBaseUrl = (): string => {
@@ -148,6 +147,8 @@ export const API = {
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
     updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
+    getCompanyDefaults: "/api/method/custom_api.api.organization.company.api.get_company_defaults",
+    updateCompanyDefaults: "/api/method/custom_api.api.organization.company.api.update_company_defaults",
   },
 
   RoleManagement: {

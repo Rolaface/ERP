@@ -328,7 +328,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
       height="70vh"
-      customWidth="70vw"
+      customWidth="75vw"
       footer={footer}
       formContainerRef={containerRef}
     >
@@ -514,14 +514,14 @@ export const SalaryComponentModal: React.FC<Props> = ({
               <AttrRow
                 id="attr-pay-days"
                 label="Depends on Payment Days"
-                description="Prorates the amount based on employee attendance. Formula: (Amount / Total Days) * Working Days."
+                description="Prorates the amount based on the employee's payable days. Formula: (Amount ÷ Total Working Days) * Payment Days."
                 checked={Boolean(form.depends_on_payment_days)}
                 onChange={tog("depends_on_payment_days")}
               />
               <AttrRow
                 id="attr-remove-zero"
                 label="Remove If Zero Valued"
-                description="Hides this component from the salary slip if the calculated value is ₹0."
+                description="Hides this component from the salary slip if the calculated amount is ₹0."
                 checked={Boolean(form.remove_if_zero_valued)}
                 onChange={tog("remove_if_zero_valued")}
               />
@@ -550,7 +550,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                   <AttrRow
                     id="attr-income-tax"
                     label="Income Tax Component"
-                    description="Marks this deduction specifically as the employee's monthly income tax payment."
+                    description="Marks this component as the employee's monthly income tax deduction for payroll and tax calculations."
                     checked={Boolean(form.is_income_tax_component)}
                     onChange={(checked) => {
                       markDirty();

@@ -13,6 +13,7 @@ import { OverviewTab } from "./EntryFormTabs";
 import { EmployeesTab } from "./EmployeesTab";
 import { AccountingTab } from "./Accountingtab";
 import { getAllEmployees } from "../../../api/employeeapi";
+import { getCompanyDefaults, getCompanyAccounts } from "../../../api/companySetupApi"; 
 import ModalFooter from "../../../components/common/ModalFooter";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
@@ -44,7 +45,7 @@ const EMPTY_FORM: PayrollEntry = {
   exchangeRate: DEFAULT_EXCHANGE_RATE,
   company: DEFAULT_COMPANY,
   payrollPayableAccount: DEFAULT_PAYROLL_PAYABLE_ACCOUNT,
-  payrollPayableAccountLabel:"",
+  payrollPayableAccountLabel: "",
   status: "Draft",
   salarySlipTimesheet: false,
   deductTaxForProof: false,
@@ -52,7 +53,7 @@ const EMPTY_FORM: PayrollEntry = {
   startDate: "",
   endDate: "",
   paymentAccount: DEFAULT_PAYMENT_ACCOUNT,
-  paymentAccountLabel:"",
+  paymentAccountLabel: "",
   bankAccount: DEFAULT_BANK_ACCOUNT,
   costCenter: "",
   project: "",
@@ -78,7 +79,6 @@ const NewPayrollEntry: React.FC<Props> = ({
   });
   const [employees, setEmployees] = useState<any[]>([]);
 
-
   const {
     resetDirty,
     handleCloseWithConfirm,
@@ -95,7 +95,6 @@ const NewPayrollEntry: React.FC<Props> = ({
     handleCloseWithConfirm(onBack, modalId);
   };
 
-
   useEffect(() => {
     if (!isOpen) {
       deactivate();
@@ -105,7 +104,6 @@ const NewPayrollEntry: React.FC<Props> = ({
     }
   }, [isOpen]);
 
- 
   const update = (field: string, value: unknown) => {
     markDirty();
     setFormData((p) => ({ ...p, [field]: value }));
@@ -136,8 +134,13 @@ const NewPayrollEntry: React.FC<Props> = ({
   useEffect(() => {
     (async () => {
       try {
-        const resp = await getAllEmployees();
-        const raw = resp?.message?.data || resp?.data || [];
+        const [empResp, defaultsResp, accountsResp] = await Promise.all([
+          getAllEmployees(),
+          getCompanyDefaults().catch(() => null),
+          getCompanyAccounts().catch(() => null), 
+        ]);
+
+        const raw = empResp?.message?.data || empResp?.data || [];
         setEmployees(
           raw.map((emp: any) => ({
             id: emp.name,
@@ -150,11 +153,59 @@ const NewPayrollEntry: React.FC<Props> = ({
             isActive: emp.status === "Active",
           })),
         );
+
+        if (!isEdit && defaultsResp) {
+          const defaultsData = defaultsResp?.message?.data || defaultsResp?.data;
+          
+          let accountsData: any[] = [];
+          if (Array.isArray(accountsResp)) {
+            accountsData = accountsResp;
+          } else if (Array.isArray(accountsResp?.data)) {
+            accountsData = accountsResp.data;
+          } else if (Array.isArray(accountsResp?.message?.data)) {
+            accountsData = accountsResp.message.data;
+          } else if (Array.isArray(accountsResp?.message)) {
+            accountsData = accountsResp.message;
+          }
+
+          if (defaultsData?.default_payroll_payable_account) {
+            const defaultId = defaultsData.default_payroll_payable_account;
+            
+            let finalValue = defaultId;
+            let finalLabel = defaultId;
+
+            const matchedAccount = accountsData.find(
+              (acc: any) => acc.name === defaultId || acc.value === defaultId || acc.id === defaultId
+            );
+
+            if (matchedAccount) {
+              finalValue = matchedAccount.value || matchedAccount.name || matchedAccount.id || defaultId;
+              finalLabel = matchedAccount.label || matchedAccount.account_name || matchedAccount.name || defaultId;
+            } else if (defaultId.includes(" - ")) {
+              finalLabel = defaultId.split(" - ")[0].trim();
+            }
+
+            setFormData((prev) => {
+              const shouldOverride =
+                !prev.payrollPayableAccount ||
+                prev.payrollPayableAccount === DEFAULT_PAYROLL_PAYABLE_ACCOUNT;
+
+              if (shouldOverride) {
+                return {
+                  ...prev,
+                  payrollPayableAccount: finalValue,
+                  payrollPayableAccountLabel: finalLabel,
+                };
+              }
+              return prev;
+            });
+          }
+        }
       } catch (err) {
-        console.error("Failed to fetch employees", err);
+        console.error("Failed to fetch initial data", err);
       }
     })();
-  }, []);
+  }, [isEdit]);
 
   return (
     <MinimizableModal

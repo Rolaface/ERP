@@ -44,24 +44,20 @@ export async function updateAccountsCompany(payload: any): Promise<any> {
 export async function updateCompanyFiles(
   companyId: string,
   logoFile?: File | null,
-  signatureFile?: File | null
+  signatureFile?: File | null,
 ): Promise<any> {
   const formData = new FormData();
-  
-  
+
   formData.append("id", companyId);
-  
- 
+
   if (logoFile) {
     formData.append("documents[companyLogoUrl]", logoFile);
   }
-  
 
   if (signatureFile) {
     formData.append("documents[authorizedSignatureUrl]", signatureFile);
   }
-  
-  
+
   const resp: AxiosResponse = await api.patch(
     CompanyAPI.updateCompanyFiles,
     formData,
@@ -69,14 +65,14 @@ export async function updateCompanyFiles(
       headers: {
         "Content-Type": "multipart/form-data",
       },
-    }
+    },
   );
-  
+
   return resp.data;
 }
 export async function deleteCompanyBankAccount(
   companyId: string,
-  bankAccountId: string | number
+  bankAccountId: string | number,
 ): Promise<any> {
   const resp: AxiosResponse = await api.delete(
     CompanyAPI.deleteCompanyBankAccount,
@@ -85,21 +81,32 @@ export async function deleteCompanyBankAccount(
         companyId: companyId,
         accountId: bankAccountId,
       },
-    }
+    },
   );
 
   return resp.data;
 }
-export async function getCompanyBankAccounts():Promise<any> {
-  const resp: AxiosResponse = await api.get(
-    CompanyAPI.getBankAccounts,
-  );
+export async function getCompanyBankAccounts(): Promise<any> {
+  const resp: AxiosResponse = await api.get(CompanyAPI.getBankAccounts);
 
   return resp.data;
 }
-export async function getCompanyAccounts():Promise<any> {
-  const resp: AxiosResponse = await api.get(
-    CompanyAPI.getCompanyAccounts,
+export async function getCompanyAccounts(): Promise<any> {
+  const resp: AxiosResponse = await api.get(CompanyAPI.getCompanyAccounts);
+
+  return resp.data;
+}
+
+export async function getCompanyDefaults(): Promise<any> {
+  const resp: AxiosResponse = await api.get(CompanyAPI.getCompanyDefaults);
+
+  return resp.data;
+}
+
+export async function updateCompanyDefaults(payload: any): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    CompanyAPI.updateCompanyDefaults,
+    payload,
   );
 
   return resp.data;
