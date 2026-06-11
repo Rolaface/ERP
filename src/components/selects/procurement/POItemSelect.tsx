@@ -192,7 +192,7 @@ export default function POItemSelect({
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`w-full min-w-0 ${className}`}>
 
       
       <div
