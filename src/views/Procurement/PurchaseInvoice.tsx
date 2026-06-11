@@ -44,17 +44,6 @@ import {
   getStatusActionIcon,
 } from "../../components/UI_Utils/statusActionIcons";
 
-import {
-  FileCheck,
-  Ban,
-  BadgeDollarSign,
-  Undo2,
-  Scan,
-  FileText,
-  CreditCard,
-  CircleCheckBig,
-  FileMinus,
-} from "lucide-react";
 
 interface Purchaseinvoice {
   pId: string;
@@ -76,24 +65,14 @@ interface PurchaseinvoicesTableProps {
 
 export type PIStatus =
   | "Draft"
-  | "Return"
   | "Submitted"
-  | "Paid"
-  | "Unpaid"
-  | "Party Paid"
   | "Cancelled"
-  | "Internal Transfer"
-  | "Debit Note Issued";
+
+
 
 const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
   Draft: ["Submitted", "Cancelled"],
-  Submitted: ["Paid", "Unpaid", "Cancelled", "Return"],
-  Unpaid: ["Paid", "Cancelled"],
-  Paid: ["Debit Note Issued", "Return"],
-  "Party Paid": ["Paid", "Debit Note Issued"],
-  Return: ["Debit Note Issued"],
-  "Debit Note Issued": [],
-  "Internal Transfer": [],
+  Submitted: ["Cancelled"],
   Cancelled: [],
 };
 
@@ -104,6 +83,7 @@ const invoiceStatusOptions = [
   { label: "Paid", value: "Paid" },
   { label: "Party Paid", value: "Party Paid" },
   { label: "Cancelled", value: "Cancelled" },
+  { label: "Overdue", value: "Overdue" }
 ];
 
 type OutletContextType = {
@@ -234,7 +214,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
             partyType: "Supplier",
             partyName: data.supplierName,
             partyId: data.supplierId ?? data.pId,
-            amount: data.grandTotal,
+            amount: data.outstanding_amount,
             referenceName: data.piId,
             referenceType: "Purchase Invoice",
             glTo: data.gl_account ?? "",
@@ -681,7 +661,8 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               },
 
               ...(can(PAYMENT_MODULE, "create") &&
-                Number(o.outstanding_amount || 0) > 0
+                Number(o.outstanding_amount || 0) > 0 &&
+                o.status !== "Draft"
                 ? [
                   {
                     label: "Make Payment",
