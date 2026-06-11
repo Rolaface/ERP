@@ -594,7 +594,7 @@ const handlePreviewQuotationPDF = async (
           </PermissionGate>
 
                     <ActionMenu
-  {...(q.status === "Cancelled" ? { onDelete: (e) => handleDelete(q.quotationNumber, e) } : {})}
+  {...(q.status === "Cancelled" || q.status === "Draft" ? { onDelete: (e) => handleDelete(q.quotationNumber, e) } : {})}
   customActions={[    
     ...(q.status !== "Draft"
       ? [
