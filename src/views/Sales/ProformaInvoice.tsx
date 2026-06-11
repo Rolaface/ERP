@@ -665,7 +665,7 @@ const handlePreviewDownload = () => {
             ]}
           /> */}
           <ActionMenu
-            {...(inv.status === "Cancelled" ? { onDelete: (e) => handleDelete(inv.proformaId, e) } : {})}
+            {...(inv.status === "Cancelled" || inv.status === "Draft" ? { onDelete: (e) => handleDelete(inv.proformaId, e) } : {})}
             customActions={[    
               ...(inv.status !== "Draft"
                 ? [
