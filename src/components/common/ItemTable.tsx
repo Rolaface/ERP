@@ -56,34 +56,68 @@ interface ItemTableProps {
   ) => React.ReactNode;
 }
 
+
+
+// ─── Column headers + colgroup (default invoice layout) ──────────────────────
+//
+// Visibility strategy — columns hidden by breakpoint:
+//   always visible : #, Item, Batch No (sales), Qty, Expiry, Unit Price, Amount, Actions
+//   hidden < md    : Pkg, Box, Warehouse, Dis(%), Tax(%), Tax Name
+//   hidden < xl    : Mfg Date   ← was "hidden lg", now pushed to xl to save space
+//
+// Width strategy — all percentages, table-layout:fixed, minWidth:560px fallback.
+// The colgroup percentages govern on normal screens; overflow-x-auto on the
+// wrapper handles screens narrower than 560px.
+
 interface InvoiceHeadersProps {
   isSalesInvoice: boolean;
   isQuotation: boolean;
 }
 
-const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
-  isSalesInvoice,
-  isQuotation,
-}) => (
+const InvoiceColGroup: React.FC<InvoiceHeadersProps> = ({ isSalesInvoice, isQuotation }) => (
+  <colgroup>
+    {/* #          */} <col style={{ width: "28px" }} />
+    {/* Item       */} <col style={{ width: isQuotation ? "30%" : "20%" }} />
+    {/* Pkg (U×S)  */} <col className="hidden md:table-column" style={{ width: "6%" }} />
+    {/* Box        */} <col className="hidden md:table-column" style={{ width: "7%" }} />
+    {/* Batch No   */} {isSalesInvoice && <col style={{ width: "10%" }} />}
+    {/* Qty        */} <col style={{ width: "6%" }} />
+    {/* Mfg Date   */} <col className="hidden xl:table-column" style={{ width: "8%" }} />
+    {/* Expiry     */} <col style={{ width: "8%" }} />
+    {/* Warehouse  */} <col className="hidden md:table-column" style={{ width: "9%" }} />
+    {/* Unit Price */} <col style={{ width: "7%" }} />
+    {/* Dis(%)     */} {!isQuotation && <col className="hidden md:table-column" style={{ width: "5%" }} />}
+    {/* Tax(%)     */} <col className="hidden md:table-column" style={{ width: "5%" }} />
+    {/* Tax Name   */} <col className="hidden md:table-column" style={{ width: "6%" }} />
+    {/* Amount     */} <col style={{ width: "8%" }} />
+    {/* Actions    */} <col style={{ width: "44px" }} />
+  </colgroup>
+);
+
+const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({ isSalesInvoice, isQuotation }) => (
   <tr className="border-b border-theme">
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">#</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] xl:min-w-[180px] whitespace-nowrap">Item</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap hidden md:table-cell">Pkg (U×S)</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap hidden md:table-cell">Box</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">#</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Item</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Pkg</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Box</th>
     {isSalesInvoice && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px] xl:w-[250px] whitespace-nowrap">Batch No</th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Batch</th>
     )}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Qty</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] whitespace-nowrap hidden lg:table-cell">Mfg Date</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">Expiry Date</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap hidden md:table-cell">Warehouse</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[40px] whitespace-nowrap">Unit Price <span className="text-danger">*</span></th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Qty</th>
     {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap hidden md:table-cell">Dis(%)</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden xl:table-cell">Mfg</th>
     )}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap hidden md:table-cell">Tax(%)</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap hidden md:table-cell">Tax Name</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">Amount</th>
+    {!isQuotation && (
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Expiry</th>
+    )}
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Warehouse</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Price <span className="text-danger">*</span></th>
+    {!isQuotation && (
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Dis%</th>
+    )}
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Tax%</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Tax</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Amount</th>
     <th />
   </tr>
 );
@@ -198,8 +232,12 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
-        <td className="px-2 py-1 text-center text-[9px] lg:text-[10px]">{i + 1}</td>
-        <td className="px-0.5 py-1 min-w-[135px]">
+
+        {/* # */}
+        <td className="px-2 py-1 text-center text-[10px] text-muted">{i + 1}</td>
+
+        {/* Item */}
+        <td className="px-0.5 py-1">
           <StockItemSelect
             value={it.itemCode}
             batchNo={it.batchNo}
@@ -224,96 +262,182 @@ const ItemTable: React.FC<ItemTableProps> = ({
             })}
           />
         </td>
+
+        {/* Pkg (U×S) — hidden < md */}
         <td className="px-1 py-1 hidden md:table-cell">
-          <div className="flex items-center justify-center">
-            <Tooltip content={it.packingUnit && it.packingSize ? `Packing: ${it.packingUnit} × ${it.packingSize}` : "No packing defined"}>
-              <input type="text" name="packing" value={it.packingUnit && it.packingSize ? `${it.packingUnit}×${it.packingSize}` : ""} disabled
-                className="w-[50px] h-[22px] text-[9px] lg:text-[10px] text-center bg-card text-main border border-theme rounded-sm" />
-            </Tooltip>
-          </div>
+          <Tooltip content={it.packingUnit && it.packingSize ? `Packing: ${it.packingUnit} × ${it.packingSize}` : "No packing defined"}>
+            <input
+              type="text"
+              name="packing"
+              value={it.packingUnit && it.packingSize ? `${it.packingUnit}×${it.packingSize}` : ""}
+              disabled
+              className="w-full h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+            />
+          </Tooltip>
         </td>
+
+        {/* Box — hidden < md */}
         <td className="px-0.5 py-1 hidden md:table-cell">
-          <div className="flex items-center gap-1">
-            <Tooltip content={`Box Start: ${it.boxStart}`}>
-              <input name="boxStart" value={it.boxStart || ""} placeholder="Start" onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[35px] py-1 px-1 border border-theme rounded text-[9px] lg:text-[10px] bg-card text-main" />
-            </Tooltip>
-            <span className="text-[9px] lg:text-[10px] text-muted">-</span>
-            <Tooltip content={`Box End: ${it.boxEnd}`}>
-              <input name="boxEnd" value={it.boxEnd || ""} placeholder="End" onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[35px] py-1 px-1 border border-theme rounded text-[9px] lg:text-[10px] bg-card text-main" />
-            </Tooltip>
+          <div className="flex items-center gap-0.5">
+            <input
+              name="boxStart"
+              value={it.boxStart || ""}
+              placeholder="S"
+              onChange={(e) => actions.handleItemChange(i, e)}
+              className="w-full py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+            />
+            <span className="text-[9px] text-muted shrink-0">-</span>
+            <input
+              name="boxEnd"
+              value={it.boxEnd || ""}
+              placeholder="E"
+              onChange={(e) => actions.handleItemChange(i, e)}
+              className="w-full py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+            />
           </div>
         </td>
+
+        {/* Batch No — always visible for sales invoice */}
         {isSalesInvoice && (
-          <td className="px-0.5 py-1 min-w-[100px]">
-            <Tooltip content={`Batch No: ${it.batchNo}`}>
-              <input type="text" name="batchNo" value={it.batchNo} disabled onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-full py-1 px-2 border border-theme rounded text-[9px] lg:text-[10px] bg-card text-main" />
+          <td className="px-0.5 py-1">
+            <Tooltip content={`Batch No: ${it.batchNo || "—"}`}>
+              <input
+                type="text"
+                name="batchNo"
+                value={it.batchNo || ""}
+                disabled
+                className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
+              />
             </Tooltip>
           </td>
         )}
+
+        {/* Qty */}
         <td className="px-0.5 py-1">
-          <Tooltip content={`Quantity: ${it.quantity ?? 0}`}>
-            <NumericInput name="quantity" value={it.quantity ?? ""} placeholder="0" className="w-[55px] lg:w-[75px]"
-              onChange={(value) => actions.handleItemChange(i, { target: { name: "quantity", value } } as any)} />
-          </Tooltip>
+          <NumericInput
+            name="quantity"
+            value={it.quantity ?? ""}
+            placeholder="0"
+            className="w-full min-w-[32px]"
+            onChange={(value) => actions.handleItemChange(i, { target: { name: "quantity", value } } as any)}
+          />
         </td>
-        <td className="px-0.5 py-1 hidden lg:table-cell">
-          <div className="w-[80px] xl:w-[98px]">
-            <DatePickerInput label="" name="mfgDate" value={it.mfgDate} disabled
-              onChange={(name, value) => actions.handleItemChange(i, { target: { name, value } } as any)} />
-          </div>
+
+        {/* Mfg Date — hidden < xl */}
+         {!isQuotation && (
+        <td className="px-0.5 py-1 hidden xl:table-cell">
+          <DatePickerInput
+            label=""
+            name="mfgDate"
+            value={it.mfgDate}
+            disabled
+            onChange={(name, value) =>
+              actions.handleItemChange(i, { target: { name, value } } as any)
+            }
+          />
         </td>
+         )}
+
+        {/* Expiry Date */}
+         {!isQuotation && (
         <td className="px-0.5 py-1">
-          <div className="w-[80px] xl:w-[98px]">
-            <DatePickerInput label="" name="expDate" value={it.expDate} disabled
-              onChange={(name, value) => actions.handleItemChange(i, { target: { name, value } } as any)} />
-          </div>
+          <DatePickerInput
+            label=""
+            name="expDate"
+            value={it.expDate}
+            disabled
+            onChange={(name, value) =>
+              actions.handleItemChange(i, { target: { name, value } } as any)
+            }
+          />
         </td>
+         )}
+
+        {/* Warehouse — hidden < md */}
         <td className="px-0.5 py-1 hidden md:table-cell">
           <Tooltip content={it.warehouse || "No warehouse selected"}>
-            <WarehouseSelect compact value={it.warehouse || ""}
-              onChange={(e) => actions.handleItemChange(i, { target: { name: "warehouse", value: e.target?.value ?? e } } as any)} />
+            <WarehouseSelect
+              compact
+              value={it.warehouse || ""}
+              onChange={(e) => actions.handleItemChange(i, { target: { name: "warehouse", value: e.target?.value ?? e } } as any)}
+            />
           </Tooltip>
         </td>
-        <td className="px-2 py-1">
-          <Tooltip content={`Price: ${symbol} ${Number(it.price || 0).toFixed(2)}`}>
-            <NumericInput name="price" value={it.price ?? ""} placeholder="0" decimalScale={4} className="w-[45px] lg:w-[50px]"
-              onChange={(value) => actions.handleItemChange(i, { target: { name: "price", value } } as any)} />
-          </Tooltip>
+
+        {/* Unit Price */}
+        <td className="px-0.5 py-1">
+          <NumericInput
+            name="price"
+            value={it.price ?? ""}
+            placeholder="0"
+            decimalScale={4}
+            className="w-full min-w-[36px]"
+            onChange={(value) => actions.handleItemChange(i, { target: { name: "price", value } } as any)}
+          />
         </td>
+
+        {/* Dis(%) — hidden < md */}
         {!isQuotation && (
           <td className="px-1 py-1 hidden md:table-cell">
-            <NumericInput name="discount" value={it.discount ?? ""} placeholder="0" className="w-[38px]"
-              onChange={(value) => actions.handleItemChange(i, { target: { name: "discount", value } } as any)} />
+            <NumericInput
+              name="discount"
+              value={it.discount ?? ""}
+              placeholder="0"
+              className="w-full min-w-[28px]"
+              onChange={(value) => actions.handleItemChange(i, { target: { name: "discount", value } } as any)}
+            />
           </td>
         )}
+
+        {/* Tax(%) — hidden < md */}
         <td className="px-1 py-1 hidden md:table-cell">
-          <NumericInput name="vatRate" value={it.vatRate ?? ""} placeholder="0" className="w-[38px]"
-            onChange={(value) => actions.handleItemChange(i, { target: { name: "vatRate", value } } as any)} />
+          <NumericInput
+            name="vatRate"
+            value={it.vatRate ?? ""}
+            placeholder="0"
+            className="w-full min-w-[28px]"
+            onChange={(value) => actions.handleItemChange(i, { target: { name: "vatRate", value } } as any)}
+          />
         </td>
-        <td className="px-2 py-1 hidden md:table-cell">
+
+        {/* Tax Name — hidden < md */}
+        <td className="px-1 py-1 hidden md:table-cell">
           <Tooltip content={it.taxTypes?.length ? `Tax Types: ${it.taxTypes.join(", ")}` : "No Tax Types"}>
-            <input type="text" name="vatCode" value={it.vatCode}
-              className="w-[45px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-              onChange={(e) => actions.handleItemChange(i, e)} />
+            <input
+              type="text"
+              name="vatCode"
+              value={it.vatCode || ""}
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+              onChange={(e) => actions.handleItemChange(i, e)}
+            />
           </Tooltip>
         </td>
-        <td className="px-0.5 py-1">
-          <Tooltip content={`Amount: ${symbol} ${amount.toFixed(2)}`}>
-            <span className="w-[110px] text-[9px] lg:text-[10px] font-medium text-main">{symbol} {amount.toFixed(2)}</span>
-          </Tooltip>
+
+        {/* Amount */}
+        <td className="px-1 py-1">
+          <span className="text-[10px] font-medium text-main whitespace-nowrap block truncate" title={`${symbol} ${amount.toFixed(2)}`}>
+            {symbol} {amount.toFixed(2)}
+          </span>
         </td>
+
+        {/* Actions */}
         <td className="px-0.5 py-1">
-          <div className="flex items-center gap-1">
-            <Tooltip content="Duplicate row below">
-              <button type="button" onClick={() => handleCopyRow(i)} className="p-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition">
-                <Copy className="w-4 h-4" />
+          <div className="flex items-center gap-0.5">
+            <Tooltip content="Duplicate row">
+              <button
+                type="button"
+                onClick={() => handleCopyRow(i)}
+                className="p-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition"
+              >
+                <Copy className="w-3.5 h-3.5" />
               </button>
             </Tooltip>
-            <button type="button" onClick={() => handleRemoveRow(i)} className="p-0.5 rounded bg-danger/10 text-danger hover:bg-danger/20 transition">
-              <Trash2 className="w-4 h-4" />
+            <button
+              type="button"
+              onClick={() => handleRemoveRow(i)}
+              className="p-0.5 rounded bg-danger/10 text-danger hover:bg-danger/20 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </td>
@@ -321,19 +445,29 @@ const ItemTable: React.FC<ItemTableProps> = ({
     );
   };
 
+  // Use built-in colgroup for default invoice layout;
+  // custom colGroup prop (PO table etc.) overrides it entirely.
+  const resolvedColGroup = colGroup ?? (
+    <InvoiceColGroup isSalesInvoice={isSalesInvoice} isQuotation={isQuotation} />
+  );
+
   return (
     <div className="bg-card rounded-lg p-2 shadow-sm w-full">
       {title && (
         <h3 className="text-sm font-semibold text-main mb-2">{title}</h3>
       )}
 
-      {/* ── THE KEY FIX: w-full on both wrapper and table ── */}
+      {/*
+        table-layout:fixed + colgroup percentages = columns scale to container.
+        minWidth:560px = absolute minimum before horizontal scroll kicks in.
+        overflow-x-auto on the wrapper = last-resort escape hatch only.
+      */}
       <div className="w-full overflow-x-auto scrollbar-thin">
         <table
-          className="w-full border-collapse text-[9px] lg:text-[10px] leading-tight"
-          style={{ tableLayout: colGroup ? "fixed" : "auto" }}
+          className="w-full border-collapse text-[10px] leading-tight"
+        style={{ tableLayout: "fixed", minWidth: "700px" }}
         >
-          {colGroup}
+          {resolvedColGroup}
           <thead>
             {columnHeaders || (
               <InvoiceHeaders isSalesInvoice={isSalesInvoice} isQuotation={isQuotation} />
@@ -372,12 +506,20 @@ const ItemTable: React.FC<ItemTableProps> = ({
               {ui.itemCount} items
             </div>
             <div className="flex gap-1.5 items-center">
-              <button type="button" onClick={() => ui.setPage(Math.max(0, ui.page - 1))} disabled={ui.page === 0}
-                className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px]">
+              <button
+                type="button"
+                onClick={() => ui.setPage(Math.max(0, ui.page - 1))}
+                disabled={ui.page === 0}
+                className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px]"
+              >
                 Previous
               </button>
-              <button type="button" onClick={() => ui.setPage(ui.page + 1)} disabled={(ui.page + 1) * ITEMS_PER_PAGE >= ui.itemCount}
-                className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px]">
+              <button
+                type="button"
+                onClick={() => ui.setPage(ui.page + 1)}
+                disabled={(ui.page + 1) * ITEMS_PER_PAGE >= ui.itemCount}
+                className="px-2.5 py-1 bg-card text-main border border-theme rounded text-[11px]"
+              >
                 Next
               </button>
             </div>

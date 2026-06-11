@@ -517,7 +517,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       showLoading("Updating invoice status...");
 
       const res = await updateInvoiceStatus(invoiceNumber, status);
-      console.log("🚀 ~ handleRowStatusChange ~ res:", res);
+     
 
       closeSwal();
 

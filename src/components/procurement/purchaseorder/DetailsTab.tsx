@@ -38,46 +38,57 @@ interface DetailsTabProps {
   setFromPO?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-// ─── Column headers ─────────────────────────────────────────────────────────
-// All widths are intentionally small/percentage-friendly so the table
-// never escapes its container. "hidden md:table-cell" columns are omitted
-// on narrow screens, freeing up space for the essential columns.
-
-// colgroup drives all column widths — with table-layout:fixed these are exact
 const POColGroup: React.FC = () => (
   <colgroup>
-    <col style={{ width: "24px" }} />          {/* # */}
-    <col style={{ width: "18%" }} />           {/* Item Name */}
-    <col className="hidden md:table-column" style={{ width: "44px" }} />   {/* Pkg */}
-    <col className="hidden md:table-column" style={{ width: "82px" }} />   {/* Req. By */}
-    <col className="hidden md:table-column" style={{ width: "110px" }} />  {/* Warehouse */}
-    <col style={{ width: "52px" }} />          {/* Qty */}
-    <col className="hidden lg:table-column" style={{ width: "40px" }} />   {/* UOM */}
-    <col style={{ width: "58px" }} />          {/* Rate */}
-    <col className="hidden md:table-column" style={{ width: "40px" }} />   {/* Tax% */}
-    <col className="hidden md:table-column" style={{ width: "44px" }} />   {/* Tax */}
-    <col style={{ width: "68px" }} />          {/* Amount */}
-    <col style={{ width: "40px" }} />          {/* Actions */}
+    <col style={{ width: "24px" }} /> {/* # */}
+    <col style={{ width: "18%" }} /> {/* Item Name — back to 18% */}
+    <col className="hidden md:table-column" style={{ width: "44px" }} />
+    <col className="hidden md:table-column" style={{ width: "82px" }} />
+    <col className="hidden md:table-column" style={{ width: "110px" }} />
+    <col style={{ width: "52px" }} />
+    <col className="hidden lg:table-column" style={{ width: "40px" }} />
+    <col style={{ width: "58px" }} />
+    <col className="hidden md:table-column" style={{ width: "40px" }} />
+    <col className="hidden md:table-column" style={{ width: "44px" }} />
+    <col style={{ width: "68px" }} />
+    <col style={{ width: "40px" }} />
   </colgroup>
 );
-
 const POColumnHeaders: React.FC = () => (
   <tr className="border-b border-theme">
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">#</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Item Name</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Pkg</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Req. By</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
+      #
+    </th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
+      Item Name
+    </th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
+      Pkg
+    </th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
+      Req. By
+    </th>
     <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
       Warehouse <span className="text-danger">*</span>
     </th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Qty</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden lg:table-cell">UOM</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
+      Qty
+    </th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden lg:table-cell">
+      UOM
+    </th>
     <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
       Rate <span className="text-danger">*</span>
     </th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax%</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax</th>
-    <th className="px-1 py-1 text-right text-muted font-medium text-[10px]">Amount</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
+      Tax%
+    </th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
+      Tax
+    </th>
+    <th className="px-1 py-1 text-right text-muted font-medium text-[10px]">
+      Amount
+    </th>
     <th className="px-1 py-1" />
   </tr>
 );
@@ -105,7 +116,10 @@ export const DetailsTab = ({
     if (newPage !== page) setPage(newPage);
   }, [items.length]);
 
-  const paginatedItems = items.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
+  const paginatedItems = items.slice(
+    page * ITEMS_PER_PAGE,
+    (page + 1) * ITEMS_PER_PAGE,
+  );
 
   const handleTopRequiredByChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -114,7 +128,9 @@ export const DetailsTab = ({
     onBulkItemChange?.("requiredBy", (e.target as HTMLInputElement).value);
   };
 
-  const handleTopWarehouseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleTopWarehouseChange = (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     onFormChange(e);
     onBulkItemChange?.("warehouse", e.target.value);
   };
@@ -126,14 +142,14 @@ export const DetailsTab = ({
     duplicateItem: onDuplicateItem,
   };
 
-const tableUI: ItemTableUI = {
-  page,
-  setPage: (p) => {
-    console.log("SET PAGE", p);
-    setPage(p);
-  },
-  itemCount: items.length,
-};
+  const tableUI: ItemTableUI = {
+    page,
+    setPage: (p) => {
+      console.log("SET PAGE", p);
+      setPage(p);
+    },
+    itemCount: items.length,
+  };
 
   const renderPORow = (
     it: ItemRow,
@@ -145,8 +161,10 @@ const tableUI: ItemTableUI = {
   ) => {
     const amount = (it.quantity ?? 0) * (it.rate ?? 0);
     return (
-      <tr key={i} className="border-b border-theme bg-card hover:bg-primary/5 transition-colors">
-
+      <tr
+        key={i}
+        className="border-b border-theme bg-card hover:bg-primary/5 transition-colors"
+      >
         {/* # */}
         <td className="px-1 py-1.5 text-[10px] text-muted">{i + 1}</td>
 
@@ -163,12 +181,22 @@ const tableUI: ItemTableUI = {
         <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
           <input
             type="text"
-            value={it.itemCode ? `${it.packingUnit || ""}x${it.packingSize || ""}` : ""}
+            value={
+              it.itemCode
+                ? `${it.packingUnit || ""}x${it.packingSize || ""}`
+                : ""
+            }
             onChange={(e) => {
               const value = e.target.value;
               const [unit, size] = value.split("x");
-              onItemChange({ target: { name: "packingUnit", value: unit || "" } } as any, i);
-              onItemChange({ target: { name: "packingSize", value: size || "" } } as any, i);
+              onItemChange(
+                { target: { name: "packingUnit", value: unit || "" } } as any,
+                i,
+              );
+              onItemChange(
+                { target: { name: "packingSize", value: size || "" } } as any,
+                i,
+              );
             }}
             className="w-full h-[24px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
           />
@@ -262,8 +290,8 @@ const tableUI: ItemTableUI = {
         </td>
 
         {/* Amount */}
-        <td className="px-1 py-1.5 text-right overflow-hidden">
-          <span className="text-[10px] font-medium text-main whitespace-nowrap">
+        <td className="px-1 py-1.5 overflow-hidden">
+          <span className="text-[10px] font-medium text-main whitespace-nowrap block text-right">
             {symbol} {amount.toFixed(2)}
           </span>
         </td>
@@ -295,7 +323,6 @@ const tableUI: ItemTableUI = {
 
   return (
     <div className="flex flex-col gap-3 bg-app text-main p-3">
-
       {/* ── Top fields ── */}
       <div className="flex flex-wrap gap-2 items-end">
         <div className="w-full sm:w-[180px]">
@@ -321,7 +348,9 @@ const tableUI: ItemTableUI = {
           <CostCenterSelect
             value={form.costCenter}
             onChange={(val) =>
-              onFormChange({ target: { name: "costCenter", value: val } } as React.ChangeEvent<HTMLInputElement>)
+              onFormChange({
+                target: { name: "costCenter", value: val },
+              } as React.ChangeEvent<HTMLInputElement>)
             }
           />
         </div>
@@ -329,7 +358,9 @@ const tableUI: ItemTableUI = {
           <ProjectSelect
             value={form.project}
             onChange={(val) =>
-              onFormChange({ target: { name: "project", value: val } } as React.ChangeEvent<HTMLInputElement>)
+              onFormChange({
+                target: { name: "project", value: val },
+              } as React.ChangeEvent<HTMLInputElement>)
             }
           />
         </div>
@@ -352,13 +383,7 @@ const tableUI: ItemTableUI = {
         </div>
       </div>
 
-      {/* ── Main body: table + sidebar ──
-          KEY FIX: grid uses minmax(0, 1fr) so the table column can shrink
-          below its natural content width. Without this, 1fr = min-content
-          and the grid expands past the modal. The table wrapper uses
-          overflow-x-auto as a last resort for very small screens.        ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_190px] gap-2 min-w-0 items-start">
-
         {/* ── Table column: must be min-w-0 to allow shrinking ── */}
         <div className="min-w-0 overflow-x-auto">
           <ItemTable
@@ -377,28 +402,37 @@ const tableUI: ItemTableUI = {
 
         {/* ── Sidebar ── */}
         <div className="flex flex-row lg:flex-col gap-2 lg:w-[190px] lg:sticky lg:top-0">
-
           {/* Supplier Details card */}
           <div className="bg-card rounded-lg p-2 flex-1 lg:flex-none w-full">
-            <h3 className="text-[12px] font-semibold text-main mb-2">Supplier Details</h3>
+            <h3 className="text-[12px] font-semibold text-main mb-2">
+              Supplier Details
+            </h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5 text-xs text-main">
                 <User size={14} className="text-muted shrink-0" />
-                <span className="truncate">{form.supplier || "Supplier Name"}</span>
+                <span className="truncate">
+                  {form.supplier || "Supplier Name"}
+                </span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-muted">
                 <Mail size={12} className="shrink-0" />
-                <span className="truncate">{form.supplierEmail || "supplier@example.com"}</span>
+                <span className="truncate">
+                  {form.supplierEmail || "supplier@example.com"}
+                </span>
               </div>
               {form.taxCategory && (
                 <div className="mt-1 flex flex-col gap-1">
                   <div className="flex items-center justify-between text-[10px]">
                     <span className="text-muted">Tax Category</span>
-                    <span className="font-medium text-main">{form.taxCategory}</span>
+                    <span className="font-medium text-main">
+                      {form.taxCategory}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-[10px]">
                     <span className="text-muted">Currency</span>
-                    <span className="font-medium text-main">{form.currency || "-"}</span>
+                    <span className="font-medium text-main">
+                      {form.currency || "-"}
+                    </span>
                   </div>
                 </div>
               )}
@@ -407,7 +441,9 @@ const tableUI: ItemTableUI = {
 
           {/* Summary card */}
           <div className="bg-card rounded-lg p-2 flex-1 lg:flex-none w-full">
-            <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
+            <h3 className="text-[13px] font-semibold text-main mb-2">
+              Summary
+            </h3>
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between text-[11px]">
                 <span className="text-muted">Total Items</span>
@@ -415,7 +451,9 @@ const tableUI: ItemTableUI = {
               </div>
               <div className="flex justify-between text-[11px]">
                 <span className="text-muted">Total Quantity</span>
-                <span className="font-medium text-main">{form.totalQuantity ?? 0}</span>
+                <span className="font-medium text-main">
+                  {form.totalQuantity ?? 0}
+                </span>
               </div>
               <div className="flex justify-between text-[11px]">
                 <span className="text-muted">Subtotal</span>
@@ -438,7 +476,6 @@ const tableUI: ItemTableUI = {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
