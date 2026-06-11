@@ -19,6 +19,9 @@ import { openEmployeeAdvanceModal } from "../../store/modalStore";
 import {getAllAdvances,getAdvanceById,deleteEmployeeAdvance, updateAdvanceStatus} from "../../api/expenseClaimApi";
 import EmployeeAdvanceDetailModal, { EmployeeAdvanceDetail } from "../../views/ExpenseManagement/advanceDetailView";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
+import {
+  ACTION_ICONS,
+} from "../../components/UI_Utils/statusActionIcons";
 
 
 const EMPLOYEE_ADVANCE_MODULE = "Employee Advance";
@@ -329,7 +332,7 @@ const handleOpenEdit = async (ea: EmployeeAdvance) => {
       {
         key:    "amount",
         header: "Amount",
-        align:  "right",
+        align:  "center",
         render: (ea) => (
           <div className="py-1.5">
             <span className="block font-medium">
@@ -379,25 +382,27 @@ const handleOpenEdit = async (ea: EmployeeAdvance) => {
 
         <ActionMenu
   {...((isDraft || isCancelled) && { onDelete: () => handleDelete(ea.id) })}
-  customActions={[
-    {
-      label: "Approve",
-      onClick: () => handleStatusChange(ea.id, "submit"),
-      disabled: !isDraft,
-     
-    },
-    {
-  label: "Make Payment",
-  onClick: () => handleMakePayment(ea),
-  disabled: !isUnpaid,
-},
-    {
-      label: "Cancel",
-      onClick: () => handleStatusChange(ea.id, "cancel"),
-      danger: true,
-      disabled: !isUnpaid,
-    },
-  ]}
+ customActions={[
+  {
+    label: "Approve",
+    icon: ACTION_ICONS.APPROVE,
+    onClick: () => handleStatusChange(ea.id, "submit"),
+    disabled: !isDraft,
+  },
+  {
+    label: "Make Payment",
+    icon: ACTION_ICONS.PAYMENT,
+    onClick: () => handleMakePayment(ea),
+    disabled: !isUnpaid,
+  },
+  {
+    label: "Cancel",
+    icon: ACTION_ICONS.CANCEL,
+    onClick: () => handleStatusChange(ea.id, "cancel"),
+    danger: true,
+    disabled: !isUnpaid,
+  },
+]}
 />
       </div>
     );

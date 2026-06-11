@@ -431,7 +431,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 PDF
               </button>
             )}
-            {onDownload && (
+            {/* {onDownload && (
               <button
                 className="idm-btn"
                 onClick={onDownload}
@@ -457,7 +457,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 </svg>
                 Download
               </button>
-            )}
+            )} */}
             <button
               onClick={onClose}
               style={{
