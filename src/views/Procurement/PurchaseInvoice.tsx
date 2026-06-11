@@ -214,7 +214,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
             partyType: "Supplier",
             partyName: data.supplierName,
             partyId: data.supplierId ?? data.pId,
-            amount: data.grandTotal,
+            amount: data.outstanding_amount,
             referenceName: data.piId,
             referenceType: "Purchase Invoice",
             glTo: data.gl_account ?? "",
