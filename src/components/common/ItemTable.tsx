@@ -69,7 +69,7 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">
       #
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] xl:min-w-[180px] whitespace-nowrap">
       Item
     </th>
     {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[140px] whitespace-nowrap">
@@ -82,14 +82,15 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
       Box
     </th>
     {isSalesInvoice && (
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[250px] whitespace-nowrap">
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[180px] xl:w-[250px] whitespace-nowrap">
       Batch No
     </th>
     )}
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
       Qty
     </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] whitespace-nowrap">
+    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] whitespace-nowrap"> */}
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
       Mfg Date
     </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
@@ -271,10 +272,11 @@ useBarcodeScanner(async (barcode) => {
 
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
-        <td className="px-2 py-1 text-center text-[10px]">{i + 1}</td>
+        <td className="px-2 py-1 text-center text-[9px] lg:text-[10px]">{i + 1}</td>
 
         {/* Item */}
-        <td className="px-0.5 py-1 min-w-[135px]">
+        {/* <td className="px-0.5 py-1 min-w-[135px]"> */}
+        <td className="px-0.5 py-1 w-full min-w-[200px]">
           <StockItemSelect
             value={it.itemCode}
             batchNo={it.batchNo}
@@ -332,7 +334,7 @@ useBarcodeScanner(async (barcode) => {
         {/* <td className="px-0.5 py-1">
           <Tooltip content={it.description || "No description"}>
             <input
-              className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full py-1 px-2 border border-theme rounded text-[9px] lg:text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
               name="description"
               value={it.description}
               onChange={(e) => actions.handleItemChange(i, e)}
@@ -359,7 +361,7 @@ useBarcodeScanner(async (barcode) => {
                     : ""
                 }
                 disabled
-                className="w-[50px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+                className="w-[50px] h-[22px] text-[9px] lg:text-[10px] text-center bg-card text-main border border-theme rounded-sm"
               />
             </Tooltip>
           </div>
@@ -374,17 +376,17 @@ useBarcodeScanner(async (barcode) => {
                 value={it.boxStart || ""}
                 placeholder="Start"
                 onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[35px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+                className="w-[35px] py-1 px-1 border border-theme rounded text-[9px] lg:text-[10px] bg-card text-main"
               />
             </Tooltip>
-            <span className="text-[10px] text-muted">-</span>
+            <span className="text-[9px] lg:text-[10px] text-muted">-</span>
             <Tooltip content={`Box End: ${it.boxEnd}`}>
               <input
                 name="boxEnd"
                 value={it.boxEnd || ""}
                 placeholder="End"
                 onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[35px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+                className="w-[35px] py-1 px-1 border border-theme rounded text-[9px] lg:text-[10px] bg-card text-main"
               />
             </Tooltip>
           </div>
@@ -400,7 +402,7 @@ useBarcodeScanner(async (barcode) => {
               value={it.batchNo}
               disabled
               onChange={(e) => actions.handleItemChange(i, e)}
-              className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main"
+              className="w-full py-1 px-2 border border-theme rounded text-[9px] lg:text-[10px] bg-card text-main"
             />
           </Tooltip>
         </td>
@@ -413,7 +415,7 @@ useBarcodeScanner(async (barcode) => {
               name="quantity"
               value={it.quantity ?? ""}
               placeholder="0"
-              className="w-[75px]"
+              className="w-[55px] lg:w-[75px]"
            onChange={(value) => {
   actions.handleItemChange(i, {
     target: {
@@ -428,7 +430,7 @@ useBarcodeScanner(async (barcode) => {
 
         {/* Mfg Date */}
         <td className="px-0.5 py-1">
-          <div style={{ width: "98px" }}>
+         <div className="w-[80px] xl:w-[98px]">
             <DatePickerInput
               label=""
               name="mfgDate"
@@ -443,7 +445,7 @@ useBarcodeScanner(async (barcode) => {
 
         {/* Expiry Date */}
         <td className="px-0.5 py-1">
-          <div style={{ width: "98px" }}>
+          <div className="w-[80px] xl:w-[98px]">
             <DatePickerInput
               label=""
               name="expDate"
@@ -481,7 +483,7 @@ useBarcodeScanner(async (barcode) => {
               value={it.price ?? ""}
               placeholder="0"
               decimalScale={4}
-              className="w-[50px]"
+              className="w-[45px] lg:w-[50px]"
               onChange={(value) =>
                 actions.handleItemChange(i, {
                   target: {
@@ -581,7 +583,7 @@ useBarcodeScanner(async (barcode) => {
         {/* Amount */}
         <td className="px-0.5 py-1">
           <Tooltip content={`Amount: ${symbol} ${amount.toFixed(2)}`}>
-            <span className="w-[110px] text-[10px] font-medium text-main">
+            <span className="w-[110px] text-[9px] lg:text-[10px] font-medium text-main">
               {symbol} {amount.toFixed(2)}
             </span>
           </Tooltip>
@@ -620,8 +622,8 @@ useBarcodeScanner(async (barcode) => {
         </div>
       )}
 
-      <div className="mt-2 overflow-x-auto">
-       <table className="w-full min-w-[900px] border-collapse text-[10px] leading-tight">
+      <div className="mt-2 overflow-x-auto scrollbar-thin">
+       <table className="w-full min-w-[1200px] border-collapse text-[9px] lg:text-[10px] leading-tight">
           <thead>
   {/* {columnHeaders || ( */}
     {/* // <InvoiceHeaders isSalesInvoice={isSalesInvoice} />  */}

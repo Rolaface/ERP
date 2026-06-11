@@ -77,7 +77,21 @@ export const LeavePolicyModal: React.FC<Props> = ({
     }
   }, [isOpen, initialData]);
 
+  // const addDetailRow = () => {
+  //   setForm((prev) => ({
+  //     ...prev,
+  //     leave_policy_details: [
+  //       ...prev.leave_policy_details,
+  //       { leave_type: "", annual_allocation: 0, max_leaves_allowed: 0 },
+  //     ],
+  //   }));
+  // };
   const addDetailRow = () => {
+    // Calculate what the length will be after adding the row
+    const newLength = form.leave_policy_details.length + 1;
+    // Calculate which page this new row will land on
+    const expectedPage = Math.ceil(newLength / ITEMS_PER_PAGE);
+
     setForm((prev) => ({
       ...prev,
       leave_policy_details: [
@@ -85,6 +99,11 @@ export const LeavePolicyModal: React.FC<Props> = ({
         { leave_type: "", annual_allocation: 0, max_leaves_allowed: 0 },
       ],
     }));
+
+    // If the new row pushes us to a new page, automatically navigate there
+    if (expectedPage > currentPage) {
+      setCurrentPage(expectedPage);
+    }
   };
 
   const removeDetailRow = (index: number) => {
@@ -282,6 +301,10 @@ export const LeavePolicyModal: React.FC<Props> = ({
                 // Dynamically fetch the max limit from our loaded leave types array for view mode
                 const matchedLeaveType = availableLeaveTypes.find(lt => lt.name === detail.leave_type);
                 const displayMax = matchedLeaveType?.max_leaves_allowed ?? detail.max_leaves_allowed;
+                const excludedTypes = form.leave_policy_details
+                  .filter((_, idx) => idx !== actualIndex)
+                  .map((d) => d.leave_type)
+                  .filter(Boolean); // Remove empty strings
                 
                 return (
                   <tr key={actualIndex} className="bg-white">
@@ -292,6 +315,7 @@ export const LeavePolicyModal: React.FC<Props> = ({
                       <LeaveTypeSelect
                         label=""
                         value={detail.leave_type}
+                        excludeTypes={excludedTypes}
                         onChange={(type: any) => {
                           // Correctly narrow the type to string to satisfy TypeScript
                           const typeName = typeof type === "string" ? type : (type?.name || "");
