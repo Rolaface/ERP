@@ -134,7 +134,7 @@ const handleExportExcel = async () => {
     const worksheet = XLSX.utils.json_to_sheet(
       expenseTypes.map((et) => ({
         "Expense Type": et.expense_type,
-        "Account":      et.account,
+        "GL Account":      et.account,
       }))
     );
     const workbook = XLSX.utils.book_new();
@@ -172,7 +172,7 @@ const handleExportExcel = async () => {
       },
       {
         key:      "account",
-        header:   "Account",
+        header:   "GL Account",
         align:    "left",
         render:   (et) => (
           <div className="py-1.5">

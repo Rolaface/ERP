@@ -95,7 +95,7 @@ const fetchGLAccounts = useCallback(async (search: string) => {
     if (!form.expense_type.trim())
       newErrors.expense_type = "Expense type is required";
     if (!form.account)
-      newErrors.account = "Account is required";
+      newErrors.account = "GL Account is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -169,7 +169,7 @@ const handleSubmit = async () => {
             placeholder="For example: Travel"
           />
          <SearchSelect2
-  label="Account"
+  label="GL Account"
   required
   value={form.account}
   onChange={(val) => {

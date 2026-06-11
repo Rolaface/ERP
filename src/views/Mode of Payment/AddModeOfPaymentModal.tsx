@@ -151,7 +151,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
             />
 
             <SearchSelect2
-              label="GL Accounts"
+              label="GL Account"
               value={form.defaultAccountDisplay || form.defaultAccount}
               onChange={(val, option) => {
                 markDirty();
