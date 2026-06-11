@@ -1,12 +1,10 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import { Building2, FileText } from "lucide-react";
 import { Button } from "../../ui/modal/formComponent";
 import { DetailsTab } from "./DetailsTab";
 import TermsAndCondition from "../../TermsAndCondition";
 import { useRfqForm } from "../../../hooks/useRfqForm";
 import type { RfqFormData, RfqTab } from "../../../types/Supply/rfq";
-// import { EmailTemplateTab } from "./EmailTemplateTab";
-// import { TermsTab } from "./TermsTab";
 import { MinimizableModal } from "../../common/MinimizableModal";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 
@@ -37,7 +35,16 @@ const RfqModal: React.FC<RfqModalProps> = ({
   isEdit = false,
   isViewMode = false
 }) => {
-  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+  const stableModalId = useRef(modalId).current;
+
+  const {
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
+    activate,
+    deactivate,
+  } = useUnsavedChanges();
+
   const {
     form,
     activeTab,
@@ -63,64 +70,87 @@ const RfqModal: React.FC<RfqModalProps> = ({
     onClose,
   });
 
-  // ADD this useEffect after the useRfqForm call
+  // Activate/deactivate the dirty guard with modal open state
+  useEffect(() => {
+    if (isOpen && !isViewMode) {
+      const cleanup = activate();
+      return () => {
+        cleanup();
+        deactivate();
+      };
+    }
+  }, [isOpen, isViewMode, activate, deactivate]);
+
+  // Fetch existing RFQ in edit mode
   useEffect(() => {
     if (isEdit && initialData && typeof initialData === "string") {
       fetchRFQById(initialData);
     }
   }, [isEdit, initialData]);
 
-  /* ---------- FOOTER  ---------- */
+  /* ---------- FOOTER ---------- */
 
   const footer = useMemo(
-    () => isViewMode ? (
-      <Button variant="secondary" onClick={onClose}>
-        Close
-      </Button>
-    ) : (
-      <>
-        <Button
-          variant="secondary"
-          onClick={() => handleCloseWithConfirm(onClose, modalId)}
-        >
-          Cancel
+    () =>
+      isViewMode ? (
+        <Button variant="secondary" onClick={onClose}>
+          Close
         </Button>
-        <div className="flex gap-2">
+      ) : (
+        <>
           <Button
             variant="secondary"
-            onClick={() => { resetDirty(); reset(); }}
+            onClick={() => handleCloseWithConfirm(onClose, stableModalId)}
           >
-            Reset
+            Cancel
           </Button>
-          <Button
-            variant="primary"
-            type="submit"
-            form="rfqForm"
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Save RFQ"}
-          </Button>
-        </div>
-      </>
-    ),
-    [isViewMode, handleCloseWithConfirm, onClose, modalId, resetDirty, reset, saving],
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                resetDirty();
+                reset();
+              }}
+            >
+              Reset
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              form="rfqForm"
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Save RFQ"}
+            </Button>
+          </div>
+        </>
+      ),
+    [isViewMode, handleCloseWithConfirm, onClose, stableModalId, resetDirty, reset, saving],
   );
 
   return (
     <MinimizableModal
-      modalId={modalId}
+      modalId={stableModalId}
       isOpen={isOpen}
       onClose={() =>
-        isViewMode ? onClose() : handleCloseWithConfirm(onClose, modalId)
+        isViewMode ? onClose() : handleCloseWithConfirm(onClose, stableModalId)
       }
-      title={isViewMode ? `View RFQ` : isEdit ? `Edit RFQ` : "Create Request For Quotation"}
-      subtitle={isViewMode ? `${initialData}` : isEdit ? `${initialData}` : "Create and send RFQ to suppliers"}
+      title={
+        isViewMode ? "View RFQ" : isEdit ? "Edit RFQ" : "Create Request For Quotation"
+      }
+      subtitle={
+        isViewMode
+          ? `${initialData}`
+          : isEdit
+          ? `${initialData}`
+          : "Create and send RFQ to suppliers"
+      }
       icon={FileText}
       customWidth="73vw"
       height="81vh"
       footer={footer}
     >
-      {/* ---------- FORM WRAPPER  ---------- */}
+      {/* ---------- FORM WRAPPER ---------- */}
 
       <form
         id="rfqForm"
@@ -138,23 +168,22 @@ const RfqModal: React.FC<RfqModalProps> = ({
 
         <div className="bg-app border-b border-theme px-8 shrink-0">
           <div className="flex gap-8">
-
             {tabs.map(({ key, icon: Icon, label }) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setActiveTab(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2
-                ${activeTab === key
+                ${
+                  activeTab === key
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+                }`}
               >
                 <Icon size={14} />
                 {label}
               </button>
             ))}
-
           </div>
         </div>
 
@@ -181,8 +210,9 @@ const RfqModal: React.FC<RfqModalProps> = ({
               onRemoveSupplier={removeSupplier}
               onItemChange={handleItemChange}
               onAddItem={addItem}
+              onMarkDirty={!isViewMode ? markDirty : undefined}
               onRemoveItem={removeItem}
-                isViewMode={isViewMode}
+              isViewMode={isViewMode}
             />
           )}
 
@@ -193,9 +223,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
               title="Terms & Conditions"
               terms={form.terms?.buying ?? null}
               isViewMode={isViewMode}
-              setTerms={(updated) =>
-                setTermsBuying(updated)
-              }
+              setTerms={(updated) => setTermsBuying(updated)}
             />
           )}
 
