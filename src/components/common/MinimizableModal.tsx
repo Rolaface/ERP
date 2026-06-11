@@ -6,16 +6,16 @@ import type { LucideIcon } from "lucide-react";
 import { useModalStore, MODAL_LAYER } from "../../store/modalStore";
 
 const MAX_WIDTH_CLASSES: Record<string, string> = {
-  sm: "max-w-sm",
-  md: "max-w-md",
-  lg: "max-w-lg",
-  xl: "max-w-xl",
-  "2xl": "max-w-2xl",
-  "4xl": "max-w-4xl",
-  "5xl": "max-w-5xl",
-  "6xl": "max-w-6xl",
-  wide: "w-[70vw] max-w-6xl",
-  full: "max-w-[92vw]",
+  sm: "w-full max-w-sm",
+  md: "w-full max-w-md",
+  lg: "w-full max-w-lg",
+  xl: "w-full max-w-xl",
+  "2xl": "w-full max-w-2xl",
+  "4xl": "w-full max-w-4xl",
+  "5xl": "w-full max-w-5xl",
+  "6xl": "w-full max-w-6xl",
+  wide: "w-full max-w-6xl",
+  full: "w-full max-w-[92vw]",
 };
 
 export interface MinimizableModalProps {
@@ -186,7 +186,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: 16,
+          padding: "8px",
           pointerEvents: "none",
         }}
       >
@@ -200,14 +200,14 @@ const ModalShell: React.FC<ModalShellProps> = ({
           exit={{ opacity: 0, scale: 0.9, y: 32 }}
           transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
           className={`erp-modal-panel flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-card ${
-            !customWidth ? (MAX_WIDTH_CLASSES[maxWidth] ?? "max-w-4xl") : ""
+            !customWidth ? (MAX_WIDTH_CLASSES[maxWidth] ?? "w-full max-w-4xl") : ""
           }`}
           style={{
             pointerEvents: "auto",
-            height,
+            minHeight: height,           // ← changed: was `height`, now `minHeight` — no bounce on tab switch
             width: customWidth || undefined,
-            maxWidth: customWidth ? "calc(100vw - 32px)" : undefined,
-            maxHeight: "calc(100vh - 32px)",
+            maxWidth: customWidth ? "calc(100vw - 16px)" : undefined,
+            maxHeight: "calc(100dvh - 16px)",
             boxShadow:
               "0 28px 70px rgba(15,23,42,0.28), 0 0 0 1px rgba(15,23,42,0.06)",
           }}
