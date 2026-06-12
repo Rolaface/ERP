@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
-import {
-  AppPage,
-  AppPageHeader,
-  AppPageBody,
-} from "../../components/ui/app-shell";
+// import {
+//   AppPage,
+//   AppPageHeader,
+//   AppPageBody,
+// } from "../../components/ui/app-shell";
 import { getAllPayments } from "../../api/CustomerPayment";
 import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
@@ -268,83 +268,79 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
-  return (
-    <AppPage>
-      {/* <AppPageHeader
-        title="Payment Entry"
-        description="Manage customer and supplier payment transactions."
-        icon={<Receipt />}
-      /> */}
-
-      <AppPageBody>
-        <Table
-          columns={columns}
-          data={data}
-          tableId="payment-entry"
-          rowKey={(r) => r.id}
-          // Fix: split loading states — no more full skeleton flash on page change
-          loading={isInitialLoad}
-          isFetching={isFetching}
-          showToolbar
-          searchValue={searchTerm}
-          onSearch={(q) => {
-            setSearchTerm(q);
-            setPage(1);
-          }}
-          enableColumnSelector
-          enableAdd={can(PAYMENT_ENTRY_MODULE, "create")}
-          addLabel="Add Payment Entry"
-          onAdd={
-            can(PAYMENT_ENTRY_MODULE, "create")
-              ? () =>
+return (
+  <>
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+      <Table
+        columns={columns}
+        data={data}
+        tableId="payment-entry"
+        rowKey={(r) => r.id}
+        loading={isInitialLoad}
+        isFetching={isFetching}
+        showToolbar
+        searchValue={searchTerm}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
+        enableColumnSelector
+        enableAdd={can(PAYMENT_ENTRY_MODULE, "create")}
+        addLabel="Add Payment Entry"
+        onAdd={
+          can(PAYMENT_ENTRY_MODULE, "create")
+            ? () =>
                 openPaymentEntryModal(
                   { partyType: defaultPartyType ?? "Supplier" },
                   false,
                   { onSuccess: () => fetchPayments() }
                 )
-              : undefined
-          }
-          // Fix: sorting now wired up
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onSortChange={handleSortChange}
-          currentPage={page}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          pageSize={pageSize}
-          pageSizeOptions={[10, 25, 50, 100]}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
-        />
-      </AppPageBody>
-      <SendEmailModal
-        open={emailModalOpen}
-        docType="Payment Entry"
-        invoiceNumber={emailPayment?.id}
-        contactEmail={emailContactEmail}
-        invoiceAttachments={emailAttachments}
-        onClose={() => {
-          setEmailModalOpen(false);
-          setEmailPayment(null);
-          setEmailContactEmail(null);
-          setEmailAttachments([]);
+            : undefined
+        }
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 25, 50, 100]}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
         }}
       />
+    </div>
 
-      <PaymentEntryDetailModal
-        open={drawerOpen}
-        data={drawerData}
-        loading={drawerLoading}
-        onClose={() => {
-          setDrawerOpen(false);
-          setDrawerData(null);
-        }}
-      />
-    </AppPage>
-  );
+    <SendEmailModal
+      open={emailModalOpen}
+      docType="Payment Entry"
+      invoiceNumber={emailPayment?.id}
+      contactEmail={emailContactEmail}
+      invoiceAttachments={emailAttachments}
+      onClose={() => {
+        setEmailModalOpen(false);
+        setEmailPayment(null);
+        setEmailContactEmail(null);
+        setEmailAttachments([]);
+      }}
+    />
+
+    <PaymentEntryDetailModal
+      open={drawerOpen}
+      data={drawerData}
+      loading={drawerLoading}
+      onClose={() => {
+        setDrawerOpen(false);
+        setDrawerData(null);
+      }}
+    />
+  </>
+);
+  //   </AppPage>
+  // );
+  
 };
 
 export default PaymentEntry;

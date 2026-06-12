@@ -6,10 +6,10 @@ interface AppShellProps {
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children, sidebar }) => (
-  <div className="flex min-h-screen bg-app text-main">
+  <div className="flex h-full bg-app text-main overflow-hidden">
     {sidebar}
-    <div className="flex flex-1 min-w-0 overflow-visible">
-      <div className="flex-1 min-w-0 overflow-auto">
+    <div className="flex flex-1 min-w-0 overflow-hidden">
+      <div className="flex-1 min-w-0 overflow-hidden">
         {children}
       </div>
     </div>
@@ -26,7 +26,7 @@ export const AppMain: React.FC<AppMainProps> = ({
   children,
 }) => (
   <main
-    className="flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300 ease-out"
+    className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-out"
     style={{
       paddingLeft: sidebarOpen ? 'var(--app-sidebar-width)' : 'var(--app-sidebar-width-collapsed)',
     } as React.CSSProperties}
@@ -44,8 +44,10 @@ export const AppContentContainer: React.FC<{
 }) => (
   <div
     className={[
-      "flex w-full flex-1 flex-col px-3 py-2.5 min-h-0 overflow-visible",
-      viewportLocked ? "h-screen" : "",
+      "flex w-full flex-1 flex-col min-h-0",
+      viewportLocked
+        ? "overflow-hidden"
+        : "overflow-auto px-3 py-2.5",
     ].join(" ")}
   >
     {children}

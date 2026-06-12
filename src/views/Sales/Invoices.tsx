@@ -199,7 +199,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         dueDate: inv.dueDate,
         dateOfInvoice: new Date(inv.invoiceDate),
         total: Number(inv.total),
-        outstandingAmount: inv.outstandingAmount ?? 0,
+        outstanding_amount: inv.outstanding_amount ?? 0,
         totalTax: inv.totalTax,
         invoiceStatus: inv.status,
         invoiceTypeParent: inv.invoiceTypeParent,
@@ -268,7 +268,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       partyType: "Customer",
       partyName: inv.customerName,
       partyId: inv.customerId,
-      amount: inv.outstandingAmount,
+      amount: inv.outstanding_amount,
       referenceName: inv.invoiceNumber,
       referenceType: "Sales Invoice",
       glFrom: d?.gl_account ?? "",
@@ -376,7 +376,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             ? new Date(inv.dueDate).toLocaleDateString()
             : "",
           Amount: inv.total,
-          OutStanding: inv.outstandingAmount,
+          OutStanding: inv.outstanding_amount,
           Currency: inv.currency,
           Status: inv.invoiceStatus,
         })),
@@ -668,12 +668,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         render: (inv) => (
           <div className="py-1.5">
             <span className="block whitespace-nowrap">
-              {(inv.outstandingAmount ?? 0).toLocaleString()} {inv.currency}
+              {(inv.outstanding_amount ?? 0).toLocaleString()} {inv.currency}
             </span>
           </div>
         ),
         tooltip: (inv) =>
-          `Outstanding Amount: ${(inv.outstandingAmount ?? 0).toLocaleString()} ${inv.currency} `,
+          `Outstanding Amount: ${(inv.outstanding_amount ?? 0).toLocaleString()} ${inv.currency} `,
       },
       {
         key: "invoiceStatus",
@@ -720,7 +720,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                 // Receive Payment — needs Payment Entry create
                 ...(inv.invoiceStatus !== "Draft" &&
                   inv.invoiceStatus !== "Cancelled" &&
-                  inv.outstandingAmount > 0 &&
+                  inv.outstanding_amount > 0 &&
                   can(PAYMENT_MODULE, "create")
                   ? [
                     {
