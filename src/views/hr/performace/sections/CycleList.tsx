@@ -238,7 +238,7 @@ const CycleList = () => {
                 label: "Start Cycle",
                 onClick: () => handleStartCycle(row),
                 icon: <Play className="w-4 h-4" />,
-                disabled: startingCycle === row.name,
+                disabled: startingCycle === row.name || row.status === "In Progress",
               },
             ]}
             onDelete={() => handleDelete(row.name, row.cycle_name)}
