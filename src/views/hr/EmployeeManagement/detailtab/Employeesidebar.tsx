@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { getAllDepartments } from "../../../../api/utils/frappeUtilsApi";
-import { uploadEmployeePhoto } from "../../../../api/employeeapi";
+import { uploadEmployeePhoto, removeEmployeePhoto } from "../../../../api/employeeapi";
 import { resolveLabel } from "../../../../api/utils/labelResolver";
 import {
   Mail,
@@ -12,8 +12,6 @@ import {
   Camera,
   Loader2,
   Trash2,
-  X,
-  Check,
 } from "lucide-react";
 import {
   fmt,
@@ -22,8 +20,8 @@ import {
   getFileUrl,
 } from "../detailtab/Employeehelpers";
 import { QuickStat } from "../detailtab/Employeeuiprimitives";
-import { showApiError, showSuccess } from "../../../../utils/alert";
-import { removeEmployeePhoto } from "../../../../api/employeeapi"; // add this export — see note below
+import { showApiError, showSuccess, showConfirm } from "../../../../utils/alert";
+import { PhotoUploadModal } from "../Photouploadmodal";
 
 interface Props {
   emp: any;
@@ -34,100 +32,6 @@ interface Props {
   onPhotoUploaded?: () => void;
 }
 
-// ── Tiny inline confirm dialog ────────────────────────────────────────────────
-interface PhotoConfirmDialogProps {
-  previewUrl: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-const PhotoConfirmDialog: React.FC<PhotoConfirmDialogProps> = ({
-  previewUrl,
-  onConfirm,
-  onCancel,
-}) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div className="bg-card border border-theme rounded-2xl shadow-xl p-5 w-72 flex flex-col items-center gap-4">
-      <p className="text-sm font-semibold text-main">Use this photo?</p>
-
-      <img
-        src={previewUrl}
-        alt="Preview"
-        className="w-24 h-24 rounded-full object-cover ring-2 ring-primary/30 shadow"
-      />
-
-      <p className="text-xs text-muted text-center">
-        This will replace the current employee photo.
-      </p>
-
-      <div className="flex gap-3 w-full">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-theme text-sm text-muted hover:bg-app transition-colors"
-        >
-          <X className="w-3.5 h-3.5" />
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Check className="w-3.5 h-3.5" />
-          Confirm
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
-// ── Remove confirm dialog ─────────────────────────────────────────────────────
-interface RemoveConfirmDialogProps {
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-const RemoveConfirmDialog: React.FC<RemoveConfirmDialogProps> = ({
-  onConfirm,
-  onCancel,
-}) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div className="bg-card border border-theme rounded-2xl shadow-xl p-5 w-72 flex flex-col items-center gap-4">
-      <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-        <Trash2 className="w-5 h-5 text-red-500" />
-      </div>
-
-      <div className="text-center">
-        <p className="text-sm font-semibold text-main">Remove photo?</p>
-        <p className="text-xs text-muted mt-1">
-          The employee's profile picture will be removed.
-        </p>
-      </div>
-
-      <div className="flex gap-3 w-full">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-theme text-sm text-muted hover:bg-app transition-colors"
-        >
-          <X className="w-3.5 h-3.5" />
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          Remove
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
-// ── Main component ────────────────────────────────────────────────────────────
 export const EmployeeSidebar: React.FC<Props> = ({
   emp,
   fullName,
@@ -142,10 +46,9 @@ export const EmployeeSidebar: React.FC<Props> = ({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Confirm dialog state
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
-  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  // ── Crop modal state ──────────────────────────────────────────────────────
+  const [pendingImageSrc, setPendingImageSrc] = useState<string | null>(null);
+  const [pendingFileName, setPendingFileName] = useState<string>("");
 
   useEffect(() => {
     setAvatarSrc(emp.image ? getFileUrl(emp.image, erpBase) : null);
@@ -162,56 +65,73 @@ export const EmployeeSidebar: React.FC<Props> = ({
     loadLabel();
   }, [emp?.department]);
 
-  // ── Step 1: file chosen → show confirm dialog ─────────────────────────────
+  // Cleanup blob URL on unmount (safety)
+  useEffect(() => {
+    return () => {
+      if (pendingImageSrc) URL.revokeObjectURL(pendingImageSrc);
+    };
+  }, [pendingImageSrc]);
+
+  // ── Step 1: file chosen → open crop modal ────────────────────────────────
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // Reset input immediately so the same file can trigger onChange again later
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (!file) return;
 
-    const preview = URL.createObjectURL(file);
-    setPendingFile(file);
-    setPendingPreview(preview);
+    const objectUrl = URL.createObjectURL(file);
+    setPendingImageSrc(objectUrl);
+    setPendingFileName(file.name);
   };
 
-  // ── Step 2a: user confirmed upload ───────────────────────────────────────
-  const handleConfirmUpload = async () => {
-    if (!pendingFile) return;
-
+  // ── Step 2: user confirms crop → upload ──────────────────────────────────
+  const handleCropConfirm = async (croppedFile: File) => {
     const employeeId = emp.employee || emp.name;
     if (!employeeId) return;
 
-    // Optimistic — show preview immediately
-    setAvatarSrc(pendingPreview);
-    setPendingPreview(null);
-    setPendingFile(null);
+    // Optimistic preview — use a fresh object URL from the cropped file
+    const previewUrl = URL.createObjectURL(croppedFile);
+    setAvatarSrc(previewUrl);
+
+    // Close the crop modal
+    if (pendingImageSrc) URL.revokeObjectURL(pendingImageSrc);
+    setPendingImageSrc(null);
 
     try {
       setUploading(true);
-      await uploadEmployeePhoto(String(employeeId), pendingFile);
+      await uploadEmployeePhoto(String(employeeId), croppedFile);
       showSuccess("Photo updated successfully");
       onPhotoUploaded?.();
     } catch (err) {
-      // Revert on error
+      // Revert preview on failure
       setAvatarSrc(emp.image ? getFileUrl(emp.image, erpBase) : null);
       showApiError(err);
     } finally {
       setUploading(false);
+      URL.revokeObjectURL(previewUrl);
     }
   };
 
-  // ── Step 2b: user cancelled ───────────────────────────────────────────────
-  const handleCancelUpload = () => {
-    if (pendingPreview) URL.revokeObjectURL(pendingPreview);
-    setPendingFile(null);
-    setPendingPreview(null);
+  // ── Cancel crop ───────────────────────────────────────────────────────────
+  const handleCropCancel = () => {
+    if (pendingImageSrc) URL.revokeObjectURL(pendingImageSrc);
+    setPendingImageSrc(null);
   };
 
   // ── Remove photo ──────────────────────────────────────────────────────────
-  const handleConfirmRemove = async () => {
-    setShowRemoveConfirm(false);
+  const handleRemovePhoto = async () => {
     const employeeId = emp.employee || emp.name;
     if (!employeeId) return;
+
+    const confirmed = await showConfirm(
+      "This will permanently remove the employee's profile photo.",
+      {
+        title: "Remove Photo?",
+        confirmButtonText: "Yes, remove",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#ef4444",
+      },
+    );
+    if (!confirmed) return;
 
     try {
       setUploading(true);
@@ -228,23 +148,19 @@ export const EmployeeSidebar: React.FC<Props> = ({
 
   return (
     <>
-      {/* ── Dialogs (portaled above everything) ── */}
-      {pendingPreview && pendingFile && (
-        <PhotoConfirmDialog
-          previewUrl={pendingPreview}
-          onConfirm={handleConfirmUpload}
-          onCancel={handleCancelUpload}
-        />
-      )}
-
-      {showRemoveConfirm && (
-        <RemoveConfirmDialog
-          onConfirm={handleConfirmRemove}
-          onCancel={() => setShowRemoveConfirm(false)}
+      {/* ── Crop modal — rendered outside the card so it overlays everything ── */}
+      {pendingImageSrc && (
+        <PhotoUploadModal
+          imageSrc={pendingImageSrc}
+          fileName={pendingFileName}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+          uploading={uploading}
         />
       )}
 
       <div className="bg-card rounded-xl border border-theme shadow-sm sticky top-2 overflow-hidden">
+        {/* ── Header / avatar band ─────────────────────────────────────────── */}
         <div className="bg-primary px-4 py-6 text-center relative">
           {onBack && (
             <button
@@ -299,7 +215,7 @@ export const EmployeeSidebar: React.FC<Props> = ({
             {avatarSrc && !uploading && (
               <button
                 type="button"
-                onClick={() => setShowRemoveConfirm(true)}
+                onClick={handleRemovePhoto}
                 title="Remove photo"
                 className="absolute -bottom-0.5 -left-0.5 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-md border border-white/60 hover:scale-110 transition-transform duration-150 cursor-pointer"
               >
@@ -336,7 +252,7 @@ export const EmployeeSidebar: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Employee ID */}
+        {/* ── Employee ID ─────────────────────────────────────────────────── */}
         <div className="px-4 py-2.5 border-b border-theme bg-app text-center">
           <p className="text-[9px] uppercase tracking-widest text-muted font-bold mb-0.5">
             Employee ID
@@ -346,7 +262,7 @@ export const EmployeeSidebar: React.FC<Props> = ({
           </p>
         </div>
 
-        {/* Quick stats */}
+        {/* ── Quick stats ─────────────────────────────────────────────────── */}
         <div className="px-4 py-3 space-y-4">
           <div className="space-y-1">
             <QuickStat
