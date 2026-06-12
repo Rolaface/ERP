@@ -708,7 +708,9 @@ export const API = {
       list: `${ERP_BASE}/api/resource/Employee Feedback Criteria`,
     },
     cycle: {
-      list: `${ERP_BASE}/api/resource/Appraisal Cycle`
+      list: `${ERP_BASE}/api/resource/Appraisal Cycle`,
+      start_cycle: `${ERP_BASE}/api/method/custom_hrms.api.appraisal.api.start_appraisal_cycle`,
+      get_appraisal: `${ERP_BASE}/api/resource/Appraisal`
     }
   },
 
