@@ -511,6 +511,7 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.create_rfq`,
     GetAll: `${ERP_BASE}/api/resource/Request for Quotation`,
     update: `${ERP_BASE}/api/method/custom_api.api.buying.request_for_quotation.api.update_rfq`,
+    updateStatus: `${ERP_BASE}/api/method/frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs`,
   },
 
   /* =========================

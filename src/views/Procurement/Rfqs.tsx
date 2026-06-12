@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import type { Column } from "../../components/ui/Table/type";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import { getRFQ } from "../../api/procurement/rfqApi";
+import { getRFQ, updateStatus } from "../../api/procurement/rfqApi";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -24,6 +24,7 @@ import {
   ACTION_ICONS,
   getStatusActionIcon,
 } from "../../components/UI_Utils/statusActionIcons";
+import { Ban, CheckCircle } from "lucide-react";
 
 interface RFQ {
   name: string;
@@ -47,27 +48,29 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const { can } = usePermission();
-  // ================= FETCH RFQs =================
-  const fetchRFQs = async () => {
-    try {
-      setLoading(true);
 
-      const res = await getRFQ(page, pageSize);
-
-      setRfqs(res.data);
-      setTotalPages(res.pagination?.total_pages || 1);
-      setTotalItems(res.pagination?.total || 0);
-
-    } catch (error) {
-      toast.error("Failed to load RFQs");
-    } finally {
-      setLoading(false);
-    }
-  };
+ const fetchRFQs = async () => {
+  try {
+    setLoading(true);
+    const start = (page - 1) * pageSize;
+    const res = await getRFQ(start, pageSize, searchTerm);
+    setRfqs(res.data);
+    setTotalPages(res.pagination?.total_pages || 1);
+    setTotalItems(res.pagination?.total || 0);
+  } catch (error) {
+    toast.error("Failed to load RFQs");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchRFQs();
-  }, [page, pageSize]);
+  }, [page, pageSize,searchTerm]);
+  
+  useEffect(() => {
+  setPage(1);
+}, [searchTerm]);
 
   // ================= FILTER =================
   const filteredRFQs = useMemo(() => {
@@ -80,7 +83,6 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
     );
   }, [rfqs, searchTerm]);
 
-  // ================= MODAL HANDLERS =================
   const handleAddClick = () => {
     openRfqModal(null, false, {
       onSuccess: () => fetchRFQs(),
@@ -101,8 +103,8 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
     openRfqModal(rfq.name, true, { isViewMode: true });
   };
 
-  const handleDelete = async (rfq: RFQ, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDelete = async (rfq: RFQ, e?: React.MouseEvent<HTMLButtonElement>) => {
+    e?.stopPropagation();
 
     const confirm = await fireManagedSwal({
       icon: "warning",
@@ -127,6 +129,43 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
       showApiError(error);
     }
   };
+const handleSubmit = async (rfq: RFQ) => {
+  try {
+    showLoading("Submitting RFQ...");
+    await updateStatus(rfq.name, "submit");
+    closeSwal();
+    showSuccess("RFQ submitted successfully");
+    await fetchRFQs();
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
+
+const handleCancel = async (rfq: RFQ) => {
+  const confirm = await fireManagedSwal({
+    icon: "warning",
+    title: "Cancel RFQ?",
+    text: `This will cancel "${rfq.name}". This action cannot be undone.`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, cancel",
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  try {
+    showLoading("Cancelling RFQ...");
+    await updateStatus(rfq.name, "cancel");
+    closeSwal();
+    showSuccess("RFQ cancelled successfully");
+    await fetchRFQs();
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
 
   const formatDate = (date: string | Date) => {
     if (!date) return "";
@@ -194,10 +233,32 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
           </PermissionGate>
 
           <ActionMenu
-            {...(can(RFQ_MODULE, "delete")
-              ? { onDelete: (e) => handleDelete(o, e as any) }
-              : {})}
-          />
+  customActions={[
+    ...(can(RFQ_MODULE, "submit") && o.status === "Draft"
+      ? [{
+          label: "Approve",
+          icon: <CheckCircle className="w-4 h-4" />,
+          onClick: () => handleSubmit(o),
+        }]
+      : []),
+    ...(can(RFQ_MODULE, "cancel") && o.status === "Submitted"
+      ? [{
+          label: "Cancel",
+          icon: <Ban className="w-4 h-4" />,
+          onClick: () => handleCancel(o),
+          danger: true,
+        }]
+      : []),
+  ]}
+  {...(can(RFQ_MODULE, "delete")
+    ? {
+        onDelete: o.status !== "Submitted"
+          ? (e) => handleDelete(o, e)
+          : undefined,
+        deleteLabel: o.status === "Submitted" ? "Delete" : undefined,
+      }
+    : {})}
+/>
         </ActionGroup>
       ),
     },

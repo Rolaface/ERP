@@ -2,6 +2,7 @@ import type { Axios, AxiosResponse } from "axios";
 import { createAxiosInstance } from "../axiosInstance";
 import { API, ERP_BASE } from "../../config/api";
 import { RFQListResponse } from "../../types/Supply/rfq";
+  import { buildListParams } from "../../api/utils/queryBuilder";
 
 const api = createAxiosInstance(ERP_BASE);
 export const rfqapi = API.rfq;
@@ -13,22 +14,27 @@ export async function createRFQ(payload: any): Promise<any> {
 }
 
 export async function getRFQ(
-  page = 1,
-  pageSize = 10
+  start: number,
+  pageSize: number,
+  search: string,
+  status?: string,
 ): Promise<RFQListResponse> {
+  try {
+    const query = buildListParams({
+      fields: ["name", "transaction_date", "schedule_date", "status"],
+      start,
+      pageSize,
+      search,
+      searchFields: ["name", "status"],
+      status,
+    });
 
-  const start = (page - 1) * pageSize;
-
-  const resp = await api.get(
-    `${rfqapi.GetAll}?fields=["name","transaction_date","schedule_date","status"]&with_pagination=1&limit_start=${start}&limit_page_length=${pageSize}`
-  );
-
-  return {
-    data: resp.data?.data ?? [],
-    pagination: resp.data?.pagination,
-  };
+    const resp = await api.get(`${rfqapi.GetAll}?${query}`);
+    return resp.data;
+  } catch (error) {
+    throw error;
+  }
 }
-
 export async function getRFQById(name: string): Promise<any> {
   const resp: AxiosResponse = await api.get(
     `${rfqapi.GetAll}/${encodeURIComponent(name)}`
@@ -42,5 +48,16 @@ export async function updateRFQ(name: string, payload: any): Promise<any> {
     `${rfqapi.update}?id=${encodeURIComponent(name)}`,
     payload
   );
+  return resp.data;
+}
+export async function updateStatus(
+  name: string,
+  action: "submit" | "cancel"
+): Promise<any> {
+  const resp: AxiosResponse = await api.post(rfqapi.updateStatus, {
+    doctype: "Request for Quotation",
+    action,
+    docnames: [name],
+  });
   return resp.data;
 }
