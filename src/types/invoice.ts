@@ -68,7 +68,7 @@ export interface InvoiceSummary {
   dueDate: string | null;
   dateOfInvoice: Date;
   total: number;
-  outstandingAmount: number;
+  outstanding_amount: number;
   totalDiscount: string;
   totalTax: string;
   invoiceStatus: InvoiceStatus;

@@ -1,11 +1,6 @@
 import React, { Suspense, lazy, useMemo, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Users,
-  CreditCard,
-  BarChart3
-} from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, BarChart3 } from "lucide-react";
 import {
   AppPage,
   AppPageBody,
@@ -21,7 +16,7 @@ const CRMReports = lazy(() => import("./Reports"));
 const Leads = lazy(() => import("./Leads"));
 const SupportTickets = lazy(() => import("./Support-tickets"));
 const Payments = lazy(() => import("../PaymentEntry/PaymentEntry"));
-const CustomerGroup = lazy(() => import("../Customergroup/CustomerGroup"))
+const CustomerGroup = lazy(() => import("../Customergroup/CustomerGroup"));
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -48,7 +43,7 @@ const ALL_TABS = [
     id: "dashboard",
     label: "Dashboard",
     icon: <LayoutDashboard {...iconProps} />,
-    module: null,           // always visible
+    module: null,
   },
   {
     id: "customer-managment",
@@ -80,16 +75,17 @@ const ALL_TABS = [
   },
 ];
 
+// Tabs that need full viewport lock (no scroll, fixed height layout)
+const VIEWPORT_LOCKED_TABS = new Set(["customer-managment"]);
 
 const DEFAULT_TAB = "dashboard";
 
 const CRM: React.FC = () => {
   const { can } = usePermission();
 
-  // Filter tabs based on permissions
   const crmTabs = useMemo(
     () => ALL_TABS.filter((t) => !t.module || can(t.module, t.action)),
-    [can]
+    [can],
   );
 
   const fallbackTab = crmTabs[0]?.id ?? DEFAULT_TAB;
@@ -100,33 +96,45 @@ const CRM: React.FC = () => {
   });
 
   const { openCustomerCreate } = useOutletContext<OutletContextType>();
-  const handleAddCustomer = useCallback(() => openCustomerCreate(), [openCustomerCreate]);
+  const handleAddCustomer = useCallback(
+    () => openCustomerCreate(),
+    [openCustomerCreate],
+  );
 
-  const tabComponents = useMemo(() => ({
-    dashboard: <CRMDashboard />,
-    "customer-managment": <CustomerManagement onAdd={handleAddCustomer} />,
-    payments: <Payments defaultPartyType="Customer" />,
-    CustomerGroup: <CustomerGroup />,
-    reports: <CRMReports />,
-  }), [handleAddCustomer]);
+  const tabComponents = useMemo(
+    () => ({
+      dashboard: <CRMDashboard />,
+      "customer-managment": <CustomerManagement onAdd={handleAddCustomer} />,
+      payments: <Payments defaultPartyType="Customer" />,
+      CustomerGroup: <CustomerGroup />,
+      reports: <CRMReports />,
+    }),
+    [handleAddCustomer],
+  );
 
-  const currentTabComponent =
-    tabComponents[resolvedTab as keyof typeof tabComponents] ?? <CRMDashboard />;
+  const currentTabComponent = tabComponents[
+    resolvedTab as keyof typeof tabComponents
+  ] ?? <CRMDashboard />;
 
-  const isDashboardTab = resolvedTab === "dashboard";
+  const isViewportLocked = VIEWPORT_LOCKED_TABS.has(resolvedTab);
 
   return (
-    <AppPage viewportLocked={isDashboardTab}>
+    <AppPage viewportLocked={isViewportLocked}>
       <AppPageHeader
         title="Customers"
         description="End-to-end customer management—from onboarding to payments."
         icon={<Users size={20} strokeWidth={1.75} />}
       />
-      <AppTabs tabs={crmTabs} activeTab={resolvedTab} onChange={handleTabChange} />
-      <AppPageBody viewportLocked={isDashboardTab}>
-        <Suspense fallback={null}>
-          {currentTabComponent}
-        </Suspense>
+      <AppTabs
+        tabs={crmTabs}
+        activeTab={resolvedTab}
+        onChange={handleTabChange}
+      />
+      <AppPageBody
+        viewportLocked={isViewportLocked}
+       
+      >
+        <Suspense fallback={null}>{currentTabComponent}</Suspense>
       </AppPageBody>
     </AppPage>
   );
