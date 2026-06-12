@@ -114,7 +114,7 @@ export default function FeedbackSection() {
   const columns: Column<FeedbackRow>[] = [
     {
       key: "creation",
-      header: "Created At",
+      header: "Date Created",
       align: "center",
       render: (row) => (
         <span>

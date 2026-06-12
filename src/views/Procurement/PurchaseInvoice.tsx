@@ -71,7 +71,7 @@ export type PIStatus =
 
 
 const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
-  Draft: ["Submitted", "Cancelled"],
+  Draft: ["Submitted"],
   Submitted: ["Cancelled"],
   Cancelled: [],
 };
