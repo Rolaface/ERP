@@ -241,6 +241,7 @@ export const API = {
     getAll: `${ERP_BASE}/api/resource/Employee`,
     getById: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employee_by_id`,
     Dp: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.upload_employee_image`,
+    removePhoto: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.remove_employee_image`,
     create: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.create_employee`,
     update: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee`,
     delete: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.delete_employee`,
