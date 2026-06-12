@@ -66,20 +66,17 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [allCustomers, setAllCustomers] = useState<CustomerSummary[]>([]);
-  const [taxCategory,] = useState<string>("");
-
+  const [taxCategory] = useState<string>("");
 
   const fetchCustomers = async () => {
     try {
       setCustLoading(true);
-
       const response = await getAllCustomers(
         page,
         pageSize,
         taxCategory || undefined,
         searchTerm || undefined,
       );
-
       setCustomers(response?.data || []);
       setTotalPages(response?.pagination?.total_pages || 1);
       setTotalItems(response?.pagination?.total || 0);
@@ -91,6 +88,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       setInitialLoad(false);
     }
   };
+
   useEffect(() => {
     fetchCustomers();
   }, [page, pageSize, taxCategory, searchTerm]);
@@ -105,7 +103,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     });
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchCustomers]);
-
 
   const fetchAllCustomers = async () => {
     try {
@@ -129,10 +126,22 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   const handleExport = async () => {
     try {
       showLoading("Exporting customers...");
-      const response = await getAllCustomers(1, 10000, taxCategory || undefined, searchTerm || undefined);
+      const response = await getAllCustomers(
+        1,
+        10000,
+        taxCategory || undefined,
+        searchTerm || undefined,
+      );
       const rows: CustomerSummary[] = response?.data || [];
-
-      const headers = ["Customer ID", "Name", "Type", "TPIN", "Tax Category", "Currency", "Status"];
+      const headers = [
+        "Customer ID",
+        "Name",
+        "Type",
+        "TPIN",
+        "Tax Category",
+        "Currency",
+        "Status",
+      ];
       const csvRows = [
         headers.join(","),
         ...rows.map((c) =>
@@ -144,10 +153,9 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
             c.customerTaxCategory ?? "",
             c.currency,
             c.status,
-          ].join(",")
+          ].join(","),
         ),
       ];
-
       const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -182,7 +190,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   const handleDelete = async (customerId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-
     const confirm = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
@@ -192,11 +199,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       cancelButtonColor: "#6b7280",
       confirmButtonText: "Yes, delete",
     });
-
-    if (!confirm.isConfirmed) {
-      return;
-    }
-
+    if (!confirm.isConfirmed) return;
     try {
       showLoading("Deleting Customer...");
       await deleteCustomerById(customerId);
@@ -211,7 +214,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
 
   const handleEditCustomer = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-
     try {
       showLoading("Loading customer...");
       const customer = await getCustomerByCustomerCode(id);
@@ -232,17 +234,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     try {
       setCustLoading(true);
       await ensureAllCustomers();
-
       const customerId =
         typeof customerOrId === "string" ? customerOrId : customerOrId.id;
-
       const response = await getCustomerByCustomerCode(customerId);
       const fullCustomer = response?.message?.data ?? response?.data;
-
-      if (!fullCustomer) {
-        throw new Error("Customer not found");
-      }
-
+      if (!fullCustomer) throw new Error("Customer not found");
       setSelectedCustomer(fullCustomer);
       setViewMode("detail");
     } catch (error) {
@@ -256,12 +252,12 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     setViewMode("table");
     setSelectedCustomer(null);
   };
+
   const handleDisableCustomer = async (
     customerId: string,
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
-
     await updateEntityStatus(customerId, {
       entityName: "Customer",
       action: "inactive",
@@ -277,7 +273,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
-
     await updateEntityStatus(customerId, {
       entityName: "Customer",
       action: "active",
@@ -372,10 +367,11 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       render: (customer) => (
         <div className="py-1.5">
           <span
-            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${customer.status === "Active"
-              ? "bg-green-100 text-green-700"
-              : "bg-gray-100 text-gray-600"
-              }`}
+            className={`inline-flex items-center justify-center text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
+              customer.status === "Active"
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-600"
+            }`}
           >
             {customer.status}
           </span>
@@ -388,7 +384,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
       align: "center",
       render: (customer) => (
         <ActionGroup>
-          {/* View — always shown if they can read */}
           <PermissionGate module={CUSTOMER_MODULE} action="read">
             <ActionButton
               type="view"
@@ -396,8 +391,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
               iconOnly
             />
           </PermissionGate>
-
-          {/* Edit — needs write */}
           <PermissionGate module={CUSTOMER_MODULE} action="write">
             <ActionButton
               type="edit"
@@ -406,8 +399,6 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
               title="Edit Customer"
             />
           </PermissionGate>
-
-          {/* Delete + Receive Payment — inside ActionMenu */}
           <ActionMenu
             {...(can(CUSTOMER_MODULE, "delete")
               ? { onDelete: (e) => handleDelete(customer.id, e as any) }
@@ -417,22 +408,20 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
                 ? (e) => handleDisableCustomer(customer.id, e as any)
                 : undefined
             }
-
             onEnable={
               customer.status === "Inactive"
                 ? (e) => handleEnableCustomer(customer.id, e as any)
                 : undefined
             }
             customActions={[
-              // Receive Payment only if user has Payment Entry create
               ...(can(PAYMENT_MODULE, "create")
                 ? [
-                  {
-                    label: "Receive Payment",
-                    icon: ACTION_ICONS.PAYMENT,
-                    onClick: () => handleMakePayment(customer),
-                  },
-                ]
+                    {
+                      label: "Receive Payment",
+                      icon: ACTION_ICONS.PAYMENT,
+                      onClick: () => handleMakePayment(customer),
+                    },
+                  ]
                 : []),
             ]}
           />
@@ -442,54 +431,46 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
   ];
 
   return (
-    <div>
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       {viewMode === "table" ? (
-        <Table
-          columns={columns}
-          data={customers}
-          tableId="customer-management"
-          showToolbar
-          loading={custLoading || initialLoad}
-          onPageSizeChange={(size) => setPageSize(size)}
-          pageSizeOptions={[10, 25, 50, 100]}
-          searchValue={searchTerm}
-          onSearch={(q) => {
-            setSearchTerm(q);
-            setPage(1);
-          }}
-          enableAdd={can(CUSTOMER_MODULE, "create")}
-          addLabel="Add Customer"
-          onAdd={handleAddCustomer}
-          enableColumnSelector
-          enableExport={can(CUSTOMER_MODULE, "export")}
-          onExport={handleExport}
-          currentPage={page}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={totalItems}
-          onPageChange={setPage}
-        // extraFilters={
-        //   <div>
-        //     <FilterSelect
-        //       value={taxCategory}
-        //       onChange={(e) => {
-        //         setPage(1);
-        //         setTaxCategory(e.target.value);
-        //       }}
-        //      options={taxCategoryOptions}
-        //     />
-        //   </div>
-        // }
-        />
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <Table
+            columns={columns}
+            data={customers}
+            tableId="customer-management"
+            showToolbar
+            loading={custLoading || initialLoad}
+            onPageSizeChange={(size) => setPageSize(size)}
+            pageSizeOptions={[10, 25, 50, 100]}
+            searchValue={searchTerm}
+            onSearch={(q) => {
+              setSearchTerm(q);
+              setPage(1);
+            }}
+            enableAdd={can(CUSTOMER_MODULE, "create")}
+            addLabel="Add Customer"
+            onAdd={handleAddCustomer}
+            enableColumnSelector
+            enableExport={can(CUSTOMER_MODULE, "export")}
+            onExport={handleExport}
+            currentPage={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={setPage}
+          />
+        </div>
       ) : selectedCustomer ? (
-        <CustomerDetailView
-          customerId={selectedCustomer.id}
-          customers={allCustomers}
-          onBack={handleBack}
-          onCustomerSelect={handleRowClick}
-          onAdd={onAdd}
-          onEdit={handleEditCustomer}
-        />
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <CustomerDetailView
+            customerId={selectedCustomer.id}
+            customers={allCustomers}
+            onBack={handleBack}
+            onCustomerSelect={handleRowClick}
+            onAdd={onAdd}
+            onEdit={handleEditCustomer}
+          />
+        </div>
       ) : null}
     </div>
   );

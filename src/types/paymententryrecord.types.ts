@@ -13,7 +13,7 @@ export interface SalesInvoiceRaw {
   totalAmount: number;
   totalTax: number | null;
   status: string | null;
-  outstandingAmount: number;
+  outstanding_amount: number;
   OutStandingAmount: number; 
   invoiceTypeParent: string;
   invoiceType: string | null;

@@ -225,7 +225,8 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.create_customer`,
     update: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.update_customer`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.delete_customer`,
-    getStatement: `${ERP_BASE}/api/method/custom_api.api.reports.customer_statement.get_customer_statement`,
+    getStatement:`${ERP_BASE}/api/method/custom_api.api.reports.customer.api.get_customer_statement`,
+    getcusotmerstatementpdf:`${ERP_BASE}/api/method/custom_api.api.reports.customer.api.generate_customer_statement_pdf`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
     getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
@@ -241,6 +242,7 @@ export const API = {
     getAll: `${ERP_BASE}/api/resource/Employee`,
     getById: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.get_employee_by_id`,
     Dp: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.upload_employee_image`,
+    removePhoto: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.remove_employee_image`,
     create: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.create_employee`,
     update: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.update_employee`,
     delete: `${ERP_BASE}/api/method/custom_hrms.api.employee.api.delete_employee`,
@@ -736,6 +738,8 @@ export const API = {
     createbranch: `${ERP_BASE}/api/resource/Branch`,
     getshifts: `${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
     employeesearch: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
+    searchCustomers:`${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
+    
 
 
   },

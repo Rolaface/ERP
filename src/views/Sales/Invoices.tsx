@@ -376,7 +376,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             ? new Date(inv.dueDate).toLocaleDateString()
             : "",
           Amount: inv.total,
-          OutStanding: inv.outstandingAmount,
+          OutStanding: inv.outstanding_amount,
           Currency: inv.currency,
           Status: inv.invoiceStatus,
         })),

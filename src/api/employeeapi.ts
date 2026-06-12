@@ -122,6 +122,13 @@ export async function uploadEmployeePhoto(
   );
   return resp.data;
 }
+//-remove phtoto────────────────────────────────────────────────────────
+export async function removeEmployeePhoto(employeeId: string): Promise<any> {
+  const resp: AxiosResponse = await api.delete(
+    `${EmployeeAPI.removePhoto}?id=${employeeId}`,
+  );
+  return resp.data;
+}
 
 // ── Details & Approvers ──────────────────────────────────────────
 

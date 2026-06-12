@@ -651,10 +651,10 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
         {/* RIGHT: Summary panel */}
         <div className="w-[260px] flex-shrink-0 border-l border-theme bg-app">
           <div className="h-full">
-            <EmployeeSummaryPanel
-              formData={formData}
-              onFileSelect={setEmployeeFile}
-            />
+           <EmployeeSummaryPanel
+  formData={formData}
+  onFileSelect={setEmployeeFile}
+/>
           </div>
         </div>
       </div>
