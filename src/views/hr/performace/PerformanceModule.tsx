@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import {
   ClipboardCheck,
   Repeat,
-  Settings2 ,
+  Settings2,
 } from "lucide-react";
 import {
   AppPage,
@@ -17,9 +17,9 @@ const FeedbackPage = lazy(() => import("./feedbackpage"));
 const SetupPage = lazy(() => import("./Setuppage"));
 
 const TABS = [
+  { id: "setup", label: "Setup", icon: <Settings2 size={16} strokeWidth={1.75} /> },
+  { id: "cycle", label: "Cycles", icon: <Repeat size={16} strokeWidth={1.75} /> },
   { id: "app", label: "Appraisal Form", icon: <ClipboardCheck size={16} strokeWidth={1.75} /> },
-  { id: "cycle", label: "Cycles", icon: <Repeat size={16} strokeWidth={1.75}/> },
-  { id: "setup", label: "Setup", icon: <Settings2 size={16} strokeWidth={1.75}/> },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
