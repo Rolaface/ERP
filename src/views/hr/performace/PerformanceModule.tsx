@@ -25,7 +25,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 const PerformanceModule = () => {
-  const [tab, setTab] = useState<TabId>("app");
+  const [tab, setTab] = useState<TabId>("setup");
 
   const handleTabChange = (newTab: string) => {
     setTab(newTab as TabId);
