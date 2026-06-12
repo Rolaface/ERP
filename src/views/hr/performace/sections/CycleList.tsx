@@ -1,52 +1,54 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import ModalTable from "../../../../components/ui/Table/ModalTableInside";
+import Table from "../../../../components/ui/Table/Table";
 import ActionButton, { ActionMenu } from "../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../components/ui/Table/type";
 import NewCycleModal from "../../../../components/Hr/performance/Newcyclemodal";
 import type { NewCyclePayload } from "../../../../hooks/appraisal/useCycleModal";
-
+import { Play } from "lucide-react";
 import {
   getCycleList,
   getCycleById,
   createCycle,
   deleteCycle,
+  startAppraisalCycle,
   type CycleItem,
 } from "../../../../api/Appraisalapi/performanceCycleApi";
 import {
   useDataRefreshStore,
   REFRESH_KEYS,
 } from "../../../../store/dataRefreshStore";
-import { showApiError, showSuccess } from "../../../../utils/alert";
+import { showApiError, showSuccess, showLoading, closeSwal, showConfirm } from "../../../../utils/alert";
 import { fireManagedSwal } from "../../../../utils/swalManager";
 
 // ─── Status badge styles ──────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, string> = {
-  Active:        "bg-green-100 text-green-700",
-  Draft:         "bg-yellow-100 text-yellow-700",
-  Completed:     "bg-[var(--row-hover)] text-[var(--muted)]",
+  Active: "bg-green-100 text-green-700",
+  Draft: "bg-yellow-100 text-yellow-700",
+  Completed: "bg-[var(--row-hover)] text-[var(--muted)]",
   "Not Started": "bg-blue-50 text-blue-600",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const CycleList = () => {
-  const [cycles,     setCycles]     = useState<CycleItem[]>([]);
-  const [loading,    setLoading]    = useState(false);
-  const [search,     setSearch]     = useState("");
-  const [page,       setPage]       = useState(1);
-  const [pageSize,   setPageSize]   = useState(10);
+  const [cycles, setCycles] = useState<CycleItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
   // ── Create modal ──
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [saving,          setSaving]          = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // ── View modal ──
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [viewCycle,     setViewCycle]     = useState<CycleItem | null>(null);
-  const [viewLoading,   setViewLoading]   = useState(false);
+  const [viewCycle, setViewCycle] = useState<CycleItem | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [startingCycle, setStartingCycle] = useState<string | null>(null);
 
   // ── Fetch list ────────────────────────────────────────────────────────────
 
@@ -83,7 +85,7 @@ const CycleList = () => {
       await createCycle({
         cycle_name: payload.cycle_name,
         start_date: payload.start_date,
-        end_date:   payload.end_date,
+        end_date: payload.end_date,
         appraisees: payload.appraisees,
       });
       setCreateModalOpen(false);
@@ -96,7 +98,51 @@ const CycleList = () => {
     }
   };
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  const handleStartCycle = async (row: CycleItem) => {
+    const confirmed = await showConfirm(
+      `This will create appraisal records for all appraisees in "${row.cycle_name}". Continue?`,
+      {
+        title: "Start Appraisal Cycle?",
+        confirmButtonText: "Yes, start",
+        confirmButtonColor: "#22c55e",
+      }
+    );
+    if (!confirmed) return;
+
+    setStartingCycle(row.name);
+    showLoading("Starting appraisal cycle...");
+
+    try {
+      const result = await startAppraisalCycle(row.name);
+      closeSwal();
+
+      if (result.status !== "success") {
+        showApiError({ response: { data: { message: result.message } } });
+        return;
+      }
+
+      if (result.serverMessages.length > 0) {
+        await fireManagedSwal({
+          icon: "warning",
+          title: result.data?.message ?? "Cycle started with warnings",
+          html: result.serverMessages
+            .map((m) => `<div style="text-align:left;font-size:13px;margin-bottom:8px;">${m}</div>`)
+            .join(""),
+          confirmButtonText: "OK",
+          confirmButtonColor: "#f59e0b",
+        });
+      } else {
+        showSuccess(result.data?.message ?? "Appraisal cycle started successfully");
+      }
+
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.APPRAISAL_CYCLE_LIST);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    } finally {
+      setStartingCycle(null);
+    }
+  };
 
   const handleDelete = async (name: string, cycleName: string) => {
     const result = await fireManagedSwal({
@@ -167,9 +213,8 @@ const CycleList = () => {
       align: "center",
       render: (row) => (
         <span
-          className={`text-xs px-2 py-1 rounded-full font-medium ${
-            STATUS_STYLES[row.status] ?? "bg-gray-100 text-gray-600"
-          }`}
+          className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_STYLES[row.status] ?? "bg-gray-100 text-gray-600"
+            }`}
         >
           {row.status}
         </span>
@@ -188,8 +233,16 @@ const CycleList = () => {
             title="View cycle"
           />
           <ActionMenu
-  onDelete={() => handleDelete(row.name, row.cycle_name)}
-/>
+            customActions={[
+              {
+                label: "Start Cycle",
+                onClick: () => handleStartCycle(row),
+                icon: <Play className="w-4 h-4" />,
+                disabled: startingCycle === row.name,
+              },
+            ]}
+            onDelete={() => handleDelete(row.name, row.cycle_name)}
+          />
         </div>
       ),
     },
@@ -197,7 +250,7 @@ const CycleList = () => {
 
   return (
     <>
-      <ModalTable
+      <Table
         columns={columns}
         data={cycles}
         rowKey={(row) => row.name}
@@ -235,7 +288,7 @@ const CycleList = () => {
             setViewModalOpen(false);
             setViewCycle(null);
           }}
-          onSave={() => {}}
+          onSave={() => { }}
           modalId={`view-cycle-${viewCycle.name.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
           viewData={viewCycle}
           isViewMode
