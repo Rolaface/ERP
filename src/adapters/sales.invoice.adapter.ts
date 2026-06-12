@@ -53,7 +53,7 @@ function normalizeSalesInvoice(raw: SalesInvoiceRaw): NormalizedInvoice {
 export const salesInvoiceAdapter: InvoiceAdapter = {
   async fetchPage({ page, pageSize, partyId }: FetchParams): Promise<NormalizedPage> {
    const res = await getAllSalesInvoices(
-      page, pageSize, "dueDate", "asc", undefined, partyId, 0.01,
+      page, pageSize, "dueDate", "desc", undefined, partyId, 0.01,
       ["Partly Paid", "Unpaid", "Overdue"]
     );
     const raw: SalesInvoiceRaw[] = res?.data ?? [];
@@ -68,7 +68,7 @@ export const salesInvoiceAdapter: InvoiceAdapter = {
 
   async fetchAllForFifo(partyId): Promise<NormalizedInvoice[]> {
    const res = await getAllSalesInvoices(
-      1, 1000, "dueDate", "asc", undefined, partyId, 0.01,
+      1, 1000, "dueDate", "desc", undefined, partyId, 0.01,
       ["Partly Paid", "Unpaid", "Overdue"]
     );
     console.log(res?.data?.[0]) 
