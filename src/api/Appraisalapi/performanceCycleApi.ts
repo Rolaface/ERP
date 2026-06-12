@@ -48,6 +48,20 @@ export interface GetCycleListResponse {
   };
 }
 
+export interface AppraisalItem{
+   name: string;
+   appraisal_cycle: string;
+   employee_name: string;
+   employee_image: string;
+}
+
+export interface GetAppraisalResponse{
+  data:AppraisalItem[];
+  pagination?:{
+    total:number;
+    page_count:number;
+  }
+}
 // ─── Create Cycle ───────────────────────────────────────────────
 
 export async function createCycle(
@@ -94,7 +108,7 @@ export async function getCycleList({
     start,
     pageSize,
     search,
-    searchFields: ["cycle_name"],
+    searchFields: ["cycle_name","name","status"],
   });
 
   const resp: AxiosResponse = await api.get(
@@ -110,6 +124,39 @@ export async function getCycleList({
   };
 }
 
+
+export async function getAppraisals(
+  {
+  page = 1,
+  pageSize = 20,
+  search = "",
+  } : {
+      page?: number;
+  pageSize?: number;
+  search?: string;
+  }): Promise< GetAppraisalResponse>{
+    const start = (page - 1) * pageSize;
+
+      const query = buildListParams({
+    fields: ["name", "appraisal_cycle", "employee_name", "employee_image"],
+    start,
+    pageSize,
+    search,
+    searchFields: ["appraisal_cycle","employee_name"],
+  });
+
+  const resp: AxiosResponse = await api.get(
+    `${API.performance.cycle.get_appraisal}?${query}`
+  );
+
+   return {
+    data: resp.data?.data || [],
+    pagination: {
+      total: resp.data?.pagination?.total || 0,
+      page_count: resp.data?.pagination?.total_pages || 1,
+    },
+  };
+  }
 
 export async function getCycleById(name: string): Promise<CycleItem> {
   const resp: AxiosResponse = await api.get(
@@ -143,3 +190,59 @@ export async function deleteCycle(name: string): Promise<void> {
     `${API.performance.cycle.list}/${encodeURIComponent(name)}`
   );
 } 
+
+
+// ─── Start Appraisal Cycle ──────────────────────────────────────
+
+export interface StartCycleData {
+  status: string;
+  message: string;
+  appraisal_cycle: string;
+  cycle_status: string;
+  appraisee_count: number;
+}
+
+export interface StartCycleResult {
+  status: string;           
+  message: string;          
+  data: StartCycleData | null;
+  serverMessages: string[];  
+}
+
+
+function parseServerMessages(raw: unknown): string[] {
+  if (typeof raw !== "string" || !raw.trim()) return [];
+
+  try {
+    const outer: string[] = JSON.parse(raw);
+    return outer
+      .map((entry) => {
+        try {
+          const parsed = JSON.parse(entry);
+          return typeof parsed?.message === "string" ? parsed.message : null;
+        } catch {
+          return null;
+        }
+      })
+      .filter((m): m is string => !!m);
+  } catch {
+    return [];
+  }
+}
+
+export async function startAppraisalCycle(id: string): Promise<StartCycleResult> {
+  const resp: AxiosResponse = await api.post(
+    API.performance.cycle.start_cycle,
+    {},
+    { params: { id } }
+  );
+
+  const message = resp.data?.message;
+
+  return {
+    status: message?.status ?? "error",
+    message: message?.message ?? "",
+    data: message?.data ?? null,
+    serverMessages: parseServerMessages(resp.data?._server_messages),
+  };
+}
