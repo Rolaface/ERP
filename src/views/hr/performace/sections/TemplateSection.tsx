@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import { FaTrash } from "react-icons/fa";
-
 import type { Column } from "../../../../components/ui/Table/type";
 import ModalTable from "../../../../components/ui/Table/ModalTableInside";
 
@@ -136,7 +134,7 @@ export default function TemplateSection() {
   const columns: Column<SetupRow>[] = [
     {
       key: "creation",
-      header: "Created At",
+      header: "Date Created",
       align: "center",
       render: (row) => (
         <span>
