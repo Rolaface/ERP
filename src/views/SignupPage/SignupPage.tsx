@@ -6,6 +6,7 @@ import Stepper from "../../components/SignupPage/Stepper";
 import SuccessScreen from "../../components/SignupPage/SuccessScreen";
 import { createSite } from "../../api/createSite";
 import { useCountries } from "../../hooks/useCountries";
+import { TIMEZONES } from "../../constants/timezone.constants";
 
 // ---------------- HELPERS ----------------
 const generateAbbr = (name: string): string => {
@@ -171,7 +172,7 @@ export default function SignupPage() {
                 countryList={countries}
                 countriesLoading={countriesLoading}
                 countriesError={countriesError}
-                timezones={Intl.supportedValuesOf("timeZone")}
+                timezones={TIMEZONES}
                 currencyOptions={[form.currency]}
               />
             )}

@@ -14,11 +14,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import type { Column } from "../../components/ui/Table/type";
-import {
-  AppPage,
-  AppPageHeader,
-  AppPageBody,
-} from "../../components/ui/app-shell";
+
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 
@@ -241,14 +237,14 @@ const CustomerGroup: React.FC = () => {
     return null;
   };
 
-  return (
-    <AppPage>
+return (
+  <>
       {/* <AppPageHeader
         title="Customer Groups"
         description="Manage customer group hierarchy and structure."
         icon={<Users />}
       /> */}
-      <AppPageBody>
+      
         <ExpandableTreeTable
           ref={tableRef}
           columns={columns}
@@ -311,8 +307,7 @@ const CustomerGroup: React.FC = () => {
             onSubmit={handleSaveCustomerGroup}
           />
         )}
-      </AppPageBody>
-    </AppPage>
+     </>
   );
 };
 

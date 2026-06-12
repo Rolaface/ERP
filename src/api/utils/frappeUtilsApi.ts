@@ -303,3 +303,31 @@ export async function getEmployees(
     );
   }
 }
+
+export async function searchCustomers(
+  search?: string,
+  page: number = 1,
+  pageSize: number = 10,
+): Promise<{ data: Array<{ value: string; label: string; description: string }>; pagination: any }> {
+  try {
+    const params = new URLSearchParams();
+    params.append("page", String(page));
+    params.append("page_size", String(pageSize));
+    if (search) params.append("search", encodeURIComponent(search));
+
+    const resp: AxiosResponse = await api.get(
+      `${FrappeUtilsAPI.searchCustomers}?${params.toString()}`
+    );
+
+    return {
+      data: resp.data?.data ?? [],
+      pagination: resp.data?.pagination ?? {},
+    };
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to search customers"
+    );
+  }
+}

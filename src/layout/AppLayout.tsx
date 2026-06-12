@@ -278,24 +278,16 @@ const openProformaCreate = () => openProformaModal();
     );
   }
 
+
 return (
   <QuickAddProvider>
-    <AppShell
-      sidebar={
-        <Sidebar
-          open={sidebarOpen}
-          setOpen={setSidebarOpen}
-        />
-      }
-    >
+    <AppShell sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}>
       <AppMain sidebarOpen={sidebarOpen}>
-        <AppContentContainer viewportLocked={isRootDashboard}>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <Suspense fallback={<PageLoader />}>
-              <Outlet context={sharedProps} />
-            </Suspense>
-          </div>
-        </AppContentContainer>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <Suspense fallback={<PageLoader />}>
+            <Outlet context={sharedProps} />
+          </Suspense>
+        </div>
       </AppMain>
        <FloatingViewSwitch />
       <GlobalModalHandler />

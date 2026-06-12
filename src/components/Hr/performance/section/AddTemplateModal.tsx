@@ -27,7 +27,7 @@ import {
   REFRESH_KEYS,
   useDataRefreshStore,
 } from "../../../../store/dataRefreshStore";
-import { NumberInput } from "../../../../components/ui/modal/modalComponent";
+import ModalFooter from "../../../common/ModalFooter";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -324,31 +324,44 @@ export default function AddTemplateModal({
   }, [selectedTemplate?.id]);
 
   // ── KRA fetch ─────────────────────────────────────────────────────────────
-  const fetchKRAOptions = async (q: string) => {
+  const fetchKRAOptions = async (q: string, currentRowId?: string) => {
     try {
       const res = await getKRAList({ search: q, pageSize: 20 });
-      return (res.data ?? []).map((item) => ({
-        label: item.title,
-        value: item.name,
-      }));
+      const usedValues = new Set(
+        kra.rows
+          .filter((r) => r.id !== currentRowId && r.kra)
+          .map((r) => r.kra),
+      );
+      return (res.data ?? [])
+        .filter((item) => !usedValues.has(item.name))
+        .map((item) => ({
+          label: item.title,
+          value: item.name,
+        }));
     } catch {
       return [];
     }
   };
-
   const resolveCriteriaOptions = async (
     q: string,
+    currentRowId?: string,
   ): Promise<{ label: string; value: string }[]> => {
     try {
       const res = await getFeedbackList({
         search: q,
         pageSize: 20,
       });
-
-      return (res.data || []).map((item) => ({
-        label: item.criteria,
-        value: item.criteria,
-      }));
+      const usedValues = new Set(
+        criteria.rows
+          .filter((r) => r.id !== currentRowId && r.criteria)
+          .map((r) => r.criteria),
+      );
+      return (res.data || [])
+        .filter((item) => !usedValues.has(item.criteria))
+        .map((item) => ({
+          label: item.criteria,
+          value: item.criteria,
+        }));
     } catch {
       return [];
     }
@@ -421,62 +434,20 @@ export default function AddTemplateModal({
       maxWidth="4xl"
       height="82vh"
       footer={
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "100%",
-          }}
-        >
-          <span style={{ fontSize: 11, color: "var(--muted)" }}>
-            KRA weight:
-            <b
-              style={{
-                color: kraWeightOk ? "var(--success)" : "var(--danger)",
-              }}
-            >
-              {" "}
-              {totalKraWeight.toFixed(1)}%
-            </b>
-            {!kraWeightOk && (
-              <span style={{ color: "var(--danger)", marginLeft: 4 }}>
-                (Must total 100%)
-              </span>
-            )}
-
-            &nbsp;&nbsp;
-
-            Criteria weight:
-            <b
-              style={{
-                color: criteriaWeightOk ? "var(--success)" : "var(--danger)",
-              }}
-            >
-              {" "}
-              {totalCriteriaWeight.toFixed(1)}%
-            </b>
-            {!criteriaWeightOk && (
-              <span style={{ color: "var(--danger)", marginLeft: 4 }}>
-                (Must total 100%)
-              </span>
-            )}
-          </span>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn btn-outline" onClick={onClose}>
-              {isViewMode ? "Close" : "Cancel"}
-            </button>
-            {!isViewMode && (
-              <button
-                className="btn btn-primary"
-                onClick={handleSave}
-                disabled={loading}
-              >
-                Save
-              </button>
-            )}
-          </div>
-        </div>
+        <ModalFooter
+          onCancel={onClose}
+          onReset={!isViewMode ? () => {
+            setTitle("");
+            setDescription("");
+            kra.setRows([{ id: crypto.randomUUID(), kra: "", kraLabel: "", weightage: null }]);
+            criteria.setRows([{ id: crypto.randomUUID(), criteria: "", criteriaLabel: "", weightage: null }]);
+            resetDirty();
+          } : undefined}
+          onSubmit={!isViewMode ? handleSave : undefined}
+          cancelLabel={isViewMode ? "Close" : "Cancel"}
+          submitLabel={selectedTemplate ? "Update" : "Save"}
+          isSubmitting={loading}
+        />
       }
     >
       {loading ? (
@@ -494,11 +465,12 @@ export default function AddTemplateModal({
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {/* ── Title ─────────────────────────────────────────── */}
           <div
             style={{
-              paddingBottom: 12,
-              borderBottom: "1px solid var(--border)",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+              marginBottom: 12,
             }}
           >
             <ModalInput
@@ -513,51 +485,19 @@ export default function AddTemplateModal({
               autoFocus={!isViewMode}
               required
             />
-          </div>
 
-          {/* ── Description (collapsible) ─────────────────────── */}
-          <div style={{ borderBottom: "1px solid var(--border)" }}>
-            <button
-              onClick={() => setDescOpen((v) => !v)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "9px 0",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 600,
-                color: "var(--text)",
+            <ModalTextarea
+              label="Description"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                markDirty();
               }}
-            >
-              <ChevronRight
-                size={14}
-                style={{
-                  transform: descOpen ? "rotate(90deg)" : "none",
-                  transition: "transform 0.15s",
-                }}
-              />
-              Description
-            </button>
-            {descOpen && (
-              <div style={{ paddingBottom: 10 }}>
-                <ModalTextarea
-                  label=""
-                  value={description}
-                  onChange={(e) => {
-                    setDescription(e.target.value);
-                    markDirty();
-                  }}
-                  placeholder="Add description..."
-                  disabled={isViewMode}
-                  rows={2}
-                />
-              </div>
-            )}
+              placeholder="Add description..."
+              disabled={isViewMode}
+              style={{ resize: "vertical" }}
+            />
           </div>
-
           {/* ── KRAs ─────────────────────────────────────────── */}
           <div
             style={{
@@ -720,7 +660,7 @@ export default function AddTemplateModal({
 
                                 markDirty();
                               }}
-                              fetchOptions={fetchKRAOptions}
+                              fetchOptions={(q) => fetchKRAOptions(q, row.id)}
                               placeholder="Select KRA..."
                               disabled={isViewMode}
                             />
@@ -731,8 +671,14 @@ export default function AddTemplateModal({
                             <NumericInput
                               value={row.weightage}
                               onChange={(value) => {
+                                const others = kra.rows
+                                  .filter((r) => r.id !== row.id)
+                                  .reduce((s, r) => s + (r.weightage || 0), 0);
+                                const maxAllowed = Math.round(Math.max(0, 100 - others) * 1000) / 1000;
+                                const clamped = value == null ? null : Math.min(value, maxAllowed);
+
                                 kra.updateRow(row.id, {
-                                  weightage: value,
+                                  weightage: clamped,
                                 });
 
                                 markDirty();
@@ -768,6 +714,12 @@ export default function AddTemplateModal({
                 </tbody>
               </table>
             </div>
+
+            {totalKraWeight > 0 && !kraWeightOk && (
+              <p style={{ fontSize: 11, color: "var(--danger)", margin: "6px 0 0" }}>
+                KRA weightage must total 100% (currently {totalKraWeight.toFixed(1)}%)
+              </p>
+            )}
 
             <div
               style={{
@@ -985,7 +937,7 @@ export default function AddTemplateModal({
 
                                 markDirty();
                               }}
-                              fetchOptions={resolveCriteriaOptions}
+                              fetchOptions={(q) => resolveCriteriaOptions(q, row.id)}
                               placeholder="Select criteria..."
                               disabled={isViewMode}
                             />
@@ -996,8 +948,14 @@ export default function AddTemplateModal({
                             <NumericInput
                               value={row.weightage}
                               onChange={(value) => {
+                                const others = criteria.rows
+                                  .filter((r) => r.id !== row.id)
+                                  .reduce((s, r) => s + (r.weightage || 0), 0);
+                                const maxAllowed = Math.round(Math.max(0, 100 - others) * 1000) / 1000;
+                                const clamped = value == null ? null : Math.min(value, maxAllowed);
+
                                 criteria.updateRow(row.id, {
-                                  weightage: value,
+                                  weightage: clamped,
                                 });
 
                                 markDirty();
@@ -1033,6 +991,12 @@ export default function AddTemplateModal({
                 </tbody>
               </table>
             </div>
+
+            {totalCriteriaWeight > 0 && !criteriaWeightOk && (
+              <p style={{ fontSize: 11, color: "var(--danger)", margin: "6px 0 0" }}>
+                Criteria weightage must total 100% (currently {totalCriteriaWeight.toFixed(1)}%)
+              </p>
+            )}
 
             <div
               style={{

@@ -416,19 +416,19 @@ const NewCycleModal = ({
                     onChange={(val) => hook.setFilterBranch(val)}
                     placeholder="All branches…"
                   />
+                   <SearchSelect2
+                    label="Department"
+                    value={hook.filterDepartment}
+                    fetchOptions={hook.fetchDepartments}
+                    onChange={(val) => hook.setFilterDepartment(val)}
+                    placeholder="All departments…"
+                  />
                   <SearchSelect2
                     label="Designation"
                     value={hook.filterDesignation}
                     fetchOptions={hook.fetchDesignations}
                     onChange={(val) => hook.setFilterDesignation(val)}
                     placeholder="All designations…"
-                  />
-                  <SearchSelect2
-                    label="Department"
-                    value={hook.filterDepartment}
-                    fetchOptions={hook.fetchDepartments}
-                    onChange={(val) => hook.setFilterDepartment(val)}
-                    placeholder="All departments…"
                   />
                 </>
               )}
