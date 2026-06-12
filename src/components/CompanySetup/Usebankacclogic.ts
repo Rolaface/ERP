@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState , useCallback} from "react";
 import { showApiError, showSuccess } from "../../utils/alert";
 import { getBankAccounts } from "../../api/BankAccountApi";
 import { createNewBankAccount } from "../../api/BankAccountApi";
@@ -40,16 +40,16 @@ export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
 
   const [banks, setBanks] = useState<Option[]>([]);
   const [entities, setEntities] = useState<Option[]>([]);
-  const [reportingAccounts, setReportingAccounts] = useState<Option[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isCompany = form.accountFor === "Company";
+
 
   // Auto-fill company name when accountFor = Company and only one entity exists
   useEffect(() => {
     if (form.accountFor === "Company" && entities.length > 0) {
       const company = entities[0];
-
+ 
       setForm((prev) => ({
         ...prev,
         name: company.value || company.label,
@@ -61,7 +61,6 @@ export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
 
     }
   }, [form.accountFor, entities, form.name]);
-
 
   useEffect(() => {
     if (isEdit) return;
@@ -88,39 +87,28 @@ export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
     })();
   }, []);
 
-  // Load party entities dropdown based on accountFor
-  useEffect(() => {
-    if (!form.accountFor) return;
-    (async () => {
-      try {
-        const data = await getBankAccounts(form.accountFor as AccountType);
-        setEntities(Array.isArray(data) ? data : []);
-      } catch (err) {
-        showApiError(err);
-      }
-    })();
-  }, [form.accountFor]);
 
-  // Load reporting accounts — only for Company type, silently fail if unavailable
-  useEffect(() => {
-    if (form.accountFor !== "Company") return;
-    (async () => {
-      try {
-        const data = await getBankAccounts("Account");
-        setReportingAccounts(Array.isArray(data) ? data : []);
-      } catch {
-        setReportingAccounts([]); // silently ignore
-      }
-    })();
-  }, [form.accountFor]);
+const fetchEntities = useCallback(async (accountForValue: string) => {
+  if (!accountForValue) {
+    return;
+  }
+  try {
+    const data = await getBankAccounts(accountForValue as AccountType);
+    setEntities(Array.isArray(data) ? data : []);
+  } catch (err) {
+    showApiError(err);
+  }
+}, []);
 
-  const handleAccountForChange = (accountFor: AccountType) => {
-    setForm({
-      ...getInitialForm(),
-      accountFor,
-      dateAdded: form.dateAdded,
-    });
-  };
+const handleAccountForChange = (accountFor: AccountType) => {
+  setForm({
+    ...getInitialForm(),
+    accountFor,
+    dateAdded: form.dateAdded,
+  });
+  
+  fetchEntities(accountFor);
+};
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -217,7 +205,6 @@ export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
     isSubmitting,
     banks,
     entities,
-    reportingAccounts,
     isCompany,
     handleAccountForChange,
   };

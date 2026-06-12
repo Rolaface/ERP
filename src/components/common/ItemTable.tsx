@@ -41,11 +41,11 @@ interface ItemTableProps {
   symbol: string;
   ITEMS_PER_PAGE: number;
   taxCategory?: string;
-  isSalesInvoice?:boolean;
+  isSalesInvoice?: boolean;
   title?: string;
   isQuotation?: boolean;
-
   columnHeaders?: React.ReactNode;
+  colGroup?: React.ReactNode;
   renderRow?: (
     item: any,
     absoluteIndex: number,
@@ -56,64 +56,68 @@ interface ItemTableProps {
   ) => React.ReactNode;
 }
 
+
+
+// ─── Column headers + colgroup (default invoice layout) ──────────────────────
+//
+// Visibility strategy — columns hidden by breakpoint:
+//   always visible : #, Item, Batch No (sales), Qty, Expiry, Unit Price, Amount, Actions
+//   hidden < md    : Pkg, Box, Warehouse, Dis(%), Tax(%), Tax Name
+//   hidden < xl    : Mfg Date   ← was "hidden lg", now pushed to xl to save space
+//
+// Width strategy — all percentages, table-layout:fixed, minWidth:560px fallback.
+// The colgroup percentages govern on normal screens; overflow-x-auto on the
+// wrapper handles screens narrower than 560px.
+
 interface InvoiceHeadersProps {
   isSalesInvoice: boolean;
+  isQuotation: boolean;
 }
 
-const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
-  isSalesInvoice,
-}) => (
+const InvoiceColGroup: React.FC<InvoiceHeadersProps> = ({ isSalesInvoice, isQuotation }) => (
+  <colgroup>
+    {/* #          */} <col style={{ width: "28px" }} />
+    {/* Item       */} <col style={{ width: isQuotation ? "30%" : "20%" }} />
+    {/* Pkg (U×S)  */} <col className="hidden md:table-column" style={{ width: "6%" }} />
+    {/* Box        */} <col className="hidden md:table-column" style={{ width: "7%" }} />
+    {/* Batch No   */} {isSalesInvoice && <col style={{ width: "10%" }} />}
+    {/* Qty        */} <col style={{ width: "6%" }} />
+    {/* Mfg Date   */} <col className="hidden xl:table-column" style={{ width: "8%" }} />
+    {/* Expiry     */} <col style={{ width: "8%" }} />
+    {/* Warehouse  */} <col className="hidden md:table-column" style={{ width: "9%" }} />
+    {/* Unit Price */} <col style={{ width: "7%" }} />
+    {/* Dis(%)     */} {!isQuotation && <col className="hidden md:table-column" style={{ width: "5%" }} />}
+    {/* Tax(%)     */} <col className="hidden md:table-column" style={{ width: "5%" }} />
+    {/* Tax Name   */} <col className="hidden md:table-column" style={{ width: "6%" }} />
+    {/* Amount     */} <col style={{ width: "8%" }} />
+    {/* Actions    */} <col style={{ width: "44px" }} />
+  </colgroup>
+);
+
+const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({ isSalesInvoice, isQuotation }) => (
   <tr className="border-b border-theme">
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px] whitespace-nowrap">
-      #
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[130px] whitespace-nowrap">
-      Item
-    </th>
-    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[140px] whitespace-nowrap">
-      Description
-    </th> */}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[10px] whitespace-nowrap">
-      Pkg (U×S)
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[70px] whitespace-nowrap">
-      Box
-    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">#</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Item</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Pkg</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Box</th>
     {isSalesInvoice && (
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[250px] whitespace-nowrap">
-      Batch No
-    </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Batch</th>
     )}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
-      Qty
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] whitespace-nowrap">
-      Mfg Date
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
-      Expiry Date
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[100px] whitespace-nowrap">
-      Warehouse
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[40px] whitespace-nowrap">
-      Unit Price <span className="text-danger">*</span>
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[50px] whitespace-nowrap">
-      Dis(%)
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-      Tax(%)
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-      Tax Name
-    </th>
-    {/* <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[90px] whitespace-nowrap">
-      Barcode
-    </th> */}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[60px] whitespace-nowrap">
-      Amount
-    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Qty</th>
+    {!isQuotation && (
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden xl:table-cell">Mfg</th>
+    )}
+    {!isQuotation && (
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Expiry</th>
+    )}
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Warehouse</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Price <span className="text-danger">*</span></th>
+    {!isQuotation && (
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Dis%</th>
+    )}
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Tax%</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Tax</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Amount</th>
     <th />
   </tr>
 );
@@ -130,16 +134,16 @@ const ItemTable: React.FC<ItemTableProps> = ({
   taxCategory,
   title = "Items",
   columnHeaders,
+  colGroup,
   renderRow,
   isSalesInvoice = false,
   isQuotation = false,
 }) => {
 
-useBarcodeScanner(async (barcode) => {
+  useBarcodeScanner(async (barcode) => {
     try {
       const response = await getItemDetailsByBarcodeId(barcode);
       const itemData = response?.message || response?.data?.message;
-
       if (!itemData) return;
 
       let matchedWarehouse = "";
@@ -149,34 +153,17 @@ useBarcodeScanner(async (barcode) => {
       try {
         const stockRes = await getStockReport(1, 1000, itemData.item_code, "");
         const stockItems = stockRes?.message?.data || [];
-        console.log("Fetched stock items for barcode scan:", stockItems);
-
-        const stockItem = stockItems.find(
-          (it: any) => it.item_code === itemData.item_code
-        );
+        const stockItem = stockItems.find((it: any) => it.item_code === itemData.item_code);
         if (stockItem) {
-          // Extract Packing details
           matchedPackingSize = stockItem.packingSize || "";
           matchedPackingUnit = stockItem.packingUnit || "";
-          console.log("Matched packing details from stock report:", 
-            matchedPackingUnit,
-            matchedPackingSize,
-          );
         }
-          
-          if (stockItem.taxInfo && stockItem.taxInfo.length > 0) {
-            matchedTaxName = stockItem.taxInfo[0].taxName || "";
-            console.log("Matched tax name from stock report:", matchedTaxName);
-          }
-
+        if (stockItem.taxInfo && stockItem.taxInfo.length > 0) {
+          matchedTaxName = stockItem.taxInfo[0].taxName || "";
+        }
         if (stockItem && stockItem.batches) {
-          const matchingBatch = stockItem.batches.find(
-            (b: any) => b.batch_no === itemData.batch_no
-          );
-          if (matchingBatch) {
-            matchedWarehouse = matchingBatch.warehouse;
-            console.log("Matched warehouse from stock report:", matchedWarehouse);
-          }
+          const matchingBatch = stockItem.batches.find((b: any) => b.batch_no === itemData.batch_no);
+          if (matchingBatch) matchedWarehouse = matchingBatch.warehouse;
         }
       } catch (stockError) {
         console.error("Could not fetch warehouse for scanned item:", stockError);
@@ -186,68 +173,48 @@ useBarcodeScanner(async (barcode) => {
         (it) => it.itemCode === itemData.item_code && it.batchNo === itemData.batch_no
       );
 
-      // if (existingIndex >= 0) {
-      //   const currentQty = Number(formData.items[existingIndex].quantity || 0);
-      //   actions.handleItemChange(existingIndex, {
-      //     target: { name: "quantity", value: currentQty + 1 }
-      //   } as any);
-      //   return;
-      // }
       if (existingIndex >= 0) {
-  const currentQty = Number(formData.items[existingIndex].quantity || 0);
-  
-  // 1. Update the quantity
-  actions.handleItemChange(existingIndex, {
-    target: { name: "quantity", value: currentQty + 1 }
-  } as any);
-
-  const existingItem = formData.items[existingIndex];
-  if (!existingItem.mfgDate || !existingItem.expDate) {
-    actions.updateItemDirectly?.(existingIndex, {
-      ...existingItem,
-      mfgDate: existingItem.mfgDate || itemData.manufacturing_date || "",
-      expDate: existingItem.expDate || itemData.expiry_date || "",
-    });
-  }
-  return;
-}
-
-      // 4. If new, find an empty row or add one
-      let targetIndex = formData.items.findIndex((it) => !it.itemCode);
-      
-      if (targetIndex === -1) {
-        actions.addItem(); 
-        targetIndex = formData.items.length; 
+        const currentQty = Number(formData.items[existingIndex].quantity || 0);
+        actions.handleItemChange(existingIndex, { target: { name: "quantity", value: currentQty + 1 } } as any);
+        const existingItem = formData.items[existingIndex];
+        if (!existingItem.mfgDate || !existingItem.expDate) {
+          actions.updateItemDirectly?.(existingIndex, {
+            ...existingItem,
+            mfgDate: existingItem.mfgDate || itemData.manufacturing_date || "",
+            expDate: existingItem.expDate || itemData.expiry_date || "",
+          });
+        }
+        return;
       }
 
-      // 5. Update the row with data from BOTH APIs
+      let targetIndex = formData.items.findIndex((it) => !it.itemCode);
+      if (targetIndex === -1) {
+        actions.addItem();
+        targetIndex = formData.items.length;
+      }
       actions.updateItemDirectly?.(targetIndex, {
         itemCode: itemData.item_code,
         itemName: itemData.item_name,
         price: itemData.rate || 0,
         batchNo: itemData.batch_no || "",
-        
-        quantity: 1, 
-        availableQty: Number(itemData.quantity || 0), 
-
-        // Inside StockItemSelect onChange
+        quantity: 1,
+        availableQty: Number(itemData.quantity || 0),
         mfgDate: itemData.manufacturing_date || itemData.mfgDate || "",
         expDate: itemData.expiry_date || itemData.expiryDate || "",
         description: itemData.item_name || "",
         packingSize: matchedPackingSize,
         packingUnit: matchedPackingUnit,
-        warehouse: matchedWarehouse, 
+        warehouse: matchedWarehouse,
         isServiceItem: false,
         vatRate: 0,
         vatCode: "",
         vatCd: matchedTaxName,
         taxTypes: [],
       });
-
     } catch (error) {
       showValidationError(parseFrappeError(error) || "Item not found for this barcode.");
     }
-});
+  });
 
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);
@@ -259,18 +226,18 @@ useBarcodeScanner(async (barcode) => {
     actions.removeItem(absoluteIndex);
   };
 
-  // ── built-in invoice row ──────────────────────────────────────────────────
   const renderInvoiceRow = (it: any, i: number) => {
-    const discountAmount =
-      it.quantity * it.price * (Number(it.discount || 0) / 100);
+    const discountAmount = it.quantity * it.price * (Number(it.discount || 0) / 100);
     const amount = it.quantity * it.price - discountAmount;
 
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
-        <td className="px-2 py-1 text-center text-[10px]">{i + 1}</td>
+
+        {/* # */}
+        <td className="px-2 py-1 text-center text-[10px] text-muted">{i + 1}</td>
 
         {/* Item */}
-        <td className="px-0.5 py-1 min-w-[135px]">
+        <td className="px-0.5 py-1">
           <StockItemSelect
             value={it.itemCode}
             batchNo={it.batchNo}
@@ -279,318 +246,190 @@ useBarcodeScanner(async (barcode) => {
             isQuotation={isQuotation}
             onChange={(item: SelectedStockItem) => {
               actions.updateItemDirectly?.(i, {
-                itemCode: item.itemCode,
-                itemName: item.itemName,
-                description: item.description,
-
-                packingSize: item.packingSize,
-                packingUnit: item.packingUnit,
-
-                batchNo: item.batchNo,
-                mfgDate: item.mfgDate,
-                expDate: item.expiryDate,
-
-                availableQty: item.qty,
-                quantity: 0,
-
-              price: item.price ?? 0,
-
-                // warehouse
-                warehouse: item.warehouse,
-                isServiceItem: item.isServiceItem,
-
-                vatRate: item.vatRate,
-                vatCode: item.vatCode,
-                taxTypes: (item.taxInfo || [])
-                  .flatMap((tax: any) => tax.taxRates || [])
-                  .map((r: any) => r.tax_type)
-                  .filter((t: string) => t && t.trim() !== ""),
+                itemCode: item.itemCode, itemName: item.itemName, description: item.description,
+                packingSize: item.packingSize, packingUnit: item.packingUnit,
+                batchNo: item.batchNo, mfgDate: item.mfgDate, expDate: item.expiryDate,
+                availableQty: item.qty, quantity: 0, price: item.price ?? 0,
+                warehouse: item.warehouse, isServiceItem: item.isServiceItem,
+                vatRate: item.vatRate, vatCode: item.vatCode,
+                taxTypes: (item.taxInfo || []).flatMap((tax: any) => tax.taxRates || [])
+                  .map((r: any) => r.tax_type).filter((t: string) => t && t.trim() !== ""),
               });
             }}
-            onClear={() =>
-              actions.updateItemDirectly?.(i, {
-                itemCode: "",
-                description: "",
-                batchNo: "",
-                mfgDate: "",
-                expDate: "",
-                packingUnit: "",
-                packingSize: "",
-                price: 0,
-                vatRate: undefined,
-                vatCode: "",
-              })
-            }
+            onClear={() => actions.updateItemDirectly?.(i, {
+              itemCode: "", description: "", batchNo: "", mfgDate: "", expDate: "",
+              packingUnit: "", packingSize: "", price: 0, vatRate: undefined, vatCode: "",
+            })}
           />
         </td>
 
-        {/* Description */}
-        {/* <td className="px-0.5 py-1">
-          <Tooltip content={it.description || "No description"}>
-            <input
-              className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-              name="description"
-              value={it.description}
-              onChange={(e) => actions.handleItemChange(i, e)}
-            />
-          </Tooltip>
-        </td> */}
-
-        {/* Packing */}
-        <td className="px-1 py-1">
-          <div className="flex items-center justify-center ">
-            <Tooltip
-              content={
-                it.packingUnit && it.packingSize
-                  ? `Packing: ${it.packingUnit} × ${it.packingSize}`
-                  : "No packing defined"
-              }
-            >
-              <input
-                type="text"
-                name="packing"
-                value={
-                  it.packingUnit && it.packingSize
-                    ? `${it.packingUnit}×${it.packingSize}`
-                    : ""
-                }
-                disabled
-                className="w-[50px] h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
-              />
-            </Tooltip>
-          </div>
-        </td>
-
-        {/* Box */}
-        <td className="px-0.5 py-1">
-          <div className="flex items-center gap-1">
-            <Tooltip content={`Box Start: ${it.boxStart}`}>
-              <input
-                name="boxStart"
-                value={it.boxStart || ""}
-                placeholder="Start"
-                onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[35px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
-              />
-            </Tooltip>
-            <span className="text-[10px] text-muted">-</span>
-            <Tooltip content={`Box End: ${it.boxEnd}`}>
-              <input
-                name="boxEnd"
-                value={it.boxEnd || ""}
-                placeholder="End"
-                onChange={(e) => actions.handleItemChange(i, e)}
-                className="w-[35px] py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
-              />
-            </Tooltip>
-          </div>
-        </td>
-
-        {/* Batch No */}
-        {isSalesInvoice && (
-        <td className="px-0.5 py-1 min-w-[100px]">
-          <Tooltip content={`Batch No: ${it.batchNo}`}>
+        {/* Pkg (U×S) — hidden < md */}
+        <td className="px-1 py-1 hidden md:table-cell">
+          <Tooltip content={it.packingUnit && it.packingSize ? `Packing: ${it.packingUnit} × ${it.packingSize}` : "No packing defined"}>
             <input
               type="text"
-              name="batchNo"
-              value={it.batchNo}
+              name="packing"
+              value={it.packingUnit && it.packingSize ? `${it.packingUnit}×${it.packingSize}` : ""}
               disabled
-              onChange={(e) => actions.handleItemChange(i, e)}
-              className="w-full py-1 px-2 border border-theme rounded text-[10px] bg-card text-main"
+              className="w-full h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
             />
           </Tooltip>
         </td>
+
+        {/* Box — hidden < md */}
+        <td className="px-0.5 py-1 hidden md:table-cell">
+          <div className="flex items-center gap-0.5">
+            <input
+              name="boxStart"
+              value={it.boxStart || ""}
+              placeholder="S"
+              onChange={(e) => actions.handleItemChange(i, e)}
+              className="w-full py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+            />
+            <span className="text-[9px] text-muted shrink-0">-</span>
+            <input
+              name="boxEnd"
+              value={it.boxEnd || ""}
+              placeholder="E"
+              onChange={(e) => actions.handleItemChange(i, e)}
+              className="w-full py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+            />
+          </div>
+        </td>
+
+        {/* Batch No — always visible for sales invoice */}
+        {isSalesInvoice && (
+          <td className="px-0.5 py-1">
+            <Tooltip content={`Batch No: ${it.batchNo || "—"}`}>
+              <input
+                type="text"
+                name="batchNo"
+                value={it.batchNo || ""}
+                disabled
+                className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
+              />
+            </Tooltip>
+          </td>
         )}
 
         {/* Qty */}
         <td className="px-0.5 py-1">
-          <Tooltip content={`Quantity: ${it.quantity ?? 0}`}>
-            <NumericInput
-              name="quantity"
-              value={it.quantity ?? ""}
-              placeholder="0"
-              className="w-[75px]"
-           onChange={(value) => {
-  actions.handleItemChange(i, {
-    target: {
-      name: "quantity",
-      value,
-    },
-  } as any);
-}}
-            />
-          </Tooltip>
+          <NumericInput
+            name="quantity"
+            value={it.quantity ?? ""}
+            placeholder="0"
+            className="w-full min-w-[32px]"
+            onChange={(value) => actions.handleItemChange(i, { target: { name: "quantity", value } } as any)}
+          />
         </td>
 
-        {/* Mfg Date */}
-        <td className="px-0.5 py-1">
-          <div style={{ width: "98px" }}>
-            <DatePickerInput
-              label=""
-              name="mfgDate"
-              value={it.mfgDate}
-              disabled
-              onChange={(name, value) =>
-                actions.handleItemChange(i, { target: { name, value } } as any)
-              }
-            />
-          </div>
+        {/* Mfg Date — hidden < xl */}
+         {!isQuotation && (
+        <td className="px-0.5 py-1 hidden xl:table-cell">
+          <DatePickerInput
+            label=""
+            name="mfgDate"
+            value={it.mfgDate}
+            disabled
+            onChange={(name, value) =>
+              actions.handleItemChange(i, { target: { name, value } } as any)
+            }
+          />
         </td>
+         )}
 
         {/* Expiry Date */}
+         {!isQuotation && (
         <td className="px-0.5 py-1">
-          <div style={{ width: "98px" }}>
-            <DatePickerInput
-              label=""
-              name="expDate"
-              value={it.expDate}
-              disabled
-              onChange={(name, value) =>
-                actions.handleItemChange(i, { target: { name, value } } as any)
-              }
-            />
-          </div>
+          <DatePickerInput
+            label=""
+            name="expDate"
+            value={it.expDate}
+            disabled
+            onChange={(name, value) =>
+              actions.handleItemChange(i, { target: { name, value } } as any)
+            }
+          />
         </td>
+         )}
 
-        {/* Warehouse */}
-        <td className="px-0.5 py-1">
+        {/* Warehouse — hidden < md */}
+        <td className="px-0.5 py-1 hidden md:table-cell">
           <Tooltip content={it.warehouse || "No warehouse selected"}>
             <WarehouseSelect
               compact
               value={it.warehouse || ""}
-              onChange={(e) =>
-                actions.handleItemChange(i, {
-                  target: { name: "warehouse", value: e.target?.value ?? e },
-                } as any)
-              }
+              onChange={(e) => actions.handleItemChange(i, { target: { name: "warehouse", value: e.target?.value ?? e } } as any)}
             />
           </Tooltip>
         </td>
 
-        {/* Price */}
-        <td className="px-2 py-1">
-          <Tooltip
-            content={`Price: ${symbol} ${Number(it.price || 0).toFixed(2)}`}
-          >
-            <NumericInput
-              name="price"
-              value={it.price ?? ""}
-              placeholder="0"
-              decimalScale={4}
-              className="w-[50px]"
-              onChange={(value) =>
-                actions.handleItemChange(i, {
-                  target: {
-                    name: "price",
-                    value,
-                  },
-                } as any)
-              }
-            />
-          </Tooltip>
-        </td>
-
-        {/* Discount */}
-        <td className="px-1 py-1">
+        {/* Unit Price */}
+        <td className="px-0.5 py-1">
           <NumericInput
-            name="discount"
-            value={it.discount ?? ""}
+            name="price"
+            value={it.price ?? ""}
             placeholder="0"
-            className="w-[38px]"
-            onChange={(value) =>
-              actions.handleItemChange(i, {
-                target: {
-                  name: "discount",
-                  value,
-                },
-              } as any)
-            }
+            decimalScale={4}
+            className="w-full min-w-[36px]"
+            onChange={(value) => actions.handleItemChange(i, { target: { name: "price", value } } as any)}
           />
         </td>
 
-        {/* VAT Rate */}
-        <td className="px-1 py-1">
+        {/* Dis(%) — hidden < md */}
+        {!isQuotation && (
+          <td className="px-1 py-1 hidden md:table-cell">
+            <NumericInput
+              name="discount"
+              value={it.discount ?? ""}
+              placeholder="0"
+              className="w-full min-w-[28px]"
+              onChange={(value) => actions.handleItemChange(i, { target: { name: "discount", value } } as any)}
+            />
+          </td>
+        )}
+
+        {/* Tax(%) — hidden < md */}
+        <td className="px-1 py-1 hidden md:table-cell">
           <NumericInput
             name="vatRate"
             value={it.vatRate ?? ""}
             placeholder="0"
-            className="w-[38px]"
-            onChange={(value) =>
-              actions.handleItemChange(i, {
-                target: {
-                  name: "vatRate",
-                  value,
-                },
-              } as any)
-            }
+            className="w-full min-w-[28px]"
+            onChange={(value) => actions.handleItemChange(i, { target: { name: "vatRate", value } } as any)}
           />
         </td>
 
-        {/* VAT Code */}
-        <td className="px-2 py-1">
-          <Tooltip
-            content={
-              it.taxTypes?.length
-                ? `Tax Types: ${it.taxTypes.join(", ")}`
-                : "No Tax Types"
-            }
-          >
+        {/* Tax Name — hidden < md */}
+        <td className="px-1 py-1 hidden md:table-cell">
+          <Tooltip content={it.taxTypes?.length ? `Tax Types: ${it.taxTypes.join(", ")}` : "No Tax Types"}>
             <input
               type="text"
               name="vatCode"
-              value={it.vatCode}
-              className="w-[45px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+              value={it.vatCode || ""}
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
               onChange={(e) => actions.handleItemChange(i, e)}
             />
           </Tooltip>
         </td>
-        {/* Barcode Scanner Input */}
-        {/* <td className="px-2 py-1">
-          <Tooltip content="Scan Barcode (Auto-fetches on Enter)">
-            <input
-              type="text"
-              name="barcode"
-              value={it.barcode || ""}
-              placeholder="Scan..."
-              className="w-[80px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-              onChange={(e) => {
-                // Log the value as the scanner types it
-                console.log(`Row ${i} Barcode Input:`, e.target.value); 
-                actions.handleItemChange(i, e);
-              }}
-             onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  console.log(`Scanner hit ENTER. Final Barcode for row ${i}:`, it.barcode);
-
-                  if (it.barcode) {
-                    fetchByBarcode(i, it.barcode);
-                  }
-                }
-              }}
-            />
-          </Tooltip>
-        </td> */}
 
         {/* Amount */}
-        <td className="px-0.5 py-1">
-          <Tooltip content={`Amount: ${symbol} ${amount.toFixed(2)}`}>
-            <span className="w-[110px] text-[10px] font-medium text-main">
-              {symbol} {amount.toFixed(2)}
-            </span>
-          </Tooltip>
+        <td className="px-1 py-1">
+          <span className="text-[10px] font-medium text-main whitespace-nowrap block truncate" title={`${symbol} ${amount.toFixed(2)}`}>
+            {symbol} {amount.toFixed(2)}
+          </span>
         </td>
 
-        {/* Row actions */}
+        {/* Actions */}
         <td className="px-0.5 py-1">
-          <div className="flex items-center gap-1">
-            <Tooltip content="Duplicate row below">
+          <div className="flex items-center gap-0.5">
+            <Tooltip content="Duplicate row">
               <button
                 type="button"
                 onClick={() => handleCopyRow(i)}
                 className="p-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition"
               >
-                <Copy className="w-4 h-4" />
+                <Copy className="w-3.5 h-3.5" />
               </button>
             </Tooltip>
             <button
@@ -598,7 +437,7 @@ useBarcodeScanner(async (barcode) => {
               onClick={() => handleRemoveRow(i)}
               className="p-0.5 rounded bg-danger/10 text-danger hover:bg-danger/20 transition"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </td>
@@ -606,21 +445,34 @@ useBarcodeScanner(async (barcode) => {
     );
   };
 
+  // Use built-in colgroup for default invoice layout;
+  // custom colGroup prop (PO table etc.) overrides it entirely.
+  const resolvedColGroup = colGroup ?? (
+    <InvoiceColGroup isSalesInvoice={isSalesInvoice} isQuotation={isQuotation} />
+  );
+
   return (
-    <div className="bg-card rounded-lg p-1 shadow-sm">
+    <div className="bg-card rounded-lg p-2 shadow-sm w-full">
       {title && (
-        <div className="flex items-center gap-1 mb-1">
-          <h3 className="text-sm font-semibold text-main">{title}</h3>
-        </div>
+        <h3 className="text-sm font-semibold text-main mb-2">{title}</h3>
       )}
 
-      <div className="mt-2 overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse text-[10px] leading-tight">
+      {/*
+        table-layout:fixed + colgroup percentages = columns scale to container.
+        minWidth:560px = absolute minimum before horizontal scroll kicks in.
+        overflow-x-auto on the wrapper = last-resort escape hatch only.
+      */}
+      <div className="w-full overflow-x-auto scrollbar-thin">
+        <table
+          className="w-full border-collapse text-[10px] leading-tight"
+        style={{ tableLayout: "fixed", minWidth: "700px" }}
+        >
+          {resolvedColGroup}
           <thead>
-  {columnHeaders || (
-    <InvoiceHeaders isSalesInvoice={isSalesInvoice} />
-  )}
-</thead>
+            {columnHeaders || (
+              <InvoiceHeaders isSalesInvoice={isSalesInvoice} isQuotation={isQuotation} />
+            )}
+          </thead>
           <tbody>
             {paginatedItems.map((it, idx) => {
               const i = ui.page * ITEMS_PER_PAGE + idx;

@@ -147,6 +147,8 @@ export const API = {
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
     updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
+    getCompanyDefaults: "/api/method/custom_api.api.organization.company.api.get_company_defaults",
+    updateCompanyDefaults: "/api/method/custom_api.api.organization.company.api.update_company_defaults",
   },
 
   RoleManagement: {
@@ -277,6 +279,7 @@ export const API = {
   tax: {
     getTemplates: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get`,
     taxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.create_or_update_tax_template`,
+    getTaxTemplateById: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_item_tax_template_by_id`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
     getTemplateGl: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.get_tax_accounts`,
     updatestatus: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.item.api.update_item_template_tax_status`,
@@ -425,6 +428,7 @@ export const API = {
 
   ExpenseClaim: {
     Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
+    updateExpenseClaim: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.update`,
     Claim_Type: `${ERP_BASE}/api/resource/Expense Claim Type`,
     getExpenseClaims: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claims`,
     getExpenseClaimbyId: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_by_id`,
@@ -434,6 +438,7 @@ export const API = {
     attachDocument:`${ERP_BASE}/api/method/upload_file`,
     advance: `${ERP_BASE}/api/resource/Employee Advance`,
     changeAdvanceStatus: `${ERP_BASE}/api/method/frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs`,
+    addComment: `${ERP_BASE}/api/method/frappe.desk.form.utils.add_comment`,
     
   },
   /* =========================
@@ -632,11 +637,17 @@ export const API = {
       salaryslip: `${ERP_BASE}/api/resource/Salary Slip`,
       salaryslip_pdf: `${ERP_BASE}/api/method/frappe.utils.print_format.download_pdf`,
       getpayrollpreview:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
+      cancelpayrollentry: `${ERP_BASE}/api/resource/Payroll Entry`,
 
       SalarystructureAssignment: {
         getAll: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.get_salary_structure_assignment_list`,
       },
     },
+    
+  autoUpdatesalarycomp: {
+   
+    performUpdate: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.sync_condition_and_formula`,
+  },
 
   },
 
@@ -683,6 +694,7 @@ export const API = {
     create: `${ERP_BASE}/api/resource/Leave Application`,
     update: `${ERP_BASE}/api/resource/Leave Application`,
     delete: `${ERP_BASE}/api/resource/Leave Application`,
+    getAllHolidayList:`${ERP_BASE}/api/method/custom_hrms.api.holiday_list.api.get_all_holiday_lists`
   },
 
   performance: {
@@ -728,6 +740,7 @@ export const API = {
   salaryPreviewAPI: {
     getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
   },  
+
 
 
 

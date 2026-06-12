@@ -34,15 +34,11 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
   poId,
   modalId,
 }) => {
-  const resolvedModalId =
-    modalId ||
-    (poId ? `po-edit-${poId}-${Date.now()}` : `po-create-${Date.now()}`);
+  const resolvedModalId= modalId || (poId ? `edit-po-${poId}` : "create-po");
 
-  // ✅ Added activate + deactivate
   const { markDirty, resetDirty, handleCloseWithConfirm, activate, deactivate } =
     useUnsavedChanges();
 
-  // ✅ Wire activate/deactivate to isOpen
   useEffect(() => {
     if (!isOpen) {
       deactivate();
@@ -92,7 +88,6 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
   } = usePurchaseOrderForm({ isOpen, onSuccess: onSubmit, onClose, poId });
   const removedBoxes = new Set<string>();
 
-  
   const handleFormChangeWithDirty = useCallback(
     (e: any) => { markDirty(); handleFormChange(e); },
     [markDirty, handleFormChange],
@@ -107,7 +102,6 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     (e: any, idx: number) => { markDirty(); handleItemChange(e, idx); },
     [markDirty, handleItemChange],
   );
-  // ─────────────────────────────────────────────────────────────
 
   const handleNext = useCallback(() => {
     const currentIndex = tabOrder.indexOf(activeTab);
@@ -276,8 +270,8 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       title={poId ? "Edit Purchase Order" : "Create Purchase Order"}
       subtitle="Create and manage purchase order"
       icon={ClipboardList}
-      customWidth="95vw"
-      height="88vh"
+      maxWidth="full"
+      height="75vh"
       footer={footer}
     >
       <form
@@ -317,7 +311,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           </div>
         </div>
 
-        <section className="overflow-y-auto p-2">{tabContent}</section>
+        <section className="flex-1 min-h-0 overflow-hidden p-0">{tabContent}</section>
       </form>
     </MinimizableModal>
   );

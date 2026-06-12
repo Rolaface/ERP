@@ -17,7 +17,6 @@ import type {
   SalesTaxTemplateFormData,
 } from "../../types/tax/salesTemplate";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 const SALES_TAX_TEMPLATE_MODULE = "Sales Taxes and Charges Template";
@@ -108,22 +107,23 @@ const SalesTaxTemplate: React.FC = () => {
         taxes:
           Array.isArray(data?.taxes) && data.taxes.length > 0
             ? data.taxes.map((t: any) => ({
-                name: t.name,
-                charge_type: t.charge_type,
-                account_head: t.account_head || "",
-                rate: Number(t.rate) || 0,
-                tax_amount: Number(t.tax_amount) || 0,
-                description: t.description || "",
-              }))
+              name: t.name,
+              charge_type: t.charge_type,
+              account_head: t.account_head || "",
+              account_head_display: t.account_head_name || "",
+              rate: Number(t.rate) || 0,
+              tax_amount: Number(t.tax_amount) || 0,
+              description: t.description || "",
+            }))
             : [
-                {
-                  charge_type: "On Net Total",
-                  account_head: "",
-                  rate: 0,
-                  tax_amount: 0,
-                  description: "",
-                },
-              ],
+              {
+                charge_type: "On Net Total",
+                account_head: "",
+                rate: 0,
+                tax_amount: 0,
+                description: "",
+              },
+            ],
       };
 
       openSalesTaxTemplateModal(
@@ -152,6 +152,56 @@ const SalesTaxTemplate: React.FC = () => {
   const handleEdit = (row: SalesTaxTemplateSummary, e: React.MouseEvent) => {
     e.stopPropagation();
     openEdit(row);
+  };
+
+  const handleView = async (row: SalesTaxTemplateSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setLoading(true);
+      const res = await getSalesTemplateById(row.name);
+      const data = res?.data;
+
+      const formData: SalesTaxTemplateFormData = {
+        name: data?.name,
+        title: data?.title || "",
+        disabled: data?.disabled ?? 0,
+        tax_category: data?.tax_category || "",
+        taxes:
+          Array.isArray(data?.taxes) && data.taxes.length > 0
+            ? data.taxes.map((t: any) => ({
+              name: t.name,
+              charge_type: t.charge_type,
+              account_head: t.account_head || "",
+              account_head_display: t.account_head_name || "",
+              rate: Number(t.rate) || 0,
+              tax_amount: Number(t.tax_amount) || 0,
+              description: t.description || "",
+            }))
+            : [
+              {
+                charge_type: "On Net Total",
+                account_head: "",
+                rate: 0,
+                tax_amount: 0,
+                description: "",
+              },
+            ],
+      };
+
+      openSalesTaxTemplateModal(
+        formData,
+        false,
+        { isViewMode: true },
+        {
+          title: "View Sales Tax Template",
+          subtitle: "Read-only view of this sales tax template",
+        },
+      );
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleToggleStatus = async (
@@ -304,20 +354,32 @@ const SalesTaxTemplate: React.FC = () => {
         </div>
       ),
     },
-    {
+   {
       key: "actions",
       header: "Actions",
       align: "center",
       render: (tc) => (
         <ActionGroup>
+          {/* View — always visible */}
+          <ActionButton
+            type="view"
+            onClick={(e) => handleView(tc, e)}
+            iconOnly
+          />
+
+          {/* Edit — write permission */}
+          {can(SALES_TAX_TEMPLATE_MODULE, "write") && (
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(tc, e as React.MouseEvent)}
+              iconOnly
+            />
+          )}
+
+          {/* Delete + Disable/Enable — in menu */}
           {(can(SALES_TAX_TEMPLATE_MODULE, "write") ||
             can(SALES_TAX_TEMPLATE_MODULE, "delete")) && (
             <ActionMenu
-              {...(can(SALES_TAX_TEMPLATE_MODULE, "write")
-                ? {
-                    onEdit: (e) => handleEdit(tc, e as React.MouseEvent),
-                  }
-                : {})}
               {...(can(SALES_TAX_TEMPLATE_MODULE, "delete")
                 ? {
                     onDelete: (e) =>
@@ -366,7 +428,7 @@ const SalesTaxTemplate: React.FC = () => {
             <tr style={{ borderBottom: "1px solid rgba(201,125,46,0.2)" }}>
               {[
                 "Charge Type",
-                "Account Head",
+                "GL Account",
                 "Rate",
                 "Tax Amount",
                 "Description",
@@ -397,7 +459,7 @@ const SalesTaxTemplate: React.FC = () => {
                   </span>
                 </td>
                 <td className="py-2 px-3 text-main font-medium text-xs">
-                  {row.account_head}
+                  {row.account_head_name}
                 </td>
                 <td className="py-2 px-3 text-xs">
                   {row.charge_type === "Actual" ? (

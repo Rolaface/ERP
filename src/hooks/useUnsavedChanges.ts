@@ -71,18 +71,18 @@ export const useUnsavedChangesGuard = (
     };
   }, [activate, deactivate, resetDirty]);
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+  // useEffect(() => {
+  //   const el = containerRef.current;
+  //   if (!el) return;
 
-    el.addEventListener("input", markDirty);
-    el.addEventListener("change", markDirty);
+  //   el.addEventListener("input", markDirty);
+  //   el.addEventListener("change", markDirty);
 
-    return () => {
-      el.removeEventListener("input", markDirty);
-      el.removeEventListener("change", markDirty);
-    };
-  }, [markDirty]);
+  //   return () => {
+  //     el.removeEventListener("input", markDirty);
+  //     el.removeEventListener("change", markDirty);
+  //   };
+  // }, [markDirty]);
 
   const restoreModalFocus = useCallback(
     (modalId?: string) => {

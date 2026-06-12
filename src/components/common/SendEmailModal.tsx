@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp, Loader2, Paperclip, AlertTriangle } from "lucid
 interface Props {
   open: boolean;
   docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Proforma Invoice" | "Quotation";
+  isProforma?: boolean;
   invoiceNumber?: string;
   contactEmail?: string | null;
   customerName?: string | null;
@@ -130,6 +131,7 @@ const SendEmailModal: React.FC<Props> = ({
   invoiceAttachments,
   onClose,
   docType,
+  isProforma = false,
 }) => {
   const {
     to, setTo,
@@ -369,7 +371,10 @@ const SendEmailModal: React.FC<Props> = ({
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
-                  {docType}: {invoiceNumber} is automatically attached to this email.
+                  {isProforma
+                    ? `Proforma Invoice: ${invoiceNumber} is automatically attached to this email.`
+                    : `${docType}: ${invoiceNumber} is automatically attached to this email.`}
+                  {/* {docType}: {invoiceNumber} is automatically attached to this email. */}
                 </p>
               )}
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>

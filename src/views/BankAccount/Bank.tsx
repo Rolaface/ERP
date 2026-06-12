@@ -7,7 +7,11 @@ import ActionButton, {
 } from "../../components/ui/Table/ActionButton";
 import { openBankModal } from "../../store/modalStore";
 import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
-import { getAllBanks, deleteBank } from "../../api/BankApi";
+import {
+  getAllBanks,
+  deleteBank,
+  getBankById,
+} from "../../api/BankApi";
 import type { Bank } from "../../api/BankApi";
 import { showApiError, showConfirm, showSuccess } from "../../utils/alert";
 import { usePermission } from "../../hooks/permission/usePermission";
@@ -17,6 +21,7 @@ import {
   AppPageHeader,
   AppPageBody,
 } from "../../components/ui/app-shell";
+
 
 const BANK_MODULE = "Bank";
 
@@ -55,21 +60,40 @@ const BankPage: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleView = (row: Bank, e: React.MouseEvent) => {
+  const handleView = async (
+    row: Bank,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
 
-    openBankModal(
-      { ...row },
-      false,
-      {
-        isViewMode: true,
-      },
-    );
+    try {
+      const bank = await getBankById(row.name);
+
+      openBankModal(
+        bank,
+        false,
+        {
+          isViewMode: true,
+        },
+      );
+    } catch (err) {
+      showApiError(err);
+    }
   };
 
-  const handleEdit = (row: Bank, e: React.MouseEvent) => {
+  const handleEdit = async (
+    row: Bank,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
-    openBankModal({ ...row }, true);
+
+    try {
+      const bank = await getBankById(row.name);
+
+      openBankModal(bank, true);
+    } catch (err) {
+      showApiError(err);
+    }
   };
 
   const handleDelete = async (name: string, e: React.MouseEvent) => {

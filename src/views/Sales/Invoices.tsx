@@ -75,9 +75,11 @@ const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
 
 const statusOptions = [
   { label: "Draft", value: "Draft" },
-  { label: "Approved", value: "Approved" },
   { label: "Paid", value: "Paid" },
   { label: "Cancelled", value: "Cancelled" },
+  { label: "Unpaid", value: "Unpaid" },
+  { label: "Overdue", value: "Overdue" },
+  { label: "Returned", value: "Return" },
 ];
 
 interface InvoiceTableProps {
@@ -257,17 +259,23 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     setPage(1);
   };
 
-  const handleReceivePayment = (inv: InvoiceSummary) => {
-    openPaymentEntryModal(
-      {
-        paymentType: "Receive",
-        partyType: "Customer",
-        partyName: inv.customerName,
-        partyId: inv.customerId,
-        amount: inv.outstandingAmount,
-        referenceName: inv.invoiceNumber,
-        referenceType: "Sales Invoice",
-      },
+  const handleReceivePayment = async (inv: InvoiceSummary) => {
+    const res = await getSalesInvoiceById(inv.invoiceNumber);
+    closeSwal();
+    const d = res?.message?.data;
+    openPaymentEntryModal({
+      paymentType: "Receive",
+      partyType: "Customer",
+      partyName: inv.customerName,
+      partyId: inv.customerId,
+      amount: inv.outstandingAmount,
+      referenceName: inv.invoiceNumber,
+      referenceType: "Sales Invoice",
+      glFrom: d?.gl_account ?? "",
+      glFromDisplay: d?.gl_account_name ?? "",
+      currencyFrom: d?.gl_account_currency ?? "",
+      modeOfPayment: d?.paymentMode ?? "",
+    },
       false,
       {
         onSuccess: (paymentId) => {
@@ -514,7 +522,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       showLoading("Updating invoice status...");
 
       const res = await updateInvoiceStatus(invoiceNumber, status);
-      console.log("🚀 ~ handleRowStatusChange ~ res:", res);
+     
 
       closeSwal();
 

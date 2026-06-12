@@ -1,11 +1,13 @@
-import {
-  Eye,
-  EyeOff,
-  ArrowRight,
-  BarChart3,
-} from "lucide-react";
-
+import { Eye, EyeOff, BarChart3, Brain, ShieldCheck, Zap , Lock , User, Users } from "lucide-react";import { motion } from "framer-motion";
 import { useLogin } from "../hooks/useloginhooks";
+import "../login.css";
+import { useState } from "react";
+const features = [
+  // { icon: Shield, label: "Enterprise Security" },
+  { icon: Zap, label: "Lightning Fast" },
+  { icon: BarChart3, label: "Real-time Analytics" },
+  { icon: Users, label: "Team Collaboration" },
+];
 
 const Login = () => {
   const {
@@ -18,6 +20,7 @@ const Login = () => {
     error,
     handleSubmit,
     isSubmitting,
+
     forgotOpen,
     setForgotOpen,
     forgotEmail,
@@ -27,419 +30,328 @@ const Login = () => {
     handleForgotPassword,
     closeForgotModal,
   } = useLogin();
+  const [rememberMe, setRememberMe] = useState(false);
 
-  // const [rememberMe, setRememberMe] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   return (
-    <div className="login-page relative min-h-screen overflow-hidden bg-slate-100">
-      {/* Background polish */}
-      <div className="pointer-events-none absolute inset-0 bg-radial-glow opacity-60" />
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f6f3] relative overflow-hidden">
 
-      {/* Main */}
-      <main className="relative z-10 flex min-h-screen items-center justify-center px-6 py-10">
-        <div className="w-full max-w-md motion-fade-up">
-          {/* Card */}
-          <div
-            className="
-              form-card form-card--sm
-              card-premium
-              border-theme
-              bg-card
-              min-h-0
-              gap-8
-              px-6 py-7
-              sm:px-8 sm:py-8
-            "
-          >
-            {/* =========================================================
-                BRAND
-            ========================================================= */}
-            <div className="flex items-center gap-3">
-              <div
-                className="
-                  flex h-11 w-11 items-center justify-center
-                  rounded-2xl
-                  bg-primary
-                  shadow-sm
-                "
-              >
-                <BarChart3 className="h-5 w-5 text-white" />
-              </div>
+<div className="fixed inset-0 pointer-events-none overflow-hidden bg-[#f8f6f3] z-0">
 
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold tracking-wide text-main">
-                  RolaERP
-                </span>
+  {/* SOFT GLOW BACKGROUND */}
+  <motion.div
+    className="absolute w-[500px] h-[500px] bg-orange-400 rounded-full blur-3xl opacity-20"
+    animate={{
+      x: ["-10%", "15%", "-10%"],
+      y: ["-10%", "10%", "-10%"],
+    }}
+    transition={{
+      duration: 12,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
+  />
 
-                <span className="text-xs text-muted">
-                  Enterprise Resource Platform
-                </span>
-              </div>
-            </div>
+  {/* SMALL FLOATING CUBES */}
+  {Array.from({ length: 35 }).map((_, i) => (
+    <motion.div
+      key={i}
+      className="absolute w-3 h-3 bg-[#f76733] rounded-sm shadow-sm opacity-60"
+      style={{
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+      }}
+      animate={{
+        x: [0, Math.random() * 40 - 20, 0],
+        y: [0, Math.random() * -40 + 20, 0],
+        rotate: [0, 180, 360],
+      }}
+      transition={{
+        duration: 6 + Math.random() * 4,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+    />
+  ))}
 
-            {/* =========================================================
-                HEADER
-            ========================================================= */}
-            <div className="form-header gap-3">
-              <h1
-                className="
-                  text-[30px]
-                  leading-[1.05]
-                  font-semibold
-                  tracking-tight
-                  text-main
-                "
-              >
-                Welcome back
-              </h1>
+  {Array.from({ length: 25 }).map((_, i) => (
+    <motion.div
+      key={`p-${i}`}
+      className="absolute w-1 h-1 bg-black rounded-full opacity-20"
+      style={{
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+      }}
+      animate={{
+        x: [0, 20, -20, 0],
+        y: [0, -20, 20, 0],
+      }}
+      transition={{
+        duration: 5 + Math.random() * 3,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+    />
+  ))}
 
-              <p
-                className="
-                  max-w-sm
-                  text-sm
-                  leading-relaxed
-                  text-muted
-                "
-              >
-                Sign in using your company credentials to continue.
-              </p>
-            </div>
+</div>
 
-            {/* =========================================================
-                ERROR
-            ========================================================= */}
+      <div className="relative z-10 w-[80%] max-w-8xl h-[550px] bg-gradient-to-br from-[#ff7a3d] via-[#ff9a6a] to-[#f76733] rounded-3xl shadow-2xl flex overflow-hidden">
+
+  <div className="w-1/2 p-10 flex flex-col justify-center">
+
+  <div className="flex items-center gap-3 mb-6">
+    <div className="h-10 w-10 rounded-lg bg-[#f76733] flex items-center justify-center">
+      <BarChart3 className="text-white h-5 w-5" />
+    </div>
+    <div>
+      <p className="font-semibold text-lg text-gray-800">ERP</p>
+      <p className="text-white text-xs">Enterprise Platform</p>
+    </div>
+  </div>
+
+  <h2 className="text-2xl font-bold text-gray-800 mb-1">Login</h2>
+
+  <p className="text-white text-sm mb-6">Sign in to continue</p>
+
+            {/* Error Message */}
             {error && (
-              <div
-                className="
-                  rounded-2xl
-                  border border-danger/20
-                  bg-danger/10
-                  px-4 py-3
-                  motion-fade-in
-                "
-              >
-                <p className="text-sm text-danger">{error}</p>
+              <div className="mb-4 p-3 rounded-xl bg-[hsl(0,84%,97%)] border border-[hsl(0,84%,90%)] animate-fade-in">
+                <p className="text-sm text-[hsl(0,84%,60%)] font-medium">
+                  {error}
+                </p>
               </div>
             )}
 
-            {/* =========================================================
-                FORM
-            ========================================================= */}
-            <form
-              onSubmit={handleSubmit}
-              className="form-section gap-5"
-            >
-              {/* EMAIL */}
-              <div className="form-field">
-                <label
-                  htmlFor="email"
-                  className="form-label mb-2"
-                >
-                  Email or Employee ID
-                </label>
 
-                <input
-                  id="email"
-                  type="text"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  autoComplete="username"
-                  required
-                  className="
-                    input-base
-                    h-12
-                  "
-                />
-              </div>
+  <form onSubmit={handleSubmit} className="space-y-4">
 
-              {/* PASSWORD */}
-              <div className="form-field">
-                <div className="mb-2 flex items-center justify-between">
-                  <label
-                    htmlFor="password"
-                    className="form-label"
-                  >
-                    Password
-                  </label>
+    <div>
+      <label className="text-xs text-white mb-1 block">Email</label>
+               
 
-                  <button
-                    type="button"
-                    onClick={() => setForgotOpen(true)}
-                    className="
-                      text-xs
-                      font-medium
-                      text-primary
-                      transition-opacity
-                      hover:opacity-80
-                    "
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+      <input
+        type="text"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="w-full h-10 border px-3 rounded-md"
+        placeholder="Enter your email"
+      />
+    </div>
 
-                <div className="input-wrapper">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    required
-                    className="
-                      input-base
-                      h-12
-                      pr-12
-                    "
-                  />
+    <div>
+      <div className="flex justify-between items-center">
+                   
 
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={
-                      showPassword
-                        ? "Hide password"
-                        : "Show password"
-                    }
-                    className="
-absolute inset-y-0 right-0
-flex items-center justify-center
-w-12
-text-muted
-transition-colors
-hover:text-main
-"
-                  >
-                    {showPassword ? (
-                      <Eye className="h-4 w-4" />
-                    ) : (
-                      <EyeOff className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
+        <label className="text-xs text-white mb-1 block">
+          Password
+        </label>
 
-              {/* REMEMBER */}
-
-              {/* <div className="flex items-center justify-between">
-                <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="
-                      h-4 w-4
-                      rounded
-                      border-theme
-                    "
-                  />
-
-                  <span className="text-sm text-muted">
-                    Remember me
-                  </span>
-                </label>
-              </div> */}
-
-              {/* BUTTON */}
-              <div className="pt-1">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="
-                    btn btn-primary btn-premium
-                    h-12 w-full
-                    rounded-xl
-                    text-sm font-semibold
-                    disabled:cursor-not-allowed
-                    disabled:opacity-70
-                  "
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    {isSubmitting ? "Signing in..." : "Sign In"}
-
-                    {!isSubmitting && (
-                      <ArrowRight className="h-4 w-4" />
-                    )}
-                  </span>
-                </button>
-              </div>
-            </form>
-
-            {/* =========================================================
-                FOOTER
-            ========================================================= */}
-            <div
-              className="
-                flex items-center gap-2
-                border-t border-theme
-                pt-5
-              "
-            >
-
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* =============================================================
-          FORGOT PASSWORD MODAL
-      ============================================================= */}
-      {forgotOpen && (
-        <div
-          className="
-            fixed inset-0 z-50
-            flex items-center justify-center
-            bg-black/40
-            p-4
-            backdrop-blur-sm
-          "
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              closeForgotModal();
-            }
-          }}
+        {/* 🔥 FORGOT BUTTON */}
+        <button
+          type="button"
+          onClick={() => setForgotOpen(true)}
+          className="text-xs text-[#1b64d1] hover:underline"
         >
-          <div
-            className="
-              card-premium
-              bg-card
-              relative
-              w-full
-              max-w-md
-              rounded-3xl
-              border border-theme
-              p-6
-              motion-scale-in
-            "
-          >
-            {/* Close */}
-            <button
-              type="button"
-              onClick={closeForgotModal}
-              aria-label="Close modal"
-              className="
-                absolute right-4 top-4
-                text-muted
-                transition-colors
-                hover:text-main
-              "
-            >
-              ✕
-            </button>
+          Forgot?
+        </button>
+      </div>
 
-            {/* Header */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-main">
-                Reset password
-              </h2>
+      <div className="relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full h-10 border px-3 rounded-md pr-10"
+          placeholder="Enter your password"
+        />
 
-              <p className="mt-2 text-sm leading-relaxed text-muted">
-                Enter your email address and we’ll send you a
-                password reset link.
-              </p>
-            </div>
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-3 top-2 text-gray-500"
+        >
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
 
-            {/* Status */}
-            {forgotStatus === "success" && (
-              <div
-                className="
-                  mb-5 rounded-2xl
-                  border border-success/20
-                  bg-success/10
-                  px-4 py-3
-                "
-              >
-                <p className="text-sm text-success">
-                  {forgotMessage}
-                </p>
-              </div>
-            )}
+    </div>
+             
 
-            {forgotStatus === "error" && (
-              <div
-                className="
-                  mb-5 rounded-2xl
-                  border border-danger/20
-                  bg-danger/10
-                  px-4 py-3
-                "
-              >
-                <p className="text-sm text-danger">
-                  {forgotMessage}
-                </p>
-              </div>
-            )}
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      type="submit"
+      disabled={isSubmitting}
+      className="w-full h-10 bg-white text-[#f76733] rounded-md "
+    >
+      {isSubmitting ? "Loading..." : "Login"}
+    </motion.button>
 
-            {/* Form */}
-            {forgotStatus !== "success" && (
-              <>
-                <div className="form-field mb-6">
-                  <label
-                    htmlFor="forgot-email"
-                    className="form-label mb-2"
-                  >
-                    Email address
-                  </label>
+  </form>
 
-                  <input
-                    id="forgot-email"
-                    type="email"
-                    value={forgotEmail}
-                    onChange={(e) =>
-                      setForgotEmail(e.target.value)
-                    }
-                    onKeyDown={(e) =>
-                      e.key === "Enter" &&
-                      handleForgotPassword()
-                    }
-                    placeholder="name@company.com"
-                    autoFocus
-                    className="input-base h-12"
-                  />
-                </div>
+ {/* ================= FORGOT PASSWORD MODAL ================= */}
 
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  disabled={forgotStatus === "loading"}
-                  className="
-                    btn btn-primary btn-premium
-                    h-12 w-full
-                    rounded-xl
-                    text-sm font-semibold
-                    disabled:cursor-not-allowed
-                    disabled:opacity-70
-                  "
-                >
-                  {forgotStatus === "loading"
-                    ? "Sending..."
-                    : "Send reset link"}
-                </button>
-              </>
-            )}
+</div>
 
-            {/* Success CTA */}
-            {forgotStatus === "success" && (
-              <button
-                type="button"
-                onClick={closeForgotModal}
-                className="
-                  btn btn-primary btn-premium
-                  mt-2
-                  h-12 w-full
-                  rounded-xl
-                  text-sm font-semibold
-                "
-              >
-                Back to login
-              </button>
-            )}
-          </div>
-        </div>
+        {/* RIGHT */}
+  {/* RIGHT SIDE */}
+<div className="w-1/2 relative flex items-center justify-center overflow-hidden">
+
+  {/* BIG ORANGE CIRCLE BACKGROUND */}
+  <div
+    className="absolute bg-white w-[800px] h-[800px] rounded-full right-[-280px] top-1/2 -translate-y-1/2"
+   
+  />
+
+  {/* LIGHT DOT PATTERN (TOP RIGHT) */}
+  <div className="absolute right-0 top-0 w-full h-full">
+    <div className="absolute right-10 top-10 grid grid-cols-6 gap-2 opacity-20">
+      {Array.from({ length: 36 }).map((_, i) => (
+        <span key={i} className="w-1.5 h-1.5 bg-white rounded-full" />
+      ))}
+    </div>
+  </div>
+
+  {/* FAINT CIRCLE LINES (DECOR) */}
+  <div className="absolute right-[-120px] top-10 w-[300px] h-[300px] border border-white/20 rounded-full" />
+  <div className="absolute right-[-180px] bottom-10 w-[200px] h-[200px] border border-white/10 rounded-full" />
+
+  {/* MAIN CONTENT */}
+  <div className="relative z-10 text-black w-[360px] text-center">
+
+    {/* POWERED BY */}
+    <div className="flex items-center gap-3 mb-6">
+  <div className="flex-1 h-[1px] bg-black/40" />
+  
+  <span className="text-[11px] tracking-[3px] text-black/90">
+    POWERED BY
+  </span>
+  
+  <div className="flex-1 h-[1px] bg-black/40" />
+</div>
+
+    {/* LOGOS STACK */}
+    <div className="flex flex-col items-center gap-3">
+
+
+      {/* ROLAFACE LOGO */}
+      <img
+        src="/rolafaceLogo.png"
+        alt="RolaFace"
+        className="w-52 object-contain drop-shadow-xl"
+      />
+
+      {/* AMPERSAND */}
+      <div className="text-2xl font-light leading-none opacity-80">
+        &
+      </div>
+
+      {/* iZYANE LOGO */}
+      <img
+        src="/iZyaneLogo.png"
+        alt="iZyane"
+        className="w-52 object-contain drop-shadow-xl"
+      />
+    </div>
+
+    {/* TITLE BOX STYLE */}
+    <div className="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-5">
+
+  <h1 className="text-lg text-gray-900 font-semibold mb-2">
+    Unified Business Operations
+  </h1>
+
+  <p className="text-xs text-gray-600 opacity-80 leading-relaxed">
+    Manage all your business operations in one place — from finance and inventory to HR and analytics. 
+  </p>
+
+</div>
+
+    {/* FEATURES */}
+
+{/* FEATURES */}
+<div className="flex justify-evenly mt-6 text-xs text-black">
+
+  <div className="flex flex-col items-center gap-1">
+    <BarChart3 className="w-5 h-5 text-black opacity-90" />
+    <span className="text-black opacity-90">Scalable</span>
+  </div>
+
+  <div className="flex flex-col items-center gap-1">
+    <Brain className="w-5 h-5 text-black opacity-90" />
+    <span className="text-black opacity-90">AI Powered</span>
+  </div>
+
+  <div className="flex flex-col items-center gap-1">
+    <ShieldCheck className="w-5 h-5 text-black opacity-90" />
+    <span className="text-black opacity-90">Secure</span>
+  </div>
+
+  <div className="flex flex-col items-center gap-1">
+    <Zap className="w-5 h-5 text-black opacity-90" />
+    <span className="text-black opacity-90">Reliable</span>
+  </div>
+
+</div>
+
+  </div>
+</div>
+      </div>
+
+      {/* ================= MODAL (UNCHANGED) ================= */}
+     {forgotOpen && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+    onClick={(e) => e.target === e.currentTarget && closeForgotModal()}
+  >
+    <div className="bg-white p-6 rounded-xl w-[400px] relative shadow-xl">
+
+      <button
+        onClick={closeForgotModal}
+        className="absolute top-3 right-3 text-white"
+      >
+        ✕
+      </button>
+
+      <h2 className="text-lg font-bold mb-2">Reset Password</h2>
+
+      <p className="text-sm text-white mb-4">
+        Enter your email to receive reset link
+      </p>
+
+      {forgotStatus === "success" && (
+        <p className="text-green-600 text-sm mb-3">{forgotMessage}</p>
       )}
+
+      {forgotStatus === "error" && (
+        <p className="text-red-600 text-sm mb-3">{forgotMessage}</p>
+      )}
+
+      {forgotStatus !== "success" && (
+        <>
+          <input
+            className="w-full border p-2 rounded-md"
+            value={forgotEmail}
+            onChange={(e) => setForgotEmail(e.target.value)}
+            placeholder="Enter your email"
+          />
+
+          <button
+            onClick={handleForgotPassword}
+            className="w-full mt-4 bg-[#f76733] text-white p-2 rounded-md"
+          >
+            {forgotStatus === "loading" ? "Sending..." : "Send Link"}
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
 
 export default Login;
+

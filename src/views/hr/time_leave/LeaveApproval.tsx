@@ -25,57 +25,6 @@ interface MenuAction {
   dividerBefore?: boolean;
 }
 
-const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
-  if (actions.length === 0)
-    return <span className="text-gray-400 pl-2">-</span>;
-
-  return (
-    <div className="flex justify-center">
-      <PortalDropdown
-        align="right"
-        trigger={
-          <button
-            type="button"
-            className="w-7 h-7 flex items-center justify-center rounded-md transition text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-          >
-            <MoreHorizontal size={15} />
-          </button>
-        }
-      >
-        {actions.map((action, i) => (
-          <React.Fragment key={i}>
-            {action.dividerBefore && (
-              <div className="border-t border-gray-200 my-1" />
-            )}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                action.onClick();
-              }}
-              className={`
-                w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
-                ${
-                  action.danger
-                    ? "text-red-600 hover:bg-red-50"
-                    : "text-gray-700 hover:bg-gray-100"
-                }
-              `}
-            >
-              <span
-                className={action.danger ? "text-red-600" : "text-gray-500"}
-              >
-                {action.icon}
-              </span>
-              {action.label}
-            </button>
-          </React.Fragment>
-        ))}
-      </PortalDropdown>
-    </div>
-  );
-};
-
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function LeaveApproval() {
   const { can } = usePermission();
@@ -100,7 +49,7 @@ export default function LeaveApproval() {
   // }, [showHistory, filters.from_date, filters.to_date, filters.status]);
   useEffect(() => {
     getAllLeaveApplied();
-  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize]);
+  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm]);
 
   const getAllLeaveApplied = async () => {
     try {
@@ -138,7 +87,7 @@ export default function LeaveApproval() {
       const limit_page_length = pageSize;
 
       // Pass the pagination params to your API call
-      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length);
+      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length, searchTerm);
       console.log("API Response:", response);
       setData(response || []);
     } catch (err) {
@@ -185,27 +134,6 @@ export default function LeaveApproval() {
       setIsLoading(false);
     }
   };
-const calculateLeaveDays = (fromDateStr: string, toDateStr: string, isHalfDay: number) => {
-  if (isHalfDay === 1) return "Half Day";
-  if (!fromDateStr || !toDateStr) return "-";
-
-  // Parse API strings into Date objects
-  const date1 = new Date(fromDateStr);
-  const date2 = new Date(toDateStr);
-
-  // Set time to midnight to avoid Daylight Saving Time (DST) shift bugs
-  date1.setHours(0, 0, 0, 0);
-  date2.setHours(0, 0, 0, 0);
-
-  const differenceInMs = date2.getTime() - date1.getTime();
-  const millisecondsInDay = 1000 * 60 * 60 * 24;
-
-  // Use Math.round() instead of floor() to be safe against minor hour shifts
-  // Add + 1 because leave is inclusive (e.g., May 1 to May 1 = 1 day)
-  const days = Math.round(differenceInMs / millisecondsInDay) + 1;
-
-  return days > 0 ? days : 0; 
-};
 
   const columns: Column<any>[] = [
      {
@@ -228,10 +156,11 @@ const calculateLeaveDays = (fromDateStr: string, toDateStr: string, isHalfDay: n
       render: (e) => (e.half_day === 1 ? "Half Day" : e.to_date || "-"),
     },
    {
-    key: "no_of_days",
+    key: "total_leave_days",
     header: "No of Days",
     align: "left",
-    render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
+    // render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
+    render: (e) => <span className="font-medium">{e.total_leave_days || "—"}</span>,
   },
     {
       key: "description",
@@ -359,7 +288,10 @@ if (canApproveReject && !isActionDone) {
         data={data}
         showToolbar
         searchValue={searchTerm}
-        onSearch={setSearchTerm}
+        onSearch={(val) => {
+  setSearchTerm(val);
+  setPage(1);
+}}
         enableColumnSelector
         currentPage={page}
         pageSize={pageSize}

@@ -11,11 +11,19 @@ interface CalendarLeave {
   status: LeaveStatus;
 }
 
+// interface AdvancedCalendarProps {
+//   leaves: CalendarLeave[];
+//   selectedRange?: DateRange;
+//   onRangeSelect: (range: DateRange | undefined) => void;
+//   month?: Date;                           // <-- Add this
+//   onMonthChange?: (month: Date) => void;
+// }
 interface AdvancedCalendarProps {
   leaves: CalendarLeave[];
+  holidays: Date[]; // <-- ADD THIS
   selectedRange?: DateRange;
   onRangeSelect: (range: DateRange | undefined) => void;
-  month?: Date;                           // <-- Add this
+  month?: Date;                           
   onMonthChange?: (month: Date) => void;
 }
 
@@ -31,17 +39,19 @@ const expandDateRange = (start: Date, end: Date): Date[] => {
 
 const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
   leaves,
+  holidays, // <-- DESTRUCTURE THIS
   selectedRange,
   onRangeSelect,
   month,
   onMonthChange,
 }) => {
   const modifiers = useMemo(() => {
-    const result: Record<LeaveStatus, Date[]> = {
+    const result: Record<string, Date[]> = {
       approved: [],
       pending: [],
       rejected: [],
       cancelled: [],
+      holiday: holidays, // <-- ADD HOLIDAY MODIFIER
     };
 
     leaves.forEach((leave) => {
@@ -51,7 +61,7 @@ const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
     });
 
     return result;
-  }, [leaves]);
+  }, [leaves, holidays]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -67,11 +77,11 @@ const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
         month={month}                  
         onMonthChange={onMonthChange}
         modifiers={modifiers}
-        // disabled={{ before: today }}
         modifiersClassNames={{
-          approved: "bg-green-500/10 text-green-700",
-          pending: "bg-yellow-500/10 text-yellow-700",
-          rejected: "bg-red-500/10 text-red-700",
+          // approved: "bg-green-500/10 text-green-700",
+          // pending: "bg-yellow-500/10 text-yellow-700",
+          // rejected: "bg-red-500/10 text-red-700",
+          holiday: "bg-red-300 text-indigo-700 font-medium", 
         }}
         classNames={{
           months: "flex justify-center",
@@ -92,7 +102,7 @@ const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
           <span className="text-muted">Selected</span>
         </div>
 
-        <div className="flex items-center gap-2 text-sm">
+        {/* <div className="flex items-center gap-2 text-sm">
           <div className="w-3 h-3 rounded bg-green-500/20 border border-green-500/40" />
           <span className="text-muted">Approved</span>
         </div>
@@ -100,8 +110,14 @@ const AdvancedCalendar: React.FC<AdvancedCalendarProps> = ({
         <div className="flex items-center gap-2 text-sm">
           <div className="w-3 h-3 rounded bg-yellow-500/20 border border-yellow-500/40" />
           <span className="text-muted">Pending</span>
+        </div> */}
+         <div className="flex items-center gap-2 text-sm">
+          <div className="w-3 h-3 rounded bg-red-300 border border-indigo-500/40" />
+          <span className="text-muted">Holiday</span>
         </div>
       </div>
+
+     
     </div>
   );
 };

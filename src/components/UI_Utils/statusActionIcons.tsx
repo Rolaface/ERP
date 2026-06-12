@@ -13,7 +13,11 @@ import {
   ReceiptText,
   Scan,
   ToggleRight,
-  ToggleLeft,
+  ToggleLeft,Eye,
+  Play,
+  RotateCcw,
+  Trash2,
+  XCircle
 } from "lucide-react";
 
 export const ACTION_ICONS = {
@@ -25,13 +29,17 @@ export const ACTION_ICONS = {
   DEBIT_NOTE: <FileMinus size={16} />,
   ENABLE: <ToggleRight size={16} />,
   DISABLE: <ToggleLeft size={16} />,
-
+  DELETE : <Trash2 size={16} />,
+  REJECT: <XCircle size={16} />,
   PDF: <FileText size={16} />,
   SCAN: <Scan size={16} />,
   EMAIL: <Send size={16} />,
   PAYMENT: <CreditCard size={16} />,
   ADVANCE_PAYMENT: <Banknote size={16} />,
   PURCHASE_INVOICE: <ReceiptText size={16} />,
+  PAYROLL_PREVIEW: <Eye size={16} />,
+PAYROLL_RUN: <Play size={16} />,
+PAYROLL_REVERT: <RotateCcw size={16} />,
 } as const;
 
 export const getStatusActionIcon = (status: string): ReactNode | undefined => {

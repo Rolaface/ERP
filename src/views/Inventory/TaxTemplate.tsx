@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
 import {
   showApiError,
   showSuccess,
@@ -14,7 +13,7 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import Tooltip from "../../components/Tooltip";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { getAllTemplates, deleteTemplate } from "../../api/TaxTemplateApi";
+import { getAllTemplates, deleteTemplate, getTaxTemplateById } from "../../api/TaxTemplateApi";
 import { useTaxTemplate } from "../../hooks/useTaxTemplate";
 import { openTaxTemplateModal } from "../../store/modalStore";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
@@ -91,36 +90,90 @@ const TaxTemplate: React.FC<Props> = () => {
     });
   };
 
-  const openEdit = (row: TaxTemplateSummary) => {
-    const separatorIdx = row.title.indexOf(" | ");
-    const parsedCode = separatorIdx !== -1 ? row.title.slice(0, separatorIdx) : row.title;
-    const parsedDesc = separatorIdx !== -1 ? row.title.slice(separatorIdx + 3) : "";
+  const openEdit = async (row: TaxTemplateSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setLoading(true);
+      const res = await getTaxTemplateById(row.name);
+      const data = res?.data;
 
-    const formData: TaxCategoryFormData = {
-      name: row.name,
-      title: row.title,
-      title_code: parsedCode,
-      title_desc: parsedDesc,
-      disabled: row.disabled === 1,
-      taxes: row.taxes.map((t) => ({
-        tax_type: t.tax_type,
-        tax_rate: t.tax_rate,
-      })),
-    };
-    openTaxTemplateModal(formData, true, {
-      callback: async (formData: TaxCategoryFormData) => {
-        try {
-          await updateTaxTemplate(formData);
-          await fetchTemplates();
-        } catch (error) {
-          showApiError(error);
-          throw error;
-        }
-      },
-    }, {
-      title: "Edit Tax Template",
-      subtitle: "Update tax template",
-    });
+      const separatorIdx = (data.title ?? "").indexOf(" | ");
+      const parsedCode = separatorIdx !== -1 ? data.title.slice(0, separatorIdx) : data.title;
+      const parsedDesc = separatorIdx !== -1 ? data.title.slice(separatorIdx + 3) : "";
+
+      const formData: TaxCategoryFormData = {
+        name: data.name,
+        title: data.title,
+        title_code: parsedCode,
+        title_desc: parsedDesc,
+        disabled: data.disabled === 1,
+        taxes: Array.isArray(data.taxes) && data.taxes.length > 0
+          ? data.taxes.map((t: any) => ({
+            name: t.name,
+            tax_type: t.tax_type,
+            tax_type_display: t.account_name || "", 
+            tax_rate: Number(t.tax_rate) || 0,
+          }))
+          : [{ tax_type: "", tax_rate: 0 }],
+      };
+
+      openTaxTemplateModal(formData, true, {
+        callback: async (formData: TaxCategoryFormData) => {
+          try {
+            await updateTaxTemplate(formData);
+            await fetchTemplates();
+          } catch (error) {
+            showApiError(error);
+            throw error;
+          }
+        },
+      }, {
+        title: "Edit Tax Template",
+        subtitle: "Update tax template",
+      });
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleView = async (row: TaxTemplateSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setLoading(true);
+      const res = await getTaxTemplateById(row.name);
+      const data = res?.data;
+
+      const separatorIdx = (data.title ?? "").indexOf(" | ");
+      const parsedCode = separatorIdx !== -1 ? data.title.slice(0, separatorIdx) : data.title;
+      const parsedDesc = separatorIdx !== -1 ? data.title.slice(separatorIdx + 3) : "";
+
+      const formData: TaxCategoryFormData = {
+        name: data.name,
+        title: data.title,
+        title_code: parsedCode,
+        title_desc: parsedDesc,
+        disabled: data.disabled === 1,
+        taxes: Array.isArray(data.taxes) && data.taxes.length > 0
+          ? data.taxes.map((t: any) => ({
+            name: t.name,
+            tax_type: t.tax_type,
+            tax_type_display: t.account_name || "",
+            tax_rate: Number(t.tax_rate) || 0,
+          }))
+          : [{ tax_type: "", tax_rate: 0 }],
+      };
+
+      openTaxTemplateModal(formData, false, { isViewMode: true }, {
+        title: "View Tax Template",
+        subtitle: "Read-only view of this tax template",
+      });
+    } catch (error) {
+      showApiError(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   //  Fetch 
@@ -150,8 +203,7 @@ const TaxTemplate: React.FC<Props> = () => {
   //  Handlers 
 
   const handleEdit = (row: TaxTemplateSummary, e: React.MouseEvent) => {
-    e.stopPropagation();
-    openEdit(row);
+    openEdit(row, e);
   };
 
   //  Status Toggle: Enable / Disable 
@@ -307,36 +359,39 @@ const TaxTemplate: React.FC<Props> = () => {
       align: "center",
       render: (tc) => (
         <ActionGroup>
+          {/* View — always visible */}
+          <ActionButton
+            type="view"
+            onClick={(e) => handleView(tc, e)}
+            iconOnly
+          />
 
+          {/* Edit — write permission */}
+          {can(TAX_TEMPLATE_MODULE, "write") && (
+            <ActionButton
+              type="edit"
+              onClick={(e) => handleEdit(tc, e as React.MouseEvent)}
+              iconOnly
+            />
+          )}
+
+          {/* Delete + Disable/Enable — in menu */}
           {(can(TAX_TEMPLATE_MODULE, "write") ||
             can(TAX_TEMPLATE_MODULE, "delete")) && (
               <ActionMenu
-                {...(can(TAX_TEMPLATE_MODULE, "write")
-                  ? {
-                    onEdit: (e) => handleEdit(tc, e as any),
-                  }
-                  : {})}
                 {...(can(TAX_TEMPLATE_MODULE, "delete")
-                  ? {
-                    onDelete: (e) =>
-                      handleDelete(tc.name, e as any),
-                  }
+                  ? { onDelete: (e) => handleDelete(tc.name, e as any) }
                   : {})}
                 customActions={
                   can(TAX_TEMPLATE_MODULE, "write")
                     ? [
                       {
-  label: tc.disabled ? "Enable" : "Disable",
-  icon: tc.disabled
-    ? ACTION_ICONS.ENABLE
-    : ACTION_ICONS.DISABLE,
-  onClick: () =>
-    handleToggleStatus(
-      tc,
-      { stopPropagation: () => {} } as React.MouseEvent
-    ),
-  danger: !tc.disabled,
-}
+                        label: tc.disabled ? "Enable" : "Disable",
+                        icon: tc.disabled ? ACTION_ICONS.ENABLE : ACTION_ICONS.DISABLE,
+                        onClick: () =>
+                          handleToggleStatus(tc, { stopPropagation: () => { } } as React.MouseEvent),
+                        danger: !tc.disabled,
+                      },
                     ]
                     : []
                 }
@@ -368,7 +423,7 @@ const TaxTemplate: React.FC<Props> = () => {
                 <thead>
                   <tr style={{ borderBottom: "1px solid rgba(201,125,46,0.2)" }}>
                     <th className="text-left py-2 px-3 font-bold text-muted uppercase tracking-widest text-[10px] w-[60%]">
-                      Tax Type
+                      GL Account
                     </th>
                     <th className="text-left py-2 px-3 font-bold text-muted uppercase tracking-widest text-[10px]">
                       Rate
@@ -382,7 +437,7 @@ const TaxTemplate: React.FC<Props> = () => {
                       className="transition-colors"
                       style={{ borderBottom: "1px solid rgba(0,0,0,0.04)", background: i % 2 !== 0 ? "rgba(201,125,46,0.03)" : "transparent" }}
                     >
-                      <td className="py-2 px-3 text-main font-medium text-xs">{row.tax_type}</td>
+                      <td className="py-2 px-3 text-main font-medium text-xs">{row.tax_type_name}</td>
                       <td className="py-2 px-3 text-xs">
                         <span className="font-semibold" style={{ color: "var(--primary, #c97d2e)" }}>
                           {Number(row.tax_rate).toFixed(2)}

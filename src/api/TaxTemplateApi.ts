@@ -80,3 +80,10 @@ export async function deleteTemplate(name: string): Promise<any> {
   });
   return resp.data;
 }
+
+export async function getTaxTemplateById(name: string): Promise<any> {
+  const resp: AxiosResponse = await api.get(TemplateAPI.getTaxTemplateById, {
+    params: { name },
+  });
+  return resp.data;
+}

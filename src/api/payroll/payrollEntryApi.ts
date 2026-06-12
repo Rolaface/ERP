@@ -222,6 +222,8 @@ export async function getAllPayrollEntries(
   page = 1,
   pageSize = 20,
   search = "",
+  fromDate?: string, 
+  toDate?: string,
 ): Promise<any> {
   const queryParams = new URLSearchParams({
     page: String(page),
@@ -231,6 +233,8 @@ export async function getAllPayrollEntries(
   if (search.trim()) {
     queryParams.append("search", search);
   }
+  if (fromDate)       queryParams.append("from_date", fromDate);  
+  if (toDate)         queryParams.append("to_date",   toDate); 
 
   const resp: AxiosResponse = await api.get(
     `${API.payroll.payrollentry.getPayrollEntryList}?${queryParams.toString()}`,
@@ -621,4 +625,19 @@ return {
         "Failed to fetch salary structure assignments",
     );
   }
+}
+
+export async function cancelPayrollEntry(id: string): Promise<any> {
+  const resp: AxiosResponse = await api.put(
+    `${API.payroll.payrollentry.createpayrollentry}/${encodeURIComponent(id)}`,
+    {
+      docstatus: 2,
+    },
+  );
+
+  if (resp.data?.success === false) {
+    throw new Error(resp.data?.message || "Failed to cancel payroll");
+  }
+
+  return resp.data?.data || resp.data;
 }

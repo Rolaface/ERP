@@ -4,12 +4,14 @@ export function buildListParams({
   pageSize,
   search,
   searchFields,
+    status,
 }: {
   fields: string[];
   start?: number;
   pageSize?: number;
   search?: string;
   searchFields?: string[];
+  status?: string;
 }) {
   const params = new URLSearchParams();
 
@@ -34,6 +36,8 @@ export function buildListParams({
     ]);
     params.append("or_filters", JSON.stringify(orFilters));
   }
-
+  if (status) {
+  params.append("or_filters", JSON.stringify({ status }));
+}
   return params.toString();
 }

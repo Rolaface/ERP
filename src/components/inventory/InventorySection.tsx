@@ -15,16 +15,13 @@ interface InventorySectionProps {
   setField: ItemFieldSetter;
 }
 
-
 const fieldLabel = "block text-[10px] font-medium text-main mb-1";
-
 
 const SectionHeading: React.FC<{ title: string }> = ({ title }) => (
   <p className="mt-4 text-[10px] font-semibold uppercase tracking-widest text-muted">
     {title}
   </p>
 );
-
 
 interface InlineCheckboxProps {
   id: string;
@@ -78,7 +75,6 @@ const InlineCheckbox: React.FC<InlineCheckboxProps> = ({
 
 const InventorySection: React.FC<InventorySectionProps> = React.memo(
   ({ form, isServiceItem, onFormChange, setField }) => {
-
     const fetchBrandOptions = useCallback(
       async (q: string) => getBrands(q),
       [],
@@ -88,7 +84,6 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
       <>
         {/* ── Row 1: Brand | Dimensions | Weight | Valuation Method ── */}
         <div className="grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-
           {/* Brand — async search via Frappe search_link */}
           {/* <div className="min-w-0">
             <SearchSelect2
@@ -137,10 +132,13 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
               />
               <select
                 name="dimensionUnit"
-                value={form.dimensionUnit || "cm"}
+                value={form.dimensionUnit || ""}
                 onChange={onFormChange}
                 className="h-[28px] w-14 shrink-0 rounded border border-[var(--border)] bg-card px-1 text-[11px] text-main focus:outline-none focus:ring-1 focus:ring-primary hover:border-primary/40 transition-all"
               >
+                <option value="" disabled>
+                  select
+                </option>
                 <option value="cm">cm</option>
                 <option value="in">in</option>
               </select>
@@ -208,7 +206,7 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
             placeholder="e.g. 365"
             disabled={!form.has_expiry_date}
           />
-         
+
           {/* <div className="w-full max-w-[220px]">
             <ModalSelect
               label="Tracking Method"

@@ -21,7 +21,7 @@ import DatePickerInput from "../calendar/DatePickerInput";
 import ItemTable from "../common/ItemTable";
 import {
   invoiceStatusOptions,
-  currencySymbols,
+  
   paymentMethodOptions,
 } from "../../constants/invoice.constants";
 import type { ModalSubmitHandler } from "../../types/modal";
@@ -175,7 +175,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   };
 
   const [custLoading, setCustLoading] = useState(true);
-  const symbol = currencySymbols[formData.currencyCode] || "";
+  const symbol = "";
   
   useEffect(() => {
     if (!isOpen) return;
@@ -224,8 +224,8 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           onNext={ui.activeTab === "terms" ? undefined : handleNext}
         />
       }
-      customWidth="83vw"
-      height="82vh"
+      maxWidth="full"
+     height="650px"
     >
       <form
         id="proforma-form"

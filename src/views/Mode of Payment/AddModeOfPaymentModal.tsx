@@ -17,6 +17,7 @@ interface Props {
   modalId: string;
   initialData?: any;
   isEdit?: boolean;
+  isViewMode?: boolean
 }
 
 const AddModeOfPaymentModal: React.FC<Props> = ({
@@ -26,6 +27,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
   modalId,
   initialData,
   isEdit,
+  isViewMode = false,
 }) => {
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
@@ -39,7 +41,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
     companyLoading,
   } = useModeOfPaymentLogic({
     onSubmit, onClose, initialData,
-    isEdit,
+    isEdit, isViewMode
   });
 
   const handleClose = () => {
@@ -76,13 +78,17 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
         Cancel
       </Button>
 
-      <Button
-        variant="primary"
-        onClick={handleSubmitWithDirtyReset}
-        disabled={loading}
-      >
-        {loading ? "Saving..." : "Save"}
-      </Button>
+      {!isViewMode && (
+        <Button
+          variant="primary"
+          onClick={handleSubmitWithDirtyReset}
+          disabled={loading}
+        >
+          {loading ? "Saving..." : "Save"}
+        </Button>
+      )}
+
+
     </>
   );
 
@@ -91,8 +97,15 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(handleClose, modalId)}
-      title={isEdit ? "Edit Mode of Payment" : "Add Mode of Payment"}
-      subtitle="Configure mode of payment"
+      // title={isEdit ? "Edit Mode of Payment" : "Add Mode of Payment"}
+      title={isViewMode ? "View Mode of Payment" : isEdit ? "Edit Mode of Payment" : "Add Mode of Payment"}
+      subtitle={
+        isViewMode
+          ? "Review payment details"
+          : isEdit
+            ? "Edit payment configuration"
+            : "Configure a new payment method"
+      }
       footer={footer}
       customWidth="60vw"
       height="48vh"
@@ -110,9 +123,17 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
               name="name"
               value={form.name}
               onChange={handleChange}
-              disabled={isEdit}
+              disabled={isEdit || isViewMode}
               required
             />
+            {/* <ModalInput
+  label="Mode of Payment"
+  name="name"
+  value={form.name}
+  onChange={handleChange}
+  disabled={isViewMode}  // ← removed isEdit
+  required
+/> */}
 
             <ModalSelect
               label="Type"
@@ -125,29 +146,34 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
                 { label: "General", value: "General" },
                 { label: "Phone", value: "Phone" },
               ]}
+              disabled={isViewMode}
               required
             />
 
             <SearchSelect2
-              label="Default Account"
-                value={form.defaultAccountDisplay || form.defaultAccount}
-onChange={(val, option) => {
-  markDirty();
-  setForm((p) => ({
-    ...p,
-    defaultAccount: val || "",           
-    defaultAccountDisplay: option?.label || "", 
-  }));
-}}
+              label="GL Account"
+              value={form.defaultAccountDisplay || form.defaultAccount}
+              onChange={(val, option) => {
+                markDirty();
+                setForm((p) => ({
+                  ...p,
+                  defaultAccount: val || "",
+                  defaultAccountDisplay: option?.label || "",
+                }));
+              }}
               fetchOptions={fetchGlOptions}
+              disabled={isViewMode}
+
               required
-              placeholder="Select default account"
+              placeholder="Select GL Account"
             />
 
             <label className="flex items-center gap-2 mt-6">
               <input
                 type="checkbox"
                 checked={form.enabled}
+                disabled={isViewMode}
+
                 onChange={(e) => {
                   markDirty();
                   setForm((p) => ({ ...p, enabled: e.target.checked }));

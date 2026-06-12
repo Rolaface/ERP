@@ -19,6 +19,7 @@ interface Props {
   onClose: () => void;
   initialData?: ShiftType | null;
   onSuccess?: () => void;
+  isViewMode?: boolean;
 }
 
 const CHECK_IN_OUT_OPTIONS = [
@@ -49,17 +50,16 @@ export const ShiftTypeModal: React.FC<Props> = ({
   onClose,
   initialData,
   onSuccess,
+  isViewMode = false,
 }) => {
   const isEdit = Boolean(initialData?.name);
   const [saving, setSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Basic Info
   const [name, setName] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
-  // Auto Attendance Settings
   const [determineCheckIn, setDetermineCheckIn] = useState(
     CHECK_IN_OUT_OPTIONS[0].value,
   );
@@ -69,17 +69,14 @@ export const ShiftTypeModal: React.FC<Props> = ({
   const [beginCheckInMins, setBeginCheckInMins] = useState<number | "">(60);
   const [allowCheckOutMins, setAllowCheckOutMins] = useState<number | "">(60);
 
-  // Late Entry & Early Exit
   const [enableLateEntry, setEnableLateEntry] = useState(false);
   const [lateEntryGrace, setLateEntryGrace] = useState<number | "">("");
   const [enableEarlyExit, setEnableEarlyExit] = useState(false);
   const [earlyExitGrace, setEarlyExitGrace] = useState<number | "">("");
 
-  // Thresholds
   const [halfDayThreshold, setHalfDayThreshold] = useState<number | "">("");
   const [absentThreshold, setAbsentThreshold] = useState<number | "">("");
 
-  // Attributes (Right Sidebar)
   const [enableAutoAttendance, setEnableAutoAttendance] = useState(true);
   const [markAutoOnHolidays, setMarkAutoOnHolidays] = useState(false);
   const [allowOvertime, setAllowOvertime] = useState(false);
@@ -155,6 +152,7 @@ export const ShiftTypeModal: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
+    if (isViewMode) return;
     if (!name.trim()) return showValidationError("Shift Name is required");
     if (!startTime) return showValidationError("Start Time is required");
     if (!endTime) return showValidationError("End Time is required");
@@ -207,21 +205,23 @@ export const ShiftTypeModal: React.FC<Props> = ({
         disabled={isLoading || saving}
         className="px-4 py-1.5 text-[12px] font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition disabled:opacity-50"
       >
-        Cancel
+        {isViewMode ? "Close" : "Cancel"}
       </button>
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving || isLoading}
-        className="rounded-lg bg-[#0f172a] px-5 py-1.5 text-[12px] font-medium text-white transition hover:bg-slate-800 disabled:opacity-60 flex items-center gap-2"
-      >
-        {saving && <Loader2 size={14} className="animate-spin text-white" />}
-        {saving
-          ? "Saving…"
-          : isEdit
-            ? "Update Shift Type"
-            : "Create Shift Type"}
-      </button>
+      {!isViewMode && (
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || isLoading}
+          className="rounded-lg bg-[#0f172a] px-5 py-1.5 text-[12px] font-medium text-white transition hover:bg-slate-800 disabled:opacity-60 flex items-center gap-2"
+        >
+          {saving && <Loader2 size={14} className="animate-spin text-white" />}
+          {saving
+            ? "Saving…"
+            : isEdit
+              ? "Update Shift Type"
+              : "Create Shift Type"}
+        </button>
+      )}
     </div>
   );
 
@@ -230,7 +230,7 @@ export const ShiftTypeModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? "Edit Shift Type" : "New Shift Type"}
+      title={isViewMode ? "View Shift Type" : isEdit ? "Edit Shift Type" : "New Shift Type"}
       subtitle="Define work hours and attendance rules"
       icon={Clock}
       maxWidth="5xl"
@@ -255,7 +255,7 @@ export const ShiftTypeModal: React.FC<Props> = ({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Morning Shift"
-                  disabled={isEdit}
+                  disabled={isViewMode || isEdit}
                   className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50 disabled:text-gray-500"
                 />
               </div>
@@ -267,7 +267,8 @@ export const ShiftTypeModal: React.FC<Props> = ({
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                  disabled={isViewMode}
+                  className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50"
                 />
               </div>
               <div className="col-span-6 md:col-span-3">
@@ -278,7 +279,8 @@ export const ShiftTypeModal: React.FC<Props> = ({
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                  disabled={isViewMode}
+                  className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50"
                 />
               </div>
             </div>
@@ -295,7 +297,8 @@ export const ShiftTypeModal: React.FC<Props> = ({
                   <select
                     value={determineCheckIn}
                     onChange={(e) => setDetermineCheckIn(e.target.value)}
-                    className="w-full h-8 rounded-md border border-gray-200 bg-white px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="w-full h-8 rounded-md border border-gray-200 bg-white px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50"
                   >
                     {CHECK_IN_OUT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -311,7 +314,8 @@ export const ShiftTypeModal: React.FC<Props> = ({
                   <select
                     value={calcBasedOn}
                     onChange={(e) => setCalcBasedOn(e.target.value)}
-                    className="w-full h-8 rounded-md border border-gray-200 bg-white px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="w-full h-8 rounded-md border border-gray-200 bg-white px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50"
                   >
                     {CALC_BASED_ON_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -332,7 +336,8 @@ export const ShiftTypeModal: React.FC<Props> = ({
                         e.target.value ? Number(e.target.value) : "",
                       )
                     }
-                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50"
                   />
                 </div>
                 <div className="col-span-12 md:col-span-6">
@@ -347,25 +352,26 @@ export const ShiftTypeModal: React.FC<Props> = ({
                         e.target.value ? Number(e.target.value) : "",
                       )
                     }
-                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Late Entry & Early Exit Card */}
             <div className="rounded-lg border border-gray-200 p-4">
               <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
                 Late Entry & Early Exit
               </h3>
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 md:col-span-6 space-y-2.5">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className={`flex items-center gap-2 ${isViewMode ? 'cursor-default' : 'cursor-pointer'}`}>
                     <input
                       type="checkbox"
                       checked={enableLateEntry}
                       onChange={(e) => setEnableLateEntry(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                      disabled={isViewMode}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800 disabled:opacity-50"
                     />
                     <span className="text-[11px] font-medium text-gray-800">
                       Enable Late Entry Marking
@@ -378,7 +384,7 @@ export const ShiftTypeModal: React.FC<Props> = ({
                     <input
                       type="number"
                       placeholder="e.g. 10"
-                      disabled={!enableLateEntry}
+                      disabled={isViewMode || !enableLateEntry}
                       value={lateEntryGrace}
                       onChange={(e) =>
                         setLateEntryGrace(
@@ -390,12 +396,13 @@ export const ShiftTypeModal: React.FC<Props> = ({
                   </div>
                 </div>
                 <div className="col-span-12 md:col-span-6 space-y-2.5">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className={`flex items-center gap-2 ${isViewMode ? 'cursor-default' : 'cursor-pointer'}`}>
                     <input
                       type="checkbox"
                       checked={enableEarlyExit}
                       onChange={(e) => setEnableEarlyExit(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                      disabled={isViewMode}
+                      className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800 disabled:opacity-50"
                     />
                     <span className="text-[11px] font-medium text-gray-800">
                       Enable Early Exit Marking
@@ -408,7 +415,7 @@ export const ShiftTypeModal: React.FC<Props> = ({
                     <input
                       type="number"
                       placeholder="e.g. 10"
-                      disabled={!enableEarlyExit}
+                      disabled={isViewMode || !enableEarlyExit}
                       value={earlyExitGrace}
                       onChange={(e) =>
                         setEarlyExitGrace(
@@ -422,7 +429,6 @@ export const ShiftTypeModal: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Thresholds Card */}
             <div className="rounded-lg border border-gray-200 p-4">
               <h3 className="mb-3 text-[10px] font-bold tracking-wider text-gray-500 uppercase">
                 Thresholds
@@ -442,7 +448,8 @@ export const ShiftTypeModal: React.FC<Props> = ({
                         e.target.value ? Number(e.target.value) : "",
                       )
                     }
-                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50"
                   />
                 </div>
                 <div className="col-span-12 md:col-span-6">
@@ -459,27 +466,28 @@ export const ShiftTypeModal: React.FC<Props> = ({
                         e.target.value ? Number(e.target.value) : "",
                       )
                     }
-                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="w-full h-8 rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 disabled:bg-gray-50"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* RIGHT PANEL - ATTRIBUTES */}
           <div className="w-full md:w-60 bg-[#f8faff] border-l border-gray-200 p-4 flex flex-col gap-4 overflow-y-auto">
             <h3 className="text-[12px] font-bold text-gray-800 border-b border-gray-200 pb-2">
               Attributes
             </h3>
 
             <div className="flex flex-col gap-3.5">
-              <label className="flex items-start gap-2.5 cursor-pointer">
+              <label className={`flex items-start gap-2.5 ${isViewMode ? 'cursor-default' : 'cursor-pointer'}`}>
                 <div className="pt-0.5">
                   <input
                     type="checkbox"
                     checked={enableAutoAttendance}
                     onChange={(e) => setEnableAutoAttendance(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800 disabled:opacity-50"
                   />
                 </div>
                 <span className="text-[11px] font-medium text-gray-700 leading-snug">
@@ -487,13 +495,14 @@ export const ShiftTypeModal: React.FC<Props> = ({
                 </span>
               </label>
 
-              <label className="flex items-start gap-2.5 cursor-pointer">
+              <label className={`flex items-start gap-2.5 ${isViewMode ? 'cursor-default' : 'cursor-pointer'}`}>
                 <div className="pt-0.5">
                   <input
                     type="checkbox"
                     checked={markAutoOnHolidays}
                     onChange={(e) => setMarkAutoOnHolidays(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800 disabled:opacity-50"
                   />
                 </div>
                 <span className="text-[11px] font-medium text-gray-700 leading-snug">
@@ -501,13 +510,14 @@ export const ShiftTypeModal: React.FC<Props> = ({
                 </span>
               </label>
 
-              <label className="flex items-start gap-2.5 cursor-pointer">
+              <label className={`flex items-start gap-2.5 ${isViewMode ? 'cursor-default' : 'cursor-pointer'}`}>
                 <div className="pt-0.5">
                   <input
                     type="checkbox"
                     checked={allowOvertime}
                     onChange={(e) => setAllowOvertime(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800 disabled:opacity-50"
                   />
                 </div>
                 <span className="text-[11px] font-medium text-gray-700 leading-snug">
@@ -515,13 +525,14 @@ export const ShiftTypeModal: React.FC<Props> = ({
                 </span>
               </label>
 
-              <label className="flex items-start gap-2.5 cursor-pointer">
+              <label className={`flex items-start gap-2.5 ${isViewMode ? 'cursor-default' : 'cursor-pointer'}`}>
                 <div className="pt-0.5">
                   <input
                     type="checkbox"
                     checked={autoUpdateLastSync}
                     onChange={(e) => setAutoUpdateLastSync(e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800"
+                    disabled={isViewMode}
+                    className="h-3.5 w-3.5 rounded border-gray-300 text-slate-800 focus:ring-slate-800 disabled:opacity-50"
                   />
                 </div>
                 <span className="text-[11px] font-medium text-gray-700 leading-snug">

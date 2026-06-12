@@ -1,5 +1,13 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Layers, Plus, Trash2, ChevronDown, ChevronRight, Tag, AlertCircle } from "lucide-react";
+import {
+  Layers,
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+  Tag,
+  AlertCircle,
+} from "lucide-react";
 import { getAllTemplates } from "../../api/salesTaxTemplateApi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,7 +30,7 @@ interface Template {
 }
 
 interface InvoiceCharge {
-  charge_type: string; 
+  charge_type: string;
   amount: string;
   rate?: string;
 }
@@ -44,7 +52,7 @@ interface InvoiceChargesTabProps {
   selectedTemplate?: string;
   onTemplateSelect?: (templateName: string, taxes: TemplateTax[]) => void;
 
-  taxes: any[];   
+  taxes: any[];
   onTaxChange?: (index: number, field: string, value: any) => void; // ✅ ADD THIS
 }
 
@@ -57,10 +65,10 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
   onAdd,
   onChange,
   onRemove,
- selectedTemplate = "",
-onTemplateSelect,
-taxes,
-onTaxChange,
+  selectedTemplate = "",
+  onTemplateSelect,
+  taxes,
+  onTaxChange,
 }) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -89,14 +97,14 @@ onTaxChange,
   // ── Derived ───────────────────────────────────────────────────────────────
 
   const activeTemplates = templates.filter((t) => !t.disabled);
-  
 
-  const selectedTemplateObj = templates.find((t) => t.name === selectedTemplate) ?? null;
+  const selectedTemplateObj =
+    templates.find((t) => t.name === selectedTemplate) ?? null;
 
   const chargesTotal = taxes.reduce(
-  (sum, t) => sum + (Number(t.amount) || 0),
-  0
-);
+    (sum, t) => sum + (Number(t.amount) || 0),
+    0,
+  );
 
   // CIF = subTotal + charges total + totalTax
   const cifValue = totals.subTotal + chargesTotal;
@@ -122,14 +130,15 @@ onTaxChange,
     <div className="flex gap-4 items-start max-w-[1600px] mx-auto">
       {/* ── Left: Template + Charges ── */}
       <div className="flex-1 flex flex-col gap-4">
-
         {/* ── Sales Tax Template Selector ── */}
         <div className="bg-card rounded-lg border border-theme overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-theme">
             <div className="flex items-center gap-2">
               <Tag size={14} className="text-primary" />
-              <span className="text-xs font-semibold text-main">Sales Tax Template</span>
+              <span className="text-xs font-semibold text-main">
+                Sales Tax Template
+              </span>
               {selectedTemplateObj && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
                   {selectedTemplateObj.title}
@@ -178,12 +187,16 @@ onTaxChange,
                 disabled={loadingTemplates}
               >
                 <option value="">
-                  {loadingTemplates ? "Loading templates..." : "-- Select a Sales Tax Template (optional) --"}
+                  {loadingTemplates
+                    ? "Loading templates..."
+                    : "-- Select a Sales Tax Template (optional) --"}
                 </option>
                 {activeTemplates.map((t) => (
                   <option key={t.name} value={t.name}>
                     {t.title}
-                    {t.taxes.length > 0 ? ` (${t.taxes.length} charge${t.taxes.length > 1 ? "s" : ""})` : ""}
+                    {t.taxes.length > 0
+                      ? ` (${t.taxes.length} charge${t.taxes.length > 1 ? "s" : ""})`
+                      : ""}
                   </option>
                 ))}
               </select>
@@ -202,81 +215,83 @@ onTaxChange,
           </div>
 
           {/* Template charges preview */}
-         {taxes && taxes.length > 0 && (
-  <div className="border-t border-theme">
-    <table className="w-full text-xs border-collapse">
-      <thead>
-        <tr className="bg-primary/5">
-  <th className="px-4 py-2 text-left w-[15%]">Account Head</th>
-  <th className="px-4 py-2 text-left w-[20%]">Charge Type</th>
-  <th className="px-4 py-2 text-left w-[12%]">Rate(%)</th>
-  <th className="px-4 py-2 text-left w-[12%]">Amount</th>
-  <th className="px-4 py-2 text-left w-[30%]">Description</th>
-</tr>
-      </thead>
+          {taxes && taxes.length > 0 && (
+            <div className="border-t border-theme">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-primary/5">
+                    <th className="px-4 py-2 text-left w-[15%]">
+                      Account Head
+                    </th>
+                    <th className="px-4 py-2 text-left w-[20%]">Charge Type</th>
+                    <th className="px-4 py-2 text-left w-[12%]">Rate(%)</th>
+                    <th className="px-4 py-2 text-left w-[12%]">Amount</th>
+                    <th className="px-4 py-2 text-left w-[30%]">Description</th>
+                  </tr>
+                </thead>
 
-      <tbody>
-        {taxes.map((tax, i) => (
-          <tr key={i} className="border-t border-theme">
+                <tbody>
+                  {taxes.map((tax, i) => (
+                    <tr key={i} className="border-t border-theme">
+                      <td className="w-[20%] py-1 px-2">
+                        <div className="w-full py-1 px-2 border border-transparent rounded text-[11px] text-main bg-primary/5">
+                          {tax.accountHead || "-"}
+                        </div>
+                      </td>
 
-           <td className="w-[15%] py-1 px-2">
-              <input
-                value={tax.accountHead}
-                onChange={(e) =>
-                  onTaxChange?.(i, "accountHead", e.target.value)
-                }
-                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </td>
+                      <td className="w-[10%] py-1 px-2">
+                        <div className="py-1 px-2 text-[11px] text-main">
+                          {tax.chargeType}
+                        </div>
+                      </td>
 
-           <td className="w-[20%] py-1 px-2">
-  <input
-    value={tax.chargeType}
-    readOnly
-    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary opacity-40 cursor-not-allowed"
-  />
-</td>
+                      <td className="w-[15%] py-1 px-2">
+                        <input
+                          type="number"
+                          value={tax.rate ?? ""}
+                          onChange={(e) =>
+                            onTaxChange?.(i, "rate", e.target.value)
+                          }
+                          disabled={tax.chargeType === "Actual"}
+                          className={`w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner ${
+                            tax.chargeType === "Actual"
+                              ? "opacity-40 cursor-not-allowed"
+                              : ""
+                          }`}
+                        />
+                      </td>
 
-            <td className="w-[12%] py-1 px-2">
-  <input
-    type="number"
-    value={tax.rate ?? ""}
-    onChange={(e) => onTaxChange?.(i, "rate", e.target.value)}
-    disabled={tax.chargeType === "Actual"}
-    className={`w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner ${
-      tax.chargeType === "Actual" ? "opacity-40 cursor-not-allowed" : ""
-    }`}
-  />
-</td>
+                      <td className="w-[15%] py-1 px-2">
+                        <input
+                          type="number"
+                          value={tax.amount ?? ""}
+                          onChange={(e) =>
+                            onTaxChange?.(i, "amount", e.target.value)
+                          }
+                          disabled={tax.chargeType !== "Actual"}
+                          className={`w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner ${
+                            tax.chargeType !== "Actual"
+                              ? "opacity-40 cursor-not-allowed"
+                              : ""
+                          }`}
+                        />
+                      </td>
 
-           <td className="w-[12%] py-1 px-2">
-  <input
-    type="number"
-    value={tax.amount ?? ""}
-    onChange={(e) => onTaxChange?.(i, "amount", e.target.value)}
-    disabled={tax.chargeType !== "Actual"}
-    className={`w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary no-spinner ${
-      tax.chargeType !== "Actual" ? "opacity-40 cursor-not-allowed" : ""
-    }`}
-  />
-</td>
-
-            <td className="w-[30%] py-1 px-2">
-              <input
-                value={tax.description}
-                onChange={(e) =>
-                  onTaxChange?.(i, "description", e.target.value)
-                }
-                className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </td>
-
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-)}
+                      <td className="w-[40%] py-1 px-2">
+                        <input
+                          value={tax.description}
+                          onChange={(e) =>
+                            onTaxChange?.(i, "description", e.target.value)
+                          }
+                          className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {selectedTemplateObj && selectedTemplateObj.taxes.length === 0 && (
             <div className="px-4 pb-3 text-xs text-muted italic">
@@ -284,122 +299,6 @@ onTaxChange,
             </div>
           )}
         </div>
-
-        {/* ── Manual Charges Table ── */}
-        {/* <div className="bg-card rounded-lg border border-theme overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-theme">
-            <div className="flex items-center gap-2">
-              <Layers size={14} className="text-primary" />
-              <span className="text-xs font-semibold text-main">
-                Shipping &amp; Other Charges
-              </span>
-              <span className="text-[10px] text-muted">
-                {charges.length} charge{charges.length !== 1 ? "s" : ""} · Total{" "}
-                {chargesTotal.toFixed(2)}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={onAdd}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-primary text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
-            >
-              <Plus size={12} />
-              Add Charge
-            </button>
-          </div>
-
-          {charges.length > 0 ? (
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-primary/5">
-                  <th className="text-center px-3 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider w-10">
-                    #
-                  </th>
-                  <th className="text-left px-3 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider">
-                    Charge Name / Account Head
-                  </th>
-                  <th className="text-right px-3 py-2 font-semibold text-muted text-[10px] uppercase tracking-wider w-40">
-                    Amount
-                  </th>
-                  <th className="w-10" />
-                </tr>
-              </thead>
-              <tbody>
-                {charges.map((charge, idx) => (
-                  <tr
-                    key={idx}
-                    className="border-t border-theme group transition-colors hover:bg-primary/5"
-                  >
-                    <td className="px-3 py-2 text-center">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-semibold bg-border/50 text-muted">
-                        {idx + 1}
-                      </span>
-                    </td>
-
-                    <td className="px-3 py-2">
-                      <input
-                        type="text"
-                        value={charge.charge_type}
-                        onChange={(e) => onChange(idx, "charge_type", e.target.value)}
-                        placeholder="e.g. Freight, Insurance, Handling..."
-                        className="w-full bg-transparent border border-theme rounded px-2 py-1 text-xs text-main placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-                      />
-                    </td>
-
-                    <td className="px-3 py-2">
-                      <div className="relative">
-                        <input
-                          type="number"
-                          value={charge.amount}
-                          onChange={(e) => onChange(idx, "amount", e.target.value)}
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                          className="w-full bg-transparent border border-theme rounded px-2 py-1 text-xs text-right text-main placeholder:text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-                        />
-                      </div>
-                    </td>
-
-                    <td className="px-2 py-2 text-center">
-                      <button
-                        type="button"
-                        onClick={() => onRemove(idx)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-danger/10 text-muted hover:text-danger bg-transparent border-none cursor-pointer"
-                        title="Remove charge"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-
-              <tfoot>
-                <tr className="border-t-2 border-theme bg-primary/5">
-                  <td colSpan={2} className="px-3 py-2 text-right text-xs font-semibold text-muted">
-                    Total Charges
-                  </td>
-                  <td className="px-3 py-2 text-right text-xs font-bold text-primary">
-                    {chargesTotal.toFixed(2)}
-                  </td>
-                  <td />
-                </tr>
-              </tfoot>
-            </table>
-          ) : (
-            <div className="px-4 py-8 flex flex-col items-center gap-2 text-center">
-              <Layers size={28} className="text-muted/30" />
-              <p className="text-xs text-muted">No charges added yet.</p>
-              <button
-                type="button"
-                onClick={onAdd}
-                className="mt-1 text-xs text-primary underline bg-transparent border-none cursor-pointer"
-              >
-                Add a charge
-              </button>
-            </div>
-          )}
-        </div> */}
       </div>
 
       {/* ── Right: Summary panel ── */}
@@ -413,15 +312,21 @@ onTaxChange,
           <div className="flex flex-col gap-2">
             <div className="flex justify-between text-xs">
               <span className="text-muted">Subtotal</span>
-              <span className="font-medium text-main">{totals.subTotal.toFixed(2)}</span>
+              <span className="font-medium text-main">
+                {totals.subTotal.toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-muted">Tax</span>
-              <span className="font-medium text-main">{totals.totalTax.toFixed(2)}</span>
+              <span className="font-medium text-main">
+                {totals.totalTax.toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-muted">Charges</span>
-              <span className="font-medium text-main">{chargesTotal.toFixed(2)}</span>
+              <span className="font-medium text-main">
+                {chargesTotal.toFixed(2)}
+              </span>
             </div>
           </div>
         </div>
@@ -431,12 +336,17 @@ onTaxChange,
           <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-0.5">
             CIF Value
           </p>
-          <p className="text-[10px] text-muted mb-2">Cost + Insurance + Freight</p>
+          <p className="text-[10px] text-muted mb-2">
+            Cost + Insurance + Freight
+          </p>
           <p className="text-lg font-bold text-main">{cifValue.toFixed(2)}</p>
         </div>
 
         {/* FOB Value */}
-        <div className="rounded-lg p-3" style={{ background: "var(--primary, #c97d2e)" }}>
+        <div
+          className="rounded-lg p-3"
+          style={{ background: "var(--primary, #c97d2e)" }}
+        >
           <div className="flex items-center gap-1 mb-1">
             <svg
               className="w-3 h-3 text-white/80"
@@ -465,7 +375,9 @@ onTaxChange,
             </span>
           </div>
           {currency && (
-            <p className="text-[10px] text-muted mt-0.5 text-right">{currency}</p>
+            <p className="text-[10px] text-muted mt-0.5 text-right">
+              {currency}
+            </p>
           )}
         </div>
       </div>

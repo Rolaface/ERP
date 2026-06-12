@@ -1,4 +1,11 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
+import { createPortal } from "react-dom";
 import { getSuppliers } from "../../../api/procurement/supplierApi";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -38,7 +45,7 @@ interface SupplierSelectProps {
   error?: string;
 }
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 const mapSupplier = (s: any): Supplier => ({
   id: s.id,
@@ -50,6 +57,30 @@ const mapSupplier = (s: any): Supplier => ({
   taxCategory: s.supplierTaxCategory,
   supplierGroup: s.supplierGroup,
 });
+
+function getDropStyle(
+  rect: DOMRect,
+  vw: number,
+  vh: number,
+): React.CSSProperties {
+  const PADDING = 8;
+  const DROP_H = 230;
+  const width = rect.width;
+
+  let left = rect.left;
+  if (left + width > vw - PADDING)
+    left = Math.max(PADDING, vw - width - PADDING);
+
+  const spaceBelow = vh - rect.bottom - PADDING;
+  const spaceAbove = rect.top - PADDING;
+  const flipUp = spaceBelow < DROP_H && spaceAbove > spaceBelow;
+
+  const vertPos = flipUp
+    ? { bottom: vh - rect.top + 4, top: "auto" as const }
+    : { top: rect.bottom + 4, bottom: "auto" as const };
+
+  return { position: "fixed", ...vertPos, left, width, zIndex: 9999 };
+}
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
@@ -70,43 +101,57 @@ export default function SupplierSelect({
   const [fetched, setFetched] = useState(false);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
+  const [dropRect, setDropRect] = useState<DOMRect | null>(null);
 
-  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // ── Sync display value from parent ───────────────────────────────────────
+  // ── Sync display value ────────────────────────────────────────────────────
   useEffect(() => {
     setSearch(value);
   }, [value]);
 
-  // ── Resolve name from selectedId after list loads ─────────────────────────
- useEffect(() => {
-  if (value) {
-    setSearch(value);
-    return;
-  }
-
-  if (selectedId && suppliers.length > 0) {
-    const found = suppliers.find((s) => s.id === selectedId);
-    if (found) setSearch(found.name);
-  }
-}, [value, selectedId, suppliers]);
-
-  // ── Close on outside click ────────────────────────────────────────────────
   useEffect(() => {
+    if (value) {
+      setSearch(value);
+      return;
+    }
+    if (selectedId && suppliers.length > 0) {
+      const found = suppliers.find((s) => s.id === selectedId);
+      if (found) setSearch(found.name);
+    }
+  }, [value, selectedId, suppliers]);
+
+  // ── Outside click ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        if (!suppliers.find((s) => s.name === search)) {
-          setSearch(value);
-        }
-      }
+      const t = e.target as Node;
+      if (dropdownRef.current?.contains(t) || containerRef.current?.contains(t))
+        return;
+      setOpen(false);
+      // restore last valid value if search doesn't match
+      if (!suppliers.find((s) => s.name === search)) setSearch(value);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [search, suppliers, value]);
+  }, [open, search, suppliers, value]);
 
-  // ── Load suppliers once on first open ────────────────────────────────────
+  // ── Reposition on scroll/resize ───────────────────────────────────────────
+  useEffect(() => {
+    if (!open) return;
+    const update = () =>
+      setDropRect(containerRef.current?.getBoundingClientRect() ?? null);
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open]);
+
+  // ── Load suppliers once ───────────────────────────────────────────────────
   const loadSuppliers = useCallback(async () => {
     if (fetched) return;
     try {
@@ -124,20 +169,22 @@ export default function SupplierSelect({
 
   const handleOpen = useCallback(() => {
     if (disabled) return;
+    setDropRect(containerRef.current?.getBoundingClientRect() ?? null);
     setOpen(true);
     inputRef.current?.select();
     loadSuppliers();
   }, [disabled, loadSuppliers]);
 
   // ── Filtered list ─────────────────────────────────────────────────────────
-  const filtered = suppliers.filter((s) => {
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return (
-      s.name.toLowerCase().includes(q) ||
-      s.id.toLowerCase().includes(q) ||
-      (s.tpin ?? "").toLowerCase().includes(q)
+    return suppliers.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.id.toLowerCase().includes(q) ||
+        (s.tpin ?? "").toLowerCase().includes(q),
     );
-  });
+  }, [suppliers, search]);
 
   // ── Select ────────────────────────────────────────────────────────────────
   const handleSelect = (s: Supplier) => {
@@ -155,13 +202,19 @@ export default function SupplierSelect({
     });
   };
 
+  // ── Dropdown style ────────────────────────────────────────────────────────
+  const dropStyle = useMemo((): React.CSSProperties => {
+    if (!dropRect) return {};
+    return getDropStyle(dropRect, window.innerWidth, window.innerHeight);
+  }, [dropRect]);
+
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
     <div className={`w-full min-w-0 flex flex-col ${className}`}>
       {label && (
         <span className="block text-[10px] font-medium text-main mb-1">
           {label}
-          {required && <span className="text-danger">*</span>}
+          {required && <span className="text-danger ml-0.5">*</span>}
         </span>
       )}
 
@@ -174,16 +227,22 @@ export default function SupplierSelect({
           className={[
             "py-1 px-2 border rounded text-[11px] text-main bg-card w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap",
             disabled
-              ? "opacity-50 cursor-not-allowed border-[var(--border)]"
+              ? "opacity-50 cursor-not-allowed border-theme"
               : error
                 ? "border-red-400/60"
-                : "border-[var(--border)] hover:border-primary/40",
+                : "border-theme hover:border-primary/40 focus:outline-none focus:border-primary",
           ].join(" ")}
           placeholder={loading ? "Loading..." : placeholder}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setOpen(true);
+            if (!open) {
+              setDropRect(
+                containerRef.current?.getBoundingClientRect() ?? null,
+              );
+              setOpen(true);
+              loadSuppliers();
+            }
           }}
           onFocus={handleOpen}
         />
@@ -191,27 +250,40 @@ export default function SupplierSelect({
         {error && (
           <p className="text-[10px] text-red-500 mt-1 font-medium">{error}</p>
         )}
+      </div>
 
-        {open && !loading && (
-          <div className="absolute left-0 top-full mt-1 w-full max-w-full bg-card border border-[var(--border)] shadow rounded z-30">
-            <ul className="max-h-56 overflow-y-auto text-[13px]">
-              {filtered.length === 0 ? (
-                <li className="px-2 py-1 text-muted text-[11px]">
+     
+      {open &&
+        dropRect &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            style={dropStyle}
+            className="bg-card border border-theme rounded-lg shadow-xl overflow-hidden"
+          >
+            <ul className="max-h-56 overflow-y-auto text-[11px]">
+              {loading ? (
+                <li className="px-3 py-2 text-muted text-[11px]">Loading…</li>
+              ) : filtered.length === 0 ? (
+                <li className="px-3 py-2 text-muted text-[11px]">
                   {search ? `No match for "${search}"` : "No suppliers found"}
                 </li>
               ) : (
                 filtered.map((s) => (
                   <li
                     key={s.id}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelect(s);
+                    }}
+                    onClick={() => {}}
                     className={[
-                      "px-2 py-1 cursor-pointer text-[11px]",
+                      "px-3 py-1.5 cursor-pointer border-b border-theme last:border-none transition-colors",
                       s.id === selectedId
                         ? "bg-primary/10 text-primary font-semibold"
                         : "hover:bg-primary/5 text-main",
                     ].join(" ")}
-                    onClick={() => handleSelect(s)}
                   >
-                    {/* ── Only name + currency, no ID ── */}
                     <div className="flex justify-between items-center gap-2">
                       <span className="truncate">{s.name}</span>
                       {s.currency && (
@@ -224,9 +296,9 @@ export default function SupplierSelect({
                 ))
               )}
             </ul>
-          </div>
+          </div>,
+          document.body,
         )}
-      </div>
     </div>
   );
 }

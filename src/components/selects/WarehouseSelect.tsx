@@ -11,7 +11,6 @@ interface WarehouseSelectProps {
   disabled?: boolean;
   className?: string;
   compact?: boolean;
-  /** Called once when warehouses load — gives you the first warehouse value */
   onDefaultLoad?: (firstWarehouse: string) => void;
 }
 
@@ -30,18 +29,10 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
 
   useEffect(() => {
     if (warehouses.length) return;
-
     const loadWarehouses = async () => {
       try {
-        const data = await getAllWarehouses({
-          is_disabled:0,
-        });
-
-        const options = data.map((wh: string) => ({
-          value: wh,
-          label: wh,
-        }));
-
+        const data = await getAllWarehouses({ is_disabled: 0 });
+        const options = data.map((wh: string) => ({ value: wh, label: wh }));
         setWarehouses(options);
         if (onDefaultLoad && !value && options.length > 0) {
           onDefaultLoad(options[0].value);
@@ -50,7 +41,6 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
         console.error("Failed to load warehouses", err);
       }
     };
-
     loadWarehouses();
   }, []);
 
@@ -62,7 +52,8 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
         onChange={onChange}
         disabled={disabled}
         required={required}
-        className={`w-[100px] py-1 pl-1 pr-4 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary ${className}`}
+        // ✅ w-full so it fills whatever column width the table gives it
+        className={`w-full py-1 pl-1 pr-4 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary ${className}`}
       >
         <option value="">Select</option>
         {warehouses.map((opt) => (

@@ -13,6 +13,7 @@ import { OverviewTab } from "./EntryFormTabs";
 import { EmployeesTab } from "./EmployeesTab";
 import { AccountingTab } from "./Accountingtab";
 import { getAllEmployees } from "../../../api/employeeapi";
+import { getCompanyDefaults, getCompanyAccounts } from "../../../api/companySetupApi"; 
 import ModalFooter from "../../../components/common/ModalFooter";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
@@ -44,6 +45,7 @@ const EMPTY_FORM: PayrollEntry = {
   exchangeRate: DEFAULT_EXCHANGE_RATE,
   company: DEFAULT_COMPANY,
   payrollPayableAccount: DEFAULT_PAYROLL_PAYABLE_ACCOUNT,
+  payrollPayableAccountLabel: "",
   status: "Draft",
   salarySlipTimesheet: false,
   deductTaxForProof: false,
@@ -51,6 +53,7 @@ const EMPTY_FORM: PayrollEntry = {
   startDate: "",
   endDate: "",
   paymentAccount: DEFAULT_PAYMENT_ACCOUNT,
+  paymentAccountLabel: "",
   bankAccount: DEFAULT_BANK_ACCOUNT,
   costCenter: "",
   project: "",
@@ -76,7 +79,6 @@ const NewPayrollEntry: React.FC<Props> = ({
   });
   const [employees, setEmployees] = useState<any[]>([]);
 
-  // ✅ Pull activate + deactivate from the hook — removes the need for a local readyRef
   const {
     resetDirty,
     handleCloseWithConfirm,
@@ -93,17 +95,15 @@ const NewPayrollEntry: React.FC<Props> = ({
     handleCloseWithConfirm(onBack, modalId);
   };
 
-  // ✅ Use the hook's own activate/deactivate instead of a local readyRef
   useEffect(() => {
     if (!isOpen) {
       deactivate();
       resetDirty();
     } else {
-      return activate(); // activate() returns a cleanup fn that clears its own timeout
+      return activate();
     }
   }, [isOpen]);
 
-  // ✅ markDirty is now guarded by the hook's internal readyRef, so no local check needed
   const update = (field: string, value: unknown) => {
     markDirty();
     setFormData((p) => ({ ...p, [field]: value }));
@@ -134,8 +134,13 @@ const NewPayrollEntry: React.FC<Props> = ({
   useEffect(() => {
     (async () => {
       try {
-        const resp = await getAllEmployees();
-        const raw = resp?.message?.data || resp?.data || [];
+        const [empResp, defaultsResp, accountsResp] = await Promise.all([
+          getAllEmployees(),
+          getCompanyDefaults().catch(() => null),
+          getCompanyAccounts().catch(() => null), 
+        ]);
+
+        const raw = empResp?.message?.data || empResp?.data || [];
         setEmployees(
           raw.map((emp: any) => ({
             id: emp.name,
@@ -148,11 +153,82 @@ const NewPayrollEntry: React.FC<Props> = ({
             isActive: emp.status === "Active",
           })),
         );
+
+        if (!isEdit && defaultsResp) {
+          const defaultsData = defaultsResp?.message?.data || defaultsResp?.data;
+          
+          let accountsData: any[] = [];
+          if (Array.isArray(accountsResp)) {
+            accountsData = accountsResp;
+          } else if (Array.isArray(accountsResp?.data)) {
+            accountsData = accountsResp.data;
+          } else if (Array.isArray(accountsResp?.message?.data)) {
+            accountsData = accountsResp.message.data;
+          } else if (Array.isArray(accountsResp?.message)) {
+            accountsData = accountsResp.message;
+          }
+
+          if (defaultsData?.default_payroll_payable_account) {
+            const defaultId = defaultsData.default_payroll_payable_account;
+            
+            let finalValue = defaultId;
+            let finalLabel = defaultId;
+
+            const matchedAccount = accountsData.find(
+              (acc: any) => acc.name === defaultId || acc.value === defaultId || acc.id === defaultId
+            );
+
+            if (matchedAccount) {
+              finalValue = matchedAccount.value || matchedAccount.name || matchedAccount.id || defaultId;
+              finalLabel = matchedAccount.label || matchedAccount.account_name || matchedAccount.name || defaultId;
+            } else if (defaultId.includes(" - ")) {
+              finalLabel = defaultId.split(" - ")[0].trim();
+            }
+
+            setFormData((prev) => {
+              const shouldOverride =
+                !prev.payrollPayableAccount ||
+                prev.payrollPayableAccount === DEFAULT_PAYROLL_PAYABLE_ACCOUNT;
+
+              if (shouldOverride) {
+                return {
+                  ...prev,
+                  payrollPayableAccount: finalValue,
+                  payrollPayableAccountLabel: finalLabel,
+                };
+              }
+              return prev;
+            });
+          }
+        }
       } catch (err) {
-        console.error("Failed to fetch employees", err);
+        console.error("Failed to fetch initial data", err);
       }
     })();
-  }, []);
+  }, [isEdit]);
+
+  // ─── Footer — passed as prop so MinimizableModal pins it to the bottom ───
+  const footer = (
+    <ModalFooter
+      onCancel={handleClose}
+      onNext={
+        !isLastStep
+          ? () => setStep((p) => Math.min(TABS.length - 1, p + 1))
+          : undefined
+      }
+      onSubmit={isLastStep ? handleSubmit : undefined}
+      currentTab={step}
+      totalTabs={TABS.length}
+      isSubmitting={submitting}
+      nextLabel="Next"
+      submitLabel={
+        isEdit
+          ? "Update Payroll"
+          : `Create Payroll (${formData.selectedEmployees.length})`
+      }
+      submitDisabled={!formData.selectedEmployees.length}
+    />
+  );
 
   return (
     <MinimizableModal
@@ -163,80 +239,55 @@ const NewPayrollEntry: React.FC<Props> = ({
       subtitle="Create payroll entries"
       maxWidth="6xl"
       height="90vh"
+      footer={footer}
       formContainerRef={containerRef}
     >
-      <div className="flex flex-col h-full -mx-4 -my-3 overflow-hidden">
-        {/* Tabs */}
-        <div className="bg-app border-b border-theme px-8 shrink-0">
-          <div className="flex gap-8 overflow-x-auto">
-            {TABS.map((t, i) => {
-              const isActive = i === step;
-              return (
-                <button
-                  key={t.label}
-                  type="button"
-                  onClick={() => setStep(i)}
-                  className={`py-2.5 bg-transparent border-none text-xs font-medium whitespace-nowrap cursor-pointer transition-all flex items-center gap-2
-                    ${
-                      isActive
-                        ? "text-primary border-b-[3px] border-primary"
-                        : "text-muted border-b-[3px] border-transparent hover:text-main"
-                    }`}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
+      {/* ── Tabs ── */}
+      <div className="bg-app border-b border-theme px-8 shrink-0">
+        <div className="flex gap-8 overflow-x-auto scrollbar-none">
+          {TABS.map((t, i) => {
+            const isActive = i === step;
+            return (
+              <button
+                key={t.label}
+                type="button"
+                onClick={() => setStep(i)}
+                className={`py-2.5 bg-transparent border-none text-xs font-medium whitespace-nowrap cursor-pointer transition-all flex items-center gap-2 ${
+                  isActive
+                    ? "text-primary border-b-[3px] border-primary"
+                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Tab content ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto bg-app p-5">
+        <div style={{ display: step === 0 ? "block" : "none" }}>
+          <OverviewTab
+            data={formData}
+            onChange={update}
+            isEditMode={!!isEdit}
+          />
         </div>
 
-        {/* Tab content — all three stay mounted; only active one is visible */}
-        <div className="flex-1 min-h-0 overflow-y-auto bg-app p-5">
-          <div style={{ display: step === 0 ? "block" : "none" }}>
-            <OverviewTab
-              data={formData}
-              onChange={update}
-              isEditMode={!!isEdit}
-            />
-          </div>
-
-          <div style={{ display: step === 1 ? "block" : "none" }}>
-            <EmployeesTab
-              data={formData}
-              onChange={update}
-              isEditMode={!!isEdit}
-            />
-          </div>
-
-          <div style={{ display: step === 2 ? "block" : "none" }}>
-            <AccountingTab
-              data={formData}
-              onChange={update}
-              employees={employees}
-            />
-          </div>
+        <div style={{ display: step === 1 ? "block" : "none" }}>
+          <EmployeesTab
+            data={formData}
+            onChange={update}
+            isEditMode={!!isEdit}
+          />
         </div>
 
-        {/* Footer */}
-        <div className="shrink-0 border-t border-theme bg-app px-5 py-3">
-          <ModalFooter
-            onCancel={handleClose}
-            onNext={
-              !isLastStep
-                ? () => setStep((p) => Math.min(TABS.length - 1, p + 1))
-                : undefined
-            }
-            onSubmit={isLastStep ? handleSubmit : undefined}
-            currentTab={step}
-            totalTabs={TABS.length}
-            isSubmitting={submitting}
-            nextLabel="Next"
-            submitLabel={
-              isEdit
-                ? "Update Payroll"
-                : `Create Payroll (${formData.selectedEmployees.length})`
-            }
-            submitDisabled={!formData.selectedEmployees.length}
+        <div style={{ display: step === 2 ? "block" : "none" }}>
+          <AccountingTab
+            data={formData}
+            onChange={update}
+            employees={employees}
           />
         </div>
       </div>

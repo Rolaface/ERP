@@ -81,6 +81,15 @@ export const showValidationError = (message: string) => {
   });
 };
 
+export const showWarningError = (message: string) => {
+  fireManagedSwal({
+    icon: "warning",
+    title: "Warning",
+    text: message,
+    confirmButtonColor: "#ff9966",
+  });
+};
+
 export const showApiError = (error: any) => {
   const rawMessage = extractFieldErrors(error) ?? extractErrorMessage(error);
   const cleanMessage = String(rawMessage).replace(/<[^>]+>/g, "");

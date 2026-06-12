@@ -30,6 +30,7 @@ interface Props {
   editData?: EditData | null;
   actionLoading?: boolean;
   modalId: string;
+  isViewMode?: boolean;
 }
 
 interface FormState {
@@ -60,7 +61,7 @@ const EMPTY_FORM: FormState = {
   fromCurrency: "",
   toCurrency: "",
   exchangeRate: "",
- isBuying: true,
+  isBuying: true,
   isSelling: true,
 };
 
@@ -75,6 +76,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
   editData = null,
   actionLoading = false,
   modalId,
+  isViewMode = false,   // ← added
+
 }) => {
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -86,12 +89,12 @@ const CurrencyConversionModal: React.FC<Props> = ({
     if (!isOpen) return;
     if (editData) {
       setForm({
-        date:         editData.date,
+        date: editData.date,
         fromCurrency: editData.fromCurrency,
-        toCurrency:   editData.toCurrency,
+        toCurrency: editData.toCurrency,
         exchangeRate: String(editData.exchangeRate),
-        isBuying:     editData.isBuying,
-        isSelling:    editData.isSelling,
+        isBuying: editData.isBuying,
+        isSelling: editData.isSelling,
       });
     } else {
       setForm(EMPTY_FORM);
@@ -165,12 +168,12 @@ const CurrencyConversionModal: React.FC<Props> = ({
     try {
       await onSubmit?.({
         ...(editData?.id ? { id: editData.id } : {}),
-        date:         form.date,
+        date: form.date,
         fromCurrency: form.fromCurrency,
-        toCurrency:   form.toCurrency,
+        toCurrency: form.toCurrency,
         exchangeRate: Number(form.exchangeRate),
-        isBuying:     form.isBuying,
-        isSelling:    form.isSelling,
+        isBuying: form.isBuying,
+        isSelling: form.isSelling,
       });
       resetDirty();
       onClose();
@@ -189,7 +192,11 @@ const CurrencyConversionModal: React.FC<Props> = ({
   };
 
   // ── Footer ────────────────────────────────────
-  const footer = (
+  const footer = isViewMode ? (
+    <Button variant="secondary" onClick={handleClose}>
+      Close
+    </Button>
+  ) : (
     <>
       <Button
         variant="secondary"
@@ -218,9 +225,19 @@ const CurrencyConversionModal: React.FC<Props> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(handleClose, modalId)}
       icon={Repeat}
-      title="Create Currency Exchange"
-      subtitle={editData ? "Edit exchange rate" : "Add exchange rate"}
-      footer={footer}
+      title={
+        isViewMode
+          ? "View Currency Exchange"
+          : editData
+            ? "Edit Currency Exchange"
+            : "Create Currency Exchange"
+      } subtitle={
+        isViewMode
+          ? "View exchange rate"
+          : editData
+            ? "Edit exchange rate"
+            : "Add exchange rate"
+      } footer={footer}
       customWidth="58vw"
       height="auto"
     >
@@ -238,6 +255,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
                 setForm((prev) => ({ ...prev, [name]: value }));
                 clearError("date");
               }}
+              disabled={isViewMode}       // ← add
+
             />
             {errors.date && (
               <span className="text-danger text-[10px]">{errors.date}</span>
@@ -254,6 +273,9 @@ const CurrencyConversionModal: React.FC<Props> = ({
               placeholder="Search currency..."
               error={errors.fromCurrency}
               required
+
+              disabled={isViewMode}       // ← add
+
             />
           </div>
 
@@ -267,6 +289,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
               placeholder="Search currency..."
               error={errors.toCurrency}
               required
+              disabled={isViewMode}       // ← add
+
             />
           </div>
 
@@ -279,6 +303,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
               value={form.exchangeRate}
               onChange={handleExchangeRateChange}
               placeholder="e.g. 83.25"
+              disabled={isViewMode}       // ← add
+
             />
             {errors.exchangeRate && (
               <span className="text-danger text-[10px]">{errors.exchangeRate}</span>
@@ -295,6 +321,8 @@ const CurrencyConversionModal: React.FC<Props> = ({
                   checked={form.isBuying}
                   onChange={handleCheckboxChange}
                   className="w-3.5 h-3.5 accent-primary"
+                  disabled={isViewMode}       // ← add
+
                 />
                 Buying
               </label>
@@ -305,6 +333,9 @@ const CurrencyConversionModal: React.FC<Props> = ({
                   checked={form.isSelling}
                   onChange={handleCheckboxChange}
                   className="w-3.5 h-3.5 accent-primary"
+                  disabled={isViewMode}       // ← add
+
+
                 />
                 Selling
               </label>

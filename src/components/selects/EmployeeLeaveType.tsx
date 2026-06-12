@@ -1,13 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getAllLeaveTypes } from "../../api/leaveConfigApi";
+import { getEmployeeDetailsById } from "../../api/employeeapi";
+import { showApiError } from "../../utils/alert";
+import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 
 type LeaveType = {
   name: string;
   include_holiday?: number;
+  balance: number;
 };
 
-interface LeaveTypeSelectProps {
+interface EmployeeLeaveTypeSelectProps {
   value?: string;
   // onChange: (leaveType: { name: string }) => void;
   onChange: (leaveType: LeaveType) => void;
@@ -15,20 +19,20 @@ interface LeaveTypeSelectProps {
   label?: string;
   required?: boolean;
   disabled?: boolean;
-  leaveBalances?: any[];
   excludeTypes?: string[];
+  employeeId: string;
 }
 
-export default function LeaveTypeSelect({
+export default function EmployeeLeaveTypeSelect({
   value = "",
   onChange,
   className = "",
   label = "Leave Type",
   required = false,
   disabled = false,
-  leaveBalances = [],
   excludeTypes = [],
-}: LeaveTypeSelectProps) {
+  employeeId = "",
+}: EmployeeLeaveTypeSelectProps) {
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -42,27 +46,22 @@ export default function LeaveTypeSelect({
   const fetchLeaveTypes = async () => {
     try {
       setLoading(true);
-      const res: any = await getAllLeaveTypes();
+      const res: any = await getEmployeeDetailsById(employeeId);
 
-      // Handle both raw Axios response structures and directly returned arrays
       const rawTypes =
-        res?.data?.message?.data ||
-        res?.data?.message ||
-        res?.data?.data ||
-        res?.data ||
-        res ||
-        [];
+        res?.message?.data?.leaveBalances;
 
       if (Array.isArray(rawTypes)) {
         setLeaveTypes(
           rawTypes.map((t: any) => ({
-            name: t.name,
+            name: t.leave_type,
             include_holiday: t.include_holiday,
+            balance: t.balance,
           }))
         );
       }
     } catch (err) {
-      console.error("Failed to fetch leave types", err);
+      showApiError(parseFrappeError(err) || "Failed to fetch leave types");
     } finally {
       setLoading(false);
     }
@@ -185,30 +184,7 @@ export default function LeaveTypeSelect({
                   </div>
                 )}
 
-                {/* {filteredTypes.map((type) => (
-                  <li
-                    key={type.name}
-                    className="px-2 py-1.5 cursor-pointer hover:bg-primary/5 hover:bg-gray-100 text-main text-[11px]"
-                    onMouseDown={(e) => {
-                      e.preventDefault(); // Prevents input from losing focus
-                    }}
-                    onClick={() => {
-                      setSearch(type.name); 
-                      setOpen(false);
-                      onChange({ name: type.name });
-                    }}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium truncate">{type.name}</span>
-                    </div>
-                  </li>
-                ))} */}
-                {/* Replace your existing filteredTypes.map block with this: */}
 {filteredTypes.map((type) => {
-  // Find the matching balance from the passed array
-  const matchingBalance = leaveBalances.find(
-    (b) => b.leave_type === type.name
-  );
   
   return (
     <li
@@ -221,18 +197,18 @@ export default function LeaveTypeSelect({
         setSearch(type.name); 
         setOpen(false);
         onChange({ name: type.name,
+            balance: type.balance,
           include_holiday: type.include_holiday
          });
       }}
     >
       <div className="flex justify-between items-center">
         <span className="font-medium truncate">{type.name}</span>
-        {/* Render the balance if leaveBalances are provided */}
-        {leaveBalances.length > 0 && (
-          <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap ml-2">
-            {matchingBalance ? `${matchingBalance.balance.toFixed(1)} left` : "0.0 left"}
-          </span>
-        )}
+        <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap ml-2">
+          {type.balance !== undefined && type.balance !== null 
+            ? `${Number(type.balance).toFixed(1)} left` 
+            : "0.0 left"}
+        </span>
       </div>
     </li>
   );

@@ -284,8 +284,14 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
     loadLabel();
   }, [formData.shift]);
   // ── Helpers ─────────────────────────────────────────────────────────────
-  const handleInputChange = (field: string, value: any) =>
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: string, value: any) => {
+  markDirty();
+
+  setFormData((prev) => ({
+    ...prev,
+    [field]: value,
+  }));
+};
 
   const TAB_REQUIRED_FIELDS: Partial<Record<TabName, () => string | null>> = {
     Personal: () => {

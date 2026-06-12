@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getInvoiceAdapter, isSupportedPartyType } from "../adapters/invoice.adapter.registry";
+import {
+  getInvoiceAdapter,
+  isSupportedPartyType,
+} from "../adapters/invoice.adapter.registry";
 import type {
   AllocationMap,
   AllocationResult,
@@ -10,7 +13,10 @@ import type {
 const PAGE_SIZE = 10;
 
 // ─── Greedy allocation in API order (no frontend sorting — API returns FIFO) ──
-function runGreedyAllocation(invoices: NormalizedInvoice[], budget: number): AllocationMap {
+function runGreedyAllocation(
+  invoices: NormalizedInvoice[],
+  budget: number,
+): AllocationMap {
   if (budget <= 0) return {};
   const result: AllocationMap = {};
   let remaining = budget;
@@ -66,29 +72,33 @@ export function useInvoiceList(
 ): UseInvoiceListReturn {
   console.log("partyId:", partyId);
 
-  const adapter     = getInvoiceAdapter(partyType);
+  const adapter = getInvoiceAdapter(partyType);
   const isSupported = isSupportedPartyType(partyType);
 
-  const [invoices, setInvoices]       = useState<NormalizedInvoice[]>([]);
-  const [pagination, setPagination]   = useState<NormalizedPagination | null>(null);
+  const [invoices, setInvoices] = useState<NormalizedInvoice[]>([]);
+  const [pagination, setPagination] = useState<NormalizedPagination | null>(
+    null,
+  );
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading]         = useState(false);
-  const [fetchError, setFetchError]   = useState<string | null>(null);
-  const [editingRow, setEditingRow]   = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [editingRow, setEditingRow] = useState<string | null>(null);
 
-  const [allocated, setAllocated] = useState<AllocationMap>(initialAllocated ?? {});
+  const [allocated, setAllocated] = useState<AllocationMap>(
+    initialAllocated ?? {},
+  );
   const [inputValues, setInputValues] = useState<Record<string, string>>(
     Object.fromEntries(
-      Object.entries(initialAllocated ?? {}).map(([k, v]) => [k, String(v)])
-    )
+      Object.entries(initialAllocated ?? {}).map(([k, v]) => [k, String(v)]),
+    ),
   );
 
   // ── Refs — avoid stale closures ───────────────────────────────────────────
-  const paymentAmountRef    = useRef(paymentAmount);
-  paymentAmountRef.current  = paymentAmount;
+  const paymentAmountRef = useRef(paymentAmount);
+  paymentAmountRef.current = paymentAmount;
 
-  const onFormChangeRef     = useRef(onFormChange);
-  onFormChangeRef.current   = onFormChange;
+  const onFormChangeRef = useRef(onFormChange);
+  onFormChangeRef.current = onFormChange;
 
   const referenceInvoiceRef = useRef(referenceInvoice);
   referenceInvoiceRef.current = referenceInvoice;
@@ -97,8 +107,8 @@ export function useInvoiceList(
   // If paymentAmount differs on next tab visit → re-run allocation.
   const lastAutoAllocatedAmountRef = useRef<number | null>(
     initialAllocated && Object.keys(initialAllocated).length > 0
-      ? paymentAmount   // treat initial as already allocated
-      : null
+      ? paymentAmount // treat initial as already allocated
+      : null,
   );
 
   const publishAllocation = useCallback((map: AllocationMap) => {
@@ -106,35 +116,52 @@ export function useInvoiceList(
   }, []);
 
   // ── Fetch a single page (display only — no allocation side-effect) ─────────
-  const fetchPage = useCallback(async (page: number) => {
-    if (!adapter) return;
-    if (!partyId) {
-      setInvoices([]);
-      setPagination(null);
-      return;
-    }
-    setLoading(true);
-    setFetchError(null);
-    try {
-      const ref = referenceInvoiceRef.current;
-      if (ref) {
-        const allData = await adapter.fetchAllForFifo(partyId);
-        const match   = allData.filter((inv) => inv.invoiceNumber === ref);
-        setInvoices(match);
-        setPagination({ page: 1, totalPages: 1, total: match.length, hasNext: false, hasPrev: false });
-      } else {
-        const result = await adapter.fetchPage({ page, pageSize: PAGE_SIZE, partyId });
-        setInvoices(result.data);
-        setPagination(result.pagination);
+  const fetchPage = useCallback(
+    async (page: number) => {
+      if (!adapter) return;
+      if (!partyId) {
+        setInvoices([]);
+        setPagination(null);
+        return;
       }
-    } catch (err) {
-      setFetchError(err instanceof Error ? err.message : "Failed to load invoices.");
-    } finally {
-      setLoading(false);
-    }
-  }, [adapter, partyId]);
+      setLoading(true);
+      setFetchError(null);
+      try {
+        const ref = referenceInvoiceRef.current;
+        if (ref) {
+          const invoice = await adapter.fetchById(ref);
 
-  const fetchPageRef   = useRef(fetchPage);
+          setInvoices(invoice ? [invoice] : []);
+
+          setPagination({
+            page: 1,
+            totalPages: 1,
+            total: invoice ? 1 : 0,
+            hasNext: false,
+            hasPrev: false,
+          });
+        } else {
+          const result = await adapter.fetchPage({
+            page,
+            pageSize: PAGE_SIZE,
+            partyId,
+          });
+
+          setInvoices(result.data);
+          setPagination(result.pagination);
+        }
+      } catch (err) {
+        setFetchError(
+          err instanceof Error ? err.message : "Failed to load invoices.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [adapter, partyId],
+  );
+
+  const fetchPageRef = useRef(fetchPage);
   fetchPageRef.current = fetchPage;
 
   // ── Auto-FIFO allocation — fetch all → allocate greedily in API order ─────
@@ -147,12 +174,15 @@ export function useInvoiceList(
 
     let cancelled = false;
     try {
-      const ref         = referenceInvoiceRef.current;
-      const allData     = await adapter.fetchAllForFifo(partyId);
-      const allInvoices = ref
-        ? allData.filter((inv) => inv.invoiceNumber === ref)
-        : allData;
+      const ref = referenceInvoiceRef.current;
+      let allInvoices: NormalizedInvoice[];
 
+      if (ref) {
+        const invoice = await adapter.fetchById(ref);
+        allInvoices = invoice ? [invoice] : [];
+      } else {
+        allInvoices = await adapter.fetchAllForFifo(partyId);
+      }
       if (cancelled) return;
 
       // API already returns invoices in FIFO order — allocate as-is
@@ -174,7 +204,9 @@ export function useInvoiceList(
     } catch {
       // silent — page fetch will show its own error
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [adapter, partyId, publishAllocation]);
 
   // ── Effect 1: On mount — partyId / referenceInvoice change ───────────────
@@ -189,8 +221,7 @@ export function useInvoiceList(
 
     const budget = paymentAmountRef.current;
     const needsAllocation =
-      budget > 0 &&
-      lastAutoAllocatedAmountRef.current !== budget;
+      budget > 0 && lastAutoAllocatedAmountRef.current !== budget;
 
     if (needsAllocation) {
       // Reset allocation state before re-running
@@ -228,21 +259,27 @@ export function useInvoiceList(
   }, [paymentAmount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Manual allocation ─────────────────────────────────────────────────────
-  const handleInputChange = useCallback((invoiceNumber: string, raw: string) => {
-    if (!/^\d*\.?\d*$/.test(raw)) return;
-    setInputValues((prev) => ({ ...prev, [invoiceNumber]: raw }));
-  }, []);
+  const handleInputChange = useCallback(
+    (invoiceNumber: string, raw: string) => {
+      if (!/^\d*\.?\d*$/.test(raw)) return;
+      setInputValues((prev) => ({ ...prev, [invoiceNumber]: raw }));
+    },
+    [],
+  );
 
   const handleInputBlur = useCallback(
     (invoiceNumber: string, outstandingMax: number) => {
       setAllocated((prev) => {
-        const raw             = inputValues[invoiceNumber] ?? "";
-        const value           = parseFloat(raw) || 0;
-        const othersTotal     = Object.entries(prev)
+        const raw = inputValues[invoiceNumber] ?? "";
+        const value = parseFloat(raw) || 0;
+        const othersTotal = Object.entries(prev)
           .filter(([k]) => k !== invoiceNumber)
           .reduce((sum, [, v]) => sum + v, 0);
         const remainingBudget = paymentAmountRef.current - othersTotal;
-        const safeValue       = Math.max(0, Math.min(value, outstandingMax, Math.max(0, remainingBudget)));
+        const safeValue = Math.max(
+          0,
+          Math.min(value, outstandingMax, Math.max(0, remainingBudget)),
+        );
 
         setInputValues((iv) => ({
           ...iv,
@@ -256,7 +293,7 @@ export function useInvoiceList(
       });
       setEditingRow(null);
     },
-    [inputValues, publishAllocation]
+    [inputValues, publishAllocation],
   );
 
   const totalAllocated = Object.values(allocated).reduce((a, b) => a + b, 0);

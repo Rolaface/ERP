@@ -375,7 +375,7 @@ const GlobalModalHandler: React.FC = () => {
             onClose={handleClose}
             onSubmit={handleSubmit}
             initialData={modal.initialData}
-             mode={modal.isEdit ? "edit" : "create"}
+            mode={modal.isEdit ? "edit" : "create"}
           />,
         );
 
@@ -479,6 +479,7 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
             initialData={getInitialData<TaxTemplateFormData>(modal.initialData)}
             isEditMode={modal.isEdit}
+            isViewMode={context?.isViewMode ?? false}
           />,
         );
 
@@ -496,19 +497,28 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-case "taxCategory":
-  return wrappedModal(
-    <TaxCategoryModalComponent
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={async (data) => {
-        await handleSubmit(data);
-        return true; // ← was missing
-      }}
-    />,
-  );
+      case "taxCategory":
+        return wrappedModal(
+          <TaxCategoryModalComponent
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            isViewMode={context?.isViewMode ?? false}
+            initialData={
+              isRecord(modal.initialData)
+                ? {
+                  title: modal.initialData.title as string,
+                  disabled: modal.initialData.disabled as boolean,
+                }
+                : null
+            }
+            onSubmit={async (data) => {
+              await handleSubmit(data);
+              return true;
+            }}
+          />,
+        );
       case "salesTax":
         return wrappedModal(
           <SalesTaxTemplateModalComponent
@@ -521,6 +531,7 @@ case "taxCategory":
               modal.initialData,
             )}
             isEditMode={modal.isEdit}
+            isViewMode={context?.isViewMode ?? false} 
           />,
         );
       case "bankAccount": {
@@ -546,18 +557,19 @@ case "taxCategory":
           />,
         );
       }
-      case "modeOfPayment":
-        return wrappedModal(
-          <AddModeOfPaymentModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            onSubmit={handleSubmit}
-            initialData={getRecordInitialData(modal.initialData)}
-            isEdit={modal.isEdit}
-          />,
-        );
+     case "modeOfPayment":
+  return wrappedModal(
+    <AddModeOfPaymentModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={handleSubmit}
+      initialData={getRecordInitialData(modal.initialData)}
+      isEdit={modal.isEdit}
+      isViewMode={context?.isViewMode ?? false}  // ← read from context
+    />,
+  );
 
       case "paymentEntry":
         return wrappedModal(
@@ -581,6 +593,9 @@ case "taxCategory":
             onSubmit={handleSubmit}
             editData={getInitialData(modal.initialData) as any}
             actionLoading={false}
+                  isViewMode={context?.isViewMode ?? false}  // ← add this
+
+
           />,
         );
       case "fixedAsset":
@@ -994,33 +1009,34 @@ case "taxCategory":
 
 
       case "holidayList":
-        return wrappedModal(
-          <HolidayListModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            initialData={getInitialData(modal.initialData)}
-            onSuccess={() => {
-              if (context?.onSuccess) context.onSuccess(undefined);
-            }}
-          />,
-        );
+  return wrappedModal(
+    <HolidayListModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      isViewMode={context?.isViewMode ?? false}  // ← add this
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+    />,
+  );
 
       case "shiftType":
-        return wrappedModal(
-          <ShiftTypeModal
-            key={modal.id}
-            modalId={modal.id}
-            isOpen={true}
-            onClose={handleClose}
-            initialData={getInitialData(modal.initialData)}
-            onSuccess={() => {
-              if (context?.onSuccess) context.onSuccess(undefined);
-
-            }}
-          />,
-        );
+  return wrappedModal(
+    <ShiftTypeModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      initialData={getInitialData(modal.initialData)}
+      isViewMode={context?.isViewMode ?? false}  // ← add this
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+    />,
+  );
 
       case "scanPI":
         return wrappedModal(
@@ -1051,7 +1067,7 @@ case "taxCategory":
             }}
           />,
         );
-      // Add case in renderModal switch:
+    
       case "feedback":
         return wrappedModal(
           <AddFeedbackModal
