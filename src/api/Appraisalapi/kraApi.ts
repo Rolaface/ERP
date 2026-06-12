@@ -40,7 +40,7 @@ export async function getKRAList({
     start,
     pageSize,
     search,
-    searchFields: ["name", "title"],
+    searchFields: ["name", "title","description","creation"],
   });
 
   const resp: AxiosResponse = await api.get(

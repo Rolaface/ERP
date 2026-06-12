@@ -298,7 +298,7 @@ const PdfDropdown = ({ onSelect, onClose }: PdfDropdownProps) => {
   const items: { action: PdfAction; icon: React.ReactNode; label: string; sub: string }[] = [
     { action: "preview",  icon: <Eye      className="w-3.5 h-3.5" />, label: "Preview",        sub: "View in-app" },
     { action: "download", icon: <Download className="w-3.5 h-3.5" />, label: "Download",       sub: "Save as PDF" },
-    { action: "share",    icon: <Mail     className="w-3.5 h-3.5" />, label: "Share via Email", sub: "Send to customer" },
+    // { action: "share",    icon: <Mail     className="w-3.5 h-3.5" />, label: "Share via Email", sub: "Send to customer" },
   ];
 
   return (
@@ -573,7 +573,7 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
       </div>
 
       {/* Ledger table */}
-      <div className="bg-card border border-theme rounded-2xl overflow-hidden">
+      <div className="bg-card border border-theme rounded-2xl overflow-visible">
 
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-theme flex-wrap">
