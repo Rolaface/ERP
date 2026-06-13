@@ -7,7 +7,6 @@ import {
   FileText,
   TrendingUp,
   TrendingDown,
-  Minus,
   ChevronDown,
   Eye,
   Download,
@@ -16,6 +15,7 @@ import {
   ExternalLink,
   Loader2,
   Check,
+  Scale
 } from "lucide-react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { getCustomerStatement, getCustomerStatementPdf } from "../../api/statementApi";
@@ -43,7 +43,7 @@ const VOUCHER_OPTIONS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const fmt = (n: number) => Math.abs(n || 0).toLocaleString("en-IN");
+const fmt = (n: number) => (n || 0).toLocaleString("en-IN");
 
 const fmtDateRange = (from?: string, to?: string) => {
   if (!from && !to) return "All dates";
@@ -521,6 +521,7 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
   const totalDebit      = data?.summary.totalDebit      ?? 0;
   const totalCredit     = data?.summary.totalCredit     ?? 0;
   const netOutstanding  = data?.summary.netOutstanding  ?? 0;
+  console.log("🚀 ~ CustomerStatement ~ netOutstanding:", netOutstanding)
 
   // ─── Guards ───────────────────────────────────────────────────────────────
 
@@ -550,7 +551,7 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
         <StatCell label="Total Debit"      icon={<TrendingUp   size={12} className="text-warning" />} value={totalDebit}     valueClass="text-warning" />
         <StatCell label="Total Credit"     icon={<TrendingDown size={12} className="text-success" />} value={totalCredit}    valueClass="text-success" />
         <StatCell label="Net Outstanding"
-          icon={<Minus size={12} className={netOutstanding > 0 ? "text-danger" : "text-muted"} />}
+          icon={<Scale size={12} className={netOutstanding > 0 ? "text-danger" : "text-muted"} />}
           value={netOutstanding}
           valueClass={netOutstanding > 0 ? "text-danger" : "text-muted"}
           highlight={netOutstanding > 0} />
