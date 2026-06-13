@@ -6,7 +6,7 @@ export type InvoiceStatus =
   | "Paid"
   | "Cancelled"
   | "Approved"
-  | "Amend";
+  |"Unpaid";
 // export type InvoiceStatus =
 //   | "Draft"
 //   | "Rejected"

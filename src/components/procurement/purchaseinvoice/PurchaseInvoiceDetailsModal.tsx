@@ -124,7 +124,6 @@ interface Props {
   onClosePdf?: () => void;
 }
 
-
 const fmt = (n?: number | string, currency = "INR") => {
   const num = typeof n === "string" ? parseFloat(n) : (n ?? 0);
   return new Intl.NumberFormat("en-IN", {
@@ -143,7 +142,7 @@ const fmtDate = (d?: string | null) =>
       })
     : "—";
 
-    const parseAddress = (html?: string | null) => {
+const parseAddress = (html?: string | null) => {
   if (!html) return null;
 
   const lines = html
@@ -249,30 +248,24 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
   const items = data?.items ?? [];
   const currency = data?.currency ?? "INR";
   const statusCls = STATUS_MAP[data?.status ?? "Draft"] ?? "bg-draft";
- const buying =
-  (data as any)?.terms?.buying ??
-  data?.terms?.terms?.buying;
+  const buying = (data as any)?.terms?.buying ?? data?.terms?.terms?.buying;
 
-const phases =
-  buying?.payment?.phases
-    ?.filter((p) => p?.percentage)
-    ?.slice(0, 3) ?? [];
+  const phases =
+    buying?.payment?.phases?.filter((p) => p?.percentage)?.slice(0, 3) ?? [];
   const grandTotal =
-  data?.summary?.grandTotal ??
-  data?.grandTotal ??
-  (data as any)?.grandTotal ??
-  0;
- const subTotal =
-  data?.summary?.subTotal ??
-  (data?.grandTotal ?? 0) - Number((data as any)?.totalTaxes ?? 0);
- const taxTotal = Number(
-  data?.summary?.taxTotal ??
-  (data as any)?.totalTaxes ??
-  0
-);
-const rounding =
-  data?.summary?.roundingAdjustment ??
-  ((data as any)?.roundedTotal ?? 0) - (data?.grandTotal ?? 0);
+    data?.summary?.grandTotal ??
+    data?.grandTotal ??
+    (data as any)?.grandTotal ??
+    0;
+  const subTotal =
+    data?.summary?.subTotal ??
+    (data?.grandTotal ?? 0) - Number((data as any)?.totalTaxes ?? 0);
+  const taxTotal = Number(
+    data?.summary?.taxTotal ?? (data as any)?.totalTaxes ?? 0,
+  );
+  const rounding =
+    data?.summary?.roundingAdjustment ??
+    ((data as any)?.roundedTotal ?? 0) - (data?.grandTotal ?? 0);
   return (
     <>
       {/* Backdrop */}
@@ -400,8 +393,20 @@ const rounding =
             {onViewPdf && (
               <button
                 className="pidm-btn"
-                onClick={onViewPdf}
-                style={{ background: "var(--primary)", color: "#fff" }}
+                onClick={data?.status === "Cancelled" ? undefined : onViewPdf}
+                disabled={data?.status === "Cancelled"}
+                title={
+                  data?.status === "Cancelled"
+                    ? "Cannot view PDF for cancelled invoice"
+                    : "View PDF"
+                }
+                style={{
+                  background: "var(--primary)",
+                  color: "#fff",
+                  opacity: data?.status === "Cancelled" ? 0.5 : 1,
+                  cursor:
+                    data?.status === "Cancelled" ? "not-allowed" : "pointer",
+                }}
               >
                 <svg
                   width="11"
@@ -580,42 +585,43 @@ const rounding =
                       color: "var(--text)",
                     }}
                   >
-                    {fmtDate(data.pDate ?? (data as any)?.piDate ?? (data as any)?.poDate)}
+                    {fmtDate(
+                      data.pDate ??
+                        (data as any)?.piDate ??
+                        (data as any)?.poDate,
+                    )}
                   </p>
-
-                  
-                  
                 </div>
                 <div
-  style={{
-    padding: "9px 11px",
-    borderRadius: 7,
-    background: "var(--bg)",
-    border: "1px solid var(--border)",
-  }}
->
-  <p
-    style={{
-      fontSize: 9,
-      fontWeight: 700,
-      letterSpacing: "0.08em",
-      textTransform: "uppercase",
-      color: "var(--muted)",
-      marginBottom: 2,
-    }}
-  >
-    Due Date
-  </p>
-  <p
-    style={{
-      fontSize: 13,
-      fontWeight: 700,
-      color: "var(--text)",
-    }}
-  >
-    {fmtDate(data.dueDate)}
-  </p>
-</div>
+                  style={{
+                    padding: "9px 11px",
+                    borderRadius: 7,
+                    background: "var(--bg)",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "var(--muted)",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Due Date
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "var(--text)",
+                    }}
+                  >
+                    {fmtDate(data.dueDate)}
+                  </p>
+                </div>
               </div>
 
               {/* ── SUPPLIER & TRANSACTION ── */}
@@ -630,7 +636,12 @@ const rounding =
               >
                 <F label="Supplier" value={data.supplierName} />
                 <F label="Supplier Invoice No" value={data.spplrInvcNo} mono />
-                <F label="Supplier Invoice Date" value={fmtDate(data.spplrInvcDate ?? (data as any)?.spplrInvcDt)}/>
+                <F
+                  label="Supplier Invoice Date"
+                  value={fmtDate(
+                    data.spplrInvcDate ?? (data as any)?.spplrInvcDt,
+                  )}
+                />
               </div>
               <div
                 style={{
@@ -641,8 +652,14 @@ const rounding =
               >
                 <F label="Currency" value={data.currency} />
                 <F label="Tax Category" value={data.taxCategory} />
-                <F label="Incoterm" value={data.incoterm ?? (data as any)?.incoterms} />
-                <F label="Payment Method" value={data.paymentMethod ?? (data as any)?.paymentType} />
+                <F
+                  label="Incoterm"
+                  value={data.incoterm ?? (data as any)?.incoterms}
+                />
+                <F
+                  label="Payment Method"
+                  value={data.paymentMethod ?? (data as any)?.paymentType}
+                />
               </div>
               <div
                 style={{
@@ -688,103 +705,101 @@ const rounding =
             )} */}
 
               {/* ── ADDRESSES ── */}
-              {(
-  data.addresses ||
-  (data as any)?.supplierAddressDisplay ||
-  (data as any)?.shippingAddressDisplay ||
-  (data as any)?.dispatchAddressDisplay
-) && (
-                  <>
-                    <S title="Addresses" />
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(3,1fr)",
-                        gap: 6,
-                      }}
-                    >
-                      {[
-  {
-    label: "Supplier",
-    addr:
-      data.addresses?.supplierAddress ??
-      parseAddress((data as any)?.supplierAddressDisplay),
-  },
-  {
-    label: "Dispatch",
-    addr:
-      data.addresses?.dispatchAddress ??
-      parseAddress((data as any)?.dispatchAddressDisplay),
-  },
-  {
-    label: "Shipping",
-    addr:
-      data.addresses?.shippingAddress ??
-      parseAddress((data as any)?.shippingAddressDisplay),
-  },
-].map(({ label, addr }) =>
-                        addr ? (
-                          <div
-                            key={label}
+              {(data.addresses ||
+                (data as any)?.supplierAddressDisplay ||
+                (data as any)?.shippingAddressDisplay ||
+                (data as any)?.dispatchAddressDisplay) && (
+                <>
+                  <S title="Addresses" />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3,1fr)",
+                      gap: 6,
+                    }}
+                  >
+                    {[
+                      {
+                        label: "Supplier",
+                        addr:
+                          data.addresses?.supplierAddress ??
+                          parseAddress((data as any)?.supplierAddressDisplay),
+                      },
+                      {
+                        label: "Dispatch",
+                        addr:
+                          data.addresses?.dispatchAddress ??
+                          parseAddress((data as any)?.dispatchAddressDisplay),
+                      },
+                      {
+                        label: "Shipping",
+                        addr:
+                          data.addresses?.shippingAddress ??
+                          parseAddress((data as any)?.shippingAddressDisplay),
+                      },
+                    ].map(({ label, addr }) =>
+                      addr ? (
+                        <div
+                          key={label}
+                          style={{
+                            padding: "7px 9px",
+                            borderRadius: 6,
+                            background: "var(--bg)",
+                            border: "1px solid var(--border)",
+                          }}
+                        >
+                          <p
                             style={{
-                              padding: "7px 9px",
-                              borderRadius: 6,
-                              background: "var(--bg)",
-                              border: "1px solid var(--border)",
+                              fontSize: 9,
+                              color: "var(--muted)",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.07em",
+                              marginBottom: 3,
                             }}
                           >
-                            <p
-                              style={{
-                                fontSize: 9,
-                                color: "var(--muted)",
-                                fontWeight: 700,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.07em",
-                                marginBottom: 3,
-                              }}
-                            >
-                              {label}
-                            </p>
-                            {[
-                              addr.addressLine1,
-                              addr.city,
-                              [addr.state, addr.postalCode]
-                                .filter(Boolean)
-                                .join(", "),
-                              addr.country?.toUpperCase(),
-                            ]
+                            {label}
+                          </p>
+                          {[
+                            addr.addressLine1,
+                            addr.city,
+                            [addr.state, addr.postalCode]
                               .filter(Boolean)
-                              .map((l, i) => (
-                                <p
-                                  key={i}
-                                  style={{
-                                    fontSize: 12,
-                                    color: "var(--text)",
-                                    lineHeight: 1.5,
-                                  }}
-                                >
-                                  {l}
-                                </p>
-                              ))}
-                            {hasPhone(addr) && addr.phone && (
+                              .join(", "),
+                            addr.country?.toUpperCase(),
+                          ]
+                            .filter(Boolean)
+                            .map((l, i) => (
                               <p
+                                key={i}
                                 style={{
-                                  fontSize: 10,
-                                  color: "var(--muted)",
-                                  marginTop: 2,
+                                  fontSize: 12,
+                                  color: "var(--text)",
+                                  lineHeight: 1.5,
                                 }}
                               >
-                                {addr.phone}
+                                {l}
                               </p>
-                            )}
-                          </div>
-                        ) : (
-                          <div key={label} />
-                        ),
-                      )}
-                    </div>
-                  </>
-                )}
+                            ))}
+                          {hasPhone(addr) && addr.phone && (
+                            <p
+                              style={{
+                                fontSize: 10,
+                                color: "var(--muted)",
+                                marginTop: 2,
+                              }}
+                            >
+                              {addr.phone}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div key={label} />
+                      ),
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* ── LINE ITEMS ── */}
               <S title="Line Items" />
@@ -841,20 +856,22 @@ const rounding =
                           textOverflow: "ellipsis",
                         }}
                       >
-                         {it.item_name || (it as any)?.itemName || (it as any)?.itemCode}
+                        {it.item_name ||
+                          (it as any)?.itemName ||
+                          (it as any)?.itemCode}
                       </p>
-                      {(it.item_name || (it as any)?.itemName) && 
-                       (it.item_code || (it as any)?.itemCode) && (
-                        <p
-                          style={{
-                            fontSize: 9,
-                            color: "var(--muted)",
-                            fontFamily: "monospace",
-                          }}
-                        > 
+                      {(it.item_name || (it as any)?.itemName) &&
+                        (it.item_code || (it as any)?.itemCode) && (
+                          <p
+                            style={{
+                              fontSize: 9,
+                              color: "var(--muted)",
+                              fontFamily: "monospace",
+                            }}
+                          >
                             {it.item_code || (it as any)?.itemCode}
-                        </p>
-                      )}
+                          </p>
+                        )}
                       {/* Badges */}
                       <div
                         style={{
@@ -894,7 +911,10 @@ const rounding =
                             Batch: {it.batchNo}
                           </span>
                         )}
-                        {(it.packingSize || it.packingUnit || (it as any)?.packingSize || (it as any)?.packingUnit) && (
+                        {(it.packingSize ||
+                          it.packingUnit ||
+                          (it as any)?.packingSize ||
+                          (it as any)?.packingUnit) && (
                           <span
                             style={{
                               fontSize: 9,
@@ -905,8 +925,18 @@ const rounding =
                               color: "var(--muted)",
                             }}
                           >
-                            Pack {Math.floor(Number(it.packingSize ?? (it as any)?.packingSize) || 0)}*
-{Math.floor(Number(it.packingUnit ?? (it as any)?.packingUnit) || 0)}
+                            Pack{" "}
+                            {Math.floor(
+                              Number(
+                                it.packingSize ?? (it as any)?.packingSize,
+                              ) || 0,
+                            )}
+                            *
+                            {Math.floor(
+                              Number(
+                                it.packingUnit ?? (it as any)?.packingUnit,
+                              ) || 0,
+                            )}
                           </span>
                         )}
                         {it.schedule_date && (
@@ -933,7 +963,7 @@ const rounding =
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      {((it.qty ?? (it as any)?.quantity) ?? 0).toLocaleString()}
+                      {(it.qty ?? (it as any)?.quantity ?? 0).toLocaleString()}
                     </p>
                     <p
                       style={{
@@ -964,10 +994,11 @@ const rounding =
                       }}
                     >
                       {fmt(
-  it.amount ??
-  ((it as any)?.quantity ?? 0) * ((it as any)?.rate ?? 0),
-  currency
-)}
+                        it.amount ??
+                          ((it as any)?.quantity ?? 0) *
+                            ((it as any)?.rate ?? 0),
+                        currency,
+                      )}
                     </p>
                   </div>
                 ))}
@@ -984,36 +1015,36 @@ const rounding =
                   }}
                 >
                   {[
-  {
-    label: "Subtotal",
-    val: fmt(subTotal, currency),
-    big: false,
-  },
-  {
-    label: "Tax",
-    val: fmt(taxTotal, currency),
-    big: false,
-  },
-  ...(rounding !== 0
-    ? [
-        {
-          label: "Rounding",
-          val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
-          big: false,
-        },
-      ]
-    : []),
-  {
-    label: "Grand Total",
-    val: fmt(
-      data?.summary?.roundedTotal ??
-        (data as any)?.roundedTotal ??
-        grandTotal,
-      currency
-    ),
-    big: true,
-  },
-].map(({ label, val, big }) => (
+                    {
+                      label: "Subtotal",
+                      val: fmt(subTotal, currency),
+                      big: false,
+                    },
+                    {
+                      label: "Tax",
+                      val: fmt(taxTotal, currency),
+                      big: false,
+                    },
+                    ...(rounding !== 0
+                      ? [
+                          {
+                            label: "Rounding",
+                            val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
+                            big: false,
+                          },
+                        ]
+                      : []),
+                    {
+                      label: "Grand Total",
+                      val: fmt(
+                        data?.summary?.roundedTotal ??
+                          (data as any)?.roundedTotal ??
+                          grandTotal,
+                        currency,
+                      ),
+                      big: true,
+                    },
+                  ].map(({ label, val, big }) => (
                     <div
                       key={label}
                       style={{
@@ -1159,8 +1190,7 @@ const rounding =
               {/* ── TERMS & CONDITIONS ── */}
               {(() => {
                 const b =
-  (data as any)?.terms?.buying ??
-  data.terms?.terms?.buying;
+                  (data as any)?.terms?.buying ?? data.terms?.terms?.buying;
                 if (!b) return null;
                 const rows = [
                   { label: "Delivery", value: b.delivery },

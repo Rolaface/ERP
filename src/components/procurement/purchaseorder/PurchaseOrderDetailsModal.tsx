@@ -326,8 +326,20 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
             {onViewPdf && (
               <button
                 className="podm-btn"
-                onClick={onViewPdf}
-                style={{ background: "var(--primary)", color: "#fff" }}
+                onClick={data?.status === "Cancelled" ? undefined : onViewPdf}
+                disabled={data?.status === "Cancelled"}
+                title={
+                  data?.status === "Cancelled"
+                    ? "Cannot view PDF for cancelled order"
+                    : "View PDF"
+                }
+                style={{
+                  background: "var(--primary)",
+                  color: "#fff",
+                  opacity: data?.status === "Cancelled" ? 0.5 : 1,
+                  cursor:
+                    data?.status === "Cancelled" ? "not-allowed" : "pointer",
+                }}
               >
                 <svg
                   width="11"
@@ -345,33 +357,45 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                 PDF
               </button>
             )}
-            {onDownload && (
-              <button
-                className="podm-btn"
-                onClick={onDownload}
-                style={{
-                  background: "var(--bg)",
-                  color: "var(--text)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Download
-              </button>
-            )}
+            {/* {onDownload && (
+              // <button
+              //   className="podm-btn"
+              //   onClick={data?.status === "Cancelled" ? undefined : onDownload}
+              //   disabled={data?.status === "Cancelled"}
+              //   title={
+              //     data?.status === "Cancelled"
+              //       ? "Cannot download cancelled order"
+              //       : "Download PDF"
+              //   }
+              //   style={{
+              //     background: "var(--bg)",
+              //     color:
+              //       data?.status === "Cancelled"
+              //         ? "var(--muted)"
+              //         : "var(--text)",
+              //     border: "1px solid var(--border)",
+              //     opacity: data?.status === "Cancelled" ? 0.5 : 1,
+              //     cursor:
+              //       data?.status === "Cancelled" ? "not-allowed" : "pointer",
+              //   }}
+              // >
+              //   <svg
+              //     width="11"
+              //     height="11"
+              //     viewBox="0 0 24 24"
+              //     fill="none"
+              //     stroke="currentColor"
+              //     strokeWidth="2.5"
+              //     strokeLinecap="round"
+              //     strokeLinejoin="round"
+              //   >
+              //     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              //     <polyline points="7 10 12 15 17 10" />
+              //     <line x1="12" y1="15" x2="12" y2="3" />
+              //   </svg>
+              //   Download
+              // </button>
+            )} */}
             <button
               onClick={onClose}
               style={{
