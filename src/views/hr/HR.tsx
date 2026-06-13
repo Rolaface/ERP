@@ -299,7 +299,7 @@ const HrPayrollModule: React.FC = () => {
 
   // ─── PROFESSIONAL VIEW ────────────────────────────────────────────────────
   return (
-    <AppPage viewportLocked={isViewportLocked}>
+    <AppPage >
       <AppPageHeader
         title="Human Resources"
         icon={<FaUserTie />}
@@ -310,7 +310,7 @@ const HrPayrollModule: React.FC = () => {
         activeTab={tab}
         onChange={setTab}
       />
-      <AppPageBody viewportLocked={isViewportLocked}>
+      <AppPageBody >
         <Suspense fallback={<AppSkeleton />}>
           <HrContentFrame>{renderContent()}</HrContentFrame>
         </Suspense>
