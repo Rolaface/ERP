@@ -3,6 +3,8 @@ import { CreditCard, FileText, Receipt, X, Loader2 } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import PaymentDetailsTab from "../../components/Payment/PaymentDetailsTab";
+import PaymentDeductionsTab from "../../components/Payment/PaymentDeductionsTab";
+import type { DeductionRow } from "../../components/Payment/PaymentDeductionsTab";
 import PaymentTaxesTab from "../../components/Payment/PaymentTaxesTab";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import InvoiceList from "./invoicelist";
@@ -20,12 +22,14 @@ import {
 } from "../../utils/alert";
 import { fetchCostCenters, fetchProjects } from "../../api/getAllApi";
 
-type TabType = "details" | "invoices" | "taxes";
+type TabType = "details" | "invoices" | "taxes" | "deductions";
+
 
 const ALL_TABS = [
   { key: "details" as TabType, label: "Details", icon: CreditCard },
   { key: "invoices" as TabType, label: "Invoices", icon: FileText },
-  { key: "taxes" as TabType, label: "Taxes & Charges", icon: FileText },
+  // { key: "taxes" as TabType, label: "Taxes & Charges", icon: FileText },
+  { key: "deductions" as TabType, label: "Deductions", icon: FileText },
 ];
 
 interface Props {
@@ -228,6 +232,10 @@ const PaymentEntryModal: React.FC<Props> = ({
   const [form, setForm] = useState<Record<string, any>>({});
   // const [error, setError] = useState<string | null>(null);
   const [taxesMounted, setTaxesMounted] = useState(false);
+  const [deductionRows, setDeductionRows] = useState<DeductionRow[]>([]);
+  const deductionRowsRef = useRef<DeductionRow[]>([]);
+
+
   const [isSaving, setIsSaving] = useState(false);
   const [isAllocating, setIsAllocating] = useState(false);
   const lastFetchedPartyKeyRef = useRef<string>("");
@@ -251,6 +259,8 @@ const PaymentEntryModal: React.FC<Props> = ({
     setForm(getInitialForm());
     setActiveTab("details");
     setTaxesMounted(false);
+    setDeductionRows([]);
+    deductionRowsRef.current = [];
     setIsSaving(false);
     setIsAllocating(false);
     lastFetchedPartyKeyRef.current = "";
@@ -409,6 +419,11 @@ const PaymentEntryModal: React.FC<Props> = ({
   const advance = isAllocating ? 0 : Math.max(0, paymentAmount - totalAllocated);
   const selectedCount: number = (form?.selectedInvoices ?? []).length;
 
+
+  const handleDeductionRowsChange = useCallback((rows: DeductionRow[]) => {
+    deductionRowsRef.current = rows;
+    setDeductionRows(rows);
+  }, []);
 
 
   const getResetPartyState = (prev: any, name: string, value: string) => ({
@@ -586,6 +601,13 @@ const PaymentEntryModal: React.FC<Props> = ({
 
     try {
       const payload = buildPayload(form);
+      payload.deductions = deductionRowsRef.current
+        .filter((r) => r.account && r.cost_center && r.amount !== null && r.amount > 0)
+        .map((r) => ({
+          account: r.account,
+          cost_center: r.cost_center,
+          amount: r.amount as number,
+        }));
       const response = await createPaymentEntry(payload);
 
       closeSwal();
@@ -743,6 +765,12 @@ const PaymentEntryModal: React.FC<Props> = ({
                 <PaymentTaxesTab form={form} onFormChange={handleFormChange} />
               </div>
             )}
+            <div className={activeTab === "deductions" ? "block" : "hidden"}>
+              <PaymentDeductionsTab
+                rows={deductionRows}
+                onRowsChange={handleDeductionRowsChange}
+              />
+            </div>
           </div>
 
           {/* ── Summary sidebar ── */}
