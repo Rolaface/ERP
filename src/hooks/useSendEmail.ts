@@ -28,7 +28,7 @@ export interface InvoiceAttachment {
 
 interface UseSendEmailOptions {
     open: boolean;
-    docType: "Sales Invoice" | "Purchase Order" | "Payment Entry";
+    docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Customer" | "Quotation";
     invoiceNumber?: string;
     contactEmail?: string | null;
     customerName?: string | null;

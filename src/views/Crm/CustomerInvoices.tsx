@@ -119,7 +119,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
       align: "right" as const,
       render: (row: SalesInvoice) => (
         <span className="text-sm font-black text-danger">
-          {row.outstandingAmount?.toLocaleString()}
+          {row.baseOutstandingAmount?.toLocaleString()}
         </span>
       ),
     },

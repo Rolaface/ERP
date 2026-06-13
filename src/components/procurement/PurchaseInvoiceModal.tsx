@@ -268,7 +268,7 @@ const handleItemChangeWithDirty = useCallback(
       subtitle="Create and manage purchase invoice"
       icon={Receipt}
       maxWidth="full"
-      height="75vh"
+      height="88vh"
       footer={footer}
     >
       <form

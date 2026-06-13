@@ -19,13 +19,17 @@ import {
   openWarehouseModal,
   type ModalContext,
 } from "../store/modalStore";
-import { AppMain, AppShell, AppContentContainer } from "./layoutSystem";
+import { AppMain, AppShell } from "./layoutSystem";
 import GlobalModalHandler from "../components/common/GlobalModalHandler";
 import { FloatingMinimizedDock } from "../components/common/FloatingMinimizedDock";
 import { showApiError, showSuccess } from "../utils/alert";
 import { createSalesInvoice } from "../api/salesApi";
 import { createQuotation } from "../api/quotationApi";
-import { createItemGroupNode, renameItemGroup, updateItemGroupById } from "../api/itemGroupApi";
+import {
+  createItemGroupNode,
+  renameItemGroup,
+  updateItemGroupById,
+} from "../api/itemGroupApi";
 import { createWarehouseNode, updateWarehouseById } from "../api/WarehouseApi";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 
@@ -36,7 +40,6 @@ const AppLayout: React.FC = () => {
   const publicRoutes = ["/", "/login", "/signup"];
 
   const isPublicRoute = publicRoutes.includes(location.pathname);
-  const isRootDashboard = location.pathname === "/dashboard";
 
   const handleInvoiceSubmit = async (payload: any) => {
     try {
@@ -62,7 +65,9 @@ const AppLayout: React.FC = () => {
         return false;
       }
       showSuccess("Quotation created successfully!");
-      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.QUOTATION_LIST);
+      useDataRefreshStore
+        .getState()
+        .triggerRefresh(REFRESH_KEYS.QUOTATION_LIST);
       return true;
     } catch (error) {
       showApiError(error);
@@ -70,16 +75,24 @@ const AppLayout: React.FC = () => {
     }
   };
 
-  const handleItemSubmit = async (payload: any, isEdit: boolean, onSuccess: () => void) => {
+  const handleItemSubmit = async (
+    payload: any,
+    isEdit: boolean,
+    onSuccess: () => void,
+  ) => {
     try {
       if (isEdit) {
         await updateItemGroupById(payload.id, payload);
         showSuccess("Item group updated successfully!");
-        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.ITEM_CATEGORY_LIST);
+        useDataRefreshStore
+          .getState()
+          .triggerRefresh(REFRESH_KEYS.ITEM_CATEGORY_LIST);
       } else {
         await createItemGroupNode(payload);
         showSuccess("Item group created successfully!");
-        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.ITEM_CATEGORY_LIST);
+        useDataRefreshStore
+          .getState()
+          .triggerRefresh(REFRESH_KEYS.ITEM_CATEGORY_LIST);
       }
       onSuccess();
       return true;
@@ -89,17 +102,29 @@ const AppLayout: React.FC = () => {
     }
   };
 
-  const handleCategorySubmit = async (payload: any, isEdit: boolean, onSuccess: () => void) => {
+  const handleCategorySubmit = async (
+    payload: any,
+    isEdit: boolean,
+    onSuccess: () => void,
+  ) => {
     try {
       let response;
 
       if (isEdit) {
         let targetId = payload.id;
 
-        if (payload.original_name && payload.original_name !== payload.item_group_name) {
-          const renameResp = await renameItemGroup(payload.original_name, payload.item_group_name);
-
-          if (!renameResp || ![200, 201].includes(renameResp.status || renameResp.status_code)) {
+        if (
+          payload.original_name &&
+          payload.original_name !== payload.item_group_name
+        ) {
+          const renameResp = await renameItemGroup(
+            payload.original_name,
+            payload.item_group_name,
+          );
+          if (
+            !renameResp ||
+            ![200, 201].includes(renameResp.status || renameResp.status_code)
+          ) {
             showApiError(renameResp);
             return false;
           }
@@ -111,8 +136,9 @@ const AppLayout: React.FC = () => {
         response = await createItemGroupNode(payload);
       }
 
-      const isSuccess = response && [200, 201, 202].includes(response.status_code || response.status);
-
+      const isSuccess =
+        response &&
+        [200, 201, 202].includes(response.status_code || response.status);
       if (!isSuccess) {
         showApiError(response);
         return false;
@@ -121,11 +147,13 @@ const AppLayout: React.FC = () => {
       const actionText = isEdit ? "updated" : "created";
       showSuccess(
         response.data?.message ||
-        response.message ||
-        `Item Group ${payload.item_group_name} ${actionText} successfully`
+          response.message ||
+          `Item Group ${payload.item_group_name} ${actionText} successfully`,
       );
 
-      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.ITEM_CATEGORY_LIST);
+      useDataRefreshStore
+        .getState()
+        .triggerRefresh(REFRESH_KEYS.ITEM_CATEGORY_LIST);
       onSuccess();
       return true;
     } catch (error: any) {
@@ -134,13 +162,19 @@ const AppLayout: React.FC = () => {
     }
   };
 
-  const handleWarehouseSubmit = async (payload: any, isEdit: boolean, onSuccess: () => void) => {
+  const handleWarehouseSubmit = async (
+    payload: any,
+    isEdit: boolean,
+    onSuccess: () => void,
+  ) => {
     try {
       const response = isEdit
         ? await updateWarehouseById(payload.id, payload)
         : await createWarehouseNode(payload);
-      const isSuccess = response && [200, 201, 202].includes(response.status_code || response.status);
 
+      const isSuccess =
+        response &&
+        [200, 201, 202].includes(response.status_code || response.status);
       if (!isSuccess) {
         showApiError(response);
         return false;
@@ -149,11 +183,13 @@ const AppLayout: React.FC = () => {
       const actionText = isEdit ? "updated" : "created";
       showSuccess(
         response.data?.message ||
-        response.message ||
-        `Warehouse ${payload.warehouse_name} ${actionText} successfully`
+          response.message ||
+          `Warehouse ${payload.warehouse_name} ${actionText} successfully`,
       );
 
-      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.WAREHOUSE_LIST);
+      useDataRefreshStore
+        .getState()
+        .triggerRefresh(REFRESH_KEYS.WAREHOUSE_LIST);
       onSuccess();
       return true;
     } catch (error: any) {
@@ -162,25 +198,26 @@ const AppLayout: React.FC = () => {
     }
   };
 
-  // Sales handlers - using Zustand modal store
+  // Sales handlers
   const openInvoiceCreate = () => openInvoiceModal();
-  const openInvoiceEdit = (invoiceNumber: string, data: any) => openInvoiceModal(data, true);
-
-  // const openProformaCreate = () => openProformaModal();
-  // const openProformaEdit = (proformaId: string, data: any) => openProformaModal({ proformaId }, true);
-const openProformaCreate = () => openProformaModal();
-  const openProformaEdit = (proformaId: string, data: any) => openProformaModal({ ...data, proformaId }, true);
-
+  const openInvoiceEdit = (invoiceNumber: string, data: any) =>
+    openInvoiceModal(data, true);
+  const openProformaCreate = () => openProformaModal();
+  const openProformaEdit = (proformaId: string, data: any) =>
+    openProformaModal({ ...data, proformaId }, true);
   const openQuotationCreate = () => openQuotationModal();
-  const openQuotationEdit = (quotationId: string, data: any) => openQuotationModal({...data, quotationId }, true);
+  const openQuotationEdit = (quotationId: string, data: any) =>
+    openQuotationModal({ ...data, quotationId }, true);
 
   // CRM handlers
   const openCustomerCreate = () => openCustomerModal();
-  const openCustomerEdit = (id: string, data: any) => openCustomerModal(data, true);
+  const openCustomerEdit = (id: string, data: any) =>
+    openCustomerModal(data, true);
 
   // Procurement handlers
   const openSupplierCreate = () => openSupplierModal();
-  const openSupplierEdit = (id: string, data: any) => openSupplierModal(data, true);
+  const openSupplierEdit = (id: string, data: any) =>
+    openSupplierModal(data, true);
   const openPOCreate = () => openPurchaseOrderModal();
   const openPOEdit = (poId: string | number) => openPurchaseOrderModal(poId);
   const openPICreate = () => openPurchaseInvoiceModal();
@@ -195,79 +232,53 @@ const openProformaCreate = () => openProformaModal();
     parent?: string;
     onSuccess?: () => void;
   }) =>
-    openItemCategoryModal(
-      { parent: options?.parent },
-      false,
-      {
-        onSuccess: options?.onSuccess,
-      }
-    );
-  const openCategoryEdit = (id: string, data: any, options?: {
-    onSuccess?: () => void;
-  }) =>
-    openItemCategoryModal(
-      data,
-      true,
-      {
-        onSuccess: options?.onSuccess,
-      }
-    );
+    openItemCategoryModal({ parent: options?.parent }, false, {
+      onSuccess: options?.onSuccess,
+    });
+  const openCategoryEdit = (
+    id: string,
+    data: any,
+    options?: { onSuccess?: () => void },
+  ) => openItemCategoryModal(data, true, { onSuccess: options?.onSuccess });
   const openWarehouseCreate = (options?: {
     parent?: string;
     onSuccess?: () => void;
   }) =>
-    openWarehouseModal(
-      { parent: options?.parent },
-      false,
-      {
-        onSuccess: options?.onSuccess,
-      }
-    );
+    openWarehouseModal({ parent: options?.parent }, false, {
+      onSuccess: options?.onSuccess,
+    });
   const openWarehouseEdit = (
     id: string,
     data: any,
-    options?: { onSuccess?: () => void }
-  ) =>
-    openWarehouseModal(
-      data,
-      true,
-      {
-        onSuccess: options?.onSuccess,
-      }
-    );
+    options?: { onSuccess?: () => void },
+  ) => openWarehouseModal(data, true, { onSuccess: options?.onSuccess });
 
   const sharedProps = {
-    // Sales
     openInvoiceCreate,
     openInvoiceEdit,
     openProformaCreate,
     openProformaEdit,
     openQuotationCreate,
     openQuotationEdit,
-    // CRM
     openCustomerCreate,
     openCustomerEdit,
-    // Procurement
     openSupplierCreate,
     openSupplierEdit,
     openPOCreate,
     openPOEdit,
     openPICreate,
     openPIEdit,
-    // Inventory
     openItemCreate,
     openItemEdit,
     openCategoryCreate,
     openCategoryEdit,
     openWarehouseCreate,
     openWarehouseEdit,
-    // Submit handlers
     handleInvoiceSubmit,
     handleQuotationSubmit,
     handleItemSubmit,
     handleCategorySubmit,
     handleWarehouseSubmit,
-
   };
 
   if (isPublicRoute) {
@@ -278,31 +289,29 @@ const openProformaCreate = () => openProformaModal();
     );
   }
 
-
-return (
-  <QuickAddProvider>
-    <AppShell sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}>
-      <AppMain sidebarOpen={sidebarOpen}>
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+  return (
+    <QuickAddProvider>
+      <AppShell
+        sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
+      >
+        <AppMain sidebarOpen={sidebarOpen}>
+          {/* ← wrapper div hataya — flex chain unbroken rehti hai ab */}
           <Suspense fallback={<PageLoader />}>
             <Outlet context={sharedProps} />
           </Suspense>
-        </div>
-      </AppMain>
-       <FloatingViewSwitch />
-      <GlobalModalHandler />
-
-      {FEATURES.CHAT_ENABLED && (
-        <ChatWindow
-          isOpen={isChatOpen}
-          onToggle={() => setIsChatOpen((prev) => !prev)}
-        />
-      )}
-    </AppShell>
-
-    <FloatingMinimizedDock />
-  </QuickAddProvider>
-);
+        </AppMain>
+        <FloatingViewSwitch />
+        <GlobalModalHandler />
+        {FEATURES.CHAT_ENABLED && (
+          <ChatWindow
+            isOpen={isChatOpen}
+            onToggle={() => setIsChatOpen((prev) => !prev)}
+          />
+        )}
+      </AppShell>
+      <FloatingMinimizedDock />
+    </QuickAddProvider>
+  );
 };
 
 export default AppLayout;
