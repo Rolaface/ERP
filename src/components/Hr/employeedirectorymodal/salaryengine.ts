@@ -1,5 +1,3 @@
-
-
 export type ComponentType = "Earning" | "Deduction";
 
 export interface SalaryComponentDef {
@@ -101,12 +99,13 @@ const isTaxComponent = (comp: SalaryComponentDef): boolean =>
   comp.variable_based_on_taxable_salary === 1 ||
   comp.is_income_tax_component === 1;
 
-// Normalise raw API numbers — call on every value coming from the API
-// to prevent float drift from causing accounting inconsistencies.
 const normaliseAmount = (v: unknown): number => r2(Number(v ?? 0));
 
-// Write a value under every casing variant so formulas like
-// BASIC, basic, Basic, basic_salary, bs, BS all resolve correctly.
+// Only write keys that are valid JS identifiers — keys with spaces break
+// new Function() in strict mode and cause all formulas to silently return 0.
+const isValidIdentifier = (k: string): boolean =>
+  /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(k);
+
 const writeCtx = (
   ctx:           CalcContext,
   nameKey:       string,
@@ -114,14 +113,18 @@ const writeCtx = (
   value:         number,
   originalName?: string,
 ): void => {
-  ctx[nameKey]               = value;
-  ctx[nameKey.toUpperCase()] = value;
+  const write = (k: string) => {
+    if (isValidIdentifier(k)) ctx[k] = value;
+  };
+
+  write(nameKey);
+  write(nameKey.toUpperCase());
 
   const firstWord = nameKey.split("_")[0];
   if (firstWord && firstWord !== nameKey) {
-    ctx[firstWord]                                               = value;
-    ctx[firstWord.toUpperCase()]                                 = value;
-    ctx[firstWord.charAt(0).toUpperCase() + firstWord.slice(1)] = value;
+    write(firstWord);
+    write(firstWord.toUpperCase());
+    write(firstWord.charAt(0).toUpperCase() + firstWord.slice(1));
   }
 
   if (originalName?.trim()) {
@@ -131,17 +134,18 @@ const writeCtx = (
     const origSnake = origLower.replace(/\s+/g, "_");
     const origTitle = origLower.replace(/\b\w/g, (c) => c.toUpperCase());
 
-    ctx[orig]                    = value;
-    ctx[origLower]               = value;
-    ctx[origUpper]               = value;
-    ctx[origSnake]               = value;
-    ctx[origSnake.toUpperCase()] = value;
-    ctx[origTitle]               = value;
+    // Skip keys with spaces — not valid JS identifiers
+    write(orig);       // works only if single word e.g. "BASIC"
+    write(origLower);  // "basic"
+    write(origUpper);  // "BASIC"
+    write(origSnake);  // "basic_salary"
+    write(origSnake.toUpperCase()); // "BASIC_SALARY"
+    write(origTitle.replace(/\s+/g, "")); // "BasicSalary" — camelCase without spaces
   }
 
   if (abbrKey) {
-    ctx[abbrKey]               = value;
-    ctx[abbrKey.toUpperCase()] = value;
+    write(abbrKey);
+    write(abbrKey.toUpperCase());
   }
 };
 
@@ -176,20 +180,33 @@ const FORMULA_HELPERS = {
 export function evaluateFormula(formula: string, ctx: CalcContext): number {
   if (!formula?.trim()) return 0;
   try {
-    const jsFormula    = pythonToJS(formula);
-    const helperKeys   = Object.keys(FORMULA_HELPERS);
-    const helperValues = Object.values(FORMULA_HELPERS);
-    const ctxKeys      = Object.keys(ctx);
-    const ctxValues    = Object.values(ctx);
+    const jsFormula = pythonToJS(formula);
+
+   
+    const merged: Record<string, unknown> = {
+      ...FORMULA_HELPERS,
+      ...ctx,
+    };
+
+    // Filter to valid JS identifiers only — spaces and special chars
+    // in keys cause new Function to throw and silently return 0.
+    const safeKeys:   string[]   = [];
+    const safeValues: unknown[]  = [];
+
+    for (const [k, v] of Object.entries(merged)) {
+      if (isValidIdentifier(k)) {
+        safeKeys.push(k);
+        safeValues.push(v);
+      }
+    }
 
     // eslint-disable-next-line no-new-func
     const fn = new Function(
-      ...helperKeys,
-      ...ctxKeys,
+      ...safeKeys,
       `"use strict"; return +(${jsFormula});`,
     );
 
-    const n = Number(fn(...helperValues, ...ctxValues));
+    const n = Number(fn(...safeValues));
     return isFinite(n) ? n : 0;
   } catch {
     return 0;
@@ -252,7 +269,6 @@ export function calculateSalary(
   };
   if (!components.length) return empty;
 
-  // Normalise all incoming API amounts up front
   const normalisedComponents = components.map((c) => ({
     ...c,
     amount: normaliseAmount(c.amount),
