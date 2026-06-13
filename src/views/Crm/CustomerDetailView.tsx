@@ -63,12 +63,12 @@ const fmtPct = (v: any): string => {
 };
 
 const TABS = [
-  { id: "overview",   label: "Overview",   icon: <Globe /> },
-  { id: "bank",       label: "Bank",       icon: <Building2 /> },
+  { id: "overview", label: "Overview", icon: <Globe /> },
+  { id: "bank", label: "Bank", icon: <Building2 /> },
   { id: "quotations", label: "Quotations", icon: <FileText /> },
-  { id: "invoices",   label: "Invoices",   icon: <Receipt /> },
-  { id: "payments",   label: "Payments",   icon: <CreditCard /> },
-  { id: "statement",  label: "Statement",  icon: <FileBarChart /> },
+  { id: "invoices", label: "Invoices", icon: <Receipt /> },
+  { id: "payments", label: "Payments", icon: <CreditCard /> },
+  { id: "statement", label: "Statement", icon: <FileBarChart /> },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -125,15 +125,13 @@ const SidebarList: React.FC<SidebarListProps> = ({ customers, loading, activeId,
           <button
             key={c.value}
             onClick={() => onSelect(c.value)}
-            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-3 border mb-0.5 ${
-              active
+            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-3 border mb-0.5 ${active
                 ? "bg-primary text-white border-primary shadow-sm"
                 : "bg-transparent border-transparent hover:bg-row-hover"
-            }`}
+              }`}
           >
-            <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-bold text-[11px] ${
-              active ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
-            }`}>
+            <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-bold text-[11px] ${active ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+              }`}>
               {c.label.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -158,17 +156,17 @@ const CustomerDetailView: React.FC<Props> = ({
   onBack,
   onCustomerSelect,
 }) => {
-  const [customer,      setCustomer]      = useState<CustomerDetail | null>(null);
-  const [loading,       setLoading]       = useState(true);
-  const [activeTab,     setActiveTab]     = useState<TabId>("overview");
-  const [editingRow,    setEditingRow]    = useState<any>(null);
-  const [sidebarOpen,   setSidebarOpen]   = useState(true);
-  const [mobileDrawer,  setMobileDrawer]  = useState(false);
+  const [customer, setCustomer] = useState<CustomerDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [editingRow, setEditingRow] = useState<any>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileDrawer, setMobileDrawer] = useState(false);
 
-  const [sidebarCustomers,  setSidebarCustomers]  = useState<SidebarCustomer[]>([]);
-  const [sidebarTotal,      setSidebarTotal]      = useState(0);
-  const [sidebarLoading,    setSidebarLoading]    = useState(false);
-  const [searchTerm,        setSearchTerm]        = useState("");
+  const [sidebarCustomers, setSidebarCustomers] = useState<SidebarCustomer[]>([]);
+  const [sidebarTotal, setSidebarTotal] = useState(0);
+  const [sidebarLoading, setSidebarLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshBankAccounts = useRef<(() => void) | null>(null);
 
@@ -207,23 +205,23 @@ const CustomerDetailView: React.FC<Props> = ({
   };
 
   // ── DERIVED ───────────────────────────────────────────────────────────────
-  const contacts       = (customer as any)?.contacts ?? [];
+  const contacts = (customer as any)?.contacts ?? [];
   const primaryContact = contacts.find((c: any) => c.isPrimary) ?? contacts[0];
-  const addresses      = (customer as any)?.addresses ?? [];
-  const billingAddr    = addresses.find((a: any) => a.type === "Billing");
-  const shippingAddr   = addresses.find((a: any) => a.type === "Shipping");
+  const addresses = (customer as any)?.addresses ?? [];
+  const billingAddr = addresses.find((a: any) => a.type === "Billing");
+  const shippingAddr = addresses.find((a: any) => a.type === "Shipping");
 
-  const contactName   = primaryContact?.fullName
+  const contactName = primaryContact?.fullName
     ?? [primaryContact?.firstName, primaryContact?.lastName].filter(Boolean).join(" ")
     ?? "";
   const contactMobile = primaryContact?.mobile ?? primaryContact?.phone ?? (customer as any)?.mobile ?? "";
-  const contactEmail  = primaryContact?.email ?? (customer as any)?.email ?? "";
+  const contactEmail = primaryContact?.email ?? (customer as any)?.email ?? "";
   const contactStatus = primaryContact?.status ?? "";
 
-  const sellingTerms  = (customer?.terms as any)?.Selling ?? (customer?.terms as any)?.selling;
-  const taxCategory   = (customer as any)?.customerTaxCategory ?? (customer as any)?.taxCategory ?? "";
+  const sellingTerms = (customer?.terms as any)?.Selling ?? (customer?.terms as any)?.selling;
+  const taxCategory = (customer as any)?.customerTaxCategory ?? (customer as any)?.taxCategory ?? "";
   const customerGroup = (customer as any)?.customerGroup ?? "";
-  const createdAt     = (customer as any)?.createdAt ?? customer?.dateOfAddition ?? "";
+  const createdAt = (customer as any)?.createdAt ?? customer?.dateOfAddition ?? "";
 
   if (loading) {
     return (
@@ -262,7 +260,7 @@ const CustomerDetailView: React.FC<Props> = ({
           >
             {sidebarOpen
               ? <PanelLeftClose size={15} className="text-muted" />
-              : <PanelLeftOpen  size={15} className="text-muted" />}
+              : <PanelLeftOpen size={15} className="text-muted" />}
           </button>
           <button
             onClick={onBack}
@@ -333,9 +331,8 @@ const CustomerDetailView: React.FC<Props> = ({
         )}
 
         {/* Desktop sidebar */}
-        <aside className={`hidden lg:flex flex-col bg-card border-r border-theme transition-all duration-300 shrink-0 overflow-hidden h-full ${
-          sidebarOpen ? "w-56 xl:w-64" : "w-0 border-0"
-        }`}>
+        <aside className={`hidden lg:flex flex-col bg-card border-r border-theme transition-all duration-300 shrink-0 overflow-hidden h-full ${sidebarOpen ? "w-56 xl:w-64" : "w-0 border-0"
+          }`}>
           {sidebarOpen && (
             <>
               <div className="px-4 py-3 border-b border-theme shrink-0">
@@ -368,11 +365,10 @@ const CustomerDetailView: React.FC<Props> = ({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-2.5 sm:px-4 py-3 sm:py-3.5 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
-                    activeTab === tab.id
+                  className={`px-2.5 sm:px-4 py-3 sm:py-3.5 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${activeTab === tab.id
                       ? "border-primary text-primary"
                       : "border-transparent text-muted hover:text-main"
-                  }`}
+                    }`}
                 >
                   {React.cloneElement(tab.icon as React.ReactElement, { size: 12 })}
                   <span>{tab.label}</span>
@@ -387,12 +383,12 @@ const CustomerDetailView: React.FC<Props> = ({
             {activeTab === "overview" && (
               <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-                  <KpiCard icon={<Building2 size={14} />}  label="Customer Type"   value={(customer as any).type} />
-                  <KpiCard icon={<Globe size={14} />}      label="Registration No" value={(customer as any).registration_no} />
-                  <KpiCard icon={<Tag size={14} />}        label="Tax Category"    value={taxCategory} />
-                  <KpiCard icon={<BadgeCheck size={14} />} label="TPIN"            value={(customer as any).tpin} mono />
-                  <KpiCard icon={<Layers size={14} />}     label="Customer Group"  value={customerGroup} />
-                  <KpiCard icon={<Banknote size={14} />}   label="Currency"        value={(customer as any).currency} />
+                  <KpiCard icon={<Building2 size={14} />} label="Customer Type" value={(customer as any).type} />
+                  <KpiCard icon={<Globe size={14} />} label="Registration No" value={(customer as any).registration_no} />
+                  <KpiCard icon={<Tag size={14} />} label="Tax Category" value={taxCategory} />
+                  <KpiCard icon={<BadgeCheck size={14} />} label="TPIN" value={(customer as any).tpin} mono />
+                  <KpiCard icon={<Layers size={14} />} label="Customer Group" value={customerGroup} />
+                  <KpiCard icon={<Banknote size={14} />} label="Currency" value={(customer as any).currency} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 items-start">
@@ -403,10 +399,10 @@ const CustomerDetailView: React.FC<Props> = ({
                       <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Contact Channels</h4>
                     </div>
                     <div className="divide-y divide-theme">
-                      <DataRow icon={<Users size={11} />}      label="Contact" value={contactName} />
-                      <DataRow icon={<Phone size={11} />}      label="Mobile"  value={contactMobile} mono />
-                      <DataRow icon={<Mail size={11} />}       label="Email"   value={contactEmail} />
-                      <DataRow icon={<BadgeCheck size={11} />} label="Status"  value={contactStatus} />
+                      <DataRow icon={<Users size={11} />} label="Contact" value={contactName} />
+                      <DataRow icon={<Phone size={11} />} label="Mobile" value={contactMobile} mono />
+                      <DataRow icon={<Mail size={11} />} label="Email" value={contactEmail} />
+                      <DataRow icon={<BadgeCheck size={11} />} label="Status" value={contactStatus} />
                     </div>
                     <div className="border-t border-theme">
                       <div className="flex items-center gap-2 px-4 sm:px-5 py-2.5 border-b border-theme bg-row-hover/30 shrink-0">
@@ -477,7 +473,7 @@ const CustomerDetailView: React.FC<Props> = ({
                                   <span className="text-xs font-bold text-main capitalize truncate">{phase.name}</span>
                                   <span className="text-xs font-black text-primary shrink-0">{fmtPct(phase.percentage)}</span>
                                 </div>
-                                {phase.condition   && <p className="text-[10px] text-muted">{phase.condition}</p>}
+                                {phase.condition && <p className="text-[10px] text-muted">{phase.condition}</p>}
                                 {phase.credit_days && <p className="text-[10px] text-muted">Credit: <span className="font-semibold text-main">{phase.credit_days} days</span></p>}
                               </div>
                             ))}
@@ -487,17 +483,17 @@ const CustomerDetailView: React.FC<Props> = ({
                       {(sellingTerms?.payment?.dueDates || sellingTerms?.payment?.lateCharges || sellingTerms?.payment?.taxes || sellingTerms?.payment?.notes) && (
                         <TermsSection title="Payment Details">
                           <div className="space-y-1">
-                            {sellingTerms.payment.dueDates    && <TermLine label="Due Dates"    value={sellingTerms.payment.dueDates} />}
+                            {sellingTerms.payment.dueDates && <TermLine label="Due Dates" value={sellingTerms.payment.dueDates} />}
                             {sellingTerms.payment.lateCharges && <TermLine label="Late Charges" value={sellingTerms.payment.lateCharges} />}
-                            {sellingTerms.payment.taxes       && <TermLine label="Taxes"        value={sellingTerms.payment.taxes} />}
-                            {sellingTerms.payment.notes       && <TermLine label="Notes"        value={sellingTerms.payment.notes} />}
+                            {sellingTerms.payment.taxes && <TermLine label="Taxes" value={sellingTerms.payment.taxes} />}
+                            {sellingTerms.payment.notes && <TermLine label="Notes" value={sellingTerms.payment.notes} />}
                           </div>
                         </TermsSection>
                       )}
-                      {sellingTerms?.delivery     && <TermsSection title="Delivery"><p>{sellingTerms.delivery}</p></TermsSection>}
+                      {sellingTerms?.delivery && <TermsSection title="Delivery"><p>{sellingTerms.delivery}</p></TermsSection>}
                       {sellingTerms?.cancellation && <TermsSection title="Cancellation"><p>{sellingTerms.cancellation}</p></TermsSection>}
-                      {sellingTerms?.warranty     && <TermsSection title="Warranty"><p>{sellingTerms.warranty}</p></TermsSection>}
-                      {sellingTerms?.liability    && <TermsSection title="Liability"><p>{sellingTerms.liability}</p></TermsSection>}
+                      {sellingTerms?.warranty && <TermsSection title="Warranty"><p>{sellingTerms.warranty}</p></TermsSection>}
+                      {sellingTerms?.liability && <TermsSection title="Liability"><p>{sellingTerms.liability}</p></TermsSection>}
                       {!sellingTerms && (
                         <div className="flex flex-col items-center justify-center py-8 sm:py-10 gap-3">
                           <div className="w-10 h-10 rounded-xl border-2 border-dashed border-theme flex items-center justify-center">
@@ -522,7 +518,12 @@ const CustomerDetailView: React.FC<Props> = ({
               </div>
             )}
 
-            {activeTab === "statement" && <CustomerStatement customerId={customer.id} />}
+            {activeTab === "statement" && (
+              <CustomerStatement
+                customerId={customer.id}
+                customerEmail={contactEmail}
+              />
+            )}
 
             {activeTab === "quotations" && (
               <div className="p-2 sm:p-3 w-full min-w-0">
