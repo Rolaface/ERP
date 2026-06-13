@@ -730,17 +730,17 @@ export async function getDeductionAccounts(
   try {
     const params = new URLSearchParams();
     params.append("fields", JSON.stringify(["name", "account_name", "account_number", "account_type"]));
-    params.append("page_length", "20");
-    if (search?.trim()) params.append("txt", search.trim());
+    params.append("limit_page_length", "10");
+    if (search?.trim()) {
+      params.append("or_filters", JSON.stringify([
+        ["account_name", "like", `%${search.trim()}%`],
+        ["account_number", "like", `%${search.trim()}%`],
+      ]));
+    }
 
-    const filters = encodeURIComponent(
-      JSON.stringify([
-        ["is_group", "=", "0"],
-      ])
-    );
-
+    params.append("filters", JSON.stringify([["is_group", "=", "0"]]));
     const resp: AxiosResponse = await api.get(
-      `${Account.getAccountsResource}?${params.toString()}&filters=${filters}`,
+      `${Account.getAccountsResource}?${params.toString()}`,
     );
 
     const raw: any[] = resp?.data?.data ?? [];
@@ -767,18 +767,20 @@ export async function getTaxAccounts(
   try {
     const params = new URLSearchParams();
     params.append("fields", JSON.stringify(["name", "account_name", "account_number", "account_type"]));
-    params.append("page_length", "20");
-    if (search?.trim()) params.append("txt", search.trim());
+    params.append("limit_page_length", "10");
+    if (search?.trim()) {
+      params.append("or_filters", JSON.stringify([
+        ["account_name", "like", `%${search.trim()}%`],
+        ["account_number", "like", `%${search.trim()}%`],
+      ]));
+    }
 
-    const filters = encodeURIComponent(
-      JSON.stringify([
-        ["account_type", "in", ["Tax", "Chargeable", "Income Account", "Expenses Included In Valuation"]],
-      ])
-    );
-
+    params.append("filters", JSON.stringify([
+      ["account_type", "in", ["Tax", "Chargeable", "Income Account", "Expenses Included In Valuation"]],
+    ]));
     const resp: AxiosResponse = await api.get(
-      `${Account.getAccountsResource}?${params.toString()}&filters=${filters}`,
-    );
+      `${Account.getAccountsResource}?${params.toString()}`,
+    )
 
     const raw: any[] = resp?.data?.data ?? [];
 
