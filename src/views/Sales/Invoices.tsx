@@ -104,6 +104,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfInvoiceNumber, setPdfInvoiceNumber] = useState<string | null>(null);
 
   //email
   const [emailModalOpen, setEmailModalOpen] = useState(false);
@@ -444,7 +445,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       const blobUrl = URL.createObjectURL(blob);
       closeSwal();
       setPdfUrl(blobUrl);
-      setSelectedInvoice(null); // no longer needed for PDF generation
+      setSelectedInvoice(null); 
+      setPdfInvoiceNumber(inv.invoiceNumber);
       setPdfOpen(true);
     } catch (err: any) {
       closeSwal();
@@ -471,7 +473,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
     setPdfUrl(null);
     setSelectedInvoice(null);
+        setPdfInvoiceNumber(null);
     setPdfOpen(false);
+
   };
   const formatDate = (date: string | Date) => {
     if (!date) return "";
@@ -876,11 +880,15 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         title="Invoice Preview"
         pdfUrl={pdfUrl}
         onClose={handleClosePdf}
-        onDownload={() =>
-          selectedInvoice &&
-          company &&
-          generateInvoicePDF(selectedInvoice, company, "save")
-        }
+        onDownload={() => {
+  if (!pdfUrl || !pdfInvoiceNumber) return;
+  const a = document.createElement("a");
+  a.href = pdfUrl;
+  a.download = `${pdfInvoiceNumber}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}}
       />
       <SendEmailModal
         open={emailModalOpen}
