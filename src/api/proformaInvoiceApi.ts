@@ -28,17 +28,13 @@ export async function updateProformaInvoiceStatus(
   return resp.data;
 }
 
-export async function getAllProformaInvoices(
-  page: number = 1,
-  page_size: number = 10,
-  sortBy: string = "",
-  sortOrder: "asc" | "desc" = "asc",
-  search?: string,
-): Promise<any> {
-  const resp: AxiosResponse = await api.get(ProformaAPI.getAll, {
-    params: { page, page_size, sortBy, sortOrder, search, documentType: "Proforma Invoice"},
-  });
-  return resp.data;
+export interface QuotationFilters {
+  party_name?: string;
+  status?: string;
+  from_date?: string;
+  to_date?: string;
+  company?: string;
+  [key: string]: any;
 }
 
 export async function getAllQuotation(
@@ -47,9 +43,40 @@ export async function getAllQuotation(
   sortBy: string = "",
   sortOrder: "asc" | "desc" = "asc",
   search?: string,
+  filters?: QuotationFilters
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(ProformaAPI.getAll, {
-    params: { page, page_size, sortBy, sortOrder, search, documentType: "Quotation"},
+    params: { 
+      page, 
+      page_size, 
+      sortBy, 
+      sortOrder, 
+      search, 
+      documentType: "Quotation",
+      ...filters
+    },
+  });
+  return resp.data;
+}
+
+export async function getAllProformaInvoices(
+  page: number = 1,
+  page_size: number = 10,
+  sortBy: string = "",
+  sortOrder: "asc" | "desc" = "asc",
+  search?: string,
+  filters?: QuotationFilters
+): Promise<any> {
+  const resp: AxiosResponse = await api.get(ProformaAPI.getAll, {
+    params: { 
+      page, 
+      page_size, 
+      sortBy, 
+      sortOrder, 
+      search, 
+      documentType: "Proforma Invoice",
+      ...filters
+    },
   });
   return resp.data;
 }

@@ -26,6 +26,7 @@ import type { CustomerDetail } from "../../types/customer";
 import CustomerStatement from "../../views/Crm/CustomerStatement";
 import CustomerInvoices from "./CustomerInvoices";
 import CustomerQuotations from "./CustomerQuotations";
+import CustomerProformaInvoices from "./CustomerProformaInvoices";
 import CustomerBankDetails from "./CustomerBankDetails";
 import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
 import { getCustomerByCustomerCode } from "../../api/customerApi";
@@ -66,6 +67,7 @@ const TABS = [
   { id: "overview", label: "Overview", icon: <Globe /> },
   { id: "bank", label: "Bank", icon: <Building2 /> },
   { id: "quotations", label: "Quotations", icon: <FileText /> },
+  { id: "proforma-invoices", label: "Proforma Invoices", icon: <FileText /> },
   { id: "invoices", label: "Invoices", icon: <Receipt /> },
   { id: "payments", label: "Payments", icon: <CreditCard /> },
   { id: "statement", label: "Statement", icon: <FileBarChart /> },
@@ -528,6 +530,11 @@ const CustomerDetailView: React.FC<Props> = ({
             {activeTab === "quotations" && (
               <div className="p-2 sm:p-3 w-full min-w-0">
                 <CustomerQuotations customerId={customer.id} />
+              </div>
+            )}
+            {activeTab === "proforma-invoices" && (
+              <div className="p-2 sm:p-3 w-full min-w-0">
+                <CustomerProformaInvoices customerId={customer.id} />
               </div>
             )}
 
