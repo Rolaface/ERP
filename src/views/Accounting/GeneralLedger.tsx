@@ -4,9 +4,6 @@ import JETab, { type JournalEntry } from "./JE";
 import { FolderTree, BookText } from "lucide-react";
 import { usePermission } from "../../hooks/permission/usePermission";
 
-/*
-   Types
-*/
 type Account = {
   code: string;
   name: string;
@@ -31,17 +28,15 @@ type Props = {
   journalEntries: JournalEntry[];
   showFilterDropdown: boolean;
   setShowFilterDropdown: (val: boolean) => void;
+  onViewLedger?: (account: string) => void;  
 };
 
-/*
-   GeneralLedger — tab shell only
-*/
 const GeneralLedger: React.FC<Props> = ({
   glSubTab,
   setGlSubTab,
   searchTerm,
   setSearchTerm,
-  journalEntries,
+  onViewLedger,                             
 }) => {
   const { can } = usePermission();
 
@@ -74,10 +69,11 @@ const GeneralLedger: React.FC<Props> = ({
           <button
             key={tab.id}
             onClick={() => setGlSubTab(tab.id)}
-            className={`flex items-center gap-2 pb-3 border-b-2 text-sm font-medium transition-colors ${glSubTab === tab.id
+            className={`flex items-center gap-2 pb-3 border-b-2 text-sm font-medium transition-colors ${
+              glSubTab === tab.id
                 ? "text-primary border-current"
                 : "text-muted hover:text-main border-transparent"
-              }`}
+            }`}
           >
             {tab.icon}
             <span>{tab.label}</span>
@@ -92,6 +88,7 @@ const GeneralLedger: React.FC<Props> = ({
         <COATab
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          onViewLedger={onViewLedger}         
         />
       )}
     </div>

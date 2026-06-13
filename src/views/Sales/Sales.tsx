@@ -20,7 +20,6 @@ import AppSkeleton from "../../components/ui/AppSkeleton";
 import { usePermission } from "../../hooks/permission/usePermission";
 import { useUrlTab } from "../../hooks/useUrlTab";
 
-
 const QuotationsTable = lazy(() => import("./Quotations"));
 const InvoiceTable = lazy(() => import("./Invoices"));
 const ReportTable = lazy(() => import("./Reports"));
@@ -85,30 +84,29 @@ const ALL_SALES_TAB = [
     label: "Reports",
     icon: <BarChart3 size={16} strokeWidth={1.75} />,
     module: "Sales Invoice",
-    action: "report" as const,    // ← report action
+    action: "report" as const,
   },
   {
     id: "salesAnalytics",
     label: "Sales Analytics",
     icon: <TrendingUp size={16} strokeWidth={1.75} />,
     module: "Sales Invoice",
-    action: "report" as const,    // ← report action
+    action: "report" as const,
   },
 ];
 
 const DEFAULT_TAB = "salesdashboard";
 
 const SalesModule: React.FC = () => {
-  const { can } = usePermission();       
-  
-   const salesTabs = useMemo(
-  () => ALL_SALES_TAB.filter((t) => !t.module || can(t.module, t.action)),
-  [can]
-);                                                       
+  const { can } = usePermission();
+
+  const salesTabs = useMemo(
+    () => ALL_SALES_TAB.filter((t) => !t.module || can(t.module, t.action)),
+    [can]
+  );
 
   const { openInvoiceCreate, openProformaCreate, openQuotationCreate } =
     useOutletContext<OutletContextType>();
-  
 
   const fallbackTab = salesTabs[0]?.id ?? DEFAULT_TAB;
   const [activeTab, handleTabChange] = useUrlTab({
@@ -116,9 +114,10 @@ const SalesModule: React.FC = () => {
     defaultTab: fallbackTab,
     basePath: "/sales",
   });
+
   const resolvedTab = activeTab;
 
-
+  // Dashboard ko viewport lock nahi karna — use scroll chahiye
   const isDashboardTab = resolvedTab === "salesdashboard";
 
   const renderTab = () => {
@@ -163,14 +162,14 @@ const SalesModule: React.FC = () => {
   };
 
   return (
-    <AppPage viewportLocked={isDashboardTab}>
+    <AppPage viewportLocked={!isDashboardTab}>
       <AppPageHeader
         title="Sales"
         description="End-to-end sales management"
-          icon={<ShoppingCart size={20} strokeWidth={1.75} />}
+        icon={<ShoppingCart size={20} strokeWidth={1.75} />}
       />
       <AppTabs tabs={salesTabs} activeTab={resolvedTab} onChange={handleTabChange} />
-      <AppPageBody viewportLocked={isDashboardTab}>
+      <AppPageBody viewportLocked={!isDashboardTab}>
         <Suspense fallback={<AppSkeleton />}>{renderTab()}</Suspense>
       </AppPageBody>
     </AppPage>
