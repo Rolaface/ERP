@@ -8,11 +8,8 @@ interface AppShellProps {
 export const AppShell: React.FC<AppShellProps> = ({ children, sidebar }) => (
   <div className="flex h-screen bg-app text-main overflow-hidden">
     {sidebar}
-    <div className="flex flex-1 min-w-0 overflow-hidden">
-      <div className="flex flex-1 min-w-0 overflow-hidden">
-  {children}
-</div>
-    </div>
+
+    <div className="flex flex-1 min-w-0 overflow-hidden">{children}</div>
   </div>
 );
 
