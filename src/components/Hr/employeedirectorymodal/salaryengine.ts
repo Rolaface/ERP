@@ -1,35 +1,30 @@
 
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type ComponentType = "Earning" | "Deduction";
 
 export interface SalaryComponentDef {
-  salary_component: string;
-  amount: number;
-  amount_based_on_formula?: 0 | 1;
-  formula?: string;
-  type: ComponentType;
-  /** ERP field names for the abbreviation — any one may be present */
-  abbr?: string;
-  salary_component_abbr?: string;
-  name?: string;
-  depends_on_payment_days?: 0 | 1;
-  is_tax_applicable?: number;
-  /** 1 = this component's amount is the computed income tax */
+  salary_component:                  string;
+  amount:                            number;
+  amount_based_on_formula?:          0 | 1;
+  formula?:                          string;
+  type:                              ComponentType;
+  abbr?:                             string;
+  salary_component_abbr?:            string;
+  name?:                             string;
+  depends_on_payment_days?:          0 | 1;
+  is_tax_applicable?:                number;
   variable_based_on_taxable_salary?: 0 | 1;
-  is_income_tax_component?: 0 | 1;
+  is_income_tax_component?:          0 | 1;
   [key: string]: unknown;
 }
 
-/** Flat key→value map used inside formula evaluation */
 export type CalcContext = Record<string, number>;
 
 export interface ComponentResult {
   name:      string;
-  key:       string;        // snake_case of salary_component
-  abbrKey:   string | null; // lowercase abbr, e.g. "bs", "hra"
-  amount:    number;        // always rounded to 2dp
+  key:       string;
+  abbrKey:   string | null;
+  amount:    number;
   formula:   string;
   isFormula: boolean;
   type:      ComponentType;
@@ -37,20 +32,18 @@ export interface ComponentResult {
 
 export interface SalaryResult {
   components:      ComponentResult[];
-  breakdown:       Record<string, number>; // nameKey + abbrKey → amount
-  gross:           number;  // sum of Earning components
-  deductionsTotal: number;  // sum of Deduction components
-  net:             number;  // gross - deductionsTotal
-  resolvedBase:    number;  // the base passed in (rounded)
-  annualTax:       number;  // full-year income tax
-  monthlyTax:      number;  // annualTax / 12
+  breakdown:       Record<string, number>;
+  gross:           number;
+  deductionsTotal: number;
+  net:             number;
+  resolvedBase:    number;
+  annualTax:       number;
+  monthlyTax:      number;
 }
-
-// ─── Tax config (mirrors the ERP Income Tax Slab doctype) ─────────────────────
 
 export interface TaxSlabRow {
   from_amount?:       number;
-  to_amount?:         number; // 0 = no upper limit
+  to_amount?:         number;
   percent_deduction?: number;
 }
 
@@ -58,21 +51,17 @@ export interface TaxChargeRow {
   description:          string;
   percent?:             number;
   min_taxable_income?:  number;
-  max_taxable_income?:  number; // 0 = no upper limit
+  max_taxable_income?:  number;
 }
 
 export interface TaxConfig {
   name:                           string;
-  /** Flat rupee deduction from gross before applying slabs (e.g. ₹75,000) */
   standard_tax_exemption_amount?: number;
   allow_tax_exemption?:           0 | 1;
- 
   tax_relief_limit?:              number;
   slabs:                          TaxSlabRow[];
   other_taxes_and_charges?:       TaxChargeRow[];
 }
-
-// ─── Payload sent to the API after save ───────────────────────────────────────
 
 export interface CompensationPayload {
   salary_structure:  string | null;
@@ -95,63 +84,72 @@ export interface CompensationPayload {
   branch_code:      string | null;
 }
 
-// ─── Internal helpers (not exported) ─────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Round to exactly 2 decimal places — kills all float drift */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
-/** snake_case key from a component name */
 const toNameKey = (name: string): string =>
   name.trim().toLowerCase().replace(/\s+/g, "_");
 
-/** Lowercase abbr key, or null if blank */
 const toAbbrKey = (abbr?: string | null): string | null =>
   abbr?.trim() ? abbr.trim().toLowerCase() : null;
 
-/** Resolve the abbr from whichever field the ERP populated */
 const resolveAbbr = (comp: SalaryComponentDef): string | null =>
   toAbbrKey(comp.abbr ?? comp.salary_component_abbr);
 
-/**
- * Write a value into the context under both nameKey and abbrKey (lower + upper).
- * Does NOT mutate the original — the ctx object is always local to calculateSalary.
- */
+const isTaxComponent = (comp: SalaryComponentDef): boolean =>
+  comp.variable_based_on_taxable_salary === 1 ||
+  comp.is_income_tax_component === 1;
+
+// Normalise raw API numbers — call on every value coming from the API
+// to prevent float drift from causing accounting inconsistencies.
+const normaliseAmount = (v: unknown): number => r2(Number(v ?? 0));
+
+// Write a value under every casing variant so formulas like
+// BASIC, basic, Basic, basic_salary, bs, BS all resolve correctly.
 const writeCtx = (
-  ctx:     CalcContext,
-  nameKey: string,
-  abbrKey: string | null,
-  value:   number,
+  ctx:           CalcContext,
+  nameKey:       string,
+  abbrKey:       string | null,
+  value:         number,
+  originalName?: string,
 ): void => {
-  ctx[nameKey] = value;
+  ctx[nameKey]               = value;
+  ctx[nameKey.toUpperCase()] = value;
+
+  const firstWord = nameKey.split("_")[0];
+  if (firstWord && firstWord !== nameKey) {
+    ctx[firstWord]                                               = value;
+    ctx[firstWord.toUpperCase()]                                 = value;
+    ctx[firstWord.charAt(0).toUpperCase() + firstWord.slice(1)] = value;
+  }
+
+  if (originalName?.trim()) {
+    const orig      = originalName.trim();
+    const origLower = orig.toLowerCase();
+    const origUpper = orig.toUpperCase();
+    const origSnake = origLower.replace(/\s+/g, "_");
+    const origTitle = origLower.replace(/\b\w/g, (c) => c.toUpperCase());
+
+    ctx[orig]                    = value;
+    ctx[origLower]               = value;
+    ctx[origUpper]               = value;
+    ctx[origSnake]               = value;
+    ctx[origSnake.toUpperCase()] = value;
+    ctx[origTitle]               = value;
+  }
+
   if (abbrKey) {
     ctx[abbrKey]               = value;
     ctx[abbrKey.toUpperCase()] = value;
   }
 };
 
-/** Returns true if this component's amount is the computed income tax */
-const isTaxComponent = (comp: SalaryComponentDef): boolean =>
-  comp.variable_based_on_taxable_salary === 1 ||
-  comp.is_income_tax_component           === 1;
-
-// ─── Python → JavaScript transpiler ─────────────────────────────────────────
-//
-// ERPNext stores salary formulas as Python expressions. Before we can run
-// them inside new Function() we need to convert Python syntax to JavaScript.
-//
-// Rules applied (in order, so nested expressions resolve correctly):
-//  1. Python ternary:  "x if cond else y"  →  "(cond ? x : y)"
-//     Handled iteratively until no more matches remain (handles nesting).
-//  2. Logical keywords: and → &&,  or → ||,  not → !
-//     Word-boundary matched so variable names like "standard" are untouched.
+// ─── Python → JS Transpiler ───────────────────────────────────────────────────
 
 function pythonToJS(formula: string): string {
   let result = formula;
 
-  // ── Step 1: Python ternary — iterate until fully unwound ──────────────────
-  // Pattern: <trueExpr> if <condition> else <falseExpr>
-  // We match lazily so the innermost ternary is resolved first on each pass.
-  // Up to 20 passes handles deeply nested chains without infinite loops.
   const ternaryRe = /(.+?)\s+if\s+(.+?)\s+else\s+(.+)/;
   for (let i = 0; i < 20; i++) {
     const next = result.replace(ternaryRe, "($2 ? $1 : $3)");
@@ -159,69 +157,44 @@ function pythonToJS(formula: string): string {
     result = next;
   }
 
-  // ── Step 2: logical keywords → JS operators ───────────────────────────────
-  result = result
+  return result
     .replace(/\band\b/g, "&&")
     .replace(/\bor\b/g,  "||")
     .replace(/\bnot\b/g, "!");
-
-  return result;
 }
 
-// ─── Formula helpers injected into every evaluation context ──────────────────
-//
-// JS-style helpers kept for any legacy formulas that still use IF(...) syntax.
-// AND / OR return 1 or 0 so they compose with IF:
-//   IF(AND(base >= 50000, base <= 100000), base * 0.15, 0)
+// ─── Formula Helpers ──────────────────────────────────────────────────────────
 
 const FORMULA_HELPERS = {
-  /** IF(condition, trueValue, falseValue) */
-  IF: (cond: unknown, a: number, b: number): number => (cond ? a : b),
-
-  /** AND(a, b, …) → 1 if every argument is truthy, else 0 */
+  IF:  (cond: unknown, a: number, b: number): number => (cond ? a : b),
   AND: (...args: unknown[]): number => (args.every(Boolean) ? 1 : 0),
-
-  /** OR(a, b, …) → 1 if any argument is truthy, else 0 */
-  OR: (...args: unknown[]): number => (args.some(Boolean) ? 1 : 0),
+  OR:  (...args: unknown[]): number => (args.some(Boolean)  ? 1 : 0),
 } as const;
 
-// ─── Formula evaluator ────────────────────────────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
 
-/**
- * Evaluates a formula string against a context of named variables.
- * Returns 0 on any error — never throws.
- *
- * Accepts both Python syntax (as stored in ERPNext) and plain JS expressions.
- * Python is transparently converted via pythonToJS() before evaluation.
- *
- * Security note: new Function() is intentional here (same approach as ERPNext).
- * The context keys are alphanumeric identifiers; the formula comes from your
- * own ERP configuration, not from end-user input.
- */
 export function evaluateFormula(formula: string, ctx: CalcContext): number {
   if (!formula?.trim()) return 0;
   try {
-    // Convert Python syntax → JS (no-op if formula is already JS)
-    const jsFormula = pythonToJS(formula);
-
-    // Merge helpers + context — helpers come first so context values
-    // can shadow them if a component name collides with a helper name.
-    const allKeys   = [...Object.keys(FORMULA_HELPERS),   ...Object.keys(ctx)];
-    const allValues = [...Object.values(FORMULA_HELPERS), ...Object.values(ctx)];
+    const jsFormula    = pythonToJS(formula);
+    const helperKeys   = Object.keys(FORMULA_HELPERS);
+    const helperValues = Object.values(FORMULA_HELPERS);
+    const ctxKeys      = Object.keys(ctx);
+    const ctxValues    = Object.values(ctx);
 
     // eslint-disable-next-line no-new-func
     const fn = new Function(
-      ...allKeys,
+      ...helperKeys,
+      ...ctxKeys,
       `"use strict"; return +(${jsFormula});`,
     );
-    const result = fn(...allValues);
-    const n = Number(result);
+
+    const n = Number(fn(...helperValues, ...ctxValues));
     return isFinite(n) ? n : 0;
   } catch {
     return 0;
   }
 }
-
 
 export function calculateAnnualTax(
   annualGross: number,
@@ -229,53 +202,42 @@ export function calculateAnnualTax(
 ): number {
   if (!taxConfig?.slabs?.length) return 0;
 
-  // Step 1: standard exemption
-  const exemption     = taxConfig.standard_tax_exemption_amount ?? 0;
-  const taxableIncome = Math.max(0, annualGross - exemption);
-
+  const exemption     = normaliseAmount(taxConfig.standard_tax_exemption_amount);
+  const taxableIncome = Math.max(0, r2(annualGross) - exemption);
   if (taxableIncome <= 0) return 0;
 
-  // Step 2: Section 87A rebate — full relief if income within threshold
-  const reliefThreshold = taxConfig.tax_relief_limit ?? 0;
-  if (reliefThreshold > 0 && taxableIncome <= reliefThreshold) {
-    return 0;
-  }
+  const reliefThreshold = normaliseAmount(taxConfig.tax_relief_limit);
+  if (reliefThreshold > 0 && taxableIncome <= reliefThreshold) return 0;
 
-  // Step 3: progressive slab tax
-  let tax = 0;
+  let slabTax = 0;
   for (const slab of taxConfig.slabs) {
-    const from = slab.from_amount ?? 0;
-    const to   = (slab.to_amount && slab.to_amount > 0) ? slab.to_amount : Infinity;
-    const rate = (slab.percent_deduction ?? 0) / 100;
+    const from = normaliseAmount(slab.from_amount);
+    const to   = slab.to_amount && slab.to_amount > 0
+      ? normaliseAmount(slab.to_amount)
+      : Infinity;
+    const rate = normaliseAmount(slab.percent_deduction) / 100;
 
-    if (rate === 0)            continue; // skip zero-rate slabs
-    if (taxableIncome <= from) continue; // income hasn't reached this slab
-
-    const slabIncome = Math.min(taxableIncome, to) - from;
-    tax += slabIncome * rate;
+    if (rate === 0 || taxableIncome <= from) continue;
+    slabTax += (Math.min(taxableIncome, to) - from) * rate;
   }
 
-  // Step 4: surcharges / cess (% applied to the base tax already computed)
-  if (taxConfig.other_taxes_and_charges?.length) {
-    const baseTax = tax;
-    for (const charge of taxConfig.other_taxes_and_charges) {
-      const rate = (charge.percent ?? 0) / 100;
-      if (rate === 0) continue;
+  let totalTax = slabTax;
+  for (const charge of taxConfig.other_taxes_and_charges ?? []) {
+    const rate = normaliseAmount(charge.percent) / 100;
+    if (rate === 0) continue;
 
-      const min = charge.min_taxable_income ?? 0;
-      const max = (charge.max_taxable_income && charge.max_taxable_income > 0)
-        ? charge.max_taxable_income
-        : Infinity;
+    const min = normaliseAmount(charge.min_taxable_income);
+    const max = charge.max_taxable_income && charge.max_taxable_income > 0
+      ? normaliseAmount(charge.max_taxable_income)
+      : Infinity;
 
-      if (taxableIncome >= min && taxableIncome <= max) {
-        tax += baseTax * rate;
-      }
+    if (taxableIncome >= min && taxableIncome <= max) {
+      totalTax += slabTax * rate;
     }
   }
 
-  return r2(Math.max(0, tax));
+  return r2(Math.max(0, totalTax));
 }
-
 
 export function calculateSalary(
   monthlyBase: number,
@@ -283,108 +245,97 @@ export function calculateSalary(
   overrides:   Record<string, number> = {},
   taxConfig?:  TaxConfig | null,
 ): SalaryResult {
-  if (!components.length) {
-    return {
-      components: [], breakdown: {},
-      gross: 0, deductionsTotal: 0, net: 0,
-      resolvedBase: r2(monthlyBase), annualTax: 0, monthlyTax: 0,
-    };
-  }
+  const empty: SalaryResult = {
+    components: [], breakdown: {},
+    gross: 0, deductionsTotal: 0, net: 0,
+    resolvedBase: r2(monthlyBase), annualTax: 0, monthlyTax: 0,
+  };
+  if (!components.length) return empty;
 
-  // Pre-compute stable keys for every component
-  const keys = components.map((c) => ({
+  // Normalise all incoming API amounts up front
+  const normalisedComponents = components.map((c) => ({
+    ...c,
+    amount: normaliseAmount(c.amount),
+  }));
+
+  const keys = normalisedComponents.map((c) => ({
     nameKey: toNameKey(c.salary_component),
     abbrKey: resolveAbbr(c),
   }));
 
-  const ctx: CalcContext = { base: r2(monthlyBase) };
+  const ctx: CalcContext = {};
+  writeCtx(ctx, "base", null, r2(monthlyBase), "base");
 
-  // ── Pass 1: fixed non-tax components ──────────────────────────────────────
-  for (let i = 0; i < components.length; i++) {
-    const comp = components[i];
-    if (comp.amount_based_on_formula === 1) continue;
-    if (isTaxComponent(comp))              continue;
+  // Pass 1 — fixed non-tax components
+  for (let i = 0; i < normalisedComponents.length; i++) {
+    const comp = normalisedComponents[i];
+    if (comp.amount_based_on_formula === 1 || isTaxComponent(comp)) continue;
 
     const { nameKey, abbrKey } = keys[i];
-    const value = r2(
-      overrides[nameKey] ??
-      (abbrKey ? overrides[abbrKey] : undefined) ??
-      comp.amount ??
-      0,
-    );
-    writeCtx(ctx, nameKey, abbrKey, value);
+    const override = overrides[nameKey] ?? (abbrKey ? overrides[abbrKey] : undefined);
+    writeCtx(ctx, nameKey, abbrKey, r2(override ?? comp.amount), comp.salary_component);
   }
 
-  // ── Pass 2: formula components — iterate until fully stable ───────────────
+  // Pass 2 — formula non-tax components (iterate until stable)
   for (let pass = 0; pass < 10; pass++) {
     let changed = false;
-
-    for (let i = 0; i < components.length; i++) {
-      const comp = components[i];
-      if (comp.amount_based_on_formula !== 1) continue;
-      if (isTaxComponent(comp))              continue;
+    for (let i = 0; i < normalisedComponents.length; i++) {
+      const comp = normalisedComponents[i];
+      if (comp.amount_based_on_formula !== 1 || isTaxComponent(comp)) continue;
 
       const { nameKey, abbrKey } = keys[i];
-      // Check for manual override first
-      const overrideVal =
-        overrides[nameKey] ?? (abbrKey ? overrides[abbrKey] : undefined);
-
-      const next = r2(
-        overrideVal !== undefined
-          ? overrideVal
+      const override = overrides[nameKey] ?? (abbrKey ? overrides[abbrKey] : undefined);
+      const next     = r2(
+        override !== undefined
+          ? override
           : evaluateFormula(comp.formula ?? "", ctx),
       );
 
       if (next !== (ctx[nameKey] ?? 0)) {
         changed = true;
-        writeCtx(ctx, nameKey, abbrKey, next);
+        writeCtx(ctx, nameKey, abbrKey, next, comp.salary_component);
       }
     }
-
     if (!changed) break;
   }
 
-  // ── Pass 3: pre-tax gross (sum of all Earning components resolved so far) ──
+  // Pass 3 — pre-tax gross
   const preTaxGross = r2(
-    components
+    normalisedComponents
       .filter((c) => c.type === "Earning")
-      .reduce((sum, c, i) => {
-        const idx = components.indexOf(c); // original index for keys lookup
+      .reduce((sum, c) => {
+        const idx = normalisedComponents.indexOf(c);
         return sum + (ctx[keys[idx].nameKey] ?? 0);
       }, 0),
   );
 
-  // ── Pass 4: income tax calculation ────────────────────────────────────────
+  // Pass 4 — income tax
   let annualTax  = 0;
   let monthlyTax = 0;
-
   if (taxConfig) {
     annualTax  = calculateAnnualTax(preTaxGross * 12, taxConfig);
     monthlyTax = r2(annualTax / 12);
   }
 
-  // ── Pass 5: inject tax into tax-variable components ────────────────────────
-  // Add tax values to context so formula-based tax components can reference them
-  ctx["annual_tax"]  = annualTax;
-  ctx["monthly_tax"] = monthlyTax;
+  writeCtx(ctx, "annual_tax",  null, annualTax,  "annual_tax");
+  writeCtx(ctx, "monthly_tax", null, monthlyTax, "monthly_tax");
 
-  for (let i = 0; i < components.length; i++) {
-    const comp = components[i];
+  // Pass 5 — tax-variable components
+  for (let i = 0; i < normalisedComponents.length; i++) {
+    const comp = normalisedComponents[i];
     if (!isTaxComponent(comp)) continue;
 
     const { nameKey, abbrKey } = keys[i];
-
     const taxAmount = r2(
       comp.amount_based_on_formula === 1 && comp.formula?.trim()
         ? evaluateFormula(comp.formula, ctx)
         : monthlyTax,
     );
-
-    writeCtx(ctx, nameKey, abbrKey, taxAmount);
+    writeCtx(ctx, nameKey, abbrKey, taxAmount, comp.salary_component);
   }
 
-  // ── Pass 6: build final results ────────────────────────────────────────────
-  const resultComponents: ComponentResult[] = components.map((comp, i) => ({
+  // Pass 6 — final results
+  const resultComponents: ComponentResult[] = normalisedComponents.map((comp, i) => ({
     name:      comp.salary_component,
     key:       keys[i].nameKey,
     abbrKey:   keys[i].abbrKey,
@@ -401,25 +352,22 @@ export function calculateSalary(
     resultComponents.filter((c) => c.type === "Deduction").reduce((s, c) => s + c.amount, 0),
   );
 
-  // Build breakdown lookup — both nameKey and abbrKey point to the same amount
   const breakdown: Record<string, number> = {};
-  for (const { key, abbrKey, amount } of resultComponents) {
-    breakdown[key] = amount;
-    if (abbrKey) breakdown[abbrKey] = amount;
+  for (const { key, abbrKey, amount, name } of resultComponents) {
+    writeCtx(breakdown, key, abbrKey, amount, name);
   }
 
   return {
-    components:      resultComponents,
+    components: resultComponents,
     breakdown,
     gross,
     deductionsTotal,
-    net:             r2(gross - deductionsTotal),
-    resolvedBase:    r2(monthlyBase),
+    net:          r2(gross - deductionsTotal),
+    resolvedBase: r2(monthlyBase),
     annualTax,
     monthlyTax,
   };
 }
-
 
 export function solveBaseFromGross(
   targetGross:  number,
@@ -435,18 +383,16 @@ export function solveBaseFromGross(
   );
   if (!hasFormulaEarnings) return 0;
 
-  const calcGross = (base: number) =>
+  const calcGross = (base: number): number =>
     calculateSalary(base, components, {}, taxConfig).gross;
 
   let lo = 0;
   let hi = targetGross * 3;
   for (let i = 0; i < 25 && calcGross(hi) < targetGross; i++) hi *= 2;
 
-  // Binary search
   for (let iter = 0; iter < maxIterations; iter++) {
     const mid   = (lo + hi) / 2;
     const gross = calcGross(mid);
-
     if (Math.abs(gross - targetGross) <= tolerance) return r2(mid);
     if (gross < targetGross) lo = mid;
     else                     hi = mid;
@@ -455,13 +401,13 @@ export function solveBaseFromGross(
   return r2((lo + hi) / 2);
 }
 
-
 export function structureToComponents(
   structureData: Record<string, unknown>,
 ): SalaryComponentDef[] {
   const normalize = (row: Record<string, unknown>, type: ComponentType): SalaryComponentDef => ({
     ...(row as SalaryComponentDef),
     type,
+    amount:                normaliseAmount((row as SalaryComponentDef).amount),
     abbr:                  (row.abbr ?? row.salary_component_abbr ?? "") as string,
     salary_component_abbr: (row.abbr ?? row.salary_component_abbr ?? "") as string,
   });
@@ -475,11 +421,6 @@ export function structureToComponents(
   ];
 }
 
-// ─── Payload builder ──────────────────────────────────────────────────────────
-
-/**
- * Converts a SalaryResult + form values into the payload shape the API expects.
- */
 export function buildCompensationPayload(
   formData: Record<string, unknown>,
   result:   SalaryResult,
@@ -493,23 +434,25 @@ export function buildCompensationPayload(
   };
 
   const basicComp = result.components.find(
-    (c) => c.type === "Earning" && (c.abbrKey === "bs" || c.key === "basic_salary"),
+    (c) =>
+      c.type === "Earning" &&
+      (c.abbrKey === "bs" || c.key === "basic_salary" || c.key === "basic"),
   );
 
   return {
     salary_structure:  (formData.salaryStructure as string) ?? null,
-    base_salary:       basicComp?.amount ?? result.gross,
+    base_salary:       r2(basicComp?.amount ?? result.gross),
     components:        result.components.map(({ name, key, abbrKey, amount, type }) => ({
-      name, key, abbrKey, amount, type,
+      name, key, abbrKey, amount: r2(amount), type,
     })),
-    gross:             result.gross,
-    deductions_total:  result.deductionsTotal,
-    net:               result.net,
+    gross:             r2(result.gross),
+    deductions_total:  r2(result.deductionsTotal),
+    net:               r2(result.net),
     salary_mode:       mapPaymentMode(formData.paymentMethod),
-    salary_currency:   (formData.currency      as string) ??  null,
-    bank_name:         (formData.bankName       as string) ?? null,
-    bank_ac_no:        (formData.accountNumber  as string) ?? null,
-    account_type:      (formData.accountType    as string) ?? null,
-    branch_code:       (formData.branchCode     as string) ?? null,
+    salary_currency:   (formData.currency     as string) ?? null,
+    bank_name:         (formData.bankName      as string) ?? null,
+    bank_ac_no:        (formData.accountNumber as string) ?? null,
+    account_type:      (formData.accountType   as string) ?? null,
+    branch_code:       (formData.branchCode    as string) ?? null,
   };
 }
