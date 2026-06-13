@@ -84,7 +84,7 @@ const AgingCell = ({ label, value, active = false, warn = false }: AgingCellProp
   const isHot = warn && value > 0;
   return (
     <div className={`flex-1 flex flex-col items-center justify-center py-3 px-1 sm:px-2 ${active ? "bg-primary/8" : isHot ? "bg-danger/5" : ""}`}>
-      <span className={`text-[9px] font-black uppercase tracking-widest mb-1.5 whitespace-nowrap ${active ? "text-primary" : isHot ? "text-danger" : "text-muted"}`}>
+      <span className={`text-[7px] font-black uppercase tracking-widest mb-1.5 whitespace-nowrap ${active ? "text-primary" : isHot ? "text-danger" : "text-muted"}`}>
         {label}
       </span>
       <span className={`text-[12px] sm:text-[13px] font-black tabular-nums ${active ? "text-primary" : isHot ? "text-danger" : "text-main"}`}>
@@ -588,11 +588,11 @@ const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps
             </span>
           </div>
           <div className="flex flex-1 divide-x divide-theme">
-            <AgingCell label="Current" value={data.aging.current} active />
-            <AgingCell label="1 – 30" value={data.aging["1_30"]} />
-            <AgingCell label="31 – 60" value={data.aging["31_60"]} />
-            <AgingCell label="61 – 90" value={data.aging["61_90"]} />
-            <AgingCell label="90 +" value={data.aging["90_plus"]} warn />
+            <AgingCell label="Not Due Yet" value={data.aging.current} active />
+            <AgingCell label="1 - 30 Days Overdue" value={data.aging["1_30"]} />
+            <AgingCell label="31 - 60 Days Overdue" value={data.aging["31_60"]} />
+            <AgingCell label="61 - 90 Days Overdue" value={data.aging["61_90"]} />
+            <AgingCell label="90 + Days Overdue" value={data.aging["90_plus"]} warn />
           </div>
         </div>
       </div>
