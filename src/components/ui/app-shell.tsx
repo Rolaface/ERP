@@ -1,13 +1,11 @@
 import { LucideIcon } from "lucide-react";
 import React, { memo, useCallback, useState } from "react";
 
-
 interface AppTabItem {
   id: string;
   label: string;
   icon?: React.ReactNode;
 }
-
 
 interface AppPageProps {
   children: React.ReactNode;
@@ -18,12 +16,9 @@ export const AppPage: React.FC<AppPageProps> = ({
   children,
   viewportLocked = false,
 }) => (
-  <div
-    className={[
-      "flex flex-col flex-1 min-h-0",
-      viewportLocked ? "overflow-hidden" : "overflow-visible",
-    ].join(" ")}
-  >
+ <div className={[
+  "flex flex-col flex-1 min-h-0 h-full overflow-hidden",
+].join(" ")}>
     {children}
   </div>
 );
@@ -34,9 +29,11 @@ export const AppPageBody: React.FC<{
   viewportLocked?: boolean;
 }> = ({ children, className = "", viewportLocked = false }) => (
   <div
-    className={`flex flex-1 flex-col px-3 py-2.5 sm:px-4 min-h-0 ${
-      viewportLocked ? "overflow-hidden" : "overflow-auto"
-    } ${className}`.trim()}
+   className={[
+      "flex flex-1 flex-col px-3 py-2.5 sm:px-4 min-h-0",
+      viewportLocked ? "overflow-hidden h-full" : "overflow-y-auto overscroll-contain",
+      className,
+    ].join(" ").trim()}
   >
     {children}
   </div>
@@ -83,18 +80,6 @@ export const AppPageHeader: React.FC<AppPageHeaderProps> = ({
     ) : null}
   </div>
 );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// AppModuleHeader
-// ─────────────────────────────────────────────────────────────────────────────
-interface AppModuleHeaderProps {
-  icon: React.ReactNode;
-  moduleName: string;
-  tabs: AppTabItem[];
-  activeTab: string;
-  onTabChange: (id: string) => void;
-  trailing?: React.ReactNode;
-}
 
 export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
   ({ icon, moduleName, tabs, activeTab, onTabChange, trailing }) => {
@@ -154,13 +139,13 @@ export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
 );
 AppModuleHeader.displayName = "AppModuleHeader";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AppTabs
-// ─────────────────────────────────────────────────────────────────────────────
-interface AppTabsProps {
+interface AppModuleHeaderProps {
+  icon: React.ReactNode;
+  moduleName: string;
   tabs: AppTabItem[];
   activeTab: string;
-  onChange: (tabId: string) => void;
+  onTabChange: (id: string) => void;
+  trailing?: React.ReactNode;
 }
 
 export const AppTabs: React.FC<AppTabsProps> = memo(
@@ -200,9 +185,12 @@ export const AppTabs: React.FC<AppTabsProps> = memo(
 );
 AppTabs.displayName = "AppTabs";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AppSubTabs
-// ─────────────────────────────────────────────────────────────────────────────
+interface AppTabsProps {
+  tabs: AppTabItem[];
+  activeTab: string;
+  onChange: (tabId: string) => void;
+}
+
 interface AppSubTabsProps {
   tabs: AppTabItem[];
   activeTab: string;
@@ -221,9 +209,7 @@ export const AppSubTabs: React.FC<AppSubTabsProps> = memo(
     return (
       <div className="flex w-full items-center justify-between border-b border-[var(--border)] bg-card shrink-0">
         {leading && (
-          <div className="flex shrink-0 items-center pl-3">
-            {leading}
-          </div>
+          <div className="flex shrink-0 items-center pl-3">{leading}</div>
         )}
         <div className="flex min-w-0 flex-1 overflow-x-auto scrollbar-hide">
           <div className="flex items-end gap-0 min-w-max px-1">
@@ -264,9 +250,7 @@ export const AppSubTabs: React.FC<AppSubTabsProps> = memo(
           </div>
         </div>
         {trailing && (
-          <div className="flex shrink-0 items-center gap-2 px-4">
-            {trailing}
-          </div>
+          <div className="flex shrink-0 items-center gap-2 px-4">{trailing}</div>
         )}
       </div>
     );
@@ -274,9 +258,6 @@ export const AppSubTabs: React.FC<AppSubTabsProps> = memo(
 );
 AppSubTabs.displayName = "AppSubTabs";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AppSetupLayout
-// ─────────────────────────────────────────────────────────────────────────────
 export interface AppSetupSection {
   key: string;
   label: string;
@@ -369,10 +350,6 @@ export const AppSetupLayout: React.FC<AppSetupLayoutProps> = memo(
 );
 AppSetupLayout.displayName = "AppSetupLayout";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AppSurface / AppSectionCard / AppMetricCard
-// ─────────────────────────────────────────────────────────────────────────────
-
 export const AppSurface: React.FC<{
   children: React.ReactNode;
   className?: string;
@@ -394,13 +371,13 @@ export const AppSectionCard: React.FC<AppSectionCardProps> = ({
   className = "",
 }) => (
   <AppSurface className={className}>
-    <div className="border-b border-[var(--border)] px-6 py-4">
-      <h2 className="text-base font-semibold text-main">{title}</h2>
+    <div className="border-b border-[var(--border)] px-3 py-3 sm:px-4 sm:py-3.5 lg:px-6 lg:py-4">
+      <h2 className="text-sm sm:text-base font-semibold text-main">{title}</h2>
       {description ? (
-        <p className="mt-1 text-sm text-muted">{description}</p>
+        <p className="mt-1 text-xs sm:text-sm text-muted">{description}</p>
       ) : null}
     </div>
-    <div className="px-6 py-4">{children}</div>
+    <div className="px-3 py-3 sm:px-4 sm:py-3.5 lg:px-6 lg:py-4">{children}</div>
   </AppSurface>
 );
 
@@ -417,18 +394,20 @@ export const AppMetricCard: React.FC<AppMetricCardProps> = ({
   icon: Icon,
   accentClassName = "from-slate-700 to-slate-800",
 }) => (
-  <AppSurface className="p-6">
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-muted">{label}</p>
-        <p className="mt-3 truncate text-3xl font-semibold text-main">
+  <AppSurface className="p-3 sm:p-4 lg:p-5">
+    <div className="flex items-center justify-between gap-2 sm:items-start sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-xs sm:text-sm font-medium text-muted truncate">{label}</p>
+        <p className="mt-1 sm:mt-3 truncate text-xl sm:text-2xl lg:text-3xl font-semibold text-main">
           {value}
         </p>
       </div>
       <div
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white ${accentClassName}`}
+        className={`flex h-9 w-9 sm:h-10 sm:w-10 lg:h-12 lg:w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white ${accentClassName}`}
       >
-        <Icon size={20} />
+        <Icon size={16} className="sm:hidden" />
+        <Icon size={18} className="hidden sm:block lg:hidden" />
+        <Icon size={20} className="hidden lg:block" />
       </div>
     </div>
   </AppSurface>

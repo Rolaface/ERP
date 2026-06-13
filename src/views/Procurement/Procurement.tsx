@@ -165,14 +165,14 @@ const Procurement: React.FC = () => {
     tabComponents[resolvedTab as keyof typeof tabComponents] ?? <Dashboard />;
 
   return (
-    <AppPage viewportLocked={isDashboardTab}>
+    <AppPage >
       <AppPageHeader
         title="Procurement"
         description="Manage the full procurement cycle—from RFQs and POs to payments."
         icon={<ShoppingBag size={20} strokeWidth={1.75} />}
       />
       <AppTabs tabs={procurementTabs} activeTab={resolvedTab} onChange={handleTabChange} />
-      <AppPageBody viewportLocked={isDashboardTab}>
+      <AppPageBody >
         <Suspense fallback={null}>
           {currentTabComponent}
         </Suspense>
