@@ -647,6 +647,11 @@ export type CreatePaymentEntryPayload = {
 
   references: PaymentReference[];
   taxes: PaymentTax[];
+  deductions?: {
+    account: string;
+    cost_center: string;
+    amount: number;
+  }[];
 };
 
 
@@ -708,4 +713,83 @@ export async function getPaymentEntryById(id: string): Promise<PaymentEntryByIdR
     { params: { id } },
   );
   return resp.data;
+}
+
+
+
+//deduction account -
+export interface DeductionAccountOption {
+  label: string;
+  value: string;
+  subLabel?: string;
+}
+
+export async function getDeductionAccounts(
+  search?: string,
+): Promise<DeductionAccountOption[]> {
+  try {
+    const params = new URLSearchParams();
+    params.append("fields", JSON.stringify(["name", "account_name", "account_number", "account_type"]));
+    params.append("page_length", "20");
+    if (search?.trim()) params.append("txt", search.trim());
+
+    const filters = encodeURIComponent(
+      JSON.stringify([
+        ["is_group", "=", "0"],
+      ])
+    );
+
+    const resp: AxiosResponse = await api.get(
+      `${Account.getAccountsResource}?${params.toString()}&filters=${filters}`,
+    );
+
+    const raw: any[] = resp?.data?.data ?? [];
+
+    return raw.map((item) => ({
+      label: item.account_number
+        ? `${item.account_number} - ${item.account_name}`
+        : item.account_name,
+      value: item.name,
+      subLabel: item.account_type ?? "",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+
+// tax account
+
+
+export async function getTaxAccounts(
+  search?: string,
+): Promise<DeductionAccountOption[]> {
+  try {
+    const params = new URLSearchParams();
+    params.append("fields", JSON.stringify(["name", "account_name", "account_number", "account_type"]));
+    params.append("page_length", "20");
+    if (search?.trim()) params.append("txt", search.trim());
+
+    const filters = encodeURIComponent(
+      JSON.stringify([
+        ["account_type", "in", ["Tax", "Chargeable", "Income Account", "Expenses Included In Valuation"]],
+      ])
+    );
+
+    const resp: AxiosResponse = await api.get(
+      `${Account.getAccountsResource}?${params.toString()}&filters=${filters}`,
+    );
+
+    const raw: any[] = resp?.data?.data ?? [];
+
+    return raw.map((item) => ({
+      label: item.account_number
+        ? `${item.account_number} - ${item.account_name}`
+        : item.account_name,
+      value: item.name,
+      subLabel: item.account_type ?? "",
+    }));
+  } catch {
+    return [];
+  }
 }
