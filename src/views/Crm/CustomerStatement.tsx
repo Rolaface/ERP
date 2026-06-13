@@ -22,6 +22,8 @@ import { getCustomerStatement, getCustomerStatementPdf } from "../../api/stateme
 import { showApiError } from "../../utils/alert";
 import { DateRangeFilter } from "../../components/ui/modal/DateRangeFilter";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
+import SendEmailModal from "../../components/common/SendEmailModal";
+import { uploadFile } from "../../api/Email/EmailApi";
 import type {
   LedgerEntry,
   StatementData,
@@ -33,12 +35,12 @@ import type {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const VOUCHER_OPTIONS = [
-  { value: "Sales Invoice",    label: "Sales Invoice" },
+  { value: "Sales Invoice", label: "Sales Invoice" },
   { value: "Purchase Invoice", label: "Purchase Invoice" },
-  { value: "Payment Entry",    label: "Payment Entry" },
-  { value: "Receipt",          label: "Receipt" },
-  { value: "Credit Note",      label: "Credit Note" },
-  { value: "Journal Entry",    label: "Journal Entry" },
+  { value: "Payment Entry", label: "Payment Entry" },
+  { value: "Receipt", label: "Receipt" },
+  { value: "Credit Note", label: "Credit Note" },
+  { value: "Journal Entry", label: "Journal Entry" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -55,8 +57,8 @@ const fmtDateRange = (from?: string, to?: string) => {
 
 const triggerDownload = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);
-  const a   = document.createElement("a");
-  a.href     = url;
+  const a = document.createElement("a");
+  a.href = url;
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
@@ -96,16 +98,16 @@ const AgingCell = ({ label, value, active = false, warn = false }: AgingCellProp
 
 interface ShareModalProps {
   customerName: string;
-  dateRange:    string;
-  blob:         Blob;
+  dateRange: string;
+  blob: Blob;
   defaultEmail?: string;
-  onClose:      () => void;
+  onClose: () => void;
 }
 
 const ShareModal = ({ customerName, dateRange, blob, defaultEmail = "", onClose }: ShareModalProps) => {
   const [email, setEmail] = useState(defaultEmail);
-  const [note,  setNote]  = useState("");
-  const [sent,  setSent]  = useState(false);
+  const [note, setNote] = useState("");
+  const [sent, setSent] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
@@ -124,7 +126,7 @@ const ShareModal = ({ customerName, dateRange, blob, defaultEmail = "", onClose 
   const handleSend = () => {
     // Swap this for your real email API call
     const subject = encodeURIComponent(`Customer Statement – ${customerName} (${dateRange})`);
-    const body    = encodeURIComponent(`Hi,\n\nPlease find the statement for ${customerName} (${dateRange}) attached.\n\n${note ? `Note: ${note}\n\n` : ""}Regards`);
+    const body = encodeURIComponent(`Hi,\n\nPlease find the statement for ${customerName} (${dateRange}) attached.\n\n${note ? `Note: ${note}\n\n` : ""}Regards`);
     window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_self");
     setSent(true);
     setTimeout(onClose, 1800);
@@ -185,10 +187,9 @@ const ShareModal = ({ customerName, dateRange, blob, defaultEmail = "", onClose 
             Cancel
           </button>
           <button onClick={handleSend} disabled={!valid || sent}
-            className={`flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-semibold rounded-xl transition-all ${
-              sent           ? "bg-success/10 text-success border border-success/30" :
-              valid          ? "bg-primary text-white hover:opacity-90" :
-                               "bg-primary/20 text-primary/40 cursor-not-allowed"}`}>
+            className={`flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-semibold rounded-xl transition-all ${sent ? "bg-success/10 text-success border border-success/30" :
+              valid ? "bg-primary text-white hover:opacity-90" :
+                "bg-primary/20 text-primary/40 cursor-not-allowed"}`}>
             {sent ? <><Check className="w-3.5 h-3.5" />Sent!</> : <><Mail className="w-3.5 h-3.5" />Send Email</>}
           </button>
         </div>
@@ -200,13 +201,13 @@ const ShareModal = ({ customerName, dateRange, blob, defaultEmail = "", onClose 
 // ─── PDF: Viewer Modal ────────────────────────────────────────────────────────
 
 interface PdfViewerModalProps {
-  blobUrl:       string;
-  blob:          Blob;
-  filename:      string;
-  customerName:  string;
-  dateRange:     string;
+  blobUrl: string;
+  blob: Blob;
+  filename: string;
+  customerName: string;
+  dateRange: string;
   defaultEmail?: string;
-  onClose:       () => void;
+  onClose: () => void;
 }
 
 const PdfViewerModal = ({ blobUrl, blob, filename, customerName, dateRange, defaultEmail, onClose }: PdfViewerModalProps) => {
@@ -283,7 +284,7 @@ type PdfAction = "preview" | "download" | "share";
 
 interface PdfDropdownProps {
   onSelect: (a: PdfAction) => void;
-  onClose:  () => void;
+  onClose: () => void;
 }
 
 const PdfDropdown = ({ onSelect, onClose }: PdfDropdownProps) => {
@@ -296,9 +297,9 @@ const PdfDropdown = ({ onSelect, onClose }: PdfDropdownProps) => {
   }, [onClose]);
 
   const items: { action: PdfAction; icon: React.ReactNode; label: string; sub: string }[] = [
-    { action: "preview",  icon: <Eye      className="w-3.5 h-3.5" />, label: "Preview",        sub: "View in-app" },
-    { action: "download", icon: <Download className="w-3.5 h-3.5" />, label: "Download",       sub: "Save as PDF" },
-    // { action: "share",    icon: <Mail     className="w-3.5 h-3.5" />, label: "Share via Email", sub: "Send to customer" },
+    { action: "preview", icon: <Eye className="w-3.5 h-3.5" />, label: "Preview", sub: "View in-app" },
+    { action: "download", icon: <Download className="w-3.5 h-3.5" />, label: "Download", sub: "Save as PDF" },
+    { action: "share", icon: <Mail className="w-3.5 h-3.5" />, label: "Compose Email", sub: "Send to customer" },
   ];
 
   return (
@@ -322,24 +323,25 @@ const PdfDropdown = ({ onSelect, onClose }: PdfDropdownProps) => {
 // ─── PDF: Button (orchestrator) ───────────────────────────────────────────────
 
 interface PdfButtonProps {
-  customerId:    string;
-  customerName:  string;
-  fromDate?:     string;
-  toDate?:       string;
-  voucherType?:  string;
+  customerId: string;
+  customerName: string;
+  fromDate?: string;
+  toDate?: string;
+  voucherType?: string;
   defaultEmail?: string;
 }
 
 const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, defaultEmail }: PdfButtonProps) => {
-  const [open,    setOpen]    = useState(false);
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
-  const [viewer,  setViewer]  = useState<{ blobUrl: string; blob: Blob } | null>(null);
-  const [shareBlob, setShareBlob] = useState<Blob | null>(null);
-
+  const [error, setError] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ blobUrl: string; blob: Blob } | null>(null);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailAttachments, setEmailAttachments] = useState<{ name: string; file_name: string }[]>([]);
+  const [emailUploading, setEmailUploading] = useState(false);
   const cachedRef = useRef<Blob | null>(null);
   const dateRange = fmtDateRange(fromDate, toDate);
-  const filename  = `Statement_${customerName.replace(/\s+/g, "_")}_${dateRange.replace(/[\s–]/g, "")}.pdf`;
+  const filename = `Statement_${customerName.replace(/\s+/g, "_")}_${dateRange.replace(/[\s–]/g, "")}.pdf`;
 
   // Invalidate cache when filters change
   useEffect(() => { cachedRef.current = null; }, [customerId, fromDate, toDate, voucherType]);
@@ -364,9 +366,22 @@ const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, de
   const handleSelect = async (action: PdfAction) => {
     const blob = await fetchBlob();
     if (!blob) return;
-    if (action === "preview")  { setViewer({ blobUrl: URL.createObjectURL(blob), blob }); }
+    if (action === "preview") { setViewer({ blobUrl: URL.createObjectURL(blob), blob }); }
     if (action === "download") { triggerDownload(blob, filename); }
-    if (action === "share")    { setShareBlob(blob); }
+    if (action === "share") {
+      // Convert blob to File, upload it, get the server name back, open modal
+      try {
+        setEmailUploading(true);
+        const file = new File([blob], filename, { type: "application/pdf" });
+        const uploaded = await uploadFile(file, customerId, "Customer");
+        setEmailAttachments([{ name: uploaded.name, file_name: uploaded.file_name }]);
+        setEmailModalOpen(true);
+      } catch (err) {
+        setError("Failed to attach PDF. Please try again.");
+      } finally {
+        setEmailUploading(false);
+      }
+    }
   };
 
   const closeViewer = () => {
@@ -377,12 +392,12 @@ const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, de
   return (
     <>
       <div className="relative inline-flex">
-        <button onClick={() => setOpen((v) => !v)} disabled={loading}
+        <button onClick={() => setOpen((v) => !v)} disabled={loading || emailUploading}
           className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors disabled:opacity-60">
-          {loading
+          {(loading || emailUploading)
             ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
             : <FileText className="w-3.5 h-3.5 text-primary" />}
-          <span>{loading ? "Generating…" : "PDF"}</span>
+          <span>{loading ? "Generating…" : emailUploading ? "Attaching…" : "PDF"}</span>
           <ChevronDown className={`w-3 h-3 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
         {open && <PdfDropdown onSelect={handleSelect} onClose={() => setOpen(false)} />}
@@ -400,9 +415,19 @@ const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, de
           customerName={customerName} dateRange={dateRange} defaultEmail={defaultEmail} onClose={closeViewer} />
       )}
 
-      {shareBlob && !viewer && (
-        <ShareModal customerName={customerName} dateRange={dateRange} blob={shareBlob}
-          defaultEmail={defaultEmail} onClose={() => setShareBlob(null)} />
+      {emailModalOpen && (
+        <SendEmailModal
+          open={emailModalOpen}
+          docType="Customer"
+          invoiceNumber={customerId}
+          contactEmail={defaultEmail}
+          customerName={customerName}
+          invoiceAttachments={emailAttachments}
+          onClose={() => {
+            setEmailModalOpen(false);
+            setEmailAttachments([]);
+          }}
+        />
       )}
     </>
   );
@@ -410,20 +435,20 @@ const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, de
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
-  const [data,       setData]       = useState<StatementData | null>(null);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
+const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps & { customerEmail?: string }) => {
+  const [data, setData] = useState<StatementData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Pagination
-  const [page,       setPage]       = useState(1);
-  const [pageSize,   setPageSize]   = useState(4);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(4);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
   // Filters
-  const [fromDate,    setFromDate]    = useState<string | undefined>();
-  const [toDate,      setToDate]      = useState<string | undefined>();
+  const [fromDate, setFromDate] = useState<string | undefined>();
+  const [toDate, setToDate] = useState<string | undefined>();
   const [voucherType, setVoucherType] = useState("");
 
   // ─── Fetch ──────────────────────────────────────────────────────────────
@@ -518,10 +543,9 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
 
   // ─── Derived ─────────────────────────────────────────────────────────────
 
-  const totalDebit      = data?.summary.totalDebit      ?? 0;
-  const totalCredit     = data?.summary.totalCredit     ?? 0;
-  const netOutstanding  = data?.summary.netOutstanding  ?? 0;
-  console.log("🚀 ~ CustomerStatement ~ netOutstanding:", netOutstanding)
+  const totalDebit = data?.summary.totalDebit ?? 0;
+  const totalCredit = data?.summary.totalCredit ?? 0;
+  const netOutstanding = data?.summary.netOutstanding ?? 0;
 
   // ─── Guards ───────────────────────────────────────────────────────────────
 
@@ -548,8 +572,8 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
 
       {/* Summary + Aging */}
       <div className="bg-card border border-theme rounded-2xl flex items-stretch overflow-x-auto divide-x divide-theme">
-        <StatCell label="Total Debit"      icon={<TrendingUp   size={12} className="text-warning" />} value={totalDebit}     valueClass="text-warning" />
-        <StatCell label="Total Credit"     icon={<TrendingDown size={12} className="text-success" />} value={totalCredit}    valueClass="text-success" />
+        <StatCell label="Total Debit" icon={<TrendingUp size={12} className="text-warning" />} value={totalDebit} valueClass="text-warning" />
+        <StatCell label="Total Credit" icon={<TrendingDown size={12} className="text-success" />} value={totalCredit} valueClass="text-success" />
         <StatCell label="Net Outstanding"
           icon={<Scale size={12} className={netOutstanding > 0 ? "text-danger" : "text-muted"} />}
           value={netOutstanding}
@@ -564,11 +588,11 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
             </span>
           </div>
           <div className="flex flex-1 divide-x divide-theme">
-            <AgingCell label="Current" value={data.aging.current}       active />
-            <AgingCell label="1 – 30"  value={data.aging["1_30"]}  />
+            <AgingCell label="Current" value={data.aging.current} active />
+            <AgingCell label="1 – 30" value={data.aging["1_30"]} />
             <AgingCell label="31 – 60" value={data.aging["31_60"]} />
             <AgingCell label="61 – 90" value={data.aging["61_90"]} />
-            <AgingCell label="90 +"    value={data.aging["90_plus"]}    warn />
+            <AgingCell label="90 +" value={data.aging["90_plus"]} warn />
           </div>
         </div>
       </div>
@@ -600,7 +624,7 @@ const CustomerStatement = ({ customerId }: CustomerStatementProps) => {
               fromDate={fromDate}
               toDate={toDate}
               voucherType={voucherType}
-              defaultEmail={data.customerEmail}
+              defaultEmail={customerEmail ?? data.customerEmail}
             />
           </div>
         </div>

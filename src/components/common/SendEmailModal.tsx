@@ -9,7 +9,7 @@ import { ChevronDown, ChevronUp, Loader2, Paperclip, AlertTriangle } from "lucid
 
 interface Props {
   open: boolean;
-  docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Proforma Invoice" | "Quotation";
+  docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Proforma Invoice" | "Quotation" | "Customer";
   isProforma?: boolean;
   invoiceNumber?: string;
   contactEmail?: string | null;
