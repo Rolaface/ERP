@@ -72,7 +72,10 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 //   Approved: ["Paid", "Cancelled"],
 // };
 
-const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid"];
+const CRITICAL_STATUSES: InvoiceStatus[] = [
+  "Paid",
+  "Cancelled",
+];
 
 const statusOptions = [
   { label: "Draft", value: "Draft" },
@@ -514,7 +517,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         title: "Confirm Status Change",
         text: `Mark invoice ${invoiceNumber} as ${status}?`,
         showCancelButton: true,
-        confirmButtonColor: "#22c55e",
+        confirmButtonColor: "#ef0000",
         cancelButtonColor: "#6b7280",
         confirmButtonText: "Yes",
         cancelButtonText: "Cancel",
@@ -753,7 +756,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
           label: status === "Approved" ? "Approve" : status,
           icon: getStatusActionIcon(status),
-          danger: status === "Paid",
+          danger: status === "Paid" || status === "Cancelled",
           onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
         }))
       : []),
