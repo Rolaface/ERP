@@ -26,6 +26,7 @@ import {
   createPurchaseInvoice,
   getPurchaseInvoiceById,
   updatePurchaseInvoice,
+  uploadPIAttachment
 } from "../api/procurement/PurchaseInvoiceApi";
 import {
   mapUIToCreatePI,
@@ -63,19 +64,19 @@ type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 const addressStub = (id: string, type: string): ApiAddress | null =>
   id
     ? {
-        id,
-        title: id,
-        type,
-        addressType: type,
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        country: "",
-        pincode: "",
-        phone: "",
-        email: "",
-      }
+      id,
+      title: id,
+      type,
+      addressType: type,
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      country: "",
+      pincode: "",
+      phone: "",
+      email: "",
+    }
     : null;
 
 // ─────────────────────────────────────────────
@@ -294,23 +295,23 @@ export const usePurchaseInvoiceForm = ({
 
     loadCompanyData();
   }, [isOpen, pId]);
-useEffect(() => {
-  if (!form.supplierInvoiceDate) return;
+  useEffect(() => {
+    if (!form.supplierInvoiceDate) return;
 
-  const terms = form.terms?.buying?.payment?.dueDates ?? "";
+    const terms = form.terms?.buying?.payment?.dueDates ?? "";
 
-  const due = calculateDueDate(
+    const due = calculateDueDate(
+      form.supplierInvoiceDate,
+      terms
+    );
+
+    if (due) {
+      setForm((prev) => ({ ...prev, dueDate: due }));
+    }
+  }, [
     form.supplierInvoiceDate,
-    terms
-  );
-
-  if (due) {
-    setForm((prev) => ({ ...prev, dueDate: due }));
-  }
-}, [
-  form.supplierInvoiceDate,
-  form.terms?.buying?.payment?.dueDates,
-]);
+    form.terms?.buying?.payment?.dueDates,
+  ]);
 
   // ── Load PI in edit mode ───────────────────
   useEffect(() => {
@@ -464,14 +465,14 @@ useEffect(() => {
   useFieldDefault(isOpen, form.project, fetchProjects, (val) =>
     setForm((prev) => ({ ...prev, project: val })),
   );
-useFieldDefault(
-  isOpen && !pId,  // only auto-default in create mode
-  form.warehouse,
-  () => getAllWarehouses().then((list: string[]) =>
-    list.map((w) => ({ value: w, label: w }))
-  ),
-  (val) => setForm((prev) => ({ ...prev, warehouse: val })),
-);
+  useFieldDefault(
+    isOpen && !pId,  // only auto-default in create mode
+    form.warehouse,
+    () => getAllWarehouses().then((list: string[]) =>
+      list.map((w) => ({ value: w, label: w }))
+    ),
+    (val) => setForm((prev) => ({ ...prev, warehouse: val })),
+  );
 
   // ─────────────────────────────────────────────
   // Handlers
@@ -499,6 +500,12 @@ useFieldDefault(
     const target = e.target as HTMLInputElement;
     const { name, value, type } = target;
     const finalValue = type === "checkbox" ? target.checked : value;
+
+    if (name === "attachments") {
+      const file = Array.isArray(value) ? (value as File[]) : [];
+      setForm((prev) => ({ ...prev, attachments: file }));
+      return;
+    }
 
     if (name === "updateStock") {
       setForm((prev) => ({
@@ -896,9 +903,9 @@ useFieldDefault(
           : {}),
         ...(shippingAddrId
           ? {
-              companyShipping: addressStub(shippingAddrId, "Shipping"),
-              companyBilling: addressStub(shippingAddrId, "Billing"),
-            }
+            companyShipping: addressStub(shippingAddrId, "Shipping"),
+            companyBilling: addressStub(shippingAddrId, "Billing"),
+          }
           : {}),
         ...(dispatchAddrId
           ? { supplierDispatch: addressStub(dispatchAddrId, "Dispatch") }
@@ -983,13 +990,13 @@ useFieldDefault(
         i !== idx
           ? item
           : {
-              ...item,
-              [name]: isNum
-                ? value === "" || value === null
-                  ? null
-                  : Number(value)
-                : value,
-            },
+            ...item,
+            [name]: isNum
+              ? value === "" || value === null
+                ? null
+                : Number(value)
+              : value,
+          },
       );
       return { ...p, items };
     });
@@ -1172,6 +1179,7 @@ useFieldDefault(
   };
 
   // ── Submit ─────────────────────────────────
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (saving) return;
@@ -1201,8 +1209,9 @@ useFieldDefault(
 
       const payload = mapUIToCreatePI(finalForm);
 
+      // ── Step 1: Create / Update PI first ──────────────────────────
       const res = isEditMode
-        ? await updatePurchaseInvoice(pId!, payload) // ← properly imported now
+        ? await updatePurchaseInvoice(pId!, payload)
         : await createPurchaseInvoice(payload);
 
       closeSwal();
@@ -1212,11 +1221,27 @@ useFieldDefault(
         return;
       }
 
+      // ── Step 2: Extract pId from create response ───────────────────
+      const createdPId =
+        res?.data?.pId ??
+        res?.data?.id ??
+        res?.data?.name ??
+        (isEditMode ? pId : null);
+
+      // ── Step 3: Upload attachments using createdPId as docname ──
+      if (form.attachments?.length && createdPId) {
+        await Promise.all(
+          form.attachments.map((file) =>
+            uploadPIAttachment(file, String(createdPId))
+          )
+        );
+      }
+      // ── Step 4: Success ────────────────────────────────────────────
       showSuccess(
         res.message ||
-          (isEditMode
-            ? "Purchase Invoice updated successfully"
-            : "Purchase Invoice created successfully"),
+        (isEditMode
+          ? "Purchase Invoice updated successfully"
+          : "Purchase Invoice created successfully"),
       );
       useDataRefreshStore
         .getState()
@@ -1237,6 +1262,7 @@ useFieldDefault(
     setUsePO(true);
     setForm({
       ...emptyPOForm,
+      attachments: [],
       terms: {
         buying: companyDefaults.terms?.buying ?? emptyPOForm.terms?.buying!,
       },
