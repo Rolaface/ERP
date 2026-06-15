@@ -24,11 +24,13 @@ async function searchErpLink(
   txt = "",
   pageLength = 10
 ): Promise<SearchOption[]> {
-  const resp: AxiosResponse<SearchResponse> = await api.post(getAllApi, {
+const resp: AxiosResponse<SearchResponse> = await api.get(getAllApi, {
+  params: {
     page_length: pageLength,
     doctype,
     txt,
-  });
+  },
+});
   return (resp.data?.message ?? []).map((item) => ({
     value: item.value,
     label: item.value,
