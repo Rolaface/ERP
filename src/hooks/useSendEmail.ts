@@ -28,13 +28,14 @@ export interface InvoiceAttachment {
 
 interface UseSendEmailOptions {
     open: boolean;
-    docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Customer" | "Quotation";
+    docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Customer" | "Quotation" | "Proforma Invoice";
     invoiceNumber?: string;
     contactEmail?: string | null;
     customerName?: string | null;
     supplierName?: string | null;
     invoiceAttachments?: InvoiceAttachment[];
     onClose: () => void;
+    periodText?: string;
 }
 
 interface UseSendEmailReturn {
@@ -59,6 +60,7 @@ interface UseSendEmailReturn {
 }
 
 
+
 export function useSendEmail({
     open,
     docType,
@@ -68,6 +70,7 @@ export function useSendEmail({
     onClose,
     customerName,
     supplierName,
+    periodText,
 }: UseSendEmailOptions): UseSendEmailReturn {
     const [to, setTo] = useState<string[]>([]);
     const [subject, setSubject] = useState("");
@@ -78,6 +81,8 @@ export function useSendEmail({
     const [templateLoading, setTemplateLoading] = useState(false);
     const [cc, setCC] = useState<string[]>([]);
     const [bcc, setBCC] = useState<string[]>([]);
+
+
 
     /* ── Reset form + fetch template on open ── */
     useEffect(() => {
@@ -109,13 +114,18 @@ export function useSendEmail({
 
         setTemplateLoading(true);
         makeEmailTemplate({
-            id: docType,
+            id: docType === "Customer" ? "Customer Statement" : docType,
             doc_type: docType,
             doc_type_name: invoiceNumber,
         })
             .then((result) => {
-                setSubject(result.subject ?? "");
-                setMessage(result.message ?? "");
+
+                const period = periodText ?? "";
+                const resolvedSubject = (result.subject ?? "").replaceAll("{{ PERIOD }}", period);
+                const resolvedMessage = (result.message ?? "").replaceAll("{{ PERIOD }}", period);
+
+                setSubject(resolvedSubject);
+                setMessage(resolvedMessage);
             })
             .catch(() => {
                 // Non-critical: fall back to placeholder
@@ -126,7 +136,8 @@ export function useSendEmail({
                 setTemplateLoading(false);
             });
 
-    }, [open, invoiceNumber, contactEmail, invoiceAttachments, docType]);
+    }, [open, invoiceNumber, contactEmail, invoiceAttachments, docType, periodText]);
+
 
     /* ── Add files ── */
     const handleAddFiles = useCallback(

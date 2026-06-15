@@ -47,8 +47,9 @@ const VOUCHER_OPTIONS = [
 
 const fmt = (n: number) => (n || 0).toLocaleString("en-IN");
 
+
 const fmtDateRange = (from?: string, to?: string) => {
-  if (!from && !to) return "All dates";
+  if (!from && !to) return "";
   const d = (s: string) =>
     new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   if (from && to) return `${d(from)} – ${d(to)}`;
@@ -220,9 +221,10 @@ interface PdfButtonProps {
   toDate?: string;
   voucherType?: string;
   defaultEmail?: string;
+  periodText: string;
 }
 
-const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, defaultEmail }: PdfButtonProps) => {
+const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, defaultEmail ,periodText  }: PdfButtonProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -314,6 +316,7 @@ const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, de
           contactEmail={defaultEmail}
           customerName={customerName}
           invoiceAttachments={emailAttachments}
+          periodText={periodText} 
           onClose={() => {
             setEmailModalOpen(false);
             setEmailAttachments([]);
@@ -516,6 +519,7 @@ const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps
               toDate={toDate}
               voucherType={voucherType}
               defaultEmail={customerEmail ?? data.customerEmail}
+              periodText={fmtDateRange(fromDate, toDate)} 
             />
           </div>
         </div>
