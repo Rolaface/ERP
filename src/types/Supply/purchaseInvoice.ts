@@ -44,7 +44,7 @@ export interface PaymentRow {
 }
 
 export type AddressBlock = {
-  id:string;
+  id: string;
   addressTitle: string;
   addressType: "Billing" | "Shipping";
   addressLine1: string;
@@ -77,8 +77,9 @@ export interface PurchaseInvoiceFormData {
   transactionProgress: string;
   supplierInvoiceNumber: string;
   supplierInvoiceDate: string;
+  attachments?: File[];
 
-  destnCountryCd: string; 
+  destnCountryCd: string;
   shippingRule: string;
   incoterm: string;
   taxesChargesTemplate: string;
@@ -204,6 +205,7 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   useShippingAddress: true,
   useCompanyBillingAddress: true,
   selectedSupplierAddressIds: [],
+  attachments: [],
 
   addresses: {
     supplierAddress: {
@@ -254,4 +256,4 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   acceptedTerms: {},
 };
 
-export type POTab = "details" | "email" | "tax" | "address" | "terms";
+export type POTab = "details" | "address" | "attachments" | "terms";
