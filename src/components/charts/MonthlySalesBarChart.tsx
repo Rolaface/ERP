@@ -40,13 +40,13 @@ export const MonthlySalesBarChart: React.FC<Props> = ({ data }) => {
       data: ['Total Sales', 'Received', 'Receivable'],
       bottom: 0
     },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '12%',
-      top: '8%',
-      containLabel: true
-    },
+ grid: {
+  left: '1%',
+  right: '2%',
+  bottom: '14%',
+  top: '5%',
+  containLabel: true  
+},
     xAxis: [
       {
         type: 'category',

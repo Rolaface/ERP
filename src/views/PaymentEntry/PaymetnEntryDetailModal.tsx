@@ -37,9 +37,9 @@ export interface PaymentEntryDetail {
     };
     transaction_info: {
         mode_of_payment: string;
-        paid_from: string;
+        paid_from_account_name: string;
         paid_from_currency: string;
-        paid_to: string;
+        paid_to_account_name: string;
         paid_to_currency: string;
         bank?: string;
         bank_account_no?: string;
@@ -235,12 +235,12 @@ const PaymentEntryDetailModal: React.FC<Props> = ({ open, data, loading, onClose
     const metaItems = data ? [
         { label: "Name", value: data.party_info.party_name },
         { label: "Type", value: data.party_info.party_type },
-        { label: "Email", value: data.contact_email },
+        { label: "From", value: data.transaction_info.paid_from_account_name },
         { label: "Mode", value: data.transaction_info.mode_of_payment },
-        { label: "From", value: data.transaction_info.paid_from },
-        { label: "To", value: data.transaction_info.paid_to },
+        { label: "Email", value: data.contact_email },
         { label: "Reference Number", value: data.transaction_info.reference_no },
         { label: "Reference Date", value: data.transaction_info.reference_date ? formatDate(data.transaction_info.reference_date) : null },
+        { label: "To", value: data.transaction_info.paid_to_account_name },
         { label: "Bank", value: data.transaction_info.bank },
     ].filter((m) => !!m.value) : [];
 

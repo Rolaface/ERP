@@ -114,7 +114,7 @@ interface OverviewTabProps {
   onChange: (field: string, value: any) => void;
   /** Pass true when opening an existing record so defaults are not injected. */
   isEditMode?: boolean;
-   onDirty?: () => void; 
+  onDirty?: () => void;
 
 }
 
@@ -145,7 +145,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       onChange("startDate", range.startDate);
       onChange("endDate", range.endDate);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally empty — fire once on mount only
 
   // ── Exchange rate fetcher ─────────────────────────────────────────────────
@@ -225,7 +225,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     (_name: string, value: string) => {
       onChange("endDate", value);
     },
-    
+
     [onChange]
   );
 
@@ -305,7 +305,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <SearchSelect2
             label="Payroll Payable Account"
             required
-            value={data.payrollPayableAccount}
+            value={data.payrollPayableAccountLabel}
             placeholder="Search payroll payable account..."
             fetchOptions={(q) =>
               getPayrollPayableAccounts(
@@ -314,9 +314,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 q
               )
             }
-            onChange={(val: any) => {
+
+            onChange={(val: any, option: any) => {
               const value = typeof val === "string" ? val : val?.value;
-              onChange("payrollPayableAccount", value);
+              onChange("payrollPayableAccount", value);        // stores name → goes in payload
+              onChange("payrollPayableAccountLabel", option?.label ?? value); // stores display label
             }}
           />
         </div>

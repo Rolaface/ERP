@@ -27,6 +27,7 @@ interface DetailsTabProps {
   onAddItem: () => void;
   onRemoveItem: (idx: number) => void;
   isViewMode?: boolean;
+  onMarkDirty?: () => void;
 }
 
 export const DetailsTab: React.FC<DetailsTabProps> = ({
@@ -46,7 +47,8 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
   onItemChange,
   onAddItem,
   onRemoveItem,
-  isViewMode = false
+  isViewMode = false,
+  onMarkDirty,
 }) => {
   const ITEMS_PER_PAGE = 4;
 
@@ -105,17 +107,6 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
               onChange={(name, value) => onQuoteDeadlineChange(value)}
             />
           </div>
-
-          {/* Status */}
-          <div className="w-[120px]">
-            <ModalSelect
-              label="Status"
-              value={status}
-              onChange={(e) => onStatusChange(e.target.value)}
-              options={[{ value: "Draft", label: "Draft" }]}
-              disabled
-            />
-          </div>
         </div>
       </div>
 
@@ -157,6 +148,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                             required
                             disabled={isViewMode}
                             onChange={async (selected: any) => {
+                              onMarkDirty?.();
                               onSupplierChange(
                                 i,
                                 "supplier",
@@ -167,7 +159,6 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                                 "supplierName",
                                 selected.name ?? "",
                               );
-
                               try {
                                 const res = await getSupplierById(selected.id);
                                 const detail =
@@ -186,7 +177,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                                   "email",
                                   primaryContact?.email ?? "",
                                 );
-                              } catch { }
+                              } catch {}
                             }}
                           />
                         </div>
@@ -202,7 +193,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         />
                       </td>
 
-                      {/* Email — read-only, auto-filled */}
+                      {/* Email */}
                       <td className="px-2 py-1">
                         <input
                           readOnly
@@ -224,11 +215,16 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         />
                       </td>
 
-
-                      {/* Remove button in supplier row */}
+                      {/* Remove */}
                       <td className="px-2 py-1 text-center">
                         {!isViewMode && (
-                          <Button variant="ghost" onClick={() => onRemoveSupplier(i)}>
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              onMarkDirty?.();
+                              onRemoveSupplier(i);
+                            }}
+                          >
                             <Trash2 size={16} />
                           </Button>
                         )}
@@ -244,7 +240,10 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
               {!isViewMode && (
                 <button
                   type="button"
-                  onClick={onAddSupplier}
+                  onClick={() => {
+                    onMarkDirty?.();
+                    onAddSupplier();
+                  }}
                   className="px-4 py-1.5 bg-primary text-white rounded text-xs flex items-center gap-1"
                 >
                   <Plus size={14} /> Add Supplier
@@ -320,6 +319,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                             selectedId={it.itemCode}
                             disabled={isViewMode}
                             onChange={(detail: any) => {
+                              onMarkDirty?.();
                               onItemChange(i, "itemCode", detail.id ?? "");
                               onItemChange(
                                 i,
@@ -360,7 +360,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         <NumericInput
                           name="quantity"
                           placeholder="1"
-                          disabled={isViewMode} 
+                          disabled={isViewMode}
                           value={it.quantity ?? ""}
                           onChange={(value) =>
                             onItemChange(i, "quantity", value)
@@ -369,7 +369,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         />
                       </td>
 
-                      {/* UOM — read-only, auto-filled from item select */}
+                      {/* UOM */}
                       <td className="px-2 py-1">
                         <input
                           readOnly
@@ -379,15 +379,16 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         />
                       </td>
 
-                      {/* Warehouse  */}
+                      {/* Warehouse */}
                       <td className="px-2 py-1">
                         <WarehouseSelect
                           compact
                           value={it.warehouse}
-                          disabled={isViewMode} 
-                          onChange={(e) =>
-                            onItemChange(i, "warehouse", e.target.value)
-                          }
+                          disabled={isViewMode}
+                          onChange={(e) => {
+                            onMarkDirty?.();
+                            onItemChange(i, "warehouse", e.target.value);
+                          }}
                           onDefaultLoad={(firstWarehouse) =>
                             onItemChange(i, "warehouse", firstWarehouse)
                           }
@@ -395,11 +396,16 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                         />
                       </td>
 
-
-                      {/* Remove button in item row */}
+                      {/* Remove */}
                       <td className="px-2 py-1 text-center">
                         {!isViewMode && (
-                          <Button variant="ghost" onClick={() => onRemoveItem(i)}>
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              onMarkDirty?.();
+                              onRemoveItem(i);
+                            }}
+                          >
                             <Trash2 size={16} />
                           </Button>
                         )}
@@ -415,7 +421,10 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
               {!isViewMode && (
                 <button
                   type="button"
-                  onClick={onAddItem}
+                  onClick={() => {
+                    onMarkDirty?.();
+                    onAddItem();
+                  }}
                   className="px-4 py-1.5 bg-primary text-white rounded text-xs flex items-center gap-1"
                 >
                   <Plus size={14} /> Add Item

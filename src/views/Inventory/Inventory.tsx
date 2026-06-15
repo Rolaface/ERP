@@ -115,7 +115,7 @@ const Inventory: React.FC = () => {
   const currentTabComponent = tabComponents[resolvedTab as keyof typeof tabComponents] || <InventoryDashboard />;
 
   return (
-    <AppPage viewportLocked={isDashboardTab}>
+    <AppPage >
       <AppPageHeader
         title="Inventory"
         description="Track, manage, and optimize inventory in one unified workflow."
@@ -126,7 +126,7 @@ const Inventory: React.FC = () => {
         activeTab={resolvedTab}
         onChange={handleTabChange}
       />
-      <AppPageBody viewportLocked={isDashboardTab}>
+      <AppPageBody >
         {currentTabComponent}
       </AppPageBody>
     </AppPage>

@@ -1,13 +1,11 @@
 import { LucideIcon } from "lucide-react";
 import React, { memo, useCallback, useState } from "react";
 
-
 interface AppTabItem {
   id: string;
   label: string;
   icon?: React.ReactNode;
 }
-
 
 interface AppPageProps {
   children: React.ReactNode;
@@ -18,14 +16,9 @@ export const AppPage: React.FC<AppPageProps> = ({
   children,
   viewportLocked = false,
 }) => (
-  <div
-    className={[
-      "flex flex-1 flex-col",
-      viewportLocked
-        ? "h-[calc(100vh-2rem)] min-h-0 overflow-hidden"
-        : "min-h-0 overflow-visible",
-    ].join(" ")}
-  >
+ <div className={[
+  "flex flex-col flex-1 min-h-0 h-full overflow-hidden",
+].join(" ")}>
     {children}
   </div>
 );
@@ -36,9 +29,11 @@ export const AppPageBody: React.FC<{
   viewportLocked?: boolean;
 }> = ({ children, className = "", viewportLocked = false }) => (
   <div
-    className={`flex flex-1 flex-col px-3 py-2.5 sm:px-4 ${
-      viewportLocked ? "min-h-0 overflow-auto" : "overflow-visible"
-    } ${className}`.trim()}
+   className={[
+      "flex flex-1 flex-col px-3 py-2.5 sm:px-4 min-h-0",
+      viewportLocked ? "overflow-hidden h-full" : "overflow-y-auto overscroll-contain",
+      className,
+    ].join(" ").trim()}
   >
     {children}
   </div>
@@ -57,7 +52,7 @@ export const AppPageHeader: React.FC<AppPageHeaderProps> = ({
   icon,
   actions,
 }) => (
-  <div className="flex flex-col gap-1.5 border-b border-[var(--border)] px-3 py-2 sm:px-4 lg:flex-row lg:items-center lg:justify-between">
+  <div className="flex flex-col gap-1.5 border-b border-[var(--border)] px-3 py-2 sm:px-4 lg:flex-row lg:items-center lg:justify-between shrink-0">
     <div className="min-w-0">
       <div className="flex items-center gap-2.5">
         {icon ? (
@@ -86,31 +81,6 @@ export const AppPageHeader: React.FC<AppPageHeaderProps> = ({
   </div>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AppModuleHeader
-//
-// Matches the Payroll sub-header exactly:
-//   [ 🔲icon  Module Name  |  Tab  Tab  Tab ]        [ trailing actions ]
-//
-// Usage:
-//   <AppModuleHeader
-//     icon={<Settings2 size={18} />}
-//     moduleName="HR Setup"
-//     tabs={TABS}
-//     activeTab={activeTab}
-//     onTabChange={setActiveTab}
-//     trailing={<button>+ New</button>}
-//   />
-// ─────────────────────────────────────────────────────────────────────────────
-interface AppModuleHeaderProps {
-  icon: React.ReactNode;
-  moduleName: string;
-  tabs: AppTabItem[];
-  activeTab: string;
-  onTabChange: (id: string) => void;
-  trailing?: React.ReactNode;
-}
-
 export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
   ({ icon, moduleName, tabs, activeTab, onTabChange, trailing }) => {
     const handleClick = useCallback(
@@ -119,10 +89,8 @@ export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
     );
 
     return (
-      <div className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--border)] bg-card px-3 sm:px-4">
-        {/* ── left: icon + name + divider + tab pills ─────────────────── */}
+      <div className="flex min-h-11 items-center justify-between gap-3 border-b border-[var(--border)] bg-card px-3 sm:px-4 shrink-0">
         <div className="flex min-w-0 items-center gap-2.5 overflow-x-auto py-1.5 scrollbar-hide">
-          {/* icon square */}
           <div
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-primary"
             style={{
@@ -131,18 +99,12 @@ export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
           >
             {icon}
           </div>
-
-          {/* module name */}
           <span className="shrink-0 whitespace-nowrap text-sm font-semibold text-main">
             {moduleName}
           </span>
-
-          {/* vertical divider — only shown when there are tabs */}
           {tabs.length > 0 && (
             <span className="h-5 w-px shrink-0 bg-[var(--border)]" />
           )}
-
-          {/* tab pill buttons */}
           <div className="flex items-center gap-1 min-w-max">
             {tabs.map((tab) => {
               const isActive = tab.id === activeTab;
@@ -168,8 +130,6 @@ export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
             })}
           </div>
         </div>
-
-        {/* ── right: trailing actions ──────────────────────────────────── */}
         {trailing && (
           <div className="flex shrink-0 items-center gap-2">{trailing}</div>
         )}
@@ -179,13 +139,13 @@ export const AppModuleHeader: React.FC<AppModuleHeaderProps> = memo(
 );
 AppModuleHeader.displayName = "AppModuleHeader";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AppTabs  (original pill-in-a-box style — dashboards / charts)
-// ─────────────────────────────────────────────────────────────────────────────
-interface AppTabsProps {
+interface AppModuleHeaderProps {
+  icon: React.ReactNode;
+  moduleName: string;
   tabs: AppTabItem[];
   activeTab: string;
-  onChange: (tabId: string) => void;
+  onTabChange: (id: string) => void;
+  trailing?: React.ReactNode;
 }
 
 export const AppTabs: React.FC<AppTabsProps> = memo(
@@ -196,7 +156,7 @@ export const AppTabs: React.FC<AppTabsProps> = memo(
     );
 
     return (
-      <div className="w-full overflow-x-auto scrollbar-hide border-b border-[var(--border)] bg-card px-3 py-1.5 sm:px-4">
+      <div className="w-full overflow-x-auto scrollbar-hide border-b border-[var(--border)] bg-card px-3 py-1.5 sm:px-4 shrink-0">
         <div className="flex min-w-max items-center justify-start gap-1.5">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTab;
@@ -225,30 +185,31 @@ export const AppTabs: React.FC<AppTabsProps> = memo(
 );
 AppTabs.displayName = "AppTabs";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AppSubTabs  (underline style — nested tab panels)
-// ─────────────────────────────────────────────────────────────────────────────
+interface AppTabsProps {
+  tabs: AppTabItem[];
+  activeTab: string;
+  onChange: (tabId: string) => void;
+}
+
 interface AppSubTabsProps {
   tabs: AppTabItem[];
   activeTab: string;
   onChange: (tabId: string) => void;
   trailing?: React.ReactNode;
-  leading?: React.ReactNode; 
+  leading?: React.ReactNode;
 }
 
 export const AppSubTabs: React.FC<AppSubTabsProps> = memo(
-  ({ tabs, activeTab, onChange, leading, trailing }) => {   
+  ({ tabs, activeTab, onChange, leading, trailing }) => {
     const handleClick = useCallback(
       (tabId: string) => onChange(tabId),
       [onChange],
     );
 
     return (
-      <div className="flex w-full items-center justify-between border-b border-[var(--border)] bg-card">
+      <div className="flex w-full items-center justify-between border-b border-[var(--border)] bg-card shrink-0">
         {leading && (
-          <div className="flex shrink-0 items-center pl-3">
-            {leading}
-          </div>
+          <div className="flex shrink-0 items-center pl-3">{leading}</div>
         )}
         <div className="flex min-w-0 flex-1 overflow-x-auto scrollbar-hide">
           <div className="flex items-end gap-0 min-w-max px-1">
@@ -289,9 +250,7 @@ export const AppSubTabs: React.FC<AppSubTabsProps> = memo(
           </div>
         </div>
         {trailing && (
-          <div className="flex shrink-0 items-center gap-2 px-4">
-            {trailing}
-          </div>
+          <div className="flex shrink-0 items-center gap-2 px-4">{trailing}</div>
         )}
       </div>
     );
@@ -299,50 +258,44 @@ export const AppSubTabs: React.FC<AppSubTabsProps> = memo(
 );
 AppSubTabs.displayName = "AppSubTabs";
 
-//app setuplayout can be used when we want to have a sidebar for navigation between different sections of the setup module. It provides a consistent layout with a sidebar and a main content area. The sidebar can contain links or buttons for navigating between different sections, while the main content area can display the relevant information or forms based on the selected section.
 export interface AppSetupSection {
   key: string;
   label: string;
   icon: LucideIcon;
   description?: string;
 }
- 
+
 interface AppSetupLayoutProps {
   sections: AppSetupSection[];
   activeSection: string;
   onSectionChange: (key: string) => void;
   children: React.ReactNode;
 }
- 
+
 export const AppSetupLayout: React.FC<AppSetupLayoutProps> = memo(
   ({ sections, activeSection, onSectionChange, children }) => {
-   const [collapsed, setCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(false);
     return (
-     <div className="flex flex-1 min-h-0 gap-0 relative">
-      
-        {/* ── Vertical sidebar ──────────────────────────────────────────── */}
-        
-  <aside
-  className={`flex flex-col shrink-0 border-r border-[var(--border)] bg-card py-2 gap-0.5 transition-all duration-300 ${
-    collapsed ? "w-14" : "w-52"
-  }`}
->
-  <div className="flex items-center justify-between px-3 mb-2">
-  {!collapsed && (
-    <span className="text-sm font-semibold text-main">Setup</span>
-  )}
-
-  <button
-    onClick={() => setCollapsed((p) => !p)}
-    className="p-1 rounded hover:bg-gray-100"
-  >
-    {collapsed ? ">" : "<"}
-  </button>
-</div>
+      <div className="flex flex-1 min-h-0 gap-0 relative">
+        <aside
+          className={`flex flex-col shrink-0 border-r border-[var(--border)] bg-card py-2 gap-0.5 transition-all duration-300 ${
+            collapsed ? "w-14" : "w-52"
+          }`}
+        >
+          <div className="flex items-center justify-between px-3 mb-2">
+            {!collapsed && (
+              <span className="text-sm font-semibold text-main">Setup</span>
+            )}
+            <button
+              onClick={() => setCollapsed((p) => !p)}
+              className="p-1 rounded hover:bg-gray-100"
+            >
+              {collapsed ? ">" : "<"}
+            </button>
+          </div>
           {sections.map((section) => {
             const Icon = section.icon;
             const isActive = section.key === activeSection;
- 
             return (
               <button
                 key={section.key}
@@ -356,66 +309,46 @@ export const AppSetupLayout: React.FC<AppSetupLayoutProps> = memo(
                     : "text-muted hover:bg-row-hover hover:text-main",
                 ].join(" ")}
               >
-                {/* active left accent bar */}
                 {isActive && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r-full bg-primary" />
                 )}
- 
-                {/* icon */}
                 <span
                   className={`shrink-0 transition-colors ${
-                    isActive
-                      ? "text-primary"
-                      : "text-muted group-hover:text-main"
+                    isActive ? "text-primary" : "text-muted group-hover:text-main"
                   }`}
                 >
                   <span className="flex justify-center w-full">
-  <Icon size={16} />
-</span>
-                </span>
- 
-                {/* label + description */}
-                {!collapsed && (
-  <span className="flex flex-col min-w-0">
-                  <span className="text-sm font-medium leading-tight truncate">
-                    {section.label}
+                    <Icon size={16} />
                   </span>
-                  {section.description && (
-                    <span
-                      className={`text-[11px] leading-tight truncate mt-0.5 ${
-                        isActive ? "text-primary/70" : "text-muted"
-                      }`}
-                    >
-                      {section.description}
-                    </span>
-                  )}
                 </span>
+                {!collapsed && (
+                  <span className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium leading-tight truncate">
+                      {section.label}
+                    </span>
+                    {section.description && (
+                      <span
+                        className={`text-[11px] leading-tight truncate mt-0.5 ${
+                          isActive ? "text-primary/70" : "text-muted"
+                        }`}
+                      >
+                        {section.description}
+                      </span>
+                    )}
+                  </span>
                 )}
               </button>
             );
           })}
         </aside>
-        
- 
-        {/* ── Content area ──────────────────────────────────────────────── */}
         <div className="flex flex-1 flex-col min-w-0 min-h-0 overflow-auto p-4 gap-4">
-
-  {/* TOP BAR */}
- 
-
-  {children}
-</div>
-
-        
+          {children}
+        </div>
       </div>
     );
   },
 );
 AppSetupLayout.displayName = "AppSetupLayout";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// AppSurface / AppSectionCard / AppMetricCard  (unchanged)
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const AppSurface: React.FC<{
   children: React.ReactNode;
@@ -438,13 +371,13 @@ export const AppSectionCard: React.FC<AppSectionCardProps> = ({
   className = "",
 }) => (
   <AppSurface className={className}>
-    <div className="border-b border-[var(--border)] px-6 py-4">
-      <h2 className="text-base font-semibold text-main">{title}</h2>
+    <div className="border-b border-[var(--border)] px-3 py-3 sm:px-4 sm:py-3.5 lg:px-6 lg:py-4">
+      <h2 className="text-sm sm:text-base font-semibold text-main">{title}</h2>
       {description ? (
-        <p className="mt-1 text-sm text-muted">{description}</p>
+        <p className="mt-1 text-xs sm:text-sm text-muted">{description}</p>
       ) : null}
     </div>
-    <div className="px-6 py-4">{children}</div>
+    <div className="px-3 py-3 sm:px-4 sm:py-3.5 lg:px-6 lg:py-4">{children}</div>
   </AppSurface>
 );
 
@@ -461,18 +394,20 @@ export const AppMetricCard: React.FC<AppMetricCardProps> = ({
   icon: Icon,
   accentClassName = "from-slate-700 to-slate-800",
 }) => (
-  <AppSurface className="p-6">
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-muted">{label}</p>
-        <p className="mt-3 truncate text-3xl font-semibold text-main">
+  <AppSurface className="p-3 sm:p-4 lg:p-5">
+    <div className="flex items-center justify-between gap-2 sm:items-start sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-xs sm:text-sm font-medium text-muted truncate">{label}</p>
+        <p className="mt-1 sm:mt-3 truncate text-xl sm:text-2xl lg:text-3xl font-semibold text-main">
           {value}
         </p>
       </div>
       <div
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white ${accentClassName}`}
+        className={`flex h-9 w-9 sm:h-10 sm:w-10 lg:h-12 lg:w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white ${accentClassName}`}
       >
-        <Icon size={20} />
+        <Icon size={16} className="sm:hidden" />
+        <Icon size={18} className="hidden sm:block lg:hidden" />
+        <Icon size={20} className="hidden lg:block" />
       </div>
     </div>
   </AppSurface>

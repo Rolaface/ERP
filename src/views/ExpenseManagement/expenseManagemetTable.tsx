@@ -7,11 +7,13 @@ import React, {
 } from "react";
 import { Ban, CheckCircle2, XCircle } from "lucide-react";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
-import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
+import {
+  ACTION_ICONS,
+} from "../../components/UI_Utils/statusActionIcons";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { usePermission } from "../../hooks/permission/usePermission";
@@ -493,53 +495,60 @@ const ExpenseHistory: React.FC = () => {
             </PermissionGate>
 
             <ActionMenu
-              customActions={
-                ["Paid", "Cancelled", "Rejected", "Approved"].includes(exp.approvalStatus)
-                  ? []
-                  : [
-                    ...(!isEmployeeView && exp.approvalStatus === "Draft"
-                      ? [
-                        {
-                          label: "Approve",
-                          onClick: () => handleApprove(exp.id),
-                        },
-                        {
-                          label: "Reject",
-                          onClick: () => handleReject(exp.id),
-                        },
-                      ]
-                      : []),
+             customActions={
+  ["Paid", "Cancelled", "Rejected", "Approved"].includes(exp.approvalStatus)
+    ? []
+    : [
+        ...(!isEmployeeView && exp.approvalStatus === "Draft"
+          ? [
+              {
+                label: "Approve",
+                icon: ACTION_ICONS.APPROVE,
+                onClick: () => handleApprove(exp.id),
+              },
+              {
+                label: "Reject",
+                icon: ACTION_ICONS.REJECT,
+                onClick: () => handleReject(exp.id),
+                danger: true,
+              },
+            ]
+          : []),
 
-                    ...(isEmployeeView && exp.approvalStatus === "Draft"
-                      ? [
-                        {
-                          label: "Delete",
-                          onClick: () => handleDelete(exp.id),
-                        },
-                      ]
-                      : []),
-                    ...(exp.approvalStatus === "Draft"
-                      ? [
-                        {
-                          label: "Cancel",
-                          onClick: () => handleCancel(exp.id),
-                        },
-                      ]
-                      : []),
+        ...(isEmployeeView && exp.approvalStatus === "Draft"
+          ? [
+              {
+                label: "Delete",
+                icon:ACTION_ICONS.DELETE,  
+                onClick: () => handleDelete(exp.id),
+                danger: true,
+              },
+            ]
+          : []),
 
+        ...(exp.approvalStatus === "Draft"
+          ? [
+              {
+                label: "Cancel",
+                icon: ACTION_ICONS.CANCEL,
+                onClick: () => handleCancel(exp.id),
+              },
+            ]
+          : []),
 
-                    ...(!isEmployeeView &&
-                      can(PAYMENT_MODULE, "create") &&
-                      exp.approvalStatus === "Unpaid"
-                      ? [
-                        {
-                          label: "Make Payment",
-                          onClick: () => handleMakePayment(exp),
-                        },
-                      ]
-                      : []),
-                  ]
-              }
+        ...(!isEmployeeView &&
+          can(PAYMENT_MODULE, "create") &&
+          exp.approvalStatus === "Unpaid"
+          ? [
+              {
+                label: "Make Payment",
+                icon: ACTION_ICONS.PAYMENT,
+                onClick: () => handleMakePayment(exp),
+              },
+            ]
+          : []),
+      ]
+}
             />
           </div>
         ),

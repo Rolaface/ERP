@@ -28,7 +28,7 @@ const DOC_TYPE_OPTIONS = [
 type DocType = (typeof DOC_TYPE_OPTIONS)[number]["value"];
 
 
-function getVariableChips(docType: string): { label: string; value: string }[] {
+function getVariableChips(docType: string): { label: string; value: string; payloadValue?: string }[] {
     switch (docType) {
         case "Sales Invoice":
             return [
@@ -54,14 +54,14 @@ function getVariableChips(docType: string): { label: string; value: string }[] {
                 { label: "{{ employee_name }}", value: " {{ employee_name }} " },
                 { label: "{{ company }}", value: " {{ company }} " },
                 { label: "{{ grand_total }}", value: " {{ grand_total }} " },
-
+                { label: "{{ expense_category }}", value: " {{ expense_category }} ", payloadValue: ' {{ expenses[0]["expense_type"] }} ' },
             ]
         case "Quotation":
             return [
                 { label: "{{ name }}", value: " {{ name }} " },
                 { label: "{{ quotation_to }}", value: " {{ quotation_to }} " },
                 { label: "{{ customer_name }}", value: " {{ customer_name }} " },
-                 { label: "{{ transaction_date }}", value: " {{ transaction_date }} " },
+                { label: "{{ transaction_date }}", value: " {{ transaction_date }} " },
                 { label: "{{ company }}", value: " {{ company }} " },
             ]
         default:
@@ -130,12 +130,27 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
             setLoading(true);
             getEmailTemplateById({ id: templateId })
                 .then((data) => {
+                    // Reverse map: payloadValue → display value for editor
+                    const chips = getVariableChips(data.id ?? "");
+                    const reverseMap = chips
+                        .filter((chip) => chip.payloadValue)
+                        .reduce<Record<string, string>>((acc, chip) => {
+                            acc[chip.payloadValue!.trim()] = chip.value.trim();
+                            return acc;
+                        }, {});
+
+                    const displayMessage = Object.entries(reverseMap).reduce(
+                        (msg, [payload, display]) => msg.replaceAll(payload, display),
+                        data.message ?? "",
+                    );
+
                     setForm({
                         name: data.id ?? "",
                         subject: data.subject ?? "",
-                        message: data.message ?? "",
+                        message: displayMessage,
                     });
                 })
+
                 .catch(showApiError)
                 .finally(() => setLoading(false));
         } else {
@@ -209,6 +224,18 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                 return;
             }
 
+            const variableReplaceMap = getVariableChips(form.name)
+                .filter((chip) => chip.payloadValue && chip.payloadValue !== chip.value)
+                .reduce<Record<string, string>>((acc, chip) => {
+                    acc[chip.value.trim()] = chip.payloadValue!.trim();
+                    return acc;
+                }, {});
+
+            const resolvedMessage = Object.entries(variableReplaceMap).reduce(
+                (msg, [display, payload]) =>
+                    msg.replaceAll(display, payload),
+                form.message,
+            );
             try {
                 setSaving(true);
                 showLoading(templateId ? "Updating template..." : "Creating template...");
@@ -219,13 +246,13 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                     result = await updateEmailTemplate({
                         id: templateId,
                         subject: form.subject,
-                        message: form.message,
+                        message: resolvedMessage,
                     });
                 } else {
                     result = await createEmailTemplate({
                         template_name: form.name,
                         subject: form.subject,
-                        message: form.message,
+                        message: resolvedMessage,
                     });
                 }
 

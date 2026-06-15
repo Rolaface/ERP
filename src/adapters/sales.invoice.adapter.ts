@@ -32,7 +32,7 @@ function normalizePagination(p: ApiPagination, fallbackPage: number) {
 function normalizeSalesInvoice(raw: SalesInvoiceRaw): NormalizedInvoice {
   // Always prefer lowercase — it's the consistent field.
   // Fall back to PascalCase only if lowercase is missing/NaN (backend inconsistency guard).
-  const outstanding = Number(raw.outstandingAmount ?? raw.OutStandingAmount ?? 0);
+  const outstanding = Number(raw.outstanding_amount ?? raw.OutStandingAmount ?? 0);
   const totalAmount = Number(raw.totalAmount ?? 0);
 
   return {
@@ -40,7 +40,7 @@ function normalizeSalesInvoice(raw: SalesInvoiceRaw): NormalizedInvoice {
     partyName: raw.customerName ?? "",
     invoiceDate: formatDate(raw.dateOfInvoice),
     dueDate: formatDate(raw.dueDate),
-    dueDateRaw: raw.dueDate ?? "9999-12-31",  
+    dueDateRaw: raw.dueDate ?? "",  
     totalAmount,
     paid: totalAmount - outstanding,
     outstanding,
@@ -53,7 +53,7 @@ function normalizeSalesInvoice(raw: SalesInvoiceRaw): NormalizedInvoice {
 export const salesInvoiceAdapter: InvoiceAdapter = {
   async fetchPage({ page, pageSize, partyId }: FetchParams): Promise<NormalizedPage> {
    const res = await getAllSalesInvoices(
-      page, pageSize, "dueDate", "asc", undefined, partyId, 0.01,
+      page, pageSize, "dueDate", "desc", undefined, partyId, 0.01,
       ["Partly Paid", "Unpaid", "Overdue"]
     );
     const raw: SalesInvoiceRaw[] = res?.data ?? [];
@@ -61,14 +61,14 @@ export const salesInvoiceAdapter: InvoiceAdapter = {
     return {
       data: raw
         .map(normalizeSalesInvoice)
-        .filter((inv) => inv.outstanding > 0),  // client-side guard — backend may return 0s
+        .filter((inv) => inv.outstanding > 0), 
       pagination: normalizePagination(res?.pagination, page),
     };
   },
 
   async fetchAllForFifo(partyId): Promise<NormalizedInvoice[]> {
    const res = await getAllSalesInvoices(
-      1, 1000, "dueDate", "asc", undefined, partyId, 0.01,
+      1, 1000, "dueDate", "desc", undefined, partyId, 0.01,
       ["Partly Paid", "Unpaid", "Overdue"]
     );
     console.log(res?.data?.[0]) 

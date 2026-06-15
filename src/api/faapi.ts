@@ -1,7 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
-import {buildListParams} from "../api/utils/queryBuilder"
+import { buildListParams } from "../api/utils/queryBuilder"
 
 
 const api = createAxiosInstance(ERP_BASE);
@@ -123,7 +123,7 @@ export async function createAssetCategory(
 
 
 export type GetAssetCategoryParams = {
-  fields?: string[]; 
+  fields?: string[];
   filters?: any[];
   search?: string;
   page?: number;
@@ -183,7 +183,7 @@ export async function getPayrollPayableAccounts(
 ): Promise<AccountOption[]> {
   try {
     const params = buildListParams({
-      fields: ["name"],
+      fields: ["name", "account_name", "account_number","account_type"],
       pageSize: 20,
       search,
       searchFields: ["name"],
@@ -204,8 +204,11 @@ export async function getPayrollPayableAccounts(
     const raw: any[] = resp?.data?.data ?? [];
 
     return raw.map((item) => ({
-      label: item.name,
+      label: item.account_number
+        ? `${item.account_number} - ${item.account_name}`
+        : item.account_name,
       value: item.name,
+      subLabel : item.account_type,
     }));
   } catch {
     return [];
@@ -218,7 +221,7 @@ export async function getPayrollPaymentAccounts(
 ): Promise<AccountOption[]> {
   try {
     const params = buildListParams({
-      fields: ["name"],
+      fields: ["name", "account_name" , "account_number", "account_type"],
       pageSize: 20,
       search,
       searchFields: ["name"],
@@ -239,8 +242,11 @@ export async function getPayrollPaymentAccounts(
     const raw: any[] = resp?.data?.data ?? [];
 
     return raw.map((item) => ({
-      label: item.name,
+      label: item.account_number
+        ? `${item.account_number} - ${item.account_name}`
+        : item.account_name,
       value: item.name,
+      subLabel: item.account_type,
     }));
   } catch {
     return [];

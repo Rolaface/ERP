@@ -487,6 +487,20 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
   };
 
   const handleStatusChange = async (poId: string, newStatus: POStatus) => {
+    if (newStatus === "Cancelled") {
+      const result = await fireManagedSwal({
+        icon: "warning",
+        title: "Confirm Cancellation",
+        text: `Are you sure you want to cancel this Purchase Order?`,
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, Cancel",
+        cancelButtonText: "No",
+      });
+      if (!result.isConfirmed) return;
+    }
+
     try {
       const res = await updatePurchaseOrderStatus(poId, newStatus);
 
@@ -627,16 +641,20 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
             />
           </PermissionGate>
 
-          <ActionMenu
-            {...(can(PO_MODULE, "delete")
-              ? { onDelete: (e) => handleDelete(o, e as any) }
-              : {})}
-            customActions={[
-              {
-                label: "View PDF",
-                icon: ACTION_ICONS.PDF,
-                onClick: () => handlePreviewPDF(o),
-              },
+          {(() => {
+            const isCancelled = o.status === "Cancelled";
+            const hasDelete = can(PO_MODULE, "delete") && o.status === "Draft";
+
+            const customActions = [
+              ...(!isCancelled
+                ? [
+                    {
+                      label: "View PDF",
+                      icon: ACTION_ICONS.PDF,
+                      onClick: () => handlePreviewPDF(o),
+                    },
+                  ]
+                : []),
 
               ...(["Approved", "Completed"].includes(o.status)
                 ? [
@@ -648,7 +666,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
                         setEmailContactEmail(null);
                         setEmailPurchaseOrderAttachments([]);
                         setEmailModalOpen(true);
-
                         try {
                           const res = await getPurchaseOrderById(o.id);
                           if (res?.status === "success") {
@@ -659,15 +676,12 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
                               res.data?.attachments ?? [],
                             );
                           }
-                        } catch {
-                          // non-critical
-                        }
+                        } catch {}
                       },
                     },
                   ]
                 : []),
 
-              // Advance Payment — needs Payment Entry create + Approved status
               ...(can(PAYMENT_MODULE, "create") && o.status === "Approved"
                 ? [
                     {
@@ -678,7 +692,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
                   ]
                 : []),
 
-              // Make Purchase Invoice — needs Purchase Invoice create + Approved
               ...(can(PI_MODULE, "create") && o.status === "Approved"
                 ? [
                     {
@@ -693,17 +706,29 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
                 ? (STATUS_TRANSITIONS[o.status as POStatus] ?? []).map(
                     (status) => ({
                       label: status === "Approved" ? "Approve" : status,
-
                       icon: getStatusActionIcon(status),
-
                       danger: status === "Completed" || status === "Cancelled",
-
                       onClick: () => handleStatusChange(o.id, status),
                     }),
                   )
                 : []),
-            ]}
-          />
+            ];
+
+            const isMenuEmpty = customActions.length === 0 && !hasDelete;
+
+            return (
+              <div
+                className={isMenuEmpty ? "opacity-40 pointer-events-none" : ""}
+              >
+                <ActionMenu
+                  {...(hasDelete
+                    ? { onDelete: (e) => handleDelete(o, e as any) }
+                    : {})}
+                  customActions={customActions}
+                />
+              </div>
+            );
+          })()}
         </ActionGroup>
       ),
     },

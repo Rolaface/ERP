@@ -44,18 +44,6 @@ import {
   getStatusActionIcon,
 } from "../../components/UI_Utils/statusActionIcons";
 
-import {
-  FileCheck,
-  Ban,
-  BadgeDollarSign,
-  Undo2,
-  Scan,
-  FileText,
-  CreditCard,
-  CircleCheckBig,
-  FileMinus,
-} from "lucide-react";
-
 interface Purchaseinvoice {
   pId: string;
   supplier: string;
@@ -76,24 +64,20 @@ interface PurchaseinvoicesTableProps {
 
 export type PIStatus =
   | "Draft"
-  | "Return"
   | "Submitted"
-  | "Paid"
-  | "Unpaid"
-  | "Party Paid"
   | "Cancelled"
-  | "Internal Transfer"
-  | "Debit Note Issued";
+  | "Unpaid"
+  | "Paid"
+  | "Overdue"
+  | "Partly Paid";
 
 const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
-  Draft: ["Submitted", "Cancelled"],
-  Submitted: ["Paid", "Unpaid", "Cancelled", "Return"],
-  Unpaid: ["Paid", "Cancelled"],
-  Paid: ["Debit Note Issued", "Return"],
-  "Party Paid": ["Paid", "Debit Note Issued"],
-  Return: ["Debit Note Issued"],
-  "Debit Note Issued": [],
-  "Internal Transfer": [],
+  Draft: ["Submitted"],
+  Submitted: ["Cancelled"],
+  Unpaid: ["Cancelled"],
+  Paid: [],
+  Overdue: ["Cancelled"],
+  "Partly Paid": ["Cancelled"],
   Cancelled: [],
 };
 
@@ -104,6 +88,7 @@ const invoiceStatusOptions = [
   { label: "Paid", value: "Paid" },
   { label: "Party Paid", value: "Party Paid" },
   { label: "Cancelled", value: "Cancelled" },
+  { label: "Overdue", value: "Overdue" },
 ];
 
 type OutletContextType = {
@@ -114,9 +99,7 @@ type OutletContextType = {
 const PI_MODULE = "Purchase Invoice";
 const PAYMENT_MODULE = "Payment Entry";
 
-const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
-  onAdd,
-}) => {
+const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
   const { openPICreate, openPIEdit } = useOutletContext<OutletContextType>();
   const [orders, setOrders] = useState<Purchaseinvoice[]>([]);
   const [loading, setLoading] = useState(false);
@@ -130,11 +113,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const [filters, setFilters] = useState<PurchaseInvoiceFilters>({});
   const [company, setCompany] = useState<any | null>(null);
   const { can } = usePermission();
-  // ── PDF preview modal
+
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
 
-  // ── Drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<PurchaseInvoiceDetail | null>(
     null,
@@ -162,34 +144,30 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const fetchInvoice = useCallback(async () => {
     try {
       setLoading(true);
-
       const res = await getPurchaseInvoices(page, pageSize, filters);
-
       if (!res?.data || res.data.length === 0) {
         setOrders([]);
         setTotalItems(0);
         setTotalPages(1);
         return;
       }
-
       setTotalPages(res.pagination?.total_pages || 1);
       setTotalItems(res.pagination?.total || 0);
-
-      const mappedInvoice = res.data.map((pi: any) => ({
-        pId: pi.pId,
-        supplier: pi.supplierName,
-        podate: pi.poDate,
-        deliveryDate: pi.deliveryDate,
-        amount: pi.grandTotal,
-        grandTotal: pi.grandTotal,
-        status: pi.status,
-        registrationType: pi.registrationType,
-        grandTotalWithTax: pi.grandTotalWithTax,
-        outstanding_amount: pi.outstanding_amount,
-        currency: pi.currency,
-      }));
-
-      setOrders(mappedInvoice);
+      setOrders(
+        res.data.map((pi: any) => ({
+          pId: pi.pId,
+          supplier: pi.supplierName,
+          podate: pi.poDate,
+          deliveryDate: pi.deliveryDate,
+          amount: pi.grandTotal,
+          grandTotal: pi.grandTotal,
+          status: pi.status,
+          registrationType: pi.registrationType,
+          grandTotalWithTax: pi.grandTotalWithTax,
+          outstanding_amount: pi.outstanding_amount,
+          currency: pi.currency,
+        })),
+      );
     } catch (err) {
       showApiError(err);
       setOrders([]);
@@ -202,17 +180,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     fetchInvoice();
   }, [fetchInvoice]);
 
-  const subscribeToRefresh = useDataRefreshStore(
-    (state) => state.subscribeToRefresh,
-  );
-
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(
-      REFRESH_KEYS.PURCHASE_INVOICE_LIST,
-      fetchInvoice,
-    );
-    return () => unsubscribe();
-  }, [subscribeToRefresh, fetchInvoice]);
+    const unsubscribe = useDataRefreshStore
+      .getState()
+      .subscribeToRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST, fetchInvoice);
+    return unsubscribe;
+  }, [fetchInvoice]);
 
   const handleMakePayment = useCallback(
     async (pId: string) => {
@@ -220,23 +193,24 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         showLoading("Opening payment...");
         const res = await getPurchaseInvoiceById(pId);
         closeSwal();
-
         if (!res || res.status !== "success") {
           showApiError("Failed to load invoice");
           return;
         }
-
         const data = res.data ?? {};
-
         openPaymentEntryModal(
           {
             paymentType: "Pay",
             partyType: "Supplier",
             partyName: data.supplierName,
             partyId: data.supplierId ?? data.pId,
-            amount: data.grandTotal,
+            amount: data.outstanding_amount,
             referenceName: data.piId,
             referenceType: "Purchase Invoice",
+            glTo: data.gl_account ?? "",
+            glToDisplay: data.gl_account_name ?? "",
+            currencyTo: data.gl_account_currency ?? "",
+            modeOfPayment: data.paymentType ?? "",
           },
           false,
           {
@@ -245,7 +219,6 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
               useDataRefreshStore
                 .getState()
                 .triggerRefresh(REFRESH_KEYS.PURCHASE_INVOICE_LIST);
-
               const paymentId =
                 typeof result === "string"
                   ? result
@@ -273,11 +246,9 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     setDrawerData(null);
     try {
       const res = await getPurchaseInvoiceById(pId);
-      if (res?.status === "success") {
+      if (res?.status === "success")
         setDrawerData(res.data as PurchaseInvoiceDetail);
-      } else {
-        showApiError(res);
-      }
+      else showApiError(res);
     } catch (err) {
       showApiError(err);
     } finally {
@@ -298,12 +269,9 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         showApiError(res);
         return;
       }
-      const blobUrl = await generatePurchaseInvoicePDF(
-        res.data,
-        company,
-        "bloburl",
+      setDrawerPdfUrl(
+        await generatePurchaseInvoicePDF(res.data, company, "bloburl"),
       );
-      setDrawerPdfUrl(blobUrl);
     } catch (err) {
       showApiError(err);
     } finally {
@@ -318,20 +286,17 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     e?.stopPropagation();
     try {
       showLoading("Generating PDF...");
-
       if (!company) {
         closeSwal();
         showApiError("Company data not loaded");
         return;
       }
-
       const res = await getPurchaseInvoiceById(invoice.pId);
       if (!res || res.status !== "success") {
         closeSwal();
         showApiError(res?.message || "Failed to load invoice");
         return;
       }
-
       const blobUrl = await generatePurchaseInvoicePDF(
         res.data,
         company,
@@ -347,19 +312,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     }
   };
 
-  const handleAddClick = () => {
-    setSelectedInvoice(null);
-    openPICreate();
-  };
-
   const handleEdit = (invoice: Purchaseinvoice, e: React.MouseEvent) => {
     e.stopPropagation();
-
     if (invoice.status !== "Draft") {
       showApiError("Only Draft purchase invoices can be edited");
       return;
     }
-
     setSelectedInvoice(invoice);
     openPIEdit(invoice.pId);
   };
@@ -378,20 +336,15 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       cancelButtonColor: "#6b7280",
       confirmButtonText: "Yes, delete",
     });
-
     if (!confirm.isConfirmed) return;
-
     try {
       showLoading("Deleting Purchase Invoice...");
-
       const res = await deletePi(invoice.pId);
-
       if (res.status < 200 || res.status >= 300) {
         closeSwal();
         showApiError("Delete failed");
         return;
       }
-
       closeSwal();
       showSuccess("Purchase Invoice deleted successfully");
       await fetchInvoice();
@@ -401,77 +354,63 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
     }
   };
 
-  const fetchAllPIForExport = async () => {
-    try {
-      let allData: Purchaseinvoice[] = [];
-      let currentPage = 1;
-      let totalPagesLocal = 1;
-
-      do {
-        const res = await getPurchaseInvoices(currentPage, 100, filters);
-
-        if (res?.status_code === 200) {
-          const mapped = res.data.map((pi: any) => ({
-            pId: pi.pId,
-            supplier: pi.supplierName,
-            podate: pi.poDate,
-            deliveryDate: pi.deliveryDate,
-            amount: pi.grandTotal,
-            grandTotal: pi.grandTotal,
-            status: pi.status,
-            registrationType: pi.registrationType,
-            outstanding_amount: pi.outstanding_amount,
-            currency: pi.currency,
-          }));
-          allData = [...allData, ...mapped];
-          totalPagesLocal = res.pagination?.total_pages || 1;
-        }
-
-        currentPage++;
-      } while (currentPage <= totalPagesLocal);
-
-      return allData;
-    } catch (error) {
-      showApiError(error);
-      return [];
-    }
-  };
-
   const handleExportExcel = async () => {
     try {
       showLoading("Exporting Purchase Invoices...");
+      let allData: Purchaseinvoice[] = [];
+      let currentPage = 1;
+      let totalPagesLocal = 1;
+      do {
+        const res = await getPurchaseInvoices(currentPage, 100, filters);
+        if (res?.status_code === 200) {
+          allData = [
+            ...allData,
+            ...res.data.map((pi: any) => ({
+              pId: pi.pId,
+              supplier: pi.supplierName,
+              podate: pi.poDate,
+              deliveryDate: pi.deliveryDate,
+              amount: pi.grandTotal,
+              grandTotal: pi.grandTotal,
+              status: pi.status,
+              registrationType: pi.registrationType,
+              outstanding_amount: pi.outstanding_amount,
+              currency: pi.currency,
+              grandTotalWithTax: pi.grandTotalWithTax,
+            })),
+          ];
+          totalPagesLocal = res.pagination?.total_pages || 1;
+        }
+        currentPage++;
+      } while (currentPage <= totalPagesLocal);
 
-      const dataToExport = await fetchAllPIForExport();
-
-      if (!dataToExport.length) {
+      if (!allData.length) {
         closeSwal();
         showApiError("No purchase invoices to export");
         return;
       }
 
-      const formattedData = dataToExport.map((pi) => ({
-        "PI ID": pi.pId,
-        Supplier: pi.supplier,
-        "PO Date": pi.podate,
-        "Delivery Date": pi.deliveryDate,
-        "Registration Type": pi.registrationType,
-        Amount: pi.amount,
-        grandTotal: pi.grandTotal,
-        Status: pi.status,
-        outstanding_amount: pi.outstanding_amount,
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(formattedData);
+      const worksheet = XLSX.utils.json_to_sheet(
+        allData.map((pi) => ({
+          "PI ID": pi.pId,
+          Supplier: pi.supplier,
+          "PO Date": pi.podate,
+          "Delivery Date": pi.deliveryDate,
+          "Registration Type": pi.registrationType,
+          Amount: pi.amount,
+          "Grand Total": pi.grandTotal,
+          Status: pi.status,
+          "Outstanding Amount": pi.outstanding_amount,
+        })),
+      );
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Invoices");
-
       saveAs(
         new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
         "All_Purchase_Invoices.xlsx",
       );
-
       closeSwal();
       showSuccess("Export completed successfully");
     } catch (error) {
@@ -483,26 +422,22 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
   const handleStatusChange = async (pId: string, newStatus: PIStatus) => {
     try {
       showLoading("Updating status...");
-
       const res = await updatePurchaseinvoiceStatus(pId, newStatus);
-
       closeSwal();
-
       if (!res || res.status_code !== 200) {
         showApiError(res || "Failed to update Purchase Invoice status");
         return;
       }
-
       await fetchInvoice();
-      showSuccess(`Purchase Invoice updated`);
+      showSuccess("Purchase Invoice updated");
     } catch (err) {
       closeSwal();
       showApiError(err);
     }
   };
+
   const formatDate = (date: string | Date) => {
     if (!date) return "";
-
     const months = [
       "JAN",
       "FEB",
@@ -517,12 +452,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       "NOV",
       "DEC",
     ];
-
     if (typeof date === "string") {
       const [year, month, day] = date.split("T")[0].split("-").map(Number);
       return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
     }
-
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
 
@@ -638,78 +571,92 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
       key: "actions",
       header: "Actions",
       align: "center",
-      render: (o) => (
-        <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={(e) => handleViewClick(o.pId, e)}
-            iconOnly
-          />
+      render: (o) => {
+        const customActions = [
+          // View PDF — sirf non-cancelled pe
+          ...(o.status !== "Cancelled"
+            ? [
+                {
+                  label: "View PDF",
+                  icon: ACTION_ICONS.PDF,
+                  onClick: () => handleOpenPDF(o),
+                },
+              ]
+            : []),
 
-          <PermissionGate module={PI_MODULE} action="write">
+          // {
+          //   label: "Scan PI",
+          //   icon: ACTION_ICONS.SCAN,
+          //   onClick: () => openScanPIModal(o.pId),
+          // },
+
+          // Make Payment — non-draft, outstanding > 0
+          ...(can(PAYMENT_MODULE, "create") &&
+          Number(o.outstanding_amount || 0) > 0 &&
+          o.status !== "Draft"
+            ? [
+                {
+                  label: "Make Payment",
+                  icon: ACTION_ICONS.PAYMENT,
+                  onClick: () => handleMakePayment(o.pId),
+                },
+              ]
+            : []),
+
+          // Status transitions
+          ...(can(PI_MODULE, "write")
+            ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
+                (status) => ({
+                  label:
+                    status === "Submitted"
+                      ? "Approve"
+                      : status === "Cancelled"
+                        ? "Cancel"
+                        : status,
+                  icon: getStatusActionIcon(status),
+                  danger: status === "Cancelled",
+                  onClick: () => handleStatusChange(o.pId, status),
+                }),
+              )
+            : []),
+        ];
+
+        const hasDelete = can(PI_MODULE, "delete") && o.status === "Draft";
+        const isMenuEmpty = customActions.length === 0 && !hasDelete;
+
+        return (
+          <ActionGroup>
             <ActionButton
-              type="edit"
-              onClick={(e) => handleEdit(o, e)}
+              type="view"
+              onClick={(e) => handleViewClick(o.pId, e)}
               iconOnly
-              disabled={o.status !== "Draft"}
-              title={
-                o.status !== "Draft"
-                  ? "Only Draft invoices can be edited"
-                  : "Edit Purchase Invoice"
-              }
             />
-          </PermissionGate>
-
-          <ActionMenu
-            {...(can(PI_MODULE, "delete")
-              ? { onDelete: (e) => handleDelete(o, e as any) }
-              : {})}
-            customActions={[
-              {
-                label: "View PDF",
-                icon: ACTION_ICONS.PDF,
-                onClick: () => handleOpenPDF(o),
-              },
-              {
-                label: "Scan PI",
-                icon: ACTION_ICONS.SCAN,
-                onClick: () => openScanPIModal(o.pId),
-              },
-
-              ...(can(PAYMENT_MODULE, "create") &&
-              Number(o.outstanding_amount || 0) > 0
-                ? [
-                    {
-                      label: "Make Payment",
-                      icon: ACTION_ICONS.PAYMENT,
-                      onClick: () => handleMakePayment(o.pId),
-                    },
-                  ]
-                : []),
-
-              ...(can(PI_MODULE, "write")
-                ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-                    (status) => ({
-                      label:
-                        status === "Submitted"
-                          ? "Approve"
-                          : status === "Cancelled"
-                            ? "Cancel"
-                            : status,
-
-                      icon: getStatusActionIcon(status),
-                      danger:
-                        status === "Cancelled" ||
-                        status === "Debit Note Issued",
-
-                      onClick: () => handleStatusChange(o.pId, status),
-                    }),
-                  )
-                : []),
-            ]}
-          />
-        </ActionGroup>
-      ),
+            <PermissionGate module={PI_MODULE} action="write">
+              <ActionButton
+                type="edit"
+                onClick={(e) => handleEdit(o, e)}
+                iconOnly
+                disabled={o.status !== "Draft"}
+                title={
+                  o.status !== "Draft"
+                    ? "Only Draft invoices can be edited"
+                    : "Edit Purchase Invoice"
+                }
+              />
+            </PermissionGate>
+            <div
+              className={isMenuEmpty ? "opacity-40 pointer-events-none" : ""}
+            >
+              <ActionMenu
+                {...(hasDelete
+                  ? { onDelete: (e) => handleDelete(o, e as any) }
+                  : {})}
+                customActions={customActions}
+              />
+            </div>
+          </ActionGroup>
+        );
+      },
     },
   ];
 
@@ -725,7 +672,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
         onSearch={setSearchTerm}
         enableAdd={can(PI_MODULE, "create")}
         addLabel="Add Purchase Invoice"
-        onAdd={handleAddClick}
+        onAdd={() => {
+          setSelectedInvoice(null);
+          openPICreate();
+        }}
         enableExport={can(PI_MODULE, "export")}
         onExport={handleExportExcel}
         enableColumnSelector
@@ -795,9 +745,8 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = ({
           setPdfOpen(false);
         }}
         onDownload={() => {
-          if (selectedInvoice && company) {
+          if (selectedInvoice && company)
             generatePurchaseInvoicePDF(selectedInvoice, company, "save");
-          }
         }}
       />
 

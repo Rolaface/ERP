@@ -24,6 +24,7 @@ import { ModalInput }     from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import { useAuth }        from "../../../context/AuthContext";
 import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
+import EmployeeLeaveTypeSelect from "../../selects/EmployeeLeaveType";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ export default function LeaveApplyModal({
   const isView = Boolean((initialData as any)?._isView);
   console.log( "editLeaveId:", editLeaveId, "isView:", isView);
   const { user } = useAuth();
+  const targetEmployeeId = (initialData as any)?.employee || user?.employeeId;
 
   // ── Form state ──────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<LeaveFormData>({
@@ -109,23 +111,50 @@ const [calendarMonth,   setCalendarMonth]   = useState<Date>(new Date());
   fetchHolidays();
 }, [isOpen, calendarMonth]);
 
+// useEffect(() => {
+//   if (!isOpen) return;
+
+//   const fetchEmployeeData = async () => {
+//     // const id = editLeaveId || editId;
+//     // if (id) return; 
+
+//     if (!user?.employeeId) return; 
+
+//     try {
+//       const res = await getEmployeeById(user.employeeId!);
+//       const data = res?.message?.data ?? res?.data ?? res;
+//       setLeaveApproverName(data?.leave_approver_name ?? "");
+//       setLeaveApprover(data?.leave_approver ?? "");
+//       setLeaveApproverId(data?.leave_approver ?? "");
+
+//       const detailsRes = await getEmployeeDetailsById(user.employeeId!);
+//       const detailsData = detailsRes?.message?.data ?? detailsRes?.data ?? detailsRes;
+//       if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
+//       if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
+//     } catch {
+//       setLeaveApproverName("");
+//       setLeaveApprover("");
+//       setLeaveApproverId("");
+//     }
+//   };
+
+//   fetchEmployeeData();
+// }, [isOpen, user?.employeeId]);
+
 useEffect(() => {
   if (!isOpen) return;
 
   const fetchEmployeeData = async () => {
-    const id = editLeaveId || editId;
-    if (id) return; 
-
-    if (!user?.employeeId) return; 
+    if (!targetEmployeeId) return; 
 
     try {
-      const res = await getEmployeeById(user.employeeId!);
+      const res = await getEmployeeById(targetEmployeeId);
       const data = res?.message?.data ?? res?.data ?? res;
       setLeaveApproverName(data?.leave_approver_name ?? "");
       setLeaveApprover(data?.leave_approver ?? "");
       setLeaveApproverId(data?.leave_approver ?? "");
 
-      const detailsRes = await getEmployeeDetailsById(user.employeeId!);
+      const detailsRes = await getEmployeeDetailsById(targetEmployeeId);
       const detailsData = detailsRes?.message?.data ?? detailsRes?.data ?? detailsRes;
       if (detailsData?.employeeInfo) setEmpDetails(detailsData.employeeInfo);
       if (detailsData?.leaveBalances) setLeaveBalances(detailsData.leaveBalances);
@@ -137,7 +166,8 @@ useEffect(() => {
   };
 
   fetchEmployeeData();
-}, [isOpen, user?.employeeId]);
+}, [isOpen, targetEmployeeId]);
+
   useEffect(() => {
     const id = editLeaveId || editId;
     if (!id || !isOpen){
@@ -180,6 +210,19 @@ useEffect(() => {
     setSelectedRange({ from, to });
   }, [formData.startDate, formData.endDate]);
 
+  // ── Sync includeHolidayFlag on View/Edit mode ──
+  useEffect(() => {
+    if (formData.type && leaveBalances?.length > 0) {
+      // Find the selected leave type in the balances array
+      const selectedType = leaveBalances.find(
+        (lt) => lt.leave_type === formData.type || lt.name === formData.type
+      );
+      if (selectedType) {
+        setIncludeHolidayFlag(selectedType.include_holiday === 1);
+      }
+    }
+  }, [formData.type, leaveBalances]);
+
   // ── Helpers ──────────────────────────────────────────────────────────────
   const formatLocalDate = (date: Date) => {
     const y = date.getFullYear();
@@ -194,17 +237,18 @@ useEffect(() => {
   };
 
 // ── Day calculation ──────────────────────────────────────────────────────
-  let totalDays     = 0;
-  let workDays      = 0; 
-  let dayOffDays    = 0; 
-  let holidaysCount = 0; 
+  let totalDays       = 0;
+  let workDays        = 0; 
+  let dayOffDays      = 0; 
+  let holidaysCount   = 0; 
+  let totalLeaveCount = 0; 
 
   if (formData.startDate && formData.endDate) {
     const start   = new Date(formData.startDate + "T00:00:00");
     const end     = new Date(formData.endDate   + "T00:00:00");
     const current = new Date(start);
 
-     const isHoliday = (date: Date) => {
+    const isHoliday = (date: Date) => {
       return holidayDates.some(
         (h) =>
           h.getDate() === date.getDate() &&
@@ -219,24 +263,27 @@ useEffect(() => {
       const isWknd = isWeekend(current);
       const isHol = isHoliday(current);
 
-      // Track stats for the UI
       if (isWknd) {
         dayOffDays++;
       } else if (isHol) {
         holidaysCount++;
       }
 
-      if (includeHolidayFlag || (!isWknd && !isHol)) {
+      // Work days are strictly ONLY non-holiday and non-weekend
+      if (!isWknd && !isHol) {
         workDays++;
       }
-      console.log("includeHolidayFlag",includeHolidayFlag);
       
       current.setDate(current.getDate() + 1);
     }
 
-    // Adjust work days if it's a half-day request
-    if (formData.isHalfDay && workDays > 0) {
-      workDays -= 0.5;
+    // Adjust counts based on half-day and include_holiday logic
+    if (formData.isHalfDay) {
+      if (workDays > 0) workDays -= 0.5;
+      totalLeaveCount = 0.5; 
+    } else {
+      // If include_holiday is true, deduct calendar days. Otherwise deduct work days.
+      totalLeaveCount = includeHolidayFlag ? totalDays : workDays;
     }
   }
 
@@ -284,7 +331,8 @@ useEffect(() => {
     const fromDate = formData.startDate;
     const toDate   = formData.isHalfDay ? fromDate : formData.endDate || fromDate;
     return {
-      employee:   user?.employeeId ?? "",   // always in payload, never shown in UI
+      // employee:   user?.employeeId ?? "",  
+      employee:   targetEmployeeId ?? "",
       leave_type: formData.type,
       from_date:  fromDate,
       to_date:    toDate,
@@ -430,7 +478,7 @@ title={
 
                 {/* Leave Type — now full width since Employee is hidden */}
                 <div className="flex flex-col min-w-0">
-                  <LeaveTypeSelect
+                  {/* <LeaveTypeSelect
                     label="Leave Type"
                     required
                     value={formData.type}
@@ -438,6 +486,18 @@ title={
                   setIncludeHolidayFlag(lt.include_holiday === 1);}}
                     disabled={isEditMode}
                     leaveBalances={leaveBalances}
+                  /> */}
+                  <EmployeeLeaveTypeSelect
+                  label="Leave Type"
+                  required
+                  value={formData.type}
+                 onChange={(lt) => { 
+                      setFormData((p) => ({ ...p, type: lt.name }));
+                      setIncludeHolidayFlag(lt.include_holiday === 1);
+                    }}
+                    disabled={isEditMode || isView}
+                    // employeeId={user?.employeeId || ""}
+                    employeeId={targetEmployeeId || ""}
                   />
                 </div>
 
@@ -490,12 +550,22 @@ title={
                   />
                 </div>
 
-               {showSummary && (
+            {showSummary && (
                   <div className="flex flex-wrap items-center gap-3 rounded-lg bg-[var(--border)]/30 px-3 py-2 text-xs text-main">
+                    
+                    {/* Shows the actual Leaves to be deducted */}
                     <div className="flex items-center gap-1.5">
                       <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="font-bold text-primary text-sm">{workDays}</span>
-                      <span className="font-bold text-main">Work Day{workDays !== 1 ? "s" : ""}</span>
+                      <span className="font-bold text-primary text-sm">{totalLeaveCount}</span>
+                      <span className="font-bold text-main">Leave{totalLeaveCount !== 1 ? "s" : ""} Deducted</span>
+                    </div>
+
+                    <div className="h-3 w-px bg-[var(--border)]" />
+
+                    {/* Shows the strict Work Days calculation */}
+                    <div className="flex items-center gap-1 text-muted">
+                      <span>Work Days:</span>
+                      <span className="font-semibold text-main">{workDays}</span>
                     </div>
 
                     <div className="h-3 w-px bg-[var(--border)]" />
@@ -505,14 +575,16 @@ title={
                       <span className="font-semibold text-main">{totalDays}</span>
                     </div>
 
-                    <div className="h-3 w-px bg-[var(--border)]" />
+                    {dayOffDays > 0 && (
+                      <>
+                        <div className="h-3 w-px bg-[var(--border)]" />
+                        <div className="flex items-center gap-1 text-muted">
+                          <span>Weekends:</span>
+                          <span className="font-semibold text-main">{dayOffDays}</span>
+                        </div>
+                      </>
+                    )}
 
-                    <div className="flex items-center gap-1 text-muted">
-                      <span>Weekends:</span>
-                      <span className="font-semibold text-main">{dayOffDays}</span>
-                    </div>
-
-                    {/* Dynamically show holidays if the range includes them */}
                     {holidaysCount > 0 && (
                       <>
                         <div className="h-3 w-px bg-[var(--border)]" />

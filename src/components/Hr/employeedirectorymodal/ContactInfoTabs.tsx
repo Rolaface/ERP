@@ -6,14 +6,12 @@ type ContactInfoTabProps = {
   handleInputChange: (field: string, value: string | boolean) => void;
 };
 
-
-
 const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
   formData,
   handleInputChange,
 }) => {
   return (
-    <div className="max-w-4xl mx-auto space-y-3">
+    <div className="w-full flex flex-col gap-2 min-w-0">
 
       {/* Contact Information */}
       <div className="bg-card p-3 rounded-lg border border-theme">
@@ -30,17 +28,16 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             required
           />
           <ModalSelect
-          label="Preferred Contact Email"
-          name="preferredContactMethod"
-          value={formData.preferredContactMethod}
-          onChange={(e) => handleInputChange("preferredContactMethod", e.target.value)}
-          options={[
-            { label: "Company Email", value: "Company Email" },
-            { label: "Personal Email", value: "Personal Email" },
-            { label: "User ID", value: "User ID" },
-            
-          ]}
-          required
+            label="Preferred Contact Email"
+            name="preferredContactMethod"
+            value={formData.preferredContactMethod}
+            onChange={(e) => handleInputChange("preferredContactMethod", e.target.value)}
+            options={[
+              { label: "Company Email", value: "Company Email" },
+              { label: "Personal Email", value: "Personal Email" },
+              { label: "User ID", value: "User ID" },
+            ]}
+            required
           />
           <ModalInput
             label="Company Email"
@@ -59,7 +56,6 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
             placeholder="+91"
           />
-          
         </div>
       </div>
 
@@ -68,7 +64,7 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Address
         </h4>
-        <div className="space-y-2.5">
+        <div className="flex flex-col gap-2.5">
           <ModalInput
             label="Street Address"
             name="street"

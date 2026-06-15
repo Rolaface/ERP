@@ -155,9 +155,17 @@ const SalesDashboard: React.FC = () => {
 if (countsRes?.data) {
           setSalesCounts(countsRes.data);
         }
-        if (echartsMonthlyRes?.data) {
-          setMonthlyEchartsData(echartsMonthlyRes.data);
-        }
+       if (echartsMonthlyRes?.data) {
+  setMonthlyEchartsData(
+    echartsMonthlyRes.data.map((item: any) => ({
+      month: item.month,
+      year: item.year,
+      "total-sales": Number(item["total-sales"] ?? item.totalSales ?? 0),
+      received: Number(item.received ?? item.totalReceived ?? 0),
+      receivable: Number(item.receivable ?? item.totalPending ?? 0),
+    }))
+  );
+}
       } catch (e: any) {
         console.error("Failed to load sales dashboard charts:", e);
       } finally {
@@ -206,7 +214,7 @@ const stats = [
   );
 
   return (
-    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pb-6 min-h-0">
       {/* --- TOP METRIC CARDS --- */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {stats.map((stat) => (
@@ -220,7 +228,7 @@ const stats = [
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+     <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
         {/* --- MONTHLY SALES (LINE CHART) --- */}
       <AppSectionCard title="Monthly Sales Overview">
           <div className="relative h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
@@ -236,7 +244,7 @@ const stats = [
 
         {/* --- TOP 10 RECENT SALES (BAR CHART) --- */}
         <AppSectionCard title="Top 10 Recent Sales">
-          <div className="relative h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
+         <div className="relative h-56 sm:h-64 lg:h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
             {chartsLoading ? (
               <ChartSkeleton variant="bar" />
             ) : recentSales.length === 0 ? (

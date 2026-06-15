@@ -1,13 +1,16 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { ModalSelect, ModalInput } from "../ui/modal/modalComponent";
+import { getTaxAccounts } from "../../api/BankAccountApi";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
 
 // Types
 
 export type TaxRow = {
-  id: string; 
+  id: string;
   type: "Actual" | "On Net Total" | "On Previous Row Amount" | "On Previous Row Total" | "";
   account_head: string;
+  account_head_label: string;
   tax_rate: number | "";
   amount: number | "";
   total: number | "";
@@ -25,6 +28,7 @@ function makeEmptyRow(): TaxRow {
     id: `tax_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     type: "",
     account_head: "",
+    account_head_label: "",
     tax_rate: "",
     amount: "",
     total: "",
@@ -50,19 +54,41 @@ const PaymentTaxesTab: React.FC<PaymentTaxesTabProps> = ({
     ? form.taxes
     : [];
 
+  const PAGE_SIZE = 8;
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(taxes.length / PAGE_SIZE));
+  const pagedTaxes = taxes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const startIdx = (currentPage - 1) * PAGE_SIZE;
+
   const pushUpdate = useCallback(
     (updated: TaxRow[]) => onFormChange({ taxes: updated }),
     [onFormChange]
   );
 
+  const fetchTaxAccounts = useCallback(async (search: string) => {
+    const opts = await getTaxAccounts(search);
+    return opts.map((o) => ({
+      value: o.value,
+      label: o.label,
+      subLabel: o.subLabel,
+    }));
+  }, []);
+
   // ── Row operations 
 
   const handleAddRow = () => {
-    pushUpdate([...taxes, makeEmptyRow()]);
+    const newRows = [...taxes, makeEmptyRow()];
+    pushUpdate(newRows);
+    setCurrentPage(Math.ceil(newRows.length / PAGE_SIZE));
   };
 
   const handleDeleteRow = (id: string) => {
     pushUpdate(taxes.filter((r) => r.id !== id));
+    const newLen = taxes.length - 1;
+    const newTotalPages = Math.max(1, Math.ceil(newLen / PAGE_SIZE));
+    if (currentPage > newTotalPages) setCurrentPage(newTotalPages);
   };
 
   const handleCellChange = (
@@ -117,13 +143,12 @@ const PaymentTaxesTab: React.FC<PaymentTaxesTabProps> = ({
         {/* Header */}
         <div className="grid grid-cols-[32px_1.5fr_2fr_1fr_1fr_1fr_40px] bg-[var(--row-hover)] border-b border-[var(--border)] px-4 py-2.5">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">#</div>
-          {(["Type", "Account Head", "Tax Rate (%)", "Amount", "Total"] as const).map(
+          {(["Type", "GL Account", "Tax Rate (%)", "Amount", "Total"] as const).map(
             (h, i) => (
               <div
                 key={h}
-                className={`text-[11px] font-semibold uppercase tracking-wide text-muted ${
-                  i >= 2 ? "text-right" : ""
-                }`}
+                className={`text-[11px] font-semibold uppercase tracking-wide text-muted ${i >= 2 ? "text-right" : ""
+                  }`}
               >
                 {h}
               </div>
@@ -149,14 +174,14 @@ const PaymentTaxesTab: React.FC<PaymentTaxesTabProps> = ({
           </div>
         ) : (
           <div className="divide-y divide-[var(--border)]">
-            {taxes.map((row, idx) => (
+            {pagedTaxes.map((row, idx) => (
               <div
                 key={row.id}
                 className="grid grid-cols-[32px_1.5fr_2fr_1fr_1fr_1fr_40px] px-4 py-2.5 gap-2 items-center
                   hover:bg-[var(--row-hover)] transition-colors"
               >
                 {/* # */}
-                <span className="text-xs text-muted font-mono">{idx + 1}</span>
+                <span className="text-xs text-muted font-mono">{startIdx + idx + 1}</span>
 
                 {/* Type */}
                 <ModalSelect
@@ -170,14 +195,19 @@ const PaymentTaxesTab: React.FC<PaymentTaxesTabProps> = ({
                 />
 
                 {/* Account Head */}
-                <ModalInput
+                <SearchSelect2
                   label=""
-                  name={`tax_account_${row.id}`}
-                  value={row.account_head}
-                  placeholder="e.g. TDS - RI"
-                  onChange={(e) =>
-                    handleCellChange(row.id, "account_head", e.target.value)
-                  }
+                  value={row.account_head_label}
+                  onChange={(val, option: any) => {
+                    const updated = taxes.map((r) => {
+                      if (r.id !== row.id) return r;
+                      return { ...r, account_head: val, account_head_label: option?.label ?? val };
+                    });
+                    pushUpdate(updated);
+                  }}
+                  fetchOptions={fetchTaxAccounts}
+                  placeholder="Search account..."
+                  allowCustomInput={false}
                 />
 
                 {/* Tax Rate */}
@@ -247,6 +277,39 @@ const PaymentTaxesTab: React.FC<PaymentTaxesTabProps> = ({
           </div>
         )}
       </div>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-muted">
+            Showing {startIdx + 1}–{Math.min(currentPage * PAGE_SIZE, taxes.length)} of {taxes.length}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 text-xs font-medium text-primary
+                hover:text-primary/80 border border-primary/30 hover:border-primary/60
+                rounded-lg px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ‹ Previous
+            </button>
+            <span className="text-[11px] font-semibold text-main px-1">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 text-xs font-medium text-primary
+                hover:text-primary/80 border border-primary/30 hover:border-primary/60
+                rounded-lg px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next ›
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Hint */}
       <p className="text-[11px] text-muted leading-relaxed">

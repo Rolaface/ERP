@@ -7,6 +7,9 @@ import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFr
 type Account = {
   name: string;
   currency: string;
+  accountNumber: string;
+  accountName: string;
+  accountType: string;
 };
 
 interface AccountSelectProps {
@@ -27,10 +30,10 @@ export default function AccountSelect({
   disabled = false,
 }: AccountSelectProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
@@ -41,7 +44,7 @@ export default function AccountSelect({
       setLoading(true);
       const res = await getComponentById(
         "Account",
-        ["name", "account_currency"],
+        ["name", "account_currency", "account_number", "account_name", "account_type"],
         [["is_group", "=", 0]],
         // { order_by: "creation desc" },
         "creation desc"
@@ -59,11 +62,14 @@ export default function AccountSelect({
           rawAccounts.map((a: any) => ({
             name: a.name,
             currency: a.account_currency || "",
+            accountNumber: a.account_number || "",
+            accountName: a.account_name || "",
+            accountType: a.account_type || "",
           }))
         );
       }
     } catch (err) {
-      showApiError(err|| parseFrappeError || "Failed to fetch account options");
+      showApiError(err || parseFrappeError || "Failed to fetch account options");
     } finally {
       setLoading(false);
     }
@@ -80,10 +86,10 @@ export default function AccountSelect({
         const rect = containerRef.current!.getBoundingClientRect();
         setDropdownStyle({
           position: "fixed",
-          top: rect.bottom + 4, 
+          top: rect.bottom + 4,
           left: rect.left,
           width: rect.width,
-          zIndex: 99999, 
+          zIndex: 99999,
         });
       };
 
@@ -93,7 +99,7 @@ export default function AccountSelect({
         // 2. FIX: Check if e.target is actually a Node before using contains()
         if (
           dropdownRef.current &&
-          e.target instanceof Node && 
+          e.target instanceof Node &&
           dropdownRef.current.contains(e.target)
         ) {
           return;
@@ -101,7 +107,7 @@ export default function AccountSelect({
         setOpen(false);
       };
 
-      window.addEventListener("scroll", handleScroll, true); 
+      window.addEventListener("scroll", handleScroll, true);
       window.addEventListener("resize", handleScroll);
 
       return () => {
@@ -129,7 +135,9 @@ export default function AccountSelect({
   }, []);
 
   const filteredAccounts = accounts.filter((a) =>
-    a.name.toLowerCase().includes(search.toLowerCase())
+    a.name.toLowerCase().includes(search.toLowerCase()) ||
+    a.accountName.toLowerCase().includes(search.toLowerCase()) ||
+    a.accountNumber.toLowerCase().includes(search.toLowerCase())
   );
 
   // 3. Handler to open dropdown and fetch fresh data
@@ -176,32 +184,42 @@ export default function AccountSelect({
             <ul className="max-h-56 overflow-y-auto text-[13px] m-0 p-0 relative">
               {/* Show a mini loading indicator inside the dropdown if fetching */}
               {loading && (
-                 <div className="absolute top-0 left-0 w-full h-1 bg-gray-100 overflow-hidden">
-                   <div className="h-full bg-blue-500 animate-pulse"></div>
-                 </div>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gray-100 overflow-hidden">
+                  <div className="h-full bg-blue-500 animate-pulse"></div>
+                </div>
               )}
-              
+
               {filteredAccounts.map((account) => (
                 <li
                   key={account.name}
-                  className="px-2 py-1 cursor-pointer hover:bg-primary/5 hover:bg-gray-100 text-main text-[11px]"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                  }}
+                  className="px-2 py-1.5 cursor-pointer hover:bg-primary/5 hover:bg-gray-100 text-main text-[11px]"
+                  onMouseDown={(e) => { e.preventDefault(); }}
                   onClick={() => {
-                    setSearch(account.name);
+                    const displayLabel = account.accountNumber
+                      ? `${account.accountNumber} - ${account.accountName}`
+                      : account.accountName || account.name;
+                    setSearch(displayLabel);
                     setOpen(false);
                     onChange({ name: account.name, currency: account.currency });
                   }}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="truncate">{account.name}</span>
+                    <span className="truncate font-medium">
+                      {account.accountNumber
+                        ? `${account.accountNumber} - ${account.accountName}`
+                        : account.accountName || account.name}
+                    </span>
                     {account.currency && (
                       <span className="text-xs text-muted ml-2 shrink-0">
                         ({account.currency})
                       </span>
                     )}
                   </div>
+                  {account.accountType && (
+                    <p className="text-[10px] text-muted mt-0.5 truncate">
+                      {account.accountType}
+                    </p>
+                  )}
                 </li>
               ))}
 
@@ -212,7 +230,7 @@ export default function AccountSelect({
               )}
             </ul>
           </div>,
-          document.body 
+          document.body
         )}
       </div>
     </div>

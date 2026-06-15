@@ -111,7 +111,7 @@ export default function KRASection() {
   const columns: Column<SetupRow>[] = [
     {
       key: "creation",
-      header: "Created At",
+      header: "Date Created",
       align: "center",
       render: (row) => (
         <span>

@@ -412,8 +412,20 @@ const InvoiceDetailModal: React.FC<Props> = ({
             {onViewPdf && (
               <button
                 className="idm-btn"
-                onClick={onViewPdf}
-                style={{ background: "var(--primary)", color: "#fff" }}
+                onClick={data?.status === "Cancelled" ? undefined : onViewPdf}
+                disabled={data?.status === "Cancelled"}
+                title={
+                  data?.status === "Cancelled"
+                    ? "Cannot view PDF for cancelled invoice"
+                    : "View PDF"
+                }
+                style={{
+                  background: "var(--primary)",
+                  color: "#fff",
+                  opacity: data?.status === "Cancelled" ? 0.5 : 1,
+                  cursor:
+                    data?.status === "Cancelled" ? "not-allowed" : "pointer",
+                }}
               >
                 <svg
                   width="11"
@@ -431,7 +443,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 PDF
               </button>
             )}
-            {onDownload && (
+            {/* {onDownload && (
               <button
                 className="idm-btn"
                 onClick={onDownload}
@@ -457,7 +469,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 </svg>
                 Download
               </button>
-            )}
+            )} */}
             <button
               onClick={onClose}
               style={{

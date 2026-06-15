@@ -39,7 +39,7 @@ export const useModeOfPaymentLogic = ({ onSubmit, onClose, initialData, isEdit, 
           enabled: record.enabled === 1,
           company: record.company ?? "",
           defaultAccount: record.defaultAccount ?? "",
-          defaultAccountDisplay: record.defaultAccountName ?? record.defaultAccount ?? "",
+          defaultAccountDisplay: record.accountName ?? record.defaultAccount ?? "",
         });
       } catch (err: any) {
         showApiError(err.message);

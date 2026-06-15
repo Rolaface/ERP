@@ -324,7 +324,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
               <table className="w-full text-left text-sm text-main whitespace-nowrap">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-3 py-2 font-medium w-48">Account</th>
+                    <th className="px-3 py-2 font-medium w-48">GL Account</th>
                     <th className="px-3 py-2 font-medium w-14">CCY</th>
                     <th className="px-3 py-2 font-medium w-20">Type</th>
                     <th className="px-3 py-2 font-medium w-28">Amount</th>
