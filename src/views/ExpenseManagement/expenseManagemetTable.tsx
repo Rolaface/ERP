@@ -428,7 +428,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "category",
         header: "Category",
-        align: "left",
+        align: "center",
         render: (exp) => (
           <div className="py-1.5">
             <span className="block">{exp.category}</span>
@@ -439,7 +439,7 @@ const ExpenseHistory: React.FC = () => {
       {
         key: "amount",
         header: "Amount",
-        align: "right",
+        align: "center",
         render: (exp) => (
           <div className="py-1.5">
             <span className="block">{exp.amount}</span>

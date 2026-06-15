@@ -3,8 +3,14 @@ import { ClipboardList, Trash2, Plus } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import { ModalInput } from "../../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
-import { useCycleModal, type NewCyclePayload } from "../../../hooks/appraisal/useCycleModal";
-import type { AppraiseeRow, CycleItem } from "../../../api/Appraisalapi/performanceCycleApi";
+import {
+  useCycleModal,
+  type NewCyclePayload,
+} from "../../../hooks/appraisal/useCycleModal";
+import type {
+  AppraiseeRow,
+  CycleItem,
+} from "../../../api/Appraisalapi/performanceCycleApi";
 import DatePickerInput from "../../calendar/DatePickerInput";
 
 const ROWS_PER_PAGE = 5;
@@ -18,6 +24,11 @@ interface NewCycleModalProps {
   isViewMode?: boolean;
   viewLoading?: boolean;
 }
+
+const trimAtLastDash = (val: string) => {
+  const idx = val.lastIndexOf("-");
+  return idx !== -1 ? val.slice(0, idx).trimEnd() : val;
+};
 
 const SectionLabel = ({ children }: { children: string }) => (
   <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2">
@@ -72,8 +83,21 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
         <table className="w-full table-fixed text-xs">
           <thead>
             <tr className="bg-[var(--border)]/10 border-b-2 border-[var(--border)]">
-              {["", "No.", "Employee *", "Employee Name", "Appraisal Template", "Department", "Designation", "Branch", ""].map((h, i) => (
-                <th key={i} className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
+              {[
+                "",
+                "No.",
+                "Employee *",
+                "Employee Name",
+                "Appraisal Template",
+                "Department",
+                "Designation",
+                "Branch",
+                "",
+              ].map((h, i) => (
+                <th
+                  key={i}
+                  className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]"
+                >
                   {h}
                 </th>
               ))}
@@ -84,7 +108,10 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
               <tr key={i} className="border-b border-[var(--border)]/20">
                 {Array.from({ length: 9 }).map((_, j) => (
                   <td key={j} className="px-3 py-2">
-                    <div className="h-3 rounded animate-pulse" style={{ width: "70%", background: "rgba(0,0,0,0.07)" }} />
+                    <div
+                      className="h-3 rounded animate-pulse"
+                      style={{ width: "70%", background: "rgba(0,0,0,0.07)" }}
+                    />
                   </td>
                 ))}
               </tr>
@@ -114,17 +141,33 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
           <thead>
             <tr className="bg-[var(--border)]/10 border-b-2 border-[var(--border)]">
               <th className="px-2 py-2 text-center">
-                <input type="checkbox" className="w-3 h-3 accent-[var(--primary)]" disabled={isViewMode} />
+                <input
+                  type="checkbox"
+                  className="w-3 h-3 accent-[var(--primary)]"
+                  disabled={isViewMode}
+                />
               </th>
-              <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">No.</th>
+              <th className="px-2 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
+                No.
+              </th>
               <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
                 Employee <span className="text-red-500">*</span>
               </th>
-              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Employee Name</th>
-              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Appraisal Template</th>
-              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Department</th>
-              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Designation</th>
-              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">Branch</th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
+                Employee Name
+              </th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
+                Appraisal Template
+              </th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
+                Department
+              </th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
+                Designation
+              </th>
+              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--muted)]">
+                Branch
+              </th>
               <th className="px-2 py-2" />
             </tr>
           </thead>
@@ -132,7 +175,10 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
           <tbody>
             {pageRows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-10 text-center text-[var(--muted)] text-xs opacity-60">
+                <td
+                  colSpan={9}
+                  className="py-10 text-center text-[var(--muted)] text-xs opacity-60"
+                >
                   No employees found
                 </td>
               </tr>
@@ -146,12 +192,18 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
                     key={rowKey}
                     className={[
                       "border-b border-[var(--border)]/20 transition-colors",
-                      idx % 2 === 0 ? "bg-transparent" : "bg-[var(--row-hover)]/10",
+                      idx % 2 === 0
+                        ? "bg-transparent"
+                        : "bg-[var(--row-hover)]/10",
                       "hover:bg-[var(--row-hover)]",
                     ].join(" ")}
                   >
                     <td className="px-2 py-1 text-center">
-                      <input type="checkbox" className="w-3 h-3 accent-[var(--primary)]" disabled={isViewMode} />
+                      <input
+                        type="checkbox"
+                        className="w-3 h-3 accent-[var(--primary)]"
+                        disabled={isViewMode}
+                      />
                     </td>
                     <td className="px-2 py-1 text-center text-[var(--muted)] font-medium text-xs">
                       {globalIdx + 1}
@@ -159,7 +211,10 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
 
                     <td className="px-2 py-1">
                       {isViewMode ? (
-                        <span className="block truncate text-xs text-[var(--text)]" title={row.employee}>
+                        <span
+                          className="block truncate text-xs text-[var(--text)]"
+                          title={row.employee}
+                        >
                           {row.employee || "—"}
                         </span>
                       ) : (
@@ -168,7 +223,11 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
                           value={row.employee}
                           fetchOptions={fetchEmployees}
                           onChange={(val, opt: any) =>
-                            onUpdateEmployee(row.employee, val, opt?.label ?? val)
+                            onUpdateEmployee(
+                              row.employee,
+                              val,
+                              opt?.label ?? val,
+                            )
                           }
                           placeholder="Search employee…"
                         />
@@ -176,14 +235,20 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
                     </td>
 
                     <td className="px-3 py-1">
-                      <span className="block truncate text-xs text-[var(--text)]" title={row.employee_name}>
+                      <span
+                        className="block truncate text-xs text-[var(--text)]"
+                        title={row.employee_name}
+                      >
                         {row.employee_name || "—"}
                       </span>
                     </td>
 
                     <td className="px-2 py-1">
                       {isViewMode ? (
-                        <span className="block truncate text-xs text-[var(--text)]" title={row.appraisal_template}>
+                        <span
+                          className="block truncate text-xs text-[var(--text)]"
+                          title={row.appraisal_template}
+                        >
                           {row.appraisal_template || "—"}
                         </span>
                       ) : (
@@ -191,24 +256,35 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
                           label=""
                           value={row.appraisal_template}
                           fetchOptions={fetchTemplates}
-                          onChange={(val) => onUpdateTemplate(row.employee, val)}
+                          onChange={(val) =>
+                            onUpdateTemplate(row.employee, val)
+                          }
                           placeholder="Select template…"
                         />
                       )}
                     </td>
 
                     <td className="px-3 py-1">
-                      <span className="block truncate text-xs text-[var(--text)]" title={row.department}>
-                        {row.department || "—"}
+                      <span
+                        className="block truncate text-xs text-[var(--text)]"
+                        title={row.department}
+                      >
+                        {row.department ? trimAtLastDash(row.department) : "—"}
                       </span>
                     </td>
                     <td className="px-3 py-1">
-                      <span className="block truncate text-xs text-[var(--text)]" title={row.designation}>
+                      <span
+                        className="block truncate text-xs text-[var(--text)]"
+                        title={row.designation}
+                      >
                         {row.designation || "—"}
                       </span>
                     </td>
                     <td className="px-3 py-1">
-                      <span className="block truncate text-xs text-[var(--text)]" title={row.branch}>
+                      <span
+                        className="block truncate text-xs text-[var(--text)]"
+                        title={row.branch}
+                      >
                         {row.branch || "—"}
                       </span>
                     </td>
@@ -217,7 +293,10 @@ const AppraiseeTable: React.FC<AppraiseeTableProps> = ({
                       {!isViewMode && (
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); onRemove(row.employee); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove(row.employee);
+                          }}
                           className="p-1 rounded text-red-400 hover:text-red-600 transition-colors"
                           title="Remove row"
                         >
@@ -297,7 +376,14 @@ const NewCycleModal = ({
   isViewMode = false,
   viewLoading = false,
 }: NewCycleModalProps) => {
-  const hook = useCycleModal(isOpen, onSave, onClose, modalId, viewData, isViewMode);
+  const hook = useCycleModal(
+    isOpen,
+    onSave,
+    onClose,
+    modalId,
+    viewData,
+    isViewMode,
+  );
 
   const [appraiseePage, setAppraiseePage] = useState(1);
 
@@ -328,16 +414,28 @@ const NewCycleModal = ({
 
   const footer = isViewMode ? (
     <div className="flex items-center justify-end w-full">
-      <button type="button" onClick={hook.handleClose} className="btn btn-outline text-sm px-4 h-8">
+      <button
+        type="button"
+        onClick={hook.handleClose}
+        className="btn btn-outline text-sm px-4 h-8"
+      >
         Close
       </button>
     </div>
   ) : (
     <div className="flex items-center justify-between w-full">
-      <button type="button" onClick={hook.handleClose} className="btn btn-outline text-sm px-4 h-8">
+      <button
+        type="button"
+        onClick={hook.handleClose}
+        className="btn btn-outline text-sm px-4 h-8"
+      >
         Cancel
       </button>
-      <button type="button" onClick={hook.handleSave} className="btn btn-primary text-sm px-5 h-8">
+      <button
+        type="button"
+        onClick={hook.handleSave}
+        className="btn btn-primary text-sm px-5 h-8"
+      >
         Create Cycle
       </button>
     </div>
@@ -362,14 +460,15 @@ const NewCycleModal = ({
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
         <div style={{ flex: 1, overflowY: "auto", paddingRight: 2 }}>
           <div className="space-y-4 pb-2">
-
             {/* Form fields */}
             <div className="grid grid-cols-3 gap-3">
               <ModalInput
                 label="Cycle Name"
                 required={!isViewMode}
                 value={hook.form.cycle_name}
-                onChange={(e) => !isViewMode && hook.setField("cycle_name", e.target.value)}
+                onChange={(e) =>
+                  !isViewMode && hook.setField("cycle_name", e.target.value)
+                }
                 placeholder="e.g. Annual Review 2025"
                 disabled={isViewMode}
               />
@@ -384,7 +483,9 @@ const NewCycleModal = ({
                 label="Start Date"
                 required={!isViewMode}
                 value={hook.form.start_date}
-                onChange={(_, value) => { if (!isViewMode) hook.setField("start_date", value); }}
+                onChange={(_, value) => {
+                  if (!isViewMode) hook.setField("start_date", value);
+                }}
                 disabled={isViewMode}
               />
               {hook.getError("start_date") && (
@@ -398,7 +499,9 @@ const NewCycleModal = ({
                 label="End Date"
                 required={!isViewMode}
                 value={hook.form.end_date}
-                onChange={(_, value) => { if (!isViewMode) hook.setField("end_date", value); }}
+                onChange={(_, value) => {
+                  if (!isViewMode) hook.setField("end_date", value);
+                }}
                 disabled={isViewMode}
               />
               {hook.getError("end_date") && (
@@ -416,7 +519,7 @@ const NewCycleModal = ({
                     onChange={(val) => hook.setFilterBranch(val)}
                     placeholder="All branches…"
                   />
-                   <SearchSelect2
+                  <SearchSelect2
                     label="Department"
                     value={hook.filterDepartment}
                     fetchOptions={hook.fetchDepartments}
@@ -436,7 +539,9 @@ const NewCycleModal = ({
 
             {/* Employees section */}
             <div className="flex items-center justify-between">
-              <SectionLabel>{isViewMode ? "Appraisees" : "Employees"}</SectionLabel>
+              <SectionLabel>
+                {isViewMode ? "Appraisees" : "Employees"}
+              </SectionLabel>
             </div>
 
             {hook.empError && (
@@ -452,7 +557,9 @@ const NewCycleModal = ({
               currentPage={safePage}
               totalPages={totalPages}
               onPrev={() => setAppraiseePage((p) => Math.max(1, p - 1))}
-              onNext={() => setAppraiseePage((p) => Math.min(totalPages, p + 1))}
+              onNext={() =>
+                setAppraiseePage((p) => Math.min(totalPages, p + 1))
+              }
               fetchTemplates={hook.fetchTemplates}
               fetchEmployees={hook.fetchEmployees}
               onUpdateTemplate={hook.updateAppraiseeTemplate}

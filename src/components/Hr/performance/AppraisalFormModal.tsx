@@ -251,9 +251,9 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({
   const fetchEmployees = async (q: string) => {
     const data = await getEmployees(q);
     return data.map((e: any) => ({
-      label: `${e.name} — ${e.employee_name ?? ""}`,
-      value: e.name,
-      meta:  e,
+    label: e.label,         
+    value: e.value,         
+    meta:  e,
     }));
   };
 

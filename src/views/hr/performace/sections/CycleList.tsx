@@ -18,6 +18,8 @@ import {
   REFRESH_KEYS,
 } from "../../../../store/dataRefreshStore";
 import { showApiError, showSuccess, showLoading, closeSwal, showConfirm } from "../../../../utils/alert";
+
+import DateDisplay from "../../../../components/UI_Utils/Datedisplay";
 import { fireManagedSwal } from "../../../../utils/swalManager";
 
 // ─── Status badge styles ──────────────────────────────────────────────────────
@@ -199,13 +201,13 @@ const CycleList = () => {
       key: "start_date",
       header: "Start Date",
       align: "center",
-      render: (row) => <span>{row.start_date}</span>,
+      render: (row) => <DateDisplay date={row.start_date} />,
     },
     {
       key: "end_date",
       header: "End Date",
       align: "center",
-      render: (row) => <span>{row.end_date}</span>,
+      render: (row) => <DateDisplay date={row.end_date} />,
     },
     {
       key: "status",
