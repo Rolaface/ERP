@@ -188,6 +188,7 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
             name="dateOfJoining"
             value={formData.dateOfJoining}
             onChange={handleInputChange}
+            required
           />
           <DatePickerInput
             label="Contract End Date"

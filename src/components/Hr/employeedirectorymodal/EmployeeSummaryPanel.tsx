@@ -1,4 +1,4 @@
-import { FaCamera, FaBuilding, FaBriefcase, FaStar, FaCalendarAlt, FaMapMarkerAlt, FaMoneyBillWave, FaUmbrella, FaClock } from "react-icons/fa";
+import { FaCamera, FaBuilding, FaBriefcase, FaStar, FaCalendarAlt, FaMapMarkerAlt, FaMoneyBillWave, FaCalendarCheck , FaClock } from "react-icons/fa";
 import React, { useRef, useState, useEffect } from "react";
 
 import { ERP_BASE } from "../../../config/api";
@@ -138,7 +138,7 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
         : undefined,
     },
     { icon: FaMoneyBillWave, label: "Gross/mo",   value: grossMonthly, accent: true },
-    { icon: FaUmbrella,      label: "Leave",      value: formData.leavePolicyLabel || formData.leavePolicy },
+    { icon: FaCalendarCheck ,      label: "Leave",      value: formData.leavePolicyLabel || formData.leavePolicy },
     { icon: FaClock,         label: "Shift",      value: formData.shiftLabel || formData.shift },
   ];
 
@@ -270,7 +270,7 @@ export const EmployeeSummaryPanel: React.FC<EmployeeSummaryPanelProps> = ({
               {/* icon */}
               <Icon className="w-2.5 h-2.5 text-muted flex-shrink-0" />
               {/* label */}
-              <span className="text-[9px] uppercase tracking-wider text-muted font-medium flex-shrink-0 w-14 truncate">
+              <span className="text-[9px] uppercase tracking-wider text-muted font-medium flex-shrink-0 w-20">
                 {label}
               </span>
               {/* value */}
