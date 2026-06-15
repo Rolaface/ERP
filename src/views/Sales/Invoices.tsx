@@ -63,6 +63,8 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   Cancelled: [],
   Approved: ["Paid", "Cancelled"],
   Unpaid: ["Cancelled"],
+  Overdue:["Cancelled"]
+  
 };
 // const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 //   Draft: ["Rejected", "Approved"],
