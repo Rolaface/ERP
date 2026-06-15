@@ -100,6 +100,13 @@ export interface PurchaseInvoiceDetail {
             percentage?: string;
             condition?: string;
           }>;
+          attachments?: Array<{
+            file_name?: string;
+            file_url?: string;
+            file_size?: number;
+            is_private?: number;
+          }>;
+
         };
       };
     };
@@ -137,13 +144,13 @@ const fmt = (n?: number | string, currency = "INR") => {
 const fmtDate = (d?: string | null) =>
   d
     ? new Date(d).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "—";
 
-    const parseAddress = (html?: string | null) => {
+const parseAddress = (html?: string | null) => {
   if (!html) return null;
 
   const lines = html
@@ -249,30 +256,30 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
   const items = data?.items ?? [];
   const currency = data?.currency ?? "INR";
   const statusCls = STATUS_MAP[data?.status ?? "Draft"] ?? "bg-draft";
- const buying =
-  (data as any)?.terms?.buying ??
-  data?.terms?.terms?.buying;
+  const buying =
+    (data as any)?.terms?.buying ??
+    data?.terms?.terms?.buying;
 
-const phases =
-  buying?.payment?.phases
-    ?.filter((p) => p?.percentage)
-    ?.slice(0, 3) ?? [];
+  const phases =
+    buying?.payment?.phases
+      ?.filter((p) => p?.percentage)
+      ?.slice(0, 3) ?? [];
   const grandTotal =
-  data?.summary?.grandTotal ??
-  data?.grandTotal ??
-  (data as any)?.grandTotal ??
-  0;
- const subTotal =
-  data?.summary?.subTotal ??
-  (data?.grandTotal ?? 0) - Number((data as any)?.totalTaxes ?? 0);
- const taxTotal = Number(
-  data?.summary?.taxTotal ??
-  (data as any)?.totalTaxes ??
-  0
-);
-const rounding =
-  data?.summary?.roundingAdjustment ??
-  ((data as any)?.roundedTotal ?? 0) - (data?.grandTotal ?? 0);
+    data?.summary?.grandTotal ??
+    data?.grandTotal ??
+    (data as any)?.grandTotal ??
+    0;
+  const subTotal =
+    data?.summary?.subTotal ??
+    (data?.grandTotal ?? 0) - Number((data as any)?.totalTaxes ?? 0);
+  const taxTotal = Number(
+    data?.summary?.taxTotal ??
+    (data as any)?.totalTaxes ??
+    0
+  );
+  const rounding =
+    data?.summary?.roundingAdjustment ??
+    ((data as any)?.roundedTotal ?? 0) - (data?.grandTotal ?? 0);
   return (
     <>
       {/* Backdrop */}
@@ -583,39 +590,39 @@ const rounding =
                     {fmtDate(data.pDate ?? (data as any)?.piDate ?? (data as any)?.poDate)}
                   </p>
 
-                  
-                  
+
+
                 </div>
                 <div
-  style={{
-    padding: "9px 11px",
-    borderRadius: 7,
-    background: "var(--bg)",
-    border: "1px solid var(--border)",
-  }}
->
-  <p
-    style={{
-      fontSize: 9,
-      fontWeight: 700,
-      letterSpacing: "0.08em",
-      textTransform: "uppercase",
-      color: "var(--muted)",
-      marginBottom: 2,
-    }}
-  >
-    Due Date
-  </p>
-  <p
-    style={{
-      fontSize: 13,
-      fontWeight: 700,
-      color: "var(--text)",
-    }}
-  >
-    {fmtDate(data.dueDate)}
-  </p>
-</div>
+                  style={{
+                    padding: "9px 11px",
+                    borderRadius: 7,
+                    background: "var(--bg)",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "var(--muted)",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Due Date
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "var(--text)",
+                    }}
+                  >
+                    {fmtDate(data.dueDate)}
+                  </p>
+                </div>
               </div>
 
               {/* ── SUPPLIER & TRANSACTION ── */}
@@ -630,7 +637,7 @@ const rounding =
               >
                 <F label="Supplier" value={data.supplierName} />
                 <F label="Supplier Invoice No" value={data.spplrInvcNo} mono />
-                <F label="Supplier Invoice Date" value={fmtDate(data.spplrInvcDate ?? (data as any)?.spplrInvcDt)}/>
+                <F label="Supplier Invoice Date" value={fmtDate(data.spplrInvcDate ?? (data as any)?.spplrInvcDt)} />
               </div>
               <div
                 style={{
@@ -689,11 +696,11 @@ const rounding =
 
               {/* ── ADDRESSES ── */}
               {(
-  data.addresses ||
-  (data as any)?.supplierAddressDisplay ||
-  (data as any)?.shippingAddressDisplay ||
-  (data as any)?.dispatchAddressDisplay
-) && (
+                data.addresses ||
+                (data as any)?.supplierAddressDisplay ||
+                (data as any)?.shippingAddressDisplay ||
+                (data as any)?.dispatchAddressDisplay
+              ) && (
                   <>
                     <S title="Addresses" />
                     <div
@@ -704,25 +711,25 @@ const rounding =
                       }}
                     >
                       {[
-  {
-    label: "Supplier",
-    addr:
-      data.addresses?.supplierAddress ??
-      parseAddress((data as any)?.supplierAddressDisplay),
-  },
-  {
-    label: "Dispatch",
-    addr:
-      data.addresses?.dispatchAddress ??
-      parseAddress((data as any)?.dispatchAddressDisplay),
-  },
-  {
-    label: "Shipping",
-    addr:
-      data.addresses?.shippingAddress ??
-      parseAddress((data as any)?.shippingAddressDisplay),
-  },
-].map(({ label, addr }) =>
+                        {
+                          label: "Supplier",
+                          addr:
+                            data.addresses?.supplierAddress ??
+                            parseAddress((data as any)?.supplierAddressDisplay),
+                        },
+                        {
+                          label: "Dispatch",
+                          addr:
+                            data.addresses?.dispatchAddress ??
+                            parseAddress((data as any)?.dispatchAddressDisplay),
+                        },
+                        {
+                          label: "Shipping",
+                          addr:
+                            data.addresses?.shippingAddress ??
+                            parseAddress((data as any)?.shippingAddressDisplay),
+                        },
+                      ].map(({ label, addr }) =>
                         addr ? (
                           <div
                             key={label}
@@ -841,20 +848,20 @@ const rounding =
                           textOverflow: "ellipsis",
                         }}
                       >
-                         {it.item_name || (it as any)?.itemName || (it as any)?.itemCode}
+                        {it.item_name || (it as any)?.itemName || (it as any)?.itemCode}
                       </p>
-                      {(it.item_name || (it as any)?.itemName) && 
-                       (it.item_code || (it as any)?.itemCode) && (
-                        <p
-                          style={{
-                            fontSize: 9,
-                            color: "var(--muted)",
-                            fontFamily: "monospace",
-                          }}
-                        > 
+                      {(it.item_name || (it as any)?.itemName) &&
+                        (it.item_code || (it as any)?.itemCode) && (
+                          <p
+                            style={{
+                              fontSize: 9,
+                              color: "var(--muted)",
+                              fontFamily: "monospace",
+                            }}
+                          >
                             {it.item_code || (it as any)?.itemCode}
-                        </p>
-                      )}
+                          </p>
+                        )}
                       {/* Badges */}
                       <div
                         style={{
@@ -906,7 +913,7 @@ const rounding =
                             }}
                           >
                             Pack {Math.floor(Number(it.packingSize ?? (it as any)?.packingSize) || 0)}*
-{Math.floor(Number(it.packingUnit ?? (it as any)?.packingUnit) || 0)}
+                            {Math.floor(Number(it.packingUnit ?? (it as any)?.packingUnit) || 0)}
                           </span>
                         )}
                         {it.schedule_date && (
@@ -964,10 +971,10 @@ const rounding =
                       }}
                     >
                       {fmt(
-  it.amount ??
-  ((it as any)?.quantity ?? 0) * ((it as any)?.rate ?? 0),
-  currency
-)}
+                        it.amount ??
+                        ((it as any)?.quantity ?? 0) * ((it as any)?.rate ?? 0),
+                        currency
+                      )}
                     </p>
                   </div>
                 ))}
@@ -984,36 +991,36 @@ const rounding =
                   }}
                 >
                   {[
-  {
-    label: "Subtotal",
-    val: fmt(subTotal, currency),
-    big: false,
-  },
-  {
-    label: "Tax",
-    val: fmt(taxTotal, currency),
-    big: false,
-  },
-  ...(rounding !== 0
-    ? [
-        {
-          label: "Rounding",
-          val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
-          big: false,
-        },
-      ]
-    : []),
-  {
-    label: "Grand Total",
-    val: fmt(
-      data?.summary?.roundedTotal ??
-        (data as any)?.roundedTotal ??
-        grandTotal,
-      currency
-    ),
-    big: true,
-  },
-].map(({ label, val, big }) => (
+                    {
+                      label: "Subtotal",
+                      val: fmt(subTotal, currency),
+                      big: false,
+                    },
+                    {
+                      label: "Tax",
+                      val: fmt(taxTotal, currency),
+                      big: false,
+                    },
+                    ...(rounding !== 0
+                      ? [
+                        {
+                          label: "Rounding",
+                          val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
+                          big: false,
+                        },
+                      ]
+                      : []),
+                    {
+                      label: "Grand Total",
+                      val: fmt(
+                        data?.summary?.roundedTotal ??
+                        (data as any)?.roundedTotal ??
+                        grandTotal,
+                        currency
+                      ),
+                      big: true,
+                    },
+                  ].map(({ label, val, big }) => (
                     <div
                       key={label}
                       style={{
@@ -1159,8 +1166,8 @@ const rounding =
               {/* ── TERMS & CONDITIONS ── */}
               {(() => {
                 const b =
-  (data as any)?.terms?.buying ??
-  data.terms?.terms?.buying;
+                  (data as any)?.terms?.buying ??
+                  data.terms?.terms?.buying;
                 if (!b) return null;
                 const rows = [
                   { label: "Delivery", value: b.delivery },
@@ -1222,6 +1229,107 @@ const rounding =
                         </div>
                       ))}
                     </div>
+                  </>
+                );
+              })()}
+
+              {/* ── ATTACHMENTS ── */}
+              {(() => {
+                const attachments =
+                  (data as any)?.attachments ??
+                  (data as any)?.attachment_list ??
+                  [];
+                if (!attachments.length) return null;
+
+                return (
+                  <>
+                    <S title="Attachments" />
+                    <details
+                      style={{
+                        border: "1px solid var(--border)",
+                        borderRadius: 7,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <summary
+                        style={{
+                          padding: "8px 12px",
+                          cursor: "pointer",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "var(--text)",
+                          background: "var(--bg)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          listStyle: "none",         // removes default triangle in some browsers
+                        }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                          <path d="M21.44 11.05L12.25 20.24a6 6 0 0 1-8.49-8.49L14.5 1l1.06 1.06L4.82 12.81a4 4 0 1 0 5.66 5.66l9.19-9.19a2 2 0 0 0-2.83-2.83L7.7 15.58a1 1 0 1 0 1.41 1.41L18.65 7.45l1.06 1.06-9.54 9.54a3 3 0 0 1-4.24-4.24l8.48-8.49z" />
+                        </svg>
+                        {attachments.length} attachment{attachments.length > 1 ? "s" : ""}
+                      </summary>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: 1, padding: "4px 0" }}>
+                        {attachments.map((file: any, i: number) => {
+                          const fileName = file.file_name ?? file.name ?? `Attachment ${i + 1}`;
+                          const fileUrl = file.file_url ?? file.url ?? null;
+                          const fileSize = file.file_size ?? null;
+                          const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+                          const isPdf = ext === "pdf";
+                          const isImage = ["png", "jpg", "jpeg", "webp", "gif"].includes(ext);
+
+                          return (
+                            <div
+                              key={i}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "7px 12px",
+                                borderTop: i > 0 ? "1px solid var(--border)" : "none",
+                                background: "var(--card)",
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                {/* icon — same logic you already have */}
+                                <div style={{
+                                  width: 28, height: 28, borderRadius: 6,
+                                  background: isPdf ? "rgba(239,68,68,0.1)" : isImage ? "rgba(59,130,246,0.1)" : "rgba(99,102,241,0.1)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                }}>
+                                  {/* reuse your existing icon SVGs here */}
+                                </div>
+                                <div>
+                                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{fileName}</p>
+                                  {fileSize && (
+                                    <p style={{ fontSize: 10, color: "var(--muted)" }}>
+                                      {fileSize < 1024 ? `${fileSize} B`
+                                        : fileSize < 1048576 ? `${(fileSize / 1024).toFixed(1)} KB`
+                                          : `${(fileSize / 1048576).toFixed(1)} MB`}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              {fileUrl && (
+                                <button className="pidm-btn"
+                                  onClick={() => {
+                                    const url = fileUrl.startsWith("http") ? fileUrl
+                                      : `${window.location.origin}${fileUrl.startsWith("/") ? "" : "/"}${fileUrl}`;
+                                    window.open(url, "_blank", "noopener,noreferrer");
+                                  }}
+                                  style={{ background: "var(--primary)", color: "#fff", fontSize: 11, padding: "4px 10px" }}
+                                >
+                                  View
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </details>
                   </>
                 );
               })()}
