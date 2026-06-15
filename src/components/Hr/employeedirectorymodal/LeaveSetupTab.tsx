@@ -3,9 +3,9 @@ import { FaInfoCircle, FaCalendarCheck } from "react-icons/fa";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { getAllLeavePolicies } from "../../../api/utils/frappeUtilsApi";
 import { getLeavePolicyById } from "../../../api/leaveConfigApi";
-import { getAllEmployees } from "../../../api/employeeapi";
 import { getalluser } from "../../../api/utils/frappeUtilsApi";
 import { resolveLabel } from "../../../api/utils/labelResolver";
+
 type LeaveSetupTabProps = {
   formData: any;
   handleInputChange: (field: string, value: string | boolean | any) => void;
@@ -54,7 +54,7 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
     await loadPolicyDetails(value);
   };
 
-  // Load on mount if already set (edit mode)
+  // load policy details on mount when editing
   useEffect(() => {
     if (formData.leavePolicy) {
       loadPolicyDetails(formData.leavePolicy);
@@ -67,66 +67,48 @@ export const LeaveSetupTab: React.FC<LeaveSetupTabProps> = ({
     (s: number, i: any) => s + (i.annual_allocation ?? 0),
     0,
   );
+
+  // resolve labels for approver fields in edit mode
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({
-        value: formData.leavePolicy,
-        fetcher: getAllLeavePolicies,
-      });
-
+      const label = await resolveLabel({ value: formData.leavePolicy, fetcher: getAllLeavePolicies });
       handleInputChange("leavePolicyLabel", label);
     };
-
     loadLabel();
   }, [formData.leavePolicy]);
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({
-        value: formData.leaveApprover,
-        fetcher: getalluser,
-      });
-
+      const label = await resolveLabel({ value: formData.leaveApprover, fetcher: getalluser });
       handleInputChange("leaveApproverLabel", label);
     };
-
     loadLabel();
   }, [formData.leaveApprover]);
+
   useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.expenseApprover,
-      fetcher: getalluser,
-    });
+    const loadLabel = async () => {
+      const label = await resolveLabel({ value: formData.expenseApprover, fetcher: getalluser });
+      handleInputChange("expenseApproverLabel", label);
+    };
+    loadLabel();
+  }, [formData.expenseApprover]);
 
-    handleInputChange(
-      "expenseApproverLabel",
-      label,
-    );
-  };
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({ value: formData.shiftRequestApprover, fetcher: getalluser });
+      handleInputChange("shiftRequestApproverLabel", label);
+    };
+    loadLabel();
+  }, [formData.shiftRequestApprover]);
 
-  loadLabel();
-}, [formData.expenseApprover]);
-useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.shiftRequestApprover,
-      fetcher: getalluser,
-    });
-
-    handleInputChange(
-      "shiftRequestApproverLabel",
-      label,
-    );
-  };
-
-  loadLabel();
-}, [formData.shiftRequestApprover]);
   return (
-    <div className="max-w-4xl mx-auto space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        {/* LEFT — selector */}
-        <div className="bg-card p-3 rounded-lg border border-theme space-y-2.5">
+    <div className="w-full flex flex-col gap-2 min-w-0">
+
+      {/* Row 1: Policy selector + preview table side by side */}
+      <div className="grid grid-cols-2 gap-2">
+
+        {/* LEFT — policy selector only */}
+        <div className="bg-card p-3 rounded-lg border border-theme flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider">
               Leave Configuration
@@ -148,58 +130,16 @@ useEffect(() => {
           </p>
 
           {!formData.leavePolicy && (
-            <div className="mt-2 p-3 rounded border border-dashed border-theme text-center">
+            <div className="p-3 rounded border border-dashed border-theme text-center">
               <FaCalendarCheck className="w-5 h-5 text-muted mx-auto mb-1" />
               <p className="text-[10px] text-muted">
                 Select a policy to preview entitlements
               </p>
             </div>
           )}
-          <div className="grid grid-cols-3 gap-2">
-            <SearchSelect2
-              label="Leave Approver"
-              value={
-                formData.leaveApproverLabel || formData.leaveApprover || ""
-              }
-              placeholder="Search ..."
-              fetchOptions={getalluser}
-              onChange={(value: string, option: any) => {
-                handleInputChange("leaveApprover", value);
-                handleInputChange("leaveApproverLabel", option?.label);
-              }}
-            />
-
-            <SearchSelect2
-              label="Expense Approver"
-              value={
-                formData.expenseApproverLabel || formData.expenseApprover || ""
-              }
-              placeholder="Search ..."
-              fetchOptions={getalluser}
-              onChange={(value: string, option: any) => {
-                handleInputChange("expenseApprover", value);
-                handleInputChange("expenseApproverLabel", option?.label);
-              }}
-            />
-            <SearchSelect2
-              label="Shift Request Approver"
-              value={
-                formData.shiftRequestApproverLabel ||
-                formData.shiftRequestApprover ||
-                ""
-              }
-              placeholder="Search ..."
-              fetchOptions={getalluser}
-              onChange={(value: string, option: any) => {
-                handleInputChange("shiftRequestApprover", value);
-
-                handleInputChange("shiftRequestApproverLabel", option?.label);
-              }}
-            />
-          </div>
         </div>
 
-        {/* RIGHT — policy detail table */}
+        {/* RIGHT — policy detail preview table */}
         <div className="bg-card p-3 rounded-lg border border-theme">
           {loading && (
             <p className="text-xs text-muted py-4 text-center">Loading…</p>
@@ -215,12 +155,9 @@ useEffect(() => {
 
           {!loading && policyDetails && (
             <div className="space-y-2">
-              {/* Policy name */}
               <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider pb-1 border-b border-theme">
                 {policyDetails.title ?? policyDetails.name}
               </h4>
-
-              {/* Table */}
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-theme">
@@ -259,6 +196,46 @@ useEffect(() => {
           )}
         </div>
       </div>
+
+      {/* Row 2: Approvers — full width, 3 columns */}
+      <div className="bg-card p-3 rounded-lg border border-theme">
+        <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
+          Approvers
+        </h4>
+        <div className="grid grid-cols-3 gap-3">
+          <SearchSelect2
+            label="Leave Approver"
+            value={formData.leaveApproverLabel || formData.leaveApprover || ""}
+            placeholder="Search ..."
+            fetchOptions={getalluser}
+            onChange={(value: string, option: any) => {
+              handleInputChange("leaveApprover", value);
+              handleInputChange("leaveApproverLabel", option?.label);
+            }}
+          />
+          <SearchSelect2
+            label="Expense Approver"
+            value={formData.expenseApproverLabel || formData.expenseApprover || ""}
+            placeholder="Search ..."
+            fetchOptions={getalluser}
+            onChange={(value: string, option: any) => {
+              handleInputChange("expenseApprover", value);
+              handleInputChange("expenseApproverLabel", option?.label);
+            }}
+          />
+          <SearchSelect2
+            label="Shift Request Approver"
+            value={formData.shiftRequestApproverLabel || formData.shiftRequestApprover || ""}
+            placeholder="Search ..."
+            fetchOptions={getalluser}
+            onChange={(value: string, option: any) => {
+              handleInputChange("shiftRequestApprover", value);
+              handleInputChange("shiftRequestApproverLabel", option?.label);
+            }}
+          />
+        </div>
+      </div>
+
     </div>
   );
 };

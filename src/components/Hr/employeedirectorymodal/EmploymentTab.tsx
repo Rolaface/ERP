@@ -13,7 +13,6 @@ import {
   getEmployees,
 } from "../../../api/utils/frappeUtilsApi";
 import { resolveLabel } from "../../../api/utils/labelResolver";
-
 import DatePickerInput from "../../calendar/DatePickerInput";
 
 type EmploymentTabProps = {
@@ -51,63 +50,37 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
   }, [formData.employment_type]);
 
   const fetchReportingToOptions = async (q: string) => {
-    const res = await getEmployees(q, {
-      currentEmployee: formData.employee,
-    });
-
+    const res = await getEmployees(q, { currentEmployee: formData.employee });
     return (res || []).map((emp: any) => ({
       label: emp.label,
       value: emp.value,
-      meta: {
-        description: emp.description,
-      },
+      meta: { description: emp.description },
     }));
   };
-useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.department,
-      fetcher: getAllDepartments,
-    });
 
-    handleInputChange(
-      "departmentLabel",
-      label,
-    );
-  };
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({ value: formData.department, fetcher: getAllDepartments });
+      handleInputChange("departmentLabel", label);
+    };
+    loadLabel();
+  }, [formData.department]);
 
-  loadLabel();
-}, [formData.department]);
-useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.reports_to,
-      fetcher: getEmployees,
-    });
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({ value: formData.reports_to, fetcher: getEmployees });
+      handleInputChange("reportingToLabel", label);
+    };
+    loadLabel();
+  }, [formData.reports_to]);
 
-    handleInputChange(
-      "reportingToLabel",
-      label,
-    );
-  };
-
-  loadLabel();
-}, [formData.reports_to]);
-useEffect(() => {
-  const loadLabel = async () => {
-    const label = await resolveLabel({
-      value: formData.branch,
-      fetcher: getallbranches,
-    });
-
-    handleInputChange(
-      "branchLabel",
-      label,
-    );
-  };
-
-  loadLabel();
-}, [formData.branch]);
+  useEffect(() => {
+    const loadLabel = async () => {
+      const label = await resolveLabel({ value: formData.branch, fetcher: getallbranches });
+      handleInputChange("branchLabel", label);
+    };
+    loadLabel();
+  }, [formData.branch]);
 
   const fetchDepartmentOptions = (q: string) => getAllDepartments(q);
   const fetchGradeOptions = (q: string) => getAllGrades(q);
@@ -117,14 +90,14 @@ useEffect(() => {
   const fetchShiftOptions = (q: string) => getshift(q);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-3">
-      {/* ── Employment Details ───────────────────────────────────── */}
+    <div className="w-full flex flex-col gap-2 min-w-0">
+
+      {/* Employment Details */}
       <div className="bg-card p-3 rounded-lg border border-theme">
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Employment Details
         </h4>
 
-        {/* Row 1 – Department / Grade / Designation */}
         <div className="grid grid-cols-3 gap-2.5">
           <SearchSelect2
             label="Department"
@@ -133,7 +106,6 @@ useEffect(() => {
             fetchOptions={fetchDepartmentOptions}
             onChange={(value, option) => {
               handleInputChange("department", value);
-
               handleInputChange("departmentLabel", option?.label || "");
             }}
           />
@@ -153,15 +125,12 @@ useEffect(() => {
           />
         </div>
 
-        {/* Row 2 – Employee Number / Shift / Employment Status */}
         <div className="grid grid-cols-3 gap-2.5 mt-2.5">
           <ModalInput
             label="Employee Number"
             name="employee_number"
             value={formData.employee_number}
-            onChange={(e) =>
-              handleInputChange("employee_number", e.target.value)
-            }
+            onChange={(e) => handleInputChange("employee_number", e.target.value)}
           />
           <SearchSelect2
             label="Employee Type"
@@ -174,14 +143,11 @@ useEffect(() => {
             label="Employment Status"
             name="employmentStatus"
             value={formData.employmentStatus}
-            onChange={(e) =>
-              handleInputChange("employmentStatus", e.target.value)
-            }
+            onChange={(e) => handleInputChange("employmentStatus", e.target.value)}
             options={EMPLOYMENT_STATUS_OPTIONS}
           />
         </div>
 
-        {/* Row 3 – Shift always + Relieving Date only when Left */}
         <div className="grid grid-cols-3 gap-2.5 mt-2.5">
           <SearchSelect2
             label="Shift"
@@ -201,7 +167,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* ── Reporting & Dates ────────────────────────────────────── */}
+      {/* Reporting & Dates */}
       <div className="bg-card p-3 rounded-lg border border-theme">
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Reporting & Dates
@@ -214,7 +180,6 @@ useEffect(() => {
             fetchOptions={fetchReportingToOptions}
             onChange={(value, option) => {
               handleInputChange("reports_to", value);
-
               handleInputChange("reportingToLabel", option?.label || "");
             }}
           />
@@ -234,7 +199,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* ── Work Location ────────────────────────────────────────── */}
+      {/* Work Location */}
       <div className="bg-card p-3 rounded-lg border border-theme">
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Work Location
@@ -257,6 +222,7 @@ useEffect(() => {
           />
         </div>
       </div>
+
     </div>
   );
 };

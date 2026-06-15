@@ -6,7 +6,7 @@ export const TAB_ORDER = [
   "Attendance & Leaves",
   "Compensation",
   "Bank",
-  "Work Schedule",
+  // "Work Schedule",
 ] as const;
 
 export type TabName = (typeof TAB_ORDER)[number];

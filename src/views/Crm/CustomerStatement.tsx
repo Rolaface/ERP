@@ -14,7 +14,7 @@ import {
   X,
   ExternalLink,
   Loader2,
-  Check,
+
   Scale
 } from "lucide-react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
@@ -94,109 +94,6 @@ const AgingCell = ({ label, value, active = false, warn = false }: AgingCellProp
   );
 };
 
-// ─── PDF: Share Modal ─────────────────────────────────────────────────────────
-
-interface ShareModalProps {
-  customerName: string;
-  dateRange: string;
-  blob: Blob;
-  defaultEmail?: string;
-  onClose: () => void;
-}
-
-const ShareModal = ({ customerName, dateRange, blob, defaultEmail = "", onClose }: ShareModalProps) => {
-  const [email, setEmail] = useState(defaultEmail);
-  const [note, setNote] = useState("");
-  const [sent, setSent] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => { inputRef.current?.focus(); }, []);
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [onClose]);
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
-
-  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-
-  const handleSend = () => {
-    // Swap this for your real email API call
-    const subject = encodeURIComponent(`Customer Statement – ${customerName} (${dateRange})`);
-    const body = encodeURIComponent(`Hi,\n\nPlease find the statement for ${customerName} (${dateRange}) attached.\n\n${note ? `Note: ${note}\n\n` : ""}Regards`);
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_self");
-    setSent(true);
-    setTimeout(onClose, 1800);
-  };
-
-  return (
-    <div className="fixed inset-0 flex items-center justify-center" style={{ zIndex: 10001 }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div className="relative bg-card rounded-2xl shadow-2xl border border-theme overflow-hidden w-[94vw] max-w-[460px]"
-        onClick={(e) => e.stopPropagation()}>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-theme">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <Mail className="w-4 h-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-main leading-tight">Share Statement</p>
-              <p className="text-[10px] text-muted truncate">{customerName} · {dateRange}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-red-50 hover:text-red-500 text-muted transition-colors shrink-0">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="px-5 py-4 space-y-3.5">
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">Recipient Email</label>
-            <input ref={inputRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="customer@example.com"
-              className="w-full rounded-xl border border-theme bg-card px-3 py-2 text-sm font-medium text-main outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">
-              Note <span className="font-normal normal-case tracking-normal">(optional)</span>
-            </label>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3}
-              placeholder="Add a short message…"
-              className="w-full rounded-xl border border-theme bg-card px-3 py-2 text-sm font-medium text-main outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all resize-none" />
-          </div>
-          <div className="flex items-center gap-2 rounded-xl border border-theme bg-row-hover/40 px-3 py-2.5">
-            <FileText className="w-3.5 h-3.5 text-muted shrink-0" />
-            <span className="text-[11px] text-muted truncate flex-1">
-              Statement_{customerName.replace(/\s+/g, "_")}.pdf
-            </span>
-            <span className="text-[10px] text-muted shrink-0">{(blob.size / 1024).toFixed(0)} KB</span>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-theme bg-app/50">
-          <button onClick={onClose}
-            className="px-3.5 py-1.5 text-[12px] font-semibold rounded-xl border border-theme text-main hover:bg-row-hover transition-colors">
-            Cancel
-          </button>
-          <button onClick={handleSend} disabled={!valid || sent}
-            className={`flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-semibold rounded-xl transition-all ${sent ? "bg-success/10 text-success border border-success/30" :
-              valid ? "bg-primary text-white hover:opacity-90" :
-                "bg-primary/20 text-primary/40 cursor-not-allowed"}`}>
-            {sent ? <><Check className="w-3.5 h-3.5" />Sent!</> : <><Mail className="w-3.5 h-3.5" />Send Email</>}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // ─── PDF: Viewer Modal ────────────────────────────────────────────────────────
 
@@ -210,7 +107,7 @@ interface PdfViewerModalProps {
   onClose: () => void;
 }
 
-const PdfViewerModal = ({ blobUrl, blob, filename, customerName, dateRange, defaultEmail, onClose }: PdfViewerModalProps) => {
+const PdfViewerModal = ({ blobUrl, blob, filename, customerName, dateRange, onClose }: PdfViewerModalProps) => {
   const [showShare, setShowShare] = useState(false);
 
   useEffect(() => {
@@ -244,10 +141,7 @@ const PdfViewerModal = ({ blobUrl, blob, filename, customerName, dateRange, defa
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <button onClick={() => setShowShare(true)}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors">
-                <Mail className="w-3.5 h-3.5" /><span className="hidden sm:inline">Share</span>
-              </button>
+             
               <button onClick={() => triggerDownload(blob, filename)}
                 className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors">
                 <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Download</span>
@@ -270,10 +164,7 @@ const PdfViewerModal = ({ blobUrl, blob, filename, customerName, dateRange, defa
         </div>
       </div>
 
-      {showShare && (
-        <ShareModal customerName={customerName} dateRange={dateRange} blob={blob}
-          defaultEmail={defaultEmail} onClose={() => setShowShare(false)} />
-      )}
+      
     </>
   );
 };
