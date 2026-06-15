@@ -129,8 +129,12 @@ interface Props {
   onViewPdf?: () => void;
   onDownload?: () => void;
   onClosePdf?: () => void;
+  attachmentUrl?: string | null;
+  attachmentLoading?: boolean;
+  attachmentName?: string;
+  onViewAttachment?: () => void;
+  onCloseAttachment?: () => void;
 }
-
 const fmt = (n?: number | string, currency = "INR") => {
   const num = typeof n === "string" ? parseFloat(n) : (n ?? 0);
   return new Intl.NumberFormat("en-IN", {
@@ -249,13 +253,17 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
   onViewPdf,
   onDownload,
   onClosePdf,
+  attachmentUrl,
+  attachmentLoading,
+  attachmentName,
+  onViewAttachment,
+  onCloseAttachment,
 }) => {
   if (!open) return null;
 
   const items = data?.items ?? [];
   const currency = data?.currency ?? "INR";
   const statusCls = STATUS_MAP[data?.status ?? "Draft"] ?? "bg-draft";
-<<<<<<< bug-fix
   const buying =
     (data as any)?.terms?.buying ??
     data?.terms?.terms?.buying;
@@ -264,12 +272,6 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
     buying?.payment?.phases
       ?.filter((p) => p?.percentage)
       ?.slice(0, 3) ?? [];
-=======
-  const buying = (data as any)?.terms?.buying ?? data?.terms?.terms?.buying;
-
-  const phases =
-    buying?.payment?.phases?.filter((p) => p?.percentage)?.slice(0, 3) ?? [];
->>>>>>> uat
   const grandTotal =
     data?.summary?.grandTotal ??
     data?.grandTotal ??
@@ -279,13 +281,9 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
     data?.summary?.subTotal ??
     (data?.grandTotal ?? 0) - Number((data as any)?.totalTaxes ?? 0);
   const taxTotal = Number(
-<<<<<<< bug-fix
     data?.summary?.taxTotal ??
     (data as any)?.totalTaxes ??
     0
-=======
-    data?.summary?.taxTotal ?? (data as any)?.totalTaxes ?? 0,
->>>>>>> uat
   );
   const rounding =
     data?.summary?.roundingAdjustment ??
@@ -611,16 +609,13 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                   >
                     {fmtDate(
                       data.pDate ??
-                        (data as any)?.piDate ??
-                        (data as any)?.poDate,
+                      (data as any)?.piDate ??
+                      (data as any)?.poDate,
                     )}
                   </p>
-<<<<<<< bug-fix
 
 
 
-=======
->>>>>>> uat
                 </div>
                 <div
                   style={{
@@ -666,16 +661,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               >
                 <F label="Supplier" value={data.supplierName} />
                 <F label="Supplier Invoice No" value={data.spplrInvcNo} mono />
-<<<<<<< bug-fix
                 <F label="Supplier Invoice Date" value={fmtDate(data.spplrInvcDate ?? (data as any)?.spplrInvcDt)} />
-=======
-                <F
-                  label="Supplier Invoice Date"
-                  value={fmtDate(
-                    data.spplrInvcDate ?? (data as any)?.spplrInvcDt,
-                  )}
-                />
->>>>>>> uat
               </div>
               <div
                 style={{
@@ -739,13 +725,10 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
             )} */}
 
               {/* ── ADDRESSES ── */}
-<<<<<<< bug-fix
-              {(
-                data.addresses ||
+              {(data.addresses ||
                 (data as any)?.supplierAddressDisplay ||
                 (data as any)?.shippingAddressDisplay ||
-                (data as any)?.dispatchAddressDisplay
-              ) && (
+                (data as any)?.dispatchAddressDisplay) && (
                   <>
                     <S title="Addresses" />
                     <div
@@ -778,103 +761,65 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                         addr ? (
                           <div
                             key={label}
-=======
-              {(data.addresses ||
-                (data as any)?.supplierAddressDisplay ||
-                (data as any)?.shippingAddressDisplay ||
-                (data as any)?.dispatchAddressDisplay) && (
-                <>
-                  <S title="Addresses" />
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3,1fr)",
-                      gap: 6,
-                    }}
-                  >
-                    {[
-                      {
-                        label: "Supplier",
-                        addr:
-                          data.addresses?.supplierAddress ??
-                          parseAddress((data as any)?.supplierAddressDisplay),
-                      },
-                      {
-                        label: "Dispatch",
-                        addr:
-                          data.addresses?.dispatchAddress ??
-                          parseAddress((data as any)?.dispatchAddressDisplay),
-                      },
-                      {
-                        label: "Shipping",
-                        addr:
-                          data.addresses?.shippingAddress ??
-                          parseAddress((data as any)?.shippingAddressDisplay),
-                      },
-                    ].map(({ label, addr }) =>
-                      addr ? (
-                        <div
-                          key={label}
-                          style={{
-                            padding: "7px 9px",
-                            borderRadius: 6,
-                            background: "var(--bg)",
-                            border: "1px solid var(--border)",
-                          }}
-                        >
-                          <p
->>>>>>> uat
                             style={{
-                              fontSize: 9,
-                              color: "var(--muted)",
-                              fontWeight: 700,
-                              textTransform: "uppercase",
-                              letterSpacing: "0.07em",
-                              marginBottom: 3,
+                              padding: "7px 9px",
+                              borderRadius: 6,
+                              background: "var(--bg)",
+                              border: "1px solid var(--border)",
                             }}
                           >
-                            {label}
-                          </p>
-                          {[
-                            addr.addressLine1,
-                            addr.city,
-                            [addr.state, addr.postalCode]
-                              .filter(Boolean)
-                              .join(", "),
-                            addr.country?.toUpperCase(),
-                          ]
-                            .filter(Boolean)
-                            .map((l, i) => (
-                              <p
-                                key={i}
-                                style={{
-                                  fontSize: 12,
-                                  color: "var(--text)",
-                                  lineHeight: 1.5,
-                                }}
-                              >
-                                {l}
-                              </p>
-                            ))}
-                          {hasPhone(addr) && addr.phone && (
                             <p
                               style={{
-                                fontSize: 10,
+                                fontSize: 9,
                                 color: "var(--muted)",
-                                marginTop: 2,
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.07em",
+                                marginBottom: 3,
                               }}
                             >
-                              {addr.phone}
+                              {label}
                             </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div key={label} />
-                      ),
-                    )}
-                  </div>
-                </>
-              )}
+                            {[
+                              addr.addressLine1,
+                              addr.city,
+                              [addr.state, addr.postalCode]
+                                .filter(Boolean)
+                                .join(", "),
+                              addr.country?.toUpperCase(),
+                            ]
+                              .filter(Boolean)
+                              .map((l, i) => (
+                                <p
+                                  key={i}
+                                  style={{
+                                    fontSize: 12,
+                                    color: "var(--text)",
+                                    lineHeight: 1.5,
+                                  }}
+                                >
+                                  {l}
+                                </p>
+                              ))}
+                            {hasPhone(addr) && addr.phone && (
+                              <p
+                                style={{
+                                  fontSize: 10,
+                                  color: "var(--muted)",
+                                  marginTop: 2,
+                                }}
+                              >
+                                {addr.phone}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <div key={label} />
+                        ),
+                      )}
+                    </div>
+                  </>
+                )}
 
               {/* ── LINE ITEMS ── */}
               <S title="Line Items" />
@@ -931,13 +876,9 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                           textOverflow: "ellipsis",
                         }}
                       >
-<<<<<<< bug-fix
-                        {it.item_name || (it as any)?.itemName || (it as any)?.itemCode}
-=======
                         {it.item_name ||
                           (it as any)?.itemName ||
                           (it as any)?.itemCode}
->>>>>>> uat
                       </p>
                       {(it.item_name || (it as any)?.itemName) &&
                         (it.item_code || (it as any)?.itemCode) && (
@@ -994,35 +935,20 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                           it.packingUnit ||
                           (it as any)?.packingSize ||
                           (it as any)?.packingUnit) && (
-                          <span
-                            style={{
-                              fontSize: 9,
-                              background: "var(--bg)",
-                              border: "1px solid var(--border)",
-                              borderRadius: 4,
-                              padding: "1px 5px",
-                              color: "var(--muted)",
-                            }}
-                          >
-<<<<<<< bug-fix
-                            Pack {Math.floor(Number(it.packingSize ?? (it as any)?.packingSize) || 0)}*
-                            {Math.floor(Number(it.packingUnit ?? (it as any)?.packingUnit) || 0)}
-=======
-                            Pack{" "}
-                            {Math.floor(
-                              Number(
-                                it.packingSize ?? (it as any)?.packingSize,
-                              ) || 0,
-                            )}
-                            *
-                            {Math.floor(
-                              Number(
-                                it.packingUnit ?? (it as any)?.packingUnit,
-                              ) || 0,
-                            )}
->>>>>>> uat
-                          </span>
-                        )}
+                            <span
+                              style={{
+                                fontSize: 9,
+                                background: "var(--bg)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 4,
+                                padding: "1px 5px",
+                                color: "var(--muted)",
+                              }}
+                            >
+                              Pack {Math.floor(Number(it.packingSize ?? (it as any)?.packingSize) || 0)}*
+                              {Math.floor(Number(it.packingUnit ?? (it as any)?.packingUnit) || 0)}
+                            </span>
+                          )}
                         {it.schedule_date && (
                           <span
                             style={{
@@ -1079,14 +1005,8 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                     >
                       {fmt(
                         it.amount ??
-<<<<<<< bug-fix
                         ((it as any)?.quantity ?? 0) * ((it as any)?.rate ?? 0),
                         currency
-=======
-                          ((it as any)?.quantity ?? 0) *
-                            ((it as any)?.rate ?? 0),
-                        currency,
->>>>>>> uat
                       )}
                     </p>
                   </div>
@@ -1116,35 +1036,20 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                     },
                     ...(rounding !== 0
                       ? [
-<<<<<<< bug-fix
                         {
                           label: "Rounding",
                           val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
                           big: false,
                         },
                       ]
-=======
-                          {
-                            label: "Rounding",
-                            val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
-                            big: false,
-                          },
-                        ]
->>>>>>> uat
                       : []),
                     {
                       label: "Grand Total",
                       val: fmt(
                         data?.summary?.roundedTotal ??
-<<<<<<< bug-fix
                         (data as any)?.roundedTotal ??
                         grandTotal,
                         currency
-=======
-                          (data as any)?.roundedTotal ??
-                          grandTotal,
-                        currency,
->>>>>>> uat
                       ),
                       big: true,
                     },
@@ -1294,12 +1199,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               {/* ── TERMS & CONDITIONS ── */}
               {(() => {
                 const b =
-<<<<<<< bug-fix
-                  (data as any)?.terms?.buying ??
-                  data.terms?.terms?.buying;
-=======
                   (data as any)?.terms?.buying ?? data.terms?.terms?.buying;
->>>>>>> uat
                 if (!b) return null;
                 const rows = [
                   { label: "Delivery", value: b.delivery },
@@ -1446,11 +1346,13 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                                 </div>
                               </div>
                               {fileUrl && (
-                                <button className="pidm-btn"
-                                  onClick={() => {
-                                    const url = fileUrl.startsWith("http") ? fileUrl
-                                      : `${window.location.origin}${fileUrl.startsWith("/") ? "" : "/"}${fileUrl}`;
-                                    window.open(url, "_blank", "noopener,noreferrer");
+                                <button
+                                  type="button"
+                                  className="pidm-btn"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onViewAttachment?.(file);
                                   }}
                                   style={{ background: "var(--primary)", color: "#fff", fontSize: 11, padding: "4px 10px" }}
                                 >
@@ -1648,9 +1550,171 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
             </div>
           </div>
         )}
+
+        {(attachmentUrl || attachmentLoading) && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 21,
+              background: "var(--card)",
+              display: "flex",
+              flexDirection: "column",
+              animation: "pidm-up .18s cubic-bezier(.4,0,.2,1)",
+            }}
+          >
+            {/* HEADER */}
+            <div
+              style={{
+                padding: "9px 12px",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexShrink: 0,
+              }}
+            >
+              {/* LEFT */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  onClick={onCloseAttachment}
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 6,
+                    border: "1px solid var(--border)",
+                    background: "transparent",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "var(--muted)",
+                  }}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+
+                <div style={{ lineHeight: 1 }}>
+                  <p
+                    style={{
+                      fontSize: 9,
+                      color: "var(--muted)",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Attachment Preview
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "var(--text)",
+                    }}
+                  >
+                    {attachmentName}
+                  </p>
+                </div>
+              </div>
+
+              {/* RIGHT BUTTONS */}
+              <div style={{ display: "flex", gap: 5 }}>
+                {attachmentUrl && /\.(png|jpe?g|gif|webp|svg)$/i.test(attachmentName || "") ? (
+                  <img
+                    src={attachmentUrl}
+                    alt={attachmentName}
+                    style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                  />
+                ) : (
+                  attachmentUrl && (
+                    <iframe
+                      src={attachmentUrl}
+                      style={{ width: "100%", height: "100%", border: "none" }}
+                      title="Attachment Preview"
+                    />
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* CONTENT AREA */}
+            {/* CONTENT AREA */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "auto", background: "var(--bg)" }}>
+              {attachmentLoading && (
+                <p style={{ padding: 20 }}>Loading...</p>
+              )}
+
+              {attachmentUrl && /\.(png|jpe?g|gif|webp|svg)$/i.test(attachmentName || "") ? (
+                <img
+                  src={attachmentUrl}
+                  alt={attachmentName}
+                  style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                />
+              ) : (
+                attachmentUrl && (
+                  <iframe
+                    src={attachmentUrl}
+                    style={{ width: "100%", height: "100%", border: "none" }}
+                    title="Attachment Preview"
+                  />
+                )
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </>
   );
 };
 
 export default PurchaseInvoiceDetailModal;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
