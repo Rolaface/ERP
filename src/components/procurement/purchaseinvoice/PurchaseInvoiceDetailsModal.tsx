@@ -123,7 +123,12 @@ interface Props {
   onDownload?: () => void;
   onClosePdf?: () => void;
 }
-
+type PaymentPhase = {
+  id?: string;
+  name?: string;
+  percentage?: string;
+  condition?: string;
+};
 const fmt = (n?: number | string, currency = "INR") => {
   const num = typeof n === "string" ? parseFloat(n) : (n ?? 0);
   return new Intl.NumberFormat("en-IN", {
@@ -250,8 +255,10 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
   const statusCls = STATUS_MAP[data?.status ?? "Draft"] ?? "bg-draft";
   const buying = (data as any)?.terms?.buying ?? data?.terms?.terms?.buying;
 
-  const phases =
-    buying?.payment?.phases?.filter((p) => p?.percentage)?.slice(0, 3) ?? [];
+  const phases: PaymentPhase[] =
+    buying?.payment?.phases
+      ?.filter((p: PaymentPhase) => !!p?.percentage)
+      ?.slice(0, 3) ?? [];
   const grandTotal =
     data?.summary?.grandTotal ??
     data?.grandTotal ??
@@ -373,7 +380,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               <p
                 style={{ fontSize: 15, fontWeight: 800, color: "var(--text)" }}
               >
-                {data?.pId ?? (data as any)?.piId ?? "—"}
+                {data?.piId ?? (data as any)?.piId ?? "—"}
               </p>
             </div>
             <span
@@ -1333,7 +1340,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       color: "var(--text)",
                     }}
                   >
-                    {data?.pId}
+                    {data?.piId}
                   </p>
                 </div>
               </div>
