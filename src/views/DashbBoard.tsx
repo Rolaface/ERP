@@ -17,6 +17,7 @@ import BarChart from '../components/charts/BarChart';
 import { useHRView } from '../hooks/permission/useHRView';
 import { useCompanyStore } from '../store/companyStore';
 import { Link } from "react-router-dom";
+import { use } from 'echarts';
 
 const availableYears = Array.from({ length: 4 }, (_, i) => (new Date().getFullYear() - i).toString());
 
@@ -45,17 +46,40 @@ const Dashboard = () => {
 
 // Subscribe to baseCurrency from Zustand
   const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
+  const currencySymbol = useCompanyStore((state) => state.currencySymbol || '');
 
+  // const currencyFormatter = useMemo(() => {
+  //   const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    
+  //   return new Intl.NumberFormat(locale, {
+  //     style: 'currency', 
+  //     currency: baseCurrency, 
+  //     maximumFractionDigits: 2, 
+  //     notation: "compact"
+  //   });
+  // }, [baseCurrency]);  
   const currencyFormatter = useMemo(() => {
     const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
     
-    return new Intl.NumberFormat(locale, {
-      style: 'currency', 
-      currency: baseCurrency, 
+    const numberFormatter = new Intl.NumberFormat(locale, {
+      style: 'decimal', 
       maximumFractionDigits: 2, 
       notation: "compact"
     });
-  }, [baseCurrency]);  
+
+    return {
+      format: (value: number) => {
+        const num = Number(value) || 0;
+        const formattedNumber = numberFormatter.format(Math.abs(num));
+        
+         const sign = num < 0 ? '-' : '';
+        
+         const space = currencySymbol.length > 1 ? ' ' : '';
+        
+        return `${sign}${currencySymbol}${space}${formattedNumber}`;
+      }
+    };
+  }, [baseCurrency, currencySymbol]);
 
   useEffect(() => {
     let mounted = true;
@@ -164,6 +188,66 @@ const Dashboard = () => {
     return () => { mounted = false; };
   }, [purchaseYear, purchaseInterval]);
 
+  const currentMonthIndex = new Date().getMonth(); // 0 for Jan, 11 for Dec
+  const currentYear = new Date().getFullYear().toString();
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const filteredSalesData = useMemo(() => {
+    if (!salesData?.trend) return {};
+    
+    const filtered: Record<string, any> = {};
+    let cumulativeReceivable = 0;
+    let cumulativeReceived = 0;
+
+    for (const [key, value] of Object.entries(salesData.trend)) {
+      cumulativeReceivable += (value.receivable || 0);
+      cumulativeReceived += (value.received || 0);
+
+      const monthIndex = monthNames.indexOf(key);
+
+      const isCurrentYearMonthly = salesInterval === 'Monthly' && salesYear === currentYear;
+      const shouldInclude = !isCurrentYearMonthly || monthIndex === -1 || monthIndex <= currentMonthIndex;
+
+      if (shouldInclude) {
+        filtered[key] = {
+          ...value,
+          receivable: cumulativeReceivable,
+          received: cumulativeReceived
+        };
+      }
+    }
+    
+    return filtered;
+  }, [salesData?.trend, salesInterval, salesYear]);
+
+const filteredPurchaseData = useMemo(() => {
+    if (!purchaseData?.trend) return {};
+    
+    const filtered: Record<string, any> = {};
+    let cumulativePayable = 0;
+    let cumulativePaid = 0;
+
+    for (const [key, value] of Object.entries(purchaseData.trend)) {
+       cumulativePayable += (value.payable || 0);
+      cumulativePaid += (value.paid || 0);
+
+      const monthIndex = monthNames.indexOf(key);
+
+       const isCurrentYearMonthly = purchaseInterval === 'Monthly' && purchaseYear === currentYear;
+      const shouldInclude = !isCurrentYearMonthly || monthIndex === -1 || monthIndex <= currentMonthIndex;
+
+      if (shouldInclude) {
+         filtered[key] = {
+          ...value,
+          payable: cumulativePayable,
+          paid: cumulativePaid
+        };
+      }
+    }
+    
+    return filtered;
+  }, [purchaseData?.trend, purchaseInterval, purchaseYear]);
+
   return (
     <div className="flex h-screen w-full flex-col bg-gray-50 p-4">
 
@@ -247,7 +331,8 @@ const Dashboard = () => {
             <LineChart
               title="SALES CHART"
               loading={loadingSales}
-              trendData={salesData?.trend}
+              // trendData={salesData?.trend}
+              trendData={filteredSalesData}
               metrics={[
                 { key: 'receivable', name: 'Receivable', color: '#3b82f6' },
                 { key: 'received', name: 'Received', color: '#10b981' }
@@ -278,7 +363,8 @@ const Dashboard = () => {
             <LineChart
               title="PURCHASE CHART"
               loading={loadingPurchase}
-              trendData={purchaseData?.trend}
+              // trendData={purchaseData?.trend}
+              trendData={filteredPurchaseData}
               metrics={[
                 { key: 'payable', name: 'Payable', color: '#f59e0b' },
                 { key: 'paid', name: 'Paid', color: '#ef4444' }
