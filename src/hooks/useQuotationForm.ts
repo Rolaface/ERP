@@ -76,7 +76,8 @@ export function buildInvoicePayload(
       description: item.description ?? "",
       discount: Number(item.discount ?? 0),
       vatRate: String(item.vatRate ?? 0),
-      vatCode: item.vatCode ?? "",
+      vatCode: item.vatCode || item?.vatCd || "" ,
+      uom: item.uom ?? item.unitOfMeasureCd ?? "",
     }));
   const mappedTaxes = (formData.taxes || []).map((t: any) => ({
     chargeType: t.chargeType,
@@ -883,8 +884,10 @@ const handleItemChange = (
           price,
           discount,
           vatRate: it.taxInfo?.[0]?.totalTaxRate ?? taxRate,
-          vatCode: it.itemTaxTemplate ?? it.vatCode ?? "",
+          vatCode: it.itemTaxTemplate ?? it.vatCode ?? it.taxInfo?.[0]?.taxName ?? it.vatCd ?? "",
+          // vatCd: it.vatCd ?? "",
           taxTypes: taxTypes,
+          uom: it.uom ?? it.unitOfMeasureCd ?? "",
           packingUnit: it.packingUnit ?? "",
           packingSize: it.packingSize ?? "",
           batchNo: it.batchNo ?? "",

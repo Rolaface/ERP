@@ -60,7 +60,8 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
         : `proforma-create-${Date.now()}`)
   );
-      
+  const [submitting, setSubmitting] = useState(false);
+  
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     formData,
@@ -110,6 +111,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
  const handleSave = async () => {
     if (!validateDetailsOrFocus()) return;
+    if (submitting) return;
 
     try {
       const payload = await actions.handleSubmit({
@@ -222,6 +224,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           }}
           onSave={handleSave}
           onNext={ui.activeTab === "terms" ? undefined : handleNext}
+          currentTab={tabs.indexOf(ui.activeTab as any)}
+          totalTabs={tabs.length}
+          saving={submitting}
         />
       }
       maxWidth="full"
