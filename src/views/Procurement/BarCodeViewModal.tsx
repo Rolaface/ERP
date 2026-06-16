@@ -1,4 +1,5 @@
-// components/BarcodeViewModal.tsx
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import React from "react";
 
 // Fallback SVG barcode generator (used only when barcode_image_url is absent)
@@ -97,14 +98,59 @@ const BarcodeViewModal: React.FC<Props> = ({ open, onClose, batch, itemName, ite
     setTimeout(() => w.print(), 400);
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([buildSinglePrintHTML(batch, itemName, itemCode)], { type: "text/html" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `barcode-${batch.batchNumber}.html`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
+const handleDownload = async () => {
+  const loadImageAsBase64 = (url: string): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "use-credentials"; // sends cookies for session
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext("2d")!.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => reject(new Error("Failed to load: " + url));
+      img.src = url;
+    });
+
+  // Pre-load barcode image via native Image to avoid canvas taint
+  let batchWithBase64 = { ...batch };
+  if (batch.barcodeImageUrl) {
+    try {
+      batchWithBase64.barcodeImageUrl = await loadImageAsBase64(batch.barcodeImageUrl);
+    } catch {
+      batchWithBase64.barcodeImageUrl = undefined;
+    }
+  }
+
+  const container = document.createElement("div");
+  // Set fixed width so HTML layout looks like an A4 page before screenshot
+  container.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:20px;font-family:Arial,sans-serif";
+  container.innerHTML = buildSinglePrintHTML(batchWithBase64, itemName, itemCode);
+  document.body.appendChild(container);
+
+  // Wait for <img> tags in container to finish loading (instant since it's base64)
+  await Promise.all(
+    Array.from(container.querySelectorAll("img")).map(
+      (img) => new Promise((res) => { img.onload = img.onerror = res; if (img.complete) res(null); })
+    )
+  );
+
+  try {
+    const canvas = await html2canvas(container, { scale: 2, useCORS: false, allowTaint: true });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = (canvas.height * pageW) / canvas.width;
+    
+    pdf.addImage(imgData, "PNG", 0, 0, pageW, pageH);
+    pdf.save(`barcode-${batch.batchNumber}.pdf`);
+  } finally {
+    document.body.removeChild(container);
+  }
+};
 
   const BarcodeDisplay = () =>
     batch.barcodeImageUrl ? (
@@ -160,7 +206,7 @@ const BarcodeViewModal: React.FC<Props> = ({ open, onClose, batch, itemName, ite
               🖨 Print
             </button>
             <button onClick={handleDownload} style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:6,fontSize:12,fontWeight:500,cursor:"pointer",border:"none",background:"#178ee0",color:"#fff" }}>
-              ↓ Save
+              ↓ Download PDF
             </button>
             <button onClick={onClose} style={{ width:26,height:26,borderRadius:6,cursor:"pointer",border:"0.5px solid var(--border,#e5e7eb)",background:"transparent",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--muted,#888)" }}>✕</button>
           </div>
