@@ -703,7 +703,7 @@ const handlePreviewDownload = () => {
             ...(STATUS_TRANSITIONS[inv.status as keyof typeof STATUS_TRANSITIONS] ?? [])
                   .filter((status) => status !== "Draft") 
                   .map((status) => ({
-                    label: status === "Cancelled" ? "Cancel" : ` ${status}`,
+                    label: status === "Cancelled" ? "Cancel" : ` ${status}` || status === "Approved" ? "Approve" : status,
                     icon: getStatusActionIcon(status),
                     danger: status === "Cancelled",
                     onClick: () => handleRowStatusChange(inv.proformaId, status),

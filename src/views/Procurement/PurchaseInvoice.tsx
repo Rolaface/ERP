@@ -83,7 +83,7 @@ const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
 
 const invoiceStatusOptions = [
   { label: "Draft", value: "Draft" },
-  { label: "Approved", value: "Submitted" },
+  { label: "Approve", value: "Submitted" },
   { label: "Unpaid", value: "Unpaid" },
   { label: "Paid", value: "Paid" },
   { label: "Party Paid", value: "Party Paid" },
@@ -593,7 +593,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
       render: (o) => (
         <div className="py-1.5">
           <StatusBadge
-            status={o.status === "Submitted" ? "Approved" : o.status}
+            status={o.status === "Submitted" ? "Approve" : o.status}
           />
         </div>
       ),
