@@ -679,6 +679,7 @@ const fetchEmployees = useCallback(async (search: string) => {
                     label="Date incurred"
                     name="date_incurred"
                     value={form.date_incurred}
+                    disableFuture
                     onChange={(name, value) => {
                       setForm((prev) => ({ ...prev, [name]: value }));
                       if (errors.date_incurred)
