@@ -8,10 +8,11 @@ export function formatDate(date?: string | Date | null): string {
   if (!date) return "—";
 
   if (typeof date === "string") {
-    const [year, month, day] = date.split("T")[0].split("-").map(Number);
-    if (!year || !month || !day) return "—";
-    return `${String(day).padStart(2, "0")}-${MONTHS[month - 1]}-${year}`;
-  }
+  const datePart = date.split("T")[0].split(" ")[0];
+  const [year, month, day] = datePart.split("-").map(Number); 
+  if (!year || !month || !day) return "—";
+  return `${String(day).padStart(2, "0")}-${MONTHS[month - 1]}-${year}`;
+}
 
   // Date object
   return `${String(date.getDate()).padStart(2, "0")}-${MONTHS[date.getMonth()]}-${date.getFullYear()}`;

@@ -14,6 +14,7 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../../../components/ui/Table/ActionButton";
+import DateDisplay from "../../../../components/UI_Utils/Datedisplay";
 
 interface FeedbackRow {
   id: string;
@@ -116,13 +117,8 @@ export default function FeedbackSection() {
       key: "creation",
       header: "Date Created",
       align: "center",
-      render: (row) => (
-        <span>
-          {row.creation && row.creation !== "-"
-            ? new Date(row.creation).toLocaleDateString()
-            : "-"}
-        </span>
-      ),
+      render: (row) => <DateDisplay date={row.creation} />,
+      
     },
     {
       key: "criteria",

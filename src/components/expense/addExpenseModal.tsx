@@ -641,14 +641,14 @@ const fetchEmployees = useCallback(async (search: string) => {
       icon={CreditCard}
       footer={footer}
       customWidth="46vw"
-      height="620px"
+      height="460px"
     >
       <form
         onSubmit={(e) => e.preventDefault()}
         className="h-full flex flex-col"
       >
         {/* ── tab strip ── */}
-        <div className="px-4 pt-3">
+        <div className="px-4 pt-0">
           <TabStrip
             active={activeTab}
             onChange={setActiveTab}
@@ -658,33 +658,19 @@ const fetchEmployees = useCallback(async (search: string) => {
 
         {activeTab === "expense" && (
           <div
-            className="p-4 flex flex-col gap-4 overflow-y-auto"
-            style={{ height: "420px" }}
+            className="px-4 pb-4 pt-2 flex flex-col gap-4 overflow-y-auto"
+            style={{ height: "360px" }}
           >
-            <ModalInput
-              label="Claim title"
-              name="claim_title"
-              value={form.claim_title}
-              onChange={handleChange}
-              error={errors.claim_title}
-              required
-              placeholder="For example: Client meeting lunch"
-            />
-
-            <div className="grid grid-cols-12 gap-4">
+<div className="grid grid-cols-12 gap-4">
               <div className="col-span-6">
-                <SearchSelect2
-                  label="Category"
+                <ModalInput
+                  label="Claim title"
+                  name="claim_title"
+                  value={form.claim_title}
+                  onChange={handleChange}
+                  error={errors.claim_title}
                   required
-                  value={form.category}
-                  onChange={(val) => {
-                    setForm((prev) => ({ ...prev, category: val || "" }));
-                    if (errors.category)
-                      setErrors((prev) => ({ ...prev, category: "" }));
-                  }}
-                  fetchOptions={fetchCategories}
-                  placeholder="Select a category"
-                  error={errors.category}
+                  placeholder="For example: Client meeting lunch"
                 />
               </div>
               <div className="col-span-6">
@@ -693,6 +679,7 @@ const fetchEmployees = useCallback(async (search: string) => {
                     label="Date incurred"
                     name="date_incurred"
                     value={form.date_incurred}
+                    disableFuture
                     onChange={(name, value) => {
                       setForm((prev) => ({ ...prev, [name]: value }));
                       if (errors.date_incurred)
@@ -706,10 +693,11 @@ const fetchEmployees = useCallback(async (search: string) => {
                   )}
                 </div>
               </div>
+
             </div>
 
             <div className="grid grid-cols-12 gap-4 items-start">
-              <div className="col-span-6">
+              <div className="col-span-4">
                 {isEmployeeView ? (
                   <ModalInput
                     label="Employee"
@@ -768,7 +756,23 @@ const fetchEmployees = useCallback(async (search: string) => {
                   />
                 )}
               </div>
-              <div className="col-span-6">
+                            <div className="col-span-4">
+                <SearchSelect2
+                  label="Category"
+                  required
+                  value={form.category}
+                  onChange={(val) => {
+                    setForm((prev) => ({ ...prev, category: val || "" }));
+                    if (errors.category)
+                      setErrors((prev) => ({ ...prev, category: "" }));
+                  }}
+                  fetchOptions={fetchCategories}
+                  placeholder="Select a category"
+                  error={errors.category}
+                />
+              </div>
+              
+              <div className="col-span-4">
                 <ModalInput
                   label="Amount"
                   name="amount"
@@ -902,72 +906,32 @@ onClick={() => {
                   onViewAdvances={() => setActiveTab("advance")}
                 />
               )}
+              
+           <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12">
+                <label className="block text-xs font-medium text-muted mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="remarks"
+                  value={form.remarks}
+                  onChange={handleChange}
+                  rows={2}
+                  placeholder="Add any context for the approver"
+                  className="w-full rounded-lg border border-[var(--border)] bg-transparent
+                    px-3 py-2 text-sm text-main placeholder:text-muted
+                    focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+              </div>
+            </div>
 
-            {/* receipt upload */}
-            <div>
+
+        {/* receipt upload */}
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12">
               <label className="block text-xs font-medium text-muted mb-1">
                 Upload Receipt
               </label>
-
-              {form.existingAttachments.length > 0 && (
-                <div className="flex flex-col gap-2 mb-2">
-                  {form.existingAttachments.map((att) => (
-                    <div
-                      key={att.name}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10"
-                    >
-                      <FileText size={16} className="text-primary shrink-0" />
-                      <span className="text-sm text-main truncate flex-1">
-                        {att.file_name}
-                      </span>
-                      <span className="text-xs text-muted shrink-0">
-                        {(att.file_size / 1024).toFixed(0)} KB
-                      </span>
-                      <a
-                        href={att.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline shrink-0"
-                      >
-                        View
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => removeExistingAttachment(att.name)}
-                        className="text-muted hover:text-danger ml-1"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {form.receipts.length > 0 && (
-                <div className="flex flex-col gap-2 mb-2">
-                  {form.receipts.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10"
-                    >
-                      <FileText size={16} className="text-primary shrink-0" />
-                      <span className="text-sm text-main truncate flex-1">
-                        {file.name}
-                      </span>
-                      <span className="text-xs text-muted shrink-0">
-                        {(file.size / 1024).toFixed(0)} KB
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeNewReceipt(index)}
-                        className="text-muted hover:text-danger ml-1"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
 
               <div
                 onDragOver={(e) => {
@@ -978,7 +942,7 @@ onClick={() => {
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
                 className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed
-                  py-6 cursor-pointer transition-colors
+                  py-1 cursor-pointer transition-colors
                   ${isDragOver
                     ? "border-primary bg-primary/5"
                     : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"
@@ -1004,28 +968,74 @@ onClick={() => {
               {errors.receipt && (
                 <p className="text-xs text-danger mt-1">{errors.receipt}</p>
               )}
-            </div>
 
-            <div>
-              <label className="block text-xs font-medium text-muted mb-1">
-                Remarks (optional)
-              </label>
-              <textarea
-                name="remarks"
-                value={form.remarks}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Add any context for the approver"
-                className="w-full rounded-lg border border-[var(--border)] bg-transparent
-                  px-3 py-2 text-sm text-main placeholder:text-muted
-                  focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-              />
+              {form.existingAttachments.length > 0 && (
+                <div className="flex flex-col gap-2 mt-2">
+                  {form.existingAttachments.map((att) => (
+                    <div
+                      key={att.name}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10"
+                    >
+                      <FileText size={16} className="text-primary shrink-0" />
+                      <span className="text-sm text-main truncate flex-1">
+                        {att.file_name}
+                      </span>
+                      <span className="text-xs text-muted shrink-0">
+                        {(att.file_size / 1024).toFixed(0)} KB
+                      </span>
+                      
+                        <a
+                        href={att.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline shrink-0"
+                      >
+                        View
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => removeExistingAttachment(att.name)}
+                        className="text-muted hover:text-danger ml-1"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {form.receipts.length > 0 && (
+                <div className="flex flex-col gap-2 mt-2">
+                  {form.receipts.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10"
+                    >
+                      <FileText size={16} className="text-primary shrink-0" />
+                      <span className="text-sm text-main truncate flex-1">
+                        {file.name}
+                      </span>
+                      <span className="text-xs text-muted shrink-0">
+                        {(file.size / 1024).toFixed(0)} KB
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeNewReceipt(index)}
+                        className="text-muted hover:text-danger ml-1"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             </div>
           </div>
         )}
 
         {activeTab === "advance" && (
-          <div className="p-4 overflow-y-auto" style={{ height: "420px" }}>
+          <div className="p-4 overflow-y-auto" style={{ height: "360px" }}>
             {!form.employee ? (
               <div className="flex items-center justify-center h-full text-muted">
                 <span className="text-sm">

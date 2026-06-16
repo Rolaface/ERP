@@ -10,6 +10,7 @@ interface Props {
   name: string;
   required?: boolean;
   disabled?: boolean;
+  disableFuture?: boolean; 
   onChange: (name: string, value: string) => void;
   sx?: Record<string, unknown>;
 }
@@ -20,6 +21,7 @@ const DatePickerInput: React.FC<Props> = ({
   name,
   required,
   disabled,
+  disableFuture,
   onChange,
   sx,
 }) => {
@@ -62,6 +64,7 @@ const DatePickerInput: React.FC<Props> = ({
         value={internalValue}
         format="DD-MMM-YYYY"
         disabled={disabled}
+        disableFuture={disableFuture}
         enableAccessibleFieldDOMStructure={false}
         onChange={handleChange}
         onError={(reason) => {
