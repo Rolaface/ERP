@@ -106,6 +106,7 @@ export function ShiftTypeSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -134,7 +135,8 @@ export function ShiftTypeSetup() {
         setPageSize(s);
         setPage(1);
       }}
-      bodyMaxHeight={400}
+   
     />
+    </div>
   );
 }

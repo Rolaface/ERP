@@ -231,6 +231,7 @@ export function TaxConfigurationSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -269,5 +270,6 @@ export function TaxConfigurationSetup() {
       enableColumnSelector
       tableId="tax-configurations"
     />
+    </div>
   );
 }

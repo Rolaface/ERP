@@ -190,6 +190,7 @@ export function LeavePolicySetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -217,5 +218,6 @@ export function LeavePolicySetup() {
       enableColumnSelector
       tableId="leave-policies-table"
     />
+    </div>
   );
 }

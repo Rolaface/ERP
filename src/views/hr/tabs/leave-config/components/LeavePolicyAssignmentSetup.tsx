@@ -193,6 +193,7 @@ export function LeavePolicyAssignmentSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -220,5 +221,6 @@ export function LeavePolicyAssignmentSetup() {
       enableColumnSelector
       tableId="leave-policy-assignments-table"
     />
+    </div>
   );
 }

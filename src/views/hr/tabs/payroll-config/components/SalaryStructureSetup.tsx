@@ -168,6 +168,7 @@ export function SalaryStructureSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -206,5 +207,6 @@ export function SalaryStructureSetup() {
       enableColumnSelector
       tableId="salary-structures"
     />
+     </div> 
   );
 }

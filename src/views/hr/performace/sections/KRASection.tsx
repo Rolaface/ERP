@@ -154,7 +154,9 @@ export default function KRASection() {
   ];
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable<SetupRow>
+      
       tableId="setup-kra"
       columns={columns}
       data={data}
@@ -180,5 +182,7 @@ export default function KRASection() {
       totalItems={totalItems}
       onPageChange={setPage}
     />
+     </div>
+
   );
 }

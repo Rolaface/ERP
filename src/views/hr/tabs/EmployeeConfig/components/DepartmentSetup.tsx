@@ -135,6 +135,7 @@ export function DepartmentSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -156,9 +157,10 @@ export function DepartmentSetup() {
       totalPages={totalPages}
       totalItems={totalItems}
       pageSize={pageSize}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={[pageSize, 25, 50]}
       onPageChange={setPage}
       onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
     />
+    </div>
   );
 }

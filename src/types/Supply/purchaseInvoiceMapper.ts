@@ -379,6 +379,7 @@ export const mapSupplierToAddress = (
   const primaryContact =
     supplier.contacts?.find((c: any) => c.isPrimary) ||
     supplier.contacts?.[0];
+    
 
   return {
     id: str(addr.id),
