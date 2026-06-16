@@ -269,8 +269,8 @@ const handleItemChangeWithDirty = useCallback(
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={pId ? "Edit Purchase Invoice" : "Create Purchase Invoice"}
-      subtitle="Create and manage purchase invoice"
+      title={pId ? "Edit Purchase Invoice" : "Add Purchase Invoice"}
+      subtitle="Add and manage purchase invoice"
       icon={Receipt}
       maxWidth="full"
       height="88vh"

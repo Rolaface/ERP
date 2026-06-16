@@ -322,8 +322,8 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
             modalId={resolvedModalId}
             isOpen={isOpen}
             onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-            title={isViewMode ? "View Email Template" : templateId ? "Edit Email Template" : "Create Email Template"}
-            subtitle={isViewMode ? "Read-only view of this email template" : "Create email templates"}
+            title={isViewMode ? "View Email Template" : templateId ? "Edit Email Template" : "Add Email Template"}
+            subtitle={isViewMode ? "Read-only view of this email template" : "Add email templates"}
             icon={Mail}
             customWidth="65vw"
             height="auto"

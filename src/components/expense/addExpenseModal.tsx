@@ -634,7 +634,7 @@ const fetchEmployees = useCallback(async (search: string) => {
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode ? "Edit Expense Claim" : "Expense Claim"}
+      title={isEditMode ? "Edit Expense Claim" : " Add Expense Claim"}
       subtitle={
         isEditMode ? "Update expense claim" : "Submit a new expense claim"
       }

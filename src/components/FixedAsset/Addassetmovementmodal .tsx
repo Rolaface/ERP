@@ -196,7 +196,7 @@ const AddAssetMovementModal: React.FC<AddAssetMovementModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={mode === "edit" ? "Edit Asset Movement" : "Create Asset Movement"}
+      title={mode === "edit" ? "Edit Asset Movement" : "Add Asset Movement"}
       subtitle="Transfer or issue assets across locations"
       icon={ArrowRightLeft}
       footer={footerContent}

@@ -125,8 +125,8 @@ const TaxCategoryModal: React.FC<TaxCategoryModalProps> = React.memo(({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={isViewMode ? onClose : () => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={isViewMode ? "View Tax Category" : "Create Tax Category"}
-      subtitle={isViewMode ? "Read-only view of this tax category" : "Create a new tax category"}
+      title={isViewMode ? "View Tax Category" : "Add Tax Category"}
+      subtitle={isViewMode ? "Read-only view of this tax category" : "Add a new tax category"}
       icon={Tags}
       footer={footer}
       maxWidth="lg"

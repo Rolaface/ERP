@@ -147,7 +147,7 @@ const handleSubmit = async () => {
       isOpen={isOpen}
       onClose={onClose}
       title={isEditMode ? "Edit Expense Type" : "Add Expense Type"}
-      subtitle={isEditMode ? "Update expense type" : "Create a new expense type"}
+      subtitle={isEditMode ? "Update expense type" : "Add a new expense type"}
       icon={CreditCard}
       footer={footer}
       customWidth="38vw"

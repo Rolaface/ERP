@@ -136,14 +136,14 @@ const RfqModal: React.FC<RfqModalProps> = ({
         isViewMode ? onClose() : handleCloseWithConfirm(onClose, stableModalId)
       }
       title={
-        isViewMode ? "View RFQ" : isEdit ? "Edit RFQ" : "Create Request For Quotation"
+        isViewMode ? "View RFQ" : isEdit ? "Edit RFQ" : "Add Request For Quotation"
       }
       subtitle={
         isViewMode
           ? `${initialData}`
           : isEdit
           ? `${initialData}`
-          : "Create and send RFQ to suppliers"
+          : "Add and send RFQ to suppliers"
       }
       icon={FileText}
       customWidth="73vw"

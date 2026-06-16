@@ -182,7 +182,7 @@ const WarehouseModal: React.FC<{
       onClose={() =>
         handleCloseWithConfirm(handleClose, resolvedModalId)
       }
-      title={isViewMode ? "View Warehouse" : isEditMode ? "Edit Warehouse" : "Create Warehouse"}
+      title={isViewMode ? "View Warehouse" : isEditMode ? "Edit Warehouse" : "Add Warehouse"}
       subtitle={isViewMode ? "Read-only view of this warehouse" : "Manage your inventory locations"}
       icon={Warehouse}
       customWidth="35vw"

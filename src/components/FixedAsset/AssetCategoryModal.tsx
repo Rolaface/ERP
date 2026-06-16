@@ -597,8 +597,8 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={categoryId ? "Edit Asset Category" : "Create Asset Category"}
-      subtitle="Create and manage asset categories"
+      title={categoryId ? "Edit Asset Category" : "Add Asset Category"}
+      subtitle="Add and manage asset categories"
       icon={Layers}
       customWidth="60vw"
       height="80vh"

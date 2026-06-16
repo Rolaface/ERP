@@ -51,7 +51,7 @@ const CustomerGroupModal: React.FC<Props> = ({
   const isView = mode === "view";
   const title =
     mode === "create"
-      ? "Create Customer Group"
+      ? "Add Customer Group"
       : mode === "edit"
         ? "Edit Customer Group"
         : "View Customer Group";

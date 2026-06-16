@@ -230,7 +230,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
           ? "View Currency Exchange"
           : editData
             ? "Edit Currency Exchange"
-            : "Create Currency Exchange"
+            : "Add Currency Exchange"
       } subtitle={
         isViewMode
           ? "View exchange rate"
