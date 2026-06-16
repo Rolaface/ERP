@@ -161,6 +161,7 @@ export function LeavePeriodSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -188,5 +189,6 @@ export function LeavePeriodSetup() {
       enableColumnSelector
       tableId="leave-periods-table"
     />
+    </div>
   );
 }

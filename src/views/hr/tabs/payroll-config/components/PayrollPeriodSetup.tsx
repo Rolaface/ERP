@@ -150,6 +150,7 @@ export function PayrollPeriodSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -184,5 +185,6 @@ export function PayrollPeriodSetup() {
       enableColumnSelector
       tableId="payroll-periods"
     />
+    </div>
   );
 }

@@ -155,6 +155,7 @@ export default function FeedbackSection() {
   ];
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable<FeedbackRow>
       tableId="setup-feedback"
       columns={columns}
@@ -181,5 +182,6 @@ export default function FeedbackSection() {
       totalItems={totalItems}
       onPageChange={setPage}
     />
+    </div>
   );
 }

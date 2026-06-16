@@ -273,10 +273,11 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
     (data as any)?.terms?.buying ??
     data?.terms?.terms?.buying;
 
-  const phases =
-  buying?.payment?.phases
-    ?.filter((p: PaymentPhase) => p?.percentage)
-    ?.slice(0, 3) ?? [];
+ const phases = (
+  buying?.payment?.phases?.filter(
+    (p: PaymentPhase) => !!p?.percentage
+  )?.slice(0, 3) ?? []
+) as PaymentPhase[];
   const grandTotal =
     data?.summary?.grandTotal ??
     data?.grandTotal ??

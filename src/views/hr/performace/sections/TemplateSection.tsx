@@ -224,7 +224,8 @@ export default function TemplateSection() {
   ];
 
   return (
-    <>
+     <div className="h-[calc(100vh-220px)]"> 
+    
       <ModalTable<SetupRow>
         tableId="setup-template"
         columns={columns}
@@ -274,7 +275,8 @@ export default function TemplateSection() {
             setIsViewMode(false);
           }}
         />
+        
       )}
-    </>
+    </div>
   );
 }

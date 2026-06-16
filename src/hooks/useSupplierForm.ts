@@ -224,6 +224,26 @@ export const useSupplierForm = ({
     >,
   ) => {
     const { name, type, value } = e.target;
+    if (name === "alternateCode" || name === "alternateNo") {
+      setForm((prev) => {
+        const newCode = name === "alternateCode" ? value : prev.alternateCode;
+        const newNo = name === "alternateNo" ? value : prev.alternateNo;
+        const newAlternate = `${newCode || ""}${newNo || ""}`;
+
+        const updatedContacts = prev.contacts?.length
+          ? prev.contacts.map((c, i) =>
+              i === 0 ? { ...c, alternatePhone: newAlternate } : c,
+            )
+          : prev.contacts;
+
+        return {
+          ...prev,
+          [name]: value,
+          contacts: updatedContacts,
+        };
+      });
+      return;
+    }
 
     if (name === "bankAccounts") {
       setForm((p) => ({
@@ -288,8 +308,8 @@ export const useSupplierForm = ({
 
           const updatedContacts = prev.contacts?.length
             ? prev.contacts.map((c, i) =>
-              i === 0 ? { ...c, mobile: newMobile } : c
-            )
+                i === 0 ? { ...c, mobile: newMobile } : c,
+              )
             : prev.contacts;
 
           return {

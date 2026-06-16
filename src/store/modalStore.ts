@@ -21,6 +21,7 @@ export type ModalType =
   | "paymentEntry"
   | "currencyExchange"
   | "fixedAsset"
+  |"assetCategory"
   | "assetMovement"
   | "Rfq"
   | "JournalEntries"
@@ -561,6 +562,16 @@ export const openCurrencyExchangeModal = (
     .getState()
     .openModal("currencyExchange", initialData, isEdit, context, meta);
 
+    export const openassetCategory = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("assetCategory", initialData, isEdit, context, meta);
+
 export const openFixedAssetModal = (
   initialData?: unknown,
   isEdit = false,
@@ -570,6 +581,7 @@ export const openFixedAssetModal = (
   useModalStore
     .getState()
     .openModal("fixedAsset", initialData, isEdit, context, meta);
+
 export const openAssetMovementModal = (
   initialData?: unknown,
   isEdit = false,
