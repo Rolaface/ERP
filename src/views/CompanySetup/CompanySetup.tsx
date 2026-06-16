@@ -83,11 +83,11 @@ const navTabs = [
     label: "Logo & Signature",
     icon: <UploadCloud {...iconProps} />,
   },
-  // {
-  //   id: "naming",
-  //   label: "Naming Series",
-  //   icon: <Hash {...iconProps} />,
-  // },
+  {
+    id: "naming",
+    label: "Naming Series",
+    icon: <Hash {...iconProps} />,
+  },
 
 ];
 
@@ -220,9 +220,9 @@ const CompanySetup: React.FC = () => {
     buyingSelling: (
       <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
     ),
-    // naming: (
-    //   <NamingSeries onSaveSuccess={fetchCompanyDetail} />
-    // ),
+    naming: (
+      <NamingSeries onSaveSuccess={fetchCompanyDetail} />
+    ),
     subscribed: <SubscribedModules />,
     Templates: <Templates templates={companytemplates} />,
     logo: (

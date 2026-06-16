@@ -8,7 +8,6 @@ import { useNamingSeries } from "../../hooks/useNamingSeries";
 interface NamingSeriesField {
   key: string;
   label: string;
-  defaultValue: string;
 }
 
 export interface NamingSeriesSection {
@@ -26,45 +25,45 @@ export const SECTIONS: NamingSeriesSection[] = [
     id: "sales",
     title: "SALES",
     fields: [
-      { key: "sales_order",       label: "SALES ORDER",      defaultValue: "SAL-ORD-.YYYY.-"  },
-      { key: "sales_invoice",     label: "SALES INVOICE",    defaultValue: "SINV-"            },
-      { key: "quotation",         label: "QUOTATION",        defaultValue: "SAL-QTN-.YYYY.-"  },
-      { key: "proforma_invoice",  label: "PROFORMA INVOICE", defaultValue: ""                 },
-      { key: "customer",          label: "CUSTOMER",         defaultValue: "CUST-.YYYY.-"     },
+      { key: "sales_order", label: "SALES ORDER" },
+      { key: "sales_invoice", label: "SALES INVOICE" },
+      { key: "quotation", label: "QUOTATION" },
+      { key: "proforma_invoice", label: "PROFORMA INVOICE" },
+      { key: "customer", label: "CUSTOMER" },
     ],
   },
   {
     id: "purchase",
     title: "PURCHASE",
     fields: [
-      { key: "purchase_order",     label: "PURCHASE ORDER",              defaultValue: "PUR-ORD-.YYYY.-"  },
-      { key: "purchase_invoice",   label: "PURCHASE INVOICE",            defaultValue: "ACC-PINV-.YYYY.-" },
-      { key: "supplier_quotation", label: "SUPPLIER QUOTATION",          defaultValue: "PUR-SQTN-.YYYY.-" },
-      { key: "rfq",                label: "RFQ (REQUEST FOR QUOTATION)", defaultValue: "PUR-RFQ-.YYYY.-"  },
-      { key: "purchase_receipt",   label: "PURCHASE RECEIPT",            defaultValue: "MAT-PRE-.YYYY.-"  },
-      { key: "supplier",           label: "SUPPLIER",                    defaultValue: "SUP-.YYYY.-"      },
+      { key: "purchase_order", label: "PURCHASE ORDER" },
+      { key: "purchase_invoice", label: "PURCHASE INVOICE" },
+      { key: "supplier_quotation", label: "SUPPLIER QUOTATION"},
+      { key: "rfq", label: "RFQ (REQUEST FOR QUOTATION)" },
+      { key: "purchase_receipt", label: "PURCHASE RECEIPT" },
+      { key: "supplier", label: "SUPPLIER"},
     ],
   },
   {
     id: "inventory",
     title: "INVENTORY",
     fields: [
-      { key: "item_code", label: "ITEM CODE", defaultValue: "STO-ITEM-.YYYY.-" },
+      { key: "item_code", label: "ITEM CODE" },
     ],
   },
   {
     id: "accounting",
     title: "ACCOUNTING",
     fields: [
-      { key: "journal_entry", label: "JOURNAL ENTRY", defaultValue: "ACC-JV-.YYYY.-"  },
-      { key: "payment_entry", label: "PAYMENT ENTRY", defaultValue: "ACC-PAY-.YYYY.-" },
+      { key: "journal_entry", label: "JOURNAL ENTRY" },
+      { key: "payment_entry", label: "PAYMENT ENTRY" },
     ],
   },
   {
     id: "hr",
     title: "HR",
     fields: [
-      { key: "employee", label: "EMPLOYEE", defaultValue: "HR-EMP-" },
+      { key: "employee", label: "EMPLOYEE" },
     ],
   },
 ];
@@ -72,14 +71,14 @@ export const SECTIONS: NamingSeriesSection[] = [
 // ─── Variables reference ──────────────────────────────────────────────────────
 
 const VARIABLES = [
-  { token: ".YYYY.",        description: "Year in 4 digits"                  },
-  { token: ".YY.",          description: "Year in 2 digits"                  },
-  { token: ".MM.",          description: "Month"                             },
-  { token: ".DD.",          description: "Day of month"                      },
-  { token: ".WW.",          description: "Week of the year"                  },
+  { token: ".YYYY.", description: "Year in 4 digits" },
+  { token: ".YY.", description: "Year in 2 digits" },
+  { token: ".MM.", description: "Month" },
+  { token: ".DD.", description: "Day of month" },
+  { token: ".WW.", description: "Week of the year" },
   { token: ".{fieldname}.", description: "Fieldname on document e.g. branch" },
-  { token: ".FY.",          description: "Fiscal Year"                       },
-  { token: ".ABBR.",        description: "Company Abbreviation"              },
+  { token: ".FY.", description: "Fiscal Year" },
+  { token: ".ABBR.", description: "Company Abbreviation" },
 ];
 
 const EXAMPLES = ["INV-", "INV-10-", "INVK-", "INV-.YYYY.-.{branch}.-.MM.-.####"];
@@ -88,24 +87,24 @@ const EXAMPLES = ["INV-", "INV-10-", "INVK-", "INV-.YYYY.-.{branch}.-.MM.-.####"
 
 function generatePreview(pattern: string): string[] {
   if (!pattern.trim()) return [];
-  const now  = new Date();
+  const now = new Date();
   const yyyy = String(now.getFullYear());
-  const yy   = yyyy.slice(2);
-  const mm   = String(now.getMonth() + 1).padStart(2, "0");
-  const dd   = String(now.getDate()).padStart(2, "0");
-  const ww   = String(Math.ceil(now.getDate() / 7)).padStart(2, "0");
+  const yy = yyyy.slice(2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const ww = String(Math.ceil(now.getDate() / 7)).padStart(2, "0");
   const digitMatch = pattern.match(/\.#+/);
   const digitCount = digitMatch ? digitMatch[0].length - 1 : 5;
   const base = pattern
-    .replace(/\.YYYY\./g,      yyyy)
-    .replace(/\.YY\./g,        yy)
-    .replace(/\.MM\./g,        mm)
-    .replace(/\.DD\./g,        dd)
-    .replace(/\.WW\./g,        ww)
-    .replace(/\.FY\./g,        `${yyyy}-${String(Number(yyyy) + 1).slice(2)}`)
-    .replace(/\.ABBR\./g,      "CO")
+    .replace(/\.YYYY\./g, yyyy)
+    .replace(/\.YY\./g, yy)
+    .replace(/\.MM\./g, mm)
+    .replace(/\.DD\./g, dd)
+    .replace(/\.WW\./g, ww)
+    .replace(/\.FY\./g, `${yyyy}-${String(Number(yyyy) + 1).slice(2)}`)
+    .replace(/\.ABBR\./g, "CO")
     .replace(/\.\{[^}]+\}\./g, "VAL")
-    .replace(/\.#+/g,          "");
+    .replace(/\.#+/g, "");
   return [1, 2, 3].map((n) => `${base}${String(n).padStart(digitCount, "0")}`);
 }
 
@@ -131,8 +130,7 @@ const SeriesSection: React.FC<SectionProps> = ({ section, values, onChange }) =>
           key={field.key}
           label={field.label}
           name={field.key}
-          value={values[field.key] ?? field.defaultValue}
-          placeholder={field.defaultValue}
+          value={values[field.key] ?? ""}
           onChange={(e) => onChange(field.key, e.target.value)}
         />
       ))}

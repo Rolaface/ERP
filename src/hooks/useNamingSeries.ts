@@ -3,51 +3,52 @@ import {
   getNamingSeriesSettings,
   updateNamingSeriesSettings,
 } from "../api/NamingSeriesApi";
-import { SECTIONS} from "../views/CompanySetup/NamingSeries";
+import { showApiError, showSuccessWithWarnings } from "../utils/alert";
+import { useDataRefreshStore, REFRESH_KEYS } from "../store/dataRefreshStore"; 
 
 type SeriesValues = Record<string, string>;
 
-function getDefaultValues(): SeriesValues {
-  const vals: SeriesValues = {};
-  SECTIONS.forEach((s) => s.fields.forEach((f) => { vals[f.key] = f.defaultValue; }));
-  return vals;
-}
-
 export function useNamingSeries() {
-  const [values, setValues]         = useState<SeriesValues>(getDefaultValues);
-  const [savedValues, setSavedValues] = useState<SeriesValues>(getDefaultValues);
-  const [isLoading, setIsLoading]   = useState(false);
-  const [isSaving, setIsSaving]     = useState(false);
-  const [error, setError]           = useState<string | null>(null);
+  const [values, setValues]           = useState<SeriesValues>({});
+  const [savedValues, setSavedValues] = useState<SeriesValues>({});
+  const [isLoading, setIsLoading]     = useState(true);
+  const [isSaving, setIsSaving]       = useState(false);
+  const [error, setError]             = useState<string | null>(null);
 
-  // ── Fetch on mount ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    const fetchSettings = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const resp = await getNamingSeriesSettings();
-        const data: SeriesValues = resp?.message?.data ?? {};
 
-        // Map API keys → component keys and only override what the API returns
-        setValues((prev) => ({ ...prev, ...data }));
-        setSavedValues((prev) => ({ ...prev, ...data }));
-      } catch (err: any) {
-        setError(err?.message ?? "Failed to load naming series settings.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSettings();
+  const fetchSettings = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setIsLoading(true);
+    setError(null);
+    try {
+      const resp = await getNamingSeriesSettings();
+      const data: SeriesValues = resp?.message?.data ?? {};
+      setValues(data);
+      setSavedValues(data);
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to load naming series settings.");
+    } finally {
+      if (!opts?.silent) setIsLoading(false);
+    }
   }, []);
 
-  // ── Field change ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+
+  useEffect(() => {
+    const unsubscribe = useDataRefreshStore
+      .getState()
+      .subscribeToRefresh(REFRESH_KEYS.NAMING_SERIES, () =>
+        fetchSettings({ silent: true })
+      );
+    return unsubscribe;
+  }, [fetchSettings]);
+
   const handleChange = useCallback((key: string, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  // ── Save — only dirty fields ────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     const dirty: SeriesValues = {};
     Object.keys(values).forEach((key) => {
@@ -56,26 +57,24 @@ export function useNamingSeries() {
       }
     });
 
-    if (Object.keys(dirty).length === 0) return; // nothing changed
+    if (Object.keys(dirty).length === 0) return;
 
     setIsSaving(true);
     setError(null);
     try {
-      await updateNamingSeriesSettings(dirty);
-      setSavedValues({ ...values }); // sync baseline to current
+      const resp = await updateNamingSeriesSettings(dirty);
+      const payload = resp?.message;
+
+      showSuccessWithWarnings(payload?.message, payload?.data?.warnings);
+
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.NAMING_SERIES);
     } catch (err: any) {
-      setError(err?.message ?? "Failed to save naming series settings.");
+      setError(err?.message);
+      showApiError(err);
     } finally {
       setIsSaving(false);
     }
   }, [values, savedValues]);
 
-  return {
-    values,
-    isLoading,
-    isSaving,
-    error,
-    handleChange,
-    handleSave,
-  };
+  return { values, isLoading, isSaving, error, handleChange, handleSave };
 }
