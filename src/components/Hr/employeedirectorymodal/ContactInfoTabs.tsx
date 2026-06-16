@@ -1,19 +1,18 @@
 import React from "react";
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
+import PhoneCodeSelect from "../../common/PhoneCodeSelect";
 
 type ContactInfoTabProps = {
   formData: any;
   handleInputChange: (field: string, value: string | boolean) => void;
 };
 
-
-
 const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
   formData,
   handleInputChange,
 }) => {
   return (
-    <div className="max-w-4xl mx-auto space-y-3">
+    <div className="w-full flex flex-col gap-2 min-w-0">
 
       {/* Contact Information */}
       <div className="bg-card p-3 rounded-lg border border-theme">
@@ -30,17 +29,16 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             required
           />
           <ModalSelect
-          label="Preferred Contact Email"
-          name="preferredContactMethod"
-          value={formData.preferredContactMethod}
-          onChange={(e) => handleInputChange("preferredContactMethod", e.target.value)}
-          options={[
-            { label: "Company Email", value: "Company Email" },
-            { label: "Personal Email", value: "Personal Email" },
-            { label: "User ID", value: "User ID" },
-            
-          ]}
-          required
+            label="Preferred Contact Email"
+            name="preferredContactMethod"
+            value={formData.preferredContactMethod}
+            onChange={(e) => handleInputChange("preferredContactMethod", e.target.value)}
+            options={[
+              { label: "Company Email", value: "Company Email" },
+              { label: "Personal Email", value: "Personal Email" },
+              { label: "User ID", value: "User ID" },
+            ]}
+            required
           />
           <ModalInput
             label="Company Email"
@@ -51,15 +49,44 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             placeholder="@company.co.zm"
             required
           />
-          <ModalInput
-            label="Phone Number"
-            name="phoneNumber"
-            type="tel"
-            value={formData.phoneNumber}
-            onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-            placeholder="+91"
-          />
-          
+          {/* Phone Number */}
+          <div className="flex flex-col min-w-0">
+            <span className="block text-[10px] font-medium text-main mb-1">
+              Phone Number
+            </span>
+            <div className="flex">
+              <PhoneCodeSelect
+                value={formData.phoneCode}
+                onChange={(code) => {
+                  handleInputChange("phoneCode", code);
+                  handleInputChange(
+                    "phoneNumber",
+                    `${code || ""}${formData.phoneNo || ""}`,
+                  );
+                }}
+              />
+              <input
+                name="phoneNo"
+                type="tel"
+                value={formData.phoneNo}
+                onChange={(e) => {
+                  handleInputChange("phoneNo", e.target.value);
+                  handleInputChange(
+                    "phoneNumber",
+                    `${formData.phoneCode || ""}${e.target.value || ""}`,
+                  );
+                }}
+                placeholder="Enter phone number"
+                className="flex-1 py-1 px-2 border-t border-b border-r rounded-r text-[11px] text-main bg-card transition-all min-w-0 border-[var(--border)] hover:border-primary/40"
+                onFocus={(e) => {
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.16)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.boxShadow = "";
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -68,7 +95,7 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Address
         </h4>
-        <div className="space-y-2.5">
+        <div className="flex flex-col gap-2.5">
           <ModalInput
             label="Street Address"
             name="street"
@@ -112,14 +139,46 @@ const ContactInfoTab: React.FC<ContactInfoTabProps> = ({
             value={formData.emergencyContactName}
             onChange={(e) => handleInputChange("emergencyContactName", e.target.value)}
           />
-          <ModalInput
-            label="Phone"
-            name="emergencyContactPhone"
-            type="tel"
-            value={formData.emergencyContactPhone}
-            onChange={(e) => handleInputChange("emergencyContactPhone", e.target.value)}
-            placeholder="+91"
-          />
+
+          {/* Emergency Phone */}
+          <div className="flex flex-col min-w-0">
+            <span className="block text-[10px] font-medium text-main mb-1">
+              Phone
+            </span>
+            <div className="flex">
+              <PhoneCodeSelect
+                value={formData.emergencyContactCode}
+                onChange={(code) => {
+                  handleInputChange("emergencyContactCode", code);
+                  handleInputChange(
+                    "emergencyContactPhone",
+                    `${code || ""}${formData.emergencyContactNo || ""}`,
+                  );
+                }}
+              />
+              <input
+                name="emergencyContactNo"
+                type="tel"
+                value={formData.emergencyContactNo}
+                onChange={(e) => {
+                  handleInputChange("emergencyContactNo", e.target.value);
+                  handleInputChange(
+                    "emergencyContactPhone",
+                    `${formData.emergencyContactCode || ""}${e.target.value || ""}`,
+                  );
+                }}
+                placeholder="Enter phone number"
+                className="flex-1 py-1 px-2 border-t border-b border-r rounded-r text-[11px] text-main bg-card transition-all min-w-0 border-[var(--border)] hover:border-primary/40"
+                onFocus={(e) => {
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.16)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.boxShadow = "";
+                }}
+              />
+            </div>
+          </div>
+
           <ModalInput
             label="Relationship"
             name="emergencyContactRelationship"

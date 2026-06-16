@@ -28,6 +28,7 @@ async function searchErpLink(
     page_length: pageLength,
     doctype,
     txt,
+    filters: doctype === "Cost Center" ? { is_group: 0 } : undefined,
   });
   return (resp.data?.message ?? []).map((item) => ({
     value: item.value,
@@ -41,6 +42,6 @@ export const fetchTaxCategories = (txt = "") =>
 export const fetchCostCenters = (txt = "") =>
   searchErpLink("Cost Center", txt);
 
-// NEW
+
 export const fetchProjects = (txt = "") =>
   searchErpLink("Project", txt);

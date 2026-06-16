@@ -23,6 +23,7 @@ const DOC_TYPE_OPTIONS = [
     { label: "Expense Claim", value: "Expense Claim" },
     // { label: "Proforma Invoice", value: "Proforma Invoice" },
     { label: "Quotation", value: "Quotation" },
+    { label: "Customer Statement", value: "Customer Statement" },
 ] as const;
 
 type DocType = (typeof DOC_TYPE_OPTIONS)[number]["value"];
@@ -64,6 +65,11 @@ function getVariableChips(docType: string): { label: string; value: string; payl
                 { label: "{{ transaction_date }}", value: " {{ transaction_date }} " },
                 { label: "{{ company }}", value: " {{ company }} " },
             ]
+        case "Customer Statement":
+            return [
+                { label: "{{ customer_name }}", value: " {{ customer_name }} " },
+                { label: "{{ PERIOD }}", value: " {{ PERIOD }} " },  
+            ];
         default:
             return [];
     }

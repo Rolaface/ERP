@@ -282,13 +282,13 @@ const HrPayrollModule: React.FC = () => {
   // ─── EMPLOYEE VIEW ────────────────────────────────────────────────────────
   if (isEmployeeView) {
     return (
-      <AppPage viewportLocked={isViewportLocked}>
+      <AppPage>
         <AppPageHeader
           title="Employee Portal"
           icon={<FaUserTie />}
           // actions={switchButton}
         />
-        <AppPageBody viewportLocked={isViewportLocked}>
+        <AppPageBody >
           <Suspense fallback={<AppSkeleton />}>
             <HrContentFrame>{renderContent()}</HrContentFrame>
           </Suspense>

@@ -17,6 +17,7 @@ interface Props {
   supplierName?: string | null;
   invoiceAttachments?: InvoiceAttachment[];
   onClose: () => void;
+  periodText?: string;
 }
 
 function isValidEmail(val: string) {
@@ -132,6 +133,7 @@ const SendEmailModal: React.FC<Props> = ({
   onClose,
   docType,
   isProforma = false,
+  periodText,
 }) => {
   const {
     to, setTo,
@@ -146,7 +148,8 @@ const SendEmailModal: React.FC<Props> = ({
     sending,
     templateLoading,
     handleSend,
-  } = useSendEmail({ open, docType, invoiceNumber, contactEmail, customerName, supplierName, invoiceAttachments, onClose });
+    
+  } = useSendEmail({ open, docType, invoiceNumber, contactEmail, customerName, supplierName, invoiceAttachments, onClose ,periodText, });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);

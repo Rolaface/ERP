@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { uploadEmployeePhoto } from "../../../api/employeeapi";
 import ModalFooter from "../../common/ModalFooter";
 import IdentityVerificationModal from "./IdentityVerificationModal";
@@ -104,9 +104,7 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   // ── Form state ──────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<Record<string, any>>(DEFAULT_FORM);
-  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>({});
   const [isPreFilled, setIsPreFilled] = useState(false);
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
 
@@ -116,8 +114,10 @@ const AddEmployeeModal: React.FC<Props> = ({
   // ── People dropdowns ────────────────────────────────────────────────────
   const [reportingManagers, setReportingManagers] = useState<any[]>([]);
   const [hrManagers, setHrManagers] = useState<any[]>([]);
-const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
-  useUnsavedChangesGuard();
+
+  const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
+    useUnsavedChangesGuard();
+
   // ── Documents ───────────────────────────────────────────────────────────
   const [, setDocuments] = useState<Record<string, DocumentUpload>>({
     "NRC Copy": { uploaded: false },
@@ -134,10 +134,7 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
     if (!isOpen) return;
 
     if (editData) {
-      // editData is the flat object from the API response
-      // It may be nested as editData.data or flat – unwrap accordingly
       const flat = editData?.data ?? editData?.message?.data ?? editData;
-
       setStep("form");
       setFormData(mapEditDataToForm(flat));
       setIsPreFilled(true);
@@ -150,6 +147,8 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
 
     setCurrentTabIndex(0);
     setEmployeeFile(null);
+    // reset dirty state whenever modal opens fresh
+    resetDirty();
   }, [isOpen, editData, features.requireIdentityVerification]);
 
   // ── Body scroll lock ────────────────────────────────────────────────────
@@ -181,21 +180,13 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
 
   useEffect(() => {
     const loadReportingToLabel = async () => {
-      if (!formData.reports_to) {
-        return;
-      }
-
+      if (!formData.reports_to) return;
       try {
         const res = await getEmployees(formData.reports_to);
-
         const matchedEmployee = (res || []).find(
           (emp: any) => emp.value === formData.reports_to,
         );
-
-        if (
-          matchedEmployee &&
-          matchedEmployee.label !== formData.reportingToLabel
-        ) {
+        if (matchedEmployee && matchedEmployee.label !== formData.reportingToLabel) {
           setFormData((prev: any) => ({
             ...prev,
             reportingToLabel: matchedEmployee.label,
@@ -205,93 +196,56 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
         // silent
       }
     };
-
     loadReportingToLabel();
   }, [formData.reports_to]);
+
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({
-        value: formData.department,
-        fetcher: getAllDepartments,
-      });
-
-      setFormData((prev: any) => ({
-        ...prev,
-        departmentLabel: label,
-      }));
+      const label = await resolveLabel({ value: formData.department, fetcher: getAllDepartments });
+      setFormData((prev: any) => ({ ...prev, departmentLabel: label }));
     };
-
     loadLabel();
   }, [formData.department]);
+
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({
-        value: formData.leavePolicy,
-        fetcher: getAllLeavePolicies,
-      });
-
-      setFormData((prev: any) => ({
-        ...prev,
-        leavePolicyLabel: label,
-      }));
+      const label = await resolveLabel({ value: formData.leavePolicy, fetcher: getAllLeavePolicies });
+      setFormData((prev: any) => ({ ...prev, leavePolicyLabel: label }));
     };
-
     loadLabel();
   }, [formData.leavePolicy]);
+
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({
-        value: formData.grade,
-        fetcher: getAllGrades,
-      });
-
-      setFormData((prev: any) => ({
-        ...prev,
-        gradeLabel: label,
-      }));
+      const label = await resolveLabel({ value: formData.grade, fetcher: getAllGrades });
+      setFormData((prev: any) => ({ ...prev, gradeLabel: label }));
     };
-
     loadLabel();
   }, [formData.grade]);
+
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({
-        value: formData.designation,
-        fetcher: getAllDesignations,
-      });
-
-      setFormData((prev: any) => ({
-        ...prev,
-        designationLabel: label,
-      }));
+      const label = await resolveLabel({ value: formData.designation, fetcher: getAllDesignations });
+      setFormData((prev: any) => ({ ...prev, designationLabel: label }));
     };
-
     loadLabel();
   }, [formData.designation]);
+
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({
-        value: formData.shift,
-        fetcher: getAllShiftTypes,
-      });
-
-      setFormData((prev: any) => ({
-        ...prev,
-        shiftLabel: label,
-      }));
+      const label = await resolveLabel({ value: formData.shift, fetcher: getAllShiftTypes });
+      setFormData((prev: any) => ({ ...prev, shiftLabel: label }));
     };
-
     loadLabel();
   }, [formData.shift]);
-  // ── Helpers ─────────────────────────────────────────────────────────────
-  const handleInputChange = (field: string, value: any) => {
-  markDirty();
 
-  setFormData((prev) => ({
-    ...prev,
-    [field]: value,
-  }));
-};
+  // ── Helpers ─────────────────────────────────────────────────────────────
+
+  // central handler — marks dirty so unsaved-changes guard fires on close
+  const handleInputChange = (field: string, value: any) => {
+    markDirty();
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const TAB_REQUIRED_FIELDS: Partial<Record<TabName, () => string | null>> = {
     Personal: () => {
@@ -302,16 +256,14 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
     },
     "Address & Contact": () => {
       if (!formData.email?.trim()) return "Personal Email is required.";
-
       if (!formData.CompanyEmail?.trim()) return "Company Email is required.";
-
       if (!formData.preferredContactMethod?.trim())
         return "Please select a preferred contact email.";
-
       return null;
     },
   };
 
+  // validate current tab before advancing
   const handleNext = () => {
     const validator = TAB_REQUIRED_FIELDS[activeTab];
     if (validator) {
@@ -323,37 +275,34 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
     }
     setCurrentTabIndex((p) => p + 1);
   };
+
   const handlePrevious = () => setCurrentTabIndex((p) => p - 1);
 
+  // route close through the unsaved-changes guard
   const handleCloseRequest = () => {
     if (saving) return;
-    onClose();
+    handleCloseWithConfirm(onClose, modalId);
   };
 
   const handleResetTab = () => {
     if (saving) return;
-
     if (editData) {
       const flat = editData?.data ?? editData?.message?.data ?? editData;
-
       setFormData(mapEditDataToForm(flat));
     } else {
       setFormData({ ...DEFAULT_FORM });
       setVerifiedFields({});
       setEmployeeFile(null);
     }
-
     setCurrentTabIndex(0);
+    resetDirty();
   };
 
   const handleSave = async () => {
-   const payload = buildEmployeePayload(
-  formData,
-  mode === "edit" || !!editData,
-);
+    const payload = buildEmployeePayload(formData, mode === "edit" || !!editData);
     const isEdit = mode === "edit" || !!editData;
 
-    // ── EDIT MODE: keep exact same simple flow as before ───────────────────────
+    // ── EDIT MODE ────────────────────────────────────────────────────────────
     if (isEdit) {
       try {
         setSaving(true);
@@ -368,9 +317,7 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
 
         if (!id) throw new Error("Cannot determine employee ID for update");
         if (formData._salaryChanged && !formData.effectiveFrom) {
-          showValidationError(
-            "Effective date is required when salary details are changed.",
-          );
+          showValidationError("Effective date is required when salary details are changed.");
           return;
         }
 
@@ -390,7 +337,7 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
         }
 
         showSuccess(msg);
-        resetDirty();   
+        resetDirty();
         onSubmit(payload);
         onClose();
       } catch (err) {
@@ -403,12 +350,10 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
       return;
     }
 
-    // Step 1 — show loader while creating employee
+    // ── ADD MODE ─────────────────────────────────────────────────────────────
     showStepLoader(
       "Creating Employee…",
-      `<span style="font-size:13px;color:#64748b">
-       Setting up the employee record, please wait.
-     </span>`,
+      `<span style="font-size:13px;color:#64748b">Setting up the employee record, please wait.</span>`,
     );
 
     let employeeId = "";
@@ -418,19 +363,13 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
 
     try {
       const res = await createEmployee(payload);
-
-      // ── Extract all fields from the response ──────────────────────────────
       const data = res?.message?.data ?? res?.data?.data ?? {};
 
       employeeId = data?.employee || res?.data?.employee || "";
       backendMsg =
-        res?.message?.message ||
-        res?.data?.message ||
-        "Employee created successfully.";
-      welcomeMsg =
-        typeof data?.messages === "string" ? data.messages.trim() : "";
+        res?.message?.message || res?.data?.message || "Employee created successfully.";
+      welcomeMsg = typeof data?.messages === "string" ? data.messages.trim() : "";
 
-      // Parse Frappe _server_messages (double-encoded JSON array)
       try {
         if (res?._server_messages) {
           const outer: string[] = JSON.parse(res._server_messages);
@@ -457,19 +396,18 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
     let photoError = "";
 
     if (employeeFile && employeeId) {
-      // Update the loader text to show photo upload is in progress
       showStepLoader(
         "Uploading Profile Photo…",
         `<div style="text-align:left;padding:2px 0">
-         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-           <span style="color:#16a34a;font-size:15px">✓</span>
-           <span style="font-size:12.5px;color:#15803d;font-weight:600">${backendMsg}</span>
-         </div>
-         <div style="display:flex;align-items:center;gap:8px">
-           <span style="font-size:12px;color:#6366f1">↑</span>
-           <span style="font-size:12px;color:#6366f1;font-weight:500">Uploading photo to <code style="font-size:11px">${employeeId}</code>…</span>
-         </div>
-       </div>`,
+           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+             <span style="color:#16a34a;font-size:15px">✓</span>
+             <span style="font-size:12.5px;color:#15803d;font-weight:600">${backendMsg}</span>
+           </div>
+           <div style="display:flex;align-items:center;gap:8px">
+             <span style="font-size:12px;color:#6366f1">↑</span>
+             <span style="font-size:12px;color:#6366f1;font-weight:500">Uploading photo to <code style="font-size:11px">${employeeId}</code>…</span>
+           </div>
+         </div>`,
       );
 
       try {
@@ -480,7 +418,6 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
       }
     }
 
-    // Step 3 — all done, close loader and show the full result Swal
     closeSwal();
 
     await showEmployeeCreationResult({
@@ -492,9 +429,8 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
       photoError: photoError || undefined,
     });
 
-    // Only after user clicks "Done" on the result Swal do we close everything
     onSubmit(payload);
-    resetDirty();   
+    resetDirty();
     onClose();
   };
 
@@ -559,11 +495,11 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={() => handleCloseWithConfirm(onClose, modalId)}  
-  formContainerRef={containerRef}      
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
+      formContainerRef={containerRef}
       title={editData ? "Edit Employee" : "New Employee"}
       subtitle="Employee Management"
-      customWidth="77vw"
+      customWidth="full"
       height="90vh"
       footer={footer}
     >
@@ -571,7 +507,7 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
       <div className="flex h-full overflow-hidden">
         {/* LEFT: Tab bar + content */}
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-          {/* Tab bar */}
+          {/* Tab bar — clicking any tab jumps directly to it */}
           <div className="flex border-b border-theme bg-card px-1.5 overflow-x-auto flex-shrink-0">
             {TAB_ORDER.map((tab, i) => {
               const active = i === currentTabIndex;
@@ -629,20 +565,18 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
                 isEditMode={!!editData}
               />
             )}
-            {activeTab === "Work Schedule" && (
+            {/* {activeTab === "Work Schedule" && (
               <WorkScheduleTab
                 formData={formData}
                 handleInputChange={handleInputChange}
               />
-            )}
+            )} */}
             {activeTab === "Bank" && (
               <EmployeeBankTab
                 formData={formData}
                 setFormData={setFormData}
                 isEditMode={!!editData}
-                employeeId={
-                  editData?.employee || editData?.id || editData?.name
-                }
+                employeeId={editData?.employee || editData?.id || editData?.name}
               />
             )}
           </div>
@@ -651,10 +585,10 @@ const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
         {/* RIGHT: Summary panel */}
         <div className="w-[260px] flex-shrink-0 border-l border-theme bg-app">
           <div className="h-full">
-           <EmployeeSummaryPanel
-  formData={formData}
-  onFileSelect={setEmployeeFile}
-/>
+            <EmployeeSummaryPanel
+              formData={formData}
+              onFileSelect={setEmployeeFile}
+            />
           </div>
         </div>
       </div>

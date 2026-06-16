@@ -140,10 +140,18 @@ const PhoneCodeSelect: React.FC<PhoneCodeSelectProps> = ({
     const recalc = () => {
       const rect = triggerRef.current?.getBoundingClientRect();
       if (rect) {
-        setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+        const dropdownHeight = 240; // search bar + max-height of options list
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const openUpward = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+
+        setDropdownPos({
+          top: openUpward ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+          left: rect.left,
+        });
       }
     };
 
+    recalc();
     window.addEventListener("scroll", recalc, true);
     window.addEventListener("resize", recalc);
     return () => {
@@ -170,7 +178,14 @@ const PhoneCodeSelect: React.FC<PhoneCodeSelectProps> = ({
     if (!open) {
       const rect = triggerRef.current?.getBoundingClientRect();
       if (rect) {
-        setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+        const dropdownHeight = 240;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const openUpward = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+
+        setDropdownPos({
+          top: openUpward ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+          left: rect.left,
+        });
       }
     }
     setOpen((p) => !p);

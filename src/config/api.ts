@@ -503,8 +503,9 @@ export const API = {
     update: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update`,
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.buying.purchase_invoice.api.update_status`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
-    getBarcodeByItemCode:`${ERP_BASE}/api/method/custom_api.utils.barcode_utils.get_item_batches`,
-    getSearchItems:`${ERP_BASE}/api/method/custom_api.utils.barcode_utils.search_item_batches`,
+    attachDocument: `${ERP_BASE}/api/method/upload_file`,
+    getBarcodeByItemCode: `${ERP_BASE}/api/method/custom_api.utils.barcode_utils.get_item_batches`,
+    getSearchItems: `${ERP_BASE}/api/method/custom_api.utils.barcode_utils.search_item_batches`,
   },
 
   rfq: {
