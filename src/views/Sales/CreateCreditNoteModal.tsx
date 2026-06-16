@@ -83,7 +83,7 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
               ? "Saving..."
               : isEdit
                 ? "Update Credit Note"
-                : "Create Credit Note"}
+                : "Add Credit Note"}
           </Button>
         </div>
       </>
@@ -128,8 +128,8 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={handleClose} // ← guarded close
-      title={isEdit ? "Edit Credit Note" : "Create Credit Note"}
-      subtitle="Create and manage credit notes"
+      title={isEdit ? "Edit Credit Note" : "Add Credit Note"}
+      subtitle="Add and manage credit notes"
       icon={FileMinus}
       footer={footer}
       maxWidth="6xl"

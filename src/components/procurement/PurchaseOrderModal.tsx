@@ -267,8 +267,8 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={poId ? "Edit Purchase Order" : "Create Purchase Order"}
-      subtitle="Create and manage purchase order"
+      title={poId ? "Edit Purchase Order" : "Add Purchase Order"}
+      subtitle="Add and manage purchase order"
       icon={ClipboardList}
       maxWidth="full"
       height="75vh"

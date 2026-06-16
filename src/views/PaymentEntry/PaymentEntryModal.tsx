@@ -679,7 +679,7 @@ const PaymentEntryModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={handleCloseRequest}
-      title="Create Payment Entry"
+      title="Add Payment Entry"
       subtitle={
         isAdvanceFromPO
           ? `Advance payment against PO: ${defaultValues?.referenceName}`

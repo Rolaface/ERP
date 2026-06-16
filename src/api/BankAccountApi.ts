@@ -685,7 +685,7 @@ export async function createPaymentEntry(
   const data = resp?.data;
 
   if (data?.status_code !== 201) {
-    throw new Error(data?.message || "Failed to create payment entry.");
+    throw new Error(data?.message || "Failed to add payment entry.");
   }
 
   return data as CreatePaymentEntryResponse;

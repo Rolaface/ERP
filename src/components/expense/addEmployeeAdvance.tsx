@@ -196,9 +196,9 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode ? "Edit Employee Advance" : "Employee Advance"}
+      title={isEditMode ? "Edit Employee Advance" : " Add Employee Advance"}
       subtitle={
-        isEditMode ? "Update employee advance" : "Create a new employee advance"
+        isEditMode ? "Update employee advance" : "Add a new employee advance"
       }
       icon={Wallet}
       footer={footer}

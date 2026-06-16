@@ -79,7 +79,7 @@ export default function AddKRAModal({
       modalId={modalId}
       isOpen
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isViewMode ? "View KRA" : selectedKRA ? "Edit KRA" : "Create KRA"}
+      title={isViewMode ? "View KRA" : selectedKRA ? "Edit KRA" : "Add KRA"}
       subtitle={
         isViewMode
           ? "View Key Result Area details"

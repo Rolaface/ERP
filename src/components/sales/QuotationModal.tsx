@@ -158,8 +158,8 @@ const [submitting, setSubmitting] = useState(false);
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={mode === "edit" ? "Edit Quotation" : "Create Quotation"}
-      subtitle="Create and manage quotation details"
+      title={mode === "edit" ? "Edit Quotation" : "Add Quotation"}
+      subtitle="Add and manage quotation details"
       icon={FileSignature}
       footer={
         <ModalFooter

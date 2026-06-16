@@ -284,7 +284,7 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={isEdit ? "Edit Role" : "Create New Role"}
+      title={isEdit ? "Edit Role" : "Add New Role"}
       subtitle="Define role name and module permissions"
       icon={ShieldCheck}
       footer={footer}

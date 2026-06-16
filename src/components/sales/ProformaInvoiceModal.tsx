@@ -211,9 +211,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       icon={FileClock}
       onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={
-        mode === "edit" ? "Edit Proforma Invoice" : "Create Proforma Invoice"
+        mode === "edit" ? "Edit Proforma Invoice" : "Add Proforma Invoice"
       }
-      subtitle="Create and manage proforma invoice details"
+      subtitle="Add and manage proforma invoice details"
       footer={
         <ModalFooter
           // onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
