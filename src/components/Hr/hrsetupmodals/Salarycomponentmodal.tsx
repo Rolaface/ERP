@@ -319,7 +319,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
         className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving…" : isEdit ? "Update Component" : "Create Component"}
+        {saving ? "Saving…" : isEdit ? "Update " : "Submit"}
       </button>
     </div>
   );
@@ -334,7 +334,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={ isViewMode ? "View Salary Component" :
   isEdit     ? "Edit Salary Component" :
-               "New Salary Component"}
+               "Add New Salary Component"}
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
       height="70vh"

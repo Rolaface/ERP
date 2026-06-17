@@ -100,7 +100,7 @@ export const PayrollPeriodModal: React.FC<Props> = ({
         className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving..." : isEdit ? "Update Period" : "Create Period"}
+        {saving ? "Saving..." : isEdit ? "Update " : "Submit "}
       </button>
     </div>
   );
@@ -110,7 +110,7 @@ export const PayrollPeriodModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? "Edit Payroll Period" : "New Payroll Period"}
+      title={isEdit ? "Edit Payroll Period" : "Add New Payroll Period"}
       subtitle="Define payroll period start and end dates"
       icon={Calendar}
       customWidth="40vw"

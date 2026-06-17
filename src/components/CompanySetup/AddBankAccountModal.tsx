@@ -200,7 +200,7 @@ const AddBankAccountModal: React.FC<Props> = ({
           onClick={onSave}
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Saving..." : "Save Account"}
+          {isSubmitting ? "Saving..." : " Submit"}
         </Button>
       </div>
     </>
