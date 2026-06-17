@@ -43,6 +43,18 @@ export interface PaymentRow {
   paymentAmount: number;
 }
 
+
+export interface ExistingAttachment {
+  name: string;
+  url: string;
+  file_size?: number;
+  isExisting: true;
+  fid:string
+}
+
+export type AttachmentItem = File | ExistingAttachment;
+
+
 export type AddressBlock = {
   id: string;
   addressTitle: string;
@@ -77,7 +89,7 @@ export interface PurchaseInvoiceFormData {
   transactionProgress: string;
   supplierInvoiceNumber: string;
   supplierInvoiceDate: string;
-  attachments?: File[];
+  attachments?: AttachmentItem[];
 
   destnCountryCd: string;
   shippingRule: string;
@@ -255,5 +267,6 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   itemTerms: [],
   acceptedTerms: {},
 };
+
 
 export type POTab = "details" | "address" | "attachments" | "terms";

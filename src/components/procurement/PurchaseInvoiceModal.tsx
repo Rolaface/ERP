@@ -89,6 +89,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     setLoading,
     handleAddressSelect,
     handleAddressRemove,
+    handleRemoveAttachment
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
   // ── Wrapped handlers so select/dropdown changes also mark dirty ──
@@ -190,6 +191,8 @@ const handleItemChangeWithDirty = useCallback(
           <AttachmentsTab
             form={form}
             onFormChange={handleFormChangeWithDirty}
+                onRemoveAttachment={handleRemoveAttachment}   
+
           />
         </div>
         <div style={{ display: activeTab === "address" ? "block" : "none" }}>
