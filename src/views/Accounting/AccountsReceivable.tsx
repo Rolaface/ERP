@@ -617,7 +617,7 @@ const AccountsReceivable = () => {
       {
         id: "due",
         accessorKey: "due",
-        header: "Due Date",
+        header: "Due/Posting Date",
         size: 110,
         cell: ({ row }) =>
           row.original.isSummary ? null : (

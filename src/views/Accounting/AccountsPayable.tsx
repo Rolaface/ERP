@@ -657,7 +657,7 @@ const AccountsPayable = () => {
       {
         id: "due",
         accessorKey: "due",
-        header: "Due Date",
+        header: "Due/Posting Date",
         cell: ({ row }) =>
           row.original.isSummary ? null : (
             <span className="text-[11px] text-muted tabular-nums">
