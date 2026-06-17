@@ -11,6 +11,7 @@ import {
   MODULE_STRUCTURE,
   ALL_MODULES,
 } from "../../hooks/useUserRole";
+import ModalFooter from "../common/ModalFooter";
 import type { UserRoleFormData, PermissionEntry } from "../../types/RoleManagement/UserRole";
 
 
@@ -26,6 +27,7 @@ const PERMISSION_KEYS: PermissionKey[] = [
   "report",
   "submit",
   "cancel",
+  "email"
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -50,6 +52,7 @@ const ACTION_LABELS: Record<PermissionKey, string> = {
   report: "Report",
   submit: "Submit",
   cancel: "Cancel",
+  email:"Email"
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -252,39 +255,6 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
     });
   };
 
-  const footer = (
-    <div className="flex items-center justify-between w-full">
-      {!isViewMode && (
-        <button
-          type="button"
-          onClick={() => { handleReset(); resetDirty(); }}
-          className="px-4 py-2 text-sm font-medium text-muted border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
-        >
-          Reset
-        </button>
-      )}
-      <div className={`flex gap-3 ${isViewMode ? "ml-auto" : ""}`}>
-        <button
-          type="button"
-          onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-          className="px-4 py-2 text-sm font-medium text-main border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
-        >
-          {isViewMode ? "Close" : "Cancel"}
-        </button>
-        {!isViewMode && (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""}`}
-          >
-            {isSubmitting ? "Saving..." : isEdit ? "Update" : "Save"}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <MinimizableModal
       modalId={resolvedModalId}
@@ -305,7 +275,17 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
             : "Define role name and module permissions"
       }
       icon={ShieldCheck}
-      footer={footer}
+      footer={
+  <ModalFooter
+    onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+    onReset={!isViewMode ? () => { handleReset(); resetDirty(); } : undefined}
+    onSubmit={!isViewMode ? async () => { await handleSubmit(); } : undefined}
+    isSubmitting={isSubmitting}
+    submitLabel={isEdit ? "Update" : "Save"}
+    cancelLabel={isViewMode ? "Close" : "Cancel"}
+    resetLabel="Reset"
+  />
+}
       maxWidth="5xl"
       height="82vh"
     >

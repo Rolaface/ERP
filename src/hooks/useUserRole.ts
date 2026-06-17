@@ -158,6 +158,7 @@ export const useUserRoleLogic = ({
         report: existing?.report ?? 0,
         submit: existing?.submit ?? 0,
         cancel: existing?.cancel ?? 0,
+        email : existing?.email ?? 0
       };
     });
 
@@ -175,7 +176,7 @@ export const useUserRoleLogic = ({
         const newEntries: PermissionEntry[] = subModules.map((sub) => ({
           module: sub,
           read: 1, write: 1, create: 1, delete: 1,
-          import: 1, export: 1, report: 1, submit: 1, cancel: 1,
+          import: 1, export: 1, report: 1, submit: 1, cancel: 1,email:1
         }));
         return { ...prev, permission: [...filtered, ...newEntries] };
       });
@@ -214,7 +215,7 @@ export const useUserRoleLogic = ({
         const newEntry: PermissionEntry = {
           module,
           read: 0, write: 0, create: 0,
-          delete: 0, import: 0, export: 0, report: 0, submit: 0, cancel: 0,
+          delete: 0, import: 0, export: 0, report: 0, submit: 0, cancel: 0, email: 0,
           [action]: 1,
         };
         return { ...prev, permission: [...prev.permission, newEntry] };
@@ -233,7 +234,7 @@ export const useUserRoleLogic = ({
           ...prev,
           permission: [
             ...filtered,
-            { module, read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1, submit: 1, cancel: 1, },
+            { module, read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1, submit: 1, cancel: 1, email:1},
           ],
         };
       });
