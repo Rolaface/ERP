@@ -1,3 +1,5 @@
+import { getCurrencySymbol } from "../../utils/currency";
+
 export type PLNode = {
   id: string;
   account: string;
@@ -66,17 +68,21 @@ export function formatPeriod(key: string) {
   return `${month.slice(0, 3).toUpperCase()} ${year}`;
 }
 
-export const nf = (value: number, currency?: string): string => {
+
+
+export const nf = (
+  value: number | null | undefined,
+): string => {
   if (value === null || value === undefined) return "—";
+
+  const symbol = getCurrencySymbol();
 
   const formatted = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Math.abs(value));
 
-  const currencyStr = currency ? `${currency} ` : "";
-
   return value < 0
-    ? `${currencyStr}-${formatted}`
-    : `${currencyStr}${formatted}`;
+    ? `${symbol} -${formatted}`
+    : `${symbol} ${formatted}`;
 };
