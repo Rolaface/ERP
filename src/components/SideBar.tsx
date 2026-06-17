@@ -353,7 +353,16 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
     [canAccessAnyOf, permissionsLoading, isEmployeeView],
   );
 
-  const canSeeHr = canAccessAnyOf(["Employee", "Payroll Entry"]);
+  const canSeeHr = canAccessAnyOf([
+    "Employee",
+    "Payroll Entry",
+    "Leave Type",
+    "Leave Period",
+    "Leave Policy",
+    "Leave Policy Assignment",
+    "Holiday List",
+    "Shift Type",
+  ]);
   const showSettingsSection = visibleSettingsItems.length > 0;
 
   // ── User display ──────────────────────────────────────────────────────────
