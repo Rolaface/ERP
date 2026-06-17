@@ -211,7 +211,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
         disabled={isSaving}
         className={isSaving ? "opacity-60 cursor-not-allowed" : ""}
       >
-        {isSaving ? "Saving..." : editData ? "Update" : "Save"}
+        {isSaving ? "Saving..." : editData ? "Update" : "Submit"}
       </Button>
     </>
   );

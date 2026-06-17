@@ -670,7 +670,7 @@ const PaymentEntryModal: React.FC<Props> = ({
         Cancel
       </Button>
       <Button variant="primary" onClick={handleSave} disabled={isSubmitDisabled}>
-        {isSaving ? "Saving…" : "Save"}
+        {isSaving ? "Saving…" : "Submit"}
       </Button>
     </>
   );

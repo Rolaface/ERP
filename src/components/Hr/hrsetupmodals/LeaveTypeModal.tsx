@@ -148,8 +148,8 @@ export const LeaveTypeModal: React.FC<Props> = ({
         {saving
           ? "Saving…"
           : isEdit
-            ? "Update Leave Type"
-            : "Create Leave Type"}
+            ? "Update "
+            : "  Submit"}
       </button>
     </div>
   ): null;
@@ -160,7 +160,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
       isOpen={isOpen}
       onClose={onClose}
       // title={isEdit ? "Edit Leave Type" : "New Leave Type"}
-      title={isView ? "View Leave Type" : isEdit ? "Edit Leave Type" : "New Leave Type"}
+      title={isView ? "View Leave Type" : isEdit ? "Edit Leave Type" : "Add New Leave Type"}
       subtitle="Configure leave policies and rules"
       icon={CalendarRange}
       maxWidth="2xl"

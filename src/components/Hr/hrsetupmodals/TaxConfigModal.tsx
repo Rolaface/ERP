@@ -363,7 +363,7 @@ const updateCharge = <K extends keyof TaxChargeDraftRow>(idx: number, key: K, va
         className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving..." : isEdit ? "Update Tax" : "Create Tax"}
+        {saving ? "Saving..." : isEdit ? "Update " : "Submit"}
       </button>
     </div>
   ): null;
@@ -374,7 +374,7 @@ const updateCharge = <K extends keyof TaxChargeDraftRow>(idx: number, key: K, va
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
 
-      title={isEdit ? "Edit Tax Configuration" : "New Tax Configuration"}
+      title={isEdit ? "Edit Tax Configuration" : " Add New Tax Configuration"}
       subtitle="Configure income tax slabs and exemptions"
       icon={Percent}
       customWidth="60vw"

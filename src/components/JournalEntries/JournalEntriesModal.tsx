@@ -130,7 +130,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
             loading={loading}
             onClick={handleSubmit}
           >
-            {actualEntryId ? "Update Entry" : "Save Entry"}
+            {actualEntryId ? "Update " : " Submit"}
           </Button>
         </div>
       )}

@@ -120,7 +120,7 @@ const RfqModal: React.FC<RfqModalProps> = ({
               form="rfqForm"
               disabled={saving}
             >
-              {saving ? "Saving..." : "Save RFQ"}
+              {saving ? "Saving..." : "Submit"}
             </Button>
           </div>
         </>

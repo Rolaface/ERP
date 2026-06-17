@@ -341,7 +341,7 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={mode === "edit" ? "Edit Appraisal" : "New Appraisal"}
+      title={mode === "edit" ? "Edit Appraisal" : "Add Appraisal"}
       subtitle="Manage employee performance appraisal"
       icon={ClipboardList}
       footer={footerContent}

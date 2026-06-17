@@ -84,7 +84,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
           onClick={handleSubmitWithDirtyReset}
           disabled={loading}
         >
-          {loading ? "Saving..." : "Save"}
+          {loading ? "Saving..." : "Submit"}
         </Button>
       )}
 

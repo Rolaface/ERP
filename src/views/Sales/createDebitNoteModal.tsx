@@ -83,8 +83,8 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
             {saving
               ? "Saving..."
               : isEdit
-                ? "Update Debit Note"
-                : "Add Debit Note"}
+                ? "Update"
+                : "Submit"}
           </Button>
         </div>
       </>

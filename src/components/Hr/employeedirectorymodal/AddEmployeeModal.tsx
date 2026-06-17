@@ -486,7 +486,7 @@ const AddEmployeeModal: React.FC<Props> = ({
       currentTab={currentTabIndex}
       totalTabs={TAB_ORDER.length}
       isSubmitting={saving}
-      submitLabel={editData ? "Update" : "Save"}
+      submitLabel={editData ? "Update" : "Submit"}
     />
   );
 
