@@ -217,7 +217,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     onReset={() => { handleReset(); resetDirty(); }}
     onSubmit={handleSubmit}
     isSubmitting={isSubmitting}
-    submitLabel={isEditMode ? "Update" : "Save"}
+    submitLabel={isEditMode ? "Update" : "Submit"}
     cancelLabel="Cancel"
     resetLabel="Reset"
   />

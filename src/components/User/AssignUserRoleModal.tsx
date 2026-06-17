@@ -281,7 +281,7 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
     onReset={!isViewMode ? () => { handleReset(); resetDirty(); } : undefined}
     onSubmit={!isViewMode ? async () => { await handleSubmit(); } : undefined}
     isSubmitting={isSubmitting}
-    submitLabel={isEdit ? "Update" : "Save"}
+    submitLabel={isEdit ? "Update" : "Submit"}
     cancelLabel={isViewMode ? "Close" : "Cancel"}
     resetLabel="Reset"
   />

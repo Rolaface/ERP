@@ -115,7 +115,7 @@ const TaxCategoryModal: React.FC<TaxCategoryModalProps> = React.memo(({
       onReset={reset}
       onSubmit={handleSave}
       isSubmitting={submitting}
-      submitLabel="Save"
+      submitLabel="Submit"
       resetLabel="Reset"
     />
   );

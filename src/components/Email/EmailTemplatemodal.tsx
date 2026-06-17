@@ -309,7 +309,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                         form="emailTemplateForm"
                         disabled={saving}
                     >
-                        {saving ? "Saving..." : templateId ? "Update Template" : "Save Template"}
+                        {saving ? "Saving..." : templateId ? "Update" : "Submit"}
                     </Button>
                 </div>
             </>

@@ -183,8 +183,8 @@ const BankModal: React.FC<BankModalProps> = ({
             {isSubmitting
               ? "Saving..."
               : isEditMode
-                ? "Update Bank"
-                : "Add Bank"}
+                ? "Update"
+                : "Submit"}
           </button>
         )}
       </div>

@@ -208,7 +208,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
       onReset={reset}
       onSubmit={handleSubmitInternal}
       isSubmitting={loading}
-      submitLabel={isEditMode ? "Update" : "Save"}
+      submitLabel={isEditMode ? "Update" : "Submit"}
       resetLabel="Reset"
     />
   );
