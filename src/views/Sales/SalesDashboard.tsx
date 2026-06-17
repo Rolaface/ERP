@@ -59,7 +59,9 @@ const SalesDashboard: React.FC = () => {
     debit_notes: 0
   });
 
-  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || 'INR';
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
+  const currencySymbol = useCompanyStore((state) => state.currencySymbol || '');
+  
 
   const currencyINR = useMemo(() => {
     const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
@@ -70,16 +72,28 @@ const SalesDashboard: React.FC = () => {
     });
   }, [baseCurrency]);
 
-  const currencyINRCompact = useMemo(() => {
-    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: baseCurrency,
-      notation: "compact",
-      compactDisplay: "short",
-      maximumFractionDigits: 1,
-    });
-  }, [baseCurrency]);
+  const currencyFormatter = useMemo(() => {
+      const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+      
+      const numberFormatter = new Intl.NumberFormat(locale, {
+        style: 'decimal', 
+        maximumFractionDigits: 2, 
+        notation: "compact"
+      });
+  
+      return {
+        format: (value: number) => {
+          const num = Number(value) || 0;
+          const formattedNumber = numberFormatter.format(Math.abs(num));
+          
+           const sign = num < 0 ? '-' : '';
+          
+           const space = currencySymbol.length > 1 ? ' ' : '';
+          
+          return `${sign}${currencySymbol}${space}${formattedNumber}`;
+        }
+      };
+    }, [baseCurrency, currencySymbol]);
  
 
   const dateWithDay = useMemo(
@@ -193,7 +207,7 @@ if (countsRes?.data) {
     const { x, y, name, value } = props;
     return (
       <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
-        {String(name)}: {currencyINRCompact.format(Number(value ?? 0))}
+        {String(name)}: {currencyFormatter.format(Number(value ?? 0))}
       </text>
     );
   };
@@ -261,7 +275,7 @@ const stats = [
                     textAnchor="end"
                     height={54}
                   />
-                  <YAxis tick={{ fontSize: 12 }} width={52} tickFormatter={(v) => currencyINRCompact.format(Number(v))} />
+                  <YAxis tick={{ fontSize: 12 }} width={52} tickFormatter={(v) => currencyFormatter.format(Number(v))} />
                   <Tooltip
                     formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
                     labelFormatter={(
@@ -295,7 +309,7 @@ const stats = [
                     <LabelList
                       dataKey="base_grand_total"
                       position="top"
-                      formatter={(v: any) => currencyINRCompact.format(Number(v ?? 0))}
+                      formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))}
                       fill="#6b7280"
                       fontSize={10}
                     />

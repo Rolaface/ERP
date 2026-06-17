@@ -28,15 +28,30 @@ const InventoryDashboard: React.FC = () => {
 
   const baseCurrency = useCompanyStore((state) => state.baseCurrency) || 'INR';
 
-  const currencyINR = useMemo(() => new Intl.NumberFormat(
-    baseCurrency === 'INR' ? 'en-IN' : 'en-US',
-    { style: "currency", currency: baseCurrency, maximumFractionDigits: 2 }
-  ), [baseCurrency]);
+ const currencySymbol = useCompanyStore((state) => state.currencySymbol || '');
+   
+  const currencyFormatter = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    
+    const numberFormatter = new Intl.NumberFormat(locale, {
+      style: 'decimal', 
+      maximumFractionDigits: 2, 
+      notation: "compact"
+    });
 
-  const currencyINRCompact = useMemo(() => new Intl.NumberFormat(
-    baseCurrency === 'INR' ? 'en-IN' : 'en-US',
-    { style: "currency", currency: baseCurrency, notation: "compact", compactDisplay: "short", maximumFractionDigits: 1 }
-  ), [baseCurrency]);
+    return {
+      format: (value: number) => {
+        const num = Number(value) || 0;
+        const formattedNumber = numberFormatter.format(Math.abs(num));
+        
+         const sign = num < 0 ? '-' : '';
+        
+         const space = currencySymbol.length > 1 ? ' ' : '';
+        
+        return `${sign}${currencySymbol}${space}${formattedNumber}`;
+      }
+    };
+  }, [baseCurrency, currencySymbol]);
 
   useEffect(() => {
     let mounted = true;
@@ -110,7 +125,7 @@ const InventoryDashboard: React.FC = () => {
     const { x, y, name, value } = props;
     return (
       <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
-        {String(name)}: {currencyINRCompact.format(Number(value ?? 0))}
+        {String(name)}: {currencyFormatter.format(Number(value ?? 0))}
       </text>
     );
   };
@@ -168,7 +183,7 @@ const InventoryDashboard: React.FC = () => {
              itemBreakdown.length === 0 ? <NoDataOverlay /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                  <Tooltip formatter={(v: any) => currencyINR.format(Number(v ?? 0))} {...tooltipStyle} />
+                  <Tooltip formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))} {...tooltipStyle} />
                   <Legend {...legendProps} />
                   <Pie data={itemBreakdown} dataKey="total_value" nameKey="name"
                     cx="50%" cy="45%" innerRadius={55} outerRadius={82}
@@ -192,12 +207,12 @@ const InventoryDashboard: React.FC = () => {
                 <BarChart data={topItems} margin={{ top: 16, right: 18, left: 6, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="item_name" tick={{ fontSize: 11 }} interval={0} angle={-10} textAnchor="end" height={48} />
-                  <YAxis tick={{ fontSize: 12 }} width={52} tickFormatter={(v) => currencyINRCompact.format(Number(v))} />
-                  <Tooltip formatter={(v: any) => currencyINR.format(Number(v ?? 0))} {...tooltipStyle} cursor={{ fill: "var(--primary)", opacity: 0.1 }} />
+                  <YAxis tick={{ fontSize: 12 }} width={52} tickFormatter={(v) => currencyFormatter.format(Number(v))} />
+                  <Tooltip formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))} {...tooltipStyle} cursor={{ fill: "var(--primary)", opacity: 0.1 }} />
                   <Legend {...legendProps} />
                   <Bar dataKey="total_value" fill={palette.emerald} radius={[6, 6, 0, 0]} name="Total Sales">
                     <LabelList dataKey="total_value" position="top"
-                      formatter={(v: any) => currencyINRCompact.format(Number(v ?? 0))}
+                      formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))}
                       fill="#6b7280" fontSize={10} />
                   </Bar>
                 </BarChart>

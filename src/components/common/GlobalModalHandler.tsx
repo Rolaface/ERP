@@ -81,6 +81,10 @@ const PaymentEntryModal = lazy(
 const CurrencyConversionModal = lazy(
   () => import("../currencyconversion/CurrencyConversionModal"),
 );
+
+const AddassetCategory =lazy(
+()=> import("../../components/FixedAsset/AssetCategoryModal")
+)
 const AddAssetModal = lazy(
   () => import("../../components/FixedAsset/AddAssetModal"),
 );
@@ -598,6 +602,25 @@ const GlobalModalHandler: React.FC = () => {
 
           />,
         );
+        case "assetCategory":
+  return wrappedModal(
+    <AddassetCategory
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSubmit={async (data) => {
+        await handleSubmit(data);
+        useDataRefreshStore
+          .getState()
+          .triggerRefresh(REFRESH_KEYS.ASSET_CATEGORY_LIST);
+      }}
+      initialData={getRecordInitialData(modal.initialData)}
+      isEdit={modal.isEdit}
+      isViewMode={context?.isViewMode ?? false}
+    />,
+  );
+
       case "fixedAsset":
         return wrappedModal(
           <AddAssetModal
@@ -808,6 +831,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             initialData={getInitialData<SalaryComponent>(modal.initialData)}
+              isViewMode={context?.isViewMode ?? false} 
             onSuccess={() => {
               if (context?.onSuccess) context.onSuccess(undefined);
               handleClose();

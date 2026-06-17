@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
-import type { Column } from "../../components/ui/Table/type";
 import {
-  getProfitAndLoss,
-  type ProfitLossFilters,
-} from "../../api/Accounting/AccountApi";
+  useReactTable,
+  getCoreRowModel,
+  getExpandedRowModel,
+  flexRender,
+  type ColumnDef,
+  type ExpandedState,
+} from "@tanstack/react-table";
 import {
   AlertCircle,
   Loader2,
@@ -15,10 +17,20 @@ import {
   ChevronRight,
   Layers,
 } from "lucide-react";
-import { PLNode, PLData, PLResponse, mapNode, nf, formatPeriod } from "../../types/Accounting/ProfitLoss";
+import {
+  PLNode,
+  PLData,
+  PLResponse,
+  mapNode,
+  nf,
+  formatPeriod,
+} from "../../types/Accounting/ProfitLoss";
+import {
+  getProfitAndLoss,
+  type ProfitLossFilters,
+} from "../../api/Accounting/AccountApi";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import { getCompanyCurrentFiscalYear } from "../../api/utils/frappeUtilsApi";
-
 
 const toInputDate = (apiDate: string): string => {
   if (!apiDate || !apiDate.includes("-")) return "";
@@ -35,10 +47,9 @@ const toApiDate = (inputDate: string): string => {
 };
 
 const res = await getCompanyCurrentFiscalYear();
-
 const fiscalYear = res.data?.fiscal_year;
 const fiscalYearStartDate = res?.data?.start_date;
-const fiscalYearEndDate = res ?.data?.end_date;
+const fiscalYearEndDate = res?.data?.end_date;
 
 const currentMonthStart = (): string => {
   const d = new Date();
@@ -51,66 +62,69 @@ const currentMonthEnd = (): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
 };
 
+/* builds the {rowId: true} map needed to expand the tree to N levels by default */
+const buildExpandedToDepth = (
+  nodes: PLNode[],
+  depth: number,
+  path = "",
+): Record<string, boolean> => {
+  let state: Record<string, boolean> = {};
+  nodes.forEach((node, i) => {
+    const id = path ? `${path}.${i}` : `${i}`;
+    if (depth > 0 && node.children?.length) {
+      state[id] = true;
+      Object.assign(state, buildExpandedToDepth(node.children, depth - 1, id));
+    }
+  });
+  return state;
+};
 
+/* ── KPI STRIP ── */
+function KpiStrip({
+  data,
+  loading,
+}: {
+  data: PLData | null;
+  loading: boolean;
+}) {
+  const items = data?.summary.filter((i) => !i.type) ?? [];
 
-const nodeKey = (n: PLNode) => n.id;
-/*
-  EXPAND ICON
-*/
-
-function expandIcon(
-  _node: PLNode,
-  isExpanded: boolean,
-  hasChildren: boolean
-): React.ReactNode {
-  if (!hasChildren)
-    return <FileText size={12} className="text-muted opacity-50" />;
-  return isExpanded ? (
-    <FolderOpen size={13} className="text-muted" />
-  ) : (
-    <Folder size={13} className="text-muted" />
-  );
-}
-
-/*
-  SUMMARY STRIP
-*/
-
-function SummaryStrip({ data }: { data: PLData }) {
-  const items = data.summary.filter((i) => !i.type);
+  const colorFor = (label: string, indicator?: string) => {
+    if (label.toLowerCase().includes("income")) return "text-emerald-600";
+    if (label.toLowerCase().includes("expense")) return "text-red-500";
+    return indicator?.toLowerCase() === "green"
+      ? "text-emerald-600"
+      : "text-red-500";
+  };
 
   return (
-    <div className="grid grid-cols-3 gap-3 w-full max-w-[900px]">
-      {items.map((item) => {
-        const isProfit = item.indicator?.toLowerCase() === "green";
-
-        return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      {(loading || !data ? Array.from({ length: 3 }) : items).map(
+        (item: any, i) => (
           <div
-            key={item.label}
-            className="rounded-xl border p-3 flex flex-col gap-1 bg-card w-full"
+            key={item?.label ?? i}
+            className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 flex flex-col gap-1.5"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted opacity-70">
-                {item.label}
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+              {item?.label ?? "—"}
+            </span>
+            {loading || !data ? (
+              <div className="h-4 w-24 bg-[var(--border)] rounded animate-pulse" />
+            ) : (
+              <span
+                className={`text-sm font-extrabold tabular-nums ${colorFor(item.label, item.indicator)}`}
+              >
+                {nf(item.value)}
               </span>
-            </div>
-
-            <div
-              className={`text-sm font-black tracking-tight ${isProfit ? "text-emerald-500" : "text-rose-500"
-                }`}
-            >
-              {nf(item.value, item.currency)}
-            </div>
+            )}
           </div>
-        );
-      })}
+        ),
+      )}
     </div>
   );
 }
 
-/*
-  FILTER BAR
-*/
+/* ── FILTER BAR ── */
 type FilterBarProps = {
   filters: ProfitLossFilters;
   setFilters: React.Dispatch<React.SetStateAction<ProfitLossFilters>>;
@@ -129,38 +143,27 @@ function FilterBar({
   onCollapseAll,
 }: FilterBarProps) {
   const inputClass =
-    "w-25 px-2 py-1.5 border border-[var(--border)] rounded-lg bg-card text-main text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all no-spinner";
+    "h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all no-spinner";
 
   const btnClass =
-    "flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap";
+    "h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40 rounded-md transition-all whitespace-nowrap";
 
   return (
-    <div className="w-[900px] flex items-center gap-2 flex-nowrap overflow-x-auto p-3 rounded-xl border border-[var(--border)] bg-card shadow-sm scrollbar-thin">
-
-
-      {/* MODE */}
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+    <div className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted">
           Mode
         </span>
-
         <select
           value={filters.mode}
           onChange={(e) => {
             const mode = e.target.value as "Fiscal Year" | "Date Range";
-
             setFilters((f) => ({
               ...f,
               mode,
               ...(mode === "Date Range"
-                ? {
-                  from_date: currentMonthStart(),
-                  to_date: currentMonthEnd(),
-                }
-                : {
-                  from_fiscal_year: fiscalYear,
-                  to_fiscal_year: fiscalYear,
-                })
+                ? { from_date: currentMonthStart(), to_date: currentMonthEnd() }
+                : { from_fiscal_year: fiscalYear, to_fiscal_year: fiscalYear }),
             }));
           }}
           className={inputClass}
@@ -169,18 +172,17 @@ function FilterBar({
           <option value="Date Range">Date Range</option>
         </select>
       </div>
-      {/* PERIODICITY */}
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+
+      <div className="flex items-center gap-1.5">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted">
           Period
         </span>
-
         <select
           value={filters.periodicity}
           onChange={(e) =>
             setFilters((f) => ({
               ...f,
-              periodicity: e.target.value as ProfitLossFilters["periodicity"]
+              periodicity: e.target.value as ProfitLossFilters["periodicity"],
             }))
           }
           className={inputClass}
@@ -192,210 +194,171 @@ function FilterBar({
         </select>
       </div>
 
-      {/* FROM FY */}
       {filters.mode !== "Date Range" && (
         <>
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
               From FY
             </span>
-
             <input
               type="number"
               value={filters.from_fiscal_year}
               onChange={(e) =>
                 setFilters((f) => ({
                   ...f,
-                  from_fiscal_year: Number(e.target.value)
+                  from_fiscal_year: Number(e.target.value),
                 }))
               }
-              className={inputClass}
+              className={`${inputClass} w-20`}
             />
           </div>
-
-          {/* TO FY */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
               To FY
             </span>
-
             <input
               type="number"
               value={filters.to_fiscal_year}
               onChange={(e) =>
                 setFilters((f) => ({
                   ...f,
-                  to_fiscal_year: Number(e.target.value)
+                  to_fiscal_year: Number(e.target.value),
                 }))
               }
-              className={inputClass}
+              className={`${inputClass} w-20`}
             />
           </div>
-        </>)
-      }
-      {/* FROM DATE */}
+        </>
+      )}
+
       {filters.mode === "Date Range" && (
         <>
-          {/* FROM DATE */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
               From
             </span>
-
-            <div className="w-[120px]">
+            <div className="w-[130px]">
               <DatePickerInput
                 name="from_date"
                 value={toInputDate(filters.from_date ?? "")}
                 onChange={(name, value) =>
-                  setFilters((f) => ({
-                    ...f,
-                    from_date: toApiDate(value),
-                  }))
+                  setFilters((f) => ({ ...f, from_date: toApiDate(value) }))
                 }
               />
             </div>
           </div>
-
-          {/* TO DATE */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
               To
             </span>
-
-            <div className="w-[120px]">
+            <div className="w-[130px]">
               <DatePickerInput
                 name="to_date"
                 value={toInputDate(filters.to_date ?? "")}
                 onChange={(name, value) =>
-                  setFilters((f) => ({
-                    ...f,
-                    to_date: toApiDate(value),
-                  }))
+                  setFilters((f) => ({ ...f, to_date: toApiDate(value) }))
                 }
               />
             </div>
           </div>
-        </>)}
+        </>
+      )}
 
-      <div className="h-5 w-px bg-[var(--border)] mx-1" />
+      <div className="w-px self-stretch bg-[var(--border)]" />
 
-      {/* EXPAND */}
       <button onClick={onExpandAll} className={btnClass}>
         <Layers size={11} />
         Expand All
       </button>
-
-      {/* COLLAPSE */}
       <button onClick={onCollapseAll} className={btnClass}>
         <ChevronRight size={11} />
         Collapse
       </button>
-
+      <button onClick={onRefresh} className={`${btnClass} ml-auto`}>
+        <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
+        Refresh
+      </button>
     </div>
   );
 }
 
-/*
-  MAIN COMPONENT
-*/
-
+/* ── MAIN COMPONENT ── */
 const ProfitLoss: React.FC = () => {
-
-  const [filters, setFilters] = useState<ProfitLossFilters>({
-    mode: "Fiscal Year",
-    periodicity: "Monthly",
-    from_fiscal_year: fiscalYear,
-    to_fiscal_year: fiscalYear,
-    from_date: currentMonthStart(),
-    to_date: currentMonthEnd()
-  });
-
+const [filters, setFilters] = useState<ProfitLossFilters>({
+  mode: "Fiscal Year",
+  periodicity: "Monthly",
+  from_fiscal_year: fiscalYear,
+  to_fiscal_year: fiscalYear,
+  from_date: currentMonthStart(),
+  to_date: currentMonthEnd(),
+});
   const [data, setData] = useState<PLData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandKey, setExpandKey] = useState(0);
-  const [expandDepth, setExpandDepth] = useState(2);
+  const [expanded, setExpanded] = useState<ExpandedState>({});
 
-
-
-  const handleExpandAll = useCallback(() => {
-    setExpandDepth(Number.MAX_SAFE_INTEGER);
-    setExpandKey((k) => k + 1);
-  }, []);
-
-  const handleCollapseAll = useCallback(() => {
-    setExpandDepth(0);
-    setExpandKey((k) => k + 1);
-  }, []);
-
-  const tableData = useMemo(() => {
+  const tableData = useMemo<PLNode[]>(() => {
     if (!data) return [];
-
-    return [
-      ...data.income,
-      ...data.expense
-    ];
+    return [...data.income, ...data.expense];
   }, [data]);
 
+  useEffect(() => {
+    if (!data) return;
+    setExpanded(buildExpandedToDepth(tableData, 2));
+  }, [data, tableData]);
 
-  const fetchPL = useCallback(
-    async (currentFilters: ProfitLossFilters) => {
-      setLoading(true);
-      setError(null);
-      try {
-        if (
-          currentFilters.mode === "Date Range" &&
-          (!currentFilters.from_date || !currentFilters.to_date)
-        ) {
-          setError("Please select a valid date range.");
-          return;
-        }
-        const params =
-          currentFilters.mode === "Date Range"
-            ? {
+  const handleExpandAll = useCallback(() => setExpanded(true), []);
+  const handleCollapseAll = useCallback(() => setExpanded({}), []);
 
+  const fetchPL = useCallback(async (currentFilters: ProfitLossFilters) => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (
+        currentFilters.mode === "Date Range" &&
+        (!currentFilters.from_date || !currentFilters.to_date)
+      ) {
+        setError("Please select a valid date range.");
+        return;
+      }
+      const params =
+        currentFilters.mode === "Date Range"
+          ? {
               periodicity: currentFilters.periodicity,
               from_date: currentFilters.from_date,
               to_date: currentFilters.to_date,
-              filter_based_on: "Date Range"
+              filter_based_on: "Date Range",
             }
-            : {
+          : {
               periodicity: currentFilters.periodicity,
               from_fiscal_year: currentFilters.from_fiscal_year,
               to_fiscal_year: currentFilters.to_fiscal_year,
-              filter_based_on: "Fiscal Year"
+              filter_based_on: "Fiscal Year",
             };
-        const res: PLResponse = await getProfitAndLoss(params);
-        console.log("API RESPONSE:", res);
-        if (res?.message?.status_code === 200) {
-          const d = res.message.data;
-
-          setData({
-            ...d,
-            income: d.income.map(mapNode),
-            expense: d.expense.map(mapNode),
-          });
-        } else {
-          setError(res?.message?.message ?? "Failed to load Profit & Loss.");
-        }
-      } catch (err: any) {
-        setError(err?.message ?? "Error fetching Profit & Loss.");
-      } finally {
-        setLoading(false);
+      const res: PLResponse = await getProfitAndLoss(params);
+      if (res?.message?.status_code === 200) {
+        const d = res.message.data;
+        setData({
+          ...d,
+          income: d.income.map(mapNode),
+          expense: d.expense.map(mapNode),
+        });
+      } else {
+        setError(res?.message?.message ?? "Failed to load Profit & Loss.");
       }
-    },
-    []
-  );
+    } catch (err: any) {
+      setError(err?.message ?? "Error fetching Profit & Loss.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-
-  /* Debounced fetch */
   useEffect(() => {
     if (
       filters.mode === "Date Range" &&
       (!filters.from_date || !filters.to_date)
     )
       return;
-
     if (
       filters.mode === "Fiscal Year" &&
       (!filters.from_fiscal_year || !filters.to_fiscal_year)
@@ -406,47 +369,83 @@ const ProfitLoss: React.FC = () => {
     return () => clearTimeout(timer);
   }, [filters, fetchPL]);
 
-
-
-  const columns: Column<PLNode>[] = useMemo(() => {
+  const columns = useMemo<ColumnDef<PLNode>[]>(() => {
     if (!data?.columns) return [];
 
     return data.columns
       .filter((col) => !col.hidden)
-      .map((col) => {
+      .map((col): ColumnDef<PLNode> => {
         if (col.fieldname === "account") {
           return {
-            key: "account_name",
+            id: "account_name",
             header: col.label,
-            width: "220px",
-            align: "left" as const,
-            render: (row: PLNode) => (
-              <span className={row.is_group ? "font-semibold" : ""}>
-                {row.account_name}
-              </span>
-            )
-          }
+            size: 240,
+            cell: ({ row }) => {
+              const node = row.original;
+              const canExpand = row.getCanExpand();
+              return (
+                <div
+                  className="flex items-center gap-1.5"
+                  style={{ paddingLeft: `${row.depth * 18}px` }}
+                >
+                  {canExpand ? (
+                    <button
+                      type="button"
+                      onClick={row.getToggleExpandedHandler()}
+                      className="shrink-0 text-muted hover:text-main flex items-center gap-1"
+                    >
+                      <ChevronRight
+                        size={12}
+                        className={`transition-transform duration-150 ${
+                          row.getIsExpanded() ? "rotate-90" : ""
+                        }`}
+                      />
+                      {row.getIsExpanded() ? (
+                        <FolderOpen size={13} />
+                      ) : (
+                        <Folder size={13} />
+                      )}
+                    </button>
+                  ) : (
+                    <FileText
+                      size={12}
+                      className="text-muted opacity-50 shrink-0"
+                    />
+                  )}
+                  <span
+                    className={`text-xs truncate ${node.is_group ? "font-semibold" : ""}`}
+                  >
+                    {node.account_name}
+                  </span>
+                </div>
+              );
+            },
+          };
         }
 
         return {
-          key: col.fieldname,
+          id: col.fieldname,
           header: col.label,
-          width: `${Math.min(col.width ?? 100, 90)}px`,
-          align: "right" as const,
-          render: (row: PLNode) =>
-            nf(row.periods?.[col.fieldname] ?? 0, row.currency)
-        }
-      })
+          size: col.fieldname === "total" ? 130 : 110,
+          meta: { align: "right" },
+          cell: ({ row }) => (
+            <span className="text-xs tabular-nums text-main">
+              {nf(row.original.periods?.[col.fieldname] ?? 0)}
+            </span>
+          ),
+        };
+      });
   }, [data]);
 
-  /*  FULL-PAGE STATES  */
-  if (loading && !data) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 size={30} className="animate-spin text-primary" />
-      </div>
-    );
-  }
+  const table = useReactTable({
+    data: tableData,
+    columns,
+    state: { expanded },
+    onExpandedChange: setExpanded,
+    getSubRows: (row) => row.children,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+  });
 
   if (error && !data) {
     return (
@@ -464,13 +463,10 @@ const ProfitLoss: React.FC = () => {
     );
   }
 
-  /*  RENDER  */
   return (
-    <div className="flex flex-col gap-4 w-full overflow-x-hidden">
-      {/* Summary */}
-      {data && <SummaryStrip data={data} />}
+    <div className="flex flex-col gap-3">
+      <KpiStrip data={data} loading={loading && !data} />
 
-      {/* Filter bar — top, shared */}
       <FilterBar
         filters={filters}
         setFilters={setFilters}
@@ -480,30 +476,92 @@ const ProfitLoss: React.FC = () => {
         onCollapseAll={handleCollapseAll}
       />
 
-      <style>{`
- .pl-no-minw table {
-  width: max-content;
-  min-width: 100%;
-}
-`}</style>
-
-      <div className="w-full max-w-full overflow-hidden rounded-xl border border-[var(--border)]">
-        <div className="pl-no-minw w-full max-w-full overflow-x-auto">
-          <ExpandableTreeTable<PLNode>
-            key={`pl-${expandKey}`}
-            columns={columns}
-            data={tableData}
-            childrenKey="children"
-            nodeKey={nodeKey}
-            showToolbar={false}
-            defaultExpandDepth={expandDepth}
-            expandIconRender={expandIcon}
-            loading={loading}
-            emptyMessage="No Profit & Loss data."
-          />
+      <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
+        <div className="overflow-x-auto overflow-y-auto flex-1 relative">
+          <table
+            className="border-collapse"
+            style={{
+              tableLayout: "fixed",
+              width: "max-content",
+              minWidth: "100%",
+            }}
+          >
+            <colgroup>
+              {table.getAllLeafColumns().map((col) => (
+                <col key={col.id} style={{ width: col.getSize() }} />
+              ))}
+            </colgroup>
+            <thead className="sticky top-0 z-10 border-b border-[var(--border)]">
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((header) => {
+                    const align =
+                      (header.column.columnDef.meta as any)?.align === "right"
+                        ? "text-right"
+                        : "text-left";
+                    return (
+                      <th
+                        key={header.id}
+                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-row-hover border-b border-[var(--border)] ${align}`}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {loading && !data ? (
+                <tr>
+                  <td colSpan={columns.length} style={{ height: "300px" }}>
+                    <div className="flex justify-center items-center h-full">
+                      <Loader2 size={20} className="animate-spin text-muted" />
+                    </div>
+                  </td>
+                </tr>
+              ) : table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="py-16 text-center text-xs text-muted"
+                  >
+                    No Profit &amp; Loss data.
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="hover:bg-row-hover transition-colors h-[34px]"
+                    style={{ borderBottom: "1px solid rgba(128,128,128,0.12)" }}
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      const align =
+                        (cell.column.columnDef.meta as any)?.align === "right"
+                          ? "text-right"
+                          : "text-left";
+                      return (
+                        <td
+                          key={cell.id}
+                          className={`px-3 py-1 whitespace-nowrap ${align}`}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-
-
       </div>
     </div>
   );

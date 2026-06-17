@@ -393,9 +393,7 @@ const PaymentEntryModal: React.FC<Props> = ({
     return () => { cancelled = true; };
   }, [isOpen]);
 
-  // ── Watch amountFrom — set isAllocating=true immediately when amount
-  //    changes AND party is selected, BEFORE InvoiceList has a chance to react
-  // ──────────────────────────────────────────────────────────────────────────
+
   const amountFrom = Number(form?.amountFrom ?? form?.amount ?? 0);
 
   useEffect(() => {
@@ -408,6 +406,9 @@ const PaymentEntryModal: React.FC<Props> = ({
       // Amount just changed with party selected → allocation will run → show spinner NOW
       setIsAllocating(true);
     }
+     else if (!hasParty) {
+    setIsAllocating(false); 
+  }
 
     prevAmountRef.current = amountFrom;
   }, [amountFrom]); // eslint-disable-line react-hooks/exhaustive-deps

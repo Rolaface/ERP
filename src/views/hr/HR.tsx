@@ -14,7 +14,6 @@ import {
   FaChartLine,
   FaSlidersH,
 } from "react-icons/fa";
-import { ArrowLeftRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   AppPage,
@@ -71,7 +70,7 @@ const EmployeeLeave = lazy<ComponentType<LeaveProps>>(
 const EmployeeAttendanceTimesheet = lazy(
   () => import("./EmployeeView/EmployeeTimesheetAttendance"),
 );
-const HrAttendanceTimesheet     = lazy(() => import("./HrView/HrTimesheetAttendance"));
+const HrAttendanceTimesheet = lazy(() => import("./HrView/HrTimesheetAttendance"));
 const EmployeeDocuments = lazy(
   () => import("./EmployeeView/EmployeeDocuments"),
 );
@@ -104,6 +103,15 @@ const EMPLOYEE_TAB_IDS = [
 
 type EmployeeTabId = (typeof EMPLOYEE_TAB_IDS)[number];
 
+const LEAVE_CHILD_MODULES = [
+  "Leave Type",
+  "Leave Period",
+  "Leave Policy",
+  "Leave Policy Assignment",
+  "Holiday List",
+  "Shift Type",
+] as const;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const HrPayrollModule: React.FC = () => {
@@ -121,43 +129,44 @@ const HrPayrollModule: React.FC = () => {
         : []),
       ...(can("Employee", "read")
         ? [
-            {
-              id: "management",
-              label: "Employee Management",
-              icon: <FaUserFriends />,
-            },
-          ]
+          {
+            id: "management",
+            label: "Employee Management",
+            icon: <FaUserFriends />,
+          },
+        ]
         : []),
       ...(can("Leave Application", "read")
         ? [
-            {
-              id: "leave",
-              label: "Leave Management",
-              icon: <FaClipboardList />,
-            },
-          ]
+          {
+            id: "leave",
+            label: "Leave Management",
+            icon: <FaClipboardList />,
+          },
+        ]
         : []),
       ...(can("Attendance", "read")
         ? [
-            {
-              id: "attendance",
-              label: "Timesheet & Attendance",
-              icon: <FaCalendarDay />,
-            },
-          ]
+          {
+            id: "attendance",
+            label: "Timesheet & Attendance",
+            icon: <FaCalendarDay />,
+          },
+        ]
         : []),
       ...(can("Performance", "read")
-  ? [
-      {
-        id: "performance-growth",
-        label: "Performance & Growth",
-        icon: <FaChartLine />,
-      },
-    ]
-  : []),
-      ...(can("Payroll Entry", "read")
+        ? [
+          {
+            id: "performance-growth",
+            label: "Performance & Growth",
+            icon: <FaChartLine />,
+          },
+        ]
+        : []),
+      ...(can("Payroll Entry", "create")
         ? [{ id: "payroll", label: "Payroll", icon: <FaMoneyCheckAlt /> }]
         : []),
+
 
       // ── HR Setup primary tab ──────────────────────────────────────────────
       // Visible if the user has write OR create on any of the modules that
@@ -168,13 +177,9 @@ const HrPayrollModule: React.FC = () => {
       //   payroll  → create on Payroll Entry
       //   leave    → create on Leave Application
       //   slip     → write|create on Salary Slip
-      ...(can("HR Settings", "write") ||
-      can("HR Settings", "create") ||
-      can("Employee", "create") ||
-      can("Payroll Entry", "create") ||
-      can("Leave Application", "create") ||
-      can("Salary Slip", "write") ||
-      can("Salary Slip", "create")
+      ...(can("Employee", "create") ||
+        can("Payroll Entry", "create") ||
+        LEAVE_CHILD_MODULES.some((mod) => can(mod, "create"))
         ? [{ id: "setup", label: "HR Setup", icon: <FaSlidersH /> }]
         : []),
     ],
@@ -229,8 +234,8 @@ const HrPayrollModule: React.FC = () => {
           return <PerformanceModule />;
         case "emp-expenses":
           return <EmployeeExpenses />;
-          case "emp-performance-growth":
-  return <PerformanceModule />;
+        case "emp-performance-growth":
+          return <PerformanceModule />;
         default:
           return <EmployeeDashboard />;
       }
@@ -243,8 +248,8 @@ const HrPayrollModule: React.FC = () => {
         return <EmployeeManagement isEmployeeView={false} />;
       case "attendance":
         return <HrAttendanceTimesheet />;
-    case "performance-growth":
-  return <PerformanceModule />;
+      case "performance-growth":
+        return <PerformanceModule />;
       case "leave":
         return <Leave isEmployeeView={false} />;
       case "payroll":
@@ -286,7 +291,7 @@ const HrPayrollModule: React.FC = () => {
         <AppPageHeader
           title="Employee Portal"
           icon={<FaUserTie />}
-          // actions={switchButton}
+        // actions={switchButton}
         />
         <AppPageBody >
           <Suspense fallback={<AppSkeleton />}>

@@ -9,6 +9,7 @@ export interface PermissionEntry {
   report: 0 | 1;
   submit: 0 | 1;
   cancel: 0 | 1;
+  email: 0 | 1;
 }
 
 export interface UserRoleFormData {

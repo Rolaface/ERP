@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
-import { UserPlus, X } from "lucide-react";
+import { UserPlus } from "lucide-react";
+import ModalFooter from "../common/ModalFooter";
 import UserDetailsViewModal from "./UserDetailsViewModal";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
@@ -180,48 +181,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
     markDirty();
   };
 
-  const footer = (
-    <div className="flex items-center justify-between w-full">
-      <button
-        type="button"
-        onClick={() => {
-          handleReset();
-          resetDirty();
-        }}
-        className="px-4 py-2 text-sm font-medium text-muted border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
-      >
-        Reset
-      </button>
-
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={() =>
-            handleCloseWithConfirm(onClose, resolvedModalId)
-          }
-          className="px-4 py-2 text-sm font-medium text-main border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
-        >
-          Cancel
-        </button>
-
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${isSubmitting
-            ? "opacity-60 cursor-not-allowed"
-            : ""
-            }`}
-        >
-          {isSubmitting
-            ? "Creating..."
-            : isEditMode
-              ? "Update"
-              : "Save"}
-        </button>
-      </div>
-    </div>
-  );
 
   if (isViewMode) {
     return (
@@ -252,7 +211,17 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
           : "Fill in the details to create a new user account"
       }
       icon={UserPlus}
-      footer={footer}
+      footer={
+  <ModalFooter
+    onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+    onReset={() => { handleReset(); resetDirty(); }}
+    onSubmit={handleSubmit}
+    isSubmitting={isSubmitting}
+    submitLabel={isEditMode ? "Update" : "Save"}
+    cancelLabel="Cancel"
+    resetLabel="Reset"
+  />
+}
       maxWidth="4xl"
       height="80vh"
     >

@@ -1,28 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef , useMemo } from "react";
 import {
-  X,
-  Search,
-  FileText,
-  Mail,
-  Building2,
-  FileBarChart,
-  Globe,
-  CreditCard,
-  ShoppingCart,
-  Receipt,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Phone,
-  MapPin,
-  Tag,
-  BadgeCheck,
-  Banknote,
-  Users,
-  CalendarDays,
-  ChevronRight,
-  Layers,
+  X, Search, FileText, Mail, Building2, FileBarChart, Globe, CreditCard, ShoppingCart, Receipt,
+  Menu, PanelLeftClose, PanelLeftOpen, Phone, MapPin, Tag, BadgeCheck, Banknote, Users, CalendarDays,
+  ChevronRight, Layers,
 } from "lucide-react";
+import { usePermission } from "../../hooks/permission/usePermission";
 import type { Supplier } from "../../types/Supply/supplier";
 import SupplierStatement from "./SupplierStatement";
 import SupplierPurchaseOrders from "./SupplierPurchaseOrders";
@@ -42,16 +24,16 @@ interface Props {
   onEdit: (supplier: Supplier) => void;
 }
 
-const TABS = [
-  { id: "overview",        label: "Overview",        icon: <Globe /> },
-  { id: "bank-accounts",   label: "Bank Accounts",   icon: <Building2 /> },
-  { id: "purchase-orders", label: "Purchase Orders", icon: <ShoppingCart /> },
-  { id: "bills",           label: "Bills",           icon: <Receipt /> },
-  { id: "payments",        label: "Payments",        icon: <CreditCard /> },
-  { id: "statement",       label: "Statement",       icon: <FileBarChart /> },
+const ALL_TABS = [
+  { id: "overview",        label: "Overview",        icon: <Globe />,        module: null },
+  { id: "bank-accounts",   label: "Bank Accounts",   icon: <Building2 />,   module: "Bank Account",   action: "read" as const },
+  { id: "purchase-orders", label: "Purchase Orders", icon: <ShoppingCart />, module: "Purchase Order", action: "read" as const },
+  { id: "bills",           label: "Bills",           icon: <Receipt />,      module: "Purchase Invoice", action: "read" as const },
+  { id: "payments",        label: "Payments",        icon: <CreditCard />,   module: "Payment Entry",  action: "read" as const },
+  { id: "statement",       label: "Statement",       icon: <FileBarChart />, module: "Supplier",       action: "report" as const },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+type TabId = (typeof ALL_TABS)[number]["id"];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -81,6 +63,12 @@ const SupplierDetailView: React.FC<Props> = ({
   const [editingRow,       setEditingRow]       = useState<BankAccount | null>(null);
   const [sidebarOpen,      setSidebarOpen]      = useState(true);
   const [mobileDrawer,     setMobileDrawer]     = useState(false);
+  const { can } = usePermission();
+
+const visibleTabs = useMemo(
+  () => ALL_TABS.filter((t) => !t.module || can(t.module, t.action)),
+  [can],
+);
 
   const bankAccountsRefresh = useRef<(() => void) | null>(null);
   const supplierId   = (supplier as any)?.id   ?? (supplier as any)?.supplierId;
@@ -302,7 +290,7 @@ const SupplierDetailView: React.FC<Props> = ({
           {/* Tabs */}
           <div className="bg-card border-b border-theme px-4 shrink-0 z-10">
             <div className="flex overflow-x-auto scrollbar-hide">
-              {TABS.map((t) => (
+              {visibleTabs.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setActiveTab(t.id)}
