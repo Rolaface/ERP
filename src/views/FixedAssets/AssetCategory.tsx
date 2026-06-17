@@ -15,9 +15,10 @@ import {
 } from "../../utils/alert";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { Copy } from "lucide-react";
-import AssetCategoryModal from "../../components/FixedAsset/AssetCategoryModal";
+import { useModalStore } from "../../store/modalStore";
 import { usePermission } from "../../hooks/permission/usePermission";
-import PermissionGate from "../PermissionGate";
+import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface AssetCategory {
@@ -35,12 +36,7 @@ const getAssetCategories = async (
   filters: any
 ) => {
   const data = await fetchAssetCategoriesAPI({
-    fields: [
-      "name",
-      "asset_category_name",
-
-      "non_depreciable_category",
-    ],
+    fields: ["name", "asset_category_name", "non_depreciable_category"],
     page,
     page_size: pageSize,
     search: filters?.search,
@@ -52,8 +48,7 @@ const getAssetCategories = async (
       assetCategoryName: item.asset_category_name,
       enableCapitalWorkInProgress:
         item.enable_capital_work_in_progress === 1,
-      nonDepreciableCategory:
-        item.non_depreciable_category === 1,
+      nonDepreciableCategory: item.non_depreciable_category === 1,
       financeBooks: [],
       accounts: [],
     })),
@@ -64,13 +59,8 @@ const getAssetCategories = async (
   };
 };
 
-const getAssetCategoryById = async (_id: string) => {
-  // replace with real API call
-  return { status: "success", data: {} };
-};
-
 const deleteAssetCategory = async (_id: string) => {
-  // replace with real API call
+
   return { status: 200 };
 };
 
@@ -88,10 +78,8 @@ const AssetCategoryTable: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<Record<string, any>>({});
   const { can } = usePermission();
-
-  // ── Modal state ─────────────────────────────────────────────
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editId, setEditId] = useState<string | undefined>(undefined);
+  const { openModal } = useModalStore();
+  const { subscribeToRefresh } = useDataRefreshStore();
 
   // ── Debounced search ────────────────────────────────────────
   useEffect(() => {
@@ -130,16 +118,27 @@ const AssetCategoryTable: React.FC = () => {
     fetchCategories();
   }, [fetchCategories]);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.ASSET_CATEGORY_LIST,
+      fetchCategories
+    );
+    return unsubscribe;
+  }, [subscribeToRefresh, fetchCategories]);
+
   // ── Handlers ────────────────────────────────────────────────
   const handleAddClick = () => {
-    setEditId(undefined);
-    setModalOpen(true);
+    openModal("assetCategory", null, false);
   };
 
   const handleEdit = (row: AssetCategory, e: React.MouseEvent) => {
     e.stopPropagation();
-    setEditId(row.id);
-    setModalOpen(true);
+    openModal("assetCategory", row, true);
+  };
+
+  const handleView = (row: AssetCategory, e: React.MouseEvent) => {
+    e.stopPropagation();
+    openModal("assetCategory", row, true, { isViewMode: true });
   };
 
   const handleDelete = async (row: AssetCategory, e: React.MouseEvent) => {
@@ -160,7 +159,7 @@ const AssetCategoryTable: React.FC = () => {
       showLoading("Deleting Asset Category...");
       const res = await deleteAssetCategory(row.id);
 
-      if (!res || (res.status < 200 || res.status >= 300)) {
+      if (!res || res.status < 200 || res.status >= 300) {
         closeSwal();
         showApiError("Delete failed");
         return;
@@ -175,13 +174,6 @@ const AssetCategoryTable: React.FC = () => {
     }
   };
 
-  const handleModalSubmit = async (_data: any) => {
-    // replace with real API call: createAssetCategory / updateAssetCategory
-    showSuccess(editId ? "Asset Category updated" : "Asset Category created");
-    setModalOpen(false);
-    await fetchCategories();
-  };
-
   // ── Columns ─────────────────────────────────────────────────
   const columns: Column<AssetCategory>[] = [
     {
@@ -190,12 +182,10 @@ const AssetCategoryTable: React.FC = () => {
       align: "center",
       render: (o) => {
         const id = o.id || "";
-
         const handleCopy = (e: React.MouseEvent) => {
           e.stopPropagation();
           navigator.clipboard.writeText(id);
         };
-
         return (
           <div className="flex items-center justify-center gap-1 group">
             <span className="font-mono text-sm truncate max-w-[120px]">
@@ -217,10 +207,14 @@ const AssetCategoryTable: React.FC = () => {
       key: "assetCategoryName",
       header: "Category Name",
       align: "center",
-      render: (o) =>
-        <div className="py-1.5">
+      render: (o) => (
+        <div
+          className="py-1.5 cursor-pointer hover:underline"
+          onClick={(e) => handleView(o, e)}
+        >
           <span className="block">{o.assetCategoryName || "—"}</span>
-        </div>,
+        </div>
+      ),
       tooltip: (o) => o.assetCategoryName || "—",
     },
     {
@@ -256,12 +250,9 @@ const AssetCategoryTable: React.FC = () => {
               iconOnly
             />
           )}
-
           <ActionMenu
             {...(can(ASSET_CATEGORY_MODULE, "delete")
-              ? {
-                onDelete: (e) => handleDelete(o, e as any),
-              }
+              ? { onDelete: (e) => handleDelete(o, e as any) }
               : {})}
           />
         </ActionGroup>
@@ -289,15 +280,7 @@ const AssetCategoryTable: React.FC = () => {
         totalItems={totalItems}
         onPageChange={setPage}
         onPageSizeChange={(size) => setPageSize(size)}
-        pageSizeOptions={[10, 25, 50, 100]}
-      />
-
-      {/* ── Asset Category Modal ── */}
-      <AssetCategoryModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleModalSubmit}
-        categoryId={editId}
+        pageSizeOptions={[pageSize, 25, 50, 100, pageSize]}
       />
     </div>
   );

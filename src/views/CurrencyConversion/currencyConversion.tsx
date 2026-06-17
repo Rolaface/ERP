@@ -2,6 +2,7 @@ import React from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import { Repeat } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { FaExchangeAlt } from "react-icons/fa";
 import ActionButton, {
   ActionGroup,
@@ -27,7 +28,6 @@ import {
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 
-
 const CURRENCY_EXCHANGE_MODULE = "Currency Exchange";
 
 const CurrencyConversion: React.FC = () => {
@@ -51,23 +51,23 @@ const CurrencyConversion: React.FC = () => {
         await addConversion(payload);
       },
     });
-const handleView = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
-  e?.stopPropagation();
+  const handleView = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
+    e?.stopPropagation();
 
-  openCurrencyExchangeModal(row, true, {
-    isViewMode: true,
-  });
-};
+    openCurrencyExchangeModal(row, true, {
+      isViewMode: true,
+    });
+  };
 
-const handleEdit = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
-  e?.stopPropagation();
+  const handleEdit = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
+    e?.stopPropagation();
 
-  openCurrencyExchangeModal(row, true, {
-    onSuccess: async (payload: any) => {
-      await updateConversion(payload);
-    },
-  });
-};
+    openCurrencyExchangeModal(row, true, {
+      onSuccess: async (payload: any) => {
+        await updateConversion(payload);
+      },
+    });
+  };
   const handleSearch = (q: string) => {
     setSearch(q);
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -99,9 +99,9 @@ const handleEdit = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
       key: "fromCurrency",
       header: "Currency Pair",
       render: (row) => (
-        <div className="flex items-center gap-1.5 font-medium text-sm">
+        <div className="flex items-center gap-2 font-medium text-sm">
           <span>{row.fromCurrency}</span>
-          <FaExchangeAlt className="text-primary text-[10px]" />
+          <ArrowRight className="h-3.5 w-3.5 text-primary shrink-0" />
           <span>{row.toCurrency}</span>
         </div>
       ),
@@ -145,7 +145,9 @@ const handleEdit = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
               year: "numeric",
             })}
           </span>
-        ) : "—",
+        ) : (
+          "—"
+        ),
     },
     {
       key: "actions",
@@ -153,15 +155,12 @@ const handleEdit = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <PermissionGate
-            module={CURRENCY_EXCHANGE_MODULE}
-            action="write"
-          >
+          <PermissionGate module={CURRENCY_EXCHANGE_MODULE} action="write">
             <ActionButton
-  type="view"
-  iconOnly
-  onClick={() => handleView(row)}
-/>
+              type="view"
+              iconOnly
+              onClick={() => handleView(row)}
+            />
             <ActionButton
               type="edit"
               onClick={() => handleEdit(row)}
@@ -170,40 +169,40 @@ const handleEdit = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
           </PermissionGate>
           {can(CURRENCY_EXCHANGE_MODULE, "delete") && (
             <ActionMenu
-  onDelete={async () => {
-    if (actionLoading) return;
+              onDelete={async () => {
+                if (actionLoading) return;
 
-    const confirmed = await showConfirm(
-      "Do you want to delete this record?"
-    );
+                const confirmed = await showConfirm(
+                  "Do you want to delete this record?",
+                );
 
-    if (!confirmed) return;
+                if (!confirmed) return;
 
-    try {
-      showLoading("Deleting...");
+                try {
+                  showLoading("Deleting...");
 
-      const res = await deleteConversion(row.id);
+                  const res = await deleteConversion(row.id);
 
-      closeSwal();
+                  closeSwal();
 
-      const backend = res?.message;
+                  const backend = res?.message;
 
-      if (
-        !backend ||
-        backend.status === "error" ||
-        backend.status_code >= 400
-      ) {
-        showApiError(res);
-        return;
-      }
+                  if (
+                    !backend ||
+                    backend.status === "error" ||
+                    backend.status_code >= 400
+                  ) {
+                    showApiError(res);
+                    return;
+                  }
 
-      showSuccess(backend.message);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  }}
-/>
+                  showSuccess(backend.message);
+                } catch (err) {
+                  closeSwal();
+                  showApiError(err);
+                }
+              }}
+            />
           )}
         </ActionGroup>
       ),
@@ -224,9 +223,7 @@ const handleEdit = (row: CurrencyConversionPayload, e?: React.MouseEvent) => {
           enableAdd={can(CURRENCY_EXCHANGE_MODULE, "create")}
           addLabel="Add Currency Exchange"
           onAdd={
-            can(CURRENCY_EXCHANGE_MODULE, "create")
-              ? handleAdd
-              : undefined
+            can(CURRENCY_EXCHANGE_MODULE, "create") ? handleAdd : undefined
           }
           searchValue={search}
           onSearch={handleSearch}
