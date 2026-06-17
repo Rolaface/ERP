@@ -16,18 +16,32 @@ interface Props {
 
 export const MonthlySalesBarChart: React.FC<Props> = ({ data }) => {
   // 1. Hook into your store
-  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || 'INR';
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
+      const currencySymbol = useCompanyStore((state) => state.currencySymbol || '');
+  
 
-  // 2. Create the dynamic formatter
-  const currencyFormatter = useMemo(() => {
+ const currencyFormatter = useMemo(() => {
     const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
-    return new Intl.NumberFormat(locale, {
-      style: 'currency', 
-      currency: baseCurrency, 
+    
+    const numberFormatter = new Intl.NumberFormat(locale, {
+      style: 'decimal', 
       maximumFractionDigits: 2, 
       notation: "compact"
     });
-  }, [baseCurrency]);
+
+    return {
+      format: (value: number) => {
+        const num = Number(value) || 0;
+        const formattedNumber = numberFormatter.format(Math.abs(num));
+        
+         const sign = num < 0 ? '-' : '';
+        
+         const space = currencySymbol.length > 1 ? ' ' : '';
+        
+        return `${sign}${currencySymbol}${space}${formattedNumber}`;
+      }
+    };
+  }, [baseCurrency, currencySymbol]);
 
   const option = {
     tooltip: {
