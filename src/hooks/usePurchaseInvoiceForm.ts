@@ -15,6 +15,7 @@ import type {
   TaxRow,
   PaymentRow,
   ItemRow,
+  ExistingAttachment,
 } from "../types/Supply/purchaseInvoice";
 import {
   emptyPOForm,
@@ -45,7 +46,10 @@ import { getPurchaseOrderById } from "../api/procurement/PurchaseOrderApi";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 import { getAddressList } from "../api/Adressapi";
 
+import { removeAttachment } from "../api/Email/EmailApi";
+import { fireManagedSwal } from "../utils/swalManager";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+
 
 // ─────────────────────────────────────────────
 // Types
@@ -329,8 +333,23 @@ export const usePurchaseInvoiceForm = ({
         }
 
         const mapped = mapApiToUI(res.data);
-        setForm(mapped);
 
+        const rawAttachments =
+          (res.data as any)?.attachments ??
+          (res.data as any)?.attachment_list ??
+          (res.data as any)?.terms?.terms?.buying?.payment?.attachments ??
+          [];
+
+        const existingAttachments: ExistingAttachment[] = rawAttachments.map((a: any) => ({
+          name: a.file_name ?? a.name ?? "Attachment",
+          url: a.file_url ?? a.url,
+          file_size: a.file_size,
+          isExisting: true,
+            fid: a.fid ?? a.id ?? a.name, 
+
+        }));
+
+        setForm({ ...mapped, attachments: existingAttachments });
         const supplierAddrId = mapped.addresses?.supplierAddress?.id || "";
         const dispatchAddrId = mapped.addresses?.dispatchAddress?.id || "";
         const shippingAddrId = mapped.addresses?.shippingAddress?.id || "";
@@ -632,6 +651,47 @@ export const usePurchaseInvoiceForm = ({
     [handleFormChange], // handleFormChange has stable ref (no deps), so this is safe
   );
 
+
+ const handleRemoveAttachment = async (idx: number) => {
+  const target = form.attachments?.[idx];
+  if (!target) return;
+
+  const isExisting = !(target instanceof File) && (target as any).isExisting;
+  const fileName = target instanceof File ? target.name : (target as any).name;
+
+  const confirm = await fireManagedSwal({
+    icon: "warning",
+    title: "Remove attachment?",
+    text: `Remove "${fileName}"?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, remove",
+  });
+  if (!confirm.isConfirmed) return;
+
+  if (isExisting) {
+    try {
+      showLoading("Removing attachment...");
+      await removeAttachment(
+        (target as any).fid,
+        String(pId),
+        "Purchase Invoice",
+      );
+      closeSwal();
+      showSuccess("Attachment removed");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+      return; // delete fail ho gaya to UI se mat hatao
+    }
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    attachments: (prev.attachments ?? []).filter((_, i) => i !== idx),
+  }));
+};
   // ── Supplier ───────────────────────────────
   const handleSupplierChange = async (sup: any) => {
     if (!sup) return;
@@ -1229,13 +1289,16 @@ export const usePurchaseInvoiceForm = ({
         (isEditMode ? pId : null);
 
       // ── Step 3: Upload attachments using createdPId as docname ──
-      if (form.attachments?.length && createdPId) {
+      const newFiles = (form.attachments ?? []).filter(
+        (a): a is File => a instanceof File
+      );
+
+      if (newFiles.length && createdPId) {
         await Promise.all(
-          form.attachments.map((file) =>
-            uploadPIAttachment(file, String(createdPId))
-          )
+          newFiles.map((file) => uploadPIAttachment(file, String(createdPId)))
         );
       }
+
       // ── Step 4: Success ────────────────────────────────────────────
       showSuccess(
         res.message ||
@@ -1340,6 +1403,7 @@ export const usePurchaseInvoiceForm = ({
     setAddresses,
     loading,
     setLoading,
+    handleRemoveAttachment,
     handleAddressRemove,
     handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => {
       setSelected((prev) => ({ ...prev, [boxKey]: addr }));
