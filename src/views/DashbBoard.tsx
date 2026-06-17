@@ -188,25 +188,63 @@ const Dashboard = () => {
     return () => { mounted = false; };
   }, [purchaseYear, purchaseInterval]);
 
-  const currentMonthIndex = new Date().getMonth(); // 0 for Jan, 11 for Dec
+ const currentMonthIndex = new Date().getMonth(); 
   const currentYear = new Date().getFullYear().toString();
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  const filteredSalesData = useMemo(() => {
+  // Helper function to handle multiple interval types
+  const shouldIncludePeriod = (key: string, interval: string, selectedYear: string) => {
+    if (selectedYear !== currentYear) return true;
+
+    if (interval === 'Monthly') {
+      const monthIndex = monthNames.indexOf(key);
+      return monthIndex === -1 || monthIndex <= currentMonthIndex;
+    }
+    if (interval === 'Quarterly') {
+      const currentQuarter = Math.floor(currentMonthIndex / 3) + 1;  
+      const quarterNumber = parseInt(key.replace('Q', ''));
+      return isNaN(quarterNumber) || quarterNumber <= currentQuarter;
+    }
+    if (interval === 'Half-Yearly') {
+      const currentHalf = Math.floor(currentMonthIndex / 6) + 1;  
+      const halfNumber = parseInt(key.replace('H', ''));
+      return isNaN(halfNumber) || halfNumber <= currentHalf;
+    }
+    
+    return true;  
+  };
+
+const filteredSalesData = useMemo(() => {
     if (!salesData?.trend) return {};
     
     const filtered: Record<string, any> = {};
     let cumulativeReceivable = 0;
     let cumulativeReceived = 0;
 
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const currMonthIdx = new Date().getMonth();
+    const currYear = new Date().getFullYear().toString();
+
     for (const [key, value] of Object.entries(salesData.trend)) {
       cumulativeReceivable += (value.receivable || 0);
       cumulativeReceived += (value.received || 0);
 
-      const monthIndex = monthNames.indexOf(key);
+      let shouldInclude = true;
 
-      const isCurrentYearMonthly = salesInterval === 'Monthly' && salesYear === currentYear;
-      const shouldInclude = !isCurrentYearMonthly || monthIndex === -1 || monthIndex <= currentMonthIndex;
+      if (salesYear === currYear) {
+        if (salesInterval === 'Monthly') {
+          const monthIndex = months.indexOf(key);
+          shouldInclude = monthIndex === -1 || monthIndex <= currMonthIdx;
+        } else if (salesInterval === 'Quarterly') {
+          const currentQuarter = Math.floor(currMonthIdx / 3) + 1;
+          const quarterNumber = parseInt(key.replace(/\D/g, ''), 10); // extracts number from "Q1"
+          if (!isNaN(quarterNumber)) shouldInclude = quarterNumber <= currentQuarter;
+        } else if (salesInterval === 'Half-Yearly') {
+          const currentHalf = Math.floor(currMonthIdx / 6) + 1;
+          const halfNumber = parseInt(key.replace(/\D/g, ''), 10); // extracts number from "H1"
+          if (!isNaN(halfNumber)) shouldInclude = halfNumber <= currentHalf;
+        }
+      }
 
       if (shouldInclude) {
         filtered[key] = {
@@ -227,14 +265,30 @@ const filteredPurchaseData = useMemo(() => {
     let cumulativePayable = 0;
     let cumulativePaid = 0;
 
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const currMonthIdx = new Date().getMonth();
+    const currYear = new Date().getFullYear().toString();
+
     for (const [key, value] of Object.entries(purchaseData.trend)) {
-       cumulativePayable += (value.payable || 0);
+      cumulativePayable += (value.payable || 0);
       cumulativePaid += (value.paid || 0);
 
-      const monthIndex = monthNames.indexOf(key);
+      let shouldInclude = true;
 
-       const isCurrentYearMonthly = purchaseInterval === 'Monthly' && purchaseYear === currentYear;
-      const shouldInclude = !isCurrentYearMonthly || monthIndex === -1 || monthIndex <= currentMonthIndex;
+      if (purchaseYear === currYear) {
+        if (purchaseInterval === 'Monthly') {
+          const monthIndex = months.indexOf(key);
+          shouldInclude = monthIndex === -1 || monthIndex <= currMonthIdx;
+        } else if (purchaseInterval === 'Quarterly') {
+          const currentQuarter = Math.floor(currMonthIdx / 3) + 1;
+          const quarterNumber = parseInt(key.replace(/\D/g, ''), 10); 
+          if (!isNaN(quarterNumber)) shouldInclude = quarterNumber <= currentQuarter;
+        } else if (purchaseInterval === 'Half-Yearly') {
+          const currentHalf = Math.floor(currMonthIdx / 6) + 1;
+          const halfNumber = parseInt(key.replace(/\D/g, ''), 10); 
+          if (!isNaN(halfNumber)) shouldInclude = halfNumber <= currentHalf;
+        }
+      }
 
       if (shouldInclude) {
          filtered[key] = {

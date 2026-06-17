@@ -56,16 +56,30 @@ const ProcurementDashboard: React.FC = () => {
     });
   }, [baseCurrency]);
 
-  const currencyINRCompact = useMemo(() => {
-    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: baseCurrency,
-      notation: "compact",
-      compactDisplay: "short",
-      maximumFractionDigits: 1,
-    });
-  }, [baseCurrency]);
+  const currencySymbol = useCompanyStore((state) => state.currencySymbol || '');
+     
+    const currencyFormatter = useMemo(() => {
+      const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+      
+      const numberFormatter = new Intl.NumberFormat(locale, {
+        style: 'decimal', 
+        maximumFractionDigits: 2, 
+        notation: "compact"
+      });
+  
+      return {
+        format: (value: number) => {
+          const num = Number(value) || 0;
+          const formattedNumber = numberFormatter.format(Math.abs(num));
+          
+           const sign = num < 0 ? '-' : '';
+          
+           const space = currencySymbol.length > 1 ? ' ' : '';
+          
+          return `${sign}${currencySymbol}${space}${formattedNumber}`;
+        }
+      };
+    }, [baseCurrency, currencySymbol]);
 
   useEffect(() => {
     let mounted = true;
@@ -310,10 +324,10 @@ const ProcurementDashboard: React.FC = () => {
                   <YAxis 
                     tick={{ fontSize: 12 }} 
                     width={52} 
-                    tickFormatter={(v) => currencyINRCompact.format(Number(v))}
+                    tickFormatter={(v) => currencyFormatter.format(Number(v))}
                   />
                   <Tooltip
-                    formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
+                    formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))}
                     contentStyle={{
                       background: "var(--card)",
                       border: "1px solid var(--border)",
