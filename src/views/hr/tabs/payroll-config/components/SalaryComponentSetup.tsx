@@ -60,6 +60,12 @@ export function SalaryComponentSetup() {
     },
     [triggerRefresh],
   );
+  const handleView = useCallback(
+  (row: SalaryComponent) => {
+    openSalaryComponentModal(row, false, { isViewMode: true });
+  },
+  [],
+);
 
   const columns: Column<SalaryComponent>[] = useMemo(
     () => [
@@ -148,6 +154,12 @@ export function SalaryComponentSetup() {
         align: "center",
         render: (row) => (
           <ActionGroup>
+             <ActionButton
+    type="view"
+    iconOnly
+    onClick={() => handleView(row)}
+    disabled={actionLoadingId === row.name}
+  />
             <ActionButton
               type="edit"
               iconOnly

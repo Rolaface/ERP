@@ -72,6 +72,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   initialData?: SalaryComponent | null;
+  isViewMode?: boolean;
   onSuccess?: () => void;
 }
 
@@ -84,6 +85,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
   onClose,
   initialData,
   onSuccess,
+  isViewMode = false,
 }) => {
   const isEdit = Boolean(initialData?.name);
   const [form, setForm] = useState<Omit<SalaryComponent, "name">>(EMPTY);
@@ -295,7 +297,13 @@ export const SalaryComponentModal: React.FC<Props> = ({
     payoutMethod === "Accrue per cycle, pay only on claim";
 
   /* ── footer ── */
-  const footer = (
+  const footer = isViewMode ? (
+  <button type="button" onClick={onClose}
+    className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]"
+  >
+    <X className="h-3.5 w-3.5" /> Close
+  </button>
+) : (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -324,7 +332,9 @@ export const SalaryComponentModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? "Edit Salary Component" : "New Salary Component"}
+      title={ isViewMode ? "View Salary Component" :
+  isEdit     ? "Edit Salary Component" :
+               "New Salary Component"}
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
       height="70vh"
@@ -341,6 +351,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
               <ModalSelect
                 label="Type"
                 value={form.type}
+                disabled={isViewMode}
                 onChange={(e) => {
                   console.log("SELECT CHANGED:", e.target.value);
                   handleTypeChange(e.target.value as SalaryComponentType);
@@ -353,6 +364,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
               <ModalInput
                 label="Component Name"
                 value={form.salary_component}
+                disabled={isViewMode}
                 required
                 placeholder="e.g. Basic Salary"
                 onChange={(e) => set("salary_component", e.target.value)}
@@ -362,6 +374,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 placeholder="e.g. BS"
                 maxLength={8}
                 value={form.salary_component_abbr}
+                 disabled={isViewMode}
                 required
                 onChange={(e) =>
                   set("salary_component_abbr", e.target.value.toUpperCase())
@@ -372,6 +385,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 placeholder="Optional description…"
                 value={form.description ?? ""}
                 onChange={(e) => set("description", e.target.value)}
+                disabled={isViewMode}
               />
             </div>
 
@@ -384,6 +398,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     type="button"
                     className={!isFormulaBased ? "active" : ""}
                     onClick={() => set("amount_based_on_formula", 0)}
+                    disabled={isViewMode}
                   >
                     Fixed Amount
                   </button>
@@ -391,6 +406,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     type="button"
                     className={isFormulaBased ? "active" : ""}
                     onClick={() => set("amount_based_on_formula", 1)}
+                    disabled={isViewMode}
                   >
                     Formula
                   </button>
@@ -399,6 +415,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                   <NumericInput
                     value={form.amount as number | null}
                     onChange={(value) => set("amount", value as any)}
+                    disabled={isViewMode}
                     className="sc-toggle-input"
                   />
                 ) : (
@@ -407,6 +424,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     placeholder={`e.g.base_salary * 0.4`}
                     value={form.formula ?? ""}
                     onChange={(e) => set("formula", e.target.value)}
+                    disabled={isViewMode}
                     spellCheck={false}
                     rows={4}
                   />
@@ -431,6 +449,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                         required
                         placeholder="Search ledger account..."
                         fetchOptions={fetchAccounts}
+                        disabled={isViewMode}
                         onChange={(value) => updateAccount(idx, value)}
                       />
                     </div>
@@ -454,6 +473,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                   <ModalSelect
                     label="Payout Method *"
                     value={payoutMethod}
+                    disabled={isViewMode}
                     onChange={(e) =>
                       set(
                         "payout_method",
@@ -470,6 +490,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     type="number"
                     className="no-spinner"
                     value={form.max_benefit_amount}
+                    disabled={isViewMode}
                     placeholder="0"
                     onChange={(e) =>
                       set("max_benefit_amount", parseFloat(e.target.value))
@@ -481,7 +502,9 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     id="ben-payout-unclaimed"
                     label="Payout Unclaimed Amount in Final Payroll Cycle"
                     checked={Boolean(form.pay_against_benefit_claim)}
+                    
                     onChange={tog("pay_against_benefit_claim")}
+                    
                   />
                 )}
                 <BenefitCb
@@ -517,6 +540,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 description="Prorates the amount based on the employee's payable days. Formula: (Amount ÷ Total Working Days) * Payment Days."
                 checked={Boolean(form.depends_on_payment_days)}
                 onChange={tog("depends_on_payment_days")}
+                disabled={isViewMode}
               />
               <AttrRow
                 id="attr-remove-zero"
@@ -524,6 +548,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 description="Hides this component from the salary slip if the calculated amount is ₹0."
                 checked={Boolean(form.remove_if_zero_valued)}
                 onChange={tog("remove_if_zero_valued")}
+                disabled={isViewMode}
               />
 
               {/* Earning-only */}
@@ -534,6 +559,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                   description="Includes this earning in the taxable income calculation for income tax."
                   checked={Boolean(form.is_tax_applicable)}
                   onChange={tog("is_tax_applicable")}
+                  disabled={isViewMode}
                 />
               )}
 
@@ -546,12 +572,14 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     description="Calculates the amount as a percentage of the employee's total taxable earnings."
                     checked={Boolean(form.variable_based_on_taxable_salary)}
                     onChange={tog("variable_based_on_taxable_salary")}
+                    disabled={isViewMode}
                   />
                   <AttrRow
                     id="attr-income-tax"
                     label="Income Tax Component"
                     description="Marks this component as the employee's monthly income tax deduction for payroll and tax calculations."
                     checked={Boolean(form.is_income_tax_component)}
+                    disabled={isViewMode}
                     onChange={(checked) => {
                       markDirty();
                       setForm((prev) => ({

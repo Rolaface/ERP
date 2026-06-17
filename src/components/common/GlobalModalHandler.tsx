@@ -808,6 +808,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             initialData={getInitialData<SalaryComponent>(modal.initialData)}
+              isViewMode={context?.isViewMode ?? false} 
             onSuccess={() => {
               if (context?.onSuccess) context.onSuccess(undefined);
               handleClose();
