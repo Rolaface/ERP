@@ -23,6 +23,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  DollarSign,
+  AlertTriangle,
+  Users,
+  ReceiptText,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -86,7 +90,6 @@ type PayableRecord = {
     outstanding: number;
   };
   age?: number;
-  average_payment_days?: number;
 };
 
 type KPIs = {
@@ -95,7 +98,6 @@ type KPIs = {
   total_paid: number;
   total_suppliers: number;
   overdue_amount: number;
-  average_payment_days?: number;
   ageing_summary: {
     "0_30": number;
     "31_60": number;
@@ -157,49 +159,129 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
   sym,
   loading,
 }) => {
-  const avgDays = kpis.average_payment_days ?? 0;
-  const cards = [
+  const sections = [
     {
-      label: "Total Payables (Outstanding)",
-      value: fmt(kpis.total_outstanding, sym),
-      color: "text-main",
+      icon: <DollarSign size={11} className="text-emerald-400" />,
+      label: "Outstanding",
+      items: [
+        {
+          label: "Total",
+          value: fmt(kpis.total_outstanding, sym),
+          color: "text-emerald-600",
+          bold: true,
+        },
+        {
+          label: "Overdue",
+          value: fmt(kpis.overdue_amount, sym),
+          color: "text-red-500",
+          bold: true,
+        },
+        {
+          label: "Invoiced",
+          value: fmt(kpis.total_invoiced, sym),
+          color: "text-blue-500",
+        },
+      ],
     },
     {
-      label: "Overdue Amount",
-      value: fmt(kpis.overdue_amount, sym),
-      color: kpis.overdue_amount > 0 ? "text-red-500" : "text-main",
+      icon: <Users size={11} className="text-primary" />,
+      label: "Suppliers",
+      items: [
+        {
+          label: "Count",
+          value: String(kpis.total_suppliers),
+          color: "text-primary",
+          bold: true,
+        },
+        {
+          label: "Paid",
+          value: fmt(kpis.total_paid, sym),
+          color: "text-emerald-600",
+        },
+        { label: " ", value: "", color: "" },
+      ],
     },
     {
-      label: "Avg Payment Days",
-      value: `${avgDays.toFixed(2)} days`,
-      color: "text-main",
+      icon: <ReceiptText size={11} className="text-amber-400" />,
+      label: "Aging",
+      items: [
+        {
+          label: "0–30d",
+          value: fmt(Math.abs(kpis.ageing_summary["0_30"]), sym),
+          color: "text-emerald-600",
+        },
+        {
+          label: "31–60d",
+          value: fmt(Math.abs(kpis.ageing_summary["31_60"]), sym),
+          color: "text-amber-500",
+        },
+        {
+          label: "61–90d",
+          value: fmt(Math.abs(kpis.ageing_summary["61_90"]), sym),
+          color: "text-orange-500",
+        },
+      ],
     },
     {
-      label: "Total Invoiced",
-      value: fmt(kpis.total_invoiced, sym),
-      color: "text-main",
+      icon: <AlertTriangle size={11} className="text-red-400" />,
+      label: "Overdue Aging",
+      items: [
+        {
+          label: "91–120d",
+          value: fmt(Math.abs(kpis.ageing_summary["91_120"]), sym),
+          color: "text-red-500",
+        },
+        {
+          label: "121d+",
+          value: fmt(Math.abs(kpis.ageing_summary["121_above"]), sym),
+          color: "text-red-700",
+          bold: true,
+        },
+        { label: " ", value: "", color: "" },
+      ],
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-      {cards.map((card) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      {sections.map((sec) => (
         <div
-          key={card.label}
-          className="bg-card border border-[var(--border)] rounded-lg px-4 py-3 flex flex-col gap-1.5"
+          key={sec.label}
+          className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 flex flex-col gap-2"
         >
-          <span className="text-[9px] font-black uppercase tracking-widest text-muted">
-            {card.label}
-          </span>
-          {loading ? (
-            <div className="h-5 w-32 bg-[var(--border)] rounded animate-pulse mt-1" />
-          ) : (
-            <span
-              className={`text-sm font-extrabold tabular-nums ${card.color}`}
-            >
-              {card.value}
+          <div className="flex items-center gap-1.5">
+            {sec.icon}
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+              {sec.label}
             </span>
-          )}
+          </div>
+          <div className="grid grid-cols-3 gap-1 divide-x divide-[var(--border)]">
+            {sec.items.map((item, i) => (
+              <div
+                key={i}
+                className="flex flex-col gap-0.5 px-1 first:pl-0 last:pr-0"
+              >
+                <span className="text-[9px] leading-tight text-muted truncate">
+                  {item.label}
+                </span>
+                {loading ? (
+                  <div className="h-3.5 w-12 bg-[var(--border)] rounded animate-pulse mt-0.5" />
+                ) : (
+                  <span
+                    className={`leading-tight tabular-nums ${item.color} ${"bold" in item && item.bold ? "font-extrabold" : "font-semibold"} ${
+                      (item.value || "").length > 12
+                        ? "text-[9px]"
+                        : (item.value || "").length > 8
+                          ? "text-[10px]"
+                          : "text-[11px]"
+                    }`}
+                  >
+                    {item.value || "—"}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       ))}
     </div>
@@ -584,21 +666,29 @@ const AccountsPayable = () => {
       {
         id: "due",
         accessorKey: "due",
-        header: "Due/Posted Date",
+        header: "Due Date",
         cell: ({ row }) =>
           row.original.isSummary ? null : (
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] text-main tabular-nums">
-                {formatDate(row.original.due)}
-              </span>
+            <span className="text-[11px] text-muted tabular-nums">
+              {formatDate(row.original.due)}
+            </span>
+          ),
+      },
+      {
+        id: "days",
+        accessorKey: "days",
+        header: "Aging",
+        cell: ({ row }) =>
+          row.original.isSummary ? null : (
+            <div className="flex items-center gap-1">
+              {row.original.overdue ? (
+                <FaExclamationTriangle className="text-red-500 text-[9px]" />
+              ) : (
+                <FaClock className="text-muted text-[9px]" />
+              )}
               <span
-                className={`text-[10px] font-medium flex items-center gap-1 ${row.original.overdue ? "text-red-500" : "text-muted"}`}
+                className={`text-[10px] font-medium ${row.original.overdue ? "text-red-500" : "text-muted"}`}
               >
-                {row.original.overdue ? (
-                  <FaExclamationTriangle className="text-[9px]" />
-                ) : (
-                  <FaClock className="text-[9px]" />
-                )}
                 {Math.abs(row.original.days)}d{" "}
                 {row.original.overdue ? "overdue" : "left"}
               </span>
@@ -818,11 +908,11 @@ const AccountsPayable = () => {
       {kpis ? (
         <KpiStrip kpis={kpis} sym={sym} loading={isLoading} />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="bg-card border border-[var(--border)] rounded-lg px-4 py-3 h-16 animate-pulse"
+              className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 h-16 animate-pulse"
             />
           ))}
         </div>
