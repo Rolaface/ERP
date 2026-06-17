@@ -95,6 +95,7 @@ type KPIs = {
   total_paid: number;
   total_customers: number;
   overdue_amount: number;
+  average_collection_days?: number;
   ageing_summary: {
     "0_30": number;
     "31_60": number;
@@ -160,90 +161,43 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
       icon: <DollarSign size={11} className="text-emerald-400" />,
       label: "Outstanding",
       items: [
-        {
-          label: "Total",
-          value: fmt(kpis.total_outstanding, sym),
-          color: "text-emerald-600",
-          bold: true,
-        },
-        {
-          label: "Overdue",
-          value: fmt(kpis.overdue_amount, sym),
-          color: "text-red-500",
-          bold: true,
-        },
-        {
-          label: "Invoiced",
-          value: fmt(kpis.total_invoiced, sym),
-          color: "text-blue-500",
-        },
+        { label: "Total", value: fmt(kpis.total_outstanding, sym), color: "text-emerald-600", bold: true },
+        { label: "Overdue", value: fmt(kpis.overdue_amount, sym), color: "text-red-500", bold: true },
+        { label: "Invoiced", value: fmt(kpis.total_invoiced, sym), color: "text-blue-500" },
       ],
     },
     {
       icon: <Users size={11} className="text-primary" />,
       label: "Customers",
       items: [
-        {
-          label: "Count",
-          value: String(kpis.total_customers),
-          color: "text-primary",
-          bold: true,
-        },
-        {
-          label: "Paid",
-          value: fmt(kpis.total_paid, sym),
-          color: "text-emerald-600",
-        },
-        { label: " ", value: "", color: "" },
+        { label: "Count", value: String(kpis.total_customers), color: "text-primary", bold: true },
+        { label: "Paid", value: fmt(kpis.total_paid, sym), color: "text-emerald-600" },
+        { label: "Avg Days", value: String(kpis.average_collection_days ?? "—"), color: "text-primary" },
       ],
     },
     {
       icon: <ReceiptText size={11} className="text-amber-400" />,
       label: "Aging",
-      items: [
-        {
-          label: "0–30d",
-          value: fmt(Math.abs(kpis.ageing_summary["0_30"]), sym),
-          color: "text-emerald-600",
-        },
-        {
-          label: "31–60d",
-          value: fmt(Math.abs(kpis.ageing_summary["31_60"]), sym),
-          color: "text-amber-500",
-        },
-        {
-          label: "61–90d",
-          value: fmt(Math.abs(kpis.ageing_summary["61_90"]), sym),
-          color: "text-orange-500",
-        },
-      ],
-    },
-    {
-      icon: <AlertTriangle size={11} className="text-red-400" />,
-      label: "Overdue Aging",
-      items: [
-        {
-          label: "91–120d",
-          value: fmt(Math.abs(kpis.ageing_summary["91_120"]), sym),
-          color: "text-red-500",
-        },
-        {
-          label: "121d+",
-          value: fmt(Math.abs(kpis.ageing_summary["121_above"]), sym),
-          color: "text-red-700",
-          bold: true,
-        },
-        { label: " ", value: "", color: "" },
-      ],
+      items: Object.entries(kpis.ageing_summary).map(([key, val]) => {
+        const label = key === "121_above" ? "121d+" : `${key.replace("_", "–")}d`;
+        const abs = Math.abs(val as number);
+        const bucket = key === "0_30" ? "text-emerald-600"
+          : key === "31_60" ? "text-amber-500"
+          : key === "61_90" ? "text-orange-500"
+          : "text-red-600";
+        return { label, value: fmt(abs, sym), color: bucket };
+      }),
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+    <div className="flex flex-col lg:flex-row gap-2">
       {sections.map((sec) => (
         <div
           key={sec.label}
-          className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 flex flex-col gap-2"
+          className={`bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 flex flex-col gap-2 min-w-0 ${
+            sec.items.length > 3 ? "flex-[2]" : "flex-1"
+          }`}
         >
           <div className="flex items-center gap-1.5">
             {sec.icon}
@@ -251,22 +205,34 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
               {sec.label}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-1 divide-x divide-[var(--border)]">
+          <div
+            className="grid gap-1 divide-x divide-[var(--border)]"
+            style={{
+              gridTemplateColumns:
+                sec.items.length > 3
+                  ? "repeat(5, minmax(0, 1fr))"
+                  : "repeat(3, minmax(0, 1fr))",
+            }}
+          >
             {sec.items.map((item, i) => (
-              <div
-                key={i}
-                className="flex flex-col gap-0.5 px-1 first:pl-0 last:pr-0"
-              >
-                <span className="text-[9px] leading-tight text-muted truncate">
+              <div key={i} className="flex flex-col gap-0.5 px-1 first:pl-0 last:pr-0">
+                <span className="text-[10px] leading-tight text-muted truncate">
                   {item.label}
                 </span>
                 {loading ? (
                   <div className="h-3.5 w-12 bg-[var(--border)] rounded animate-pulse mt-0.5" />
                 ) : (
                   <span
-                    className={`text-[11px] leading-tight tabular-nums ${item.color} ${item.bold ? "font-extrabold" : "font-semibold"}`}
+                    className={`leading-tight tabular-nums block ${item.color} ${
+                      "bold" in item && item.bold ? "font-extrabold" : "font-semibold"
+                    } ${
+                      String(item.value ?? "").length > 14 ? "text-[10px]"
+                      : String(item.value ?? "").length > 10 ? "text-[11px]"
+                      : String(item.value ?? "").length > 7 ? "text-[12px]"
+                      : "text-[13px]"
+                    }`}
                   >
-                    {item.value || "—"}
+                    {item.value != null && item.value !== "" ? String(item.value) : "—"}
                   </span>
                 )}
               </div>
@@ -310,11 +276,10 @@ const FilterDropdown: React.FC<{
   <div className="relative">
     <button
       onClick={onToggle}
-      className={`h-7 px-2.5 text-[11px] font-semibold border rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
-        active
+      className={`h-7 px-2.5 text-[11px] font-semibold border rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${active
           ? "border-primary bg-primary/10 text-primary"
           : "border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40"
-      }`}
+        }`}
     >
       {label}
     </button>
@@ -335,11 +300,10 @@ const DropdownItem: React.FC<{
 }> = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
-    className={`w-full text-left px-3 py-1.5 text-xs flex justify-between items-center transition-colors ${
-      active
+    className={`w-full text-left px-3 py-1.5 text-xs flex justify-between items-center transition-colors ${active
         ? "bg-primary/10 text-primary font-semibold"
         : "text-main hover:bg-row-hover"
-    }`}
+      }`}
   >
     {children}
     {active && <FaCheck className="text-[9px] shrink-0" />}
@@ -502,7 +466,7 @@ const AccountsReceivable = () => {
                 if (!isNaN(dueDateObj.getTime())) {
                   daysLeft = Math.ceil(
                     (dueDateObj.getTime() - today.getTime()) /
-                      (1000 * 3600 * 24),
+                    (1000 * 3600 * 24),
                   );
                 }
                 dueDisplay = formatDate(row.due_date);
@@ -902,11 +866,11 @@ const AccountsReceivable = () => {
       {kpis ? (
         <KpiStrip kpis={kpis} sym={sym} loading={isLoading} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="flex flex-col lg:flex-row gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 h-16 animate-pulse"
+              className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 h-16 animate-pulse flex-1"
             />
           ))}
         </div>
@@ -1297,11 +1261,10 @@ const AccountsReceivable = () => {
                     key={p}
                     onClick={() => setPage(p)}
                     disabled={isLoading}
-                    className={`px-2 py-0.5 text-[11px] rounded-md border transition-all ${
-                      p === page
+                    className={`px-2 py-0.5 text-[11px] rounded-md border transition-all ${p === page
                         ? "bg-primary text-white border-primary font-bold"
                         : "border-[var(--border)] bg-card text-main hover:bg-row-hover"
-                    }`}
+                      }`}
                   >
                     {p}
                   </button>
