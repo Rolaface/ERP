@@ -55,14 +55,14 @@ const ALL_SALES_TAB = [
     id: "quotations",
     label: "Quotations",
     icon: <FileSignature size={16} strokeWidth={1.75} />,
-    module: null,
+    module: "Quotation",
     action: "read" as const,
   },
   {
     id: "proformaInvoice",
     label: "Proforma Invoice",
     icon: <FileClock size={16} strokeWidth={1.75} />,
-    module: null,
+    module: "Sales Invoice",
     action: "read" as const,
   },
   {
