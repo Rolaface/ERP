@@ -1,17 +1,17 @@
 import { useState, useCallback } from "react";
 import type { PermissionEntry, UserRoleFormData, UserRole } from "../types/RoleManagement/UserRole";
 import { EMPTY_FORM } from "../types/RoleManagement/UserRole";
-import { showApiError } from "../utils/alert"; 
+import { showApiError } from "../utils/alert";
 
 export const MODULE_STRUCTURE: Record<string, string[]> = {
-  Sales: ["Sales Invoice"],
-  CustomerManagement: ["Customer","Customer Group", "Payment Entry"],
+  Sales: ["Sales Invoice", "Quotation"],
+  CustomerManagement: ["Customer", "Customer Group", "Payment Entry"],
   Procurement: ["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice", "Payment Entry"],
   Inventory: ["Item", "Item Group", "Warehouse", "Stock Entry"],
-  Accounting: ["Journal Entry","Account"],
+  Accounting: ["Journal Entry", "Account"],
   Assets: ["Asset Category", "Asset", "Asset Movement"],
-  HumanResource: [ "Employee","Payroll Entry","Salary Slip","Leave Application","Leave Type","Leave Period","Leave Policy","Leave Policy Assignment","Holiday List","Shift Type"],
-  Settings: ["Company", "User","Role","Bank", "Bank Account","Mode of Payment", "Currency Exchange", "Expense Claim Type","Expense Claim","Employee Advance","Email Template","Tax Category","Item Tax Template","Sales Taxes and Charges Template"],
+  HumanResource: ["Employee", "Payroll Entry", "Salary Slip", "Leave Application", "Leave Type", "Leave Period", "Leave Policy", "Leave Policy Assignment", "Holiday List", "Shift Type"],
+  Settings: ["Company", "User", "Role", "Bank", "Bank Account", "Mode of Payment", "Currency Exchange", "Expense Claim Type", "Expense Claim", "Employee Advance", "Email Template", "Tax Category", "Item Tax Template", "Sales Taxes and Charges Template"],
 };
 
 export const ALL_MODULES = Object.keys(MODULE_STRUCTURE);
@@ -83,45 +83,45 @@ export const useUserRoleLogic = ({
     (field: keyof UserRoleFormData, value: unknown) => {
       setForm((prev) => ({ ...prev, [field]: value }));
       clearError(field);
-      clearError("submit"); 
+      clearError("submit");
     },
     [clearError]
   );
 
- 
 
-const buildPayload = (): UserRoleFormData => {
-  const subModuleParent: Record<string, string> = {};
-  Object.entries(MODULE_STRUCTURE).forEach(([parent, subs]) => {
-    subs.forEach((sub) => {
-      subModuleParent[sub] = parent;
+
+  const buildPayload = (): UserRoleFormData => {
+    const subModuleParent: Record<string, string> = {};
+    Object.entries(MODULE_STRUCTURE).forEach(([parent, subs]) => {
+      subs.forEach((sub) => {
+        subModuleParent[sub] = parent;
+      });
     });
-  });
 
 
-  const allSubModules = Object.values(MODULE_STRUCTURE).flat();
+    const allSubModules = Object.values(MODULE_STRUCTURE).flat();
 
-  const permission = allSubModules.map((sub) => {
-    const existing = form.permission.find((p) => p.module === sub);
+    const permission = allSubModules.map((sub) => {
+      const existing = form.permission.find((p) => p.module === sub);
+      return {
+        module: sub,
+        read: existing?.read ?? 0,
+        write: existing?.write ?? 0,
+        create: existing?.create ?? 0,
+        delete: existing?.delete ?? 0,
+        import: existing?.import ?? 0,
+        export: existing?.export ?? 0,
+        report: existing?.report ?? 0,
+        submit: existing?.submit ?? 0,
+        cancel: existing?.cancel ?? 0,
+      };
+    });
+
     return {
-      module: sub,
-      read: existing?.read ?? 0,
-      write: existing?.write ?? 0,
-      create: existing?.create ?? 0,
-      delete: existing?.delete ?? 0,
-      import: existing?.import ?? 0,
-      export: existing?.export ?? 0,
-      report: existing?.report ?? 0,
-      submit: existing?.submit ?? 0,
-      cancel: existing?.cancel ?? 0,
+      role: form.role.trim(),
+      permission,
     };
-  });
-
-  return {
-    role: form.role.trim(),
-    permission,
   };
-};
 
   const setPermissionActions = useCallback(
     (module: string, entry: Omit<PermissionEntry, "module">) => {
@@ -153,7 +153,7 @@ const buildPayload = (): UserRoleFormData => {
         const newEntry: PermissionEntry = {
           module,
           read: 0, write: 0, create: 0,
-          delete: 0, import: 0, export: 0, report: 0,submit: 0, cancel: 0,
+          delete: 0, import: 0, export: 0, report: 0, submit: 0, cancel: 0,
           [action]: 1,
         };
         return { ...prev, permission: [...prev.permission, newEntry] };
@@ -172,7 +172,7 @@ const buildPayload = (): UserRoleFormData => {
           ...prev,
           permission: [
             ...filtered,
-            { module, read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1, submit: 1, cancel: 1 ,},
+            { module, read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1, submit: 1, cancel: 1, },
           ],
         };
       });
