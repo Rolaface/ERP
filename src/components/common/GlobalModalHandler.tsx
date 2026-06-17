@@ -685,12 +685,12 @@ const GlobalModalHandler: React.FC = () => {
               }
               handleClose();
             }}
-            initialData={
-              modal.isEdit && isRecord(modal.initialData)
-                ? (modal.initialData as unknown as UserRoleFormData)
-                : null
-            }
-            isEdit={modal.isEdit}
+ initialData={
+  (modal.isEdit || !modal.isEdit) && isRecord(modal.initialData)
+    ? (modal.initialData as unknown as UserRoleFormData)
+    : null
+}
+isEdit={modal.isEdit}
           />,
         );
 
