@@ -531,7 +531,7 @@ const GlobalModalHandler: React.FC = () => {
               modal.initialData,
             )}
             isEditMode={modal.isEdit}
-            isViewMode={context?.isViewMode ?? false} 
+            isViewMode={context?.isViewMode ?? false}
           />,
         );
       case "bankAccount": {
@@ -557,19 +557,19 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
       }
-     case "modeOfPayment":
-  return wrappedModal(
-    <AddModeOfPaymentModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={handleSubmit}
-      initialData={getRecordInitialData(modal.initialData)}
-      isEdit={modal.isEdit}
-      isViewMode={context?.isViewMode ?? false}  // ← read from context
-    />,
-  );
+      case "modeOfPayment":
+        return wrappedModal(
+          <AddModeOfPaymentModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={getRecordInitialData(modal.initialData)}
+            isEdit={modal.isEdit}
+            isViewMode={context?.isViewMode ?? false}  // ← read from context
+          />,
+        );
 
       case "paymentEntry":
         return wrappedModal(
@@ -593,7 +593,7 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
             editData={getInitialData(modal.initialData) as any}
             actionLoading={false}
-                  isViewMode={context?.isViewMode ?? false}  // ← add this
+            isViewMode={context?.isViewMode ?? false}  // ← add this
 
 
           />,
@@ -686,7 +686,7 @@ const GlobalModalHandler: React.FC = () => {
               handleClose();
             }}
             initialData={
-              modal.isEdit && isRecord(modal.initialData)
+              (modal.isEdit || !modal.isEdit) && isRecord(modal.initialData)
                 ? (modal.initialData as unknown as UserRoleFormData)
                 : null
             }
@@ -1010,34 +1010,34 @@ const GlobalModalHandler: React.FC = () => {
 
 
       case "holidayList":
-  return wrappedModal(
-    <HolidayListModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      isViewMode={context?.isViewMode ?? false}  // ← add this
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-      }}
-    />,
-  );
+        return wrappedModal(
+          <HolidayListModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            isViewMode={context?.isViewMode ?? false}  // ← add this
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+            }}
+          />,
+        );
 
       case "shiftType":
-  return wrappedModal(
-    <ShiftTypeModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      initialData={getInitialData(modal.initialData)}
-      isViewMode={context?.isViewMode ?? false}  // ← add this
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
-      }}
-    />,
-  );
+        return wrappedModal(
+          <ShiftTypeModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            initialData={getInitialData(modal.initialData)}
+            isViewMode={context?.isViewMode ?? false}  // ← add this
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+            }}
+          />,
+        );
 
       case "scanPI":
         return wrappedModal(
@@ -1068,7 +1068,7 @@ const GlobalModalHandler: React.FC = () => {
             }}
           />,
         );
-    
+
       case "feedback":
         return wrappedModal(
           <AddFeedbackModal

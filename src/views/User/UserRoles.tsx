@@ -143,7 +143,7 @@ const UserRolePage: React.FC = () => {
     }
   };
 
-  const handleView = (row: UserRole) => openRoleModal(row, true);
+const handleView = (row: UserRole) => openRoleModal(row, false);
   const handleEdit = (row: UserRole) => openRoleModal(row, true);
 
   const handleToggleStatus = async (row: UserRole) => {
@@ -205,56 +205,102 @@ const UserRolePage: React.FC = () => {
         </span>
       ),
     },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (row) => (
-        <ActionGroup>
-          <PermissionGate module={USER_ROLE_MODULE} action="write">
-            <ActionButton
-              type="edit"
-              onClick={() => handleEdit(row)}
-              iconOnly
-              title="Edit Role"
-            />
-          </PermissionGate>
-          {(can(USER_ROLE_MODULE, "read") ||
-            can(USER_ROLE_MODULE, "write")) && (
-              <ActionMenu
-                customActions={[
-                  ...(can(USER_ROLE_MODULE, "read")
-                    ? [
-                      {
-                        label: "View Details",
-                        onClick: () => handleView(row),
-                      },
-                    ]
-                    : []),
+    // {
+    //   key: "actions",
+    //   header: "Actions",
+    //   align: "center",
+    //   render: (row) => (
+    //     <ActionGroup>
+    //       <PermissionGate module={USER_ROLE_MODULE} action="write">
+    //         <ActionButton
+    //           type="edit"
+    //           onClick={() => handleEdit(row)}
+    //           iconOnly
+    //           title="Edit Role"
+    //         />
+    //       </PermissionGate>
+    //       {(can(USER_ROLE_MODULE, "read") ||
+    //         can(USER_ROLE_MODULE, "write")) && (
+    //           <ActionMenu
+    //             customActions={[
+    //               ...(can(USER_ROLE_MODULE, "read")
+    //                 ? [
+    //                   {
+    //                     label: "View Details",
+    //                     onClick: () => handleView(row),
+    //                   },
+    //                 ]
+    //                 : []),
 
-                  ...(can(USER_ROLE_MODULE, "write")
-                    ? [
-                      {
-                        label:
-                          togglingId === (row.roleId ?? row.role)
-                            ? "Updating..."
-                            : row.disabled
-                              ? "Enable"
-                              : "Disable",
-                        onClick: () => {
-                          handleToggleStatus(row);
-                        },
-                        disabled:
-                          togglingId === (row.roleId ?? row.role),
-                      },
-                    ]
-                    : []),
-                ]}
-              />
-            )}
-        </ActionGroup>
-      ),
-    },
+    //               ...(can(USER_ROLE_MODULE, "write")
+    //                 ? [
+    //                   {
+    //                     label:
+    //                       togglingId === (row.roleId ?? row.role)
+    //                         ? "Updating..."
+    //                         : row.disabled
+    //                           ? "Enable"
+    //                           : "Disable",
+    //                     onClick: () => {
+    //                       handleToggleStatus(row);
+    //                     },
+    //                     disabled:
+    //                       togglingId === (row.roleId ?? row.role),
+    //                   },
+    //                 ]
+    //                 : []),
+    //             ]}
+    //           />
+    //         )}
+    //     </ActionGroup>
+    //   ),
+    // },
+    {
+  key: "actions",
+  header: "Actions",
+  align: "center",
+  render: (row) => (
+    <ActionGroup>
+        <PermissionGate module={USER_ROLE_MODULE} action="read">
+        <ActionButton
+          type="view"
+          onClick={() => handleView(row)}
+          iconOnly
+          title="View Details"
+        />
+      </PermissionGate>
+      <PermissionGate module={USER_ROLE_MODULE} action="write">
+        <ActionButton
+          type="edit"
+          onClick={() => handleEdit(row)}
+          iconOnly
+          title="Edit Role"
+        />
+      </PermissionGate>
+
+    
+
+      {can(USER_ROLE_MODULE, "write") && (
+        <ActionMenu
+          customActions={[
+            {
+              label:
+                togglingId === (row.roleId ?? row.role)
+                  ? "Updating..."
+                  : row.disabled
+                    ? "Enable"
+                    : "Disable",
+              onClick: () => {
+                handleToggleStatus(row);
+              },
+              disabled: togglingId === (row.roleId ?? row.role),
+            },
+          ]}
+        />
+      )}
+    </ActionGroup>
+  ),
+},
   ];
 
   return (
