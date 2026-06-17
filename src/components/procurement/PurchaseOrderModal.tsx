@@ -154,7 +154,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       currentTab={tabOrder.indexOf(activeTab)}
       totalTabs={tabOrder.length}
       isSubmitting={saving}
-      submitLabel="Save Purchase Order"
+      submitLabel="Submit"
     />
   );
 

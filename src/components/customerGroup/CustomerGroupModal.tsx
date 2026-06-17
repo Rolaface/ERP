@@ -90,8 +90,7 @@ const CustomerGroupModal: React.FC<Props> = ({
       </Button>
       {!isView && (
         <Button variant="primary" onClick={handleSave}>
-          Save
-        </Button>
+Submit        </Button>
       )}
     </div>
   );

@@ -263,7 +263,7 @@ const CycleList = () => {
         onSearch={(q) => { setSearch(q); setPage(1); }}
         toolbarPlaceholder="Search cycles..."
         enableAdd
-        addLabel="New Cycle"
+        addLabel="Add Cycle"
         onAdd={() => setCreateModalOpen(true)}
         enableColumnSelector
         currentPage={page}

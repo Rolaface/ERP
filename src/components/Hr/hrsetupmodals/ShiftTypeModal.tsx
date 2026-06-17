@@ -218,8 +218,8 @@ export const ShiftTypeModal: React.FC<Props> = ({
           {saving
             ? "Saving…"
             : isEdit
-              ? "Update Shift Type"
-              : "Create Shift Type"}
+              ? "Update  "
+              : "Submit"}
         </button>
       )}
     </div>
@@ -230,7 +230,7 @@ export const ShiftTypeModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isViewMode ? "View Shift Type" : isEdit ? "Edit Shift Type" : "New Shift Type"}
+      title={isViewMode ? "View Shift Type" : isEdit ? "Edit Shift Type" : "Add New Shift Type"}
       subtitle="Define work hours and attendance rules"
       icon={Clock}
       maxWidth="5xl"

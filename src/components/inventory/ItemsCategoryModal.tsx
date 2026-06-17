@@ -242,7 +242,7 @@ const ItemsCategoryModal: React.FC<{
                   Reset
                 </Button>
                 <Button variant="primary" type="submit" loading={loading}>
-                  {isEditMode ? "Update Group" : "Save Group"}
+                  {isEditMode ? "Update " : "Submit"}
                 </Button>
               </>
             )}

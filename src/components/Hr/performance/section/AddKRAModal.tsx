@@ -105,7 +105,7 @@ export default function AddKRAModal({
 
           {!isViewMode && (
             <button className="btn btn-primary" onClick={handleSave}>
-              Save
+              Submit
             </button>
           )}
         </div>

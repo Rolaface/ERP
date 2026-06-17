@@ -146,7 +146,7 @@ export const DepartmentModal: React.FC<Props> = ({
         className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving..." : isEdit ? "Update Department" : "Create Department"}
+        {saving ? "Saving..." : isEdit ? "Update" : "Submit"}
       </button>
     </div>
   );
@@ -156,7 +156,7 @@ export const DepartmentModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? "Edit Department" : "New Department"}
+      title={isEdit ? "Edit Department" : "Add New Department"}
       subtitle="Configure department hierarchy and approvers"
       icon={Building2}
       customWidth="52vw"

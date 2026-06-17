@@ -436,7 +436,7 @@ const NewCycleModal = ({
         onClick={hook.handleSave}
         className="btn btn-primary text-sm px-5 h-8"
       >
-        Create Cycle
+         Submit
       </button>
     </div>
   );
@@ -446,7 +446,7 @@ const NewCycleModal = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={hook.handleClose}
-      title={isViewMode ? "View Appraisal Cycle" : "New Appraisal Cycle"}
+      title={isViewMode ? "View Appraisal Cycle" : "Add Appraisal Cycle"}
       subtitle={
         isViewMode
           ? "Read-only view of this performance review cycle"

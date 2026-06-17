@@ -82,8 +82,8 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
             {saving
               ? "Saving..."
               : isEdit
-                ? "Update Credit Note"
-                : "Add Credit Note"}
+                ? "Update"
+                : "Submit"}
           </Button>
         </div>
       </>

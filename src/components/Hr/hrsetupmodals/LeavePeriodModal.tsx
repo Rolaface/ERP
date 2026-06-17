@@ -111,7 +111,7 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
         className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving…" : isEdit ? "Update Leave Period" : "Create Leave Period"}
+        {saving ? "Saving…" : isEdit ? "Update" : "  Submit"}
       </button>
     </div>
   ): null;
@@ -122,7 +122,7 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
       isOpen={isOpen}
       onClose={onClose}
       // title={isEdit ? "Edit Leave Period" : "New Leave Period"}
-      title={isView ? "View Leave Period" : isEdit ? "Edit Leave Period" : "New Leave Period"}
+      title={isView ? "View Leave Period" : isEdit ? "Edit Leave Period" : "Add New Leave Period"}
       subtitle="Define fiscal or operational calendar periods for leave allocation"
       icon={Calendar}
       maxWidth="xl"

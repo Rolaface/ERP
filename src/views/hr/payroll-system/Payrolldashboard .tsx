@@ -236,7 +236,7 @@ export const PayrollDashboard: React.FC<Props> = ({
       tableId="payroll-dashboard"
       showToolbar
       enableAdd={canCreate}
-      addLabel="New Payroll"
+      addLabel="Add New Payroll"
       onAdd={onNewPayroll}
       columns={payrollColumns}
       enableColumnSelector

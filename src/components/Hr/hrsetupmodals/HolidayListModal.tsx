@@ -383,8 +383,8 @@ export const HolidayListModal: React.FC<Props> = ({
           {saving
             ? "Saving…"
             : isEdit
-              ? "Update Holiday List"
-              : "Create Holiday List"}
+              ? "Update  "
+              : "Submit"}
         </button>
       )}
     </div>

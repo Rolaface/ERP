@@ -250,7 +250,7 @@ const WarehouseModal: React.FC<{
                 Cancel
               </Button>
               <Button variant="primary" type="submit" loading={loading}>
-                {isEditMode ? "Update" : "Create New"}
+                {isEditMode ? "Update" : "Submit"}
               </Button>
             </>
           )}

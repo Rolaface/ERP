@@ -224,7 +224,7 @@ const NewPayrollEntry: React.FC<Props> = ({
       submitLabel={
         isEdit
           ? "Update Payroll"
-          : `Create Payroll (${formData.selectedEmployees.length})`
+          : `Submit (${formData.selectedEmployees.length})`
       }
       submitDisabled={!formData.selectedEmployees.length}
     />
@@ -235,8 +235,8 @@ const NewPayrollEntry: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={handleClose}
-      title={isEdit ? "Edit Payroll Entry" : "New Payroll Entry"}
-      subtitle="Create payroll entries"
+      title={isEdit ? "Edit Payroll Entry" : "Add New Payroll Entry"}
+      subtitle="Add payroll entries"
       maxWidth="6xl"
       height="90vh"
       footer={footer}
