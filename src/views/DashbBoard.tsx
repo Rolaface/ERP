@@ -47,17 +47,7 @@ const Dashboard = () => {
 // Subscribe to baseCurrency from Zustand
   const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
   const currencySymbol = useCompanyStore((state) => state.currencySymbol || '');
-
-  // const currencyFormatter = useMemo(() => {
-  //   const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
-    
-  //   return new Intl.NumberFormat(locale, {
-  //     style: 'currency', 
-  //     currency: baseCurrency, 
-  //     maximumFractionDigits: 2, 
-  //     notation: "compact"
-  //   });
-  // }, [baseCurrency]);  
+  
   const currencyFormatter = useMemo(() => {
     const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
     
@@ -187,32 +177,6 @@ const Dashboard = () => {
     fetchPurchase();
     return () => { mounted = false; };
   }, [purchaseYear, purchaseInterval]);
-
- const currentMonthIndex = new Date().getMonth(); 
-  const currentYear = new Date().getFullYear().toString();
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-  // Helper function to handle multiple interval types
-  const shouldIncludePeriod = (key: string, interval: string, selectedYear: string) => {
-    if (selectedYear !== currentYear) return true;
-
-    if (interval === 'Monthly') {
-      const monthIndex = monthNames.indexOf(key);
-      return monthIndex === -1 || monthIndex <= currentMonthIndex;
-    }
-    if (interval === 'Quarterly') {
-      const currentQuarter = Math.floor(currentMonthIndex / 3) + 1;  
-      const quarterNumber = parseInt(key.replace('Q', ''));
-      return isNaN(quarterNumber) || quarterNumber <= currentQuarter;
-    }
-    if (interval === 'Half-Yearly') {
-      const currentHalf = Math.floor(currentMonthIndex / 6) + 1;  
-      const halfNumber = parseInt(key.replace('H', ''));
-      return isNaN(halfNumber) || halfNumber <= currentHalf;
-    }
-    
-    return true;  
-  };
 
 const filteredSalesData = useMemo(() => {
     if (!salesData?.trend) return {};
@@ -484,18 +448,7 @@ const filteredPurchaseData = useMemo(() => {
             </div>
           ) : (
             <div className="flex flex-col gap-4 flex-1">
-              {/* <NoteItem
-                label="Top Customer"
-                title={notesData?.topCustomer?.name || 'N/A'}
-                value={currencyFormatter.format(notesData?.topCustomer?.value || 0)}
-                icon={<Users size={16} className="text-blue-500" />}
-              />
-              <NoteItem
-                label="Top Supplier"
-                title={notesData?.topSupplier?.name || 'N/A'}
-                value={currencyFormatter.format(notesData?.topSupplier?.value || 0)}
-                icon={<FileText size={16} className="text-amber-500" />}
-              /> */}
+           
  <NoteItem
                 label="Top Customers"
                 icon={<Users size={16} className="text-blue-500" />}
