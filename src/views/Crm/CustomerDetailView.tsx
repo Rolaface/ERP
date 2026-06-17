@@ -1,26 +1,7 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback , useMemo} from "react";
 import {
-  X,
-  Search,
-  FileText,
-  Receipt,
-  MapPin,
-  Mail,
-  Building2,
-  FileBarChart,
-  Globe,
-  CreditCard,
-  Phone,
-  Users,
-  Tag,
-  Banknote,
-  Layers,
-  ChevronRight,
-  BadgeCheck,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  CalendarDays,
+  X, Search, FileText, Receipt, MapPin, Mail, Building2, FileBarChart, Globe, CreditCard, Phone, Users, Tag,
+  Banknote,Layers,ChevronRight, BadgeCheck, Menu, PanelLeftClose, PanelLeftOpen, CalendarDays,
 } from "lucide-react";
 import type { CustomerDetail } from "../../types/customer";
 import CustomerStatement from "../../views/Crm/CustomerStatement";
@@ -31,6 +12,7 @@ import CustomerBankDetails from "./CustomerBankDetails";
 import CustomerdetailviewPayment from "./CustomerDetailViewPayments";
 import { getCustomerByCustomerCode } from "../../api/customerApi";
 import { searchCustomers } from "../../api/utils/frappeUtilsApi";
+import { usePermission } from "../../hooks/permission/usePermission";
 
 interface Props {
   customerId: string;
@@ -63,17 +45,18 @@ const fmtPct = (v: any): string => {
   return String(v).includes("%") ? String(v) : `${v}%`;
 };
 
-const TABS = [
-  { id: "overview", label: "Overview", icon: <Globe /> },
-  { id: "bank", label: "Bank", icon: <Building2 /> },
-  { id: "quotations", label: "Quotations", icon: <FileText /> },
-  { id: "proforma-invoices", label: "Proforma Invoices", icon: <FileText /> },
-  { id: "invoices", label: "Invoices", icon: <Receipt /> },
-  { id: "payments", label: "Payments", icon: <CreditCard /> },
-  { id: "statement", label: "Statement", icon: <FileBarChart /> },
+const ALL_TABS = [
+  { id: "overview",          label: "Overview",          icon: <Globe />,      module: null },
+  { id: "bank",              label: "Bank",              icon: <Building2 />,  module: "Bank Account", action: "read" as const },
+  { id: "quotations",        label: "Quotations",        icon: <FileText />,   module: "Quotation",    action: "read" as const },
+  { id: "proforma-invoices", label: "Proforma Invoices", icon: <FileText />,   module: "Sales Invoice", action: "read" as const },
+  { id: "invoices",          label: "Invoices",          icon: <Receipt />,    module: "Sales Invoice", action: "read" as const },
+  { id: "payments",          label: "Payments",          icon: <CreditCard />, module: "Payment Entry", action: "read" as const },
+  { id: "statement",         label: "Statement",         icon: <FileBarChart />, module: "Customer",   action: "report" as const },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+type TabId = (typeof ALL_TABS)[number]["id"];
+
 
 const SIDEBAR_PAGE_SIZE = 10;
 
@@ -171,6 +154,12 @@ const CustomerDetailView: React.FC<Props> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshBankAccounts = useRef<(() => void) | null>(null);
+  const { can } = usePermission();
+
+const visibleTabs = useMemo(
+  () => ALL_TABS.filter((t) => !t.module || can(t.module, t.action)),
+  [can],
+);
 
   useEffect(() => {
     if (!customerId) return;
@@ -363,7 +352,7 @@ const CustomerDetailView: React.FC<Props> = ({
           {/* Tabs bar */}
           <div className="bg-card border-b border-theme px-2 sm:px-4 shrink-0 z-10">
             <div className="flex overflow-x-auto no-scrollbar">
-              {TABS.map((tab) => (
+              {visibleTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}

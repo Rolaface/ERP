@@ -102,7 +102,7 @@ export const DesignationModal: React.FC<Props> = ({
         className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         <Save className="h-3.5 w-3.5" />
-        {saving ? "Saving..." : isEdit ? "Update Designation" : "Create Designation"}
+        {saving ? "Saving..." : isEdit ? "Update " : "Submit"}
       </button>
     </div>
   );
@@ -112,7 +112,7 @@ export const DesignationModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? "Edit Designation" : "New Designation"}
+      title={isEdit ? "Edit Designation" : "Add New Designation"}
       subtitle="Configure employee role classification"
       icon={Briefcase}
       maxWidth="xl"

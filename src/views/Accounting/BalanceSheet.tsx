@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
-import type { Column } from "../../components/ui/Table/type";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getExpandedRowModel,
+  flexRender,
+  type ColumnDef,
+  type ExpandedState,
+} from "@tanstack/react-table";
+import { getCurrencySymbol } from "../../utils/currency";
 import {
   getBalanceSheet,
   type BalanceSheetFilters,
 } from "../../api/Accounting/AccountApi";
-
-import {
-  getCompanyCurrentFiscalYear
-} from "../../api/utils/frappeUtilsApi";
+import { getCompanyCurrentFiscalYear } from "../../api/utils/frappeUtilsApi";
 
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
@@ -92,29 +96,26 @@ function mapBSNode(node: Partial<BSNode> & Record<string, any>): BSNode {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Format a number as Indian locale currency string.
- * Negative values are wrapped in parens, zero/null returns "—".
- */
-const nf = (value: number | undefined | null, currency?: string): string => {
+const nf = (value: number | undefined | null): string => {
   if (value === null || value === undefined) return "—";
+
+  const currencySymbol = getCurrencySymbol();
+
   const formatted = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Math.abs(value));
-  const prefix = currency ? `${currency} ` : "";
-  return value < 0 ? `${prefix}-${formatted}` : `${prefix}${formatted}`;
+
+  return value < 0
+    ? `${currencySymbol} -${formatted}`
+    : `${currencySymbol} ${formatted}`;
 };
 
 const res = await getCompanyCurrentFiscalYear();
-
 const fiscalYear = res.data?.fiscal_year;
 const fiscalYearStartDate = res?.data?.start_date;
-const fiscalYearEndDate = res ?.data?.end_date;
+const fiscalYearEndDate = res?.data?.end_date;
 
-// ─── Date Utilities ───────────────────────────────────────────────────────────
-
-/** "DD-MM-YYYY" → "YYYY-MM-DD" */
 const toInputDate = (apiDate: string): string => {
   if (!apiDate || !apiDate.includes("-")) return "";
   const parts = apiDate.split("-");
@@ -123,7 +124,6 @@ const toInputDate = (apiDate: string): string => {
   return `${y}-${m}-${d}`;
 };
 
-/** "YYYY-MM-DD" → "DD-MM-YYYY" */
 const toApiDate = (inputDate: string): string => {
   if (!inputDate || !inputDate.includes("-")) return "";
   const [y, m, d] = inputDate.split("-");
@@ -141,6 +141,23 @@ const currentMonthEnd = (): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
 };
 
+/* builds {rowId: true} map to expand the tree to N levels by default */
+const buildExpandedToDepth = (
+  nodes: BSNode[],
+  depth: number,
+  path = "",
+): Record<string, boolean> => {
+  let state: Record<string, boolean> = {};
+  nodes.forEach((node, i) => {
+    const id = path ? `${path}.${i}` : `${i}`;
+    if (depth > 0 && node.children?.length) {
+      state[id] = true;
+      Object.assign(state, buildExpandedToDepth(node.children, depth - 1, id));
+    }
+  });
+  return state;
+};
+
 // ─── Filter types ─────────────────────────────────────────────────────────────
 
 type FilterMode = "Fiscal Year" | "Date Range";
@@ -155,54 +172,51 @@ interface BSFilters {
   to_date?: string;
 }
 
-// ─── Expand Icon ──────────────────────────────────────────────────────────────
+// ─── KPI Strip ────────────────────────────────────────────────────────────────
 
-function expandIcon(
-  _node: BSNode,
-  isExpanded: boolean,
-  hasChildren: boolean
-): React.ReactNode {
-  if (!hasChildren)
-    return <FileText size={12} className="text-muted opacity-50" />;
-  return isExpanded ? (
-    <FolderOpen size={13} className="text-muted" />
-  ) : (
-    <Folder size={13} className="text-muted" />
-  );
-}
-
-// ─── Summary Strip ────────────────────────────────────────────────────────────
-
-function SummaryStrip({ summary }: { summary: BSSummaryItem[] }) {
+function KpiStrip({
+  summary,
+  loading,
+}: {
+  summary: BSSummaryItem[];
+  loading: boolean;
+}) {
   const items = summary.filter(Boolean);
 
   const colorFor = (item: BSSummaryItem): string => {
     const ind = item.indicator?.toLowerCase();
-    if (ind === "green") return "text-emerald-500";
-    if (ind === "red") return "text-rose-500";
-    // Fallback: color by label content
-    if (item.label?.toLowerCase().includes("asset")) return "text-blue-500";
-    if (item.label?.toLowerCase().includes("liabilit")) return "text-rose-500";
-    if (item.label?.toLowerCase().includes("equity")) return "text-violet-500";
-    if (item.label?.toLowerCase().includes("profit")) return "text-emerald-500";
+    if (ind === "green") return "text-emerald-600";
+    if (ind === "red") return "text-red-500";
+    const l = item.label?.toLowerCase() ?? "";
+    if (l.includes("asset")) return "text-blue-500";
+    if (l.includes("liabilit")) return "text-red-500";
+    if (l.includes("equity")) return "text-violet-500";
     return "text-main";
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-[900px]">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className="rounded-xl border p-3 flex flex-col gap-1 bg-card w-full"
-        >
-          <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted opacity-70">
-            {item.label}
-          </span>
-          <div className={`text-sm font-black tracking-tight ${colorFor(item)}`}>
-            {nf(item.value, item.currency)}
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {(loading || items.length === 0 ? Array.from({ length: 4 }) : items).map(
+        (item: any, i) => (
+          <div
+            key={item?.label ?? i}
+            className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 flex flex-col gap-1.5"
+          >
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted truncate">
+              {item?.label ?? "—"}
+            </span>
+            {loading || !item ? (
+              <div className="h-4 w-20 bg-[var(--border)] rounded animate-pulse" />
+            ) : (
+              <span
+                className={`text-sm font-extrabold tabular-nums ${colorFor(item)}`}
+              >
+                {nf(item.value)}
+              </span>
+            )}
           </div>
-        </div>
-      ))}
+        ),
+      )}
     </div>
   );
 }
@@ -227,16 +241,15 @@ function FilterBar({
   onCollapseAll,
 }: FilterBarProps) {
   const inputClass =
-    "w-25 px-2 py-1.5 border border-[var(--border)] rounded-lg bg-card text-main text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all no-spinner";
+    "h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all no-spinner";
 
   const btnClass =
-    "flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap";
+    "h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40 rounded-md transition-all whitespace-nowrap";
 
   return (
-    <div className="w-[905px] flex items-center gap-2 flex-nowrap overflow-x-auto p-3 rounded-xl border border-[var(--border)] bg-card shadow-sm scrollbar-thin no-spinner">
-      {/* MODE */}
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+    <div className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted">
           Mode
         </span>
         <select
@@ -258,9 +271,8 @@ function FilterBar({
         </select>
       </div>
 
-      {/* PERIODICITY */}
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted">
           Period
         </span>
         <select
@@ -280,11 +292,10 @@ function FilterBar({
         </select>
       </div>
 
-      {/* FISCAL YEAR RANGE */}
       {filters.mode !== "Date Range" && (
         <>
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50 no-spinner">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
               From FY
             </span>
             <input
@@ -296,12 +307,11 @@ function FilterBar({
                   from_fiscal_year: Number(e.target.value),
                 }))
               }
-              className={inputClass}
+              className={`${inputClass} w-20`}
             />
           </div>
-
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
               To FY
             </span>
             <input
@@ -313,50 +323,38 @@ function FilterBar({
                   to_fiscal_year: Number(e.target.value),
                 }))
               }
-              className={inputClass}
+              className={`${inputClass} w-20`}
             />
           </div>
         </>
       )}
 
-      {/* DATE RANGE */}
       {filters.mode === "Date Range" && (
         <>
-          {/* FROM DATE */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
               From
             </span>
-
-            <div className="w-[120px]">
+            <div className="w-[130px]">
               <DatePickerInput
                 name="from_date"
                 value={toInputDate(filters.from_date ?? "")}
                 onChange={(name, value) =>
-                  setFilters((f) => ({
-                    ...f,
-                    from_date: toApiDate(value),
-                  }))
+                  setFilters((f) => ({ ...f, from_date: toApiDate(value) }))
                 }
               />
             </div>
           </div>
-
-          {/* TO DATE */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
               To
             </span>
-
-            <div className="w-[120px]">
+            <div className="w-[130px]">
               <DatePickerInput
                 name="to_date"
                 value={toInputDate(filters.to_date ?? "")}
                 onChange={(name, value) =>
-                  setFilters((f) => ({
-                    ...f,
-                    to_date: toApiDate(value),
-                  }))
+                  setFilters((f) => ({ ...f, to_date: toApiDate(value) }))
                 }
               />
             </div>
@@ -364,18 +362,19 @@ function FilterBar({
         </>
       )}
 
-      <div className="h-5 w-px bg-[var(--border)] mx-1" />
+      <div className="w-px self-stretch bg-[var(--border)]" />
 
-      {/* EXPAND ALL */}
       <button onClick={onExpandAll} className={btnClass}>
         <Layers size={11} />
         Expand All
       </button>
-
-      {/* COLLAPSE */}
       <button onClick={onCollapseAll} className={btnClass}>
         <ChevronRight size={11} />
         Collapse
+      </button>
+      <button onClick={onRefresh} className={`${btnClass} ml-auto`}>
+        <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
+        Refresh
       </button>
     </div>
   );
@@ -385,13 +384,9 @@ function FilterBar({
 
 function SectionHeader({
   label,
-  total,
-  currency,
   accentClass,
 }: {
   label: string;
-  total: number;
-  currency?: string;
   accentClass: string;
 }) {
   return (
@@ -400,7 +395,124 @@ function SectionHeader({
       <span className="text-xs font-bold text-main uppercase tracking-widest">
         {label}
       </span>
+    </div>
+  );
+}
 
+// ─── Reusable Tree Table (shared by Assets / Liabilities / Equity) ────────────
+
+function BSTreeTable({
+  data,
+  columns,
+  expanded,
+  onExpandedChange,
+  loading,
+  emptyMessage,
+}: {
+  data: BSNode[];
+  columns: ColumnDef<BSNode>[];
+  expanded: ExpandedState;
+  onExpandedChange: React.Dispatch<React.SetStateAction<ExpandedState>>;
+  loading: boolean;
+  emptyMessage: string;
+}) {
+  const table = useReactTable({
+    data,
+    columns,
+    state: { expanded },
+    onExpandedChange,
+    getSubRows: (row) => row.children,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+  });
+
+  return (
+    <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
+      <div className="overflow-x-auto overflow-y-auto flex-1 relative">
+        <table
+          className="border-collapse"
+          style={{
+            tableLayout: "fixed",
+            width: "max-content",
+            minWidth: "100%",
+          }}
+        >
+          <colgroup>
+            {table.getAllLeafColumns().map((col) => (
+              <col key={col.id} style={{ width: col.getSize() }} />
+            ))}
+          </colgroup>
+          <thead className="sticky top-0 z-10 border-b border-[var(--border)]">
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id}>
+                {hg.headers.map((header) => {
+                  const align =
+                    (header.column.columnDef.meta as any)?.align === "right"
+                      ? "text-right"
+                      : "text-left";
+                  return (
+                    <th
+                      key={header.id}
+                      className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-row-hover border-b border-[var(--border)] ${align}`}
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                    </th>
+                  );
+                })}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={columns.length} style={{ height: "160px" }}>
+                  <div className="flex justify-center items-center h-full">
+                    <Loader2 size={18} className="animate-spin text-muted" />
+                  </div>
+                </td>
+              </tr>
+            ) : table.getRowModel().rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="py-10 text-center text-xs text-muted"
+                >
+                  {emptyMessage}
+                </td>
+              </tr>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="hover:bg-row-hover transition-colors h-[34px]"
+                  style={{ borderBottom: "1px solid rgba(128,128,128,0.12)" }}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const align =
+                      (cell.column.columnDef.meta as any)?.align === "right"
+                        ? "text-right"
+                        : "text-left";
+                    return (
+                      <td
+                        key={cell.id}
+                        className={`px-3 py-1 whitespace-nowrap ${align}`}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -408,36 +520,36 @@ function SectionHeader({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const BalanceSheet: React.FC = () => {
-  const [filters, setFilters] = useState<BSFilters>({
-    mode: "Fiscal Year",
-    periodicity: "Monthly",
-    from_fiscal_year: fiscalYear,
-    to_fiscal_year: fiscalYear,
-    from_date: currentMonthStart(),
-    to_date: currentMonthEnd(),
-  });
+const [filters, setFilters] = useState<BSFilters>({
+  mode: "Fiscal Year",
+  periodicity: "Monthly",
+  from_fiscal_year: fiscalYear,
+  to_fiscal_year: fiscalYear,
+  from_date: currentMonthStart(),
+  to_date: currentMonthEnd(),
+});
 
   const [data, setData] = useState<BSData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Separate expand keys per section so they can be controlled independently
-  const [expandKey, setExpandKey] = useState(0);
-  const [expandDepth, setExpandDepth] = useState(2);
-
-  // ── Expand / Collapse ──
+  const [expandedAssets, setExpandedAssets] = useState<ExpandedState>({});
+  const [expandedLiabilities, setExpandedLiabilities] = useState<ExpandedState>(
+    {},
+  );
+  const [expandedEquity, setExpandedEquity] = useState<ExpandedState>({});
 
   const handleExpandAll = useCallback(() => {
-    setExpandDepth(Number.MAX_SAFE_INTEGER);
-    setExpandKey((k) => k + 1);
+    setExpandedAssets(true);
+    setExpandedLiabilities(true);
+    setExpandedEquity(true);
   }, []);
 
   const handleCollapseAll = useCallback(() => {
-    setExpandDepth(0);
-    setExpandKey((k) => k + 1);
+    setExpandedAssets({});
+    setExpandedLiabilities({});
+    setExpandedEquity({});
   }, []);
-
-  // ── Fetch ──
 
   const fetchBS = useCallback(async (currentFilters: BSFilters) => {
     setLoading(true);
@@ -455,43 +567,41 @@ const BalanceSheet: React.FC = () => {
       const params =
         currentFilters.mode === "Date Range"
           ? {
-            periodicity: currentFilters.periodicity,
-            from_date: currentFilters.from_date,
-            to_date: currentFilters.to_date,
-            filter_based_on: "Date Range" as const,
-          }
+              periodicity: currentFilters.periodicity,
+              from_date: currentFilters.from_date,
+              to_date: currentFilters.to_date,
+              filter_based_on: "Date Range" as const,
+            }
           : {
-            periodicity: currentFilters.periodicity,
-            from_fiscal_year: String(currentFilters.from_fiscal_year),
-            to_fiscal_year: String(currentFilters.to_fiscal_year),
-            filter_based_on: "Fiscal Year" as const,
-          };
+              periodicity: currentFilters.periodicity,
+              from_fiscal_year: String(currentFilters.from_fiscal_year),
+              to_fiscal_year: String(currentFilters.to_fiscal_year),
+              filter_based_on: "Fiscal Year" as const,
+            };
 
       const res: BSResponse = await getBalanceSheet(params as any);
 
       if (res?.message?.status_code === 200) {
         const d = res.message.data;
-        setData({
-          ...d,
-          assets: d.assets.map(mapBSNode),
-          liabilities: d.liabilities.map(mapBSNode),
-          equity: (d.equity ?? []).map(mapBSNode),
-        });
-        // Reset expand depth on fresh data so tree doesn't stay at MAX
-        setExpandDepth(2);
+        const assets = d.assets.map(mapBSNode);
+        const liabilities = d.liabilities.map(mapBSNode);
+        const equity = (d.equity ?? []).map(mapBSNode);
+
+        setData({ ...d, assets, liabilities, equity });
+        setExpandedAssets(buildExpandedToDepth(assets, 2));
+        setExpandedLiabilities(buildExpandedToDepth(liabilities, 2));
+        setExpandedEquity(buildExpandedToDepth(equity, 2));
       } else {
         setError(res?.message?.message ?? "Failed to load Balance Sheet.");
       }
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Error fetching Balance Sheet."
+        err instanceof Error ? err.message : "Error fetching Balance Sheet.",
       );
     } finally {
       setLoading(false);
     }
   }, []);
-
-  // ── Debounced auto-fetch on filter change ──
 
   useEffect(() => {
     if (
@@ -499,7 +609,6 @@ const BalanceSheet: React.FC = () => {
       (!filters.from_date || !filters.to_date)
     )
       return;
-
     if (
       filters.mode === "Fiscal Year" &&
       (!filters.from_fiscal_year || !filters.to_fiscal_year)
@@ -510,74 +619,74 @@ const BalanceSheet: React.FC = () => {
     return () => clearTimeout(timer);
   }, [filters, fetchBS]);
 
-  // ── Columns from API column metadata ──
+  // shared columns — same metadata for assets/liabilities/equity
+  const columns = useMemo<ColumnDef<BSNode>[]>(() => {
+    if (!data?.columns) return [];
 
-  const buildColumns = useCallback(
-    (nodes: BSNode[]): Column<BSNode>[] => {
-      if (!data?.columns) return [];
-
-      return data.columns
-        .filter((col) => !col.hidden)
-        .map((col) => {
-          if (col.fieldname === "account") {
-            return {
-              key: "account_name",
-              header: col.label,
-              width: "240px",
-              align: "left" as const,
-              render: (row: BSNode) => (
-                <span className={row.is_group ? "font-semibold" : ""}>
-                  {row.account_name}
-                </span>
-              ),
-            };
-          }
-
+    return data.columns
+      .filter((col) => !col.hidden)
+      .map((col): ColumnDef<BSNode> => {
+        if (col.fieldname === "account") {
           return {
-            key: col.fieldname,
+            id: "account_name",
             header: col.label,
-            width: `${Math.min(col.width ?? 100, 130)}px`,
-            align: "right" as const,
-            render: (row: BSNode) =>
-              nf(row.periods?.[col.fieldname] ?? 0, row.currency),
+            size: 260,
+            cell: ({ row }) => {
+              const node = row.original;
+              const canExpand = row.getCanExpand();
+              return (
+                <div
+                  className="flex items-center gap-1.5"
+                  style={{ paddingLeft: `${row.depth * 18}px` }}
+                >
+                  {canExpand ? (
+                    <button
+                      type="button"
+                      onClick={row.getToggleExpandedHandler()}
+                      className="shrink-0 text-muted hover:text-main flex items-center gap-1"
+                    >
+                      <ChevronRight
+                        size={12}
+                        className={`transition-transform duration-150 ${
+                          row.getIsExpanded() ? "rotate-90" : ""
+                        }`}
+                      />
+                      {row.getIsExpanded() ? (
+                        <FolderOpen size={13} />
+                      ) : (
+                        <Folder size={13} />
+                      )}
+                    </button>
+                  ) : (
+                    <FileText
+                      size={12}
+                      className="text-muted opacity-50 shrink-0"
+                    />
+                  )}
+                  <span
+                    className={`text-xs truncate ${node.is_group ? "font-semibold" : ""}`}
+                  >
+                    {node.account_name}
+                  </span>
+                </div>
+              );
+            },
           };
-        });
-    },
-    [data]
-  );
+        }
 
-  const assetColumns = useMemo(
-    () => buildColumns(data?.assets ?? []),
-    [buildColumns, data]
-  );
-  const liabilityColumns = useMemo(
-    () => buildColumns(data?.liabilities ?? []),
-    [buildColumns, data]
-  );
-  const equityColumns = useMemo(
-    () => buildColumns(data?.equity ?? []),
-    [buildColumns, data]
-  );
-
-  // ── Summary values ──
-
-  const summary = data?.summary ?? [];
-  const totalAssets =
-    summary.find((s) => s.label === "Total Asset")?.value ?? 0;
-  const totalLiabilities =
-    summary.find((s) => s.label === "Total Liability")?.value ?? 0;
-  const totalEquity =
-    summary.find((s) => s.label === "Total Equity")?.value ?? 0;
-
-  // ── Full-page states ──
-
-  if (loading && !data) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 size={30} className="animate-spin text-primary" />
-      </div>
-    );
-  }
+        return {
+          id: col.fieldname,
+          header: col.label,
+          size: Math.min(col.width ?? 100, 130),
+          meta: { align: "right" },
+          cell: ({ row }) => (
+            <span className="text-xs tabular-nums text-main">
+              {nf(row.original.periods?.[col.fieldname] ?? 0)}
+            </span>
+          ),
+        };
+      });
+  }, [data]);
 
   if (error && !data) {
     return (
@@ -595,14 +704,10 @@ const BalanceSheet: React.FC = () => {
     );
   }
 
-  // ── Render ──
-
   return (
-    <div className="flex flex-col gap-4 w-full overflow-x-hidden">
-      {/* Summary strip */}
-      {data && <SummaryStrip summary={data.summary} />}
+    <div className="flex flex-col gap-3">
+      <KpiStrip summary={data?.summary ?? []} loading={loading && !data} />
 
-      {/* Filter bar */}
       <FilterBar
         filters={filters}
         setFilters={setFilters}
@@ -612,95 +717,51 @@ const BalanceSheet: React.FC = () => {
         onCollapseAll={handleCollapseAll}
       />
 
-      {/* Inline table width fix */}
-      <style>{`
-        .bs-no-minw table {
-          width: max-content;
-          min-width: 100%;
-        }
-      `}</style>
-
-      {/* ── Assets ── */}
-      {(data?.assets?.length ?? 0) > 0 && (
+      {(loading && !data) || (data?.assets?.length ?? 0) > 0 ? (
         <div className="flex flex-col gap-2">
           <SectionHeader
             label="Application of Funds (Assets)"
-            total={totalAssets}
-            currency={data?.summary[0]?.currency}
             accentClass="bg-primary"
           />
-          <div className="w-full max-w-full overflow-hidden rounded-xl border border-[var(--border)]">
-            <div className="bs-no-minw w-full max-w-full overflow-x-auto">
-              <ExpandableTreeTable<BSNode>
-                key={`bs-assets-${expandKey}`}
-                columns={assetColumns}
-                data={data?.assets ?? []}
-                childrenKey="children"
-                nodeKey={(n) => n.id}
-                showToolbar={false}
-                defaultExpandDepth={expandDepth}
-                expandIconRender={expandIcon}
-                loading={loading}
-                emptyMessage="No asset accounts found."
-              />
-            </div>
-          </div>
+          <BSTreeTable
+            data={data?.assets ?? []}
+            columns={columns}
+            expanded={expandedAssets}
+            onExpandedChange={setExpandedAssets}
+            loading={loading && !data}
+            emptyMessage="No asset accounts found."
+          />
         </div>
-      )}
+      ) : null}
 
-      {/* ── Liabilities ── */}
-      {(data?.liabilities?.length ?? 0) > 0 && (
+      {(loading && !data) || (data?.liabilities?.length ?? 0) > 0 ? (
         <div className="flex flex-col gap-2">
           <SectionHeader
             label="Source of Funds (Liabilities)"
-            total={totalLiabilities}
-            currency={data?.summary[0]?.currency}
             accentClass="bg-danger"
           />
-          <div className="w-full max-w-full overflow-hidden rounded-xl border border-[var(--border)]">
-            <div className="bs-no-minw w-full max-w-full overflow-x-auto">
-              <ExpandableTreeTable<BSNode>
-                key={`bs-liabilities-${expandKey}`}
-                columns={liabilityColumns}
-                data={data?.liabilities ?? []}
-                childrenKey="children"
-                nodeKey={(n) => n.id}
-                showToolbar={false}
-                defaultExpandDepth={expandDepth}
-                expandIconRender={expandIcon}
-                loading={loading}
-                emptyMessage="No liability accounts found."
-              />
-            </div>
-          </div>
+          <BSTreeTable
+            data={data?.liabilities ?? []}
+            columns={columns}
+            expanded={expandedLiabilities}
+            onExpandedChange={setExpandedLiabilities}
+            loading={loading && !data}
+            emptyMessage="No liability accounts found."
+          />
         </div>
-      )}
+      ) : null}
 
-      {/* ── Equity (rendered only if API returns data) ── */}
       {(data?.equity?.length ?? 0) > 0 && (
         <div className="flex flex-col gap-2">
-          <SectionHeader
-            label="Equity"
-            total={totalEquity}
-            currency={data?.summary[0]?.currency}
-            accentClass="bg-violet-500"
+          <SectionHeader label="Equity" accentClass="bg-violet-500" />
+          <BSTreeTable
+            data={data?.equity ?? []}
+            columns={columns}
+            expanded={expandedEquity}
+            onExpandedChange={setExpandedEquity}
+            loading={loading && !data}
+            emptyMessage="No equity accounts found."
           />
-          <div className="w-full max-w-full overflow-hidden rounded-xl border border-[var(--border)]">
-            <div className="bs-no-minw w-full max-w-full overflow-x-auto">
-              <ExpandableTreeTable<BSNode>
-                key={`bs-equity-${expandKey}`}
-                columns={equityColumns}
-                data={data?.equity ?? []}
-                childrenKey="children"
-                nodeKey={(n) => n.id}
-                showToolbar={false}
-                defaultExpandDepth={expandDepth}
-                expandIconRender={expandIcon}
-                loading={loading}
-                emptyMessage="No equity accounts found."
-              />
-            </div>
-          </div>
         </div>
       )}
     </div>

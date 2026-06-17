@@ -200,7 +200,7 @@ const AddBankAccountModal: React.FC<Props> = ({
           onClick={onSave}
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Saving..." : "Save Account"}
+          {isSubmitting ? "Saving..." : " Submit"}
         </Button>
       </div>
     </>
@@ -213,7 +213,7 @@ const AddBankAccountModal: React.FC<Props> = ({
       onClose={() =>
         isViewMode ? handleClose() : handleCloseWithConfirm(handleClose, modalId)
       }
-      title="Create Bank Account"
+      title="Add Bank Account"
       subtitle="Configure bank account for Companies or parties"
       icon={Landmark}
       footer={footer}

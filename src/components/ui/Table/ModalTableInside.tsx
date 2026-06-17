@@ -49,7 +49,8 @@ interface ModalTableProps<T> {
   pageSizeOptions?:  number[];
   onPageChange?:     (page: number) => void;
   onPageSizeChange?: (size: number) => void;
-  bodyMaxHeight?:    number | string;
+
+  // bodyMaxHeight removed — table now fills available space via flex-1
 }
 
 // ─── Skeleton Row ─────────────────────────────────────────────────────────────
@@ -118,9 +119,7 @@ const ModalTableInner = <T extends Record<string, any>>({
   pageSizeOptions = [10, 25, 50],
   onPageChange,
   onPageSizeChange,
-  bodyMaxHeight   = 300,
 }: ModalTableProps<T>) => {
-
 
   const allKeys = useMemo(() => columns.map((c) => c.key), [columns]);
   const { setVisibleKeys: saveVisibleKeys } = useColumnStore();
@@ -180,12 +179,13 @@ const ModalTableInner = <T extends Record<string, any>>({
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="w-full rounded-lg border border-[var(--border)] bg-card overflow-hidden flex flex-col">
+    // outer: fill whatever height the parent gives, then split into 3 rows (toolbar / body / footer)
+    <div className="w-full h-full rounded-lg border border-[var(--border)] bg-card overflow-hidden flex flex-col">
 
       {/* ── Toolbar ──────────────────────────────────────────────────────── */}
       {showToolbar && (
-        <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--border)] bg-card px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="group relative w-full max-w-xs">
+        <div className="flex shrink-0 flex-wrap gap-2 border-b border-[var(--border)] bg-card px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="group relative w-full sm:w-auto sm:max-w-xs">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted transition-colors group-focus-within:text-primary" />
             <input
               value={searchValue}
@@ -199,7 +199,7 @@ const ModalTableInner = <T extends Record<string, any>>({
             <div className="flex shrink-0 items-center gap-3">{extraFilters}</div>
           )}
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 ml-auto">
             {enableColumnSelector && (
               <ColumnSelector
                 columns={columns}
@@ -228,20 +228,12 @@ const ModalTableInner = <T extends Record<string, any>>({
         </div>
       )}
 
-      {/* ── Scrollable table region ───────────────────────────────────────── */}
-      <div
-       className="min-w-0 overflow-auto custom-scrollbar pb-2"
-        style={{
-          maxHeight:
-            typeof bodyMaxHeight === "number"
-              ? `${bodyMaxHeight}px`
-              : bodyMaxHeight ?? "none",
-        }}
-      >
+      {/* ── Scrollable table region — flex-1 so it fills all remaining height ── */}
+      <div className="flex-1 min-h-0 overflow-auto custom-scrollbar">
         <table className="w-full table-auto border-separate border-spacing-0">
           {colgroup}
 
-          {/* Sticky header — bg-card is opaque so rows don't bleed through on scroll */}
+          {/* Sticky header */}
           <thead className="sticky top-0 z-10">
             <tr>
               {visibleColumns.map((column) => {
@@ -255,7 +247,7 @@ const ModalTableInner = <T extends Record<string, any>>({
                     key={column.key}
                     onClick={isSortable ? () => handleColumnSort(column.key) : undefined}
                     className={[
-                      "border-b-2 border-[var(--border)] bg-card",  // ← fixed: was bg-[var(--border)]/10 (semi-transparent)
+                      "border-b-2 border-[var(--border)] bg-card",
                       "px-3 py-2 text-xs font-bold text-muted uppercase tracking-wide whitespace-nowrap",
                       getAlignment(column.align),
                       isSortable ? "cursor-pointer select-none transition-colors hover:text-primary" : "",
@@ -381,7 +373,7 @@ const ModalTableInner = <T extends Record<string, any>>({
       </div>
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <div className="flex shrink-0 flex-col items-center justify-between gap-1 border-t border-[var(--border)] bg-card px-3 py-1.5 text-xs sm:flex-row">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] bg-card px-3 py-1.5 text-xs">
         <div className="text-xs font-medium text-muted">Total: {totalItems}</div>
 
         {onPageSizeChange && (

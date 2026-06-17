@@ -116,6 +116,7 @@ export function HolidayListSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -149,7 +150,8 @@ export function HolidayListSetup() {
         setPageSize(s);
         setPage(1);
       }}
-      bodyMaxHeight={400}
+      
     />
+    </div>
   );
 }

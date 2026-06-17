@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Plus, Trash2, Copy } from "lucide-react";
 import { showValidationError } from "../../utils/alert";
 import StockItemSelect from "../selects/StockItemSelect";
@@ -12,6 +12,7 @@ import { getItemDetailsByBarcodeId } from "../../api/procurement/PurchaseInvoice
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import { useBarcodeScanner } from "../../api/utils/BarCodeScanner";
 import { getStockReport } from "../../api/stockApi";
+import POItemSelect from "../selects/procurement/POItemSelect";
 
 export interface ItemTableActions {
   handleItemChange: (
@@ -37,6 +38,7 @@ interface ItemTableProps {
   paginatedItems: any[];
   formData: { items: any[] };
   ui: ItemTableUI;
+  onItemSelect?: (item: any, idx: number) => void;
   actions: ItemTableActions;
   symbol: string;
   ITEMS_PER_PAGE: number;
@@ -99,18 +101,25 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({ isSalesInvoice, isQuota
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">#</th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Item</th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Pkg</th>
+    {!isQuotation && (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Box</th>
+    )}
     {isSalesInvoice && (
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Batch</th>
     )}
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Qty</th>
+    {isQuotation && (
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden xl:table-cell">UOM</th>
+    )}
     {!isQuotation && (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden xl:table-cell">Mfg</th>
     )}
     {!isQuotation && (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Expiry</th>
     )}
+    {!isQuotation && (
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Warehouse</th>
+    )}
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Price <span className="text-danger">*</span></th>
     {!isQuotation && (
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px] hidden md:table-cell">Dis%</th>
@@ -129,6 +138,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
   formData,
   ui,
   actions,
+  onItemSelect,
   symbol,
   ITEMS_PER_PAGE,
   taxCategory,
@@ -215,7 +225,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
       showValidationError(parseFrappeError(error) || "Item not found for this barcode.");
     }
   });
-
+  const [itemVatCode, setItemVatCode] = useState();
+  const [unitOfMeasurement, setUnitOfMeasurement] = useState();
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);
     const insertPage = Math.floor((absoluteIndex + 1) / ITEMS_PER_PAGE);
@@ -237,6 +248,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         <td className="px-2 py-1 text-center text-[10px] text-muted">{i + 1}</td>
 
         {/* Item */}
+         {!isQuotation && (
         <td className="px-0.5 py-1">
           <StockItemSelect
             value={it.itemCode}
@@ -262,7 +274,59 @@ const ItemTable: React.FC<ItemTableProps> = ({
             })}
           />
         </td>
+         )}
 
+       {/* Item Name */}
+        {isQuotation && (
+          <td className="px-1 py-1.5 overflow-hidden">
+            <POItemSelect
+              value={it.itemName}
+              selectedId={it.itemCode}
+              onChange={(item: any) => {
+                // 1. Safely call the parent prop
+                onItemSelect?.(item, i);
+
+                // 2. Extract basic values
+                const code = item?.id || "";
+                const name = item?.itemName || code;
+                const rate = item?.sellingPrice || 0; 
+                const pUnit = item?.packingUnit || "";
+                const pSize = item?.packingSize || "";
+                const unitOfMeasure = item?.unitOfMeasureCd || "";
+                setUnitOfMeasurement(unitOfMeasure);
+
+              let vatRate = item?.vatRate ?? 0;      
+let vatCd = item?.vatCd ?? "";         
+if (Array.isArray(item?.taxInfo) && item.taxInfo.length > 0) {
+  const tax = item.taxInfo[0];
+  if (tax?.totalTaxRate !== undefined && tax.totalTaxRate !== null) {
+    vatRate = tax.totalTaxRate;       
+  }
+  if (tax?.taxName) {
+    vatCd = tax.taxName;
+    setItemVatCode(vatCd);
+    console.log("vatCd",vatCd);               
+  }
+}
+
+                // 4. Update all fields at ONCE
+                actions.updateItemDirectly?.(i, {
+                  itemCode: code,
+                  itemName: name,
+                  price: rate,
+                  quantity: 1, 
+                  uom: unitOfMeasure,
+                  vatRate: vatRate,
+                  vatCd: vatCd,
+                  packingUnit: pUnit,
+                  packingSize: pSize,
+                  taxCode: vatCd
+                });
+              }}
+            />
+          </td>
+        )}  
+    
         {/* Pkg (U×S) — hidden < md */}
         <td className="px-1 py-1 hidden md:table-cell">
           <Tooltip content={it.packingUnit && it.packingSize ? `Packing: ${it.packingUnit} × ${it.packingSize}` : "No packing defined"}>
@@ -277,6 +341,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         {/* Box — hidden < md */}
+        {!isQuotation && (
         <td className="px-0.5 py-1 hidden md:table-cell">
           <div className="flex items-center gap-0.5">
             <input
@@ -296,6 +361,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
             />
           </div>
         </td>
+        )}
 
         {/* Batch No — always visible for sales invoice */}
         {isSalesInvoice && (
@@ -322,6 +388,35 @@ const ItemTable: React.FC<ItemTableProps> = ({
             onChange={(value) => actions.handleItemChange(i, { target: { name: "quantity", value } } as any)}
           />
         </td>
+
+        {/* {isQuotation &&(
+        <td className="px-2 py-1 hidden md:table-cell">
+          <Tooltip content={it.uom?.length ? `UOM: ${it.uom.join(", ")}` : "No UOM"}>
+            <input
+              type="text"
+              name="uom"
+              value={it.uom || "" || unitOfMeasurement}
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+              disabled
+              onChange={(e) => actions.handleItemChange(i, e)}
+            />
+          </Tooltip>
+        </td>
+        )} */}
+        {/* UOM — quotation only */}
+{isQuotation && (
+<td className="px-2 py-1 hidden md:table-cell">
+  <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
+    <input
+      type="text"
+      name="uom"
+      value={it.uom || ""}
+      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+      disabled
+    />
+  </Tooltip>
+</td>
+)}
 
         {/* Mfg Date — hidden < xl */}
          {!isQuotation && (
@@ -354,6 +449,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
          )}
 
         {/* Warehouse — hidden < md */}
+        {!isQuotation && (
         <td className="px-0.5 py-1 hidden md:table-cell">
           <Tooltip content={it.warehouse || "No warehouse selected"}>
             <WarehouseSelect
@@ -363,6 +459,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
             />
           </Tooltip>
         </td>
+        )}
 
         {/* Unit Price */}
         <td className="px-0.5 py-1">
@@ -397,6 +494,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
             placeholder="0"
             className="w-full min-w-[28px]"
             onChange={(value) => actions.handleItemChange(i, { target: { name: "vatRate", value } } as any)}
+            disabled
           />
         </td>
 
@@ -406,8 +504,9 @@ const ItemTable: React.FC<ItemTableProps> = ({
             <input
               type="text"
               name="vatCode"
-              value={it.vatCode || ""}
+              value={it.vatCode || "" || it.vatCd}
               className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+              disabled
               onChange={(e) => actions.handleItemChange(i, e)}
             />
           </Tooltip>

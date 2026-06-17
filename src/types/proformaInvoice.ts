@@ -144,6 +144,9 @@ export interface InvoiceItem {
   vatRate: number;
   price: number;
   vatCode: string;
+  vatCd?: string;
+  uom?: string;
+  unitOfMeasureCd?: string;
   _fromInvoice?: boolean;
   batchNo?: string;
   packingUnit?: string;

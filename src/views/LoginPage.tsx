@@ -39,65 +39,13 @@ const Login = () => {
 
 <div className="fixed inset-0 pointer-events-none overflow-hidden bg-[#f8f6f3] z-0">
 
-  {/* SOFT GLOW BACKGROUND */}
-  <motion.div
-    className="absolute w-[500px] h-[500px] bg-orange-400 rounded-full blur-3xl opacity-20"
-    animate={{
-      x: ["-10%", "15%", "-10%"],
-      y: ["-10%", "10%", "-10%"],
-    }}
-    transition={{
-      duration: 12,
-      repeat: Infinity,
-      ease: "easeInOut",
-    }}
-  />
+ 
 
-  {/* SMALL FLOATING CUBES */}
-  {Array.from({ length: 35 }).map((_, i) => (
-    <motion.div
-      key={i}
-      className="absolute w-3 h-3 bg-[#f76733] rounded-sm shadow-sm opacity-60"
-      style={{
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-      }}
-      animate={{
-        x: [0, Math.random() * 40 - 20, 0],
-        y: [0, Math.random() * -40 + 20, 0],
-        rotate: [0, 180, 360],
-      }}
-      transition={{
-        duration: 6 + Math.random() * 4,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    />
-  ))}
 
-  {Array.from({ length: 25 }).map((_, i) => (
-    <motion.div
-      key={`p-${i}`}
-      className="absolute w-1 h-1 bg-black rounded-full opacity-20"
-      style={{
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-      }}
-      animate={{
-        x: [0, 20, -20, 0],
-        y: [0, -20, 20, 0],
-      }}
-      transition={{
-        duration: 5 + Math.random() * 3,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    />
-  ))}
 
 </div>
 
-      <div className="relative z-10 w-[80%] max-w-8xl h-[550px] bg-gradient-to-br from-[#ff7a3d] via-[#ff9a6a] to-[#f76733] rounded-3xl shadow-2xl flex overflow-hidden">
+      <div className="relative z-10 w-[50%] max-w-8xl h-[550px] bg-gradient-to-br from-[#ff7a3d] via-[#ff9a6a] to-[#f76733] rounded-3xl shadow-2xl flex overflow-hidden">
 
   <div className="w-1/2 p-10 flex flex-col justify-center">
 
@@ -106,14 +54,16 @@ const Login = () => {
       <BarChart3 className="text-white h-5 w-5" />
     </div>
     <div>
-      <p className="font-semibold text-lg text-gray-800">ERP</p>
+      <p className="font-semibold text-lg text-white">ERP</p>
       <p className="text-white text-xs">Enterprise Platform</p>
     </div>
   </div>
 
-  <h2 className="text-2xl font-bold text-gray-800 mb-1">Login</h2>
+  <h2 className="text-2xl font-bold text-white mb-1">Welcome Back</h2>
 
-  <p className="text-white text-sm mb-6">Sign in to continue</p>
+  <p className="text-white text-sm mb-6">Sign in to your account to continue
+
+</p>
 
             {/* Error Message */}
             {error && (
@@ -152,7 +102,7 @@ const Login = () => {
         <button
           type="button"
           onClick={() => setForgotOpen(true)}
-          className="text-xs text-[#1b64d1] hover:underline"
+          className="text-xs text-white hover:underline"
         >
           Forgot?
         </button>

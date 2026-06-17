@@ -129,11 +129,11 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={handleCloseRequest}
-      title={isEditMode ? "Edit Supplier" : "Create Supplier"}
+      title={isEditMode ? "Edit Supplier" : "Add Supplier"}
       subtitle={
         isEditMode
           ? "Update supplier information"
-          : "Fill in the details to create a new supplier"
+          : "Fill in the details to add a new supplier"
       }
       icon={Users}
       footer={footer}

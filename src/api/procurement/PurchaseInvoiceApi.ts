@@ -128,3 +128,23 @@ export async function updatePurchaseInvoice(
   );
   return resp.data;
 }
+
+export async function uploadPIAttachment(
+  file: File,
+  docname: string
+): Promise<any> {
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+  formData.append("doctype", "Purchase Invoice");
+  formData.append("docname", docname);
+  formData.append("is_private", "0");
+  formData.append("folder", "Home/Attachments");
+
+  const resp: AxiosResponse = await api.post(
+    purchaseinvoiceapi.attachDocument,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  return resp.data;
+}
+

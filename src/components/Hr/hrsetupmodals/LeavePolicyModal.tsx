@@ -9,7 +9,7 @@ import {
   type LeavePolicy, 
   type LeavePolicyDetail 
 } from "../../../api/leaveConfigApi";
-import { ModalInput, YesNoCheckbox } from "../../../components/ui/modal/modalComponent";
+import { ModalInput } from "../../../components/ui/modal/modalComponent";
 import { showApiError, showSuccess, showValidationError } from "../../../utils/alert";
 import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import LeaveTypeSelect from "../../selects/LeaveTypeSelect";
@@ -25,7 +25,7 @@ interface Props {
 const EMPTY: LeavePolicy = {
   title: "",
   leave_policy_details: [],
-  docstatus: 0, // Default to Draft on creation
+  docstatus: 0,
 };
 
 export const LeavePolicyModal: React.FC<Props> = ({
@@ -77,19 +77,8 @@ export const LeavePolicyModal: React.FC<Props> = ({
     }
   }, [isOpen, initialData]);
 
-  // const addDetailRow = () => {
-  //   setForm((prev) => ({
-  //     ...prev,
-  //     leave_policy_details: [
-  //       ...prev.leave_policy_details,
-  //       { leave_type: "", annual_allocation: 0, max_leaves_allowed: 0 },
-  //     ],
-  //   }));
-  // };
   const addDetailRow = () => {
-    // Calculate what the length will be after adding the row
     const newLength = form.leave_policy_details.length + 1;
-    // Calculate which page this new row will land on
     const expectedPage = Math.ceil(newLength / ITEMS_PER_PAGE);
 
     setForm((prev) => ({
@@ -100,7 +89,6 @@ export const LeavePolicyModal: React.FC<Props> = ({
       ],
     }));
 
-    // If the new row pushes us to a new page, automatically navigate there
     if (expectedPage > currentPage) {
       setCurrentPage(expectedPage);
     }
@@ -128,9 +116,26 @@ export const LeavePolicyModal: React.FC<Props> = ({
       return;
     }
 
-    const validDetails = form.leave_policy_details.filter(d => d.leave_type.trim() !== "");
+    const validDetails = form.leave_policy_details.filter(
+      d => d.leave_type.trim() !== ""
+    );
+
     if (validDetails.length === 0) {
       showValidationError("At least one valid Leave Type configuration is required");
+      return;
+    }
+
+    const invalidAllocation = validDetails.find(
+      d =>
+        d.annual_allocation === undefined ||
+        d.annual_allocation === null ||
+        d.annual_allocation <= 0
+    );
+
+    if (invalidAllocation) {
+      showValidationError(
+        `Annual Allocation is required for ${invalidAllocation.leave_type}`
+      );
       return;
     }
 
@@ -195,7 +200,6 @@ export const LeavePolicyModal: React.FC<Props> = ({
       footer={footer}
     >
       <div className="space-y-6 pb-2">
-        {/* Basic Info */}
         <div className="grid grid-cols-2 gap-4">
           <ModalInput
             label="Policy Title"
@@ -212,99 +216,20 @@ export const LeavePolicyModal: React.FC<Props> = ({
               <tr>
                 <th className="px-4 py-3 w-1/2 border-r border-[var(--border)]">Leave Type</th>
                 <th className="px-4 py-3 w-[20%] border-r border-[var(--border)] text-center">Max Allowed</th>
-                <th className="px-4 py-3 w-1/2 border-r border-[var(--border)]">Annual Allocation</th>
+                <th className="px-4 py-3 w-1/2 border-r border-[var(--border)]">Annual Allocation <span className="text-red-500">*</span></th>
                 <th className="px-4 py-3 w-12 text-center"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
-              {/* {paginatedDetails.map((detail, pageIndex) => {
-                const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + pageIndex;
-                
-                return (
-                  <tr key={actualIndex} className="bg-white">
-                    <td 
-                      className="p-2 border-r border-[var(--border)] align-top"
-                      onClick={fetchLatestLeaveTypes}
-                    >
-                      <LeaveTypeSelect
-                        label=""
-                        value={detail.leave_type}
-                        onChange={(type) => {
-                          const typeName = type.name || type;
-                          const matchedLeaveType = availableLeaveTypes.find(lt => lt.name === typeName);
-                          
-                          setForm((prev) => {
-                            const updated = [...prev.leave_policy_details];
-                            updated[actualIndex] = { 
-                              ...updated[actualIndex], 
-                              leave_type: typeName,
-                              max_leaves_allowed: matchedLeaveType ? matchedLeaveType.max_leaves_allowed : 0 
-                            };
-                            return { ...prev, leave_policy_details: updated };
-                          });
-                        }}
-                        disabled={initialData?.docstatus === 1}
-                        required
-                        className="w-full"
-                      />
-                    </td>
-                    <td className="p-2 border-r border-[var(--border)] align-middle text-center">
-                      <div className="flex w-full items-center justify-center rounded text-sm font-semibold text-gray-600 border border-transparent">
-                        {detail.max_leaves_allowed !== undefined ? detail.max_leaves_allowed : "-"}
-                      </div>
-                    </td>
-                    <td className="p-2 border-r border-[var(--border)] align-top">
-                      <ModalInput
-                        label=""
-                        type="number"
-                        className="no-spinner w-full"
-                        value={detail.annual_allocation || ""}
-                        placeholder="0"
-                        onChange={(e) => {
-                          let val = Number(e.target.value);
-                          if (val < 0) {
-                            showValidationError("Annual allocation cannot be negative.");
-                            val = 0;
-                          } 
-                          else if (!Number.isInteger(val)) {
-                            showValidationError("Annual allocation must be a whole number.");
-                            val = Math.floor(val);
-                          }
-
-                          updateDetailRow(
-                            actualIndex,
-                            "annual_allocation",
-                            val || 0,
-                          );
-                        }}
-                        disabled={initialData?.docstatus === 1}
-                      /> 
-                    </td>
-                    <td className="p-2 text-center align-middle">
-                      {initialData?.docstatus !== 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeDetailRow(actualIndex)}
-                          className="p-1.5 text-gray-400 transition hover:text-red-600 rounded"
-                          title="Remove Row"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })} */}
               {paginatedDetails.map((detail, pageIndex) => {
                 const actualIndex = (currentPage - 1) * ITEMS_PER_PAGE + pageIndex;
                 
-                // Dynamically fetch the max limit from our loaded leave types array for view mode
                 const matchedLeaveType = availableLeaveTypes.find(lt => lt.name === detail.leave_type);
                 const displayMax = matchedLeaveType?.max_leaves_allowed ?? detail.max_leaves_allowed;
                 const excludedTypes = form.leave_policy_details
                   .filter((_, idx) => idx !== actualIndex)
                   .map((d) => d.leave_type)
-                  .filter(Boolean); // Remove empty strings
+                  .filter(Boolean);
                 
                 return (
                   <tr key={actualIndex} className="bg-white">
@@ -317,7 +242,6 @@ export const LeavePolicyModal: React.FC<Props> = ({
                         value={detail.leave_type}
                         excludeTypes={excludedTypes}
                         onChange={(type: any) => {
-                          // Correctly narrow the type to string to satisfy TypeScript
                           const typeName = typeof type === "string" ? type : (type?.name || "");
                           const selectedLeaveType = availableLeaveTypes.find(lt => lt.name === typeName);
                           
@@ -332,13 +256,11 @@ export const LeavePolicyModal: React.FC<Props> = ({
                           });
                         }}
                         disabled={initialData?.docstatus === 1}
-                        required
                         className="w-full"
                       />
                     </td>
                     <td className="p-2 border-r border-[var(--border)] align-middle text-center">
                       <div className="flex w-full items-center justify-center rounded text-sm font-semibold text-gray-600 border border-transparent">
-                        {/* Use the dynamically resolved displayMax */}
                         {displayMax !== undefined ? displayMax : "-"}
                       </div>
                     </td>
@@ -387,7 +309,6 @@ export const LeavePolicyModal: React.FC<Props> = ({
             </tbody>
           </table>
 
-          {/* Table Footer: Add Row & Pagination */}
           <div className="flex items-center justify-between bg-white p-3 border-t border-[var(--border)]">
             {initialData?.docstatus !== 1 ? (
               <button
@@ -400,7 +321,6 @@ export const LeavePolicyModal: React.FC<Props> = ({
               </button>
             ) : <div />}
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="flex items-center gap-3 text-sm">
                 <button

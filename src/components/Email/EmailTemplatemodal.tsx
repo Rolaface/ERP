@@ -23,6 +23,7 @@ const DOC_TYPE_OPTIONS = [
     { label: "Expense Claim", value: "Expense Claim" },
     // { label: "Proforma Invoice", value: "Proforma Invoice" },
     { label: "Quotation", value: "Quotation" },
+    { label: "Customer Statement", value: "Customer Statement" },
 ] as const;
 
 type DocType = (typeof DOC_TYPE_OPTIONS)[number]["value"];
@@ -64,6 +65,11 @@ function getVariableChips(docType: string): { label: string; value: string; payl
                 { label: "{{ transaction_date }}", value: " {{ transaction_date }} " },
                 { label: "{{ company }}", value: " {{ company }} " },
             ]
+        case "Customer Statement":
+            return [
+                { label: "{{ customer_name }}", value: " {{ customer_name }} " },
+                { label: "{{ PERIOD }}", value: " {{ PERIOD }} " },  
+            ];
         default:
             return [];
     }
@@ -303,7 +309,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                         form="emailTemplateForm"
                         disabled={saving}
                     >
-                        {saving ? "Saving..." : templateId ? "Update Template" : "Save Template"}
+                        {saving ? "Saving..." : templateId ? "Update" : "Submit"}
                     </Button>
                 </div>
             </>
@@ -316,8 +322,8 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
             modalId={resolvedModalId}
             isOpen={isOpen}
             onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-            title={isViewMode ? "View Email Template" : templateId ? "Edit Email Template" : "Create Email Template"}
-            subtitle={isViewMode ? "Read-only view of this email template" : "Create email templates"}
+            title={isViewMode ? "View Email Template" : templateId ? "Edit Email Template" : "Add Email Template"}
+            subtitle={isViewMode ? "Read-only view of this email template" : "Add email templates"}
             icon={Mail}
             customWidth="65vw"
             height="auto"

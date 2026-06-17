@@ -68,7 +68,7 @@ export default function AddFeedbackModal({
           ? "View Feedback Criteria"
           : selectedFeedback
             ? "Edit  Employee Feedback Criteria"
-            : "Create Employee Feedback Criteria"
+            : "Add Employee Feedback Criteria"
       }
       subtitle={
         isViewMode
@@ -90,7 +90,7 @@ export default function AddFeedbackModal({
           </button>
           {!isViewMode && (
             <button className="btn btn-primary" onClick={handleSave}>
-              Save
+              Submit
             </button>
           )}
         </div>

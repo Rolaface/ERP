@@ -133,6 +133,7 @@ export function EmployeeTypeSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -171,5 +172,6 @@ export function EmployeeTypeSetup() {
       enableColumnSelector
       tableId="employee-types"
     />
+    </div>
   );
 }

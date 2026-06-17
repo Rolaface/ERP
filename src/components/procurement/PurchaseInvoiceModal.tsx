@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Building2, MapPin, FileText, Receipt } from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
-
+import { AttachmentsTab } from "../procurement/purchaseinvoice/AttachmentsTab";
 import { DetailsTab } from "../procurement/purchaseinvoice/DetailsTab";
 import { AddressTab } from "../procurement/purchaseinvoice/AddressTab";
 import TermsAndCondition from "../TermsAndCondition";
@@ -23,11 +23,11 @@ interface PurchaseInvoiceModalProps {
 const tabs: { key: POTab; icon: typeof Building2; label: string }[] = [
   { key: "details", icon: Building2, label: "Details" },
   { key: "address", icon: MapPin, label: "Address" },
-  { key: "terms", icon: FileText, label: "Terms" },
+  { key: "attachments", icon: FileText, label: "Attachments" },
+  { key: "terms", icon: Receipt, label: "Terms" },
 ];
 
-const tabOrder: POTab[] = ["details", "address", "terms"];
-
+const tabOrder: POTab[] = ["details", "address", "attachments", "terms"];
 const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
   isOpen,
   onClose,
@@ -89,6 +89,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     setLoading,
     handleAddressSelect,
     handleAddressRemove,
+    handleRemoveAttachment
   } = usePurchaseInvoiceForm({ isOpen, onSuccess: onSubmit, onClose, pId });
 
   // ── Wrapped handlers so select/dropdown changes also mark dirty ──
@@ -186,7 +187,14 @@ const handleItemChangeWithDirty = useCallback(
             onBulkItemChange={handleBulkItemChange}
           />
         </div>
+        <div style={{ display: activeTab === "attachments" ? "block" : "none" }}>
+          <AttachmentsTab
+            form={form}
+            onFormChange={handleFormChangeWithDirty}
+                onRemoveAttachment={handleRemoveAttachment}   
 
+          />
+        </div>
         <div style={{ display: activeTab === "address" ? "block" : "none" }}>
           <AddressTab
             form={form}
@@ -264,8 +272,8 @@ const handleItemChangeWithDirty = useCallback(
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={pId ? "Edit Purchase Invoice" : "Create Purchase Invoice"}
-      subtitle="Create and manage purchase invoice"
+      title={pId ? "Edit Purchase Invoice" : "Add Purchase Invoice"}
+      subtitle="Add and manage purchase invoice"
       icon={Receipt}
       maxWidth="full"
       height="88vh"
@@ -286,9 +294,9 @@ const handleItemChangeWithDirty = useCallback(
                 onClick={() => handleTabClick(key)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
                   activeTab === key
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                  ? "text-primary border-b-[3px] border-primary"
+                  : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  }`}
               >
                 {label}
               </button>

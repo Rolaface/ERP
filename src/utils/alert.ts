@@ -287,3 +287,51 @@ export const showEmployeeCreationResult = async (options: {
     width: 480,
   });
 };
+
+
+
+// for naming series
+const formatWarning = (
+  w: string | { field?: string; doctype?: string; reason?: string }
+): string => {
+  if (typeof w === "string") return w;
+  const label = w.doctype || w.field || "";
+  if (w.reason) return label ? `${label}: ${w.reason}` : w.reason;
+  return label || JSON.stringify(w);
+};
+
+export const showSuccessWithWarnings = async (
+  message: string,
+  warnings?: Array<string | { field?: string; doctype?: string; reason?: string }>
+): Promise<void> => {
+  const hasWarnings = Array.isArray(warnings) && warnings.length > 0;
+  const rows: string[] = [];
+
+  rows.push(`
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;text-align:left;">
+      <span style="color:#16a34a;font-size:15px;margin-top:1px;flex-shrink:0;">✓</span>
+      <span style="font-size:13px;color:#15803d;font-weight:600;line-height:1.5">${message}</span>
+    </div>
+  `);
+
+  if (hasWarnings) {
+    rows.push(`<hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0;" />`);
+    for (const w of warnings!) {
+      rows.push(`
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;text-align:left;
+          background:#fffbeb;border-radius:8px;padding:8px 11px;">
+          <span style="color:#d97706;font-size:13px;flex-shrink:0;margin-top:1px;">⚠</span>
+          <span style="font-size:12px;color:#78350f;line-height:1.55">${formatWarning(w)}</span>
+        </div>
+      `);
+    }
+  }
+
+  await fireManagedSwal({
+    icon: hasWarnings ? "warning" : "success",
+    title: hasWarnings ? "Saved with Warnings" : "Success",
+    html: `<div style="margin-top:4px">${rows.join("")}</div>`,
+    confirmButtonText: "OK",
+    confirmButtonColor: hasWarnings ? "#f59e0b" : "#22c55e",
+  });
+};

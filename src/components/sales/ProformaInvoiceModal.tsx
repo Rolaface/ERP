@@ -60,7 +60,8 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
         : `proforma-create-${Date.now()}`)
   );
-      
+  const [submitting, setSubmitting] = useState(false);
+  
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     formData,
@@ -110,6 +111,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
  const handleSave = async () => {
     if (!validateDetailsOrFocus()) return;
+    if (submitting) return;
 
     try {
       const payload = await actions.handleSubmit({
@@ -209,9 +211,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       icon={FileClock}
       onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
       title={
-        mode === "edit" ? "Edit Proforma Invoice" : "Create Proforma Invoice"
+        mode === "edit" ? "Edit Proforma Invoice" : "Add Proforma Invoice"
       }
-      subtitle="Create and manage proforma invoice details"
+      subtitle="Add and manage proforma invoice details"
       footer={
         <ModalFooter
           // onCancel={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
@@ -222,6 +224,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           }}
           onSave={handleSave}
           onNext={ui.activeTab === "terms" ? undefined : handleNext}
+          currentTab={tabs.indexOf(ui.activeTab as any)}
+          totalTabs={tabs.length}
+          saving={submitting}
         />
       }
       maxWidth="full"

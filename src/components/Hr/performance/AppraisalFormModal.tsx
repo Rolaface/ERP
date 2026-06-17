@@ -251,9 +251,9 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({
   const fetchEmployees = async (q: string) => {
     const data = await getEmployees(q);
     return data.map((e: any) => ({
-      label: `${e.name} — ${e.employee_name ?? ""}`,
-      value: e.name,
-      meta:  e,
+    label: e.label,         
+    value: e.value,         
+    meta:  e,
     }));
   };
 
@@ -341,7 +341,7 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={mode === "edit" ? "Edit Appraisal" : "New Appraisal"}
+      title={mode === "edit" ? "Edit Appraisal" : "Add Appraisal"}
       subtitle="Manage employee performance appraisal"
       icon={ClipboardList}
       footer={footerContent}

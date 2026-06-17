@@ -7,19 +7,11 @@ import { getAllGenders } from "../../../api/employeeapi";
 import { showApiError } from "../../../utils/alert";
 import { parseFrappeError } from "../../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 
-
 type PersonalInfoTabProps = {
   formData: any;
   handleInputChange: (field: string, value: string | boolean) => void;
   verifiedFields: Record<string, boolean>;
 };
-
-const GENDER_OPTIONS = [
-  { label: "Male", value: "Male" },
-  { label: "Female", value: "Female" },
-  { label: "Other", value: "Other" },
-  { label: "Prefer not to say", value: "Prefer not to say" },
-];
 
 const MARITAL_STATUS_OPTIONS = [
   { label: "Single", value: "Single" },
@@ -44,21 +36,18 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
   handleInputChange,
   verifiedFields,
 }) => {
-  const [genderOptions, setGenderOptions] = useState<any[]>([]);;
+  const [genderOptions, setGenderOptions] = useState<any[]>([]);
   const { companyCode } = useCompanySelection();
   const features = getEmployeeFeatures(companyCode);
 
-const fetchGenderOptions = async () => {
+  const fetchGenderOptions = async () => {
     try {
       const response = await getAllGenders();
-      
       const rawData = response?.data || [];
-
       const formattedOptions = rawData.map((item: { name: string }) => ({
-        label: item.name, 
-        value: item.name
+        label: item.name,
+        value: item.name,
       }));
-
       setGenderOptions(formattedOptions);
     } catch (error) {
       showApiError(parseFrappeError(error) || "Failed to fetch Gender API");
@@ -72,9 +61,9 @@ const fetchGenderOptions = async () => {
   const isVerified = (field: string) => verifiedFields[field] === true;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-3">
+    <div className="w-full flex flex-col gap-2 min-w-0">
 
-      {/* Identity & Statutory */}
+      {/* Identity & Statutory — only shown when feature flag is on */}
       {features.showStatutoryFields && (
         <div className="bg-card p-3 rounded-lg border border-theme">
           <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
@@ -92,7 +81,9 @@ const fetchGenderOptions = async () => {
                 placeholder="123456/78/1"
               />
               {isVerified("nrcId") && (
-                <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">✓ Verified from NAPSA</p>
+                <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">
+                  ✓ Verified from NAPSA
+                </p>
               )}
             </div>
 
@@ -138,14 +129,12 @@ const fetchGenderOptions = async () => {
             onChange={(e) => handleInputChange("firstName", e.target.value)}
             required
           />
-
           <ModalInput
             label="Middle Name"
             name="middleName"
             value={formData.middleName}
             onChange={(e) => handleInputChange("middleName", e.target.value)}
           />
-
           <ModalInput
             label="Last Name"
             name="lastName"
@@ -153,7 +142,6 @@ const fetchGenderOptions = async () => {
             disabled={isVerified("lastName")}
             onChange={(e) => handleInputChange("lastName", e.target.value)}
           />
-
           <DatePickerInput
             label="Date of Birth"
             name="dateOfBirth"
@@ -162,13 +150,12 @@ const fetchGenderOptions = async () => {
             required
           />
           <ModalSelect
-  label="Blood Group"
-  name="blood_group"
-  value={formData.blood_group || ""}
-  onChange={(e) => handleInputChange("blood_group", e.target.value)}
-  options={blood_group_option}
-/>
-
+            label="Blood Group"
+            name="blood_group"
+            value={formData.blood_group || ""}
+            onChange={(e) => handleInputChange("blood_group", e.target.value)}
+            options={blood_group_option}
+          />
           <ModalSelect
             label="Gender"
             name="gender"
@@ -178,7 +165,6 @@ const fetchGenderOptions = async () => {
             options={genderOptions || []}
             required
           />
-
           <ModalSelect
             label="Marital Status"
             name="maritalStatus"
@@ -186,64 +172,40 @@ const fetchGenderOptions = async () => {
             onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
             options={MARITAL_STATUS_OPTIONS}
           />
-
-          {/* <ModalInput
-            label="Nationality"
-            name="nationality"
-            value={formData.nationality}
-            onChange={(e) => handleInputChange("nationality", e.target.value)}
-            placeholder=" India"
-          /> */}
         </div>
-
       </div>
+
       {/* Statutory Information */}
       <div className="bg-card p-3 rounded-lg border border-theme">
         <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
           Statutory Information
         </h4>
-
         <div className="grid grid-cols-4 gap-2.5">
           <ModalInput
             label="National Identification Number"
             name="nationalidentificationnumber"
             value={formData.nationalidentificationnumber || ""}
-            onChange={(e) =>
-              handleInputChange("nationalidentificationnumber", e.target.value)
-            }
-
+            onChange={(e) => handleInputChange("nationalidentificationnumber", e.target.value)}
           />
           <ModalInput
             label="Tax Identification Number"
             name="taxidentificationnumber"
             value={formData.taxidentificationnumber || ""}
-            onChange={(e) =>
-              handleInputChange("taxidentificationnumber", e.target.value)
-            }
-
+            onChange={(e) => handleInputChange("taxidentificationnumber", e.target.value)}
           />
           <ModalInput
             label="Universal Account Number"
             name="universalaccountnumber"
             value={formData.universalaccountnumber || ""}
-            onChange={(e) =>
-              handleInputChange("universalaccountnumber", e.target.value)
-            }
-
+            onChange={(e) => handleInputChange("universalaccountnumber", e.target.value)}
           />
-
           <ModalInput
-            label="Heatlth Insurance Number"
+            label="Health Insurance Number"
             name="healthInsuranceNo"
             value={formData.healthInsuranceNo || ""}
-            onChange={(e) =>
-              handleInputChange("healthInsuranceNo", e.target.value)
-            }
+            onChange={(e) => handleInputChange("healthInsuranceNo", e.target.value)}
             placeholder="e.g. HL-234234234"
           />
-
-
-
         </div>
       </div>
 

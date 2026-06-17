@@ -1,4 +1,5 @@
-// ─── Tab Order ────────────────────────────────────────────────────────────────
+import { parsePhoneNumberWithError } from "libphonenumber-js";
+
 export const TAB_ORDER = [
   "Personal",
   "Address & Contact",
@@ -6,7 +7,7 @@ export const TAB_ORDER = [
   "Attendance & Leaves",
   "Compensation",
   "Bank",
-  "Work Schedule",
+  // "Work Schedule",
 ] as const;
 
 export type TabName = (typeof TAB_ORDER)[number];
@@ -67,6 +68,8 @@ export const DEFAULT_FORM: Record<string, any> = {
   preferredEmail: "",
   preferredContactEmail: "",
   phoneNumber: "",
+  phoneCode: "",
+  phoneNo: "",
   alternatePhone: "",
 
   // Address
@@ -80,6 +83,8 @@ export const DEFAULT_FORM: Record<string, any> = {
   // Emergency
   emergencyContactName: "",
   emergencyContactPhone: "",
+  emergencyContactCode: "",
+  emergencyContactNo: "",
   emergencyContactRelation: "",
 
   // Employment
@@ -148,6 +153,22 @@ export const DEFAULT_FORM: Record<string, any> = {
   existingPhotoUrl: "",
 };
 
+function splitPhone(raw: string | undefined | null): { code: string; number: string } {
+  if (!raw?.startsWith("+")) return { code: "", number: raw ?? "" };
+  try {
+    const parsed = parsePhoneNumberWithError(raw);
+    if (parsed) {
+      return {
+        code: `+${parsed.countryCallingCode}`,
+        number: parsed.nationalNumber,
+      };
+    }
+  } catch {
+    // fall through
+  }
+  return { code: "", number: raw };
+}
+
 export function mapEditDataToForm(data: any): Record<string, any> {
   // Parse the joined address back into parts if possible
   // The address is stored as a comma-separated string: "street, city, province, postal, country"
@@ -192,10 +213,12 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     preferredEmail: data.prefered_email || "",
     preferredContactMethod: data.prefered_contact_email || "",
     phoneNumber: data.cell_number || "",
+    phoneCode: splitPhone(data.cell_number).code,
+    phoneNo: splitPhone(data.cell_number).number,
     alternatePhone: data.alternate_phone || "",
     employee_number: data.employee_number || "",
 
-    // ── Address (best-effort parse from joined string) ────────
+    // ── Address  ────────
     street: addressParts[0] || "",
     city: addressParts[1] || "",
     province: addressParts[2] || "",
@@ -206,6 +229,8 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     // ── Emergency Contact ─────────────────────────────────────
     emergencyContactName: data.person_to_be_contacted || "",
     emergencyContactPhone: data.emergency_phone_number || "",
+    emergencyContactCode: splitPhone(data.emergency_phone_number).code,
+    emergencyContactNo: splitPhone(data.emergency_phone_number).number,
     emergencyContactRelationship: data.relation || "",
 
     // ── Employment ────────────────────────────────────────────
@@ -248,10 +273,10 @@ export function mapEditDataToForm(data: any): Record<string, any> {
     paymentMethod: data.salary_mode || "",
     paymentFrequency: data.payment_frequency || "",
     Taxslab: data.income_tax_slab || "",
-   effectiveFrom:
-  data.effective_date ||
-  data.date_of_joining ||
-  "",
+    effectiveFrom:
+      data.effective_date ||
+      data.date_of_joining ||
+      "",
     // ── Bank ──────────────────────────────────────────────────
     accountNumber: data.bank_ac_no || "",
     bankName: data.bank_name || "",
@@ -310,7 +335,7 @@ export function buildEmployeePayload(
 
   // Computed salary result stashed by CompensationTab
   const salaryResult: SalaryResult | null = formData._salaryResult ?? null;
- 
+
   return {
     // ── Personal ──────────────────────────────────────────────
     first_name: formData.firstName || "",
@@ -372,11 +397,11 @@ export function buildEmployeePayload(
     ctc: (salaryResult?.gross ?? Number(formData.grossSalary) ?? 0) * 12,
     salary_mode: mapSalaryMode(formData.paymentMethod || ""),
     salary_currency: formData.currency || null,
-   ...(isEditMode &&
-  formData._salaryChanged &&
-  formData.effectiveFrom && {
-    effective_date: formData.effectiveFrom,
-  }),
+    ...(isEditMode &&
+      formData._salaryChanged &&
+      formData.effectiveFrom && {
+      effective_date: formData.effectiveFrom,
+    }),
     // ── Bank ──────────────────────────────────────────────────
     bank_name: formData.bankName || null,
     bank_ac_no: formData.accountNumber || null,

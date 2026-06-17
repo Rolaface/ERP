@@ -104,11 +104,11 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={handleCloseWithWarning}
-      title={isEditMode ? "Edit Customer" : "Create Customer"}
+      title={isEditMode ? "Edit Customer" : "Add Customer"}
       subtitle={
         isEditMode
           ? "Update customer information"
-          : "Fill in the details to create a new customer"
+          : "Fill in the details to add a new customer"
       }
       icon={isEditMode ? Building2 : Users}
       footer={footer}

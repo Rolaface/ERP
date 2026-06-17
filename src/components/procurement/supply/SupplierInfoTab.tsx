@@ -153,13 +153,13 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
                 Phone No <span className="text-danger">*</span>
               </span>
               <div className="flex">
-             <PhoneCodeSelect
-  value={form.phoneCode}
-  onChange={(code) =>
-    onChange({ target: { name: "phoneCode", value: code } } as React.ChangeEvent<HTMLInputElement>)
-  }
-  error={errors.phoneNo}
-/>
+                <PhoneCodeSelect
+                  value={form.phoneCode ?? ""}
+                  onChange={(code) =>
+                    onChange({ target: { name: "phoneCode", value: code } } as React.ChangeEvent<HTMLInputElement>)
+                  }
+                  error={errors.phoneNo}
+                />
                 <input
                   name="phoneNo"
                   type="tel"
@@ -191,31 +191,19 @@ export const SupplierInfoTab: React.FC<SupplierInfoTabProps> = ({
               </div>
             </div>
 
+
             {/* Alternate No */}
             <div className="flex flex-col min-w-0">
               <span className="block text-[10px] font-medium text-main mb-1">
                 Alternate No
               </span>
               <div className="flex">
-                <input
-                  name="alternateCode"
-                  value={form.alternateCode}
-                  onChange={onChange}
-                  placeholder="+"
-                  className={[
-                    "w-[50px] py-1 px-2 border rounded-l text-[11px] text-main bg-card transition-all min-w-0",
-                    errors.alternateNo
-                      ? "border-danger"
-                      : "border-[var(--border)] hover:border-primary/40",
-                  ].join(" ")}
-                  onFocus={(e) => {
-                    e.currentTarget.style.boxShadow = errors.alternateNo
-                      ? "0 0 0 3px rgba(239,68,68,0.18)"
-                      : "0 0 0 3px rgba(37,99,235,0.16)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.boxShadow = "";
-                  }}
+                <PhoneCodeSelect
+                  value={form.alternateCode ?? ""}
+                  onChange={(code) =>
+                    onChange({ target: { name: "alternateCode", value: code } } as React.ChangeEvent<HTMLInputElement>)
+                  }
+                  error={errors.alternateNo}
                 />
                 <input
                   name="alternateNo"

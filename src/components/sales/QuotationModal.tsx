@@ -47,7 +47,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
         ? `quotation-edit-${initialData.id}-${Date.now()}`
         : `quotation-create-${Date.now()}`)
   );
-
+const [submitting, setSubmitting] = useState(false);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const {
@@ -104,6 +104,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
 
   const handleSave = async () => {
     if (!validateDetailsOrFocus()) return;
+    if (submitting) return;
 
     try {
       const payload = await actions.handleSubmit({
@@ -149,7 +150,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     e.preventDefault();
     await handleSave();
   };
-
+ 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -157,8 +158,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={mode === "edit" ? "Edit Quotation" : "Create Quotation"}
-      subtitle="Create and manage quotation details"
+      title={mode === "edit" ? "Edit Quotation" : "Add Quotation"}
+      subtitle="Add and manage quotation details"
       icon={FileSignature}
       footer={
         <ModalFooter
@@ -169,6 +170,9 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
           }}
           onSave={handleSave}
           onNext={ui.activeTab === "terms" ? undefined : handleNext}
+          currentTab={tabs.indexOf(ui.activeTab as any)}
+          totalTabs={tabs.length}
+          saving={submitting}
         />
       }
       maxWidth="full"

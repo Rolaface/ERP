@@ -18,8 +18,10 @@ interface AssetCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: (data: AssetCategoryForm) => Promise<void>;
-  categoryId?: string | number;
-  modalId?: string;
+  initialData?: Record<string, unknown> | null;
+  isEdit?: boolean;
+  isViewMode?: boolean;
+  modalId: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -34,13 +36,12 @@ const SectionHeading: React.FC<{ children: React.ReactNode }> = ({
 
 const Divider = () => <div className="border-t border-theme my-5" />;
 
-// CellSearch — wraps SearchSelect2 for use inside table cells
-// Removes the label and tightens padding to fit table rows
 interface CellSearchProps {
   value: string;
   fetchOptions: (q: string) => Promise<{ label: string; value: string }[]>;
   onChange: (value: string) => void;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 const CellSearch: React.FC<CellSearchProps> = ({
@@ -48,14 +49,16 @@ const CellSearch: React.FC<CellSearchProps> = ({
   fetchOptions,
   onChange,
   placeholder = "Select...",
+  disabled = false,
 }) => (
   <div className="px-1 py-0.5">
     <SearchSelect2
-      label="" // no label inside table cells
+      label=""
       value={value}
       fetchOptions={fetchOptions}
       onChange={(val) => onChange(val)}
       placeholder={placeholder}
+      disabled={disabled}
     />
   </div>
 );
@@ -121,16 +124,13 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  categoryId,
+  initialData,
+  isEdit = false,
+  isViewMode = false,
   modalId,
 }) => {
-  const resolvedModalId =
-    modalId ??
-    (categoryId
-      ? `asset-category-edit-${categoryId}`
-      : `asset-category-create`);
-
-  const { handleCloseWithConfirm } = useUnsavedChanges();
+  const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
+    useUnsavedChanges();
 
   const {
     form,
@@ -154,6 +154,43 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
     fetchFrequencyOptions,
     fetchPostingDateOptions,
   } = useFALogic(isOpen, onSubmit, onClose);
+
+  const handleClose = () => {
+    resetDirty();
+    onClose();
+  };
+
+  // ── markDirty-wrapped mutators ──────────────────────────────────────────────
+  const handlePatch = (data: Partial<AssetCategoryForm>) => {
+    if (isViewMode) return;
+    markDirty();
+    patch(data);
+  };
+
+  const handleChangeAccountRow = (
+    id: string,
+    field: keyof AccountRow,
+    value: string,
+  ) => {
+    if (isViewMode) return;
+    markDirty();
+    changeAccountRow(id, field, value);
+  };
+
+  const handleChangeFinanceRow = (
+    id: string,
+    field: keyof FinanceBookRow,
+    value: string,
+  ) => {
+    if (isViewMode) return;
+    markDirty();
+    changeFinanceRow(id, field, value);
+  };
+
+  const handleResetForm = () => {
+    reset();
+    resetDirty();
+  };
 
   // ── Pagination ──────────────────────────────────────────────────────────────
   const [financeBookPage, setFinanceBookPage] = useState(1);
@@ -180,6 +217,8 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
 
   // ── Row helpers with page auto-advance ─────────────────────────────────────
   const handleAddFinanceRow = () => {
+    if (isViewMode) return;
+    markDirty();
     addFinanceRow();
     setFinanceBookPage(
       Math.ceil((form.financeBooks.length + 1) / ROWS_PER_PAGE)
@@ -187,6 +226,8 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
   };
 
   const handleRemoveFinanceRow = (id: string) => {
+    if (isViewMode) return;
+    markDirty();
     removeFinanceRow(id);
     const maxPage = Math.max(
       1,
@@ -196,11 +237,15 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
   };
 
   const handleAddAccountRow = () => {
+    if (isViewMode) return;
+    markDirty();
     addAccountRow();
     setAccountPage(Math.ceil((form.accounts.length + 1) / ROWS_PER_PAGE));
   };
 
   const handleRemoveAccountRow = (id: string) => {
+    if (isViewMode) return;
+    markDirty();
     removeAccountRow(id);
     const maxPage = Math.max(
       1,
@@ -210,16 +255,20 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
   };
 
   // ── Footer ──────────────────────────────────────────────────────────────────
-  const footer = (
+  const footer = isViewMode ? (
+    <Button variant="secondary" onClick={handleClose}>
+      Close
+    </Button>
+  ) : (
     <>
       <Button
         variant="secondary"
-        onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+        onClick={() => handleCloseWithConfirm(handleClose, modalId)}
       >
         Cancel
       </Button>
       <div className="flex gap-2">
-        <Button variant="secondary" onClick={reset}>
+        <Button variant="secondary" onClick={handleResetForm}>
           Reset
         </Button>
         <Button variant="primary" onClick={handleSubmit} disabled={isSaving}>
@@ -241,7 +290,8 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
             label="Asset Category Name"
             name="assetCategoryName"
             value={form.assetCategoryName}
-            onChange={(e) => patch({ assetCategoryName: e.target.value })}
+            disabled={isViewMode}
+            onChange={(e) => handlePatch({ assetCategoryName: e.target.value })}
             placeholder="Enter asset category name"
             required
           />
@@ -253,8 +303,9 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
             <input
               type="checkbox"
               checked={form.enableCapitalWorkInProgress}
+              disabled={isViewMode}
               onChange={(e) =>
-                patch({ enableCapitalWorkInProgress: e.target.checked })
+                handlePatch({ enableCapitalWorkInProgress: e.target.checked })
               }
               className="w-4 h-4 accent-primary rounded"
             />
@@ -266,8 +317,9 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
             <input
               type="checkbox"
               checked={form.nonDepreciableCategory}
+              disabled={isViewMode}
               onChange={(e) =>
-                patch({ nonDepreciableCategory: e.target.checked })
+                handlePatch({ nonDepreciableCategory: e.target.checked })
               }
               className="w-4 h-4 accent-primary rounded"
             />
@@ -275,174 +327,6 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
           </label>
         </div>
       </div>
-
-
-
-
-      {/* <div className="mb-5">
-        <SectionHeading>Finance Book Detail</SectionHeading>
-
-        <div className="rounded border border-theme mb-2 overflow-x-auto">
-          <table className="w-full text-xs border-collapse min-w-[700px]">
-            <colgroup>
-              <col style={{ width: "28px" }} />
-              <col style={{ width: "32px" }} />
-              <col /> 
-              <col /> 
-              <col style={{ width: "120px" }} /> 
-              <col style={{ width: "120px" }} /> 
-              <col style={{ width: "140px" }} /> 
-              <col style={{ width: "32px" }} />
-            </colgroup>
-            <thead>
-              <tr className="bg-subtle">
-                <th className="p-2 border-b border-theme">
-                  <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
-                </th>
-                <th className="p-2 border-b border-theme text-left font-medium text-muted">
-                  No.
-                </th>
-                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
-                  Finance Book
-                </th>
-                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
-                  Depreciation Method
-                </th>
-                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
-                  Frequency (Months)
-                </th>
-                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
-                  Total Depreciations
-                </th>
-                <th className="p-2 border-b border-theme text-left font-medium text-muted text-[11px]">
-                  Posting Date
-                </th>
-                <th className="p-2 border-b border-theme">
-                  <Settings size={12} className="text-muted mx-auto" />
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedFinanceBooks.map((row, idx) => {
-                const globalIdx = (financeBookPage - 1) * ROWS_PER_PAGE + idx;
-                return (
-                  <tr key={row.id} className="hover:bg-subtle/50 transition-colors">
-                    <td className="p-2 border-b border-theme text-center">
-                      <input type="checkbox" className="w-3.5 h-3.5 accent-primary" />
-                    </td>
-                    <td className="p-2 border-b border-theme text-muted text-center">
-                      {globalIdx + 1}
-                    </td>
-
-                    
-                    <td className="border-b border-theme">
-                      <CellSearch
-                        value={row.financeBook}
-                        fetchOptions={fetchFinanceBooks}
-                        onChange={(v) =>
-                          changeFinanceRow(row.id, "financeBook", v)
-                        }
-                        placeholder="Select finance book..."
-                      />
-                    </td>
-
-                   
-                    <td className="border-b border-theme">
-                      <CellSearch
-                        value={row.depreciationMethod}
-                        fetchOptions={fetchDepreciationMethods}
-                        onChange={(v) =>
-                          changeFinanceRow(row.id, "depreciationMethod", v)
-                        }
-                        placeholder="Select method..."
-                      />
-                    </td>
-
-                   
-                    <td className="border-b border-theme">
-                      <CellSearch
-                        value={row.frequencyOfDepreciation}
-                        fetchOptions={fetchFrequencyOptions}
-                        onChange={(v) =>
-                          changeFinanceRow(
-                            row.id,
-                            "frequencyOfDepreciation",
-                            v
-                          )
-                        }
-                        placeholder="Months..."
-                      />
-                    </td>
-
-                    
-                    <td className="border-b border-theme px-1 py-0.5">
-                      <ModalInput
-                        label=""
-                        name="totalNumberOfDepreciations"
-                        type="number"
-                        value={row.totalNumberOfDepreciations}
-                        placeholder="0"
-                        onChange={(e) =>
-                          changeFinanceRow(
-                            row.id,
-                            "totalNumberOfDepreciations",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </td>
-
-                  
-                    <td className="border-b border-theme">
-                      <CellSearch
-                        value={row.depreciationPostingDate}
-                        fetchOptions={fetchPostingDateOptions}
-                        onChange={(v) =>
-                          changeFinanceRow(
-                            row.id,
-                            "depreciationPostingDate",
-                            v
-                          )
-                        }
-                        placeholder="Select date..."
-                      />
-                    </td>
-
-                    <td className="p-2 border-b border-theme text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFinanceRow(row.id)}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                        title="Delete row"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <TablePagination
-          currentPage={financeBookPage}
-          totalPages={financeBookTotalPages}
-          totalRows={form.financeBooks.length}
-          onPrev={() => setFinanceBookPage((p) => Math.max(1, p - 1))}
-          onNext={() =>
-            setFinanceBookPage((p) => Math.min(financeBookTotalPages, p + 1))
-          }
-        />
-
-        <div className="mt-3">
-          <Button variant="secondary" onClick={handleAddFinanceRow}>
-            Add row
-          </Button>
-        </div>
-      </div> */}
-
-
 
       {/* ── Accounts ──────────────────────────────────────────────────────── */}
       <div>
@@ -496,75 +380,77 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
                       {globalIdx + 1}
                     </td>
 
-                    {/* Fixed Asset Account — API call on focus */}
                     <td className="border-b border-theme">
                       <CellSearch
                         value={row.fixedAssetAccount}
                         fetchOptions={fetchFixedAssetAccounts}
                         onChange={(v) =>
-                          changeAccountRow(row.id, "fixedAssetAccount", v)
+                          handleChangeAccountRow(row.id, "fixedAssetAccount", v)
                         }
                         placeholder="Select account..."
+                        disabled={isViewMode}
                       />
                     </td>
 
-                    {/* Accumulated Depreciation Account */}
                     <td className="border-b border-theme">
                       <CellSearch
                         value={row.accumulatedDepreciationAccount}
                         fetchOptions={fetchAccumulatedDepAccounts}
                         onChange={(v) =>
-                          changeAccountRow(
+                          handleChangeAccountRow(
                             row.id,
                             "accumulatedDepreciationAccount",
                             v
                           )
                         }
                         placeholder="Select account..."
+                        disabled={isViewMode}
                       />
                     </td>
 
-                    {/* Depreciation Expense Account */}
                     <td className="border-b border-theme">
                       <CellSearch
                         value={row.depreciationExpenseAccount}
                         fetchOptions={fetchDepExpenseAccounts}
                         onChange={(v) =>
-                          changeAccountRow(
+                          handleChangeAccountRow(
                             row.id,
                             "depreciationExpenseAccount",
                             v
                           )
                         }
                         placeholder="Select account..."
+                        disabled={isViewMode}
                       />
                     </td>
 
-                    {/* CWIP Account */}
                     <td className="border-b border-theme">
                       <CellSearch
                         value={row.capitalWorkInProgressAccount}
                         fetchOptions={fetchCWIPAccounts}
                         onChange={(v) =>
-                          changeAccountRow(
+                          handleChangeAccountRow(
                             row.id,
                             "capitalWorkInProgressAccount",
                             v
                           )
                         }
                         placeholder="Select account..."
+                        disabled={isViewMode}
                       />
                     </td>
 
                     <td className="p-2 border-b border-theme text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAccountRow(row.id)}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                        title="Delete row"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {!isViewMode && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAccountRow(row.id)}
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                          title="Delete row"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -583,26 +469,33 @@ const AssetCategoryModal: React.FC<AssetCategoryModalProps> = ({
           }
         />
 
-        <div className="mt-3">
-          <Button variant="secondary" onClick={handleAddAccountRow}>
-            Add row
-          </Button>
-        </div>
+        {!isViewMode && (
+          <div className="mt-3">
+            <Button variant="secondary" onClick={handleAddAccountRow}>
+              Add row
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
 
   return (
     <MinimizableModal
-      modalId={resolvedModalId}
+      modalId={modalId}
       isOpen={isOpen}
-      onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={categoryId ? "Edit Asset Category" : "Create Asset Category"}
+      onClose={() =>
+        isViewMode
+          ? handleClose()
+          : handleCloseWithConfirm(handleClose, modalId)
+      }
+      title={isEdit ? "Edit Asset Category" : "Create Asset Category"}
       subtitle="Create and manage asset categories"
       icon={Layers}
       customWidth="60vw"
       height="80vh"
       footer={footer}
+      formContainerRef={containerRef}
     >
       <section className="overflow-y-auto h-full">{body}</section>
     </MinimizableModal>

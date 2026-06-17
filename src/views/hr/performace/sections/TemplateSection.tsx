@@ -19,7 +19,7 @@ import {
   getTemplateById,
 } from "../../../../api/Appraisalapi/templeteApi";
 
-
+import DateDisplay from "../../../../components/UI_Utils/Datedisplay";
 
 import ActionButton, {
   ActionGroup,
@@ -136,13 +136,7 @@ export default function TemplateSection() {
       key: "creation",
       header: "Date Created",
       align: "center",
-      render: (row) => (
-        <span>
-          {row.creation
-            ? new Date(row.creation).toLocaleDateString()
-            : "-"}
-        </span>
-      ),
+       render: (row) => <DateDisplay date={row.creation} />,
     },
 
     {
@@ -224,7 +218,8 @@ export default function TemplateSection() {
   ];
 
   return (
-    <>
+     <div className="h-[calc(100vh-220px)]"> 
+    
       <ModalTable<SetupRow>
         tableId="setup-template"
         columns={columns}
@@ -274,7 +269,8 @@ export default function TemplateSection() {
             setIsViewMode(false);
           }}
         />
+        
       )}
-    </>
+    </div>
   );
 }

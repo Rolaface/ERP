@@ -567,7 +567,7 @@ const handlePreviewQuotationPDF = async (
   header: "Status",
   align: "left",
   render: (q: any) => {
-    const displayStatus = q.status === "Open" ? "Approved" : (q.status || "Draft");
+    const displayStatus = q.status === "Open" ? "Approved" : (q.status || "Draft") ;
     return <StatusBadge status={displayStatus} />;
   },
 },
@@ -642,7 +642,7 @@ const handlePreviewQuotationPDF = async (
    ...(STATUS_TRANSITIONS[q.status as keyof typeof STATUS_TRANSITIONS] ?? [])
       .filter((status) => status !== "Draft") 
       .map((status) => ({
-        label: status === "Cancelled" ? "Cancel" : `Mark as ${status}`,
+        label: status === "Cancelled" ? "Cancel" : ` ${status}` || status === "Approved" ? "Approve" : status,
         icon: getStatusActionIcon(status),
         danger: status === "Cancelled",
         onClick: () => handleRowStatusChange(q.quotationNumber, status),

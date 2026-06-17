@@ -1,67 +1,71 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import ExpandableTreeTable from "../../components/ui/Table/ExpandableTreeTable";
-import type { Column } from "../../components/ui/Table/type";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getExpandedRowModel,
+  flexRender,
+  type ColumnDef,
+  type ExpandedState,
+} from "@tanstack/react-table";
 import { getCashFlow } from "../../api/Accounting/AccountApi";
 import {
-    AlertCircle,
-    Loader2,
-    RefreshCw,
-    Folder,
-    FolderOpen,
-    FileText,
-    ChevronRight,
-    Layers,
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  Folder,
+  FolderOpen,
+  FileText,
+  ChevronRight,
+  Layers,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  ArrowLeftRight,
 } from "lucide-react";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import type {
-    CFResponse,
-    CFRawRow,
-    CFSummaryItem,
+  CFResponse,
+  CFRawRow,
+  CFSummaryItem,
 } from "../../types/Accounting/Cashflow";
 import { getCompanyCurrentFiscalYear } from "../../api/utils/frappeUtilsApi";
+import { getCurrencySymbol } from "../../utils/currency";
 
 /* ───────────────── TYPES ───────────────── */
 
 export type CFNode = {
-    id: string;
-    section: string;
-    currency?: string;
-    parent_section?: string | null;
-    indent: number;
-    periods: Record<string, number>;
-    children: CFNode[];
+  id: string;
+  section: string;
+  currency?: string;
+  parent_section?: string | null;
+  indent: number;
+  periods: Record<string, number>;
+  children: CFNode[];
 };
 
 type FilterMode = "Fiscal Year" | "Date Range";
 type Periodicity = "Monthly" | "Quarterly" | "Yearly" | "Half-Yearly";
 
 interface CFFilters {
-    mode: FilterMode;
-    periodicity: Periodicity;
-    from_fiscal_year: number;
-    to_fiscal_year: number;
-    from_date?: string;
-    to_date?: string;
+  mode: FilterMode;
+  periodicity: Periodicity;
+  from_fiscal_year: number;
+  to_fiscal_year: number;
+  from_date?: string;
+  to_date?: string;
 }
 
 const res = await getCompanyCurrentFiscalYear();
 
 const fiscalYear = res.data?.fiscal_year;
 const fiscalYearStartDate = res?.data?.start_date;
-const fiscalYearEndDate = res ?.data?.end_date;
+const fiscalYearEndDate = res?.data?.end_date;
 
 /* ───────────────── DATE HELPERS ───────────────── */
 
-const toInputDate = (apiDate?: string) => {
-    if (!apiDate) return "";
-    const [d, m, y] = apiDate.split("-");
-    return `${y}-${m}-${d}`;
-};
+const toInputDate = (date?: string) => date ?? "";
 
-const toApiDate = (inputDate: string) => {
-    const [y, m, d] = inputDate.split("-");
-    return `${d}-${m}-${y}`;
-};
+const toApiDate = (date: string) => date;
 
 const currentMonthStart = (): string => {
   const d = new Date();
@@ -76,431 +80,596 @@ const currentMonthEnd = (): string => {
 
 /* ───────────────── FORMAT ───────────────── */
 
-const nf = (value?: number | null, currency?: string) => {
-    if (value === undefined || value === null) return "—";
+const nf = (value?: number | null) => {
+  if (value === undefined || value === null) return "—";
 
-    const formatted = new Intl.NumberFormat("en-IN", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(Math.abs(value));
+  const formatted = new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(value));
 
-    const prefix = currency ? `${currency} ` : "";
-    return value < 0 ? `${prefix}-${formatted}` : `${prefix}${formatted}`;
+  const prefix = `${getCurrencySymbol()} `;
+  return value < 0 ? `${prefix}-${formatted}` : `${prefix}${formatted}`;
 };
 
 const isNetRow = (section: string, parentSection?: string | null) =>
-    section.toLowerCase().startsWith("net") && !parentSection;
-
+  section.toLowerCase().startsWith("net") && !parentSection;
 
 /* ───────────────── TREE MAPPER (NEW API STRUCTURE) ───────────────── */
 
 function mapNode(row: CFRawRow): CFNode {
-    return {
-        id: row.section || row.section_name || Math.random().toString(),
+  return {
+    id: row.section || row.section_name || Math.random().toString(),
 
-        section: (row.section ?? row.section_name ?? "")
-            .toString()
-            .replace(/^'|'$/g, ""),
+    section: (row.section ?? row.section_name ?? "")
+      .toString()
+      .replace(/^'|'$/g, ""),
 
-        currency: row.currency,
-        indent: row.indent ?? 0,
-        parent_section: row.parent_section ?? null,
+    currency: row.currency,
+    indent: row.indent ?? 0,
+    parent_section: row.parent_section ?? null,
 
-        periods: row.periods ?? {},
+    periods: row.periods ?? {},
 
-        children: (row.children ?? []).map(mapNode),
-    };
+    children: (row.children ?? []).map(mapNode),
+  };
 }
 
 function buildTree(rows: CFRawRow[]): CFNode[] {
-    return rows
-        .filter((r) => r && Object.keys(r).length > 0)
-        .map(mapNode);
+  return rows.filter((r) => r && Object.keys(r).length > 0).map(mapNode);
 }
 
-/* ───────────────── ICON ───────────────── */
-
-function expandIcon(
-    _node: CFNode,
-    isExpanded: boolean,
-    hasChildren: boolean
-) {
-    if (!hasChildren)
-        return <FileText size={12} className="text-muted opacity-50" />;
-
-    return isExpanded ? (
-        <FolderOpen size={13} className="text-muted" />
-    ) : (
-        <Folder size={13} className="text-muted" />
-    );
-}
-
-
-const getSummaryColor = (item: CFSummaryItem) => {
-    const label = item.label?.toLowerCase() || "";
-    const value = item.value ?? 0;
-
-    // Priority 1 → Label based (better UX)
-    if (label.includes("operating")) return "text-blue-500";
-    if (label.includes("investing")) return "text-purple-500";
-    if (label.includes("financing")) return "text-orange-500";
-    if (label.includes("net")) return value >= 0 ? "text-emerald-600" : "text-red-500";
-
-    // Fallback → value based
-    if (value > 0) return "text-emerald-600";
-    if (value < 0) return "text-red-500";
-
-    return "text-main";
+/* builds the {rowId: true} map needed to expand the tree to N levels by default */
+const buildExpandedToDepth = (
+  nodes: CFNode[],
+  depth: number,
+  path = "",
+): Record<string, boolean> => {
+  let state: Record<string, boolean> = {};
+  nodes.forEach((node, i) => {
+    const id = path ? `${path}.${i}` : `${i}`;
+    if (depth > 0 && node.children?.length) {
+      state[id] = true;
+      Object.assign(state, buildExpandedToDepth(node.children, depth - 1, id));
+    }
+  });
+  return state;
 };
 
-/* ───────────────── SUMMARY STRIP ───────────────── */
+/* ───────────────── SUMMARY COLOR / ICON ───────────────── */
 
-function SummaryStrip({ summary }: { summary: CFSummaryItem[] }) {
-    return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-[900px]">
-            {summary.map((item) => (
-                <div
-                    key={item.label}
-                    className="rounded-xl border p-3 flex flex-col gap-1 bg-card"
-                >
-                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-muted opacity-70">
-                        {item.label}
-                    </span>
+const getSummaryColor = (item: CFSummaryItem) => {
+  const label = item.label?.toLowerCase() || "";
+  const value = item.value ?? 0;
 
-                    <div className={`text-sm font-black ${getSummaryColor(item)}`}>
-                        {nf(item.value, item.currency)}
-                    </div>
-                </div>
-            ))}
+  // Priority 1 → Label based (better UX)
+  if (label.includes("operating")) return "text-blue-500";
+  if (label.includes("investing")) return "text-purple-500";
+  if (label.includes("financing")) return "text-orange-500";
+  if (label.includes("net"))
+    return value >= 0 ? "text-emerald-600" : "text-red-500";
+
+  // Fallback → value based
+  if (value > 0) return "text-emerald-600";
+  if (value < 0) return "text-red-500";
+
+  return "text-main";
+};
+
+const getSummaryIcon = (label: string) => {
+  const l = label.toLowerCase();
+  if (l.includes("operating"))
+    return <Wallet size={11} className="text-blue-400" />;
+  if (l.includes("investing"))
+    return <TrendingUp size={11} className="text-purple-400" />;
+  if (l.includes("financing"))
+    return <ArrowLeftRight size={11} className="text-orange-400" />;
+  return <TrendingDown size={11} className="text-emerald-400" />;
+};
+
+/* ───────────────── KPI STRIP (AccountsPayable-style) ───────────────── */
+
+function KpiStrip({
+  summary,
+  loading,
+}: {
+  summary: CFSummaryItem[];
+  loading: boolean;
+}) {
+  const items = summary.length
+    ? summary
+    : Array.from({ length: 4 }, () => null);
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      {items.map((item, i) => (
+        <div
+          key={item?.label ?? i}
+          className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 flex flex-col gap-1.5"
+        >
+          <div className="flex items-center gap-1.5">
+            {item && getSummaryIcon(item.label)}
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted truncate">
+              {item?.label ?? "—"}
+            </span>
+          </div>
+          {loading || !item ? (
+            <div className="h-4 w-24 bg-[var(--border)] rounded animate-pulse" />
+          ) : (
+            <span
+              className={`text-sm font-extrabold tabular-nums ${getSummaryColor(item)}`}
+            >
+              {nf(item.value)}
+            </span>
+          )}
         </div>
-    );
+      ))}
+    </div>
+  );
 }
 
-/* ───────────────── FILTER BAR ───────────────── */
+/* ───────────────── FILTER BAR (AccountsPayable-style) ───────────────── */
 
 function FilterBar({
-    filters,
-    setFilters,
-    onExpandAll,
-    onCollapseAll,
+  filters,
+  setFilters,
+  onRefresh,
+  loading,
+  onExpandAll,
+  onCollapseAll,
 }: {
-    filters: CFFilters;
-    setFilters: React.Dispatch<React.SetStateAction<CFFilters>>;
-    onExpandAll: () => void;
-    onCollapseAll: () => void;
+  filters: CFFilters;
+  setFilters: React.Dispatch<React.SetStateAction<CFFilters>>;
+  onRefresh: () => void;
+  loading: boolean;
+  onExpandAll: () => void;
+  onCollapseAll: () => void;
 }) {
-    const inputClass =
-        "w-25 px-2 py-1.5 border border-[var(--border)] rounded-lg bg-card text-xs no-spinner";
+  const inputClass =
+    "h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all no-spinner";
 
-    const btnClass =
-        "flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase border rounded-xl";
+  const btnClass =
+    "h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40 rounded-md transition-all whitespace-nowrap";
 
-    return (
-        <div className="flex items-center gap-2 flex-nowrap overflow-x-auto p-3 rounded-xl border bg-card w-full max-w-[900px]">
+  return (
+    <div className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+          Mode
+        </span>
+        <select
+          value={filters.mode}
+          onChange={(e) => {
+            const mode = e.target.value as FilterMode;
 
-            {/* MODE */}
-            <select
-                value={filters.mode}
-                onChange={(e) => {
-                    const mode = e.target.value as FilterMode;
+            setFilters((f) => ({
+              ...f,
+              mode,
+              ...(mode === "Date Range"
+                ? { from_date: currentMonthStart(), to_date: currentMonthEnd() }
+                : { from_fiscal_year: fiscalYear, to_fiscal_year: fiscalYear }),
+            }));
+          }}
+          className={inputClass}
+        >
+          <option value="Fiscal Year">Fiscal Year</option>
+          <option value="Date Range">Date Range</option>
+        </select>
+      </div>
 
-                    setFilters((f) => ({
-                        ...f,
-                        mode,
-                        ...(mode === "Date Range"
-                            ? { from_date: currentMonthStart(), to_date: currentMonthEnd() }
-                            : { from_fiscal_year: fiscalYear, to_fiscal_year: fiscalYear }),
-                    }));
-                }}
-                className={inputClass}
-            >
-                <option value="Fiscal Year">Fiscal Year</option>
-                <option value="Date Range">Date Range</option>
-            </select>
+      <div className="flex items-center gap-1.5">
+        <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+          Period
+        </span>
+        <select
+          value={filters.periodicity}
+          onChange={(e) =>
+            setFilters((f) => ({
+              ...f,
+              periodicity: e.target.value as Periodicity,
+            }))
+          }
+          className={inputClass}
+        >
+          <option value="Monthly">Monthly</option>
+          <option value="Quarterly">Quarterly</option>
+          <option value="Yearly">Yearly</option>
+          <option value="Half-Yearly">Half-Yearly</option>
+        </select>
+      </div>
 
-            {/* PERIOD */}
-            <select
-                value={filters.periodicity}
-                onChange={(e) =>
-                    setFilters((f) => ({
-                        ...f,
-                        periodicity: e.target.value as Periodicity,
-                    }))
+      {filters.mode !== "Date Range" && (
+        <>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+              From FY
+            </span>
+            <input
+              type="number"
+              value={filters.from_fiscal_year}
+              onChange={(e) =>
+                setFilters((f) => ({
+                  ...f,
+                  from_fiscal_year: Number(e.target.value),
+                }))
+              }
+              className={`${inputClass} w-20`}
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+              To FY
+            </span>
+            <input
+              type="number"
+              value={filters.to_fiscal_year}
+              onChange={(e) =>
+                setFilters((f) => ({
+                  ...f,
+                  to_fiscal_year: Number(e.target.value),
+                }))
+              }
+              className={`${inputClass} w-20`}
+            />
+          </div>
+        </>
+      )}
+
+      {filters.mode === "Date Range" && (
+        <>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+              From
+            </span>
+            <div className="w-[130px]">
+              <DatePickerInput
+                name="from_date"
+                value={toInputDate(filters.from_date)}
+                onChange={(name, value) =>
+                  setFilters((f) => ({
+                    ...f,
+                    from_date: toApiDate(value),
+                  }))
                 }
-                className={inputClass}
-            >
-                <option value="Monthly">Monthly</option>
-                <option value="Quarterly">Quarterly</option>
-                <option value="Yearly">Yearly</option>
-                <option value="Half-Yearly">Half-Yearly</option>
-            </select>
+                label=""
+              />
+            </div>
+          </div>
 
-            {/* FY */}
-            {filters.mode !== "Date Range" && (
-                <>
-                    <input
-                        type="number"
-                        value={filters.from_fiscal_year}
-                        onChange={(e) =>
-                            setFilters((f) => ({
-                                ...f,
-                                from_fiscal_year: Number(e.target.value),
-                            }))
-                        }
-                        className={inputClass}
-                    />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+              To
+            </span>
+            <div className="w-[130px]">
+              <DatePickerInput
+                name="to_date"
+                value={toInputDate(filters.to_date)}
+                onChange={(name, value) =>
+                  setFilters((f) => ({
+                    ...f,
+                    to_date: toApiDate(value),
+                  }))
+                }
+                label=""
+              />
+            </div>
+          </div>
+        </>
+      )}
 
-                    <input
-                        type="number"
-                        value={filters.to_fiscal_year}
-                        onChange={(e) =>
-                            setFilters((f) => ({
-                                ...f,
-                                to_fiscal_year: Number(e.target.value),
-                            }))
-                        }
-                        className={inputClass}
-                    />
-                </>
-            )}
+      <div className="w-px self-stretch bg-[var(--border)]" />
 
-            {/* DATE RANGE */}
-            {filters.mode === "Date Range" && (
-                <>
-                    {/* DATE RANGE */}
-                    {filters.mode === "Date Range" && (
-                        <>
-                            {/* FROM */}
-                            <div className="flex items-center gap-1">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
-                                    From
-                                </span>
-
-                                <div className="w-[120px]">
-                                    <DatePickerInput
-                                        name="from_date"
-                                        value={toInputDate(filters.from_date)}
-                                        onChange={(name, value) =>
-                                            setFilters((f) => ({
-                                                ...f,
-                                                from_date: toApiDate(value),
-                                            }))
-                                        }
-                                        label=""
-                                    />
-                                </div>
-                            </div>
-
-                            {/* TO */}
-                            <div className="flex items-center gap-1">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-muted opacity-50">
-                                    To
-                                </span>
-
-                                <div className="w-[120px]">
-                                    <DatePickerInput
-                                        name="to_date"
-                                        value={toInputDate(filters.to_date)}
-                                        onChange={(name, value) =>
-                                            setFilters((f) => ({
-                                                ...f,
-                                                to_date: toApiDate(value),
-                                            }))
-                                        }
-                                        label=""
-                                    />
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </>
-            )}
-
-            <button onClick={onExpandAll} className={btnClass}>
-                <Layers size={11} /> Expand All
-            </button>
-
-            <button onClick={onCollapseAll} className={btnClass}>
-                <ChevronRight size={11} /> Collapse
-            </button>
-        </div>
-    );
+      <button onClick={onExpandAll} className={btnClass}>
+        <Layers size={11} />
+        Expand All
+      </button>
+      <button onClick={onCollapseAll} className={btnClass}>
+        <ChevronRight size={11} />
+        Collapse
+      </button>
+      <button onClick={onRefresh} className={`${btnClass} ml-auto`}>
+        <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
+        Refresh
+      </button>
+    </div>
+  );
 }
 
 /* ───────────────── MAIN COMPONENT ───────────────── */
 
 const CashFlow: React.FC = () => {
-    const [filters, setFilters] = useState<CFFilters>({
-        mode: "Fiscal Year",
-        periodicity: "Monthly",
-        from_fiscal_year: fiscalYear,
-        to_fiscal_year: fiscalYear,
-        from_date: currentMonthStart(),
-        to_date: currentMonthEnd(),
-    });
+  const [filters, setFilters] = useState<CFFilters>({
+    mode: "Fiscal Year",
+    periodicity: "Monthly",
+    from_fiscal_year: fiscalYear,
+    to_fiscal_year: fiscalYear,
+    from_date: currentMonthStart(),
+    to_date: currentMonthEnd(),
+  });
 
-    const [data, setData] = useState<CFResponse["message"]["data"] | null>(null);
-    const [tree, setTree] = useState<CFNode[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<CFResponse["message"]["data"] | null>(null);
+  const [tree, setTree] = useState<CFNode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<ExpandedState>({});
 
-    const [expandDepth, setExpandDepth] = useState(2);
-    const [expandKey, setExpandKey] = useState(0);
+  const handleExpandAll = useCallback(() => setExpanded(true), []);
+  const handleCollapseAll = useCallback(() => setExpanded({}), []);
 
-    const handleExpandAll = () => {
-        setExpandDepth(Number.MAX_SAFE_INTEGER);
-        setExpandKey((k) => k + 1);
-    };
+  const fetchData = useCallback(async () => {
+    setLoading(true);
 
-    const handleCollapseAll = () => {
-        setExpandDepth(0);
-        setExpandKey((k) => k + 1);
-    };
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-
-        try {
-            const params =
-                filters.mode === "Date Range"
-                    ? {
-                        periodicity: filters.periodicity,
-                        from_date: filters.from_date,
-                        to_date: filters.to_date,
-                        filter_based_on: "Date Range",
-                    }
-                    : {
-                        periodicity: filters.periodicity,
-                        from_fiscal_year: String(filters.from_fiscal_year),
-                        to_fiscal_year: String(filters.to_fiscal_year),
-                        filter_based_on: "Fiscal Year",
-                    };
-
-            const res: CFResponse = await getCashFlow(params as any);
-
-            if (res.message.status_code === 200) {
-                const d = res.message.data;
-
-                setData(d);
-                setTree(buildTree(d.data));
-                setExpandDepth(2);
-            } else {
-                setError(res.message.message);
+    try {
+      const params =
+        filters.mode === "Date Range"
+          ? {
+              periodicity: filters.periodicity,
+              from_date: filters.from_date,
+              to_date: filters.to_date,
+              filter_based_on: "Date Range",
             }
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [filters]);
+          : {
+              periodicity: filters.periodicity,
+              from_fiscal_year: String(filters.from_fiscal_year),
+              to_fiscal_year: String(filters.to_fiscal_year),
+              filter_based_on: "Fiscal Year",
+            };
 
-    useEffect(() => {
-        const timer = setTimeout(fetchData, 300);
-        return () => clearTimeout(timer);
-    }, [fetchData]);
+      const res: CFResponse = await getCashFlow(params as any);
 
-    const columns: Column<CFNode>[] = useMemo(() => {
-        if (!data) return [];
+      if (res.message.status_code === 200) {
+        const d = res.message.data;
 
-        return data.columns
-            .filter((c) => !c.hidden)
-            .map((col) => {
-                if (col.fieldname === "section") {
-                    return {
-                        key: "section",
-                        header: col.label,
-                        width: "260px",
-                        align: "left",
-                        render: (row) => {
-                            const isNet = isNetRow(row.section, row.parent_section);
-                            return (
-                                <span className={
-                                    isNet
-                                        ? "font-bold text-primary"
-                                        : row.children.length
-                                            ? "font-semibold"
-                                            : ""
-                                }>
-                                    {row.section}
-                                </span>
-                            );
-                        },
-                    };
-                }
+        setData(d);
+        setTree(buildTree(d.data));
+      } else {
+        setError(res.message.message);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
 
-                return {
-                    key: col.fieldname,
-                    header: col.label,
-                    align: "right",
-                    render: (row) => {
-                        const val = row.periods?.[col.fieldname as keyof typeof row.periods] ?? 0;
-                        const colorClass =
-                            val > 0
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : val < 0
-                                    ? "text-red-500 dark:text-red-400"
-                                    : "text-muted";
-                        return (
-                            <span className={colorClass}>
-                                {nf(val, row.currency)}
-                            </span>
-                        );
-                    },
-                };
-            });
-    }, [data]);
+  useEffect(() => {
+    const timer = setTimeout(fetchData, 300);
+    return () => clearTimeout(timer);
+  }, [fetchData]);
 
-    if (loading && !data)
-        return (
-            <div className="flex justify-center py-20">
-                <Loader2 size={30} className="animate-spin text-primary" />
-            </div>
-        );
+  // default-expand the tree to depth 2 whenever fresh data arrives
+  useEffect(() => {
+    if (!tree.length) return;
+    setExpanded(buildExpandedToDepth(tree, 2));
+  }, [tree]);
 
-    if (error)
-        return (
-            <div className="flex flex-col items-center py-20 gap-3">
-                <AlertCircle size={26} className="text-danger" />
-                <p>{error}</p>
-                <button
-                    onClick={fetchData}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded"
+  const columns = useMemo<ColumnDef<CFNode>[]>(() => {
+    if (!data) return [];
+
+    return data.columns
+      .filter((c) => !c.hidden)
+      .map((col): ColumnDef<CFNode> => {
+        if (col.fieldname === "section") {
+          return {
+            id: "section",
+            header: col.label,
+            size: 260,
+            cell: ({ row }) => {
+              const node = row.original;
+              const isNet = isNetRow(node.section, node.parent_section);
+              const canExpand = row.getCanExpand();
+
+              return (
+                <div
+                  className="flex items-center gap-1.5"
+                  style={{ paddingLeft: `${row.depth * 18}px` }}
                 >
-                    <RefreshCw size={14} /> Retry
-                </button>
-            </div>
-        );
+                  {canExpand ? (
+                    <button
+                      type="button"
+                      onClick={row.getToggleExpandedHandler()}
+                      className="shrink-0 text-muted hover:text-main flex items-center gap-1"
+                    >
+                      <ChevronRight
+                        size={12}
+                        className={`transition-transform duration-150 ${
+                          row.getIsExpanded() ? "rotate-90" : ""
+                        }`}
+                      />
+                      {row.getIsExpanded() ? (
+                        <FolderOpen size={13} />
+                      ) : (
+                        <Folder size={13} />
+                      )}
+                    </button>
+                  ) : (
+                    <FileText
+                      size={12}
+                      className="text-muted opacity-50 shrink-0"
+                    />
+                  )}
+                  <span
+                    className={`text-xs truncate ${
+                      isNet
+                        ? "font-bold text-primary"
+                        : node.children.length
+                          ? "font-semibold"
+                          : ""
+                    }`}
+                  >
+                    {node.section}
+                  </span>
+                </div>
+              );
+            },
+          };
+        }
 
+        return {
+          id: col.fieldname,
+          header: col.label,
+          size: col.fieldname === "total" ? 130 : 110,
+          meta: { align: "right" },
+          cell: ({ row }) => {
+            const val =
+              row.original.periods?.[
+                col.fieldname as keyof typeof row.original.periods
+              ] ?? 0;
+            const colorClass =
+              val > 0
+                ? "text-emerald-600 dark:text-emerald-400"
+                : val < 0
+                  ? "text-red-500 dark:text-red-400"
+                  : "text-muted";
+            return (
+              <span className={`text-xs tabular-nums ${colorClass}`}>
+                {nf(val)}
+              </span>
+            );
+          },
+        };
+      });
+  }, [data]);
+
+  const table = useReactTable({
+    data: tree,
+    columns,
+    state: { expanded },
+    onExpandedChange: setExpanded,
+    getSubRows: (row) => row.children,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+  });
+
+  if (error && !data) {
     return (
-        <div className="flex flex-col gap-4 w-full">
-
-            {data && <SummaryStrip summary={data.summary} />}
-
-            <FilterBar
-                filters={filters}
-                setFilters={setFilters}
-                onExpandAll={handleExpandAll}
-                onCollapseAll={handleCollapseAll}
-            />
-
-            <ExpandableTreeTable<CFNode>
-                key={`cf-${expandKey}`}
-                columns={columns}
-                data={tree}
-                childrenKey="children"
-                nodeKey={(n) => n.id}
-                defaultExpandDepth={expandDepth}
-                expandIconRender={expandIcon}
-                loading={loading}
-                emptyMessage="No cash flow data found."
-                rowClassName={(row) =>
-                    isNetRow(row.section, row.parent_section)
-                        ? "bg-muted/40 border-t border-border font-semibold"
-                        : ""
-                }
-            />
-        </div>
+      <div className="flex flex-col items-center py-20 gap-3">
+        <AlertCircle size={26} className="text-danger" />
+        <p className="text-danger text-sm">{error}</p>
+        <button
+          onClick={fetchData}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded"
+        >
+          <RefreshCw size={14} /> Retry
+        </button>
+      </div>
     );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <KpiStrip summary={data?.summary ?? []} loading={loading && !data} />
+
+      <FilterBar
+        filters={filters}
+        setFilters={setFilters}
+        onRefresh={fetchData}
+        loading={loading}
+        onExpandAll={handleExpandAll}
+        onCollapseAll={handleCollapseAll}
+      />
+
+      <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
+        <div className="overflow-x-auto overflow-y-auto relative max-h-[520px]">
+          <table
+            className="border-collapse"
+            style={{
+              tableLayout: "fixed",
+              width: "max-content",
+              minWidth: "100%",
+            }}
+          >
+            <colgroup>
+              {table.getAllLeafColumns().map((col) => (
+                <col key={col.id} style={{ width: col.getSize() }} />
+              ))}
+            </colgroup>
+            <thead className="sticky top-0 z-10 border-b border-[var(--border)] bg-card">
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((header) => {
+                    const align =
+                      (header.column.columnDef.meta as any)?.align === "right"
+                        ? "text-right"
+                        : "text-left";
+                    return (
+                      <th
+                        key={header.id}
+                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align}`}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {loading && !data ? (
+                <tr>
+                  <td colSpan={columns.length} style={{ height: "300px" }}>
+                    <div className="flex justify-center items-center h-full">
+                      <Loader2 size={20} className="animate-spin text-muted" />
+                    </div>
+                  </td>
+                </tr>
+              ) : table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={columns.length}
+                    className="py-16 text-center text-xs text-muted"
+                  >
+                    No cash flow data found.
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className={`hover:bg-row-hover transition-colors h-[34px] ${
+                      isNetRow(
+                        row.original.section,
+                        row.original.parent_section,
+                      )
+                        ? "bg-row-hover/50 border-t-2 border-[var(--border)]"
+                        : ""
+                    }`}
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      const align =
+                        (cell.column.columnDef.meta as any)?.align === "right"
+                          ? "text-right"
+                          : "text-left";
+                      return (
+                        <td
+                          key={cell.id}
+                          className={`px-3 py-1 whitespace-nowrap ${align}`}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          {loading && data && (
+            <div className="absolute inset-0 bg-card/60 backdrop-blur-[1px] flex items-center justify-center z-20">
+              <Loader2 size={20} className="animate-spin text-primary" />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default CashFlow;

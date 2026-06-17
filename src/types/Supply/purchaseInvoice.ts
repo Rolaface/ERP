@@ -43,8 +43,20 @@ export interface PaymentRow {
   paymentAmount: number;
 }
 
+
+export interface ExistingAttachment {
+  name: string;
+  url: string;
+  file_size?: number;
+  isExisting: true;
+  fid:string
+}
+
+export type AttachmentItem = File | ExistingAttachment;
+
+
 export type AddressBlock = {
-  id:string;
+  id: string;
   addressTitle: string;
   addressType: "Billing" | "Shipping";
   addressLine1: string;
@@ -77,8 +89,9 @@ export interface PurchaseInvoiceFormData {
   transactionProgress: string;
   supplierInvoiceNumber: string;
   supplierInvoiceDate: string;
+  attachments?: AttachmentItem[];
 
-  destnCountryCd: string; 
+  destnCountryCd: string;
   shippingRule: string;
   incoterm: string;
   taxesChargesTemplate: string;
@@ -204,6 +217,7 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   useShippingAddress: true,
   useCompanyBillingAddress: true,
   selectedSupplierAddressIds: [],
+  attachments: [],
 
   addresses: {
     supplierAddress: {
@@ -254,4 +268,5 @@ export const emptyPOForm: PurchaseInvoiceFormData = {
   acceptedTerms: {},
 };
 
-export type POTab = "details" | "email" | "tax" | "address" | "terms";
+
+export type POTab = "details" | "address" | "attachments" | "terms";

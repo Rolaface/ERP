@@ -130,7 +130,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
             loading={loading}
             onClick={handleSubmit}
           >
-            {actualEntryId ? "Update Entry" : "Save Entry"}
+            {actualEntryId ? "Update " : " Submit"}
           </Button>
         </div>
       )}
@@ -303,10 +303,9 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
 {/* </div> */}
         {/* MIDDLE SECTION */}
         <div className="flex flex-col gap-3 mt-2">
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-main">Entry Lines</h3>
 
-            {/* Hide Add Rows button if in View Mode */}
             {!actualIsReadOnly && (
               <Button
                 variant="secondary"
@@ -317,7 +316,7 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                 <Plus size={14} /> Add Rows
               </Button>
             )}
-          </div>
+          </div> */}
 
           <div className="w-full border border-gray-200 rounded-md">
             <div className="w-full overflow-x-auto">
@@ -571,6 +570,20 @@ const JournalEntryModal: React.FC<JournalEntryModalProps> = ({
                   </button>
                 </div>
               </div>
+            )}
+          </div>
+           <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-main">Entry Lines</h3>
+
+             {!actualIsReadOnly && (
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={handleAddDoubleRow}
+                className="text-xs py-1 px-2 flex items-center gap-1"
+              >
+                <Plus size={14} /> Add Rows
+              </Button>
             )}
           </div>
         </div>

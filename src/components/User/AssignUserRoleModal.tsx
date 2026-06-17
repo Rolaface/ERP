@@ -11,6 +11,7 @@ import {
   MODULE_STRUCTURE,
   ALL_MODULES,
 } from "../../hooks/useUserRole";
+import ModalFooter from "../common/ModalFooter";
 import type { UserRoleFormData, PermissionEntry } from "../../types/RoleManagement/UserRole";
 
 
@@ -26,6 +27,7 @@ const PERMISSION_KEYS: PermissionKey[] = [
   "report",
   "submit",
   "cancel",
+  "email"
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -50,6 +52,7 @@ const ACTION_LABELS: Record<PermissionKey, string> = {
   report: "Report",
   submit: "Submit",
   cancel: "Cancel",
+  email:"Email"
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -65,14 +68,16 @@ interface ActionChipProps {
   permKey: PermissionKey;
   selected: boolean;
   onClick: () => void;
+  disabled?: boolean;
 }
 
-
-const ActionChip: React.FC<ActionChipProps> = ({ permKey, selected, onClick }) => (
+const ActionChip: React.FC<ActionChipProps> = ({ permKey, selected, onClick, disabled }) => (
   <button
     type="button"
-    onClick={onClick}
+    onClick={disabled ? undefined : onClick}
+    disabled={disabled}
     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-semibold transition-all duration-150 select-none bg-card border-[var(--border)] hover:bg-[var(--row-hover)] text-main"
+
   >
     <div className={`w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${selected
       ? "bg-primary border-primary"
@@ -96,8 +101,8 @@ interface ActionRowProps {
   onClearAll: () => void;
   indent?: boolean;
   isModule?: boolean;
+  disabled?: boolean;
 }
-
 
 const ActionRow: React.FC<ActionRowProps> = ({
   label,
@@ -107,6 +112,7 @@ const ActionRow: React.FC<ActionRowProps> = ({
   onClearAll,
   indent = false,
   isModule = false,
+  disabled = false,
 }) => {
   const activeKeys = getActiveKeys(entry);
   const allSelected = activeKeys.length === PERMISSION_KEYS.length;
@@ -124,8 +130,9 @@ const ActionRow: React.FC<ActionRowProps> = ({
       {/* Tri-state checkbox + label */}
       <button
         type="button"
-        onClick={() => (allSelected ? onClearAll() : onSelectAll())}
-        className="flex items-center gap-2 min-w-[160px] group"
+        onClick={disabled ? undefined : () => (allSelected ? onClearAll() : onSelectAll())}
+        disabled={disabled}
+        className={`flex items-center gap-2 min-w-[160px] group ${disabled ? "cursor-not-allowed" : ""}`}
       >
         <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all ${allSelected
           ? "bg-primary border-primary"
@@ -161,6 +168,7 @@ const ActionRow: React.FC<ActionRowProps> = ({
             permKey={key}
             selected={entry ? entry[key] === 1 : false}
             onClick={() => onToggle(key)}
+            disabled={disabled}
           />
         ))}
       </div>
@@ -178,6 +186,7 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
   modalId,
 }) => {
   const resolvedModalId = useRef(modalId).current;
+  const isViewMode = !isEdit && !!initialData; // ADD KARO
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
@@ -215,7 +224,7 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
         const subModules = MODULE_STRUCTURE[module] ?? [];
         const hasPermission =
           initialData.permission.some((p) => p.module === module) ||
-          subModules.some((sub) => initialData.permission.some((p) => p.module === sub));
+          subModules.some((sub) => initialData.permission.some((p) => p.module === sub.key));
         if (hasPermission) modulesToExpand.add(module);
       });
       setExpandedModules(modulesToExpand);
@@ -241,59 +250,48 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
   const moduleHasAnyPermission = (module: string): boolean => {
     const subModules = MODULE_STRUCTURE[module] ?? [];
     return subModules.some((sub) => {
-      const subEntry = getPermissionActions(sub);
+      const subEntry = getPermissionActions(sub.key);
       return subEntry && getActiveKeys(subEntry).length > 0;
     });
   };
-
-  const footer = (
-    <div className="flex items-center justify-between w-full">
-      <button
-        type="button"
-        onClick={() => {
-          handleReset();
-          resetDirty();
-        }}
-        className="px-4 py-2 text-sm font-medium text-muted border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
-      >
-        Reset
-      </button>
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-          className="px-4 py-2 text-sm font-medium text-main border border-[var(--border)] rounded-lg hover:bg-[var(--row-hover)] transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className={`px-6 py-2 text-sm font-semibold text-white bg-primary rounded-lg shadow-sm shadow-primary/20 hover:opacity-90 transition-all ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""
-            }`}
-        >
-          {isSubmitting ? "Saving..." : isEdit ? "Update" : "Save"}
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={isEdit ? "Edit Role" : "Create New Role"}
-      subtitle="Define role name and module permissions"
+      title={
+        isViewMode
+          ? "View Role"
+          : isEdit
+            ? "Edit Role"
+            : "Add New Role"
+      }
+      subtitle={
+        isViewMode
+          ? `Viewing permissions for: ${form.role}`
+          : isEdit
+            ? "Edit role name and module permissions"
+            : "Define role name and module permissions"
+      }
       icon={ShieldCheck}
-      footer={footer}
+      footer={
+  <ModalFooter
+    onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
+    onReset={!isViewMode ? () => { handleReset(); resetDirty(); } : undefined}
+    onSubmit={!isViewMode ? async () => { await handleSubmit(); } : undefined}
+    isSubmitting={isSubmitting}
+    submitLabel={isEdit ? "Update" : "Submit"}
+    cancelLabel={isViewMode ? "Close" : "Cancel"}
+    resetLabel="Reset"
+  />
+}
       maxWidth="5xl"
       height="82vh"
     >
       <div className="h-full flex flex-col gap-0">
         {/* ── Row 1: Role Name ─────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-4 px-1 pb-4 ">
+        <div className="grid grid-cols-2 gap-4 px-1 pb-4 x ">
           <div>
             <label className="block text-[11px] font-semibold text-muted uppercase tracking-widest mb-1.5">
               Role Name <span className="text-[var(--danger)]">*</span>
@@ -301,12 +299,12 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
             <input
               type="text"
               value={form.role}
-              disabled={isEdit}
+              disabled={isEdit || isViewMode}
               onChange={(e) => handleFieldChangeDirty("role", e.target.value)}
               placeholder="e.g. Admin, HR Manager, Sales Executive"
-              className={`w-full px-3 py-2 text-sm border rounded-lg text-main placeholder:text-muted outline-none transition-all ${isEdit
-                  ? "bg-[var(--disabled-bg)] cursor-not-allowed opacity-70 border-[var(--border)]"
-                  : "bg-app focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className={`w-full px-3 py-2 text-sm border rounded-lg text-main placeholder:text-muted outline-none transition-all ${(isEdit || isViewMode)
+                ? "bg-[var(--disabled-bg)] cursor-not-allowed opacity-70 border-[var(--border)]"
+                : "bg-app focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 } ${errors.role
                   ? "border-[var(--danger)]"
                   : "border-[var(--border)]"
@@ -376,19 +374,21 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
                     {/* Tri-state checkbox for submodules */}
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={isViewMode ? undefined : () => {
                         const allSubsChecked = subModules.every((sub) => {
-                          const e = getPermissionActions(sub);
+                          const e = getPermissionActions(sub.key);
                           return e && getActiveKeys(e).length === PERMISSION_KEYS.length;
                         });
+
                         selectAllSubModules(module, !allSubsChecked);
                         onPermissionChange();
                       }}
-                      className="flex items-center gap-2 min-w-[160px] group"
+                      disabled={isViewMode}
+                      className={`flex items-center gap-2 min-w-[160px] group ${isViewMode ? "cursor-not-allowed" : ""}`}
                     >
                       {(() => {
                         const checkedSubs = subModules.filter((sub) => {
-                          const e = getPermissionActions(sub);
+                          const e = getPermissionActions(sub.key);
                           return e && getActiveKeys(e).length > 0;
                         }).length;
                         const allChecked = checkedSubs === subModules.length && subModules.length > 0;
@@ -425,11 +425,12 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
                   </div>
 
                   {/* Clear button */}
-                  {hasAny && (
+                  {hasAny && !isViewMode && (
                     <button
                       type="button"
                       onClick={() => {
-                        subModules.forEach((sub) => clearModulePermissions(sub));
+                        subModules.forEach((sub) => clearModulePermissions(sub.key));
+
                         onPermissionChange();
                       }}
                       className="text-[10px] font-bold text-[var(--danger)] hover:bg-[var(--danger)]/10 px-2 py-1 rounded-md transition-colors flex-shrink-0"
@@ -446,35 +447,38 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
                       <span className="text-[10px] font-semibold text-muted uppercase tracking-widest">
                         Submodules ({subModules.length})
                       </span>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => { selectAllSubModules(module, true); onPermissionChange(); }}
-                          className="text-[10px] font-bold text-[var(--success)] hover:bg-[var(--success)]/10 px-2 py-0.5 rounded transition-colors"
-                        >
-                          All
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { selectAllSubModules(module, false); onPermissionChange(); }}
-                          className="text-[10px] font-bold text-muted hover:text-[var(--danger)] hover:bg-[var(--danger)]/10 px-2 py-0.5 rounded transition-colors"
-                        >
-                          Clear
-                        </button>
-                      </div>
+                      {!isViewMode && (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { selectAllSubModules(module, true); onPermissionChange(); }}
+                            className="text-[10px] font-bold text-[var(--success)] hover:bg-[var(--success)]/10 px-2 py-0.5 rounded transition-colors"
+                          >
+                            All
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { selectAllSubModules(module, false); onPermissionChange(); }}
+                            className="text-[10px] font-bold text-muted hover:text-[var(--danger)] hover:bg-[var(--danger)]/10 px-2 py-0.5 rounded transition-colors"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {subModules.map((sub) => {
-                      const subEntry = getPermissionActions(sub);
+                      const subEntry = getPermissionActions(sub.key);
                       return (
                         <ActionRow
-                          key={sub}
-                          label={sub}
+                          key={sub.key}
+                          label={sub.label}
                           entry={subEntry}
                           indent
-                          onToggle={(key) => { toggleAction(sub, key); onPermissionChange(); }}
-                          onSelectAll={() => { toggleModuleLevel(sub, true); onPermissionChange(); }}
-                          onClearAll={() => { toggleModuleLevel(sub, false); onPermissionChange(); }}
+                          disabled={isViewMode}
+                          onToggle={(key) => { toggleAction(sub.key, key); onPermissionChange(); }}
+                          onSelectAll={() => { toggleModuleLevel(sub.key, true); onPermissionChange(); }}
+                          onClearAll={() => { toggleModuleLevel(sub.key, false); onPermissionChange(); }}
                         />
                       );
                     })}

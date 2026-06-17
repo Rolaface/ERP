@@ -6,6 +6,8 @@ import type { SetupRow } from "../types";
 import { showApiError, showLoading, closeSwal } from "../../../../utils/alert";
 import { fireManagedSwal } from "../../../../utils/swalManager";
 import { openKRAModal } from "../../../../store/modalStore";
+import DateDisplay from "../../../../components/UI_Utils/Datedisplay";
+
 import {
   getKRAList,
   deleteKRA,
@@ -33,7 +35,7 @@ export default function KRASection() {
         id: r.name,
         title: r.title,
         description: r.description || "-",
-        creation: r.creation || "-",
+        creation: r.creation || null,
       }));
       setData(mapped);
       setTotalItems(resp.pagination?.total || mapped.length);
@@ -55,6 +57,7 @@ export default function KRASection() {
         id: detail.name,
         title: detail.title,
         description: detail.description || "-",
+        creation: detail.creation || null,
       };
       openKRAModal(row, mode === "edit", {
         isViewMode: mode === "view",
@@ -113,13 +116,7 @@ export default function KRASection() {
       key: "creation",
       header: "Date Created",
       align: "center",
-      render: (row) => (
-        <span>
-          {row.creation && row.creation !== "-"
-            ? new Date(row.creation).toLocaleDateString()
-            : "-"}
-        </span>
-      ),
+      render: (row) => <DateDisplay date={row.creation} />,
     },
     {
       key: "title",
@@ -157,7 +154,9 @@ export default function KRASection() {
   ];
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable<SetupRow>
+      
       tableId="setup-kra"
       columns={columns}
       data={data}
@@ -183,5 +182,7 @@ export default function KRASection() {
       totalItems={totalItems}
       onPageChange={setPage}
     />
+     </div>
+
   );
 }

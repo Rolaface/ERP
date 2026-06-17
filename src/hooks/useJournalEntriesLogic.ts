@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { showApiError, showSuccess, showValidationError, showWarningError } from "../utils/alert";
+import { showApiError, showSuccess, showValidationError, showWarningError, showConfirm } from "../utils/alert";
 import {
   createJournalEntry,
   updateJournalEntryById,
@@ -450,11 +450,32 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
       } else {
         let fallbackRate = await fetchRate(undefined);
 
-        if (fallbackRate) {
-          row.exchange_rate = fallbackRate;
-          row.isRateMissing = false;
-          showWarningError(`Please maintain the latest currency exchange for ${ccy}. Using older rate.`);
-        } else {
+        // if (fallbackRate) {
+        //   row.exchange_rate = fallbackRate;
+        //   row.isRateMissing = false;
+        //   showWarningError(`Please maintain the latest currency exchange for ${ccy}. Using older rate.`);
+        // } 
+       if (fallbackRate) {
+  // Use your SweetAlert2 custom confirm flow
+  const proceed = await showConfirm(
+    `Last Pair maintained for ${ccy} - ${BASE_CURRENCY} is ${fallbackRate}.\nDo you wish to continue?`,
+    {
+      title: "Use Older Rate?",
+      confirmButtonText: "Continue",
+      confirmButtonColor: "#ff9966" // Matching the color from your showWarningError
+    }
+  );
+
+  if (proceed) {
+    row.exchange_rate = fallbackRate;
+    row.isRateMissing = false;
+  } else {
+    row.exchange_rate = "";
+    row.isRateMissing = true;
+    missingExchanges.add(`${ccy} to ${BASE_CURRENCY}`);
+  }
+}
+        else {
           row.exchange_rate = "";
           row.isRateMissing = true;
           missingExchanges.add(`${ccy} to ${BASE_CURRENCY}`);

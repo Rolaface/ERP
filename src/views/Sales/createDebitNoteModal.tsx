@@ -83,8 +83,8 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
             {saving
               ? "Saving..."
               : isEdit
-                ? "Update Debit Note"
-                : "Create Debit Note"}
+                ? "Update"
+                : "Submit"}
           </Button>
         </div>
       </>
@@ -129,8 +129,8 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={handleClose} // ← guarded close
-      title={isEdit ? "Edit Debit Note" : "Create Debit Note"}
-      subtitle="Create and manage debit notes"
+      title={isEdit ? "Edit Debit Note" : "Add Debit Note"}
+      subtitle="Add and manage debit notes"
       icon={FileMinus}
       footer={footer}
       maxWidth="6xl"

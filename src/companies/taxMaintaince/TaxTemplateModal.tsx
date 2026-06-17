@@ -194,7 +194,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
       onReset={reset}
       onSubmit={handleSubmitInternal}
       isSubmitting={loading}
-      submitLabel={isEditMode ? "Update" : "Save"}
+      submitLabel={isEditMode ? "Update" : "Submit"}
       resetLabel="Reset"
     />
   );
@@ -211,9 +211,9 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
           ? "View Tax Template"
           : isEditMode
             ? "Edit Tax Template"
-            : "Create Tax Template"
+            : "Add Tax Template"
       }
-      subtitle={isViewMode ? "Read-only view of this tax template" : "Create tax template"}
+      subtitle={isViewMode ? "Read-only view of this tax template" : "Add tax template"}
       icon={ReceiptText}
       footer={footer}
       customWidth="46vw"

@@ -182,8 +182,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={mode === "edit" ? "Edit Invoice" : "Create Invoice"}
-      subtitle="Create and manage invoice details"
+      title={mode === "edit" ? "Edit Invoice" : "Add Invoice"}
+      subtitle="Add and manage invoice details"
       icon={Receipt}
       footer={footerContent}
       maxWidth="full"

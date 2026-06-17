@@ -1,18 +1,70 @@
 import { useState, useCallback } from "react";
 import type { PermissionEntry, UserRoleFormData, UserRole } from "../types/RoleManagement/UserRole";
 import { EMPTY_FORM } from "../types/RoleManagement/UserRole";
-import { showApiError } from "../utils/alert"; 
+import { showApiError } from "../utils/alert";
 
-export const MODULE_STRUCTURE: Record<string, string[]> = {
-  Sales: ["Sales Invoice"],
-  CustomerManagement: ["Customer","Customer Group", "Payment Entry"],
-  Procurement: ["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice", "Payment Entry"],
-  Inventory: ["Item", "Item Group", "Warehouse", "Stock Entry"],
-  Accounting: ["Journal Entry","Account"],
-  Assets: ["Asset Category", "Asset", "Asset Movement"],
-  HumanResource: ["Employee", "Payroll Entry","Salary Slip","Leave Application"],
-  Settings: ["Company", "User","Role","Bank", "Bank Account","Mode of Payment", "Currency Exchange", "Expense Claim Type","Expense Claim","Employee Advance","Email Template","Tax Category","Item Tax Template","Sales Taxes and Charges Template"],
-};
+export const MODULE_STRUCTURE: Record<string, { key: string; label: string }[]> = {
+  Sales: [
+    { key: "Sales Invoice", label: "Sales Invoice" },
+    { key: "Quotation", label: "Quotation" },
+  ],
+  CustomerManagement: [
+    { key: "Customer", label: "Customer" },
+    { key: "Customer Group", label: "Customer Group" },
+    { key: "Payment Entry", label: "Payment Entry" },
+  ],
+  Procurement: [
+    { key: "Supplier", label: "Supplier" },
+    { key: "Request For Quotation", label: "Request For Quotation" },
+    { key: "Purchase Order", label: "Purchase Order" },
+    { key: "Purchase Invoice", label: "Purchase Invoice" },
+    { key: "Payment Entry", label: "Payment Entry" },
+  ],
+  Inventory: [
+    { key: "Item", label: "Item" },
+    { key: "Item Group", label: "Item Group" },
+    { key: "Warehouse", label: "Warehouse" },
+    { key: "Stock Entry", label: "Stock Entry" },
+  ],
+  Accounting: [
+    { key: "Journal Entry", label: "Journal Entry" },
+    { key: "Account", label: "Account" },
+  ],
+  Assets: [
+    { key: "Asset Category", label: "Asset Category" },
+    { key: "Asset", label: "Asset" },
+    { key: "Asset Movement", label: "Asset Movement" },
+  ],
+  HumanResource: [
+    { key: "Employee", label: "Employee" },
+    { key: "Payroll Entry", label: "Payroll Entry" },
+    { key: "Salary Slip", label: "Salary Slip" },
+    { key: "Leave Application", label: "Leave Application" },
+    { key: "Leave Type", label: "Leave Type" },
+    { key: "Leave Period", label: "Leave Period" },
+    { key: "Leave Policy", label: "Leave Policy" },
+    { key: "Leave Policy Assignment", label: "Leave Policy Assignment" },
+    { key: "Holiday List", label: "Holiday List" },
+    { key: "Shift Type", label: "Shift Type" },
+  ],
+  Settings: [
+    { key: "Company", label: "Company" },
+    { key: "Document Naming Settings", label: "Naming Series" },
+    { key: "User", label: "User" },
+    { key: "Role", label: "Role" },
+    { key: "Bank", label: "Bank" },
+    { key: "Bank Account", label: "Bank Account" },
+    { key: "Mode of Payment", label: "Mode of Payment" },
+    { key: "Currency Exchange", label: "Currency Exchange" },
+    { key: "Expense Claim Type", label: "Expense Claim Type" },
+    { key: "Expense Claim", label: "Expense Claim" },
+    { key: "Employee Advance", label: "Employee Advance" },
+    { key: "Email Template", label: "Email Template" },
+    { key: "Tax Category", label: "Tax Category" },
+    { key: "Item Tax Template", label: "Item Tax Template" },
+    { key: "Sales Taxes and Charges Template", label: "Sales Taxes and Charges Template" },
+  ],
+};;
 
 export const ALL_MODULES = Object.keys(MODULE_STRUCTURE);
 
@@ -83,45 +135,55 @@ export const useUserRoleLogic = ({
     (field: keyof UserRoleFormData, value: unknown) => {
       setForm((prev) => ({ ...prev, [field]: value }));
       clearError(field);
-      clearError("submit"); 
+      clearError("submit");
     },
     [clearError]
   );
 
- 
 
-const buildPayload = (): UserRoleFormData => {
-  const subModuleParent: Record<string, string> = {};
-  Object.entries(MODULE_STRUCTURE).forEach(([parent, subs]) => {
-    subs.forEach((sub) => {
-      subModuleParent[sub] = parent;
+
+  const buildPayload = (): UserRoleFormData => {
+    const allSubModules = Object.values(MODULE_STRUCTURE).flat().map((s) => s.key);
+
+    const permission = allSubModules.map((sub) => {
+      const existing = form.permission.find((p) => p.module === sub);
+      return {
+        module: sub,
+        read: existing?.read ?? 0,
+        write: existing?.write ?? 0,
+        create: existing?.create ?? 0,
+        delete: existing?.delete ?? 0,
+        import: existing?.import ?? 0,
+        export: existing?.export ?? 0,
+        report: existing?.report ?? 0,
+        submit: existing?.submit ?? 0,
+        cancel: existing?.cancel ?? 0,
+        email : existing?.email ?? 0
+      };
     });
-  });
 
-
-  const allSubModules = Object.values(MODULE_STRUCTURE).flat();
-
-  const permission = allSubModules.map((sub) => {
-    const existing = form.permission.find((p) => p.module === sub);
-    return {
-      module: sub,
-      read: existing?.read ?? 0,
-      write: existing?.write ?? 0,
-      create: existing?.create ?? 0,
-      delete: existing?.delete ?? 0,
-      import: existing?.import ?? 0,
-      export: existing?.export ?? 0,
-      report: existing?.report ?? 0,
-      submit: existing?.submit ?? 0,
-      cancel: existing?.cancel ?? 0,
-    };
-  });
-
-  return {
-    role: form.role.trim(),
-    permission,
+    return { role: form.role.trim(), permission };
   };
-};
+
+  const selectAllSubModules = useCallback(
+    (module: string, on: boolean) => {
+      const subModules = (MODULE_STRUCTURE[module] ?? []).map((s) => s.key);
+      setForm((prev) => {
+        const filtered = prev.permission.filter(
+          (p) => !subModules.includes(p.module)
+        );
+        if (!on) return { ...prev, permission: filtered };
+        const newEntries: PermissionEntry[] = subModules.map((sub) => ({
+          module: sub,
+          read: 1, write: 1, create: 1, delete: 1,
+          import: 1, export: 1, report: 1, submit: 1, cancel: 1,email:1
+        }));
+        return { ...prev, permission: [...filtered, ...newEntries] };
+      });
+      clearError("permission");
+    },
+    [clearError]
+  );
 
   const setPermissionActions = useCallback(
     (module: string, entry: Omit<PermissionEntry, "module">) => {
@@ -153,7 +215,7 @@ const buildPayload = (): UserRoleFormData => {
         const newEntry: PermissionEntry = {
           module,
           read: 0, write: 0, create: 0,
-          delete: 0, import: 0, export: 0, report: 0,submit: 0, cancel: 0,
+          delete: 0, import: 0, export: 0, report: 0, submit: 0, cancel: 0, email: 0,
           [action]: 1,
         };
         return { ...prev, permission: [...prev.permission, newEntry] };
@@ -172,7 +234,7 @@ const buildPayload = (): UserRoleFormData => {
           ...prev,
           permission: [
             ...filtered,
-            { module, read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1, submit: 1, cancel: 1 ,},
+            { module, read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1, submit: 1, cancel: 1, email:1},
           ],
         };
       });
@@ -188,24 +250,6 @@ const buildPayload = (): UserRoleFormData => {
     }));
   }, []);
 
-  const selectAllSubModules = useCallback(
-    (module: string, on: boolean) => {
-      const subModules = MODULE_STRUCTURE[module] ?? [];
-      setForm((prev) => {
-        const filtered = prev.permission.filter(
-          (p) => p.module !== module && !subModules.includes(p.module)
-        );
-        if (!on) return { ...prev, permission: filtered };
-        const newEntries: PermissionEntry[] = subModules.map((sub) => ({
-          module: sub,
-          read: 1, write: 1, create: 1, delete: 1, import: 1, export: 1, report: 1, submit: 1, cancel: 1,
-        }));
-        return { ...prev, permission: [...filtered, ...newEntries] };
-      });
-      clearError("permission");
-    },
-    [clearError]
-  );
 
   // ── Submit ───────────────────────────────────────────────────────────────
 

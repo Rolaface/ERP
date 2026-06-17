@@ -211,7 +211,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
         disabled={isSaving}
         className={isSaving ? "opacity-60 cursor-not-allowed" : ""}
       >
-        {isSaving ? "Saving..." : editData ? "Update" : "Save"}
+        {isSaving ? "Saving..." : editData ? "Update" : "Submit"}
       </Button>
     </>
   );
@@ -230,7 +230,7 @@ const CurrencyConversionModal: React.FC<Props> = ({
           ? "View Currency Exchange"
           : editData
             ? "Edit Currency Exchange"
-            : "Create Currency Exchange"
+            : "Add Currency Exchange"
       } subtitle={
         isViewMode
           ? "View exchange rate"

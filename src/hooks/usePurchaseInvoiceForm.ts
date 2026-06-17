@@ -15,6 +15,7 @@ import type {
   TaxRow,
   PaymentRow,
   ItemRow,
+  ExistingAttachment,
 } from "../types/Supply/purchaseInvoice";
 import {
   emptyPOForm,
@@ -26,6 +27,7 @@ import {
   createPurchaseInvoice,
   getPurchaseInvoiceById,
   updatePurchaseInvoice,
+  uploadPIAttachment
 } from "../api/procurement/PurchaseInvoiceApi";
 import {
   mapUIToCreatePI,
@@ -44,7 +46,10 @@ import { getPurchaseOrderById } from "../api/procurement/PurchaseOrderApi";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 import { getAddressList } from "../api/Adressapi";
 
+import { removeAttachment } from "../api/Email/EmailApi";
+import { fireManagedSwal } from "../utils/swalManager";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+
 
 // ─────────────────────────────────────────────
 // Types
@@ -63,19 +68,19 @@ type AddressKey = keyof PurchaseInvoiceFormData["addresses"];
 const addressStub = (id: string, type: string): ApiAddress | null =>
   id
     ? {
-        id,
-        title: id,
-        type,
-        addressType: type,
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        country: "",
-        pincode: "",
-        phone: "",
-        email: "",
-      }
+      id,
+      title: id,
+      type,
+      addressType: type,
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      country: "",
+      pincode: "",
+      phone: "",
+      email: "",
+    }
     : null;
 
 // ─────────────────────────────────────────────
@@ -294,23 +299,23 @@ export const usePurchaseInvoiceForm = ({
 
     loadCompanyData();
   }, [isOpen, pId]);
-useEffect(() => {
-  if (!form.supplierInvoiceDate) return;
+  useEffect(() => {
+    if (!form.supplierInvoiceDate) return;
 
-  const terms = form.terms?.buying?.payment?.dueDates ?? "";
+    const terms = form.terms?.buying?.payment?.dueDates ?? "";
 
-  const due = calculateDueDate(
+    const due = calculateDueDate(
+      form.supplierInvoiceDate,
+      terms
+    );
+
+    if (due) {
+      setForm((prev) => ({ ...prev, dueDate: due }));
+    }
+  }, [
     form.supplierInvoiceDate,
-    terms
-  );
-
-  if (due) {
-    setForm((prev) => ({ ...prev, dueDate: due }));
-  }
-}, [
-  form.supplierInvoiceDate,
-  form.terms?.buying?.payment?.dueDates,
-]);
+    form.terms?.buying?.payment?.dueDates,
+  ]);
 
   // ── Load PI in edit mode ───────────────────
   useEffect(() => {
@@ -328,8 +333,23 @@ useEffect(() => {
         }
 
         const mapped = mapApiToUI(res.data);
-        setForm(mapped);
 
+        const rawAttachments =
+          (res.data as any)?.attachments ??
+          (res.data as any)?.attachment_list ??
+          (res.data as any)?.terms?.terms?.buying?.payment?.attachments ??
+          [];
+
+        const existingAttachments: ExistingAttachment[] = rawAttachments.map((a: any) => ({
+          name: a.file_name ?? a.name ?? "Attachment",
+          url: a.file_url ?? a.url,
+          file_size: a.file_size,
+          isExisting: true,
+            fid: a.fid ?? a.id ?? a.name, 
+
+        }));
+
+        setForm({ ...mapped, attachments: existingAttachments });
         const supplierAddrId = mapped.addresses?.supplierAddress?.id || "";
         const dispatchAddrId = mapped.addresses?.dispatchAddress?.id || "";
         const shippingAddrId = mapped.addresses?.shippingAddress?.id || "";
@@ -464,14 +484,14 @@ useEffect(() => {
   useFieldDefault(isOpen, form.project, fetchProjects, (val) =>
     setForm((prev) => ({ ...prev, project: val })),
   );
-useFieldDefault(
-  isOpen && !pId,  // only auto-default in create mode
-  form.warehouse,
-  () => getAllWarehouses().then((list: string[]) =>
-    list.map((w) => ({ value: w, label: w }))
-  ),
-  (val) => setForm((prev) => ({ ...prev, warehouse: val })),
-);
+  useFieldDefault(
+    isOpen && !pId,  // only auto-default in create mode
+    form.warehouse,
+    () => getAllWarehouses().then((list: string[]) =>
+      list.map((w) => ({ value: w, label: w }))
+    ),
+    (val) => setForm((prev) => ({ ...prev, warehouse: val })),
+  );
 
   // ─────────────────────────────────────────────
   // Handlers
@@ -499,6 +519,12 @@ useFieldDefault(
     const target = e.target as HTMLInputElement;
     const { name, value, type } = target;
     const finalValue = type === "checkbox" ? target.checked : value;
+
+    if (name === "attachments") {
+      const file = Array.isArray(value) ? (value as File[]) : [];
+      setForm((prev) => ({ ...prev, attachments: file }));
+      return;
+    }
 
     if (name === "updateStock") {
       setForm((prev) => ({
@@ -625,6 +651,47 @@ useFieldDefault(
     [handleFormChange], // handleFormChange has stable ref (no deps), so this is safe
   );
 
+
+ const handleRemoveAttachment = async (idx: number) => {
+  const target = form.attachments?.[idx];
+  if (!target) return;
+
+  const isExisting = !(target instanceof File) && (target as any).isExisting;
+  const fileName = target instanceof File ? target.name : (target as any).name;
+
+  const confirm = await fireManagedSwal({
+    icon: "warning",
+    title: "Remove attachment?",
+    text: `Remove "${fileName}"?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, remove",
+  });
+  if (!confirm.isConfirmed) return;
+
+  if (isExisting) {
+    try {
+      showLoading("Removing attachment...");
+      await removeAttachment(
+        (target as any).fid,
+        String(pId),
+        "Purchase Invoice",
+      );
+      closeSwal();
+      showSuccess("Attachment removed");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+      return; // delete fail ho gaya to UI se mat hatao
+    }
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    attachments: (prev.attachments ?? []).filter((_, i) => i !== idx),
+  }));
+};
   // ── Supplier ───────────────────────────────
   const handleSupplierChange = async (sup: any) => {
     if (!sup) return;
@@ -896,9 +963,9 @@ useFieldDefault(
           : {}),
         ...(shippingAddrId
           ? {
-              companyShipping: addressStub(shippingAddrId, "Shipping"),
-              companyBilling: addressStub(shippingAddrId, "Billing"),
-            }
+            companyShipping: addressStub(shippingAddrId, "Shipping"),
+            companyBilling: addressStub(shippingAddrId, "Billing"),
+          }
           : {}),
         ...(dispatchAddrId
           ? { supplierDispatch: addressStub(dispatchAddrId, "Dispatch") }
@@ -983,13 +1050,13 @@ useFieldDefault(
         i !== idx
           ? item
           : {
-              ...item,
-              [name]: isNum
-                ? value === "" || value === null
-                  ? null
-                  : Number(value)
-                : value,
-            },
+            ...item,
+            [name]: isNum
+              ? value === "" || value === null
+                ? null
+                : Number(value)
+              : value,
+          },
       );
       return { ...p, items };
     });
@@ -1172,6 +1239,7 @@ useFieldDefault(
   };
 
   // ── Submit ─────────────────────────────────
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (saving) return;
@@ -1201,8 +1269,9 @@ useFieldDefault(
 
       const payload = mapUIToCreatePI(finalForm);
 
+      // ── Step 1: Create / Update PI first ──────────────────────────
       const res = isEditMode
-        ? await updatePurchaseInvoice(pId!, payload) // ← properly imported now
+        ? await updatePurchaseInvoice(pId!, payload)
         : await createPurchaseInvoice(payload);
 
       closeSwal();
@@ -1212,11 +1281,30 @@ useFieldDefault(
         return;
       }
 
+      // ── Step 2: Extract pId from create response ───────────────────
+      const createdPId =
+        res?.data?.pId ??
+        res?.data?.id ??
+        res?.data?.name ??
+        (isEditMode ? pId : null);
+
+      // ── Step 3: Upload attachments using createdPId as docname ──
+      const newFiles = (form.attachments ?? []).filter(
+        (a): a is File => a instanceof File
+      );
+
+      if (newFiles.length && createdPId) {
+        await Promise.all(
+          newFiles.map((file) => uploadPIAttachment(file, String(createdPId)))
+        );
+      }
+
+      // ── Step 4: Success ────────────────────────────────────────────
       showSuccess(
         res.message ||
-          (isEditMode
-            ? "Purchase Invoice updated successfully"
-            : "Purchase Invoice created successfully"),
+        (isEditMode
+          ? "Purchase Invoice updated successfully"
+          : "Purchase Invoice created successfully"),
       );
       useDataRefreshStore
         .getState()
@@ -1237,6 +1325,7 @@ useFieldDefault(
     setUsePO(true);
     setForm({
       ...emptyPOForm,
+      attachments: [],
       terms: {
         buying: companyDefaults.terms?.buying ?? emptyPOForm.terms?.buying!,
       },
@@ -1314,6 +1403,7 @@ useFieldDefault(
     setAddresses,
     loading,
     setLoading,
+    handleRemoveAttachment,
     handleAddressRemove,
     handleAddressSelect: (boxKey: BoxType, addr: ApiAddress) => {
       setSelected((prev) => ({ ...prev, [boxKey]: addr }));

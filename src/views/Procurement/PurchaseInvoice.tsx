@@ -83,7 +83,7 @@ const STATUS_TRANSITIONS: Record<PIStatus, PIStatus[]> = {
 
 const invoiceStatusOptions = [
   { label: "Draft", value: "Draft" },
-  { label: "Approved", value: "Submitted" },
+  { label: "Approve", value: "Submitted" },
   { label: "Unpaid", value: "Unpaid" },
   { label: "Paid", value: "Paid" },
   { label: "Party Paid", value: "Party Paid" },
@@ -124,6 +124,10 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+
+  const [drawerAttachmentUrl, setDrawerAttachmentUrl] = useState<string | null>(null);
+  const [drawerAttachmentLoading, setDrawerAttachmentLoading] = useState(false);
+  const [drawerAttachmentName, setDrawerAttachmentName] = useState<string>("");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -279,6 +283,33 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
     }
   };
 
+
+  const handleViewAttachment = async (file: any) => {
+    const fileUrl = file.file_url ?? file.url;
+    if (!fileUrl) return;
+
+    setDrawerAttachmentLoading(true);
+    setDrawerAttachmentName(file.file_name ?? file.name ?? "Attachment");
+    try {
+      const res = await fetch(`${fileUrl}${fileUrl.includes("?") ? "&" : "?"}_=${Date.now()}`, {
+        credentials: "include"
+      });
+      if (!res.ok && res.status !== 304) throw new Error(`Failed: ${res.status}`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      setDrawerAttachmentUrl(objectUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerAttachmentLoading(false);
+    }
+  };
+  const handleCloseAttachment = () => {
+    if (drawerAttachmentUrl?.startsWith("blob:"))
+      URL.revokeObjectURL(drawerAttachmentUrl);
+    setDrawerAttachmentUrl(null);
+    setDrawerAttachmentName("");
+  };
   const handleOpenPDF = async (
     invoice: Purchaseinvoice,
     e?: React.MouseEvent,
@@ -562,7 +593,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
       render: (o) => (
         <div className="py-1.5">
           <StatusBadge
-            status={o.status === "Submitted" ? "Approved" : o.status}
+            status={o.status === "Submitted" ? "Approve" : o.status}
           />
         </div>
       ),
@@ -576,12 +607,12 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
           // View PDF — sirf non-cancelled pe
           ...(o.status !== "Cancelled"
             ? [
-                {
-                  label: "View PDF",
-                  icon: ACTION_ICONS.PDF,
-                  onClick: () => handleOpenPDF(o),
-                },
-              ]
+              {
+                label: "View PDF",
+                icon: ACTION_ICONS.PDF,
+                onClick: () => handleOpenPDF(o),
+              },
+            ]
             : []),
 
           // {
@@ -592,32 +623,32 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
 
           // Make Payment — non-draft, outstanding > 0
           ...(can(PAYMENT_MODULE, "create") &&
-          Number(o.outstanding_amount || 0) > 0 &&
-          o.status !== "Draft"
+            Number(o.outstanding_amount || 0) > 0 &&
+            o.status !== "Draft"
             ? [
-                {
-                  label: "Make Payment",
-                  icon: ACTION_ICONS.PAYMENT,
-                  onClick: () => handleMakePayment(o.pId),
-                },
-              ]
+              {
+                label: "Make Payment",
+                icon: ACTION_ICONS.PAYMENT,
+                onClick: () => handleMakePayment(o.pId),
+              },
+            ]
             : []),
 
           // Status transitions
           ...(can(PI_MODULE, "write")
             ? (STATUS_TRANSITIONS[o.status as PIStatus] ?? []).map(
-                (status) => ({
-                  label:
-                    status === "Submitted"
-                      ? "Approve"
-                      : status === "Cancelled"
-                        ? "Cancel"
-                        : status,
-                  icon: getStatusActionIcon(status),
-                  danger: status === "Cancelled",
-                  onClick: () => handleStatusChange(o.pId, status),
-                }),
-              )
+              (status) => ({
+                label:
+                  status === "Submitted"
+                    ? "Approve"
+                    : status === "Cancelled"
+                      ? "Cancel"
+                      : status,
+                icon: getStatusActionIcon(status),
+                danger: status === "Cancelled",
+                onClick: () => handleStatusChange(o.pId, status),
+              }),
+            )
             : []),
         ];
 
@@ -733,6 +764,11 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
             URL.revokeObjectURL(drawerPdfUrl);
           setDrawerPdfUrl(null);
         }}
+        attachmentUrl={drawerAttachmentUrl}
+        attachmentLoading={drawerAttachmentLoading}
+        attachmentName={drawerAttachmentName}
+        onViewAttachment={handleViewAttachment}
+        onCloseAttachment={handleCloseAttachment}
       />
 
       <PdfPreviewModal
@@ -765,3 +801,39 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
 };
 
 export default PurchaseinvoicesTable;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

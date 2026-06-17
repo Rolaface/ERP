@@ -128,6 +128,7 @@ export function DesignationSetup() {
   );
 
   return (
+     <div className="h-[calc(100vh-220px)]"> 
     <ModalTable
       columns={columns}
       data={rows}
@@ -153,7 +154,7 @@ export function DesignationSetup() {
       totalPages={totalPages}
       totalItems={totalItems}
       pageSize={pageSize}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={[pageSize, 25, 50]}
       onPageChange={setPage}
       onPageSizeChange={(s) => {
         setPageSize(s);
@@ -162,5 +163,6 @@ export function DesignationSetup() {
       enableColumnSelector
       tableId="employee-designations"
     />
+    </div>
   );
 }
