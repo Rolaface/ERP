@@ -11,6 +11,7 @@ import {
   flexRender,
   type ColumnDef,
 } from "@tanstack/react-table";
+import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
   FaFilter,
   FaDownload,
@@ -892,14 +893,13 @@ const AccountsReceivable = () => {
         <div className="w-px self-stretch bg-[var(--border)]" />
 
         {/* Date */}
-        <input
-          type="date"
-          value={postingDate}
-          onChange={(e) => setPostingDate(e.target.value)}
-          className="h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main
-                     focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
-          title="Posting Date"
-        />
+        <div className="w-[140px]">
+  <DatePickerInput
+    name="postingDate"
+    value={postingDate}
+    onChange={(_, value) => setPostingDate(value)}
+  />
+</div>
 
         {/* Status */}
         <FilterDropdown
