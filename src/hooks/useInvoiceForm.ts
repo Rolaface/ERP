@@ -514,7 +514,6 @@ const paymentInformation = {
         };
       });
     } catch (err: any) {
-      console.error("Failed to load customer data", err);
       showApiError("Failed to load customer details");
     }
   };
@@ -573,6 +572,33 @@ const maxAllowed = Math.max(0, available - usedByOthers);
       // ─────────────────────────────────────────────────────
 
       const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
+      if (
+  (name === "boxStart" || name === "boxEnd") &&
+  updatedItem.piecesPerBox
+) {
+  const start = Number(updatedItem.boxStart || 0);
+  const end = Number(updatedItem.boxEnd || 0);
+  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+
+  if (start > 0 && end >= start) {
+    const totalBoxes = end - start + 1;
+    updatedItem.quantity = totalBoxes * piecesPerBox;
+  }
+}
+      if (name === "quantity") {
+  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+
+  if (piecesPerBox > 0) {
+    const totalBoxes = Math.ceil(Number(updatedItem.quantity || 0) / piecesPerBox);
+    const boxStart =
+      idx === 0
+        ? 1
+        : Number(items[idx - 1]?.boxEnd || 0) + 1;
+
+    updatedItem.boxStart = boxStart;
+    updatedItem.boxEnd = boxStart + totalBoxes - 1;
+  }
+}
       const start = Number(updatedItem.boxStart || 0);
       const end = Number(updatedItem.boxEnd || 0);
 
@@ -650,7 +676,26 @@ const maxAllowed = Math.max(0, available - usedByOthers);
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
       const items = [...prev.items];
-      items[index] = { ...items[index], ...updated };
+      const updatedItem = {
+  ...items[index],
+  ...updated,
+};
+
+const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+
+if (
+  piecesPerBox > 0 &&
+  Number(updatedItem.quantity || 0) > 0
+) {
+  const totalBoxes = Math.ceil(
+    Number(updatedItem.quantity) / piecesPerBox
+  );
+
+  updatedItem.boxEnd =
+    Number(updatedItem.boxStart || 1) + totalBoxes - 1;
+}
+
+items[index] = updatedItem;
       return { ...prev, items };
     });
   };
@@ -907,7 +952,6 @@ const maxAllowed = Math.max(0, available - usedByOthers);
           shippingAddress: DEFAULT_INVOICE_FORM.billingAddress || "",
         });
       } catch (err) {
-        console.error("Failed to re-load company defaults during reset", err);
         showApiError("Failed to reload company defaults");
         setFormData({ ...DEFAULT_INVOICE_FORM });
       }
