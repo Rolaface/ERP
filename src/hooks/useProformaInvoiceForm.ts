@@ -561,6 +561,36 @@ const maxAllowed = Math.max(0, available - usedByOthers);
       // ─────────────────────────────────────────────────────
 
       const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
+      if (name === "quantity") {
+  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+
+  if (piecesPerBox > 0) {
+    const totalBoxes = Math.ceil(
+      Number(updatedItem.quantity || 0) / piecesPerBox
+    );
+
+    const boxStart =
+      idx === 0
+        ? 1
+        : Number(items[idx - 1]?.boxEnd || 0) + 1;
+
+    updatedItem.boxStart = boxStart;
+    updatedItem.boxEnd = boxStart + totalBoxes - 1;
+  }
+}
+if (
+  (name === "boxStart" || name === "boxEnd") &&
+  updatedItem.piecesPerBox
+) {
+  const start = Number(updatedItem.boxStart || 0);
+  const end = Number(updatedItem.boxEnd || 0);
+  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+
+  if (start > 0 && end >= start) {
+    const totalBoxes = end - start + 1;
+    updatedItem.quantity = totalBoxes * piecesPerBox;
+  }
+}
       const start = Number(updatedItem.boxStart || 0);
       const end = Number(updatedItem.boxEnd || 0);
 
@@ -638,7 +668,12 @@ const maxAllowed = Math.max(0, available - usedByOthers);
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
       const items = [...prev.items];
-      items[index] = { ...items[index], ...updated };
+      const updatedItem = {
+  ...items[index],
+  ...updated,
+};
+
+items[index] = updatedItem;
       return { ...prev, items };
     });
   };

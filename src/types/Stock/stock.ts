@@ -17,4 +17,5 @@ export type SelectedStockItem = {
   vatCode?: string;
   taxInfo?: any[];
   isServiceItem?: boolean;
+  piecesPerBox?: number;
 };
