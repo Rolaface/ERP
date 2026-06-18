@@ -206,6 +206,14 @@ const InventorySection: React.FC<InventorySectionProps> = React.memo(
             placeholder="e.g. 365"
             disabled={!form.has_expiry_date}
           />
+          <ModalInput
+  label="Pieces / Box"
+  name="piecesPerBox"
+  value={form.piecesPerBox ?? ""}
+  onChange={onFormChange}
+  placeholder="e.g. 12"
+  type="number"
+/>
 
           {/* <div className="w-full max-w-[220px]">
             <ModalSelect

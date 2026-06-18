@@ -46,6 +46,7 @@ packingSize: number | null;
     reorderLevel: string;
     minStockLevel: string;
     maxStockLevel: string;
+    piecesPerBox: number;
   };
   batchInfo: BatchInfo;
 
