@@ -1,24 +1,36 @@
 import React, { useState } from "react";
-import { resetPasswordApi } from "../src/api/authService";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { confirmResetPasswordApi } from "./api/authService";
+import { Eye, EyeOff } from "lucide-react";
+import { showValidationError, showApiError } from "./utils/alert";
 
 const ResetPassword: React.FC = () => {
-  const [email, setEmail] = useState("");
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const key = searchParams.get("key") ?? "";
+  const [new_password, setNewPassword] = useState("");
+  const [confirm_password, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setMessage("");
 
+    if (!key) {
+      showValidationError("Reset link is invalid or expired.");
+      return;
+    }
+
     try {
-      const res = await resetPasswordApi(email);
-      setMessage(res.message);
+      const res = await confirmResetPasswordApi(key, new_password, confirm_password);
+      setMessage(res.message ?? "Password reset successfully.");
+      setTimeout(() => navigate("/login"), 1500);
     } catch (err: any) {
-      setError(err.message);
+      showApiError(err);
     }
   };
-
   return (
     <div className="flex justify-center items-center h-screen">
       <form
@@ -27,22 +39,47 @@ const ResetPassword: React.FC = () => {
       >
         <h2 className="text-xl font-bold text-center">Reset Password</h2>
 
-        {error && <p className="text-red-500">{error}</p>}
         {message && <p className="text-green-600">{message}</p>}
 
-        <input
-          type="text"
-          placeholder="Enter username"
-          className="w-full border p-2 rounded"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <div className="relative">
+          <input
+            type={showNewPassword ? "text" : "password"}
+            placeholder="New Password"
+            className="w-full border p-2 rounded pr-10"
+            value={new_password}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setShowNewPassword(!showNewPassword)}
+            className="absolute right-3 top-2.5 text-gray-500"
+          >
+            {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+
+        <div className="relative">
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Confirm Password"
+            className="w-full border p-2 rounded pr-10"
+            value={confirm_password}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-2.5 text-gray-500"
+          >
+            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
 
         <button
           type="submit"
           className="w-full bg-green-600 text-white p-2 rounded"
         >
-          Send Reset Link
+          Confirm
         </button>
       </form>
     </div>

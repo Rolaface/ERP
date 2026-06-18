@@ -41,6 +41,7 @@ export const API = {
     login: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
     forgotPassword: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.forgot_password`,
     logout: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`,
+    resetPassword: `${ERP_BASE}/api/method/frappe.core.doctype.user.user.update_password`
   },
   
   Delete: {
