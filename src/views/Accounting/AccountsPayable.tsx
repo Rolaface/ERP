@@ -30,6 +30,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import DatePickerInput from "../../components/calendar/DatePickerInput";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
@@ -925,13 +926,13 @@ const AccountsPayable = () => {
         </div>
         <div className="w-px self-stretch bg-[var(--border)]" />
 
-        <input
-          type="date"
-          value={postingDate}
-          onChange={(e) => setPostingDate(e.target.value)}
-          className="h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
-        />
-
+     <div className="w-[135px] min-w-[135px]">
+  <DatePickerInput
+    name="postingDate"
+    value={postingDate}
+    onChange={(_, value) => setPostingDate(value)}
+  />
+</div>
         <FilterDropdown
           label={filterStatus === "all" ? "Status" : filterStatus}
           active={filterStatus !== "all"}
