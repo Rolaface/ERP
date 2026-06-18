@@ -32,6 +32,9 @@ import PurchaseInvoiceDetailModal, {
   type PurchaseInvoiceDetail,
 } from "../../components/procurement/purchaseinvoice/PurchaseInvoiceDetailsModal";
 import { openScanPIModal } from "../../store/modalStore";
+import { ERP_BASE } from "../../config/api";
+
+// const erp ="https://api.erp.uat.rolaface.com"
 import {
   REFRESH_KEYS,
   useDataRefreshStore,
@@ -248,6 +251,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
     setDrawerOpen(true);
     setDrawerLoading(true);
     setDrawerData(null);
+     handleCloseAttachment(); 
     try {
       const res = await getPurchaseInvoiceById(pId);
       if (res?.status === "success")
@@ -284,26 +288,26 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
   };
 
 
-  const handleViewAttachment = async (file: any) => {
-    const fileUrl = file.file_url ?? file.url;
-    if (!fileUrl) return;
+const handleViewAttachment = (file: any) => {
+  const rawUrl = file.file_url ?? file.url;
 
-    setDrawerAttachmentLoading(true);
-    setDrawerAttachmentName(file.file_name ?? file.name ?? "Attachment");
-    try {
-      const res = await fetch(`${fileUrl}${fileUrl.includes("?") ? "&" : "?"}_=${Date.now()}`, {
-        credentials: "include"
-      });
-      if (!res.ok && res.status !== 304) throw new Error(`Failed: ${res.status}`);
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      setDrawerAttachmentUrl(objectUrl);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setDrawerAttachmentLoading(false);
-    }
-  };
+  if (!rawUrl) {
+    showApiError("Attachment URL missing");
+    return;
+  }
+
+  const fileUrl =
+    rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
+      ? rawUrl
+      : `${ERP_BASE}${rawUrl}`;
+
+  setDrawerAttachmentName(
+    file.file_name ?? file.name ?? "Attachment"
+  );
+
+  setDrawerAttachmentUrl(fileUrl);
+  setDrawerAttachmentLoading(false);
+};
   const handleCloseAttachment = () => {
     if (drawerAttachmentUrl?.startsWith("blob:"))
       URL.revokeObjectURL(drawerAttachmentUrl);
@@ -750,6 +754,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
           setDrawerOpen(false);
           setDrawerData(null);
           setDrawerPdfUrl(null);
+          handleCloseAttachment();
         }}
         pdfUrl={drawerPdfUrl}
         pdfLoading={drawerPdfLoading}
