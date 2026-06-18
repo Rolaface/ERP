@@ -165,3 +165,28 @@ export const resetPasswordApi = async (email: string): Promise<{ message: string
 
   return { message: data.message.message ?? "Reset link sent successfully." };
 };
+
+
+interface ConfirmResetPasswordResponse {
+  message?: string;
+  home_page?: string;
+  full_name?: string;
+}
+
+export const confirmResetPasswordApi = async (
+  key: string,
+  new_password: string,
+  confirm_password: string
+): Promise<ConfirmResetPasswordResponse> => {
+  const resp: AxiosResponse<ConfirmResetPasswordResponse> = await api.post(
+    API.loginApi.resetPassword,
+    {
+      key,
+      new_password,
+      confirm_password,
+      logout_all_sessions: 1,
+    }
+  );
+
+  return resp.data;
+};
