@@ -235,20 +235,7 @@ useEffect(() => {
     }
   }, [isOpen, entryId, loadEntry, reset]);
 
-// const totals = useMemo(() => {
-//     let debit = 0;
-//     let credit = 0;
-//     entries.forEach((entry) => {
-//       const val = Math.abs(parseFloat(entry.amount)) || 0;
-//       // Fallback to 1 if the exchange rate is blank/missing
-//       const rate = parseFloat(entry.exchange_rate) || 1; 
-//       const baseValue = val * rate;
-      
-//       if (entry.entryType === "Dr") debit += baseValue;
-//       else if (entry.entryType === "Cr") credit += baseValue;
-//     });
-//     return { debit, credit };
-//   }, [entries]);
+
 const totals = useMemo(() => {
   let debit = 0;
   let credit = 0;
@@ -282,140 +269,13 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement 
       updateExchangeRates(entries, val as string);
     }
   };
- 
-const calculateAmounts = (currentEntries: JournalEntryLine[], editedIndex: number) => {
-  const newEntries = [...currentEntries];
-
-  // Figure out if the edited row is even (Dr) or odd (Cr) to find its partner
-  const isEven = editedIndex % 2 === 0;
-  const pairIndex = isEven ? editedIndex + 1 : editedIndex - 1;
-
-  // Only proceed if the partner row exists
-  if (newEntries[editedIndex] && newEntries[pairIndex]) {
-    const inputAmount = parseFloat(newEntries[editedIndex].amount) || 0;
-
-    if (inputAmount > 0 && newEntries[editedIndex].ccy && newEntries[pairIndex].ccy) {
-      const rate1 = parseFloat(newEntries[editedIndex].exchange_rate) || 1;
-      const rate2 = parseFloat(newEntries[pairIndex].exchange_rate) || 1;
-
-      const convertedAmount = (inputAmount * rate1) / rate2;
-      // newEntries[pairIndex].amount = convertedAmount ? Number(convertedAmount.toFixed(2)).toString() : "";
-      newEntries[pairIndex].amount = convertedAmount 
-        ? parseFloat(convertedAmount.toFixed(6)).toString() 
-        : "";
-    } else if (inputAmount > 0 && !newEntries[pairIndex].ccy) {
-      newEntries[pairIndex].amount = inputAmount.toString();
-    } else if (!inputAmount) {
-      newEntries[pairIndex].amount = "";
-    }
-  }
-  return newEntries;
-};
-
-// const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: string, triggerIndex?: number) => {
-//   let newEntries = [...currentEntries];
-//   const missingExchanges: Set<string> = new Set();
-//   const processPair = async (index: number) => {
-//     const isEven = index % 2 === 0;
-//     const idx1 = isEven ? index : index - 1;
-//     const idx2 = isEven ? index + 1 : index;
-
-//     if (!newEntries[idx1] || !newEntries[idx2]) return;
-
-//     const ccy1 = newEntries[idx1].ccy;
-//     const ccy2 = newEntries[idx2].ccy;
-
-//     if (!ccy1 || !ccy2) return;
-
-//     if (ccy1 === ccy2) {
-//   newEntries[idx1].exchange_rate = ccy1 ? "1" : "";
-//   newEntries[idx2].exchange_rate = ccy2 ? "1" : "";
-//     newEntries[idx1].isRateMissing = false;
-//   newEntries[idx2].isRateMissing = false;
-  
-//   return;
-// }
-
-// try {
-//        const fetchRate = async (dateFilter?: string) => {
-//         // Try direct: ccy1 to ccy2
-//         let res = await getAllCurrencyExchanges(1, 10, undefined, ccy1, ccy2, dateFilter);
-//         let data = res?.message?.data?.data || [];
-//         if (data.length > 0) return { rate1: data[0].exchange_rate.toString(), rate2: "1" };
-
-//         // Try reverse: ccy2 to ccy1
-//         res = await getAllCurrencyExchanges(1, 10, undefined, ccy2, ccy1, dateFilter);
-//         data = res?.message?.data?.data || [];
-//         if (data.length > 0) return { rate1: "1", rate2: data[0].exchange_rate.toString() };
-
-//         return null; // Nothing found in either direction
-//       };
-
-//       // 1. Try finding a match for the specific posting date
-//       let todayRate = await fetchRate(date);
-
-//       if (todayRate) {
-//         // Found for today -> Normal behavior
-//         newEntries[idx1].exchange_rate = todayRate.rate1;
-//         newEntries[idx2].exchange_rate = todayRate.rate2;
-//         newEntries[idx1].isRateMissing = false;
-//         newEntries[idx2].isRateMissing = false;
-//       } else {
-//         // 2. Fallback: Fetch WITHOUT the date to see if ANY record exists historically
-//         let fallbackRate = await fetchRate(undefined);
-
-//         if (fallbackRate) {
-//           // Record exists, but not for today -> WARNING ONLY
-//           newEntries[idx1].exchange_rate = fallbackRate.rate1;
-//           newEntries[idx2].exchange_rate = fallbackRate.rate2;
-//           newEntries[idx1].isRateMissing = false;
-//           newEntries[idx2].isRateMissing = false;
-          
-//           showApiError(`Warning: Please maintain the latest currency exchange for ${ccy1} and ${ccy2}. Using older rate.`);
-//         } else {
-//           newEntries[idx1].exchange_rate = "";
-//           newEntries[idx2].exchange_rate = ""; 
-          
-//           newEntries[idx1].isRateMissing = true; 
-//           newEntries[idx2].isRateMissing = true; 
-          
-//           missingExchanges.add(`${ccy1} and ${ccy2}`);
-//         }
-//       }
-//  }catch (error) {
-//    showApiError(parseFrappeError || "Exchange rate fetch failed:");
-// }
-//   };
-
-//   // If a specific row triggered this, only update its pair
-//   if (triggerIndex !== undefined) {
-//     await processPair(triggerIndex);
-//     newEntries = calculateAmounts(newEntries, triggerIndex);
-//   } else {
-//     // If the Date changed, loop through and update ALL pairs
-//     for (let i = 0; i < newEntries.length; i += 2) {
-//       await processPair(i);
-//       newEntries = calculateAmounts(newEntries, i);
-//     }
-//   }
-
-//   setEntries(newEntries);
-//   const missingArray = Array.from(missingExchanges);
-//   setMissingExchanges(missingArray);
-//   if (missingExchanges.size > 0) {
-//     const missingList = Array.from(missingExchanges).join(", ");
-//     showApiError(`Please maintain the currency exchange first for: ${missingList}`);
-//   }
-// };
-  
-// Add `extraUpdates` as a 4th optional parameter
 
 const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: string, triggerIndex?: number) => {
   let newEntries = [...currentEntries];
   const missingExchanges: Set<string> = new Set();
   
-   const BASE_CURRENCY = baseCurrency; 
-   console.log("Base Currency", baseCurrency);
+  const BASE_CURRENCY = baseCurrency; 
+  console.log("Base Currency", baseCurrency);
    
   const processRow = async (index: number) => {
     const row = newEntries[index];
@@ -433,49 +293,51 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
       const fetchRate = async (dateFilter?: string) => {
         let res = await getAllCurrencyExchanges(1, 10, undefined, ccy, BASE_CURRENCY, dateFilter);
         let data = res?.message?.data?.data || [];
-        if (data.length > 0) return data[0].exchange_rate.toString();
+        if (data.length > 0) return { 
+          rate: data[0].exchange_rate.toString(), 
+          date: data[0].date 
+        };
 
         res = await getAllCurrencyExchanges(1, 10, undefined, BASE_CURRENCY, ccy, dateFilter);
         data = res?.message?.data?.data || [];
-        if (data.length > 0) return data[0].exchange_rate.toString(); 
+        if (data.length > 0) return { 
+          rate: data[0].exchange_rate.toString(), 
+          date: data[0].date 
+        }; 
 
         return null; // Nothing found in either direction
       };
 
-      let todayRate = await fetchRate(date);
+      // 2. Extract from the object
+      let todayRateObj = await fetchRate(date);
 
-      if (todayRate) {
-        row.exchange_rate = todayRate;
+      if (todayRateObj) {
+        row.exchange_rate = todayRateObj.rate;
         row.isRateMissing = false;
       } else {
-        let fallbackRate = await fetchRate(undefined);
+        let fallbackRateObj = await fetchRate(undefined);
 
-        // if (fallbackRate) {
-        //   row.exchange_rate = fallbackRate;
-        //   row.isRateMissing = false;
-        //   showWarningError(`Please maintain the latest currency exchange for ${ccy}. Using older rate.`);
-        // } 
-       if (fallbackRate) {
-  // Use your SweetAlert2 custom confirm flow
-  const proceed = await showConfirm(
-    `Last Pair maintained for ${ccy} - ${BASE_CURRENCY} is ${fallbackRate}.\nDo you wish to continue?`,
-    {
-      title: "Use Older Rate?",
-      confirmButtonText: "Continue",
-      confirmButtonColor: "#ff9966" // Matching the color from your showWarningError
-    }
-  );
+        if (fallbackRateObj) {
+          // 3. Use the rate and date from the object
+          const proceed = await showConfirm(
+            `Latest exch rate for ${ccy} - ${BASE_CURRENCY} is ${fallbackRateObj.rate}, as of date ${fallbackRateObj.date}.\nDo you wish to continue with the same rate? If not, please update the rate.`,
+            {
+              title: "Warning",
+              confirmButtonText: "Yes",
+              cancelButtonText: "No",
+              confirmButtonColor: "#ff9966"
+            }
+          );
 
-  if (proceed) {
-    row.exchange_rate = fallbackRate;
-    row.isRateMissing = false;
-  } else {
-    row.exchange_rate = "";
-    row.isRateMissing = true;
-    missingExchanges.add(`${ccy} to ${BASE_CURRENCY}`);
-  }
-}
-        else {
+          if (proceed) {
+            row.exchange_rate = fallbackRateObj.rate;
+            row.isRateMissing = false;
+          } else {
+            row.exchange_rate = "";
+            row.isRateMissing = true;
+            missingExchanges.add(`${ccy} to ${BASE_CURRENCY}`);
+          }
+        } else {
           row.exchange_rate = "";
           row.isRateMissing = true;
           missingExchanges.add(`${ccy} to ${BASE_CURRENCY}`);

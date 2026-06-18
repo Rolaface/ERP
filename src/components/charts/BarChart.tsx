@@ -24,16 +24,30 @@ interface BarChartProps {
 const BarChart: React.FC<BarChartProps> = ({ title, loading, data = [], mode, filterNode }) => {
   const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
   
-    const currencyFormatter = useMemo(() => {
-      const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
-      
-      return new Intl.NumberFormat(locale, {
-        style: 'currency', 
-        currency: baseCurrency, 
-        maximumFractionDigits: 2, 
-        notation: "compact"
-      });
-    }, [baseCurrency]);  
+  const currencySymbol = useCompanyStore((state) => state.currencySymbol || '');
+   
+  const currencyFormatter = useMemo(() => {
+    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
+    
+    const numberFormatter = new Intl.NumberFormat(locale, {
+      style: 'decimal', 
+      maximumFractionDigits: 2, 
+      notation: "compact"
+    });
+
+    return {
+      format: (value: number) => {
+        const num = Number(value) || 0;
+        const formattedNumber = numberFormatter.format(Math.abs(num));
+        
+         const sign = num < 0 ? '-' : '';
+        
+         const space = currencySymbol.length > 1 ? ' ' : '';
+        
+        return `${sign}${currencySymbol}${space}${formattedNumber}`;
+      }
+    };
+  }, [baseCurrency, currencySymbol]);
 
   const option = useMemo(() => {
     const safeData = Array.isArray(data) ? data : [];    

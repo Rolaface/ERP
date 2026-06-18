@@ -23,6 +23,8 @@ import {
 import { showApiError, showSuccess, showConfirm } from "../../utils/alert";
 import ActionButton, { ActionGroup, ActionMenu } from "../../components/ui/Table/ActionButton";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
+import StatusBadge from "../../components/ui/Table/StatusBadge";
+import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
 
 export interface JETabProps {
   searchTerm: string;
@@ -187,7 +189,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       showSuccess(`Entry ${id} has been submitted successfully.`);
       fetchJE();
     } catch (err: any) {
-      showApiError(err?.response?.data?.message || err?.message || "Failed to submit entry.");
+      showApiError(parseFrappeError(err) || err?.response?.data?.message || err?.message || "Failed to submit entry.");
       setLoading(false);
     }
   };
@@ -211,7 +213,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       showSuccess(`Entry ${id} has been cancelled successfully.`);
       fetchJE();
     } catch (err: any) {
-      showApiError(err?.response?.data?.message || err?.message || "Failed to cancel entry.");
+      showApiError(parseFrappeError(err) || err?.response?.data?.message || err?.message || "Failed to cancel entry.");
       setLoading(false);
     }
   };
@@ -233,7 +235,7 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
       showSuccess(`Entry ${id} has been successfully deleted.`);
       fetchJE();
     } catch (err: any) {
-      showApiError(err?.response?.data?.message || err?.message || "Failed to delete entry.");
+      showApiError(parseFrappeError(err) || err?.response?.data?.message || err?.message || "Failed to delete entry.");
       setLoading(false);
     }
   };
@@ -303,29 +305,45 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
         <span className="text-xs text-muted">{formatDate(row.posting_date) || "—"}</span>
       ),
     },
+    // {
+    //   key: "docstatus",
+    //   header: "Status",
+    //   align: "left",
+    //   render: (row: JournalEntry) => {
+    //     let badge = "bg-draft text-gray-400";
+    //     let label = "Draft";
+
+    //     if (row.docstatus === 1) {
+    //       badge = "bg-success text-success";
+    //       label = "Submitted";
+    //     } else if (row.docstatus === 2) {
+    //       badge = "bg-danger text-danger";
+    //       label = "Cancelled";
+    //     }
+
+    //     return (
+    //       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badge}`}>
+    //         {label}
+    //       </span>
+    //     );
+    //   },
+    // },
     {
-      key: "docstatus",
-      header: "Status",
-      align: "left",
-      render: (row: JournalEntry) => {
-        let badge = "bg-draft text-gray-400";
-        let label = "Draft";
+  key: "docstatus",
+  header: "Status",
+  align: "left",
+  render: (row: JournalEntry) => {
+    let label = "Draft";
 
-        if (row.docstatus === 1) {
-          badge = "bg-success text-success";
-          label = "Submitted";
-        } else if (row.docstatus === 2) {
-          badge = "bg-danger text-danger";
-          label = "Cancelled";
-        }
+    if (row.docstatus === 1) {
+      label = "Submitted";
+    } else if (row.docstatus === 2) {
+      label = "Cancelled";
+    }
 
-        return (
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badge}`}>
-            {label}
-          </span>
-        );
-      },
-    },
+    return <StatusBadge status={label} />;
+  },
+},
     {
       key: "total_debit",
       header: "Total Debit",
