@@ -1,4 +1,3 @@
-import React from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import {
@@ -8,6 +7,7 @@ import {
     Download,
     ArrowLeftRight
 } from "lucide-react";
+import React, { useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,11 +128,19 @@ function Skeleton() {
 // ─── Allocations Table ────────────────────────────────────────────────────────
 
 function AllocationsTable({ allocations, paymentId }: { allocations: Allocation[]; paymentId: string }) {
+    const [showAll, setShowAll] = useState(false);
+
     if (!allocations.length) {
         return <p style={{ fontSize: "12px", color: "var(--muted)", textAlign: "center", padding: "16px 0", margin: 0 }}>No allocations found.</p>;
     }
+    const VISIBLE_COUNT = 3;
+    const visibleAllocations = showAll
+        ? allocations
+        : allocations.slice(0, VISIBLE_COUNT);
 
     const totalAllocated = allocations.reduce((s, a) => s + a.allocated_amount, 0);
+
+    const showToggle = allocations.length > VISIBLE_COUNT;
     const showExport = allocations.length > ALLOC_THRESHOLD;
 
     const thStyle: React.CSSProperties = {
@@ -176,39 +184,29 @@ function AllocationsTable({ allocations, paymentId }: { allocations: Allocation[
                         </tr>
                     </thead>
                     <tbody>
-                        {allocations.map((a, i) => (
-                            <tr
-                                key={i}
-                                style={{ borderBottom: "1px solid var(--border, rgba(0,0,0,0.05))" }}
-                            >
-                                <td style={{ padding: "8px 12px", color: "var(--muted)", whiteSpace: "nowrap", fontSize: "11px" }}>
+                            {visibleAllocations.map((a, i) => (
+                            <tr key={i} style={{ borderBottom: "1px solid var(--border, rgba(0,0,0,0.05))" }}>
+                                <td style={{ padding: "8px 12px", color: "var(--muted)", fontSize: "11px" }}>
                                     {a.reference_doctype}
                                 </td>
+
                                 <td style={{ padding: "8px 12px" }}>
-                                    <span style={{
-                                        display: "inline-flex", alignItems: "center", gap: "4px",
-                                        background: "color-mix(in srgb, var(--primary) 9%, transparent)",
-                                        color: "var(--primary)", fontSize: "11px", fontWeight: 600,
-                                        padding: "2px 8px", borderRadius: "999px",
-                                        border: "1px solid color-mix(in srgb, var(--primary) 18%, transparent)",
-                                    }}>
-                                        <FileText size={10} />{a.reference_name}
-                                    </span>
+                                    {a.reference_name}
                                 </td>
-                                <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+
+                                <td style={{ padding: "8px 12px", textAlign: "right" }}>
                                     {a.total_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                 </td>
-                                <td style={{ padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                                    <span style={{ color: a.outstanding_amount > 0 ? "var(--danger, #ef4444)" : "var(--success, #22c55e)", fontWeight: 500 }}>
-                                        {a.outstanding_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                    </span>
+
+                                <td style={{ padding: "8px 12px", textAlign: "right" }}>
+                                    {a.outstanding_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                 </td>
-                                <td style={{ padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                                    <span style={{ color: "var(--success, #22c55e)", fontWeight: 600 }}>
-                                        {a.allocated_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                    </span>
+
+                                <td style={{ padding: "8px 12px", textAlign: "right" }}>
+                                    {a.allocated_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                 </td>
-                                <td style={{ padding: "8px 12px", color: "var(--muted)", whiteSpace: "nowrap", fontSize: "11px" }}>
+
+                                <td style={{ padding: "8px 12px", color: "var(--muted)", fontSize: "11px" }}>
                                     {a.account}
                                 </td>
                             </tr>
@@ -227,6 +225,27 @@ function AllocationsTable({ allocations, paymentId }: { allocations: Allocation[
                     </tfoot>
                 </table>
             </div>
+            {showToggle && (
+    <div style={{ 
+        display: "flex", 
+        justifyContent: "flex-end", 
+        padding: "8px 12px" 
+    }}>
+        <button
+            onClick={() => setShowAll(!showAll)}
+            style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "var(--primary)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer"
+            }}
+        >
+            {showAll ? "View Less" : `View More (${allocations.length - VISIBLE_COUNT})`}
+        </button>
+    </div>
+)}
         </>
     );
 }
@@ -460,7 +479,7 @@ const PaymentEntryDetailModal: React.FC<Props> = ({ open, data, loading, onClose
                                             letterSpacing: "0.08em", color: "var(--muted)",
                                             display: "flex", alignItems: "center", gap: "5px",
                                         }}>
-                                            <FileText size={11} /> Deductions / Write Off
+                                            <FileText size={11} /> Deductions
                                         </p>
                                         <div style={{
                                             background: "var(--input-bg, #f8fafc)",
