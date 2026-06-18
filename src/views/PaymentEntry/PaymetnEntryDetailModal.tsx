@@ -55,6 +55,11 @@ export interface PaymentEntryDetail {
         source_exchange_rate?: number;
         target_exchange_rate?: number;
     };
+    deductions?: Array<{
+        account?: string;
+        amount?: number;
+        description?: string;
+    }>;
     allocations: Allocation[];
     remarks?: string;
     contact_email?: string;
@@ -446,6 +451,66 @@ const PaymentEntryDetailModal: React.FC<Props> = ({ open, data, loading, onClose
                                     </div>
                                 ))}
                             </div>
+                                {/* ── DEDUCTIONS ───────────────────────────────────────────── */}
+                                {data.deductions && data.deductions.length > 0 && (
+                                    <div style={{ marginBottom: "14px" }}>
+                                        <p style={{
+                                            margin: "0 0 6px",
+                                            fontSize: "10px", fontWeight: 700, textTransform: "uppercase",
+                                            letterSpacing: "0.08em", color: "var(--muted)",
+                                            display: "flex", alignItems: "center", gap: "5px",
+                                        }}>
+                                            <FileText size={11} /> Deductions / Write Off
+                                        </p>
+                                        <div style={{
+                                            background: "var(--input-bg, #f8fafc)",
+                                            border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                                            borderRadius: "10px", overflow: "hidden",
+                                        }}>
+                                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                                <thead>
+                                                    <tr>
+                                                        <th style={{ padding: "7px 12px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)", borderBottom: "1px solid var(--border, rgba(0,0,0,0.08))", textAlign: "left" }}>
+                                                            Account
+                                                        </th>
+                                                        <th style={{ padding: "7px 12px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)", borderBottom: "1px solid var(--border, rgba(0,0,0,0.08))", textAlign: "right" }}>
+                                                            Amount
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {data.deductions.map((ded, i) => (
+                                                        <tr key={i} style={{ borderBottom: "1px solid var(--border, rgba(0,0,0,0.05))" }}>
+                                                            <td style={{ padding: "8px 12px", color: "var(--text)", fontSize: "11px" }}>
+                                                                {ded.account || "—"}
+                                                            </td>
+                                                            <td style={{
+                                                                padding: "8px 12px", textAlign: "right", fontWeight: 600,
+                                                                fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+                                                                color: (ded.amount ?? 0) < 0 ? "var(--danger, #ef4444)" : "var(--success, #22c55e)",
+                                                            }}>
+                                                                {ded.amount?.toLocaleString("en-IN", { minimumFractionDigits: 2 }) ?? "—"}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                                {data.deductions.length > 1 && (
+                                                    <tfoot>
+                                                        <tr style={{ background: "color-mix(in srgb, var(--primary) 4%, transparent)", borderTop: "1px solid var(--border, rgba(0,0,0,0.08))" }}>
+                                                            <td style={{ padding: "8px 12px", fontSize: "11px", fontWeight: 700, color: "var(--text)" }}>
+                                                                Total
+                                                            </td>
+                                                            <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>
+                                                                {data.deductions.reduce((s, d) => s + (d.amount ?? 0), 0)
+                                                                    .toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                                            </td>
+                                                        </tr>
+                                                    </tfoot>
+                                                )}
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
 
 
 
