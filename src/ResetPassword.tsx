@@ -64,6 +64,11 @@ const ResetPassword: React.FC = () => {
       return;
     }
 
+    if (new_password !== confirm_password) {
+      setError("New password and confirm password do not match.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await confirmResetPasswordApi(key, new_password, confirm_password);
@@ -158,6 +163,9 @@ const ResetPassword: React.FC = () => {
                 {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {confirm_password && new_password !== confirm_password && (
+              <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+            )}
           </div>
 
           <button
