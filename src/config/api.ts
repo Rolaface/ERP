@@ -28,8 +28,9 @@ const getApiBaseUrl = (): string => {
     return ENV.apiBaseUrl;
   }
 
-  return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
+  // return `${protocol}//api.erp.${tenantSubdomain}.${baseDomain}`;
   // return window.location.origin;
+  return "";
 };
 
 export const ERP_BASE = getApiBaseUrl();
