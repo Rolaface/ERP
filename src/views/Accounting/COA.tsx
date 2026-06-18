@@ -201,7 +201,7 @@ function FilterBar({
 
   return (
     <div className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex flex-wrap items-center gap-2">
-      <div className="relative">
+      <div className="relative flex-1 min-w-[220px] max-w-sm">
         <Search
           size={12}
           className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"
@@ -211,34 +211,36 @@ function FilterBar({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search accounts…"
-          className="h-7 pl-7 pr-2.5 text-[11px] border border-[var(--border)] bg-app rounded-md text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-56"
+          className="h-7 w-full pl-7 pr-2.5 text-[11px] border border-[var(--border)] bg-app rounded-md text-main focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
       </div>
 
-      <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={hideZero}
-          onChange={(e) => setHideZero(e.target.checked)}
-          className="rounded border-[var(--border)] text-primary focus:ring-primary/50 cursor-pointer"
-        />
-        Hide Zero Values
-      </label>
+      <div className="ml-auto flex items-center gap-2">
+        <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={hideZero}
+            onChange={(e) => setHideZero(e.target.checked)}
+            className="rounded border-[var(--border)] text-primary focus:ring-primary/50 cursor-pointer"
+          />
+          Hide Zero Values
+        </label>
 
-      <div className="w-px self-stretch bg-[var(--border)]" />
+        <div className="w-px self-stretch bg-[var(--border)]" />
 
-      <button onClick={onExpandAll} className={btnClass}>
-        <Layers size={11} />
-        Expand All
-      </button>
-      <button onClick={onCollapseAll} className={btnClass}>
-        <ChevronRight size={11} />
-        Collapse
-      </button>
-      <button onClick={onRefresh} className={`${btnClass} ml-auto`}>
-        <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
-        Refresh
-      </button>
+        <button onClick={onExpandAll} className={btnClass}>
+          <Layers size={11} />
+          Expand All
+        </button>
+        <button onClick={onCollapseAll} className={btnClass}>
+          <ChevronRight size={11} />
+          Collapse
+        </button>
+        <button onClick={onRefresh} className={btnClass}>
+          <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
+          Refresh
+        </button>
+      </div>
     </div>
   );
 }
