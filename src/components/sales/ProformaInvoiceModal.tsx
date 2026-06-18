@@ -29,6 +29,8 @@ import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
 // Add these to your existing imports
 import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
+import { getAllModeOfPayment } from "../../api/BankAccountApi";
 interface ProformaInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -107,6 +109,21 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     if (currentIndex < tabs.length - 1) {
       ui.setActiveTab(tabs[currentIndex + 1]);
     }
+  };
+
+   const handleModeFetchOptions = async (q: string) => {
+      const res = await getAllModeOfPayment(1, 10, q || "", 1);
+      return res.data.map((item: any) => ({
+        label: item.name,
+        value: item.name,
+        meta: item,
+      }));
+    };
+
+  const handleModeChange = (_: string, option: any) => {
+    actions.handleInputChange({
+      target: { name: "mode", value: option?.value || "" },
+    } as any);
   };
 
  const handleSave = async () => {
@@ -303,6 +320,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       name="validTill"
                       value={formData.validTill}
                       required
+                      disabled
                       onChange={(name, value) =>
                         actions.handleInputChange({
                           target: { name, value },
@@ -323,7 +341,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     />
                   </div> */}
 
-                  <div>
+                  {/* <div>
                     <ModalSelect
                       label="Payment Method"
                       name="paymentMethod"
@@ -336,7 +354,17 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       options={[...paymentMethodOptions]}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
-                  </div>
+                  </div> */}
+                    <div className="w-full sm:w-[200px]">
+                  <SearchSelect2
+                    label="Mode of Payment"
+                    value={formData.mode ?? ""}
+                    onChange={handleModeChange}
+                    fetchOptions={handleModeFetchOptions}
+                    placeholder="search mode of payment"
+                    // required
+                  />
+                </div>
 
                   {ui.isExport && (
                     <div>

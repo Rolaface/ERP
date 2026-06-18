@@ -37,11 +37,17 @@ type NestedSection =
 
 const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!invoiceDate) return "";
-  const match = terms?.match(/(\d+)/);
+  
+  // Add this fallback for when terms are empty
+  if (!terms) return dayjs(invoiceDate, ["DD-MMM-YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD");
+
+  const match = terms.match(/(\d+)/);
   const days = match ? Number(match[1]) : 0;
+
   let date = dayjs(invoiceDate, "DD-MMM-YYYY", true);
   if (!date.isValid()) date = dayjs(invoiceDate, "YYYY-MM-DD", true);
   if (!date.isValid()) return "";
+
   return date.add(days, "day").format("YYYY-MM-DD");
 };
 
@@ -148,28 +154,54 @@ export const useProformaInvoiceForm = (
   }, [isOpen]);
 
   
+// useEffect(() => {
+//   const terms =
+//     formData.terms?.selling?.payment?.dueDates ||
+//     formData.paymentInformation?.paymentTerms;
+
+//   if (!terms || !formData.dateOfInvoice) return;
+
+//   const due = calculateDueDate(
+//     formData.dateOfInvoice,
+//     terms,
+//   );
+
+//   setFormData((prev) => ({
+//     ...prev,
+//     dueDate: due,
+//   }));
+// }, [
+//   formData.dateOfInvoice,
+//   formData.terms?.selling?.payment?.dueDates,
+//   formData.paymentInformation?.paymentTerms,
+// ]);
+// Auto-calculate validTill date from payment terms
 useEffect(() => {
+  if (!formData.dateOfInvoice) return;
+
+  const dueDatesValue = formData.terms?.selling?.payment?.dueDates;
+
+  // If dueDates is explicitly set (even empty), use it
+  // If not set at all (null/undefined), fall back to paymentTerms
   const terms =
-    formData.terms?.selling?.payment?.dueDates ||
-    formData.paymentInformation?.paymentTerms;
+    dueDatesValue != null
+      ? dueDatesValue
+      : formData.paymentInformation?.paymentTerms ?? "";
 
-  if (!terms || !formData.dateOfInvoice) return;
+  // calculateDueDate handles "" → returns invoiceDate (today)
+  const due = calculateDueDate(formData.dateOfInvoice, terms);
 
-  const due = calculateDueDate(
-    formData.dateOfInvoice,
-    terms,
-  );
-
-  setFormData((prev) => ({
-    ...prev,
-    dueDate: due,
-  }));
+  if (due) {
+    setFormData((prev) => ({
+      ...prev,
+      validTill: due, // Changed from dueDate to validTill
+    }));
+  }
 }, [
   formData.dateOfInvoice,
   formData.terms?.selling?.payment?.dueDates,
   formData.paymentInformation?.paymentTerms,
 ]);
-
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
   const [page, setPage] = useState(0);
@@ -561,6 +593,36 @@ const maxAllowed = Math.max(0, available - usedByOthers);
       // ─────────────────────────────────────────────────────
 
       const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
+      if (name === "quantity") {
+  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+
+  if (piecesPerBox > 0) {
+    const totalBoxes = Math.ceil(
+      Number(updatedItem.quantity || 0) / piecesPerBox
+    );
+
+    const boxStart =
+      idx === 0
+        ? 1
+        : Number(items[idx - 1]?.boxEnd || 0) + 1;
+
+    updatedItem.boxStart = boxStart;
+    updatedItem.boxEnd = boxStart + totalBoxes - 1;
+  }
+}
+if (
+  (name === "boxStart" || name === "boxEnd") &&
+  updatedItem.piecesPerBox
+) {
+  const start = Number(updatedItem.boxStart || 0);
+  const end = Number(updatedItem.boxEnd || 0);
+  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+
+  if (start > 0 && end >= start) {
+    const totalBoxes = end - start + 1;
+    updatedItem.quantity = totalBoxes * piecesPerBox;
+  }
+}
       const start = Number(updatedItem.boxStart || 0);
       const end = Number(updatedItem.boxEnd || 0);
 
@@ -638,7 +700,12 @@ const maxAllowed = Math.max(0, available - usedByOthers);
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
       const items = [...prev.items];
-      items[index] = { ...items[index], ...updated };
+      const updatedItem = {
+  ...items[index],
+  ...updated,
+};
+
+items[index] = updatedItem;
       return { ...prev, items };
     });
   };
@@ -878,14 +945,14 @@ const maxAllowed = Math.max(0, available - usedByOthers);
         const company = companyRes?.data;
         const today = new Date().toISOString().split("T")[0];
         const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
-        const dueDate = calculateDueDate(today, paymentTerms);
+        const validTill = calculateDueDate(today, paymentTerms);
 
         setFormData({
           ...DEFAULT_INVOICE_FORM,
           invoiceCharges: [],
           salesTaxTemplate: "",
           dateOfInvoice: today,
-          validTill:"",
+          validTill,
           exchangeRt: "1",
           warehouse: "",
           updateStock: true,

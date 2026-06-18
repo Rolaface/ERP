@@ -34,6 +34,7 @@ interface ItemNestedInitialData extends Partial<ItemFormData> {
       | "reorderLevel"
       | "minStockLevel"
       | "maxStockLevel"
+      | "piecesPerBox"
     >
   >;
   batchInfo?: Partial<
@@ -159,6 +160,7 @@ export const emptyForm: ItemFormData = {
   reorderLevel: "",
   minStockLevel: "",
   maxStockLevel: "",
+  piecesPerBox: "",
   brand: "",
   expiryDate: "",
   manufacturingDate: "",
@@ -183,6 +185,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   packagingUnitCode: form.packagingUnitCode,
   packingUnit: form.packingUnit || "",
   packingSize: form.packingSize || "",
+  piecesPerBox: form.piecesPerBox || "",
   svcCharge: form.svcCharge,
   ins: form.ins,
   sellingPrice: Number(form.sellingPrice),
@@ -220,6 +223,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
     reorderLevel: form.reorderLevel,
     minStockLevel: form.minStockLevel,
     maxStockLevel: form.maxStockLevel,
+    piecesPerBox: form.piecesPerBox,
   },
 
   ...(Number(form.itemTypeCode) !== 3 && {
@@ -280,6 +284,7 @@ dimensionUnit: item.dimensionUOM || "cm",
     reorderLevel: item.inventoryInfo?.reorderLevel || "",
     maxStockLevel: item.inventoryInfo?.maxStockLevel || "",
     minStockLevel: item.inventoryInfo?.minStockLevel || "",
+    piecesPerBox: item.inventoryInfo?.piecesPerBox || "",
     trackInventory: Boolean(item.is_stock_item ?? true),
     allowSales: Boolean(item.is_sales_item ?? true),
     allowPurchase: Boolean(item.is_purchase_item ?? true),

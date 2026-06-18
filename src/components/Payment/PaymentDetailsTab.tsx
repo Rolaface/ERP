@@ -757,6 +757,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
             name="date"
             value={form.date}
             onChange={(name, value) => onFormChange({ [name]: value })}
+            disableFuture
           />
         </div>
 

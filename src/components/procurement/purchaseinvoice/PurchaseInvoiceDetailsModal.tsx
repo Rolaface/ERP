@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { ERP_BASE } from "../../../config/api";
 export interface PurchaseInvoiceDetail {
   piId: string;
   supplierName: string;
@@ -137,7 +138,7 @@ interface Props {
   attachmentUrl?: string | null;
   attachmentLoading?: boolean;
   attachmentName?: string;
-  onViewAttachment?: () => void;
+  onViewAttachment?: (file: any) => void;
   onCloseAttachment?: () => void;
 }
 const fmt = (n?: number | string, currency = "INR") => {
@@ -264,20 +265,29 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
   onViewAttachment,
   onCloseAttachment,
 }) => {
+  const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+    setZoom(1);
+  }, [attachmentUrl]);
+
   if (!open) return null;
 
   const items = data?.items ?? [];
+  const isImageAttachment =
+    !!attachmentUrl &&
+    /\.(png|jpe?g|gif|webp|svg)$/i.test(attachmentName || "");
+  const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 3));
+  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
+  const handleZoomReset = () => setZoom(1);
+
   const currency = data?.currency ?? "INR";
   const statusCls = STATUS_MAP[data?.status ?? "Draft"] ?? "bg-draft";
-  const buying =
-    (data as any)?.terms?.buying ??
-    data?.terms?.terms?.buying;
+  const buying = (data as any)?.terms?.buying ?? data?.terms?.terms?.buying;
 
- const phases = (
-  buying?.payment?.phases?.filter(
-    (p: PaymentPhase) => !!p?.percentage
-  )?.slice(0, 3) ?? []
-) as PaymentPhase[];
+  const phases = (buying?.payment?.phases
+    ?.filter((p: PaymentPhase) => !!p?.percentage)
+    ?.slice(0, 3) ?? []) as PaymentPhase[];
   const grandTotal =
     data?.summary?.grandTotal ??
     data?.grandTotal ??
@@ -287,9 +297,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
     data?.summary?.subTotal ??
     (data?.grandTotal ?? 0) - Number((data as any)?.totalTaxes ?? 0);
   const taxTotal = Number(
-    data?.summary?.taxTotal ??
-    (data as any)?.totalTaxes ??
-    0
+    data?.summary?.taxTotal ?? (data as any)?.totalTaxes ?? 0,
   );
   const rounding =
     data?.summary?.roundingAdjustment ??
@@ -452,33 +460,6 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                 PDF
               </button>
             )}
-            {/* {onDownload && (
-              <button
-                className="pidm-btn"
-                onClick={onDownload}
-                style={{
-                  background: "var(--bg)",
-                  color: "var(--text)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Download
-              </button>
-            )} */}
             <button
               onClick={onClose}
               style={{
@@ -615,13 +596,10 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                   >
                     {fmtDate(
                       data.pDate ??
-                      (data as any)?.piDate ??
-                      (data as any)?.poDate,
+                        (data as any)?.piDate ??
+                        (data as any)?.poDate,
                     )}
                   </p>
-
-
-
                 </div>
                 <div
                   style={{
@@ -667,7 +645,12 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               >
                 <F label="Supplier" value={data.supplierName} />
                 <F label="Supplier Invoice No" value={data.spplrInvcNo} mono />
-                <F label="Supplier Invoice Date" value={fmtDate(data.spplrInvcDate ?? (data as any)?.spplrInvcDt)} />
+                <F
+                  label="Supplier Invoice Date"
+                  value={fmtDate(
+                    data.spplrInvcDate ?? (data as any)?.spplrInvcDt,
+                  )}
+                />
               </div>
               <div
                 style={{
@@ -722,110 +705,103 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                   )}
                 </div>
               )}
-              {/* {data.metadata && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginTop: 7 }}>
-                <F label="Created By" value={data.metadata.createdBy} />
-                <F label="Created At" value={fmtDate(data.metadata.createdAt)} />
-                {data.metadata.remarks && <F label="Remarks" value={data.metadata.remarks} />}
-              </div>
-            )} */}
 
               {/* ── ADDRESSES ── */}
               {(data.addresses ||
                 (data as any)?.supplierAddressDisplay ||
                 (data as any)?.shippingAddressDisplay ||
                 (data as any)?.dispatchAddressDisplay) && (
-                  <>
-                    <S title="Addresses" />
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(3,1fr)",
-                        gap: 6,
-                      }}
-                    >
-                      {[
-                        {
-                          label: "Supplier",
-                          addr:
-                            data.addresses?.supplierAddress ??
-                            parseAddress((data as any)?.supplierAddressDisplay),
-                        },
-                        {
-                          label: "Dispatch",
-                          addr:
-                            data.addresses?.dispatchAddress ??
-                            parseAddress((data as any)?.dispatchAddressDisplay),
-                        },
-                        {
-                          label: "Shipping",
-                          addr:
-                            data.addresses?.shippingAddress ??
-                            parseAddress((data as any)?.shippingAddressDisplay),
-                        },
-                      ].map(({ label, addr }) =>
-                        addr ? (
-                          <div
-                            key={label}
+                <>
+                  <S title="Addresses" />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3,1fr)",
+                      gap: 6,
+                    }}
+                  >
+                    {[
+                      {
+                        label: "Supplier",
+                        addr:
+                          data.addresses?.supplierAddress ??
+                          parseAddress((data as any)?.supplierAddressDisplay),
+                      },
+                      {
+                        label: "Dispatch",
+                        addr:
+                          data.addresses?.dispatchAddress ??
+                          parseAddress((data as any)?.dispatchAddressDisplay),
+                      },
+                      {
+                        label: "Shipping",
+                        addr:
+                          data.addresses?.shippingAddress ??
+                          parseAddress((data as any)?.shippingAddressDisplay),
+                      },
+                    ].map(({ label, addr }) =>
+                      addr ? (
+                        <div
+                          key={label}
+                          style={{
+                            padding: "7px 9px",
+                            borderRadius: 6,
+                            background: "var(--bg)",
+                            border: "1px solid var(--border)",
+                          }}
+                        >
+                          <p
                             style={{
-                              padding: "7px 9px",
-                              borderRadius: 6,
-                              background: "var(--bg)",
-                              border: "1px solid var(--border)",
+                              fontSize: 9,
+                              color: "var(--muted)",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.07em",
+                              marginBottom: 3,
                             }}
                           >
-                            <p
-                              style={{
-                                fontSize: 9,
-                                color: "var(--muted)",
-                                fontWeight: 700,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.07em",
-                                marginBottom: 3,
-                              }}
-                            >
-                              {label}
-                            </p>
-                            {[
-                              addr.addressLine1,
-                              addr.city,
-                              [addr.state, addr.postalCode]
-                                .filter(Boolean)
-                                .join(", "),
-                              addr.country?.toUpperCase(),
-                            ]
+                            {label}
+                          </p>
+                          {[
+                            addr.addressLine1,
+                            addr.city,
+                            [addr.state, addr.postalCode]
                               .filter(Boolean)
-                              .map((l, i) => (
-                                <p
-                                  key={i}
-                                  style={{
-                                    fontSize: 12,
-                                    color: "var(--text)",
-                                    lineHeight: 1.5,
-                                  }}
-                                >
-                                  {l}
-                                </p>
-                              ))}
-                            {hasPhone(addr) && addr.phone && (
+                              .join(", "),
+                            addr.country?.toUpperCase(),
+                          ]
+                            .filter(Boolean)
+                            .map((l, i) => (
                               <p
+                                key={i}
                                 style={{
-                                  fontSize: 10,
-                                  color: "var(--muted)",
-                                  marginTop: 2,
+                                  fontSize: 12,
+                                  color: "var(--text)",
+                                  lineHeight: 1.5,
                                 }}
                               >
-                                {addr.phone}
+                                {l}
                               </p>
-                            )}
-                          </div>
-                        ) : (
-                          <div key={label} />
-                        ),
-                      )}
-                    </div>
-                  </>
-                )}
+                            ))}
+                          {hasPhone(addr) && addr.phone && (
+                            <p
+                              style={{
+                                fontSize: 10,
+                                color: "var(--muted)",
+                                marginTop: 2,
+                              }}
+                            >
+                              {addr.phone}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div key={label} />
+                      ),
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* ── LINE ITEMS ── */}
               <S title="Line Items" />
@@ -941,20 +917,30 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                           it.packingUnit ||
                           (it as any)?.packingSize ||
                           (it as any)?.packingUnit) && (
-                            <span
-                              style={{
-                                fontSize: 9,
-                                background: "var(--bg)",
-                                border: "1px solid var(--border)",
-                                borderRadius: 4,
-                                padding: "1px 5px",
-                                color: "var(--muted)",
-                              }}
-                            >
-                              Pack {Math.floor(Number(it.packingSize ?? (it as any)?.packingSize) || 0)}*
-                              {Math.floor(Number(it.packingUnit ?? (it as any)?.packingUnit) || 0)}
-                            </span>
-                          )}
+                          <span
+                            style={{
+                              fontSize: 9,
+                              background: "var(--bg)",
+                              border: "1px solid var(--border)",
+                              borderRadius: 4,
+                              padding: "1px 5px",
+                              color: "var(--muted)",
+                            }}
+                          >
+                            Pack{" "}
+                            {Math.floor(
+                              Number(
+                                it.packingSize ?? (it as any)?.packingSize,
+                              ) || 0,
+                            )}
+                            *
+                            {Math.floor(
+                              Number(
+                                it.packingUnit ?? (it as any)?.packingUnit,
+                              ) || 0,
+                            )}
+                          </span>
+                        )}
                         {it.schedule_date && (
                           <span
                             style={{
@@ -1011,8 +997,9 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                     >
                       {fmt(
                         it.amount ??
-                        ((it as any)?.quantity ?? 0) * ((it as any)?.rate ?? 0),
-                        currency
+                          ((it as any)?.quantity ?? 0) *
+                            ((it as any)?.rate ?? 0),
+                        currency,
                       )}
                     </p>
                   </div>
@@ -1042,20 +1029,20 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                     },
                     ...(rounding !== 0
                       ? [
-                        {
-                          label: "Rounding",
-                          val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
-                          big: false,
-                        },
-                      ]
+                          {
+                            label: "Rounding",
+                            val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
+                            big: false,
+                          },
+                        ]
                       : []),
                     {
                       label: "Grand Total",
                       val: fmt(
                         data?.summary?.roundedTotal ??
-                        (data as any)?.roundedTotal ??
-                        grandTotal,
-                        currency
+                          (data as any)?.roundedTotal ??
+                          grandTotal,
+                        currency,
                       ),
                       big: true,
                     },
@@ -1299,7 +1286,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                           display: "flex",
                           alignItems: "center",
                           gap: 6,
-                          listStyle: "none", // removes default triangle in some browsers
+                          listStyle: "none",
                         }}
                       >
                         <svg
@@ -1363,7 +1350,6 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                                   gap: 8,
                                 }}
                               >
-                                {/* icon — same logic you already have */}
                                 <div
                                   style={{
                                     width: 28,
@@ -1378,9 +1364,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                                     alignItems: "center",
                                     justifyContent: "center",
                                   }}
-                                >
-                                  {/* reuse your existing icon SVGs here */}
-                                </div>
+                                ></div>
                                 <div>
                                   <p
                                     style={{
@@ -1612,6 +1596,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
           </div>
         )}
 
+        {/* ── ATTACHMENT OVERLAY ── */}
         {(attachmentUrl || attachmentLoading) && (
           <div
             style={{
@@ -1692,37 +1677,135 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               </div>
 
               {/* RIGHT BUTTONS */}
-              <div style={{ display: "flex", gap: 5 }}>
-                {attachmentUrl && /\.(png|jpe?g|gif|webp|svg)$/i.test(attachmentName || "") ? (
-                  <img
-                    src={attachmentUrl}
-                    alt={attachmentName}
-                    style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-                  />
-                ) : (
-                  attachmentUrl && (
-                    <iframe
-                      src={attachmentUrl}
-                      style={{ width: "100%", height: "100%", border: "none" }}
-                      title="Attachment Preview"
-                    />
-                  )
+              <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                {isImageAttachment && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      padding: 2,
+                      marginRight: 4,
+                    }}
+                  >
+                    <button
+                      onClick={handleZoomOut}
+                      disabled={zoom <= 0.5}
+                      title="Zoom out"
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 5,
+                        border: "none",
+                        background: "transparent",
+                        cursor: zoom <= 0.5 ? "not-allowed" : "pointer",
+                        color: "var(--text)",
+                        fontSize: 15,
+                        fontWeight: 700,
+                        opacity: zoom <= 0.5 ? 0.4 : 1,
+                      }}
+                    >
+                      −
+                    </button>
+                    <button
+                      onClick={handleZoomReset}
+                      title="Reset zoom"
+                      style={{
+                        minWidth: 42,
+                        height: 24,
+                        borderRadius: 5,
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        color: "var(--muted)",
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {Math.round(zoom * 100)}%
+                    </button>
+                    <button
+                      onClick={handleZoomIn}
+                      disabled={zoom >= 3}
+                      title="Zoom in"
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 5,
+                        border: "none",
+                        background: "transparent",
+                        cursor: zoom >= 3 ? "not-allowed" : "pointer",
+                        color: "var(--text)",
+                        fontSize: 15,
+                        fontWeight: 700,
+                        opacity: zoom >= 3 ? 0.4 : 1,
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
+                {attachmentUrl && (
+                  <a
+                    href={attachmentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="pidm-btn"
+                    style={{
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      border: "1px solid var(--border)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                    New Tab
+                  </a>
                 )}
               </div>
             </div>
 
             {/* CONTENT AREA */}
-            {/* CONTENT AREA */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "auto", background: "var(--bg)" }}>
-              {attachmentLoading && (
-                <p style={{ padding: 20 }}>Loading...</p>
-              )}
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "auto",
+                background: "var(--bg)",
+              }}
+            >
+              {attachmentLoading && <p style={{ padding: 20 }}>Loading...</p>}
 
-              {attachmentUrl && /\.(png|jpe?g|gif|webp|svg)$/i.test(attachmentName || "") ? (
+              {isImageAttachment ? (
                 <img
                   src={attachmentUrl}
                   alt={attachmentName}
-                  style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                  style={{
+                    maxWidth: zoom <= 1 ? "100%" : "none",
+                    maxHeight: zoom <= 1 ? "100%" : "none",
+                    objectFit: "contain",
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "center center",
+                    transition: "transform 0.15s ease",
+                    cursor: zoom > 1 ? "grab" : "default",
+                  }}
                 />
               ) : (
                 attachmentUrl && (
@@ -1736,46 +1819,9 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
             </div>
           </div>
         )}
-
       </div>
     </>
   );
 };
 
 export default PurchaseInvoiceDetailModal;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

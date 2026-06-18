@@ -150,6 +150,7 @@ export default function StockItemSelect({
           description: item.description,
           packingSize: item.packingSize,
           packingUnit: item.packingUnit,
+          piecesPerBox: item.piecesPerBox,
           taxInfo: item.taxInfo || [],
           isServiceItem: item.is_service_item,
         };
@@ -202,6 +203,7 @@ export default function StockItemSelect({
       price: row.price_list ?? row.sellingPrice ?? row.purchasePrice ?? 0,
       packingSize: row.packingSize,
       packingUnit: row.packingUnit,
+      piecesPerBox: row.piecesPerBox,
       valuation_rate: row.valuation_rate,
       sellingPrice: row.sellingPrice,
       purchasePrice: row.purchasePrice,

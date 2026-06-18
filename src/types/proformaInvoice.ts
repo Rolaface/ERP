@@ -151,6 +151,7 @@ export interface InvoiceItem {
   batchNo?: string;
   packingUnit?: string;
   packingSize?: string;
+  piecesPerBox?: number;
   mfgDate?: string;
   expDate?: string;
  boxStart?: number;

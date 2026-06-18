@@ -83,6 +83,7 @@ const InvoiceColGroup: React.FC<InvoiceHeadersProps> = ({ isSalesInvoice, isQuot
     {/* Pkg (U×S)  */} <col className="hidden md:table-column" style={{ width: "6%" }} />
     {/* Box        */} <col className="hidden md:table-column" style={{ width: "7%" }} />
     {/* Batch No   */} {isSalesInvoice && <col style={{ width: "10%" }} />}
+    {/* UOM        */} {isQuotation && <col className="hidden xl:table-column" style={{ width: "20%" }} />}
     {/* Qty        */} <col style={{ width: "6%" }} />
     {/* Mfg Date   */} <col className="hidden xl:table-column" style={{ width: "8%" }} />
     {/* Expiry     */} <col style={{ width: "8%" }} />
@@ -257,9 +258,10 @@ const ItemTable: React.FC<ItemTableProps> = ({
             taxCategory={taxCategory}
             isQuotation={isQuotation}
             onChange={(item: SelectedStockItem) => {
+              console.log("ITEM RESPONSE", item);
               actions.updateItemDirectly?.(i, {
                 itemCode: item.itemCode, itemName: item.itemName, description: item.description,
-                packingSize: item.packingSize, packingUnit: item.packingUnit,
+                packingSize: item.packingSize, packingUnit: item.packingUnit,piecesPerBox: item.piecesPerBox,
                 batchNo: item.batchNo, mfgDate: item.mfgDate, expDate: item.expiryDate,
                 availableQty: item.qty, quantity: 0, price: item.price ?? 0,
                 warehouse: item.warehouse, isServiceItem: item.isServiceItem,
@@ -270,7 +272,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
             }}
             onClear={() => actions.updateItemDirectly?.(i, {
               itemCode: "", description: "", batchNo: "", mfgDate: "", expDate: "",
-              packingUnit: "", packingSize: "", price: 0, vatRate: undefined, vatCode: "",
+              packingUnit: "", packingSize: "", piecesPerBox: "", price: 0, vatRate: undefined, vatCode: "",
             })}
           />
         </td>
