@@ -64,6 +64,7 @@ packingSize: number | null;
   reorderLevel: string | number;
   minStockLevel: string | number;
   maxStockLevel: string | number;
+  piecesPerBox: string | number;
   brand: string;
   expiryDate: string;
   manufacturingDate: string;
