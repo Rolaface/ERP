@@ -167,12 +167,12 @@ const Navbar: React.FC = () => {
 
           {/* RIGHT: LOGIN + CTA */}
           <div className="flex items-center gap-3">
-            <Link
+            {/* <Link
               to="/login"
               className="hidden md:block text-sm font-medium text-white hover:text-main transition-colors duration-150 bg-[var(--primary)] rounded-[calc(var(--density-radius)*1)] px-[calc(var(--density-padding-sm)*2)] py-[calc(var(--density-padding-md)*1)] "
             >
               Login
-            </Link>
+            </Link> */}
 
             {/* {showSignup && (
               <Link to="/signup">
