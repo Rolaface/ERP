@@ -62,7 +62,7 @@ const Footer: React.FC = () => {
 
           {/* LINK GROUPS */}
           {[
-            { title: "Product", items: ["Modules", "How It Works", "FAQ"] },
+            { title: "Product", items: ["Modules", "How It Works"] },
             { title: "Company", items: ["About", "Contact"] },
           ].map((group) => (
             <div key={group.title}>
