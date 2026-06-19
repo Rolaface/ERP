@@ -6,6 +6,7 @@ import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
 
 import { getExchangeRate } from "../api/currencyExchangeApi";
+import { getStockReport } from "../api/stockApi";
 
 import { showApiError, showValidationError } from "../utils/alert";
 import {
@@ -36,9 +37,11 @@ type NestedSection =
 
 const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!invoiceDate) return "";
-  
-  
-  if (!terms) return dayjs(invoiceDate, ["DD-MMM-YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD");
+
+  if (!terms)
+    return dayjs(invoiceDate, ["DD-MMM-YYYY", "YYYY-MM-DD"]).format(
+      "YYYY-MM-DD",
+    );
 
   const match = terms.match(/(\d+)/);
   const days = match ? Number(match[1]) : 0;
@@ -48,7 +51,6 @@ const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!date.isValid()) return "";
 
   return date.add(days, "day").format("YYYY-MM-DD");
-  
 };
 
 const NUM_FIELDS = [
@@ -101,7 +103,6 @@ export function buildInvoicePayload(
     tax_category: formData.taxCategory,
     updateStock: formData.updateStock ?? true,
     paymentMode: formData.mode,
-    // warehouse: formData.warehouse ?? "",
     billingAddress: formData.billingAddress ?? "",
     shippingAddress: formData.shippingAddress ?? "",
     ...(formData.taxCategory === "Export"
@@ -111,15 +112,12 @@ export function buildInvoicePayload(
     paymentInformation: formData.paymentInformation,
     items,
     terms: formData.terms,
-
     ...(formData.invoiceNumber
       ? { invoiceNumber: formData.invoiceNumber }
       : {}),
-    // Computed totals
     subTotal: totals.subTotal,
     totalTax: totals.totalTax,
     grandTotal: totals.grandTotal,
-    // Pass through address objects for reference
     addresses: formData.addresses,
     taxes: mappedTaxes,
     salesTaxTemplate: formData.salesTaxTemplate ?? "",
@@ -155,32 +153,31 @@ export const useInvoiceForm = (
   }, [isOpen]);
 
   // Auto-calculate due date from payment terms
-useEffect(() => {
-  if (!formData.dateOfInvoice) return;
+  useEffect(() => {
+    if (!formData.dateOfInvoice) return;
 
-  const dueDatesValue = formData.terms?.selling?.payment?.dueDates;
+    const dueDatesValue = formData.terms?.selling?.payment?.dueDates;
 
-  // If dueDates is explicitly set (even empty), use it
-  // If not set at all (null/undefined), fall back to paymentTerms
-  const terms =
-    dueDatesValue != null
-      ? dueDatesValue
-      : formData.paymentInformation?.paymentTerms ?? "";
+    // If dueDates is explicitly set (even empty string), prefer it.
+    // Fall back to paymentTerms only when dueDates is null/undefined.
+    const terms =
+      dueDatesValue != null
+        ? dueDatesValue
+        : (formData.paymentInformation?.paymentTerms ?? "");
 
-  // calculateDueDate handles "" → returns invoiceDate (today)
-  const due = calculateDueDate(formData.dateOfInvoice, terms);
+    const due = calculateDueDate(formData.dateOfInvoice, terms);
 
-  if (due) {
-    setFormData((prev) => ({
-      ...prev,
-      dueDate: due,
-    }));
-  }
-}, [
-  formData.dateOfInvoice,
-  formData.terms?.selling?.payment?.dueDates,
-  formData.paymentInformation?.paymentTerms,
-]);
+    if (due) {
+      setFormData((prev) => ({
+        ...prev,
+        dueDate: due,
+      }));
+    }
+  }, [
+    formData.dateOfInvoice,
+    formData.terms?.selling?.payment?.dueDates,
+    formData.paymentInformation?.paymentTerms,
+  ]);
 
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
@@ -202,6 +199,10 @@ useEffect(() => {
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
+  // Frappe only deducts stock on submit (docstatus 1). A draft invoice's
+  // saved item quantities have never touched the stock ledger, so the
+  // quantity-cap math below needs to know which case it's in.
+  const invoiceDocstatusRef = useRef<number>(0);
   const enableExchange = mode === "invoice";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
 
@@ -209,13 +210,13 @@ useEffect(() => {
     try {
       const raw = localStorage.getItem("company-info");
       if (!raw) return "";
-
       const parsed = JSON.parse(raw);
       return parsed?.state?.baseCurrency || "";
     } catch {
       return "";
     }
   };
+
   // Load edit data
   useEffect(() => {
     if (!isOpen) return;
@@ -224,13 +225,72 @@ useEffect(() => {
     }
   }, [isOpen, initialData, mode]);
 
+  // Re-sync line items with LIVE stock right after loading an existing invoice
+  // for edit. Read taxCategory from initialData directly — not from formData —
+  // to avoid a stale-closure race where formData.taxCategory hasn't settled yet
+  // when this effect fires.
+  //
+  // FIX #2: use initialData?.tax_category instead of formData.taxCategory
+  useEffect(() => {
+    if (!isOpen || mode !== "edit" || !initialData?.id) return;
+    if (!formData.items.length) return;
+
+    let cancelled = false;
+
+    // Read taxCategory from the raw server payload, not from React state,
+    // to avoid a race where formData hasn't finished updating yet.
+    const taxCategoryForFetch = initialData?.tax_category ?? "";
+
+    (async () => {
+      try {
+        const res = await getStockReport(1, 1000, "", taxCategoryForFetch);
+        const raw = res?.message?.data ?? [];
+        if (cancelled) return;
+
+        // itemCode::batchNo → live bal_qty.
+        // Non-batched items key on itemCode alone with an empty batch segment.
+        const stockMap = new Map<string, number>();
+        raw.forEach((stockItem: any) => {
+          if (stockItem.batches?.length) {
+            stockItem.batches.forEach((b: any) => {
+              const key = `${stockItem.item_code}::${b.batch_no || ""}`;
+              stockMap.set(key, Number(b.bal_qty ?? 0));
+            });
+          } else {
+            stockMap.set(
+              `${stockItem.item_code}::`,
+              Number(stockItem.qty ?? 0),
+            );
+          }
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          items: prev.items.map((item) => {
+            if (item._stockLoaded) return item; // already patched
+            if (item.isServiceItem) return { ...item, _stockLoaded: true };
+            if (!item.itemCode) return item; // blank row, nothing to look up
+            const key = `${item.itemCode}::${item.batchNo || ""}`;
+            const liveQty = stockMap.get(key) ?? 0;
+            return { ...item, availableQty: liveQty, _stockLoaded: true };
+          }),
+        }));
+      } catch (err) {
+        if (!cancelled) showApiError(err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally NOT depending on formData.items — fires once per edit-load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, mode, initialData?.id]);
+
   useEffect(() => {
     if (!isOpen) return;
 
     const base = getBaseCurrencyFromStorage();
-
-   
-
     setBaseCurrency(base);
     lastCurrencyRef.current = base;
 
@@ -285,7 +345,7 @@ useEffect(() => {
         if (cancelled) return;
         setExchangeRateError(err?.message || "Exchange rate not found");
         setFormData((prev) => {
-          if (prev.exchangeRt === "1") return prev; 
+          if (prev.exchangeRt === "1") return prev;
           return { ...prev, exchangeRt: "1" };
         });
         showApiError(err);
@@ -318,10 +378,14 @@ useEffect(() => {
 
   // ─── Validation ─────────────────────────────────────────────────────────────
 
+  // A row counts as "untouched" only if NOTHING has been entered on it yet.
+  // Untouched rows are dropped silently by buildInvoicePayload (filtered by
+  // itemCode) instead of blocking submission with a confusing error.
+  const isRowEmpty = (it: any) =>
+    !it.itemCode && !it.quantity && !it.price && !it.batchNo;
+
   const validateForm = (): boolean => {
-    const invoiceType = String(formData.taxCategory ?? "")
-      .trim()
-      .toLowerCase();
+    // FIX #5: removed dead `invoiceType` variable that was never used below.
 
     if (!formData.customerId) {
       throw new Error("Please select a customer");
@@ -329,14 +393,15 @@ useEffect(() => {
     if (!formData.dateOfInvoice) {
       throw new Error("Please select date of invoice");
     }
-      if (!formData.mode) {
+    if (!formData.mode) {
       throw new Error("Please select mode of payment");
     }
     if (!formData.dueDate) {
       throw new Error("Please select due date");
     }
-    
-    if (!formData.items.length) {
+
+    const meaningfulItems = formData.items.filter((it) => !isRowEmpty(it));
+    if (!meaningfulItems.length) {
       throw new Error("Please add at least one item");
     }
     if (!formData.paymentInformation?.paymentMethod) {
@@ -344,6 +409,8 @@ useEffect(() => {
     }
 
     formData.items.forEach((it, idx) => {
+      if (isRowEmpty(it)) return; // never touched — nothing to validate
+
       if (!it.itemCode) {
         setPage(Math.floor(idx / ITEMS_PER_PAGE));
         throw new Error(`Item ${idx + 1}: Please select item`);
@@ -352,9 +419,11 @@ useEffect(() => {
         setPage(Math.floor(idx / ITEMS_PER_PAGE));
         throw new Error(`Item ${idx + 1}: Quantity must be greater than 0`);
       }
-      if (!it.price || it.price <= 0) {
+      // FIX #6: allow price === 0 for free/sample items; only block negative.
+      // Change `!it.price || it.price <= 0` → `it.price == null || it.price < 0`
+      if (it.price == null || it.price < 0) {
         setPage(Math.floor(idx / ITEMS_PER_PAGE));
-        throw new Error(`Item ${idx + 1}: Price must be greater than 0`);
+        throw new Error(`Item ${idx + 1}: Price cannot be negative`);
       }
     });
 
@@ -439,11 +508,16 @@ useEffect(() => {
     id: string;
   }) => {
     setCustomerNameDisplay(name);
-    setFormData((p) => ({ ...p, customerId: id }));setFormData((p) => ({
-  ...p,
-  customerId: id,
-  terms: { selling: EMPTY_TERMS.selling },
-}));
+
+    // FIX #4: was two separate setFormData calls (one redundant, one real).
+    // Merged into a single call to avoid the redundant render and stale-closure
+    // race between the two setState calls.
+    setFormData((p) => ({
+      ...p,
+      customerId: id,
+      terms: { selling: EMPTY_TERMS.selling },
+    }));
+
     try {
       const [customerRes, companyRes] = await Promise.all([
         getCustomerByCustomerCode(id),
@@ -478,17 +552,17 @@ useEffect(() => {
         shippingAddressObj?.country || billingAddressObj?.country,
       );
 
-const paymentInformation = {
-  paymentTerms:
-    data?.terms?.selling?.payment?.dueDates ??
-    company?.terms?.selling?.payment?.dueDates ??
-    "",
-  paymentMethod: "01",
-  bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-  accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-  routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-  swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-};
+      const paymentInformation = {
+        paymentTerms:
+          data?.terms?.selling?.payment?.dueDates ??
+          company?.terms?.selling?.payment?.dueDates ??
+          "",
+        paymentMethod: "01",
+        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+        accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+        routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+        swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+      };
 
       setFormData((prev) => {
         const billingId = billingAddressObj?.id || "";
@@ -538,67 +612,82 @@ const paymentInformation = {
               ? Number(value)
               : null;
       }
-  if (name === "quantity" && nextValue !== null) {
-      const item = items[idx];
-      if (!item._skipCap) {
-        if (!item.isServiceItem) {
-        const stockAvailable = item.availableQty ?? item.qty ?? 0;
-const thisRowOriginal = Number(item.originalQty ?? 0);
 
-// Total pool = actual stock remaining + what this invoice already reserved
-const available = stockAvailable + thisRowOriginal;
+      if (name === "quantity" && nextValue !== null) {
+        const item = items[idx];
+        if (!item._skipCap && !item.isServiceItem && item._stockLoaded) {
+          const isSubmitted = invoiceDocstatusRef.current === 1;
+          const liveStock = Number(item.availableQty ?? 0);
+          const thisRowOriginal = Number(item.originalQty ?? 0);
+          // Only cross-row batch deduction makes sense when a real batch exists.
+          // Empty-string batchNo on multiple rows must NOT be grouped together.
+          const hasBatch = !!item.batchNo;
 
-// How much other rows of same batch are using
-const usedByOthers = items
-  .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
-  .reduce((sum, x) => {
-    const qty = Number(x.quantity || 0);
-    const orig = Number(x.originalQty || 0);
-    // Net consumption = current qty - what was already allocated
-    // (original was already counted in stockAvailable pool)
-    return sum + Math.max(0, qty - orig);
-  }, 0);
+          let maxAllowed: number;
 
-const maxAllowed = Math.max(0, available - usedByOthers);
+          if (isSubmitted) {
+            // Frappe already deducted ALL rows on submit.
+            // liveStock = total remaining after every row was consumed.
+            // Add back only THIS row's original allocation — its personal ceiling.
+            // Other rows' originals are already baked into liveStock.
+            maxAllowed = liveStock + thisRowOriginal;
+          } else {
+            // Draft: stock ledger is untouched. liveStock is the full shared pool.
+            // Only subtract other rows when they share the SAME real batch.
+            // Non-batched rows each carry their own availableQty from the picker.
+            const usedByOthers = hasBatch
+              ? items
+                  .filter(
+                    (x, xIdx) => xIdx !== idx && x.batchNo === item.batchNo,
+                  )
+                  .reduce((sum, x) => sum + Number(x.quantity || 0), 0)
+              : 0;
+
+            maxAllowed = Math.max(0, liveStock - usedByOthers);
+          }
+
           if (nextValue > maxAllowed) {
             nextValue = maxAllowed;
             showValidationError(
-              `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
+              `Only ${maxAllowed} items remaining${
+                hasBatch ? ` in batch ${item.batchNo}` : ""
+              }`,
             );
           }
         }
       }
-    }
-      // ─────────────────────────────────────────────────────
 
       const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
+
       if (
-  (name === "boxStart" || name === "boxEnd") &&
-  updatedItem.piecesPerBox
-) {
-  const start = Number(updatedItem.boxStart || 0);
-  const end = Number(updatedItem.boxEnd || 0);
-  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+        (name === "boxStart" || name === "boxEnd") &&
+        updatedItem.piecesPerBox
+      ) {
+        const start = Number(updatedItem.boxStart || 0);
+        const end = Number(updatedItem.boxEnd || 0);
+        const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
 
-  if (start > 0 && end >= start) {
-    const totalBoxes = end - start + 1;
-    updatedItem.quantity = totalBoxes * piecesPerBox;
-  }
-}
+        if (start > 0 && end >= start) {
+          const totalBoxes = end - start + 1;
+          updatedItem.quantity = totalBoxes * piecesPerBox;
+        }
+      }
+
       if (name === "quantity") {
-  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+        const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
 
-  if (piecesPerBox > 0) {
-    const totalBoxes = Math.ceil(Number(updatedItem.quantity || 0) / piecesPerBox);
-    const boxStart =
-      idx === 0
-        ? 1
-        : Number(items[idx - 1]?.boxEnd || 0) + 1;
+        if (piecesPerBox > 0) {
+          const totalBoxes = Math.ceil(
+            Number(updatedItem.quantity || 0) / piecesPerBox,
+          );
+          const boxStart =
+            idx === 0 ? 1 : Number(items[idx - 1]?.boxEnd || 0) + 1;
 
-    updatedItem.boxStart = boxStart;
-    updatedItem.boxEnd = boxStart + totalBoxes - 1;
-  }
-}
+          updatedItem.boxStart = boxStart;
+          updatedItem.boxEnd = boxStart + totalBoxes - 1;
+        }
+      }
+
       const start = Number(updatedItem.boxStart || 0);
       const end = Number(updatedItem.boxEnd || 0);
 
@@ -620,10 +709,11 @@ const maxAllowed = Math.max(0, available - usedByOthers);
       return { ...prev, items };
     });
   };
-  //charge temeplete--------------------
+
+  // ─── Tax / charge template ───────────────────────────────────────────────────
+
   const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
     setFormData((prev) => {
-      // calculate subtotal first
       const subTotal = prev.items.reduce((sum, item) => {
         const qty = Number(item.quantity || 0);
         const price = Number(item.price || 0);
@@ -633,14 +723,7 @@ const maxAllowed = Math.max(0, available - usedByOthers);
       }, 0);
 
       const mappedTaxes = taxes.map((t: any) => {
-        const rate = Number(t.rate) || 0;
-
-        const amount =
-          t.charge_type === "Actual"
-            ? Number(t.tax_amount) || 0
-            : (subTotal * rate) / 100;
         const isActual = t.charge_type === "Actual";
-
         return {
           chargeType: t.charge_type,
           accountHead: t.account_head,
@@ -658,44 +741,51 @@ const maxAllowed = Math.max(0, available - usedByOthers);
       };
     });
   };
+
   const handleTaxChange = (index: number, field: string, value: any) => {
     setFormData((prev) => {
       const updated = [...(prev.taxes || [])];
-      updated[index] = {
-        ...updated[index],
-        [field]: value,
-      };
-
-      return {
-        ...prev,
-        taxes: updated,
-      };
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, taxes: updated };
     });
+  };
+  const getItemMax = (idx: number): number | undefined => {
+    const item = formData.items[idx];
+    if (!item || !item._stockLoaded || item.isServiceItem) return undefined;
+
+    const isSubmitted = invoiceDocstatusRef.current === 1;
+    const liveStock = Number(item.availableQty ?? 0);
+    const thisRowOriginal = Number(item.originalQty ?? 0);
+    const hasBatch = !!item.batchNo;
+
+    if (isSubmitted) {
+      return liveStock + thisRowOriginal;
+    }
+
+    const usedByOthers = hasBatch
+      ? formData.items
+          .filter((x, xIdx) => xIdx !== idx && x.batchNo === item.batchNo)
+          .reduce((sum, x) => sum + Number(x.quantity || 0), 0)
+      : 0;
+
+    return Math.max(0, liveStock - usedByOthers);
   };
 
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
       const items = [...prev.items];
-      const updatedItem = {
-  ...items[index],
-  ...updated,
-};
+      const updatedItem = { ...items[index], ...updated };
 
-const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+      const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+      if (piecesPerBox > 0 && Number(updatedItem.quantity || 0) > 0) {
+        const totalBoxes = Math.ceil(
+          Number(updatedItem.quantity) / piecesPerBox,
+        );
+        updatedItem.boxEnd =
+          Number(updatedItem.boxStart || 1) + totalBoxes - 1;
+      }
 
-if (
-  piecesPerBox > 0 &&
-  Number(updatedItem.quantity || 0) > 0
-) {
-  const totalBoxes = Math.ceil(
-    Number(updatedItem.quantity) / piecesPerBox
-  );
-
-  updatedItem.boxEnd =
-    Number(updatedItem.boxStart || 1) + totalBoxes - 1;
-}
-
-items[index] = updatedItem;
+      items[index] = updatedItem;
       return { ...prev, items };
     });
   };
@@ -708,6 +798,8 @@ items[index] = updatedItem;
       items: prev.items.map((item) => ({ ...item, warehouse: value })),
     }));
   };
+
+  // ─── Other charges ───────────────────────────────────────────────────────────
 
   const addOtherCharge = () => {
     setFormData((prev: any) => ({
@@ -740,6 +832,8 @@ items[index] = updatedItem;
     }));
   };
 
+  // ─── Item CRUD ───────────────────────────────────────────────────────────────
+
   const addItem = () => {
     setFormData((prev) => {
       const items = [...prev.items];
@@ -768,11 +862,19 @@ items[index] = updatedItem;
     });
   };
 
+  // FIX #1: duplicateItem was spreading the source row including originalQty
+  // and availableQty. A duplicated row is a brand-new line — it was never
+  // submitted to Frappe, so originalQty must be 0, and _skipCap must be false
+  // so the stock cap is enforced immediately on the new row.
   const duplicateItem = (absoluteIndex: number) => {
     setFormData((prev) => {
       const source = prev.items[absoluteIndex];
       if (!source) return prev;
-      const copy = { ...source };
+      const copy = {
+        ...source,
+        originalQty: 0,   // new row — never submitted, no Frappe allocation
+        _skipCap: false,  // enforce stock cap from the first keystroke
+      };
       const newItems = [...prev.items];
       newItems.splice(absoluteIndex + 1, 0, copy);
       setPage(Math.floor((absoluteIndex + 1) / ITEMS_PER_PAGE));
@@ -780,8 +882,12 @@ items[index] = updatedItem;
     });
   };
 
+  // ─── Load invoice for edit ───────────────────────────────────────────────────
+
   const setFormDataFromInvoice = (invoice: any) => {
     isLoadingRef.current = true;
+    invoiceDocstatusRef.current = Number(invoice.docstatus ?? 0);
+
     // charges[] from GET response map to taxes[] in formData
     // (taxes[] in GET is always empty; actual applied charges are in charges[])
     const mappedTaxesFromCharges =
@@ -820,7 +926,6 @@ items[index] = updatedItem;
       destnCountryCd: invoice.destnCountryCd ?? "",
       updateStock: invoice.updateStock ?? true,
       warehouse: invoice.warehouse ?? prev.warehouse ?? "",
-      // Use address IDs (not the HTML display strings) for the PUT payload
       billingAddress:
         invoice.customerAddressId ??
         invoice.billingAddress ??
@@ -887,7 +992,7 @@ items[index] = updatedItem;
           discount,
           vatRate: it.taxInfo?.[0]?.totalTaxRate ?? taxRate,
           vatCode: it.itemTaxTemplate ?? it.vatCode ?? "",
-          taxTypes: taxTypes,
+          taxTypes,
           packingUnit: it.packingUnit ?? "",
           packingSize: it.packingSize ?? "",
           batchNo: it.batchNo ?? "",
@@ -896,8 +1001,13 @@ items[index] = updatedItem;
           mfgDate: it.mfgDate ?? "",
           expDate: it.expDate ?? "",
           warehouse: it.warehouse ?? "",
+          isServiceItem: it.isServiceItem ?? false,
           originalQty: Number(it.quantity),
+          // Real stock is unknown until the live re-fetch effect resolves.
+          // Never assume 0 here — that was the old "fake stock" bug.
+          availableQty: undefined,
           _skipCap: true,
+          _stockLoaded: false,
         };
       }),
     }));
@@ -962,14 +1072,12 @@ items[index] = updatedItem;
     customerTaxCategoryRef.current = "";
     setCustomerDetails(null);
     setCustomerNameDisplay("");
-
     setSameAsBilling(true);
     setPage(0);
     setActiveTab("details");
   };
 
   // ─── Submit ──────────────────────────────────────────────────────────────────
-  // Returns the mapped API payload or null if validation fails
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1000,9 +1108,9 @@ items[index] = updatedItem;
       const lineAmount = qty * price;
       const discountAmount = lineAmount * (discount / 100);
       const netAmount = lineAmount - discountAmount;
-      const amount = netAmount * (vatRate / 100);
+      const taxAmount = netAmount * (vatRate / 100);
       sub += netAmount;
-      tax += amount;
+      tax += taxAmount;
     });
     return { subTotal: sub, totalTax: tax, grandTotal: sub + tax };
   }, [formData.items]);
@@ -1029,7 +1137,6 @@ items[index] = updatedItem;
       setPage,
       activeTab,
       setActiveTab,
-
       isShippingOpen,
       setIsShippingOpen,
       sameAsBilling,
@@ -1057,7 +1164,6 @@ items[index] = updatedItem;
       validateForm,
       handleInputChange,
       handleCustomerSelect,
-
       handleItemChange,
       updateItemDirectly,
       addItem,
@@ -1072,6 +1178,7 @@ items[index] = updatedItem;
       handleOtherChargeChange,
       removeOtherCharge,
       handleTemplateSelect,
+      getItemMax, 
       handleTaxChange,
     },
   };
