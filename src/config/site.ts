@@ -1,4 +1,4 @@
-const MASTER_SITE_HOSTNAME = "master.erp.rolaface.com";
+const MASTER_SITE_HOSTNAME = "uat.erp.rolaface.com";
 
 export const isMasterSite = (): boolean => {
   if (typeof window === "undefined") return false;
