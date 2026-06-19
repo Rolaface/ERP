@@ -16,7 +16,7 @@ const ALL_EXPENSE_TABS = [
     label: "Expense Type",
     icon: <CreditCard size={16} strokeWidth={1.75} />,
     module: "Expense Claim Type",
-    action: "read" as const,
+    action: "create" as const,
   },
   {
     id: "expenseHistory",

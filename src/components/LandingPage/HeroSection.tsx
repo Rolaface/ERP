@@ -1,4 +1,7 @@
 import React, { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import {ROUTES} from "../../routes/RoutesPath"
+
 
 const HeroSection: React.FC = () => {
   const imageRef = useRef<HTMLDivElement>(null);
@@ -174,18 +177,20 @@ const HeroSection: React.FC = () => {
             </p>
 
             <div className="flex items-center gap-4 flex-wrap mt-4 motion-fade-up motion-delay-3">
-              <button
-                ref={buttonRef}
-                className="btn btn-premium relative overflow-hidden"
+              <Link to={ROUTES.SIGNUP}>
+               <button
+                 ref={buttonRef}
+               className="btn btn-premium relative overflow-hidden"
                 style={{
                   background: "var(--gradient-primary)",
                   boxShadow: "var(--glow-primary)",
-                  color: "#fff",
+                   color: "#fff",
                   border: "none",
                 }}
               >
-                <span className="relative z-10">Start Free Trial →</span>
-              </button>
+                 <span className="relative z-10">Start Free Trial →</span>
+               </button>
+             </Link>
 
               <button className="btn btn-ghost border border-theme backdrop-blur-md hover:bg-[var(--row-hover)]">
                 See Live Demo
