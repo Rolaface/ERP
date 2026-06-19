@@ -97,23 +97,21 @@ const Navbar: React.FC = () => {
       </div>
 
       <nav
-        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-          isScrolled
-            ? `
+        className={`sticky top-0 z-50 w-full transition-all duration-300 ${isScrolled
+          ? `
               bg-card/70 backdrop-blur-2xl 
               border-b border-theme/60 
               shadow-[0_4px_20px_rgba(0,0,0,0.04)]
             `
-            : `
+          : `
               bg-card/50 backdrop-blur-xl 
               border-b border-transparent
             `
-        }`}
+          }`}
       >
         <div
-          className={`container-app flex items-center justify-between transition-all duration-300 ${
-            isScrolled ? "h-14" : "h-16"
-          }`}
+          className={`container-app flex items-center justify-between transition-all duration-300 ${isScrolled ? "h-14" : "h-16"
+            }`}
         >
           {/* LEFT: LOGO */}
           <div className="flex items-center gap-3 cursor-pointer group">
@@ -145,9 +143,8 @@ const Navbar: React.FC = () => {
                   className="relative group px-1 py-1"
                 >
                   <span
-                    className={`transition-colors duration-150 ${
-                      isActive ? "text-main" : "group-hover:text-main"
-                    }`}
+                    className={`transition-colors duration-150 ${isActive ? "text-main" : "group-hover:text-main"
+                      }`}
                   >
                     {item.name}
                   </span>
@@ -157,10 +154,9 @@ const Navbar: React.FC = () => {
                     className={`
                       absolute left-0 -bottom-1 h-[2px] w-full bg-primary
                       origin-left transition-transform duration-150 ease-out
-                      ${
-                        isActive
-                          ? "scale-x-100"
-                          : "scale-x-0 group-hover:scale-x-100"
+                      ${isActive
+                        ? "scale-x-100"
+                        : "scale-x-0 group-hover:scale-x-100"
                       }
                     `}
                   />
@@ -173,14 +169,15 @@ const Navbar: React.FC = () => {
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="hidden md:block text-sm font-medium text-muted hover:text-main transition-colors duration-150"
+              className="hidden md:block text-sm font-medium text-white hover:text-main transition-colors duration-150 bg-[var(--primary)] rounded-[calc(var(--density-radius)*1)] px-[calc(var(--density-padding-sm)*2)] py-[calc(var(--density-padding-md)*1)] "
             >
               Login
             </Link>
 
-            <Link to="/signup">
-              <button
-                className={`
+            {/* {showSignup && (
+              <Link to="/signup">
+                <button
+                  className={`
                   relative inline-flex items-center justify-center
                   px-[var(--density-padding-lg)] py-[var(--density-padding-sm)]
                   text-sm font-semibold text-white
@@ -195,12 +192,13 @@ const Navbar: React.FC = () => {
 
                   active:scale-[0.98]
                 `}
-              >
-                <span className="absolute inset-0 rounded-[var(--density-radius)] bg-primary opacity-0 blur-xl transition-opacity duration-300 hover:opacity-20"></span>
+                >
+                  <span className="absolute inset-0 rounded-[var(--density-radius)] bg-primary opacity-0 blur-xl transition-opacity duration-300 hover:opacity-20"></span>
 
-                <span className="relative z-10">Sign Up</span>
-              </button>
-            </Link>
+                  <span className="relative z-10">Sign Up</span>
+                </button>
+              </Link>
+            )} */}
           </div>
         </div>
       </nav>

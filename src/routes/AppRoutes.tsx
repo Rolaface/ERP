@@ -9,6 +9,9 @@ import GLView from "../views/Accounting/glview";
 import { usePermission } from "../hooks/permission/usePermission";
 import type { PermissionAction } from "../store/permissionStore";
 import { useHRView } from "../hooks/permission/useHRView";
+import { Toaster } from "react-hot-toast";
+import ResetPassword from "../ResetPassword";
+import { isMasterSite } from "../config/site";
 
 const Dashboard = lazy(() => import("../views/DashbBoard"));
 const SalesModule = lazy(() => import("../views/Sales/Sales"));
@@ -31,8 +34,7 @@ const ExpenseManagement = lazy(() => import("../views/ExpenseManagement/expenseM
 const EmailTemplate = lazy(() => import("../views/Email/EmailTemplate"))
 const Performance = lazy(() => import("../views/../views/hr/performace/PerformanceModule"))
 
-import { Toaster } from "react-hot-toast";
-import ResetPassword from "../ResetPassword";
+
 
 
 interface PermissionRouteProps {
@@ -63,7 +65,7 @@ const PermissionRoute: React.FC<PermissionRouteProps> = ({
 
 const DashboardRedirect: React.FC = () => {
   const { isLoading } = usePermission();
-  const { viewMode }  = useHRView();
+  const { viewMode } = useHRView();
   if (isLoading) return null;               // wait — no flash on hard refresh
   if (viewMode === "employee") return <Navigate to="/hr/emp-dashboard" replace />;
   return <Dashboard />;                     // professional/admin sees ERP dashboard
@@ -78,8 +80,14 @@ const AppRoutes: React.FC = () => {
       <Routes>
 
         {/* ── Public Routes ── */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route
+          path="/"
+          element={isMasterSite() ? <LandingPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/signup"
+          element={isMasterSite() ? <SignupPage /> : <Navigate to="/" replace />}
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/update-password" element={<ResetPassword />} />
 
@@ -104,7 +112,7 @@ const AppRoutes: React.FC = () => {
             <Route
               path="/crm"
               element={
-                <PermissionRoute modules={["Customer", "Payment Entry","Customer Group"]}>
+                <PermissionRoute modules={["Customer", "Payment Entry", "Customer Group"]}>
                   <CrmModule />
                 </PermissionRoute>
               }
@@ -202,7 +210,7 @@ const AppRoutes: React.FC = () => {
               path="/bank-management"
               element={
                 <PermissionRoute
-                  modules={["Bank", "Bank Account" , "Mode of Payment","Currency Exchange"]}
+                  modules={["Bank", "Bank Account", "Mode of Payment", "Currency Exchange"]}
                 >
                   <BankModule />
                 </PermissionRoute>
@@ -259,15 +267,15 @@ const AppRoutes: React.FC = () => {
                 </PermissionRoute>
               }
             />
-              <Route
+            <Route
               path="/Expense-Management"
               element={
-                <PermissionRoute modules={["Expense Claim","Expense Claim Type","Employee Advance"]}>
+                <PermissionRoute modules={["Expense Claim", "Expense Claim Type", "Employee Advance"]}>
                   <ExpenseManagement />
                 </PermissionRoute>
               }
             />
-             <Route
+            <Route
               path="/Email-Template"
               element={
                 <PermissionRoute modules={["Email Template"]}>
@@ -275,7 +283,7 @@ const AppRoutes: React.FC = () => {
                 </PermissionRoute>
               }
             />
-             <Route
+            <Route
               path="/performance"
               element={
                 <PermissionRoute modules={["Appraisal"]}>
