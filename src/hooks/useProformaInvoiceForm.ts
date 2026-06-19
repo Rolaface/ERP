@@ -4,6 +4,7 @@ import { getCompanyById } from "../api/companySetupApi";
 import type { TermSection } from "../types/termsAndCondition";
 // import type { ProformaInvoice, InvoiceItem } from "../types/invoice";
 import { ProformaInvoice, InvoiceItem} from "../types/proformaInvoice";
+import {getStockReport} from "../api/stockApi";
 import { getRolaCountryList } from "../api/lookupApi";
 
 import { getExchangeRate } from "../api/currencyExchangeApi";
@@ -236,7 +237,7 @@ useEffect(() => {
       return "";
     }
   };
-  // Load edit data
+
 //   useEffect(() => {
 //     if (!isOpen) return;
 //     if (mode === "edit" && initialData?.id) {
@@ -244,12 +245,60 @@ useEffect(() => {
 //     }
 //   }, [isOpen, initialData, mode]);
  
-  useEffect(() => {
+ useEffect(() => {
     if (!isOpen) return;
     if (mode === "edit" && (initialData?.id || initialData?.proformaId)) {
       setFormDataFromInvoice(initialData);
     }
   }, [isOpen, initialData, mode]);
+
+  useEffect(() => {
+    if (!isOpen || mode !== "edit") return;
+    if (!(initialData?.id || initialData?.proformaId)) return;
+    if (!formData.items.length) return;
+
+    let cancelled = false;
+    const taxCategoryForFetch =
+      initialData?.taxCategory ?? initialData?.tax_category ?? "";
+
+    (async () => {
+      try {
+        const res = await getStockReport(1, 1000, "", taxCategoryForFetch);
+        const raw = res?.message?.data ?? [];
+        if (cancelled) return;
+
+        const piecesPerBoxMap = new Map<string, number>();
+        raw.forEach((stockItem: any) => {
+          piecesPerBoxMap.set(
+            stockItem.item_code,
+            Number(stockItem.piecesPerBox ?? 0),
+          );
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          items: prev.items.map((item: any) => {
+            if (item._piecesPerBoxLoaded) return item; 
+            if (!item.itemCode) return item;
+            if (item.piecesPerBox && item.piecesPerBox > 0) {
+              return { ...item, _piecesPerBoxLoaded: true };
+            }
+            return {
+              ...item,
+              piecesPerBox: piecesPerBoxMap.get(item.itemCode) ?? 0,
+              _piecesPerBoxLoaded: true,
+            };
+          }),
+        }));
+      } catch (err) {
+        if (!cancelled) showApiError(err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, mode, initialData?.id, initialData?.proformaId]);
 
   useEffect(() => {
     if (!isOpen) return;
