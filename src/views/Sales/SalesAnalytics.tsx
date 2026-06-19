@@ -8,11 +8,9 @@ import React, {
 import {
   useReactTable,
   getCoreRowModel,
-  getExpandedRowModel,
   flexRender,
   type ColumnDef,
   type VisibilityState,
-  type ExpandedState,
 } from "@tanstack/react-table";
 import {
   getSalesAnalytics,
@@ -23,23 +21,20 @@ import {
   Loader2,
   RefreshCw,
   TrendingUp,
-  Users,
-  BarChart3,
   Award,
-  Filter,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   LayoutGrid,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
+import { FaCheck, FaDownload } from "react-icons/fa";
 import { useCompanyStore } from "../../store/companyStore";
 
 export type SalesNode = {
   entity: string;
   entity_name?: string;
   total: number;
-  indent?: number;
-  subRows?: SalesNode[];
   [key: string]: any;
 };
 
@@ -93,361 +88,244 @@ const nf = (
 const currentYearStart = () => `${new Date().getFullYear()}-01-01`;
 const currentYearEnd = () => `${new Date().getFullYear()}-12-31`;
 
-const buildTree = (flatData: SalesNode[]): SalesNode[] => {
-  const root: SalesNode[] = [];
-  const stack: SalesNode[] = [];
 
-  for (const item of flatData) {
-    const node = { ...item, subRows: [] };
-    const currentIndent = node.indent || 0;
 
-    while (
-      stack.length > 0 &&
-      (stack[stack.length - 1].indent || 0) >= currentIndent
-    ) {
-      stack.pop();
-    }
 
-    if (stack.length === 0) {
-      root.push(node);
-    } else {
-      stack[stack.length - 1].subRows!.push(node);
-    }
-    stack.push(node);
-  }
-  return root;
-};
-
-const InfoBox = ({
-  title,
-  icon,
-  loading,
-  children,
-}: {
-  title: string;
-  icon?: React.ReactNode;
-  loading: boolean;
-  children: React.ReactNode;
-}) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-300 p-3 flex flex-col justify-center h-full">
-    <div className="flex items-center gap-2 mb-2">
-      {icon && <span className="text-gray-400">{icon}</span>}
-      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-        {title}
-      </h3>
-    </div>
-    {loading ? (
-      <div className="animate-pulse h-12 bg-gray-100 rounded w-full mt-1"></div>
-    ) : (
-      children
-    )}
-  </div>
-);
-
-const NoteItem = ({
-  label,
-  title,
-  subTitle,
-  value,
-  icon,
-  list,
-  formatter,
-}: any) => (
-  <div className="flex flex-col gap-1 p-2.5 rounded-lg bg-gray-50 border border-gray-200 flex-1">
-    {label && (
-      <div className="flex items-center gap-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-        {icon} {label}
-      </div>
-    )}
-
-    {list ? (
-      <div className="flex flex-col mt-0.5">
-        {list.length > 0 ? (
-          list.map((item: any, i: number) => (
-            <div
-              key={i}
-              className="flex items-center gap-2 py-1 border-b border-gray-200 last:border-0"
-            >
-              <span
-                className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0
-              ${
-                i === 0
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-gray-200 text-gray-600"
-              }`}
-              >
-                {i + 1}
-              </span>
-              <span className="flex-1 text-xs font-medium text-gray-800 truncate">
-                {item.name || "N/A"}
-              </span>
-              <span className="text-xs font-semibold text-gray-900 whitespace-nowrap">
-                {formatter ? formatter.format(item.value || 0) : item.value}
-              </span>
-            </div>
-          ))
-        ) : (
-          <div className="text-xs text-gray-400 py-1">No data</div>
-        )}
-      </div>
-    ) : (
-      <>
-        {title && (
-          <div
-            className="font-medium text-xs text-gray-800 truncate"
-            title={title}
-          >
-            {title}
-          </div>
-        )}
-        {subTitle && subTitle !== "N/A" && (
-          <div className="text-[10px] text-gray-400 truncate">
-            Code: {subTitle}
-          </div>
-        )}
-        <div className="text-sm font-bold text-gray-900 mt-0.5">{value}</div>
-      </>
-    )}
-  </div>
-);
-
-function SummaryStrip({
-  kpis,
-  isQuantity,
-  loading,
-}: {
+// ── Compact KPI Strip ────────────────────────────────────────────────────────
+const KpiStrip: React.FC<{
   kpis: SalesKPIs | undefined;
   isQuantity: boolean;
   loading: boolean;
-}) {
-  const currencySymbol = useCompanyStore((s) => s.currencySymbol);
+  sym: string;
+}> = ({ kpis, isQuantity, loading, sym }) => {
+  const fmtVal = (v: number) =>
+    isQuantity ? nf(v, false) : nf(v, true, sym);
 
-  const valueFormatter = {
-    format: (val: number) =>
-      nf(val, !isQuantity, !isQuantity ? currencySymbol : ""),
-  };
-  const countFormatter = {
-    format: (val: number) => nf(val, false),
-  };
+  const topThree = (kpis?.top_performers || []).slice(0, 3);
 
-  const topPerformersList = (kpis?.top_performers || [])
-    .slice(0, 3)
-    .map((p) => ({
-      name: p.entity,
-      value: p.total_value,
-    }));
+  const sections = [
+    {
+      icon: <TrendingUp size={11} className="text-emerald-400" />,
+      label: isQuantity ? "Sales Quantity" : "Sales Value",
+      items: [
+        {
+          label: "Total",
+          value: fmtVal(kpis?.total_sales_value || 0),
+          color: "text-emerald-600",
+          bold: true,
+        },
+        {
+          label: "Avg / Entity",
+          value: fmtVal(kpis?.average_value_per_entity || 0),
+          color: "text-blue-500",
+          bold: false,
+        },
+        {
+          label: "Entities",
+          value: nf(kpis?.total_entities_analyzed || 0, false),
+          color: "text-primary",
+          bold: false,
+        },
+      ],
+    },
+    {
+      icon: <Award size={11} className="text-amber-400" />,
+      label: "Top Performers",
+      items:
+        topThree.length > 0
+          ? topThree.map((p, i) => ({
+              label: `#${i + 1} ${p.entity}`,
+              value: fmtVal(p.total_value),
+              color:
+                i === 0
+                  ? "text-amber-600"
+                  : i === 1
+                    ? "text-gray-600"
+                    : "text-orange-400",
+              bold: i === 0,
+            }))
+          : [{ label: "No data", value: "—", color: "text-muted", bold: false }],
+    },
+  ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-      <InfoBox
-        title={isQuantity ? "Total Sales Quantity" : "Total Sales Value"}
-        loading={loading}
-        icon={<TrendingUp size={14} />}
-      >
-        <NoteItem
-          label="Overall"
-          value={valueFormatter.format(kpis?.total_sales_value || 0)}
-        />
-      </InfoBox>
-
-      <InfoBox
-        title="Entities Analyzed"
-        loading={loading}
-        icon={<Users size={14} />}
-      >
-        <NoteItem
-          label="Analyzed Count"
-          value={countFormatter.format(kpis?.total_entities_analyzed || 0)}
-        />
-      </InfoBox>
-
-      <InfoBox
-        title={isQuantity ? "Avg Qty / Entity" : "Avg Value / Entity"}
-        loading={loading}
-        icon={<BarChart3 size={14} />}
-      >
-        <NoteItem
-          label="Average"
-          value={valueFormatter.format(kpis?.average_value_per_entity || 0)}
-        />
-      </InfoBox>
-
-      <InfoBox
-        title="Top Performers"
-        loading={loading}
-        icon={<Award size={14} />}
-      >
-        <NoteItem list={topPerformersList} formatter={valueFormatter} />
-      </InfoBox>
+    <div className="flex flex-col lg:flex-row gap-2">
+      {sections.map((sec) => (
+        <div
+          key={sec.label}
+          className={`bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 flex flex-col gap-2 min-w-0 ${
+            sec.label === "Top Performers" ? "flex-[2]" : "flex-1"
+          }`}
+        >
+          <div className="flex items-center gap-1.5">
+            {sec.icon}
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+              {sec.label}
+            </span>
+          </div>
+          <div
+            className="grid gap-1 divide-x divide-[var(--border)]"
+            style={{
+              gridTemplateColumns: `repeat(${sec.items.length}, minmax(0, 1fr))`,
+            }}
+          >
+            {sec.items.map((item, i) => (
+              <div
+                key={i}
+                className="flex flex-col gap-0.5 px-1 first:pl-0 last:pr-0"
+              >
+                <span className="text-[10px] leading-tight text-muted truncate">
+                  {item.label}
+                </span>
+                {loading ? (
+                  <div className="h-3.5 w-12 bg-[var(--border)] rounded animate-pulse mt-0.5" />
+                ) : (
+                  <span
+                    className={`leading-tight tabular-nums block ${item.color} ${
+                      item.bold ? "font-extrabold" : "font-semibold"
+                    } ${
+                      String(item.value).length > 14
+                        ? "text-[10px]"
+                        : String(item.value).length > 10
+                          ? "text-[11px]"
+                          : String(item.value).length > 7
+                            ? "text-[12px]"
+                            : "text-[13px]"
+                    }`}
+                  >
+                    {item.value || "—"}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
-}
-
-type FilterBarProps = {
-  filters: SalesAnalyticsFilters;
-  setFilters: React.Dispatch<React.SetStateAction<SalesAnalyticsFilters>>;
-  table: any;
 };
 
-function FilterBar({ filters, setFilters, table }: FilterBarProps) {
-  const [showColMenu, setShowColMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+// ── Dropdown wrapper (mirrors AccountsReceivable) ────────────────────────────
+const FilterDropdown: React.FC<{
+  label: string;
+  active: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  width?: string;
+}> = ({ label, active, isOpen, onToggle, children, width = "w-48" }) => (
+  <div className="relative">
+    <button
+      onClick={onToggle}
+      className={`h-7 px-2.5 text-[11px] font-semibold border rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
+        active
+          ? "border-primary bg-primary/10 text-primary"
+          : "border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40"
+      }`}
+    >
+      {label}
+    </button>
+    {isOpen && (
+      <div
+        className={`absolute top-full left-0 mt-1.5 bg-card border border-[var(--border)] rounded-lg z-30 ${width} shadow-xl py-1 max-h-56 overflow-y-auto`}
+      >
+        {children}
+      </div>
+    )}
+  </div>
+);
+
+const DropdownItem: React.FC<{
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}> = ({ active, onClick, children }) => (
+  <button
+    onClick={onClick}
+    className={`w-full text-left px-3 py-1.5 text-xs flex justify-between items-center transition-colors ${
+      active
+        ? "bg-primary/10 text-primary font-semibold"
+        : "text-main hover:bg-row-hover"
+    }`}
+  >
+    {children}
+    {active && <FaCheck className="text-[9px] shrink-0" />}
+  </button>
+);
+
+// ── Column visibility toggle (compact button) ────────────────────────────────
+const ColVisMenu: React.FC<{ table: any }> = ({ table }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowColMenu(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const selectClass =
-    "bg-white border border-gray-300 rounded-md text-xs font-medium text-gray-700 shadow-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none px-2 h-8 min-w-[110px] cursor-pointer";
-  const inputClass =
-    "bg-white border border-gray-300 rounded-md text-xs font-medium text-gray-700 shadow-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none px-2 h-8 w-32";
-
   return (
-    <div className="flex flex-wrap items-center gap-2 bg-gray-50/50 border border-gray-200 rounded-xl p-2 mb-3">
-      <div className="flex items-center gap-1.5 px-2 border-r border-gray-300 text-gray-500">
-        <Filter size={14} />
-        <span className="text-xs font-semibold uppercase tracking-wider">
-          Filters
-        </span>
-      </div>
-
-      <select
-        value={filters.tree_type}
-        onChange={(e) =>
-          setFilters((f) => ({
-            ...f,
-            tree_type: e.target.value as SalesAnalyticsFilters["tree_type"],
-            page: 1,
-          }))
-        }
-        className={selectClass}
-        title="Analyze By"
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border rounded-md transition-all ${
+          open
+            ? "border-primary bg-primary/10 text-primary"
+            : "border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40"
+        }`}
       >
-        <option value="Customer">Customer</option>
-        <option value="Customer Group">Customer Group</option>
-        <option value="Item">Item</option>
-        <option value="Item Group">Item Group</option>
-        <option value="Territory">Territory</option>
-      </select>
-
-      <select
-        value={filters.range}
-        onChange={(e) =>
-          setFilters((f) => ({
-            ...f,
-            range: e.target.value as SalesAnalyticsFilters["range"],
-            page: 1,
-          }))
-        }
-        className={selectClass}
-        title="Range"
-      >
-        <option value="Weekly">Weekly</option>
-        <option value="Monthly">Monthly</option>
-        <option value="Quarterly">Quarterly</option>
-        <option value="Yearly">Yearly</option>
-      </select>
-
-      <select
-        value={filters.value_quantity}
-        onChange={(e) =>
-          setFilters((f) => ({
-            ...f,
-            value_quantity: e.target
-              .value as SalesAnalyticsFilters["value_quantity"],
-            page: 1,
-          }))
-        }
-        className={selectClass}
-        title="Based On"
-      >
-        <option value="Value">Value</option>
-        <option value="Quantity">Quantity</option>
-      </select>
-
-      <div className="flex items-center gap-1 ml-auto">
-        <input
-          type="date"
-          value={filters.from_date || ""}
-          onChange={(e) =>
-            setFilters((f) => ({ ...f, from_date: e.target.value, page: 1 }))
-          }
-          className={inputClass}
-          title="From Date"
-        />
-        <span className="text-gray-400 text-xs font-medium">-</span>
-        <input
-          type="date"
-          value={filters.to_date || ""}
-          onChange={(e) =>
-            setFilters((f) => ({ ...f, to_date: e.target.value, page: 1 }))
-          }
-          className={inputClass}
-          title="To Date"
-        />
-
-        <div className="relative ml-1" ref={menuRef}>
-          <button
-            onClick={() => setShowColMenu(!showColMenu)}
-            className={`flex items-center justify-center h-9 px-3 gap-2 bg-white border rounded-lg text-xs font-semibold transition-all shadow-sm
-              ${showColMenu ? "border-primary text-primary ring-2 ring-primary/20" : "border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300"}`}
-          >
-            <LayoutGrid size={14} />
-            <span>Columns</span>
-          </button>
-
-          {showColMenu && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 shadow-lg rounded-lg p-2 z-50 flex flex-col gap-1 min-w-[200px] max-h-64 overflow-y-auto">
-              <div className="flex items-center justify-between mb-1 px-1 pb-1 border-b border-gray-100">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                  Visible Columns
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => table.toggleAllColumnsVisible(true)}
-                    className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                  >
-                    Show All
-                  </button>
-                  <button
-                    onClick={() => table.toggleAllColumnsVisible(false)}
-                    className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                  >
-                    Hide All
-                  </button>
-                </div>
-              </div>
-
-              {table.getAllLeafColumns().map((col: any) => (
-                <label
-                  key={col.id}
-                  className="flex items-center gap-2 px-1 py-1 hover:bg-gray-50 rounded cursor-pointer text-xs text-gray-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={col.getIsVisible()}
-                    onChange={col.getToggleVisibilityHandler()}
-                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <span className="truncate">{col.columnDef.header}</span>
-                </label>
-              ))}
+        <LayoutGrid size={12} />
+        Columns
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 bg-card border border-[var(--border)] shadow-xl rounded-lg p-2 z-30 flex flex-col gap-0.5 min-w-[190px] max-h-64 overflow-y-auto">
+          <div className="flex items-center justify-between mb-1 px-1 pb-1 border-b border-[var(--border)]">
+            <span className="text-[9px] font-black text-muted uppercase tracking-widest">
+              Visible Columns
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => table.toggleAllColumnsVisible(true)}
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-row-hover text-muted hover:text-main transition-colors"
+              >
+                All
+              </button>
+              <button
+                onClick={() => table.toggleAllColumnsVisible(false)}
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-row-hover text-muted hover:text-main transition-colors"
+              >
+                None
+              </button>
             </div>
-          )}
+          </div>
+          {table.getAllLeafColumns().map((col: any) => (
+            <label
+              key={col.id}
+              className="flex items-center gap-2 px-1 py-1 hover:bg-row-hover rounded cursor-pointer text-xs text-main"
+            >
+              <input
+                type="checkbox"
+                checked={col.getIsVisible()}
+                onChange={col.getToggleVisibilityHandler()}
+                className="rounded border-[var(--border)] text-primary focus:ring-primary/50 cursor-pointer"
+              />
+              <span className="truncate">{col.columnDef.header}</span>
+            </label>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
-}
+};
 
+// ── Main Component ────────────────────────────────────────────────────────────
 const SalesAnalytics: React.FC = () => {
   const currencySymbol = useCompanyStore((s) => s.currencySymbol);
+  const sym = currencySymbol || "—";
+
   const [filters, setFilters] = useState<SalesAnalyticsFilters>({
     tree_type: "Customer",
     doc_type: "Sales Invoice",
@@ -463,8 +341,21 @@ const SalesAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  
-  const [expanded, setExpanded] = useState<ExpandedState>(true);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // close dropdowns on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      )
+        setActiveDropdown(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const fetchAnalytics = useCallback(
     async (currentFilters: SalesAnalyticsFilters) => {
@@ -498,10 +389,9 @@ const SalesAnalytics: React.FC = () => {
     return () => clearTimeout(timer);
   }, [filters, fetchAnalytics]);
 
-  const treeData = useMemo(() => {
-    if (!data?.data) return [];
-    return buildTree(data.data);
-  }, [data?.data]);
+  const flatData = useMemo(() => data?.data ?? [], [data?.data]);
+
+  const isQuantity = filters.value_quantity === "Quantity";
 
   const columns = useMemo<ColumnDef<SalesNode>[]>(() => {
     if (!data?.columns) return [];
@@ -512,114 +402,268 @@ const SalesAnalytics: React.FC = () => {
         accessorKey: col.fieldname,
         header: col.label,
         size: isNumeric ? 120 : 200,
-        meta: {
-          align: isNumeric ? "right" : "left",
-        },
-        cell: ({ row, getValue }) => {
+        meta: { align: isNumeric ? "right" : "left" },
+        cell: ({ getValue }) => {
           const val = getValue() as number | string;
-          
-          if (col.fieldname === "entity" || col.fieldname === "entity_name") {
+
+          if (col.fieldname === "entity") {
             return (
-              <div 
-                style={{ paddingLeft: `${row.depth * 1.5}rem` }} 
-                className="flex items-center gap-2"
-              >
-                {row.getCanExpand() ? (
-                  <button
-                    onClick={row.getToggleExpandedHandler()}
-                    className="cursor-pointer text-gray-500 hover:text-gray-800 focus:outline-none flex items-center justify-center w-4 h-4"
-                  >
-                    {row.getIsExpanded() ? (
-                      <ChevronDown size={14} />
-                    ) : (
-                      <ChevronRight size={14} />
-                    )}
-                  </button>
-                ) : (
-                  <span className="w-4 flex-shrink-0"></span>
-                )}
-                <span className="font-semibold text-gray-800 truncate block text-xs">
-                  {val || "—"}
-                </span>
-              </div>
+              <span className="font-mono text-primary text-xs font-semibold">
+                {val || "—"}
+              </span>
             );
           }
-          
-          return (
-            <div
-              className={`text-xs ${
-                isNumeric ? "text-gray-600 font-medium" : "text-gray-800"
-              }`}
-            >
-              {isNumeric
-                ? nf(
-                    val as number,
-                    filters.value_quantity === "Value",
-                    filters.value_quantity === "Value" ? currencySymbol : "",
-                  )
-                : val}
-            </div>
-          );
+
+          if (col.fieldname === "entity_name") {
+            return (
+              <span className="text-xs font-medium text-main truncate block">
+                {val || "—"}
+              </span>
+            );
+          }
+
+          if (isNumeric) {
+            const num = val as number;
+            if (!num || num === 0) return <span className="text-xs text-muted tabular-nums">—</span>;
+            return (
+              <span className="text-xs tabular-nums text-gray-600 font-medium">
+                {nf(num, !isQuantity, !isQuantity ? sym : "")}
+              </span>
+            );
+          }
+
+          return <span className="text-xs text-main">{val}</span>;
         },
       };
     });
-  }, [data, filters.value_quantity, currencySymbol]);
+  }, [data, isQuantity, sym]);
 
   const table = useReactTable({
-    data: treeData,
+    data: flatData,
     columns,
-    state: {
-      columnVisibility,
-      expanded,
-    },
-    onExpandedChange: setExpanded,
-    getSubRows: row => row.subRows,
+    state: { columnVisibility },
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
     manualPagination: true,
     pageCount: data?.pagination?.total_pages ?? -1,
   });
 
+  const paginationMeta = data?.pagination;
+  const currentRows = table.getRowModel().rows;
+  const emptyRowsCount = Math.max(0, (filters.page_size ?? 10) - currentRows.length);
+  const visibleColumnsCount = table.getVisibleLeafColumns().length;
+
+  const treeTypeOptions: SalesAnalyticsFilters["tree_type"][] = [
+    "Customer",
+    "Customer Group",
+    "Item",
+    "Item Group",
+    "Territory",
+  ];
+  const rangeOptions: SalesAnalyticsFilters["range"][] = [
+    "Weekly",
+    "Monthly",
+    "Quarterly",
+    "Yearly",
+  ];
+
+  const hasActiveFilters =
+    filters.tree_type !== "Customer" ||
+    filters.range !== "Monthly" ||
+    filters.value_quantity !== "Value" ||
+    filters.from_date !== currentYearStart() ||
+    filters.to_date !== currentYearEnd();
+
+  const clearAll = () => {
+    setFilters((f) => ({
+      ...f,
+      tree_type: "Customer",
+      range: "Monthly",
+      value_quantity: "Value",
+      from_date: currentYearStart(),
+      to_date: currentYearEnd(),
+      page: 1,
+    }));
+    setActiveDropdown(null);
+  };
+
   if (error && !data) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white rounded-xl border border-gray-200 m-2 shadow-sm">
-        <AlertCircle size={24} className="text-red-500" />
-        <p className="text-red-600 text-sm font-medium">{error}</p>
+      <div className="flex flex-col items-center justify-center py-20 gap-3 bg-card border border-[var(--border)] rounded-xl m-2">
+        <AlertCircle size={22} className="text-red-500" />
+        <p className="text-red-500 text-xs font-medium">{error}</p>
         <button
           onClick={() => fetchAnalytics(filters)}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-semibold transition"
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-xs font-semibold transition"
         >
-          <RefreshCw size={14} />
+          <RefreshCw size={12} />
           Retry
         </button>
       </div>
     );
   }
 
-  const isQuantity = filters.value_quantity === "Quantity";
-  const paginationMeta = data?.pagination;
-  const currentRows = table.getRowModel().rows;
-  const emptyRowsCount = Math.max(0, filters.page_size - currentRows.length);
-  const visibleColumnsCount = table.getVisibleLeafColumns().length;
-
   return (
-    <div className="h-full min-h-0 flex flex-col w-full p-2">
-      <SummaryStrip
-        kpis={data?.kpis}
-        isQuantity={isQuantity}
-        loading={loading && !data}
-      />
+    <div className="h-full min-h-0 flex flex-col w-full p-2 gap-3">
 
-      <FilterBar filters={filters} setFilters={setFilters} table={table} />
+      {/* ── KPI Strip ── */}
+      {data?.kpis ? (
+        <KpiStrip
+          kpis={data.kpis}
+          isQuantity={isQuantity}
+          loading={loading && !data}
+          sym={sym}
+        />
+      ) : (
+        <div className="flex flex-col lg:flex-row gap-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 h-16 animate-pulse flex-1"
+            />
+          ))}
+        </div>
+      )}
 
-      <div className="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col min-h-0">
+      {/* ── Filter Bar ── */}
+      <div
+        ref={dropdownRef}
+        className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex flex-wrap items-center gap-2"
+      >
+        <div className="flex items-center gap-1.5 mr-1">
+          <SlidersHorizontal size={11} className="text-muted" />
+          <span className="text-[9px] font-black uppercase tracking-widest text-muted">
+            Filters
+          </span>
+        </div>
+
+        <div className="w-px self-stretch bg-[var(--border)]" />
+
+        {/* Analyze By */}
+        <FilterDropdown
+          label={filters.tree_type || "Analyze By"}
+          active={filters.tree_type !== "Customer"}
+          isOpen={activeDropdown === "treeType"}
+          onToggle={() =>
+            setActiveDropdown(
+              activeDropdown === "treeType" ? null : "treeType",
+            )
+          }
+          width="w-48"
+        >
+          {treeTypeOptions.map((opt) => (
+            <DropdownItem
+              key={opt}
+              active={filters.tree_type === opt}
+              onClick={() => {
+                setFilters((f) => ({ ...f, tree_type: opt, page: 1 }));
+                setActiveDropdown(null);
+              }}
+            >
+              {opt}
+            </DropdownItem>
+          ))}
+        </FilterDropdown>
+
+        {/* Range */}
+        <FilterDropdown
+          label={filters.range || "Range"}
+          active={filters.range !== "Monthly"}
+          isOpen={activeDropdown === "range"}
+          onToggle={() =>
+            setActiveDropdown(activeDropdown === "range" ? null : "range")
+          }
+        >
+          {rangeOptions.map((opt) => (
+            <DropdownItem
+              key={opt}
+              active={filters.range === opt}
+              onClick={() => {
+                setFilters((f) => ({ ...f, range: opt, page: 1 }));
+                setActiveDropdown(null);
+              }}
+            >
+              {opt}
+            </DropdownItem>
+          ))}
+        </FilterDropdown>
+
+        {/* Value / Quantity */}
+        <FilterDropdown
+          label={filters.value_quantity || "Based On"}
+          active={filters.value_quantity !== "Value"}
+          isOpen={activeDropdown === "valueQty"}
+          onToggle={() =>
+            setActiveDropdown(activeDropdown === "valueQty" ? null : "valueQty")
+          }
+        >
+          {(["Value", "Quantity"] as const).map((opt) => (
+            <DropdownItem
+              key={opt}
+              active={filters.value_quantity === opt}
+              onClick={() => {
+                setFilters((f) => ({ ...f, value_quantity: opt, page: 1 }));
+                setActiveDropdown(null);
+              }}
+            >
+              {opt}
+            </DropdownItem>
+          ))}
+        </FilterDropdown>
+
+        {/* Date range */}
+        <div className="flex items-center gap-1">
+          <input
+            type="date"
+            value={filters.from_date || ""}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, from_date: e.target.value, page: 1 }))
+            }
+            className="h-7 px-2 text-[11px] border border-[var(--border)] bg-card text-main rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-32"
+          />
+          <span className="text-muted text-[10px]">–</span>
+          <input
+            type="date"
+            value={filters.to_date || ""}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, to_date: e.target.value, page: 1 }))
+            }
+            className="h-7 px-2 text-[11px] border border-[var(--border)] bg-card text-main rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-32"
+          />
+        </div>
+
+        {/* Clear */}
+        {hasActiveFilters && (
+          <button
+            onClick={clearAll}
+            className="h-7 px-2 flex items-center gap-1 text-[11px] text-red-500 hover:bg-red-500/10 rounded-md transition-colors font-semibold"
+          >
+            <X size={10} /> Clear
+          </button>
+        )}
+
+        {/* Right side: col toggle + refresh */}
+        <div className="ml-auto flex items-center gap-2">
+          <ColVisMenu table={table} />
+          <button
+            onClick={() => fetchAnalytics(filters)}
+            disabled={loading}
+            className="h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40 rounded-md transition-all disabled:opacity-40"
+          >
+            <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* ── Table ── */}
+      <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
         <div className="overflow-auto flex-1 relative">
-          <table className="w-full text-left border-collapse min-w-max">
-            <thead className="bg-gray-50/95 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-200">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
+          <table className="text-left border-collapse w-full" style={{ tableLayout: "auto" }}>
+            <thead className="sticky top-0 z-10 border-b border-[var(--border)]">
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((header) => {
                     const align =
                       (header.column.columnDef.meta as any)?.align === "right"
                         ? "text-right"
@@ -628,7 +672,7 @@ const SalesAnalytics: React.FC = () => {
                       <th
                         key={header.id}
                         style={{ width: header.getSize() }}
-                        className={`px-3 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap ${align}`}
+                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-row-hover border-b border-[var(--border)] ${align}`}
                       >
                         {flexRender(
                           header.column.columnDef.header,
@@ -640,18 +684,15 @@ const SalesAnalytics: React.FC = () => {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-gray-100 relative">
+            <tbody>
               {loading && !data?.data?.length ? (
                 <tr>
                   <td
                     colSpan={columns.length || 1}
-                    style={{ height: `${filters.page_size * 37}px` }}
+                    style={{ height: `${(filters.page_size ?? 10) * 38}px` }}
                   >
-                    <div className="flex justify-center items-center absolute inset-0">
-                      <Loader2
-                        size={24}
-                        className="animate-spin text-gray-400"
-                      />
+                    <div className="flex justify-center items-center h-full">
+                      <Loader2 size={20} className="animate-spin text-muted" />
                     </div>
                   </td>
                 </tr>
@@ -659,11 +700,9 @@ const SalesAnalytics: React.FC = () => {
                 <tr>
                   <td
                     colSpan={columns.length || 1}
-                    style={{ height: `${filters.page_size * 37}px` }}
+                    className="py-16 text-center text-xs text-muted"
                   >
-                    <div className="flex justify-center items-center absolute inset-0 text-gray-500 text-sm">
-                      No data matches the selected criteria.
-                    </div>
+                    No data matches the selected criteria.
                   </td>
                 </tr>
               ) : (
@@ -671,7 +710,8 @@ const SalesAnalytics: React.FC = () => {
                   {currentRows.map((row) => (
                     <tr
                       key={row.id}
-                      className="hover:bg-gray-50 transition-colors group h-[37px]"
+                      className="hover:bg-row-hover transition-colors h-[38px]"
+                      style={{ borderBottom: "1px solid rgba(128,128,128,0.12)" }}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const align =
@@ -681,7 +721,7 @@ const SalesAnalytics: React.FC = () => {
                         return (
                           <td
                             key={cell.id}
-                            className={`px-3 py-1.5 whitespace-nowrap ${align}`}
+                            className={`px-3 py-1 whitespace-nowrap ${align}`}
                           >
                             {flexRender(
                               cell.column.columnDef.cell,
@@ -692,12 +732,9 @@ const SalesAnalytics: React.FC = () => {
                       })}
                     </tr>
                   ))}
-                  {Array.from({ length: emptyRowsCount }).map((_, index) => (
-                    <tr key={`empty-${index}`} className="h-[37px]">
-                      <td
-                        colSpan={visibleColumnsCount}
-                        className="px-3 py-1.5"
-                      ></td>
+                  {Array.from({ length: emptyRowsCount }).map((_, i) => (
+                    <tr key={`empty-${i}`} className="h-[38px]">
+                      <td colSpan={visibleColumnsCount} className="px-3 py-1" />
                     </tr>
                   ))}
                 </>
@@ -705,73 +742,74 @@ const SalesAnalytics: React.FC = () => {
             </tbody>
           </table>
 
-          {loading && data?.data?.length > 0 && (
-            <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-center z-20">
-              <Loader2 size={24} className="animate-spin text-primary" />
+          {/* loading overlay */}
+          {loading && (flatData.length ?? 0) > 0 && (
+            <div className="absolute inset-0 bg-card/60 backdrop-blur-[1px] flex items-center justify-center z-20">
+              <Loader2 size={20} className="animate-spin text-primary" />
             </div>
           )}
         </div>
 
-        <div className="bg-gray-50/50 border-t border-gray-200 px-3 py-2 flex items-center justify-between text-xs text-gray-600">
-          <div className="flex items-center gap-2">
-            <span>Rows per page:</span>
-            <select
-              value={filters.page_size}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  page_size: Number(e.target.value),
-                  page: 1,
-                }))
-              }
-              className="bg-white border border-gray-300 rounded px-1 py-0.5 outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
-            >
-              {[10, 15, 25, 50, 100].map((pageSize) => (
-                <option key={pageSize} value={pageSize}>
-                  {pageSize}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <span className="font-medium">
-              {paginationMeta ? (
-                <>
-                  Showing{" "}
-                  {(paginationMeta.page - 1) * paginationMeta.page_size + 1} to{" "}
+        {/* ── Pagination ── */}
+        <div className="border-t border-[var(--border)] bg-card px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+          <span className="text-[11px]">
+            {paginationMeta && paginationMeta.total_items > 0 ? (
+              <>
+                Showing{" "}
+                <span className="font-semibold text-main">
+                  {(paginationMeta.page - 1) * paginationMeta.page_size + 1}–
                   {Math.min(
                     paginationMeta.page * paginationMeta.page_size,
                     paginationMeta.total_items,
-                  )}{" "}
-                  of {paginationMeta.total_items}
-                </>
-              ) : (
-                "Loading..."
-              )}
-            </span>
+                  )}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-main">
+                  {paginationMeta.total_items}
+                </span>
+              </>
+            ) : (
+              "No entries"
+            )}
+          </span>
 
+          {(paginationMeta?.total_pages ?? 0) > 1 && (
             <div className="flex items-center gap-1">
               <button
-                onClick={() =>
-                  setFilters((prev) => ({ ...prev, page: prev.page - 1 }))
-                }
+                onClick={() => setFilters((f) => ({ ...f, page: (f.page ?? 1) - 1 }))}
                 disabled={!paginationMeta?.has_previous || loading}
-                className="p-1 rounded bg-white border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-1 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={13} />
               </button>
+              {Array.from(
+                { length: paginationMeta?.total_pages ?? 0 },
+                (_, i) => i + 1,
+              )
+                .filter((p) => Math.abs(p - (filters.page ?? 1)) <= 2)
+                .map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setFilters((f) => ({ ...f, page: p }))}
+                    disabled={loading}
+                    className={`px-2 py-0.5 text-[11px] rounded-md border transition-all ${
+                      p === (filters.page ?? 1)
+                        ? "bg-primary text-white border-primary font-bold"
+                        : "border-[var(--border)] bg-card text-main hover:bg-row-hover"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
               <button
-                onClick={() =>
-                  setFilters((prev) => ({ ...prev, page: prev.page + 1 }))
-                }
+                onClick={() => setFilters((f) => ({ ...f, page: (f.page ?? 1) + 1 }))}
                 disabled={!paginationMeta?.has_next || loading}
-                className="p-1 rounded bg-white border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-1 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={13} />
               </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
