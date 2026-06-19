@@ -200,7 +200,7 @@ export default function StockItemSelect({
       mfgDate: row.mfgDate,
       qty: row.qty,
       price_list: row.price_list,
-      price: row.price_list ?? row.sellingPrice ?? row.purchasePrice ?? 0,
+      price: row.price_list ?? 0,
       packingSize: row.packingSize,
       packingUnit: row.packingUnit,
       piecesPerBox: row.piecesPerBox,
