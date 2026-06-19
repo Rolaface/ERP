@@ -344,7 +344,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
             ]
             : [
               {
-                label: "View Stock",
+                label: "View Warehouse",
                 icon: <Boxes size={12} />,
                 onClick: () =>
                   openWarehouseModal(row, false, { isViewMode: true }),
