@@ -207,7 +207,7 @@ const HeroSection: React.FC = () => {
                     border: "none",
                   }}
                 >
-                  <span className="relative z-10">Start Free Trial →</span>
+                  <span className="relative z-10">Create Your Workspace  →</span>
                 </button>
               </Link>
 

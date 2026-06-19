@@ -91,10 +91,7 @@ const Footer: React.FC = () => {
             <h4 className="font-semibold mb-5 text-[14px] tracking-wide" style={{ color: "#0f1f3d" }}>
               Contact
             </h4>
-            <p className="text-sm" style={{ color: "#5a7199" }}>
-              {/* TODO: replace with your real support email / phone */}
-              Reach out via the Get Started form above.
-            </p>
+            
           </div>
 
         </motion.div>
