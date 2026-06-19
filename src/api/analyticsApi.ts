@@ -11,7 +11,7 @@ export interface SalesAnalyticsFilters {
     | "Item"
     | "Customer Group"
     | "Territory"
-    | "Order Type"
+    | "Order Type"|"Item Group"
     | "Project";
   doc_type?: "Sales Invoice" | "Delivery Note" | "Sales Order";
   value_quantity?: "Value" | "Quantity";

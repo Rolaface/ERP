@@ -28,7 +28,6 @@ const ProblemSection: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Scroll-triggered reveal
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -37,7 +36,7 @@ const ProblemSection: React.FC = () => {
       ([entry]) => {
         if (entry.isIntersecting) {
           setVisible(true);
-          observer.disconnect(); // run once
+          observer.disconnect();
         }
       },
       { threshold: 0.2 }
@@ -51,14 +50,15 @@ const ProblemSection: React.FC = () => {
   return (
     <section
       ref={sectionRef}
-      className="section-lg section-default relative overflow-hidden"
+      className="section-lg relative overflow-hidden"
+      style={{ background: "#f8fafd" }}
     >
       {/* Background */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.02), rgba(0,0,0,0.04))",
+            "linear-gradient(to bottom, rgba(15,31,61,0.015), rgba(15,31,61,0.03))",
         }}
       />
       <div className="absolute inset-0 bg-grid-subtle opacity-10 pointer-events-none" />
@@ -73,11 +73,14 @@ const ProblemSection: React.FC = () => {
             ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
           `}
         >
-          <h2 className="text-[34px] md:text-[42px] font-semibold leading-tight tracking-tight text-main">
+          <h2
+            className="text-[34px] md:text-[42px] font-semibold leading-tight tracking-tight"
+            style={{ color: "#0f1f3d" }}
+          >
             Running your business shouldn’t feel this chaotic
           </h2>
 
-          <p className="text-[16px] text-muted leading-relaxed">
+          <p className="text-[16px] leading-relaxed" style={{ color: "#5a7199" }}>
             Yet most businesses are stuck with disconnected tools, manual work,
             and constant guesswork.
           </p>
@@ -95,34 +98,44 @@ const ProblemSection: React.FC = () => {
           >
             <div
               className="absolute inset-0 blur-3xl rounded-3xl opacity-20"
-              style={{ background: "var(--danger)" }}
+              style={{ background: "#dc2626" }}
             />
 
-            <div className="relative bg-surface-2 border border-theme rounded-2xl p-6 shadow-soft-xl backdrop-blur-md">
-              <p className="text-[11px] text-muted mb-5 tracking-[0.15em] uppercase">
+            <div
+              className="relative rounded-2xl p-6 backdrop-blur-md"
+              style={{
+                background: "rgba(255,255,255,0.80)",
+                border: "1px solid rgba(200,218,240,0.60)",
+                boxShadow: "0 20px 60px rgba(15,31,61,0.10)",
+              }}
+            >
+              <p
+                className="text-[11px] mb-5 tracking-[0.15em] uppercase"
+                style={{ color: "#8aaccc" }}
+              >
                 System Errors
               </p>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between text-[14px]">
-                  <span className="text-main">Invoice #2345</span>
-                  <span className="text-danger font-medium">Mismatch</span>
+                  <span style={{ color: "#0f1f3d" }}>Invoice #2345</span>
+                  <span className="font-medium" style={{ color: "#dc2626" }}>Mismatch</span>
                 </div>
 
                 <div className="flex items-center justify-between text-[14px]">
-                  <span className="text-main">Payment Status</span>
-                  <span className="text-warning font-medium">Unclear</span>
+                  <span style={{ color: "#0f1f3d" }}>Payment Status</span>
+                  <span className="font-medium" style={{ color: "#f59e0b" }}>Unclear</span>
                 </div>
 
                 <div className="flex items-center justify-between text-[14px]">
-                  <span className="text-main">Stock Count</span>
-                  <span className="text-danger font-medium">Out of sync</span>
+                  <span style={{ color: "#0f1f3d" }}>Stock Count</span>
+                  <span className="font-medium" style={{ color: "#dc2626" }}>Out of sync</span>
                 </div>
               </div>
 
-              <div className="divider my-5" />
+              <div className="my-5 h-px" style={{ background: "rgba(200,218,240,0.60)" }} />
 
-              <p className="text-[12px] text-muted leading-relaxed">
+              <p className="text-[12px] leading-relaxed" style={{ color: "#5a7199" }}>
                 Your systems aren’t aligned — and it’s costing you time and money.
               </p>
             </div>
@@ -140,15 +153,16 @@ const ProblemSection: React.FC = () => {
                   onMouseEnter={() => setActiveIndex(i)}
                   onMouseLeave={() => setActiveIndex(null)}
                   className={`
-                    card-interactive group relative rounded-xl p-5 border border-theme
-                    transition-all duration-500 cursor-pointer
-                    ${isActive ? "shadow-soft-xl scale-[1.02]" : "opacity-80"}
+                    group relative rounded-xl p-5 transition-all duration-500 cursor-pointer
+                    ${isActive ? "scale-[1.02]" : "opacity-80"}
                     ${activeIndex !== null && !isActive ? "opacity-40 blur-[1px]" : ""}
                     ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}
                   `}
                   style={{
-                    background: "var(--surface-1)",
-                    transitionDelay: `${i * 80 + 200}ms`, // ✅ stagger
+                    background: "rgba(255,255,255,0.85)",
+                    border: "1px solid rgba(200,218,240,0.60)",
+                    boxShadow: isActive ? "0 12px 40px rgba(15,31,61,0.10)" : undefined,
+                    transitionDelay: `${i * 80 + 200}ms`,
                   }}
                 >
                   {/* Glow */}
@@ -156,7 +170,7 @@ const ProblemSection: React.FC = () => {
                     className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                     style={{
                       background:
-                        "radial-gradient(circle at 20% 20%, rgba(220,38,38,0.08), transparent 60%)",
+                        "radial-gradient(circle at 20% 20%, rgba(220,38,38,0.06), transparent 60%)",
                     }}
                   />
 
@@ -164,19 +178,25 @@ const ProblemSection: React.FC = () => {
                     <div
                       className="mt-1 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold"
                       style={{
-                        background: "rgba(220,38,38,0.12)",
-                        color: "var(--danger)",
+                        background: "rgba(220,38,38,0.10)",
+                        color: "#dc2626",
                       }}
                     >
                       !
                     </div>
 
                     <div>
-                      <h3 className="text-[15px] font-semibold text-main leading-snug">
+                      <h3
+                        className="text-[15px] font-semibold leading-snug"
+                        style={{ color: "#0f1f3d" }}
+                      >
                         {item.title}
                       </h3>
 
-                      <p className="text-[13px] text-muted leading-relaxed mt-1 max-w-[420px]">
+                      <p
+                        className="text-[13px] leading-relaxed mt-1 max-w-[420px]"
+                        style={{ color: "#5a7199" }}
+                      >
                         {item.desc}
                       </p>
                     </div>
@@ -195,10 +215,10 @@ const ProblemSection: React.FC = () => {
             ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
           `}
         >
-          <p className="text-[18px] text-muted max-w-xl mx-auto leading-relaxed">
+          <p className="text-[18px] max-w-xl mx-auto leading-relaxed" style={{ color: "#5a7199" }}>
             Manual errors. Lost revenue. Delayed decisions.
             <br />
-            <span className="text-main font-medium">
+            <span className="font-medium" style={{ color: "#0f1f3d" }}>
               Your business deserves better systems.
             </span>
           </p>

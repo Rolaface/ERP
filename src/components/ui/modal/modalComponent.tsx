@@ -1,5 +1,6 @@
 import React from "react";
 import { NumericFormat } from "react-number-format";
+import { showValidationError } from "../../../utils/alert";
 
 interface SelectOption {
   label: string;
@@ -384,17 +385,16 @@ export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
   </label>
 );
 
-
-
 interface NumericInputProps {
-  value: number | null | undefined ;
- onChange: (value: number | null) => void;
+  value: number | null | undefined;
+  onChange: (value: number | null) => void;
   placeholder?: string;
   decimalScale?: number;
   allowNegative?: boolean;
   disabled?: boolean;
   className?: string;
   name?: string;
+  max?: number;
 }
 
 export const NumericInput: React.FC<NumericInputProps> = ({
@@ -406,29 +406,46 @@ export const NumericInput: React.FC<NumericInputProps> = ({
   disabled = false,
   className = "",
   name,
-}) => (
-  <NumericFormat
-    name={name}
-    value={value ?? ""}
-    placeholder={placeholder}
-    decimalScale={decimalScale}
-    allowNegative={allowNegative}
-    disabled={disabled}
-   onValueChange={(values) => {
-  onChange(values.floatValue ?? null);
-}}
-    onWheel={(e) => (e.target as HTMLInputElement).blur()}
-    onKeyDown={(e: React.KeyboardEvent) => {
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
-    }}
-    className={[
-      "no-spinner py-1 px-2 border border-theme rounded text-[11px] bg-card text-main",
-      "focus:outline-none focus:ring-1 focus:ring-primary transition-all",
-      disabled ? "bg-app cursor-not-allowed opacity-60" : "",
-      className,
-    ].join(" ")}
-  />
-);
+  max,
+}) => {
+  React.useEffect(() => {
+    if (max != null && value != null && value > max) {
+      onChange(max);
+    }
+  }, [max, value, onChange]);
+
+  return (
+    <NumericFormat
+      name={name}
+      value={value ?? ""}
+      placeholder={placeholder}
+      decimalScale={decimalScale}
+      allowNegative={allowNegative}
+      disabled={disabled}
+      isAllowed={(vals) => {
+        if (max != null && (vals.floatValue ?? 0) > max) {
+          showValidationError(`Only ${max} items available`);
+          onChange(max);
+          return false;
+        }
+        return true;
+      }}
+      onValueChange={(values) => {
+        onChange(values.floatValue ?? null);
+      }}
+      onWheel={(e) => (e.target as HTMLInputElement).blur()}
+      onKeyDown={(e: React.KeyboardEvent) => {
+        if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
+      }}
+      className={[
+        "no-spinner py-1 px-2 border border-theme rounded text-[11px] bg-card text-main",
+        "focus:outline-none focus:ring-1 focus:ring-primary transition-all",
+        disabled ? "bg-app cursor-not-allowed opacity-60" : "",
+        className,
+      ].join(" ")}
+    />
+  );
+};
 
 // ─── NumberInput (kept for backward compat — use NumericInput for new code) ───
 

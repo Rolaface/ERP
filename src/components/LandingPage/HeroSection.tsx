@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import {ROUTES} from "../../routes/RoutesPath"
-
+import { ROUTES } from "../../routes/RoutesPath";
 
 const HeroSection: React.FC = () => {
   const imageRef = useRef<HTMLDivElement>(null);
@@ -16,7 +15,7 @@ const HeroSection: React.FC = () => {
     hover: false,
   });
 
-  // ✅ Unified animation loop
+
   useEffect(() => {
     let raf: number;
 
@@ -47,7 +46,7 @@ const HeroSection: React.FC = () => {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // ✅ Mouse movement (tilt + lighting)
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const { innerWidth, innerHeight } = window;
@@ -55,7 +54,6 @@ const HeroSection: React.FC = () => {
       state.current.mouseX = (e.clientX - innerWidth / 2) / 80;
       state.current.mouseY = (e.clientY - innerHeight / 2) / 80;
 
-      // lighting
       if (lightRef.current) {
         lightRef.current.style.background = `
           radial-gradient(
@@ -71,7 +69,6 @@ const HeroSection: React.FC = () => {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  // ✅ Scroll depth
   useEffect(() => {
     const handleScroll = () => {
       if (!imageRef.current) return;
@@ -80,7 +77,7 @@ const HeroSection: React.FC = () => {
       const vh = window.innerHeight;
 
       const progress = (vh - rect.top) / (vh + rect.height);
-      state.current.scrollY = (progress - 0.5) * 1.2; // centered motion
+      state.current.scrollY = (progress - 0.5) * 1.2;
     };
 
     handleScroll();
@@ -88,13 +85,12 @@ const HeroSection: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // ✅ Hover detection (mobile safe)
+
   useEffect(() => {
     const el = imageRef.current;
     if (!el) return;
 
     const isHoverCapable = window.matchMedia("(hover: hover)").matches;
-
     if (!isHoverCapable) return;
 
     const onEnter = () => (state.current.hover = true);
@@ -109,7 +105,7 @@ const HeroSection: React.FC = () => {
     };
   }, []);
 
-  // ✅ Magnetic CTA
+ 
   useEffect(() => {
     const btn = buttonRef.current;
     if (!btn) return;
@@ -121,7 +117,6 @@ const HeroSection: React.FC = () => {
 
       raf = requestAnimationFrame(() => {
         const rect = btn.getBoundingClientRect();
-
         const x = e.clientX - rect.left - rect.width / 2;
         const y = e.clientY - rect.top - rect.height / 2;
 
@@ -143,15 +138,29 @@ const HeroSection: React.FC = () => {
     };
   }, []);
 
+  const handleDemoClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const target = document.querySelector("#how-it-works");
+    if (!target) return;
+    const y = target.getBoundingClientRect().top + window.scrollY - 70;
+    window.scrollTo({ top: y, behavior: "smooth" });
+  };
+
   return (
-    <section className="section-lg section-default relative overflow-hidden">
+    <section className="section-lg relative overflow-hidden" style={{ background: "#fff" }}>
 
       {/* Background */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: "var(--gradient-hero)" }}
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(29,78,216,0.10), rgba(59,130,246,0.06))",
+        }}
       />
-      <div className="absolute inset-0 bg-radial-glow opacity-70 pointer-events-none"></div>
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: "radial-gradient(circle at 50% 30%, rgba(37,99,235,0.10), transparent 60%)" }}
+      />
       <div className="absolute inset-0 bg-grid-subtle opacity-30 pointer-events-none"></div>
 
       <div className="container-app">
@@ -159,48 +168,63 @@ const HeroSection: React.FC = () => {
 
           {/* LEFT */}
           <div className="container-narrow stack-lg">
-            <div className="badge glass w-fit motion-fade-up">
-              Trusted by 500+ growing businesses
-            </div>
 
-            <h1 className="text-[36px] md:text-[48px] lg:text-[60px] font-semibold leading-[1.1] tracking-tight text-main motion-fade-up motion-delay-1">
+            <h1
+              className="text-[36px] md:text-[48px] lg:text-[60px] font-semibold leading-[1.1] tracking-tight motion-fade-up motion-delay-1"
+              style={{ color: "#0f1f3d" }}
+            >
               <div>Run your entire business</div>
-              <div className="text-gradient">
+              <div
+                style={{
+                  background: "linear-gradient(90deg, #1d4ed8, #3b82f6)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
                 from one powerful dashboard
               </div>
-              <div className="text-muted">without chaos</div>
+              <div style={{ color: "#5a7199" }}>without chaos</div>
             </h1>
 
-            <p className="text-muted text-[18px] max-w-[520px] leading-relaxed motion-fade-up motion-delay-2">
-              Manage inventory, sales, and operations in one place — built for
-              modern distributors and trading businesses.
+            <p
+              className="text-[18px] max-w-[520px] leading-relaxed motion-fade-up motion-delay-2"
+              style={{ color: "#5a7199" }}
+            >
+              Manage sales, inventory, accounting, HR, and every other part of
+              your operations from one connected system.
             </p>
 
             <div className="flex items-center gap-4 flex-wrap mt-4 motion-fade-up motion-delay-3">
               <Link to={ROUTES.SIGNUP}>
-               <button
-                 ref={buttonRef}
-               className="btn btn-premium relative overflow-hidden"
+                <button
+                  ref={buttonRef}
+                  className="relative overflow-hidden rounded-2xl px-7 py-3.5 text-[15px] font-semibold transition-all"
+                  style={{
+                    background: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)",
+                    boxShadow: "0 8px 28px rgba(37,99,235,0.35)",
+                    color: "#fff",
+                    border: "none",
+                  }}
+                >
+                  <span className="relative z-10">Create Your Workspace  →</span>
+                </button>
+              </Link>
+
+              <button
+                onClick={handleDemoClick}
+                className="rounded-2xl px-7 py-3.5 text-[15px] font-semibold backdrop-blur-md transition-colors"
                 style={{
-                  background: "var(--gradient-primary)",
-                  boxShadow: "var(--glow-primary)",
-                   color: "#fff",
-                  border: "none",
+                  background: "rgba(255,255,255,0.70)",
+                  border: "1px solid rgba(200,218,240,0.60)",
+                  color: "#0f1f3d",
                 }}
               >
-                 <span className="relative z-10">Start Free Trial →</span>
-               </button>
-             </Link>
-
-              <button className="btn btn-ghost border border-theme backdrop-blur-md hover:bg-[var(--row-hover)]">
-                See Live Demo
+                See How It Works
               </button>
             </div>
 
-            <div className="flex items-center gap-5 text-[13px] text-muted mt-2 motion-fade-up motion-delay-4">
-              <span>✔ No credit card required</span>
-              <span>✔ Setup in minutes</span>
-            </div>
+           
           </div>
 
           {/* RIGHT */}
@@ -209,12 +233,12 @@ const HeroSection: React.FC = () => {
             {/* Ambient Glow */}
             <div
               className="absolute -top-20 -right-20 w-56 h-56 rounded-full blur-3xl animate-float-premium"
-              style={{ background: "var(--gradient-primary)", opacity: 0.18 }}
+              style={{ background: "linear-gradient(135deg, #1d4ed8, #3b82f6)", opacity: 0.18 }}
             />
 
             <div
               className="absolute bottom-[-40px] -left-20 w-40 h-40 rounded-full blur-2xl animate-float-delayed"
-              style={{ background: "var(--gradient-primary)", opacity: 0.15 }}
+              style={{ background: "linear-gradient(135deg, #1d4ed8, #3b82f6)", opacity: 0.15 }}
             />
 
             {/* IMAGE */}
@@ -234,7 +258,7 @@ const HeroSection: React.FC = () => {
               <div
                 className="absolute inset-0 blur-3xl rounded-[28px]"
                 style={{
-                  background: "var(--gradient-primary)",
+                  background: "linear-gradient(135deg, #1d4ed8, #3b82f6)",
                   opacity: 0.10,
                 }}
               />
@@ -243,9 +267,7 @@ const HeroSection: React.FC = () => {
                 src="/dashboard.png"
                 alt="ERP Dashboard"
                 className="relative w-full rounded-[28px]"
-                style={{
-                  boxShadow: "var(--shadow-soft-xl)",
-                }}
+                style={{ boxShadow: "0 20px 60px rgba(15,31,61,0.15)" }}
               />
             </div>
 

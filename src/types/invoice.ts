@@ -108,6 +108,7 @@ warehouse?: string;
  isServiceItem?: boolean;
   originalQty?: number;
   _skipCap?: boolean;
+  _stockLoaded ?:boolean;
 
 }
 

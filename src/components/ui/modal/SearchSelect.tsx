@@ -99,7 +99,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
     <>
       {/* Input Wrapper */}
       <div ref={wrapperRef} className="flex flex-col text- w-full">
-        <label className="text-[10px] font-medium mb-1">
+        <label className="text-[10px] font-medium mb-1 text-main">
           {label}
           {required && <span className="text-danger">*</span>}
         </label>
@@ -121,8 +121,16 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
             const data = await fetchOptions("");
             setOptions(data);
           }}
-          className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0, ${error ? "border-danger" : "border-theme"
-            }`}
+          className={[
+            "py-1 px-2 border rounded text-[11px] w-auto min-w-0 transition-colors duration-150",
+            "bg-card text-main placeholder:text-muted",
+            "focus:outline-none",
+            disabled
+              ? "opacity-50 cursor-not-allowed border-theme"
+              : error
+                ? "border-[var(--input-border-error)] bg-[var(--input-bg-error)]"
+                : "border-theme hover:border-[var(--input-border-hover)] focus:border-[var(--input-border-focus)] focus:shadow-[0_0_0_3px_var(--input-focus-ring)]",
+          ].join(" ")}
         />
         {error && <span className="text-danger text-[10px] mt-1">{error}</span>}
       </div>
@@ -140,7 +148,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
               width: dropdownPos.width,
               zIndex: 9999,
             }}
-            className="  bg-white border rounded shadow-lg max-h-48 overflow-auto  "
+            className="bg-card border border-theme rounded shadow-lg max-h-48 overflow-auto"
           >
             {options.map((opt) => (
               <div
@@ -152,7 +160,7 @@ const SearchSelect: React.FC<SearchSelectProps> = ({
                   setSearch(opt.label);
                   setOpen(false);
                 }}
-                className="px-3 py-2 cursor-pointer text-[13px] hover:bg-gray-100"
+                className="px-3 py-2 cursor-pointer text-[13px] text-main row-hover transition-colors"
               >
                 {opt.label}
               </div>

@@ -30,34 +30,53 @@ const steps = [
 
 const HowItWorks: React.FC = () => {
   return (
-    <section className="section section-default relative overflow-hidden">
+    <section id="how-it-works" className="section relative overflow-hidden" style={{ background: "#f8fafd" }}>
 
       {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 pointer-events-none"></div>
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: "linear-gradient(to bottom, transparent, rgba(37,99,235,0.04))" }}
+      />
 
       <div className="container-app">
 
         {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto stack-md animate-fade-in">
-          <h2 className="text-[34px] md:text-[40px] font-semibold leading-tight text-main tracking-tight">
+          <h2
+            className="text-[34px] md:text-[40px] font-semibold leading-tight tracking-tight"
+            style={{ color: "#0f1f3d" }}
+          >
             Get started in minutes —{" "}
-            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-600)] bg-clip-text text-transparent">
+            <span
+              style={{
+                background: "linear-gradient(90deg, #1d4ed8, #3b82f6)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
               not weeks
             </span>
           </h2>
 
-          <p className="text-[15px] text-muted leading-relaxed">
+          <p className="text-[15px] leading-relaxed" style={{ color: "#5a7199" }}>
             Set up once, and your entire business runs smoothly from there.
           </p>
         </div>
 
         {/* TIMELINE */}
-        <div className="relative mt-[calc(var(--density-gap)*4)]">
+        <div className="relative mt-16">
 
           {/* MAIN LINE */}
-          <div className="hidden md:block absolute top-10 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--primary)]/40 to-transparent" />
+          <div
+            className="hidden md:block absolute top-10 left-0 w-full h-[2px]"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, rgba(37,99,235,0.35), transparent)",
+            }}
+          />
 
-          <div className="grid md:grid-cols-4 gap-[calc(var(--density-gap)*3)]">
+          <div className="grid md:grid-cols-4 gap-10">
 
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -73,15 +92,24 @@ const HowItWorks: React.FC = () => {
                   <div className="relative mb-6">
 
                     {/* Glow */}
-                    <div className="absolute inset-0 w-16 h-16 bg-primary/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition"></div>
+                    <div
+                      className="absolute inset-0 w-16 h-16 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition"
+                      style={{ background: "rgba(37,99,235,0.18)" }}
+                    ></div>
 
                     {/* Circle */}
-                    <div className="relative z-10 w-14 h-14 rounded-full bg-card border border-theme flex items-center justify-center shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
-                      <Icon size={20} className="text-primary" />
+                    <div
+                      className="relative z-10 w-14 h-14 rounded-full flex items-center justify-center shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:shadow-md"
+                      style={{ background: "#fff", border: "1px solid rgba(200,218,240,0.60)" }}
+                    >
+                      <Icon size={20} style={{ color: "#2563eb" }} />
                     </div>
 
                     {/* Step Number */}
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-[2px] rounded-full bg-primary text-white text-[10px] font-semibold shadow">
+                    <div
+                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-[2px] rounded-full text-white text-[10px] font-semibold shadow"
+                      style={{ background: "linear-gradient(135deg, #1d4ed8, #3b82f6)" }}
+                    >
                       {step.id}
                     </div>
                   </div>
@@ -89,11 +117,11 @@ const HowItWorks: React.FC = () => {
                   {/* CONTENT */}
                   <div className="max-w-[220px] stack-sm">
 
-                    <h3 className="text-[15px] font-semibold text-main">
+                    <h3 className="text-[15px] font-semibold" style={{ color: "#0f1f3d" }}>
                       {step.title}
                     </h3>
 
-                    <p className="text-[13px] text-muted leading-relaxed">
+                    <p className="text-[13px] leading-relaxed" style={{ color: "#5a7199" }}>
                       {step.desc}
                     </p>
 
@@ -106,16 +134,16 @@ const HowItWorks: React.FC = () => {
         </div>
 
         {/* TRUST LINE */}
-        <div className="mt-[calc(var(--density-gap)*4)] text-center animate-fade-in">
+        <div className="mt-16 text-center animate-fade-in">
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-theme rounded-full shadow-sm hover:shadow-md transition">
-
-            <ShieldCheck size={14} className="text-primary" />
-
-            <p className="text-[13px] text-muted">
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-sm hover:shadow-md transition"
+            style={{ background: "#fff", border: "1px solid rgba(200,218,240,0.60)" }}
+          >
+            <ShieldCheck size={14} style={{ color: "#2563eb" }} />
+            <p className="text-[13px]" style={{ color: "#5a7199" }}>
               No training required — your team can start instantly
             </p>
-
           </div>
 
         </div>
@@ -128,27 +156,21 @@ const HowItWorks: React.FC = () => {
           .animate-fade-in {
             opacity: 0;
             transform: translateY(20px);
-            animation: fadeIn 0.6s ease forwards;
+            animation: hiwFadeIn 0.6s ease forwards;
           }
 
           .animate-fade-up {
             opacity: 0;
             transform: translateY(30px);
-            animation: fadeUp 0.7s ease forwards;
+            animation: hiwFadeUp 0.7s ease forwards;
           }
 
-          @keyframes fadeIn {
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
+          @keyframes hiwFadeIn {
+            to { opacity: 1; transform: translateY(0); }
           }
 
-          @keyframes fadeUp {
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
+          @keyframes hiwFadeUp {
+            to { opacity: 1; transform: translateY(0); }
           }
         `}
       </style>

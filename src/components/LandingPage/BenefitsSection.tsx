@@ -45,7 +45,6 @@ const BenefitsSection: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Scroll-triggered reveal
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -65,12 +64,12 @@ const BenefitsSection: React.FC = () => {
   }, []);
 
   return (
-    <section
-      ref={sectionRef}
-      className="section section-default relative overflow-hidden"
-    >
+    <section ref={sectionRef} className="section relative overflow-hidden" style={{ background: "#fff" }}>
       {/* Ambient Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.08),transparent_60%)] pointer-events-none" />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: "radial-gradient(circle at top, rgba(37,99,235,0.07), transparent 60%)" }}
+      />
 
       <div className="container-app">
 
@@ -82,17 +81,20 @@ const BenefitsSection: React.FC = () => {
             ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
           `}
         >
-          <h2 className="text-[32px] md:text-[40px] font-semibold leading-snug text-main tracking-tight">
+          <h2
+            className="text-[32px] md:text-[40px] font-semibold leading-snug tracking-tight"
+            style={{ color: "#0f1f3d" }}
+          >
             Run your business with clarity, control, and confidence
           </h2>
 
-          <p className="text-body text-muted">
-            Everything works together so you can focus on growth — not fixing problems.
+          <p className="text-[15px] leading-relaxed" style={{ color: "#5a7199" }}>
+            Every module works together so you can focus on growth — not fixing problems.
           </p>
         </div>
 
         {/* GRID */}
-        <div className="mt-[calc(var(--density-gap)*5)] grid sm:grid-cols-2 lg:grid-cols-3 gap-[calc(var(--density-gap)*2.5)]">
+        <div className="mt-16 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
           {benefits.map((item, i) => {
             const Icon = item.icon;
@@ -101,43 +103,48 @@ const BenefitsSection: React.FC = () => {
               <div
                 key={i}
                 className={`
-                  group relative rounded-[calc(var(--density-radius)*1.5)] p-[1px]
+                  group relative rounded-2xl p-[1px]
                   transition-all duration-500
                   ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}
                 `}
-                style={{
-                  transitionDelay: `${i * 90 + 150}ms`, // ✅ stagger
-                }}
+                style={{ transitionDelay: `${i * 90 + 150}ms` }}
               >
                 {/* Gradient border */}
-                <div className="absolute inset-0 rounded-[inherit] bg-gradient-to-br from-primary/40 via-transparent to-primary/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-[1px]" />
+                <div
+                  className="absolute inset-0 rounded-[inherit] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-[1px]"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(37,99,235,0.40), transparent, rgba(37,99,235,0.40))",
+                  }}
+                />
 
                 {/* Card */}
-                <div className="relative h-full rounded-[inherit] bg-card border border-theme p-[calc(var(--density-gap)*2.2)] flex flex-col gap-5 shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+                <div
+                  className="relative h-full rounded-[inherit] p-6 flex flex-col gap-5 shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1"
+                  style={{ background: "#fff", border: "1px solid rgba(200,218,240,0.60)" }}
+                >
 
                   {/* ICON */}
-                  <div className="relative w-12 h-12 rounded-[var(--density-radius)] flex items-center justify-center bg-card border border-theme overflow-hidden">
-
-                    {/* glow pulse */}
-                    <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                    <Icon size={20} className="text-primary relative z-10" />
+                  <div
+                    className="relative w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden"
+                    style={{ background: "#fff", border: "1px solid rgba(200,218,240,0.60)" }}
+                  >
+                    <div
+                      className="absolute inset-0 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{ background: "rgba(37,99,235,0.18)" }}
+                    />
+                    <Icon size={20} style={{ color: "#2563eb" }} className="relative z-10" />
                   </div>
 
                   {/* TEXT */}
                   <div className="stack-sm">
-                    <h3 className="text-[16px] font-semibold text-main">
+                    <h3 className="text-[16px] font-semibold" style={{ color: "#0f1f3d" }}>
                       {item.title}
                     </h3>
 
-                    <p className="text-[13px] text-muted leading-relaxed">
+                    <p className="text-[13px] leading-relaxed" style={{ color: "#5a7199" }}>
                       {item.desc}
                     </p>
-                  </div>
-
-                  {/* subtle hover light sweep */}
-                  <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500">
-                    <div className="absolute -inset-[1px] bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.25),transparent)] translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                   </div>
 
                 </div>
@@ -150,15 +157,15 @@ const BenefitsSection: React.FC = () => {
         {/* FOOTER */}
         <div
           className={`
-            text-center mt-[calc(var(--density-gap)*5)]
+            text-center mt-16
             transition-all duration-700 delay-500
             ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
           `}
         >
-          <p className="text-[16px] text-muted max-w-xl mx-auto leading-relaxed">
+          <p className="text-[16px] max-w-xl mx-auto leading-relaxed" style={{ color: "#5a7199" }}>
             Less stress. Fewer errors. More control.
             <br />
-            <span className="text-main font-medium">
+            <span className="font-medium" style={{ color: "#0f1f3d" }}>
               So you can focus on growing your business — not managing chaos.
             </span>
           </p>

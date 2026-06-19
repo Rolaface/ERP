@@ -3,51 +3,41 @@ import Navbar from "../../components/LandingPage/Navbar";
 import HeroSection from "../../components/LandingPage/HeroSection";
 import SocialProof from "../../components/LandingPage/SocialProof";
 import ProblemSection from "../../components/LandingPage/ProblemSection";
-import SolutionSection from "../../components/LandingPage/SolutionSection";
+// import SolutionSection from "../../components/LandingPage/SolutionSection";
 import HowItWorks from "../../components/LandingPage/HowItWorks";
-import BenefitsSection from "../../components/LandingPage/BenefitsSection"
-import Testimonials from "../../components/LandingPage/Testimonials";
-import CTA from "../../components/LandingPage/CTA";
-import FAQ from "../../components/LandingPage/FAQ";
+import BenefitsSection from "../../components/LandingPage/BenefitsSection";
+// import CTA from "../../components/LandingPage/CTA";
+// import FAQ from "../../components/LandingPage/FAQ";
 import Footer from "../../components/LandingPage/Footer";
-
-
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="w-full min-h-screen bg-white">
-      
-      {/* NAVBAR */}
+    <div className="w-full h-full overflow-y-auto bg-white">
+
+
       <Navbar />
 
-      {/* HERO */}
+
       <HeroSection />
 
-      {/* SOCIAL PROOF */}
+
       <SocialProof />
-      
-      {/* PROBLEM SECTION */}
+
+
       <ProblemSection />
 
-      {/* SOLUTION SECTION */}
-      <SolutionSection />
+
+      {/* <SolutionSection /> */}
 
       <HowItWorks />
 
       <BenefitsSection />
 
-      <Testimonials />
+      {/* <CTA /> */}
 
-      <CTA />
-
-      <FAQ />
+      {/* <FAQ /> */}
 
       <Footer />
-
-
-
-      {/* <Features /> */}
-      {/* <CTA /> */}
 
     </div>
   );
