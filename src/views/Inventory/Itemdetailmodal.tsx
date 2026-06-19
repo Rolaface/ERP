@@ -550,7 +550,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         />
 
         {/* ── AppPageBody: scrollable tab content ── */}
-        <AppPageBody viewportLocked className="gap-4">
+        <AppPageBody>
           {/* Loading skeleton */}
           {loadingDetail && (
             <div className="space-y-4 pt-2">
