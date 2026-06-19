@@ -24,12 +24,12 @@ const iconProps = { size: 16, strokeWidth: 1.75 };
 
 const allTabs = [
   { id: "gl",       label: "General Ledger", icon: <BookOpen {...iconProps} />,       module: null, action: "read" as const },
-  { id: "trial",    label: "Trial Balance",  icon: <Scale {...iconProps} />,          module: null, action: "read" as const },
-  { id: "ar",       label: "Receivables",    icon: <ArrowDownCircle {...iconProps} />, module: null, action: "read" as const },
-  { id: "ap",       label: "Payables",       icon: <ArrowUpCircle {...iconProps} />,  module: null, action: "read" as const },
-  { id: "pl",       label: "Profit & Loss",  icon: <BarChart3 {...iconProps} />,      module: null, action: "read" as const },
-  { id: "balance",  label: "Balance Sheet",  icon: <FileBarChart {...iconProps} />,   module: null, action: "read" as const },
-  { id: "cashflow", label: "Cash Flow",      icon: <Repeat {...iconProps} />,         module: null, action: "read" as const },
+  { id: "trial",    label: "Trial Balance",  icon: <Scale {...iconProps} />,          module: "Account", action: "report" as const },
+  { id: "ar",       label: "Receivables",    icon: <ArrowDownCircle {...iconProps} />, module:"Account", action: "report" as const },
+  { id: "ap",       label: "Payables",       icon: <ArrowUpCircle {...iconProps} />,  module: "Account", action: "report" as const },
+  { id: "pl",       label: "Profit & Loss",  icon: <BarChart3 {...iconProps} />,      module: "Account", action: "report" as const },
+  { id: "balance",  label: "Balance Sheet",  icon: <FileBarChart {...iconProps} />,   module: "Account", action: "report" as const },
+  { id: "cashflow", label: "Cash Flow",      icon: <Repeat {...iconProps} />,         module: "Account", action: "report" as const },
 ];
 
 const DEFAULT_TAB = "gl";
