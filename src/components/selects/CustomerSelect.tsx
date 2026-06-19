@@ -27,32 +27,29 @@ export default function CustomerSelect({
   required = false,
 }: CustomerSelectProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const loadCustomers = async () => {
-      try {
-        setLoading(true);
-        const res = await getAllCustomers(1, 100, taxCategory, search, "active");
-        if (res?.status_code !== 200) return;
+  // Fetch customers from API — called on click/focus of the input
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const res = await getAllCustomers(1, 100, taxCategory, "", "active");
+      if (res?.status_code !== 200) return;
 
-        setCustomers(
-          res.data.map((c: any) => ({
-            id: c.id,
-            name: c.name,
-            customerCode: c.code ?? c.customerCode,
-          })),
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCustomers();
-  }, [taxCategory]);
+      setCustomers(
+        res.data.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          customerCode: c.code ?? c.customerCode,
+        })),
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     setSearch(value);
@@ -101,33 +98,41 @@ export default function CustomerSelect({
             setSearch(e.target.value);
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          onClick={() => {
+            setOpen(true);
+            fetchCustomers(); 
+          }}
         />
-        {open && !loading && (
+        {open && (
           <div className="absolute left-0 top-full mt-1 w-full max-w-full bg-card border border-[var(--border)] shadow rounded z-30">
             <ul className="max-h-56 overflow-y-auto text-[13px]">
-              {filteredCustomers.map((customer) => (
-                <li
-                  key={customer.id}
-                  className="px-2 py-1 cursor-pointer hover:bg-primary/5 text-main text-[11px]"
-                  onClick={() => {
-                    setSearch(customer.name);
-                    setOpen(false);
-                    onChange({ id: customer.id, name: customer.name });
-                  }}
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="truncate">{customer.name}</span>
-                    {customer.customerCode && (
-                      <span className="text-xs text-muted">
-                        {customer.customerCode}
-                      </span>
-                    )}
-                  </div>
-                </li>
-              ))}
+              {loading && (
+                <li className="px-2 py-1 text-muted text-[11px]">Loading...</li>
+              )}
 
-              {filteredCustomers.length === 0 && (
+              {!loading &&
+                filteredCustomers.map((customer) => (
+                  <li
+                    key={customer.id}
+                    className="px-2 py-1 cursor-pointer hover:bg-primary/5 text-main text-[11px]"
+                    onClick={() => {
+                      setSearch(customer.name);
+                      setOpen(false);
+                      onChange({ id: customer.id, name: customer.name });
+                    }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="truncate">{customer.name}</span>
+                      {customer.customerCode && (
+                        <span className="text-xs text-muted">
+                          {customer.customerCode}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+
+              {!loading && filteredCustomers.length === 0 && (
                 <li className="px-2 py-1 text-muted text-[11px]">No match found</li>
               )}
             </ul>
