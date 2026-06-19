@@ -649,6 +649,10 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         label="Service Charge"
                         value={item.svcCharge}
                       />
+                      <DetailField
+                        label="Pieces/Box"
+                        value={inventory?.piecesPerBox ?? (item as any) .piecesPerBox}
+                      />
                     </div>
 
                     {/* Vendor & Accounts */}

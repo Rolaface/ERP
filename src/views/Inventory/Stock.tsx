@@ -67,6 +67,7 @@ const Items: React.FC = () => {
         description: item.description ?? "-",
         packingUnit: item.packingUnit || "-",
         packingSize: item.packingSize || "-",
+        piecesPerBox: item.piecesPerBox || "-",
         totalQty: item.total_bal_qty ?? 0,
         totalBuyValue: Number(item.total_buy_value ?? 0),
         totalSellValue: Number(item.total_sell_value ?? 0),
@@ -201,16 +202,27 @@ const Items: React.FC = () => {
     {
       key: "packingUnit",
       header: "Packing Unit",
+       align: "center",
       render: (row) => (
         <span className="whitespace-nowrap">
           {`${row.packingUnit ?? "—"} × ${row.packingSize ?? "—"}`}
         </span>
       ),
     },
+     {
+      key: "piecesPerBox",
+      header: "Pieces/Box",
+       align: "center",
+      render: (row) => (
+        <span className="whitespace-nowrap">
+          {row.piecesPerBox ?? "—"}
+        </span>
+      ),
+    },
     {
       key: "totalQty",
       header: "Qty",
-      align: "right",
+      align: "center",
       render: (row) => (
         <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
           {row.totalQty}
