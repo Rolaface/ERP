@@ -187,7 +187,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       icon={Receipt}
       footer={footerContent}
       maxWidth="full"
-      height="600px"
+      height="650px"
     >
       <form
         id="invoiceForm"

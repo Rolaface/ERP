@@ -1,5 +1,6 @@
 import React from "react";
 import { NumericFormat } from "react-number-format";
+import { showValidationError } from "../../../utils/alert";
 
 interface SelectOption {
   label: string;
@@ -384,17 +385,16 @@ export const CreditDaysInput: React.FC<CreditDaysInputProps> = ({
   </label>
 );
 
-
-
 interface NumericInputProps {
-  value: number | null | undefined ;
- onChange: (value: number | null) => void;
+  value: number | null | undefined;
+  onChange: (value: number | null) => void;
   placeholder?: string;
   decimalScale?: number;
   allowNegative?: boolean;
   disabled?: boolean;
   className?: string;
   name?: string;
+  max?: number;
 }
 
 export const NumericInput: React.FC<NumericInputProps> = ({
@@ -406,6 +406,7 @@ export const NumericInput: React.FC<NumericInputProps> = ({
   disabled = false,
   className = "",
   name,
+  max,
 }) => (
   <NumericFormat
     name={name}
@@ -414,9 +415,15 @@ export const NumericInput: React.FC<NumericInputProps> = ({
     decimalScale={decimalScale}
     allowNegative={allowNegative}
     disabled={disabled}
-   onValueChange={(values) => {
-  onChange(values.floatValue ?? null);
-}}
+    onValueChange={(values) => {
+      const floatValue = values.floatValue ?? null;
+      if (max != null && floatValue != null && floatValue > max) {
+        showValidationError(`Only ${max} items available`);
+        onChange(max);
+        return;
+      }
+      onChange(floatValue);
+    }}
     onWheel={(e) => (e.target as HTMLInputElement).blur()}
     onKeyDown={(e: React.KeyboardEvent) => {
       if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
