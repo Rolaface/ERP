@@ -247,10 +247,13 @@ export const useInvoiceForm = (
         const raw = res?.message?.data ?? [];
         if (cancelled) return;
 
-        // itemCode::batchNo → live bal_qty.
-        // Non-batched items key on itemCode alone with an empty batch segment.
-        const stockMap = new Map<string, number>();
+         const stockMap = new Map<string, number>();
+        const piecesPerBoxMap = new Map<string, number>();
         raw.forEach((stockItem: any) => {
+          piecesPerBoxMap.set(
+            stockItem.item_code,
+            Number(stockItem.piecesPerBox ?? 0),
+          );
           if (stockItem.batches?.length) {
             stockItem.batches.forEach((b: any) => {
               const key = `${stockItem.item_code}::${b.batch_no || ""}`;
@@ -267,12 +270,22 @@ export const useInvoiceForm = (
         setFormData((prev) => ({
           ...prev,
           items: prev.items.map((item) => {
-            if (item._stockLoaded) return item; // already patched
+            if (item._stockLoaded) return item; 
             if (item.isServiceItem) return { ...item, _stockLoaded: true };
-            if (!item.itemCode) return item; // blank row, nothing to look up
+            if (!item.itemCode) return item; 
             const key = `${item.itemCode}::${item.batchNo || ""}`;
             const liveQty = stockMap.get(key) ?? 0;
-            return { ...item, availableQty: liveQty, _stockLoaded: true };
+
+            const piecesPerBox =
+              item.piecesPerBox && item.piecesPerBox > 0
+                ? item.piecesPerBox
+                : (piecesPerBoxMap.get(item.itemCode) ?? 0);
+            return {
+              ...item,
+              availableQty: liveQty,
+              piecesPerBox,
+              _stockLoaded: true,
+            };
           }),
         }));
       } catch (err) {
@@ -300,7 +313,6 @@ export const useInvoiceForm = (
     }));
   }, [isOpen]);
 
-  // Exchange rate auto-fetch
   useEffect(() => {
     if (!isOpen || !enableExchange) return;
     const code = String(formData.currencyCode ?? "")
@@ -673,7 +685,7 @@ export const useInvoiceForm = (
         }
       }
 
-      if (name === "quantity") {
+       if (name === "quantity") {
         const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
 
         if (piecesPerBox > 0) {
@@ -681,7 +693,11 @@ export const useInvoiceForm = (
             Number(updatedItem.quantity || 0) / piecesPerBox,
           );
           const boxStart =
-            idx === 0 ? 1 : Number(items[idx - 1]?.boxEnd || 0) + 1;
+            Number(updatedItem.boxStart || 0) > 0
+              ? Number(updatedItem.boxStart)
+              : idx === 0
+                ? 1
+                : Number(items[idx - 1]?.boxEnd || 0) + 1;
 
           updatedItem.boxStart = boxStart;
           updatedItem.boxEnd = boxStart + totalBoxes - 1;
@@ -1003,6 +1019,7 @@ export const useInvoiceForm = (
           warehouse: it.warehouse ?? "",
           isServiceItem: it.isServiceItem ?? false,
           originalQty: Number(it.quantity),
+          piecesPerBox: Number(it.piecesPerBox) || 0,
           // Real stock is unknown until the live re-fetch effect resolves.
           // Never assume 0 here — that was the old "fake stock" bug.
           availableQty: undefined,

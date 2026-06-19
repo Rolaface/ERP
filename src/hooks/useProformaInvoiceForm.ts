@@ -602,9 +602,11 @@ const maxAllowed = Math.max(0, available - usedByOthers);
     );
 
     const boxStart =
-      idx === 0
-        ? 1
-        : Number(items[idx - 1]?.boxEnd || 0) + 1;
+      Number(updatedItem.boxStart || 0) > 0
+        ? Number(updatedItem.boxStart)
+        : idx === 0
+          ? 1
+          : Number(items[idx - 1]?.boxEnd || 0) + 1;
 
     updatedItem.boxStart = boxStart;
     updatedItem.boxEnd = boxStart + totalBoxes - 1;
@@ -915,6 +917,7 @@ items[index] = updatedItem;
           expDate: it.expDate ?? "",
           warehouse: it.warehouse ?? "",
           originalQty: Number(it.quantity),
+          piecesPerBox: Number(it.piecesPerBox) || 0,
           _skipCap: true,
         };
       }),
