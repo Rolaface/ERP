@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { isMasterSite } from "../../config/site";
 
 const NAV_ITEMS = [
   { name: "Features", href: "#features" },
@@ -15,7 +14,6 @@ const Navbar: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
 
   const ticking = useRef(false);
-  const showSignup = isMasterSite();
 
   // rAF Scroll Handling (smooth + performant)
   useEffect(() => {
@@ -176,7 +174,7 @@ const Navbar: React.FC = () => {
               Login
             </Link>
 
-            {showSignup && (
+            {/* {showSignup && (
               <Link to="/signup">
                 <button
                   className={`
@@ -200,7 +198,7 @@ const Navbar: React.FC = () => {
                   <span className="relative z-10">Sign Up</span>
                 </button>
               </Link>
-            )}
+            )} */}
           </div>
         </div>
       </nav>

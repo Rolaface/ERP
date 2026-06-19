@@ -80,7 +80,10 @@ const AppRoutes: React.FC = () => {
       <Routes>
 
         {/* ── Public Routes ── */}
-        <Route path="/" element={<LandingPage />} />
+        <Route
+          path="/"
+          element={isMasterSite() ? <LandingPage /> : <Navigate to="/login" replace />}
+        />
         <Route
           path="/signup"
           element={isMasterSite() ? <SignupPage /> : <Navigate to="/" replace />}
