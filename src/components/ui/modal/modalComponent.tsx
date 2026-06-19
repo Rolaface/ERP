@@ -407,35 +407,45 @@ export const NumericInput: React.FC<NumericInputProps> = ({
   className = "",
   name,
   max,
-}) => (
-  <NumericFormat
-    name={name}
-    value={value ?? ""}
-    placeholder={placeholder}
-    decimalScale={decimalScale}
-    allowNegative={allowNegative}
-    disabled={disabled}
-    onValueChange={(values) => {
-      const floatValue = values.floatValue ?? null;
-      if (max != null && floatValue != null && floatValue > max) {
-        showValidationError(`Only ${max} items available`);
-        onChange(max);
-        return;
-      }
-      onChange(floatValue);
-    }}
-    onWheel={(e) => (e.target as HTMLInputElement).blur()}
-    onKeyDown={(e: React.KeyboardEvent) => {
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
-    }}
-    className={[
-      "no-spinner py-1 px-2 border border-theme rounded text-[11px] bg-card text-main",
-      "focus:outline-none focus:ring-1 focus:ring-primary transition-all",
-      disabled ? "bg-app cursor-not-allowed opacity-60" : "",
-      className,
-    ].join(" ")}
-  />
-);
+}) => {
+  React.useEffect(() => {
+    if (max != null && value != null && value > max) {
+      onChange(max);
+    }
+  }, [max, value, onChange]);
+
+  return (
+    <NumericFormat
+      name={name}
+      value={value ?? ""}
+      placeholder={placeholder}
+      decimalScale={decimalScale}
+      allowNegative={allowNegative}
+      disabled={disabled}
+      isAllowed={(vals) => {
+        if (max != null && (vals.floatValue ?? 0) > max) {
+          showValidationError(`Only ${max} items available`);
+          onChange(max);
+          return false;
+        }
+        return true;
+      }}
+      onValueChange={(values) => {
+        onChange(values.floatValue ?? null);
+      }}
+      onWheel={(e) => (e.target as HTMLInputElement).blur()}
+      onKeyDown={(e: React.KeyboardEvent) => {
+        if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
+      }}
+      className={[
+        "no-spinner py-1 px-2 border border-theme rounded text-[11px] bg-card text-main",
+        "focus:outline-none focus:ring-1 focus:ring-primary transition-all",
+        disabled ? "bg-app cursor-not-allowed opacity-60" : "",
+        className,
+      ].join(" ")}
+    />
+  );
+};
 
 // ─── NumberInput (kept for backward compat — use NumericInput for new code) ───
 

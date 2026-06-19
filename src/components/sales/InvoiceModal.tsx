@@ -2,7 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Receipt, User, Mail, Phone } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { showApiError, showSuccess } from "../../utils/alert";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../store/dataRefreshStore";
 import { createSalesInvoice, editSalesInvoice } from "../../api/salesApi";
 import CustomerSelect from "../selects/CustomerSelect";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -116,7 +119,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
       if (mode === "edit") {
         const invoiceNumber =
-          formData.invoiceNumber ?? initialData?.id ?? initialData?.invoiceNumber;
+          formData.invoiceNumber ??
+          initialData?.id ??
+          initialData?.invoiceNumber;
         if (!invoiceNumber) {
           showApiError("Invoice number missing — cannot update");
           return;
@@ -127,7 +132,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           showSuccess(res?.message || "Invoice updated successfully");
           resetDirty();
           onClose();
-          useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
+          useDataRefreshStore
+            .getState()
+            .triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
         } else {
           showApiError(res?.message || "Failed to update invoice");
         }
@@ -139,7 +146,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           showSuccess(`${res?.message} (ID: ${res?.data?.invoiceId})`);
           resetDirty();
           onClose();
-          useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
+          useDataRefreshStore
+            .getState()
+            .triggerRefresh(REFRESH_KEYS.INVOICE_LIST);
         } else {
           showApiError(res?.message || "Something went wrong");
         }
@@ -198,36 +207,35 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         {/* ── Tabs ── */}
         <div className="bg-app border-b border-theme px-4 sm:px-8 shrink-0">
           <div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-none">
-            {(["details", "address", "otherCharges", "terms"] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => ui.setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
-                  ui.activeTab === tab
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
-              >
-                {tab === "details" && "Details"}
-                {tab === "address" && "Additional Details"}
-                {tab === "otherCharges" && "Shipping & Other Charges"}
-                {tab === "terms" && "Terms & Conditions"}
-              </button>
-            ))}
+            {(["details", "address", "otherCharges", "terms"] as const).map(
+              (tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => ui.setActiveTab(tab)}
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
+                    ui.activeTab === tab
+                      ? "text-primary border-b-[3px] border-primary"
+                      : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  }`}
+                >
+                  {tab === "details" && "Details"}
+                  {tab === "address" && "Additional Details"}
+                  {tab === "otherCharges" && "Shipping & Other Charges"}
+                  {tab === "terms" && "Terms & Conditions"}
+                </button>
+              ),
+            )}
           </div>
         </div>
 
         {/* ── Tab Content ── */}
         <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
-
           {/* ──────────── DETAILS ──────────── */}
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-4">
-
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
-
                 {/* Customer — full width on mobile, fixed on sm+ */}
                 <div className="w-full sm:w-[220px]">
                   <CustomerSelect
@@ -245,7 +253,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     value={formData.dateOfInvoice}
                     required
                     onChange={(name, value) =>
-                      actions.handleInputChange({ target: { name, value } } as any)
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
                     }
                   />
                 </div>
@@ -259,7 +269,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     required
                     disabled
                     onChange={(name, value) =>
-                      actions.handleInputChange({ target: { name, value } } as any)
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
                     }
                   />
                 </div>
@@ -273,7 +285,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     onChange={actions.handleInputChange}
                     options={
                       formData.currencyCode
-                        ? [{ value: formData.currencyCode, label: formData.currencyCode }]
+                        ? [
+                            {
+                              value: formData.currencyCode,
+                              label: formData.currencyCode,
+                            },
+                          ]
                         : []
                     }
                     disabled
@@ -283,27 +300,28 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
                 {/* Exchange Rate — only when foreign currency selected */}
                 {showExchangeRate && (
-                  <div className="w-full sm:w-[110px]">
+                  <div className="w-full sm:w-[110px] relative">
                     <ModalInput
-                      label={
-                        ui.exchangeRateLoading
-                          ? "Exchange Rate (Loading...)"
-                          : "Exchange Rate"
-                      }
+                      label="Exchange Rate"
                       name="exchangeRt"
-                      value={formData.exchangeRt || "1"}
+                      value={
+                        ui.exchangeRateLoading ? "" : formData.exchangeRt || "1"
+                      }
+                      placeholder={ui.exchangeRateLoading ? "Loading..." : ""}
                       onChange={actions.handleInputChange}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       disabled
                     />
                     {!!ui.exchangeRateError && (
-                      <div className="mt-1 text-[10px] text-danger">
-                        {ui.exchangeRateError}
+                      <div
+                        className="absolute left-0 top-full mt-0.5 text-[9px] text-danger whitespace-nowrap z-10"
+                        title={ui.exchangeRateError}
+                      >
+                        Rate not found
                       </div>
                     )}
                   </div>
                 )}
-
                 {/* Mode of Payment */}
                 <div className="w-full sm:w-[200px]">
                   <SearchSelect2
@@ -318,7 +336,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
                 {/* Update Stock */}
                 <div className="w-full sm:w-auto flex flex-col justify-end">
-                  <label className="text-[11px] text-transparent select-none">‎</label>
+                  <label className="text-[11px] text-transparent select-none">
+                    ‎
+                  </label>
                   <label className="flex items-center gap-2 h-[30px]">
                     <input
                       type="checkbox"
@@ -327,7 +347,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       onChange={actions.handleInputChange}
                       className="w-3.5 h-3.5 accent-primary"
                     />
-                    <span className="text-xs text-main whitespace-nowrap">Update Stock</span>
+                    <span className="text-xs text-main whitespace-nowrap">
+                      Update Stock
+                    </span>
                   </label>
                 </div>
 
@@ -354,7 +376,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   - minmax(0, 1fr) prevents the table from pushing the grid wider
                     than the modal container                                       ── */}
               <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_160px] gap-4 items-start">
-
                 {/* Table column — min-w-0 so it can shrink below natural content width */}
                 <div className="min-w-0">
                   <ItemTable
@@ -365,13 +386,15 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     symbol=""
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
                     isSalesInvoice={true}
-                    taxCategory={formData.taxCategory || customerDetails?.customerTaxCategory}
+                    taxCategory={
+                      formData.taxCategory ||
+                      customerDetails?.customerTaxCategory
+                    }
                   />
                 </div>
 
                 {/* Sidebar — full width on mobile, 220px column on xl+ */}
                 <div className="flex flex-row xl:flex-col gap-4 xl:sticky xl:top-0 h-fit">
-
                   {/* Customer Details card */}
                   <div className="bg-card rounded-lg p-2 flex-1 xl:flex-none w-full">
                     <h3 className="text-[12px] font-semibold text-main mb-2">
@@ -380,15 +403,25 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     <div className="flex flex-col gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted shrink-0" />
-                        <span className="truncate">{customerDetails?.name ?? "Customer Name"}</span>
+                        <span className="truncate">
+                          {customerDetails?.name ?? "Customer Name"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Mail size={12} className="shrink-0" />
-                        <span className="truncate">{primaryContact?.email || customerDetails?.email || "—"}</span>
+                        <span className="truncate">
+                          {primaryContact?.email ||
+                            customerDetails?.email ||
+                            "—"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Phone size={12} className="shrink-0" />
-                        <span className="truncate">{primaryContact?.mobile || customerDetails?.mobile || "—"}</span>
+                        <span className="truncate">
+                          {primaryContact?.mobile ||
+                            customerDetails?.mobile ||
+                            "—"}
+                        </span>
                       </div>
                       <div className="flex justify-between text-[10px] mt-1">
                         <span className="text-muted">Tax</span>
@@ -407,11 +440,15 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
                   {/* Summary card */}
                   <div className="bg-card rounded-lg p-3 flex-1 xl:flex-none w-full">
-                    <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
+                    <h3 className="text-[13px] font-semibold text-main mb-2">
+                      Summary
+                    </h3>
                     <div className="flex flex-col gap-2">
                       <div className="flex justify-between text-xs">
                         <span className="text-muted">Total Items</span>
-                        <span className="font-medium text-main">{formData.items.length}</span>
+                        <span className="font-medium text-main">
+                          {formData.items.length}
+                        </span>
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-muted">Subtotal</span>
@@ -427,7 +464,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       </div>
                       <div className="mt-2 p-2 bg-primary rounded-lg">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-white">Grand Total</span>
+                          <span className="text-sm font-semibold text-white">
+                            Grand Total
+                          </span>
                           <span className="text-sm font-bold text-white">
                             {totals.grandTotal.toFixed(2)}
                           </span>
@@ -435,7 +474,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       </div>
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>
@@ -446,7 +484,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <div className="space-y-6">
               <PaymentInfoBlock
                 data={formData.paymentInformation}
-                onChange={(e) => actions.handleInputChange(e, "paymentInformation")}
+                onChange={(e) =>
+                  actions.handleInputChange(e, "paymentInformation")
+                }
                 paymentMethodOptions={paymentMethodOptions}
                 showPaymentMethod={false}
               />
@@ -469,7 +509,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               onChange={actions.handleOtherChargeChange}
               onRemove={actions.removeOtherCharge}
               selectedTemplate={formData.salesTaxTemplate}
-              onTemplateSelect={(name, taxes) => actions.handleTemplateSelect(name, taxes)}
+              onTemplateSelect={(name, taxes) =>
+                actions.handleTemplateSelect(name, taxes)
+              }
               onTaxChange={actions.handleTaxChange}
             />
           )}
@@ -485,7 +527,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               />
             </div>
           )}
-
         </div>
       </form>
     </MinimizableModal>
