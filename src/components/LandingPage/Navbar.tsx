@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 const NAV_ITEMS = [
   { name: "Modules", href: "#modules" },
   { name: "How It Works", href: "#how-it-works" },
-  { name: "FAQ", href: "#faq" },
 ];
 
 const Navbar: React.FC = () => {
@@ -172,20 +171,7 @@ const Navbar: React.FC = () => {
             })}
           </div>
 
-          {/* RIGHT: LOGIN + CTA */}
-          <div className="flex items-center gap-3">
-            <a
-              href="#get-started"
-              onClick={(e) => handleNavClick(e, "#get-started")}
-              className="hidden md:inline-flex items-center text-sm font-semibold text-white rounded-xl px-4 py-2 transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]"
-              style={{
-                background: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)",
-                boxShadow: "0 4px 16px rgba(37,99,235,0.30)",
-              }}
-            >
-              Get Started
-            </a>
-          </div>
+         
         </div>
       </nav>
     </>

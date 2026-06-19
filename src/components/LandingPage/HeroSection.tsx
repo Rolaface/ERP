@@ -224,13 +224,7 @@ const HeroSection: React.FC = () => {
               </button>
             </div>
 
-            <div
-              className="flex items-center gap-5 text-[13px] mt-2 motion-fade-up motion-delay-4"
-              style={{ color: "#5a7199" }}
-            >
-              <span>✔ No credit card required</span>
-              <span>✔ Setup in minutes</span>
-            </div>
+           
           </div>
 
           {/* RIGHT */}
