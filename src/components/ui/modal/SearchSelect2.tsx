@@ -145,7 +145,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
       <>
         <div ref={wrapperRef} className="flex flex-col w-full">
           {label && (
-            <label className="text-[10px] font-medium mb-1">
+            <label className="text-[10px] font-medium mb-1 text-main">
               {label}
               {required && <span className="text-danger"> *</span>}
             </label>
@@ -179,8 +179,16 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                   setOptions(data);
                 }
               }}
-              className={`py-1 px-2 pr-6 border rounded text-[11px] text-main bg-card transition-all w-full ${error ? "border-danger" : "border-theme"
-                }`}
+              className={[
+                "py-1 px-2 pr-6 border rounded text-[11px] w-full transition-colors duration-150",
+                "bg-card text-main placeholder:text-muted",
+                "focus:outline-none",
+                disabled
+                  ? "opacity-50 cursor-not-allowed border-theme"
+                  : error
+                    ? "border-[var(--input-border-error)] bg-[var(--input-bg-error)]"
+                    : "border-theme hover:border-[var(--input-border-hover)] focus:border-[var(--input-border-focus)] focus:shadow-[0_0_0_3px_var(--input-focus-ring)]",
+              ].join(" ")}
             />
 
             {/* Clear button — only show when user is actively typing */}
@@ -195,7 +203,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                   onChange("", { label: "", value: "" });
                   setOpen(true);
                 }}
-                className="absolute right-1 top-1/2 -translate-y-1/2 text-muted hover:text-danger text-xs"
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-muted hover:text-danger text-xs transition-colors"
               >
                 ✕
               </button>
@@ -219,7 +227,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                 width: dropdownPos.width,
                 zIndex: 99999,
               }}
-              className="bg-white border rounded shadow-lg max-h-52 overflow-auto"
+              className="bg-card border border-theme rounded shadow-lg max-h-52 overflow-auto"
             >
               {options.map((opt) => (
                 // AFTER
@@ -233,7 +241,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                     userEditingRef.current = false;
                     setOpen(false);
                   }}
-                  className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                  className="px-3 py-2 cursor-pointer row-hover transition-colors"
                 >
                   <span className="block text-[13px] text-main">{opt.label}</span>
                   {opt.subLabel && (
@@ -262,7 +270,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                       userEditingRef.current = false; // ← CHANGED
                       setOpen(false);
                     }}
-                    className="px-3 py-2 cursor-pointer text-[13px] text-primary hover:bg-primary/10 border-t"
+                    className="px-3 py-2 cursor-pointer text-[13px] text-primary hover:bg-primary/10 border-t border-theme transition-colors"
                   >
                     Add "{search}"
                   </div>

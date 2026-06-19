@@ -93,24 +93,23 @@ const DatePickerInput: React.FC<Props> = ({
 
               "& .MuiOutlinedInput-root": {
                 height: "28px",
-                fontSize: "11px",
-                backgroundColor: "var(--card)",
+                fontSize: "var(--text-xs)",
+                backgroundColor: "var(--input-bg)",
                 borderRadius: "6px",
-                // Remove any MUI-injected minWidth so the field
-                // collapses to whatever the table column allows
+                color: "var(--input-text)",
                 minWidth: 0,
                 width: "100%",
                 paddingRight: "2px",
                 display: "flex",
                 alignItems: "center",
-                // Clip the input text instead of forcing the field wider
                 overflow: "hidden",
+                transition: "var(--input-transition)",
               },
 
               "& .MuiOutlinedInput-input": {
                 padding: "2px 4px",
-                fontSize: "11px",
-                // Critical: allow the text portion to shrink
+                fontSize: "var(--text-xs)",
+                color: "var(--input-text)",
                 minWidth: 0,
                 width: "100%",
                 overflow: "hidden",
@@ -118,11 +117,17 @@ const DatePickerInput: React.FC<Props> = ({
                 whiteSpace: "nowrap",
               },
 
+              "& .MuiOutlinedInput-input::placeholder": {
+                color: "var(--muted)",
+                opacity: 0.6,
+              },
+
               // ── Calendar icon: fixed size, never forces width ──
               "& .MuiIconButton-root": {
                 padding: "2px",
                 marginRight: "2px",
                 flexShrink: 0,
+                color: "var(--muted)",
               },
               "& .MuiSvgIcon-root": {
                 fontSize: "14px",
@@ -137,11 +142,44 @@ const DatePickerInput: React.FC<Props> = ({
                 flexShrink: 0,
               },
 
+              // ── Border states, theme-driven ──
               "& fieldset": {
-                borderColor: "var(--border)",
+                borderColor: "var(--input-border)",
               },
               "&:hover fieldset": {
-                borderColor: "rgba(37,99,235,0.4)",
+                borderColor: "var(--input-border-hover)",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "var(--input-border-focus)",
+                borderWidth: "1px",
+                boxShadow: `0 0 0 3px var(--input-focus-ring)`,
+              },
+
+              // ── Disabled state ──
+              "&.Mui-disabled": {
+                backgroundColor: "var(--input-bg-disabled)",
+              },
+              "& .Mui-disabled": {
+                color: "var(--input-text-disabled)",
+                WebkitTextFillColor: "var(--input-text-disabled)",
+              },
+              "&.Mui-disabled fieldset": {
+                borderColor: "var(--input-border)",
+              },
+
+              // ── Error state ──
+              "&.Mui-error .MuiOutlinedInput-root, & .Mui-error": {
+                backgroundColor: "var(--input-bg-error)",
+              },
+              "&.Mui-error fieldset, & fieldset.Mui-error": {
+                borderColor: "var(--input-border-error)",
+              },
+              "&.Mui-error:hover fieldset": {
+                borderColor: "var(--input-border-error)",
+              },
+              "&.Mui-error.Mui-focused fieldset": {
+                borderColor: "var(--input-border-error)",
+                boxShadow: "0 0 0 3px rgba(220, 38, 38, 0.15)",
               },
 
               ...sx,
@@ -151,7 +189,14 @@ const DatePickerInput: React.FC<Props> = ({
       />
 
       {error && (
-        <FormHelperText error sx={{ margin: "2px 0 0", fontSize: "10px" }}>
+        <FormHelperText
+          error
+          sx={{
+            margin: "2px 0 0",
+            fontSize: "10px",
+            color: "var(--danger)",
+          }}
+        >
           {error}
         </FormHelperText>
       )}
