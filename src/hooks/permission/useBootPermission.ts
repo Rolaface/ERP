@@ -12,48 +12,46 @@ export function useBootPermissions(
   const setAdmin         = usePermissionStore((s) => s.setAdmin);
   const clearPermissions = usePermissionStore((s) => s.clearPermissions);
 
-  // Track what we last loaded so we don't re-run unnecessarily
   const loadedRef = useRef<string>("");
 
   useEffect(() => {
-    // Wait for auth to finish loading
+    // 1. Auth still loading — wait
     if (authLoading) return;
 
-    // No session — clear everything
+    // 2. Auth done but no user/roles
     if (!roles || roles.length === 0) {
-      clearPermissions();
+      clearPermissions();       
       loadedRef.current = "";
       return;
     }
 
-    // ── Administrator check ──────────────────────────────────────────────
     const isAdministrator = roles.includes("Administrator");
 
     if (isAdministrator) {
-      // For admin — store actual permissions from API too
-      // but mark as admin so all can() calls return true
       setAdmin(true);
       if (permissions && permissions.length > 0) {
-        setPermissions(permissions);   // store them but isAdmin bypasses checks
+        setPermissions(permissions);
       } else {
-        setLoading(false);
+        setLoading(false);       
       }
       loadedRef.current = "Administrator";
       return;
     }
 
-    // ── Normal user ──────────────────────────────────────────────────────
+    
     if (!permissions || permissions.length === 0) {
-      // No permissions in user object — clear store
       clearPermissions();
       loadedRef.current = "";
       return;
     }
 
-    // Stable key — serialize permissions length + first role
-    // Changes only when permissions actually update
     const stableKey = `${roles[0]}_${permissions.length}`;
-    if (loadedRef.current === stableKey) return;
+
+    
+    if (loadedRef.current === stableKey) {
+      setLoading(false);       
+      return;
+    }
 
     setAdmin(false);
     setPermissions(permissions);
