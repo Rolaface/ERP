@@ -731,7 +731,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
             options={[
               { label: "Pay", value: "Pay" },
               { label: "Receive", value: "Receive" },
-              { label: "Internal Transfer", value: "Internal Transfer" }
+              // { label: "Internal Transfer", value: "Internal Transfer" }
             ]}
           />
           <ModalSelect
