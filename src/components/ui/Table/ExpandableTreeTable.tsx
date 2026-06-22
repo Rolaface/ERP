@@ -371,6 +371,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
 }: ExpandableTreeTableProps<T>) {
 
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [allExpanded, setAllExpanded] = useState(false);
 
   const activeTerm = showToolbar ? searchValue : (externalSearchTerm ?? "");
 
@@ -397,15 +398,18 @@ function ExpandableTreeTable<T extends Record<string, any>>({
       if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
+    setAllExpanded(false);
   }, []);
 
-  const expandAll = useCallback(() => {
-    setExpandedKeys(collectAllExpandableKeys(data, nodeKey, childrenKey));
-  }, [data, nodeKey, childrenKey]);
-
-  const collapseAll = useCallback(() => {
-    setExpandedKeys(new Set());
-  }, []);
+  const toggleExpandCollapse = useCallback(() => {
+    if (allExpanded) {
+      setExpandedKeys(new Set());
+      setAllExpanded(false);
+    } else {
+      setExpandedKeys(collectAllExpandableKeys(data, nodeKey, childrenKey));
+      setAllExpanded(true);
+    }
+  }, [allExpanded, data, nodeKey, childrenKey]);
 
   const getAlignment = (align?: "left" | "center" | "right") => {
     if (align === "center") return "text-center";
@@ -445,18 +449,11 @@ function ExpandableTreeTable<T extends Record<string, any>>({
             {showExpandControls && (
               <>
                 <button
-                  onClick={expandAll}
+                  onClick={toggleExpandCollapse}
                   className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
                 >
-                  <Layers size={11} />
-                  Expand All
-                </button>
-                <button
-                  onClick={collapseAll}
-                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-main bg-card border border-[var(--border)] rounded-xl hover:bg-row-hover transition-all whitespace-nowrap"
-                >
-                  <ChevronRight size={11} />
-                  Collapse
+                  {allExpanded ? <ChevronRight size={11} /> : <Layers size={11} />}
+                  {allExpanded ? "Collapse" : "Expand All"}
                 </button>
               </>
             )}
@@ -470,7 +467,7 @@ function ExpandableTreeTable<T extends Record<string, any>>({
               </button>
             )}
 
-            
+
           </div>
         </div>
       )}

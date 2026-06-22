@@ -215,15 +215,15 @@ function FilterBar({
   setFilters,
   onRefresh,
   loading,
-  onExpandAll,
-  onCollapseAll,
+  allExpanded,
+  onToggleExpand,
 }: {
   filters: CFFilters;
   setFilters: React.Dispatch<React.SetStateAction<CFFilters>>;
   onRefresh: () => void;
   loading: boolean;
-  onExpandAll: () => void;
-  onCollapseAll: () => void;
+  allExpanded: boolean;
+  onToggleExpand: () => void;
 }) {
   const inputClass =
     "h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all no-spinner";
@@ -360,15 +360,11 @@ function FilterBar({
 
       <div className="w-px self-stretch bg-[var(--border)]" />
 
-      <button onClick={onExpandAll} className={btnClass}>
-        <Layers size={11} />
-        Expand All
+      <button onClick={onToggleExpand} className={btnClass}>
+        {allExpanded ? <ChevronRight size={11} /> : <Layers size={11} />}
+        {allExpanded ? "Collapse" : "Expand All"}
       </button>
-      <button onClick={onCollapseAll} className={btnClass}>
-        <ChevronRight size={11} />
-        Collapse
-      </button>
-      <button onClick={onRefresh} className={`${btnClass} ml-auto`}>
+      <button onClick={onRefresh} className={`${btnClass}`}>
         <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
         Refresh
       </button>
@@ -393,9 +389,17 @@ const CashFlow: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [allExpanded, setAllExpanded] = useState(false);
 
-  const handleExpandAll = useCallback(() => setExpanded(true), []);
-  const handleCollapseAll = useCallback(() => setExpanded({}), []);
+  const handleToggleExpand = useCallback(() => {
+    if (allExpanded) {
+      setExpanded({});
+      setAllExpanded(false);
+    } else {
+      setExpanded(true);
+      setAllExpanded(true);
+    }
+  }, [allExpanded]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -404,17 +408,17 @@ const CashFlow: React.FC = () => {
       const params =
         filters.mode === "Date Range"
           ? {
-              periodicity: filters.periodicity,
-              from_date: filters.from_date,
-              to_date: filters.to_date,
-              filter_based_on: "Date Range",
-            }
+            periodicity: filters.periodicity,
+            from_date: filters.from_date,
+            to_date: filters.to_date,
+            filter_based_on: "Date Range",
+          }
           : {
-              periodicity: filters.periodicity,
-              from_fiscal_year: String(filters.from_fiscal_year),
-              to_fiscal_year: String(filters.to_fiscal_year),
-              filter_based_on: "Fiscal Year",
-            };
+            periodicity: filters.periodicity,
+            from_fiscal_year: String(filters.from_fiscal_year),
+            to_fiscal_year: String(filters.to_fiscal_year),
+            filter_based_on: "Fiscal Year",
+          };
 
       const res: CFResponse = await getCashFlow(params as any);
 
@@ -442,6 +446,7 @@ const CashFlow: React.FC = () => {
   useEffect(() => {
     if (!tree.length) return;
     setExpanded(buildExpandedToDepth(tree, 2));
+    setAllExpanded(false);
   }, [tree]);
 
   const columns = useMemo<ColumnDef<CFNode>[]>(() => {
@@ -473,9 +478,8 @@ const CashFlow: React.FC = () => {
                     >
                       <ChevronRight
                         size={12}
-                        className={`transition-transform duration-150 ${
-                          row.getIsExpanded() ? "rotate-90" : ""
-                        }`}
+                        className={`transition-transform duration-150 ${row.getIsExpanded() ? "rotate-90" : ""
+                          }`}
                       />
                       {row.getIsExpanded() ? (
                         <FolderOpen size={13} />
@@ -490,13 +494,12 @@ const CashFlow: React.FC = () => {
                     />
                   )}
                   <span
-                    className={`text-xs truncate ${
-                      isNet
-                        ? "font-bold text-primary"
-                        : node.children.length
-                          ? "font-semibold"
-                          : ""
-                    }`}
+                    className={`text-xs truncate ${isNet
+                      ? "font-bold text-primary"
+                      : node.children.length
+                        ? "font-semibold"
+                        : ""
+                      }`}
                   >
                     {node.section}
                   </span>
@@ -514,7 +517,7 @@ const CashFlow: React.FC = () => {
           cell: ({ row }) => {
             const val =
               row.original.periods?.[
-                col.fieldname as keyof typeof row.original.periods
+              col.fieldname as keyof typeof row.original.periods
               ] ?? 0;
             const colorClass =
               val > 0
@@ -536,7 +539,10 @@ const CashFlow: React.FC = () => {
     data: tree,
     columns,
     state: { expanded },
-    onExpandedChange: setExpanded,
+    onExpandedChange: (updater) => {
+      setExpanded(updater);
+      setAllExpanded(false);
+    },
     getSubRows: (row) => row.children,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
@@ -566,8 +572,8 @@ const CashFlow: React.FC = () => {
         setFilters={setFilters}
         onRefresh={fetchData}
         loading={loading}
-        onExpandAll={handleExpandAll}
-        onCollapseAll={handleCollapseAll}
+        allExpanded={allExpanded}
+        onToggleExpand={handleToggleExpand}
       />
 
       <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
@@ -630,14 +636,13 @@ const CashFlow: React.FC = () => {
                 table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className={`hover:bg-row-hover transition-colors h-[34px] ${
-                      isNetRow(
-                        row.original.section,
-                        row.original.parent_section,
-                      )
-                        ? "bg-row-hover/50 border-t-2 border-[var(--border)]"
-                        : ""
-                    }`}
+                    className={`hover:bg-row-hover transition-colors h-[34px] ${isNetRow(
+                      row.original.section,
+                      row.original.parent_section,
+                    )
+                      ? "bg-row-hover/50 border-t-2 border-[var(--border)]"
+                      : ""
+                      }`}
                   >
                     {row.getVisibleCells().map((cell) => {
                       const align =

@@ -104,15 +104,15 @@ function FilterBar({
   setFilters,
   onRefresh,
   loading,
-  onExpandAll,
-  onCollapseAll,
+  allExpanded,
+  onToggleExpand,
 }: {
   filters: TrialBalanceFilters;
   setFilters: React.Dispatch<React.SetStateAction<TrialBalanceFilters>>;
   onRefresh: () => void;
   loading: boolean;
-  onExpandAll: () => void;
-  onCollapseAll: () => void;
+  allExpanded: boolean;
+  onToggleExpand: () => void;
 }) {
   const inputClass =
     "h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all no-spinner";
@@ -218,14 +218,10 @@ function FilterBar({
 
       <div className="w-px self-stretch bg-[var(--border)]" />
 
-      <button onClick={onExpandAll} className={btnClass}>
-        <Layers size={11} />
-        Expand All
-      </button>
-      <button onClick={onCollapseAll} className={btnClass}>
-        <ChevronRight size={11} />
-        Collapse
-      </button>
+      {/* <button onClick={onToggleExpand} className={btnClass}>
+        {allExpanded ? <ChevronRight size={11} /> : <Layers size={11} />}
+        {allExpanded ? "Collapse" : "Expand All"}
+      </button> */}
       <button onClick={onRefresh} className={`${btnClass} ml-auto`}>
         <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
         Refresh
@@ -244,14 +240,22 @@ const TrialBalance: React.FC = () => {
   const [fiscalYearStartDate, setFiscalYearStartDate] = useState<string>("");
   const [fiscalYearEndDate, setFiscalYearEndDate] = useState<string>("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [allExpanded, setAllExpanded] = useState(false);
 
   const tableData: TBAccount[] = useMemo(() => {
     if (!data) return [];
     return data.accounts;
   }, [data]);
 
-  const handleExpandAll = useCallback(() => setExpanded(true), []);
-  const handleCollapseAll = useCallback(() => setExpanded({}), []);
+  const handleToggleExpand = useCallback(() => {
+    if (allExpanded) {
+      setExpanded({});
+      setAllExpanded(false);
+    } else {
+      setExpanded(true);
+      setAllExpanded(true);
+    }
+  }, [allExpanded]);
 
   /* ── Fiscal year bootstrap ── */
   useEffect(() => {
@@ -357,9 +361,8 @@ const TrialBalance: React.FC = () => {
                 >
                   <ChevronRight
                     size={11}
-                    className={`transition-transform duration-150 shrink-0 ${
-                      row.getIsExpanded() ? "rotate-90" : ""
-                    }`}
+                    className={`transition-transform duration-150 shrink-0 ${row.getIsExpanded() ? "rotate-90" : ""
+                      }`}
                   />
                   {row.getIsExpanded() ? (
                     <FolderOpen size={13} className="shrink-0" />
@@ -376,9 +379,8 @@ const TrialBalance: React.FC = () => {
                 </span>
               )}
               <span
-                className={`text-xs truncate ${
-                  row.depth === 0 ? "font-semibold" : ""
-                }`}
+                className={`text-xs truncate ${row.depth === 0 ? "font-semibold" : ""
+                  }`}
               >
                 {node.account_name}
               </span>
@@ -460,7 +462,10 @@ const TrialBalance: React.FC = () => {
     data: tableData,
     columns,
     state: { expanded },
-    onExpandedChange: setExpanded,
+    onExpandedChange: (updater) => {
+      setExpanded(updater);
+      setAllExpanded(false);
+    },
     getSubRows: (row) => row.children,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
@@ -491,8 +496,8 @@ const TrialBalance: React.FC = () => {
         setFilters={setFilters}
         onRefresh={() => fetchTB(filters)}
         loading={loading}
-        onExpandAll={handleExpandAll}
-        onCollapseAll={handleCollapseAll}
+        allExpanded={allExpanded}          
+        onToggleExpand={handleToggleExpand} 
       />
 
       <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">

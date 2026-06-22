@@ -228,8 +228,8 @@ type FilterBarProps = {
   setFilters: React.Dispatch<React.SetStateAction<BSFilters>>;
   onRefresh: () => void;
   loading: boolean;
-  onExpandAll: () => void;
-  onCollapseAll: () => void;
+  allExpanded: boolean;
+  onToggleExpand: () => void;
 };
 
 function FilterBar({
@@ -237,8 +237,8 @@ function FilterBar({
   setFilters,
   onRefresh,
   loading,
-  onExpandAll,
-  onCollapseAll,
+  allExpanded,
+  onToggleExpand,
 }: FilterBarProps) {
   const inputClass =
     "h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all no-spinner";
@@ -364,15 +364,11 @@ function FilterBar({
 
       <div className="w-px self-stretch bg-[var(--border)]" />
 
-      <button onClick={onExpandAll} className={btnClass}>
-        <Layers size={11} />
-        Expand All
+      <button onClick={onToggleExpand} className={btnClass}>
+        {allExpanded ? <ChevronRight size={11} /> : <Layers size={11} />}
+        {allExpanded ? "Collapse" : "Expand All"}
       </button>
-      <button onClick={onCollapseAll} className={btnClass}>
-        <ChevronRight size={11} />
-        Collapse
-      </button>
-      <button onClick={onRefresh} className={`${btnClass} ml-auto`}>
+      <button onClick={onRefresh} className={`${btnClass}`}>
         <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
         Refresh
       </button>
@@ -520,14 +516,14 @@ function BSTreeTable({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const BalanceSheet: React.FC = () => {
-const [filters, setFilters] = useState<BSFilters>({
-  mode: "Fiscal Year",
-  periodicity: "Monthly",
-  from_fiscal_year: fiscalYear,
-  to_fiscal_year: fiscalYear,
-  from_date: currentMonthStart(),
-  to_date: currentMonthEnd(),
-});
+  const [filters, setFilters] = useState<BSFilters>({
+    mode: "Fiscal Year",
+    periodicity: "Monthly",
+    from_fiscal_year: fiscalYear,
+    to_fiscal_year: fiscalYear,
+    from_date: currentMonthStart(),
+    to_date: currentMonthEnd(),
+  });
 
   const [data, setData] = useState<BSData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -538,18 +534,21 @@ const [filters, setFilters] = useState<BSFilters>({
     {},
   );
   const [expandedEquity, setExpandedEquity] = useState<ExpandedState>({});
+  const [allExpanded, setAllExpanded] = useState(false);
 
-  const handleExpandAll = useCallback(() => {
-    setExpandedAssets(true);
-    setExpandedLiabilities(true);
-    setExpandedEquity(true);
-  }, []);
-
-  const handleCollapseAll = useCallback(() => {
-    setExpandedAssets({});
-    setExpandedLiabilities({});
-    setExpandedEquity({});
-  }, []);
+  const handleToggleExpand = useCallback(() => {
+    if (allExpanded) {
+      setExpandedAssets({});
+      setExpandedLiabilities({});
+      setExpandedEquity({});
+      setAllExpanded(false);
+    } else {
+      setExpandedAssets(true);
+      setExpandedLiabilities(true);
+      setExpandedEquity(true);
+      setAllExpanded(true);
+    }
+  }, [allExpanded]);
 
   const fetchBS = useCallback(async (currentFilters: BSFilters) => {
     setLoading(true);
@@ -567,17 +566,17 @@ const [filters, setFilters] = useState<BSFilters>({
       const params =
         currentFilters.mode === "Date Range"
           ? {
-              periodicity: currentFilters.periodicity,
-              from_date: currentFilters.from_date,
-              to_date: currentFilters.to_date,
-              filter_based_on: "Date Range" as const,
-            }
+            periodicity: currentFilters.periodicity,
+            from_date: currentFilters.from_date,
+            to_date: currentFilters.to_date,
+            filter_based_on: "Date Range" as const,
+          }
           : {
-              periodicity: currentFilters.periodicity,
-              from_fiscal_year: String(currentFilters.from_fiscal_year),
-              to_fiscal_year: String(currentFilters.to_fiscal_year),
-              filter_based_on: "Fiscal Year" as const,
-            };
+            periodicity: currentFilters.periodicity,
+            from_fiscal_year: String(currentFilters.from_fiscal_year),
+            to_fiscal_year: String(currentFilters.to_fiscal_year),
+            filter_based_on: "Fiscal Year" as const,
+          };
 
       const res: BSResponse = await getBalanceSheet(params as any);
 
@@ -647,9 +646,8 @@ const [filters, setFilters] = useState<BSFilters>({
                     >
                       <ChevronRight
                         size={12}
-                        className={`transition-transform duration-150 ${
-                          row.getIsExpanded() ? "rotate-90" : ""
-                        }`}
+                        className={`transition-transform duration-150 ${row.getIsExpanded() ? "rotate-90" : ""
+                          }`}
                       />
                       {row.getIsExpanded() ? (
                         <FolderOpen size={13} />
@@ -713,8 +711,8 @@ const [filters, setFilters] = useState<BSFilters>({
         setFilters={setFilters}
         onRefresh={() => fetchBS(filters)}
         loading={loading}
-        onExpandAll={handleExpandAll}
-        onCollapseAll={handleCollapseAll}
+        allExpanded={allExpanded}
+        onToggleExpand={handleToggleExpand}
       />
 
       {(loading && !data) || (data?.assets?.length ?? 0) > 0 ? (
@@ -727,7 +725,10 @@ const [filters, setFilters] = useState<BSFilters>({
             data={data?.assets ?? []}
             columns={columns}
             expanded={expandedAssets}
-            onExpandedChange={setExpandedAssets}
+            onExpandedChange={(updater) => {
+              setExpandedAssets(updater);
+              setAllExpanded(false);
+            }}
             loading={loading && !data}
             emptyMessage="No asset accounts found."
           />
@@ -744,7 +745,10 @@ const [filters, setFilters] = useState<BSFilters>({
             data={data?.liabilities ?? []}
             columns={columns}
             expanded={expandedLiabilities}
-            onExpandedChange={setExpandedLiabilities}
+            onExpandedChange={(updater) => {
+              setExpandedLiabilities(updater);
+              setAllExpanded(false);
+            }}
             loading={loading && !data}
             emptyMessage="No liability accounts found."
           />
@@ -758,7 +762,10 @@ const [filters, setFilters] = useState<BSFilters>({
             data={data?.equity ?? []}
             columns={columns}
             expanded={expandedEquity}
-            onExpandedChange={setExpandedEquity}
+            onExpandedChange={(updater) => {
+              setExpandedEquity(updater);
+              setAllExpanded(false);
+            }}
             loading={loading && !data}
             emptyMessage="No equity accounts found."
           />

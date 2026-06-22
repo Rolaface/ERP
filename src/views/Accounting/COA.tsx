@@ -51,7 +51,7 @@ import { getCurrencySymbol } from "../../utils/currency";
 export interface COATabProps {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
-  onViewLedger?: (account: string) => void; // ← NEW
+  onViewLedger?: (account: string) => void;
 }
 
 function normalizeAccounts(accounts: COAAccount[]): COAAccount[] {
@@ -158,11 +158,10 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => (
               e.stopPropagation();
               action.onClick();
             }}
-            className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${
-              action.danger
+            className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${action.danger
                 ? "text-danger hover:bg-danger/10"
                 : "text-main hover:bg-row-hover"
-            }`}
+              }`}
           >
             <span className={action.danger ? "text-danger" : "text-muted"}>
               {action.icon}
@@ -184,8 +183,8 @@ function FilterBar({
   setHideZero,
   onRefresh,
   loading,
-  onExpandAll,
-  onCollapseAll,
+  allExpanded,
+  onToggleExpand,
 }: {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -193,8 +192,8 @@ function FilterBar({
   setHideZero: (v: boolean) => void;
   onRefresh: () => void;
   loading: boolean;
-  onExpandAll: () => void;
-  onCollapseAll: () => void;
+  allExpanded: boolean;
+  onToggleExpand: () => void;
 }) {
   const btnClass =
     "h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40 rounded-md transition-all whitespace-nowrap";
@@ -228,13 +227,9 @@ function FilterBar({
 
         <div className="w-px self-stretch bg-[var(--border)]" />
 
-        <button onClick={onExpandAll} className={btnClass}>
-          <Layers size={11} />
-          Expand All
-        </button>
-        <button onClick={onCollapseAll} className={btnClass}>
-          <ChevronRight size={11} />
-          Collapse
+        <button onClick={onToggleExpand} className={btnClass}>
+          {allExpanded ? <ChevronRight size={11} /> : <Layers size={11} />}
+          {allExpanded ? "Collapse" : "Expand All"}
         </button>
         <button onClick={onRefresh} className={btnClass}>
           <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
@@ -261,9 +256,17 @@ const COATab: React.FC<COATabProps> = ({
   const [selectedParent, setSelectedParent] = useState<COAAccount | null>(null);
   const [editAccount, setEditAccount] = useState<COAAccount | null>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [allExpanded, setAllExpanded] = useState(false);
 
-  const handleExpandAll = useCallback(() => setExpanded(true), []);
-  const handleCollapseAll = useCallback(() => setExpanded({}), []);
+  const handleToggleExpand = useCallback(() => {
+    if (allExpanded) {
+      setExpanded({});
+      setAllExpanded(false);
+    } else {
+      setExpanded(true);
+      setAllExpanded(true);
+    }
+  }, [allExpanded]);
 
   const fetchCOA = useCallback(async () => {
     setLoading(true);
@@ -384,9 +387,8 @@ const COATab: React.FC<COATabProps> = ({
                 >
                   <ChevronRight
                     size={12}
-                    className={`transition-transform duration-150 ${
-                      row.getIsExpanded() ? "rotate-90" : ""
-                    }`}
+                    className={`transition-transform duration-150 ${row.getIsExpanded() ? "rotate-90" : ""
+                      }`}
                   />
                   {row.getIsExpanded() ? (
                     <FolderOpen size={13} />
@@ -502,19 +504,19 @@ const COATab: React.FC<COATabProps> = ({
             },
             ...(node.is_group === 1
               ? [
-                  {
-                    label: "Add Child",
-                    icon: <GitBranch size={12} />,
-                    onClick: () => handleAddChild(node),
-                  },
-                ]
+                {
+                  label: "Add Child",
+                  icon: <GitBranch size={12} />,
+                  onClick: () => handleAddChild(node),
+                },
+              ]
               : [
-                  {
-                    label: "View Ledger",
-                    icon: <BookMarked size={12} />,
-                    onClick: () => onViewLedger?.(node.name),
-                  },
-                ]),
+                {
+                  label: "View Ledger",
+                  icon: <BookMarked size={12} />,
+                  onClick: () => onViewLedger?.(node.name),
+                },
+              ]),
             {
               label: "Delete",
               icon: <Trash2 size={12} />,
@@ -534,7 +536,10 @@ const COATab: React.FC<COATabProps> = ({
     data: tableData,
     columns,
     state: { expanded },
-    onExpandedChange: setExpanded,
+    onExpandedChange: (updater) => {
+      setExpanded(updater);
+      setAllExpanded(false);
+    },
     getSubRows: (row) => row.children,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
@@ -580,8 +585,8 @@ const COATab: React.FC<COATabProps> = ({
           setHideZero={setHideZero}
           onRefresh={fetchCOA}
           loading={loading}
-          onExpandAll={handleExpandAll}
-          onCollapseAll={handleCollapseAll}
+          allExpanded={allExpanded}
+          onToggleExpand={handleToggleExpand}
         />
 
         <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
