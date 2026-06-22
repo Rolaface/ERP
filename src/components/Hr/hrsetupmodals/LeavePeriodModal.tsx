@@ -122,7 +122,7 @@ const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
       isOpen={isOpen}
       onClose={onClose}
       // title={isEdit ? "Edit Leave Period" : "New Leave Period"}
-      title={isView ? "View Leave Period" : isEdit ? "Edit Leave Period" : "Add New Leave Period"}
+      title={isView ? "View Leave Period" : isEdit ? "Edit Leave Period" : "Add Leave Period"}
       subtitle="Define fiscal or operational calendar periods for leave allocation"
       icon={Calendar}
       maxWidth="xl"

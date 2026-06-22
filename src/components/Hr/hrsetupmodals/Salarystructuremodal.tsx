@@ -598,7 +598,7 @@ const removeRow = (idx: number) => {
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? "Edit Salary Structure" : "Add New Salary Structure"}
+      title={isEdit ? "Edit Salary Structure" : "Add Salary Structure"}
       subtitle="Build your payroll structure component by component"
       icon={LayoutList}
       customWidth="70vw"

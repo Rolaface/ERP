@@ -110,7 +110,7 @@ const SchedulerModal: React.FC<SchedulerModalProps> = ({
 };
 const title =
   mode === "add"
-    ? "Add New Scheduler"
+    ? "Add Scheduler"
     : mode === "edit"
     ? "Edit Scheduler"
     : "Scheduler";

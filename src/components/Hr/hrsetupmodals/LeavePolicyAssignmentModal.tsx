@@ -189,7 +189,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
       modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={isView ? "View Leave Policy Assignment" : isEdit ? "Edit Leave Policy Assignment" : "Add New Leave Policy Assignment"}
+      title={isView ? "View Leave Policy Assignment" : isEdit ? "Edit Leave Policy Assignment" : "Add Leave Policy Assignment"}
       subtitle="Link an Employee to a Leave Policy"
       icon={Link2}
       maxWidth="xl"
