@@ -23,7 +23,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  DollarSign,
   AlertTriangle,
   Users,
   ReceiptText,
@@ -163,7 +162,11 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
 }) => {
   const sections = [
     {
-      icon: <DollarSign size={11} className="text-emerald-400" />,
+      icon: (
+        <div className="h-4 w-4 flex items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
+          {sym}
+        </div>
+      ),
       label: "Outstanding",
       items: [
         {
@@ -203,7 +206,7 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
         {
           label: "Payment Days",
           value: kpis.average_payment_days,
-          color: "text-primary"
+          color: "text-primary",
         },
       ],
     },
@@ -211,17 +214,17 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
       icon: <ReceiptText size={11} className="text-amber-400" />,
       label: "Aging",
       items: Object.entries(kpis.ageing_summary).map(([key, val]) => {
-        const label = key === "121_above"
-          ? "121d+"
-          : `${key.replace("_", "–")}d`;
+        const label =
+          key === "121_above" ? "121d+" : `${key.replace("_", "–")}d`;
         const abs = Math.abs(val as number);
-        const bucket = key === "0_30"
-          ? "text-emerald-600"
-          : key === "31_60"
-            ? "text-amber-500"
-            : key === "61_90"
-              ? "text-orange-500"
-              : "text-red-600";
+        const bucket =
+          key === "0_30"
+            ? "text-emerald-600"
+            : key === "31_60"
+              ? "text-amber-500"
+              : key === "61_90"
+                ? "text-orange-500"
+                : "text-red-600";
         return { label, value: fmt(abs, sym), color: bucket };
       }),
     },
@@ -261,16 +264,19 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
                   <div className="h-3.5 w-12 bg-[var(--border)] rounded animate-pulse mt-0.5" />
                 ) : (
                   <span
-                    className={`leading-tight tabular-nums  block ${item.color} ${"bold" in item && item.bold ? "font-extrabold" : "font-semibold"} ${String(item.value ?? "").length > 14
-                      ? "text-[8px]"
-                      : String(item.value ?? "").length > 10
-                        ? "text-[9px]"
-                        : String(item.value ?? "").length > 7
-                          ? "text-[10px]"
-                          : "text-[11px]"
-                      }`}
+                    className={`leading-tight tabular-nums  block ${item.color} ${"bold" in item && item.bold ? "font-extrabold" : "font-semibold"} ${
+                      String(item.value ?? "").length > 14
+                        ? "text-[8px]"
+                        : String(item.value ?? "").length > 10
+                          ? "text-[9px]"
+                          : String(item.value ?? "").length > 7
+                            ? "text-[10px]"
+                            : "text-[11px]"
+                    }`}
                   >
-                    {item.value != null && item.value !== "" ? String(item.value) : "—"}
+                    {item.value != null && item.value !== ""
+                      ? String(item.value)
+                      : "—"}
                   </span>
                 )}
               </div>
@@ -314,10 +320,11 @@ const FilterDropdown: React.FC<{
   <div className="relative">
     <button
       onClick={onToggle}
-      className={`h-7 px-2.5 text-[11px] font-semibold border rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${active
-        ? "border-primary bg-primary/10 text-primary"
-        : "border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40"
-        }`}
+      className={`h-7 px-2.5 text-[11px] font-semibold border rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap ${
+        active
+          ? "border-primary bg-primary/10 text-primary"
+          : "border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40"
+      }`}
     >
       {label}
     </button>
@@ -338,10 +345,11 @@ const DropdownItem: React.FC<{
 }> = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
-    className={`w-full text-left px-3 py-1.5 text-xs flex justify-between items-center transition-colors ${active
-      ? "bg-primary/10 text-primary font-semibold"
-      : "text-main hover:bg-row-hover"
-      }`}
+    className={`w-full text-left px-3 py-1.5 text-xs flex justify-between items-center transition-colors ${
+      active
+        ? "bg-primary/10 text-primary font-semibold"
+        : "text-main hover:bg-row-hover"
+    }`}
   >
     {children}
     {active && <FaCheck className="text-[9px] shrink-0" />}
@@ -499,7 +507,7 @@ const AccountsPayable = () => {
                 if (!isNaN(dueDateObj.getTime())) {
                   daysLeft = Math.ceil(
                     (dueDateObj.getTime() - today.getTime()) /
-                    (1000 * 3600 * 24),
+                      (1000 * 3600 * 24),
                   );
                 }
                 dueDisplay = formatDate(row.due_date);
@@ -902,8 +910,6 @@ const AccountsPayable = () => {
         <KpiStrip kpis={kpis} sym={sym} loading={isLoading} />
       ) : (
         <div className="flex flex-col lg:flex-row gap-2">
-
-
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
@@ -926,13 +932,13 @@ const AccountsPayable = () => {
         </div>
         <div className="w-px self-stretch bg-[var(--border)]" />
 
-     <div className="w-[135px] min-w-[135px]">
-  <DatePickerInput
-    name="postingDate"
-    value={postingDate}
-    onChange={(_, value) => setPostingDate(value)}
-  />
-</div>
+        <div className="w-[135px] min-w-[135px]">
+          <DatePickerInput
+            name="postingDate"
+            value={postingDate}
+            onChange={(_, value) => setPostingDate(value)}
+          />
+        </div>
         <FilterDropdown
           label={filterStatus === "all" ? "Status" : filterStatus}
           active={filterStatus !== "all"}

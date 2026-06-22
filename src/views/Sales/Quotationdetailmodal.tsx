@@ -1,5 +1,5 @@
 import React from "react";
-import Tooltip from "../../components/Tooltip"; // Ensure this path is correct
+import Tooltip from "../../components/Tooltip"; 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface QuotationDetail {
@@ -22,6 +22,8 @@ export interface QuotationDetail {
   destnCountryCd?: string;
   lpoNumber?: string | null;
   grandTotal?: number;
+  roundingAdjustment?: number;
+  roundedTotal?: number;
   netTotal?: number;
   billingAddress?: any;
   shippingAddress?: any;
@@ -419,11 +421,12 @@ const QuotationDetailModal: React.FC<Props> = ({
 
               {/* Totals footer */}
               <div style={{ background: "var(--bg)", borderTop: "2px solid var(--border)", padding: "7px 10px", display: "flex", flexDirection: "column", gap: 3 }}>
-                {[
-                  { label: "Subtotal",    val: fmt(subtotal, currency),              big: false, red: false },
-                  ...(totalDisc > 0 ? [{ label: "Total Discount", val: `- ${fmt(totalDisc, currency)}`, big: false, red: true }] : []),
-                  { label: "Grand Total", val: fmt(grandTotal, currency),     big: true,  red: false },
-                ].map(({ label, val, big, red }) => (
+               {[
+  { label: "Subtotal",    val: fmt(subtotal, currency),              big: false, red: false },
+  ...(totalDisc > 0 ? [{ label: "Total Discount", val: `- ${fmt(totalDisc, currency)}`, big: false, red: true }] : []),
+  ...(data.roundingAdjustment ? [{ label: "Rounding Adjustment", val: fmt(data.roundingAdjustment, currency), big: false, red: false }] : []),
+  { label: "Rounded Total", val: fmt(data.roundedTotal ?? grandTotal, currency), big: true, red: false },
+].map(({ label, val, big, red }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</span>
                     <span style={{ fontSize: big ? 14 : 12, fontWeight: big ? 800 : 500, color: red ? "var(--danger)" : "var(--text)", fontVariantNumeric: "tabular-nums" }}>{val}</span>

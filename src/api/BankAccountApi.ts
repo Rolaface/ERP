@@ -623,8 +623,8 @@ export type PaymentTax = {
 /** Full payload sent to createPaymentEntry */
 export type CreatePaymentEntryPayload = {
   payment_type: "Pay" | "Receive" | "Internal Transfer";
-  party_type: string;
-  party_id: string;
+  party_type?: string;
+  party_id?: string;
   mode_of_payment: string;
   payment_date: string;
   reference_no?: string;

@@ -33,6 +33,7 @@ const TaxMaintenance = lazy(() => import("../views/TaxMaintaince/taxmaintaince")
 const ExpenseManagement = lazy(() => import("../views/ExpenseManagement/expenseManagement"));
 const EmailTemplate = lazy(() => import("../views/Email/EmailTemplate"))
 const Performance = lazy(() => import("../views/../views/hr/performace/PerformanceModule"))
+const Scheduler =lazy(()=> import ("../views/Scheduler/SchedulerTable"))
 
 
 
@@ -288,6 +289,14 @@ const AppRoutes: React.FC = () => {
               element={
                 <PermissionRoute modules={["Appraisal"]}>
                   <Performance />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/scheduler"
+              element={
+                <PermissionRoute modules={["Scheduler"]}>
+                  <Scheduler/>
                 </PermissionRoute>
               }
             />

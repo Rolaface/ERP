@@ -293,7 +293,7 @@ return (
                                 }}
                                 className="px-4 py-1.5 bg-primary text-white rounded text-xs font-medium hover:bg-[var(--primary-600)] transition-colors"
                               >
-                                + Add New Item
+                                + Add Item
                               </button>
                             )}
                           </td>

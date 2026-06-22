@@ -268,79 +268,81 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
-return (
-  <>
-    <div className="flex flex-col h-full min-h-0 overflow-hidden">
-      <Table
-        columns={columns}
-        data={data}
-        tableId="payment-entry"
-        rowKey={(r) => r.id}
-        loading={isInitialLoad}
-        isFetching={isFetching}
-        showToolbar
-        searchValue={searchTerm}
-        onSearch={(q) => {
-          setSearchTerm(q);
-          setPage(1);
-        }}
-        enableColumnSelector
-        enableAdd={can(PAYMENT_ENTRY_MODULE, "create")}
-        addLabel="Add Payment Entry"
-        onAdd={
-          can(PAYMENT_ENTRY_MODULE, "create")
-            ? () =>
-                openPaymentEntryModal(
-                  { partyType: defaultPartyType ?? "Supplier" },
-                  false,
-                  { onSuccess: () => fetchPayments() }
-                )
-            : undefined
-        }
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSortChange={handleSortChange}
-        currentPage={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50, 100]}
-        onPageChange={setPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
+  return (
+    <>
+      <div className="flex flex-col h-full min-h-0 overflow-hidden">
+        <Table
+          columns={columns}
+          data={data}
+          tableId="payment-entry"
+          rowKey={(r) => r.id}
+          loading={isInitialLoad}
+          isFetching={isFetching}
+          showToolbar
+          searchValue={searchTerm}
+          onSearch={(q) => {
+            setSearchTerm(q);
+            setPage(1);
+          }}
+          enableColumnSelector
+          enableAdd={can(PAYMENT_ENTRY_MODULE, "create")}
+          addLabel="Add Payment Entry"
+          onAdd={() =>
+            openPaymentEntryModal(
+              {
+                ...(defaultPartyType && {
+                  partyType: defaultPartyType,
+                  paymentType: defaultPartyType === "Customer" ? "Receive" : "Pay",
+                }),
+              },
+              false,
+              { onSuccess: () => fetchPayments() }
+            )
+          }
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
+      </div>
+
+      <SendEmailModal
+        open={emailModalOpen}
+        docType="Payment Entry"
+        invoiceNumber={emailPayment?.id}
+        contactEmail={emailContactEmail}
+        invoiceAttachments={emailAttachments}
+        onClose={() => {
+          setEmailModalOpen(false);
+          setEmailPayment(null);
+          setEmailContactEmail(null);
+          setEmailAttachments([]);
         }}
       />
-    </div>
 
-    <SendEmailModal
-      open={emailModalOpen}
-      docType="Payment Entry"
-      invoiceNumber={emailPayment?.id}
-      contactEmail={emailContactEmail}
-      invoiceAttachments={emailAttachments}
-      onClose={() => {
-        setEmailModalOpen(false);
-        setEmailPayment(null);
-        setEmailContactEmail(null);
-        setEmailAttachments([]);
-      }}
-    />
-
-    <PaymentEntryDetailModal
-      open={drawerOpen}
-      data={drawerData}
-      loading={drawerLoading}
-      onClose={() => {
-        setDrawerOpen(false);
-        setDrawerData(null);
-      }}
-    />
-  </>
-);
+      <PaymentEntryDetailModal
+        open={drawerOpen}
+        data={drawerData}
+        loading={drawerLoading}
+        onClose={() => {
+          setDrawerOpen(false);
+          setDrawerData(null);
+        }}
+      />
+    </>
+  );
   //   </AppPage>
   // );
-  
+
 };
 
 export default PaymentEntry;

@@ -81,6 +81,11 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     initialData,
   );
 
+    const primaryContact =
+    customerDetails?.contacts?.find((c: any) => c.isPrimary) || {};
+  const billingAddress =
+    customerDetails?.addresses?.find((a: any) => a.type === "Billing") || {};
+
   const tabs: Array<"details" | "address" | "otherCharges" | "terms"> = [
     "details",
     "address",
@@ -122,7 +127,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
   const handleModeChange = (_: string, option: any) => {
     actions.handleInputChange({
-      target: { name: "mode", value: option?.value || "" },
+      target: { name: "payment_mode", value: option?.value || "" },
     } as any);
   };
 
@@ -220,6 +225,12 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
     return () => controller.abort();
   }, [isOpen]);
+
+  const showExchangeRate =
+    !!ui.baseCurrency &&
+    !!formData.currencyCode &&
+    formData.currencyCode.trim().toUpperCase() !==
+      ui.baseCurrency.trim().toUpperCase();
 
   return (
     <MinimizableModal
@@ -355,10 +366,32 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   </div> */}
+
+                  {showExchangeRate && (
+    <div className="w-full sm:w-[110px]">
+      <ModalInput
+        label={
+          ui.exchangeRateLoading
+            ? "Exchange Rate (Loading...)"
+            : "Exchange Rate"
+        }
+        name="exchangeRt"
+        value={formData.exchangeRt || "1"}
+        onChange={actions.handleInputChange}
+        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+        disabled
+      />
+      {!!ui.exchangeRateError && (
+        <div className="mt-1 text-[10px] text-danger">
+          {ui.exchangeRateError}
+        </div>
+      )}
+    </div>
+  )}
                     <div className="w-full sm:w-[200px]">
                   <SearchSelect2
                     label="Mode of Payment"
-                    value={formData.mode ?? ""}
+                    value={formData.payment_mode ?? ""}
                     onChange={handleModeChange}
                     fetchOptions={handleModeFetchOptions}
                     placeholder="search mode of payment"
@@ -366,7 +399,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   />
                 </div>
 
-                  {ui.isExport && (
+                  {/* {ui.isExport && (
                     <div>
                       <ModalInput
                         label="Export To Country"
@@ -378,7 +411,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                         className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       />
                     </div>
-                  )}
+                  )} */}
 
                   {ui.isLocal && (
                     <ModalInput
@@ -424,36 +457,32 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2 text-[10px] text-muted">
-                        <Mail size={12} />
-                        {customerDetails?.email ?? "customer@gmail.com"}
-                      </div>
-
-                      <div className="flex items-center gap-2 text-[10px] text-muted">
-                        <Phone size={12} />
-                        {customerDetails?.mobile_no ?? "+123 4567890"}
-                      </div>
+                                              <Mail size={12} className="shrink-0" />
+                                              <span className="truncate">
+                                                {primaryContact?.email || customerDetails?.email || "—"}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px] text-muted">
+                                              <Phone size={12} className="shrink-0" />
+                                              <span className="truncate">
+                                                {primaryContact?.mobile || customerDetails?.mobile || "—"}
+                                              </span>
+                                            </div>
                       {customerDetails && (
                         <div className="bg-card rounded-lg ">
                           <div className="flex flex-col gap-1">
-                            {/* Invoice Type */}
-                            <div className="flex items-center gap-19 text-xs">
-                              <span className="text-muted">Invoice Type</span>
-                              <span className="font-medium text-main">
-                                {formData.invoiceType}
-                              </span>
-                            </div>
-
-                            {/* Destination Country – only for Export */}
-                            {formData.invoiceType === "Export" && (
-                              <div className="flex items-center gap-15 text-xs">
-                                <span className="text-muted">
-                                  Destination Country
-                                </span>
-                                <span className="font-medium text-main">
-                                  {formData.destnCountryCd || "-"}
-                                </span>
-                              </div>
-                            )}
+                           <div className="flex justify-between text-[10px] mt-1">
+                        <span className="text-muted">Tax</span>
+                        <span className="text-main font-medium">
+                          {customerDetails?.customerTaxCategory || "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="text-muted">Country</span>
+                        <span className="text-main font-medium">
+                          {billingAddress?.country || "—"}
+                        </span>
+                      </div>
                           </div>
                         </div>
                       )}

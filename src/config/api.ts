@@ -169,6 +169,13 @@ export const API = {
     getUserDetails: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_login_user`
   },
 
+/* =========================
+   * SCHEDULER
+   * ========================= */
+  scheduler: {
+    scheduler_api: `${ERP_BASE}/api/resource/Custom Notification Scheduler`,
+  },
+
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,

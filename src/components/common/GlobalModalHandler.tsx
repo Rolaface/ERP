@@ -15,9 +15,13 @@ import type { BankAccount } from "../../types/BankAccount/bank";
 import type { UserRoleFormData } from "../../types/RoleManagement/UserRole";
 import { createUserRoles } from "../../api/RoleManagement/UserRoleApi";
 import { showSuccess } from "../../utils/alert";
+import { createShedular, editShedular } from "../../api/schedulerApi";
 const AddKRAModal = lazy(
   () => import("../../components/Hr/performance/section/AddKRAModal"),
 )
+const SchedulerModal = lazy(
+  () => import("../../components/Schduler/SchedulerModal"),
+);
 import type { CreateUserFormData } from "../../types/RoleManagement/CreateUser";
 const AddFeedbackModal = lazy(
   () => import("../../components/Hr/performance/section/AddFeedbackModal"),
@@ -35,6 +39,9 @@ import type { LeaveApplication } from "../../api/leaveApplicationApi";
 import type { LeaveType } from "../../api/leaveConfigApi";
 import { PayrollVerificationData } from "../../api/payroll/payrollEntryApi";
 
+
+
+import type { SchedulerRecord } from "../Schduler/SchedulerModal"
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
 const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
@@ -1145,7 +1152,26 @@ const GlobalModalHandler: React.FC = () => {
             mode={modal.isEdit ? "edit" : "create"}
           />,
         );
-
+case "scheduler":
+  return wrappedModal(
+    <SchedulerModal
+      key={modal.id}
+      modalId={modal.id}
+      mode={modal.isEdit ? "edit" : context?.isViewMode ? "view" : "add"}
+      record={getInitialData<SchedulerRecord>(modal.initialData) as any}
+      onClose={handleClose}
+      onSubmit={async (values) => {
+  const record = getInitialData<SchedulerRecord>(modal.initialData) as any;
+  if (record?.id) {
+    await editShedular(record.id, values as any);
+  } else {
+    await createShedular(values as any);
+  }
+  if (context?.onSuccess) context.onSuccess(undefined);
+  handleClose();
+}}
+    />,
+  );  
       //preview modal of payroll entry
       case "payrollPreview":
         return wrappedModal(

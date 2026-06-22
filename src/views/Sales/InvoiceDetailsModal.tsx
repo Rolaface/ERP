@@ -999,6 +999,23 @@ const InvoiceDetailModal: React.FC<Props> = ({
                       big: true,
                       red: false,
                     },
+                    ...((data as any)?.roundingAdjustment != null &&
+                    (data as any).roundingAdjustment !== 0
+                      ? [
+                          {
+                            label: "Rounding Adjustment",
+                            val: fmt((data as any).roundingAdjustment, currency),
+                            big: false,
+                            red: false,
+                          },
+                          {
+                            label: "Rounded Total",
+                            val: fmt((data as any).roundedTotal, currency),
+                            big: true,
+                            red: false,
+                          },
+                        ]
+                      : []),
                     ...invoiceCharges.map((ch: any) => ({
                       label: ch.charge_type ?? ch.name ?? "Charge",
                       val: fmt(Number(ch.amount), currency),
@@ -1020,6 +1037,7 @@ const InvoiceDetailModal: React.FC<Props> = ({
                         alignItems: "center",
                       }}
                     >
+                      
                       <span
                         style={{
                           fontSize: 9,

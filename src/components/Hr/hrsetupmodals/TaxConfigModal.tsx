@@ -374,7 +374,7 @@ const updateCharge = <K extends keyof TaxChargeDraftRow>(idx: number, key: K, va
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
 
-      title={isEdit ? "Edit Tax Configuration" : " Add New Tax Configuration"}
+      title={isEdit ? "Edit Tax Configuration" : " Add Tax Configuration"}
       subtitle="Configure income tax slabs and exemptions"
       icon={Percent}
       customWidth="60vw"

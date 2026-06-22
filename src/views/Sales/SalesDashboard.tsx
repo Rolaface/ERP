@@ -28,6 +28,7 @@ import { ChartSkeleton } from "../../components/ChartSkeleton";
 import { AppMetricCard, AppSectionCard } from "../../components/ui/app-shell";
 import { MonthlySalesBarChart } from "../../components/charts/MonthlySalesBarChart";
 import { useCompanyStore } from "../../store/companyStore";
+import { NightingaleChart } from "../../components/charts/NightingaleChart";
 
 interface RecentSale {
   name: string;
@@ -61,16 +62,6 @@ const SalesDashboard: React.FC = () => {
 
   const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
   const currencySymbol = useCompanyStore((state) => state.currencySymbol || '');
-  
-
-  const currencyINR = useMemo(() => {
-    const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: baseCurrency,
-      maximumFractionDigits: 2,
-    });
-  }, [baseCurrency]);
 
   const currencyFormatter = useMemo(() => {
       const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
@@ -123,22 +114,6 @@ const SalesDashboard: React.FC = () => {
     return restTotal > 0 ? [...top, { name: "Others", total: restTotal }] : top;
   }, [recentSales]);
 
-  // 2. Sales Status Breakdown Pie (Using Received vs Pending)
-  const salesStatusPieData = useMemo(() => {
-    let received = 0;
-    let pending = 0;
-    
-    monthlySales.forEach(m => {
-      received += Number(m.totalReceived || 0);
-      pending += Number(m.totalPending || 0);
-    });
-
-    if (received === 0 && pending === 0) return [];
-    return [
-      { name: "Total Received", total: received },
-      { name: "Total Pending", total: pending }
-    ];
-  }, [monthlySales]);
 
   const pieColors = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#14b8a6"];
 
@@ -277,7 +252,7 @@ const stats = [
                   />
                   <YAxis tick={{ fontSize: 12 }} width={52} tickFormatter={(v) => currencyFormatter.format(Number(v))} />
                   <Tooltip
-                    formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
+                    formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))}
                     labelFormatter={(
                       _label: any,
                       payload: readonly { payload?: { name?: string; customer_name?: string; posting_date?: string; status?: string } }[],
@@ -320,58 +295,20 @@ const stats = [
           </div>
         </AppSectionCard>
        {/* --- SALES BREAKDOWN (PIE CHART) --- */}
-        <AppSectionCard title="Sales Breakdown">
+         <AppSectionCard title="Sales Breakdown">
           <div className="relative h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
             {chartsLoading ? (
               <ChartSkeleton variant="pie" />
             ) : customerSharePieData.length === 0 ? (
               <NoDataOverlay />
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                  <Tooltip
-                    formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: 12 }}
-                    layout="horizontal"
-                    verticalAlign="bottom"
-                    align="center"
-                    iconType="square"
-                    height={36}
-                  />
-                  <Pie
-                    data={customerSharePieData}
-                    dataKey="total"
-                    nameKey="name"
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={55}
-                    outerRadius={82}
-                    paddingAngle={2}
-                    label={renderCurrencyDonutLabel}
-                    labelLine={false}
-                  >
-                    {customerSharePieData.map((_, idx) => (
-                      <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              <NightingaleChart data={customerSharePieData} />
             )}
           </div>
         </AppSectionCard>
 
         {/* --- INVOICE BREAKDOWN (PIE CHART) --- */}
-        <AppSectionCard title="Invoice Breakdown">
+        {/* <AppSectionCard title="Invoice Breakdown">
           <div className="relative h-72 rounded-xl border border-[var(--border)] bg-card">
             {chartsLoading ? (
               <ChartSkeleton variant="pie" />
@@ -381,7 +318,7 @@ const stats = [
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                   <Tooltip
-                    formatter={(v: any) => currencyINR.format(Number(v ?? 0))}
+                    formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))}
                     contentStyle={{
                       background: "var(--card)",
                       border: "1px solid var(--border)",
@@ -419,7 +356,7 @@ const stats = [
               </ResponsiveContainer>
             )}
           </div>
-        </AppSectionCard>
+        </AppSectionCard> */}
       </div>
     </div>
   );

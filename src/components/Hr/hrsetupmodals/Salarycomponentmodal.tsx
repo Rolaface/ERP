@@ -334,7 +334,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={ isViewMode ? "View Salary Component" :
   isEdit     ? "Edit Salary Component" :
-               "Add New Salary Component"}
+               "Add Salary Component"}
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
       height="70vh"
