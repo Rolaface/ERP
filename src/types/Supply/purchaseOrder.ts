@@ -74,6 +74,7 @@ export interface PurchaseOrderDetail {
   totalTaxes?: number;
   grandTotal?: number;
   roundedTotal?: number;
+  roundingAdjustment?: number;
 
   // Legacy / optional
   status?: string;
