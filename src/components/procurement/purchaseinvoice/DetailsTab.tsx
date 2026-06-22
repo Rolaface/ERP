@@ -377,16 +377,15 @@ export const DetailsTab = ({
           </div>
         </div>
 
-        <div className="w-[128px]">
-          <ModalInput
-            label="Supplier Invoice No"
-            name="supplierInvoiceNumber"
-            value={form.supplierInvoiceNumber}
-            onChange={onFormChange}
-            required
-          />
-        </div>
-
+        <div className="w-[128px] ml-2">
+  <ModalInput
+    label="Supplier Invoice No"
+    name="supplierInvoiceNumber"
+    value={form.supplierInvoiceNumber}
+    onChange={onFormChange}
+    required
+  />
+</div>
         <div className="w-[128px]">
           <DatePickerInput
             label="Supplier Invoice Date"
