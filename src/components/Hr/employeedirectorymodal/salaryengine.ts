@@ -179,9 +179,17 @@ function pythonToJS(formula: string): string {
   }
 
   return result
-    .replace(/\band\b/g, "&&")
-    .replace(/\bor\b/g,  "||")
-    .replace(/\bnot\b/g, "!");
+    .replace(/\band\b/g,    "&&")
+    .replace(/\bor\b/g,     "||")
+    .replace(/\bnot\b/g,    "!")
+    // Only built-ins available in Frappe's safe_exec salary formula context.
+    // Do not add round/int/float — Frappe does not expose them in formulas.
+    .replace(/\bmin\s*\(/g, "Math.min(")
+    .replace(/\bmax\s*\(/g, "Math.max(")
+    .replace(/\bint\s*\(/g,   "Math.trunc(") 
+    .replace(/\babs\s*\(/g, "Math.abs(")
+    .replace(/\bTrue\b/g,   "true")
+    .replace(/\bFalse\b/g,  "false");
 }
 
 // ─── Formula Helpers ──────────────────────────────────────────────────────────
