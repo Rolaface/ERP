@@ -749,6 +749,7 @@ const PaymentEntryModal: React.FC<Props> = ({
                 isPartyLocked={Boolean(
                   form?.referenceName && form?.partyName && form?.partyType,
                 )}
+                isPartyTypeLocked={Boolean(form?.partyType && !form?.referenceName)}
                 partyFetchKeyRef={lastFetchedPartyKeyRef}
               />
             </div>
