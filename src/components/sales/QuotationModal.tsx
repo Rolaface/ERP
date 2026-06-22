@@ -15,13 +15,13 @@ import {
 } from "../../constants/invoice.constants";
 import ModalFooter from "../common/ModalFooter";
 import type { ModalSubmitHandler } from "../../types/modal";
-import ItemTable from "../common/ItemTable";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
 import { showApiError, showSuccess, showValidationError } from "../../utils/alert";
 import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
 import { createProformaInvoice, editProformaInvoice } from "../../api/proformaInvoiceApi";
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
+import QuotationItemTable from "../common/QuotationItemTable";
 
 interface QuotationModalProps {
   isOpen: boolean;
@@ -281,7 +281,7 @@ const [submitting, setSubmitting] = useState(false);
 
                 {/* Table column — min-w-0 so it can shrink below natural content width */}
                 <div className="min-w-0">
-                  <ItemTable
+                  <QuotationItemTable
                     paginatedItems={paginatedItems}
                     ui={ui}
                     actions={actions}
