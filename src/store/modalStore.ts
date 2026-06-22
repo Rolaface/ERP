@@ -58,7 +58,12 @@ export type ModalType =
   | "appraisal"
   | "employeeFeedback"
   |"employeeAdvance"
-  |"payrollPreview";
+  |"payrollPreview"
+  | "scheduler"
+  
+  
+
+  
 
 export interface ModalContext {
   source?: string;
@@ -169,6 +174,18 @@ interface ModalState {
   getVisibleModals: () => ModalInstance[];
   getMinimizedModals: () => ModalInstance[];
 }
+
+
+
+export const openSchedulerModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("scheduler", initialData, isEdit, context, meta);
 
 export const useModalStore = create<ModalState>((set, get) => ({
   modals: [],

@@ -9,6 +9,7 @@ import {
   Wallet,
   Building2,
   UserCog,
+  CalendarClock ,
   Settings,
   Menu,
   ChevronDown,
@@ -266,6 +267,13 @@ const settingsItems: SettingsItem[] = [
     modules: [],
     hideInEmployeeView: true, // ← hidden in employee view
   },
+  {
+    to: "/scheduler",
+    label: "Scheduler",
+    icon: <CalendarClock {...iconProps} />,
+    modules: ["scheduler"],
+    hideInEmployeeView: true,
+},
 ];
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
