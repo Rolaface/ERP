@@ -499,8 +499,8 @@ const AddEmployeeModal: React.FC<Props> = ({
       formContainerRef={containerRef}
       title={editData ? "Edit Employee" : "Add New Employee"}
       subtitle="Employee Management"
-      customWidth="full"
-      height="90vh"
+      customWidth="90vw"
+      height="95vh"
       footer={footer}
     >
       {/* Split layout */}
