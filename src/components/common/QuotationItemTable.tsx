@@ -1,13 +1,8 @@
 import React, { useState } from "react";
 import { Plus, Trash2, Copy } from "lucide-react";
 import { showValidationError } from "../../utils/alert";
-import StockItemSelect from "../selects/StockItemSelect";
-import WarehouseSelect from "../selects/WarehouseSelect";
-import DatePickerInput from "../calendar/DatePickerInput";
-import { SelectedStockItem } from "../../types/Stock/stock";
 import Tooltip from "../Tooltip";
 import { NumericInput } from "../ui/modal/modalComponent";
-import { useRef } from "react";
 import { getItemDetailsByBarcodeId } from "../../api/procurement/PurchaseInvoiceApi";
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import { useBarcodeScanner } from "../../api/utils/BarCodeScanner";
@@ -81,9 +76,11 @@ const InvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
     {/* #          */} <col style={{ width: "28px" }} />
     {/* Item       */} <col style={{ width: "30%" }} />
     {/* Pkg (U×S)  */} <col style={{ width: "6%" }} />
-    {/* UOM        */} <col style={{ width: "8%" }} />
-    {/* Qty        */} <col style={{ width: "20%" }} />
+    {/* Tax Name   */} <col style={{ width: "8%" }} />
+    {/* PKG        */} <col style={{ width: "8%" }} />
+    {/* UOM        */} <col style={{ width: "20%" }} />
     {/* Unit Price */} <col style={{ width: "7%" }} />
+    {/* Discnt */} <col style={{ width: "7%" }} />
     {/* Tax(%)     */} <col style={{ width: "5%" }} />
     {/* Tax Name   */} <col style={{ width: "18%" }} />
     {/* Amount     */} <col style={{ width: "8%" }} />
@@ -103,6 +100,9 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] md:table-cell">
       Pkg
     </th>
+     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        Box
+      </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
       Qty
     </th>
@@ -112,6 +112,9 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
       Price <span className="text-danger">*</span>
     </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        Dis%
+      </th>
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px] md:table-cell">
       Tax%
     </th>
@@ -331,6 +334,25 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
             />
           </Tooltip>
         </td>
+        <td className="px-0.5 py-1">
+            <div className="flex items-center gap-0.5">
+              <input
+                name="boxStart"
+                value={it.boxStart || ""}
+                placeholder="S"
+                onChange={(e) => actions.handleItemChange(i, e)}
+                className="w-full py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+              />
+              <span className="text-[9px] text-muted shrink-0">-</span>
+              <input
+                name="boxEnd"
+                value={it.boxEnd || ""}
+                placeholder="E"
+                onChange={(e) => actions.handleItemChange(i, e)}
+                className="w-full py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
+              />
+            </div>
+          </td>
 
 
         {/* Qty */}
@@ -377,6 +399,20 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
             }
           />
         </td>
+
+        <td className="px-1 py-1">
+                    <NumericInput
+                      name="discount"
+                      value={it.discount ?? ""}
+                      placeholder="0"
+                      className="w-full min-w-[28px]"
+                      onChange={(value) =>
+                        actions.handleItemChange(i, {
+                          target: { name: "discount", value },
+                        } as any)
+                      }
+                    />
+                  </td>
 
         {/* Tax(%) — hidden < md */}
         <td className="px-1 py-1 md:table-cell">
