@@ -158,7 +158,7 @@ const QuickAddSelect: React.FC<QuickAddSelectProps> = ({
                 className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors"
               >
                 <Plus size={14} />
-                Add New {label.replace("*", "").trim()}
+                Add {label.replace("*", "").trim()}
               </button>
             </div>
           </div>

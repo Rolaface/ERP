@@ -112,7 +112,7 @@ export const DesignationModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? "Edit Designation" : "Add New Designation"}
+      title={isEdit ? "Edit Designation" : "Add Designation"}
       subtitle="Configure employee role classification"
       icon={Briefcase}
       maxWidth="xl"

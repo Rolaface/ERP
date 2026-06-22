@@ -156,7 +156,7 @@ export const DepartmentModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? "Edit Department" : "Add New Department"}
+      title={isEdit ? "Edit Department" : "Add Department"}
       subtitle="Configure department hierarchy and approvers"
       icon={Building2}
       customWidth="52vw"
