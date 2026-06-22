@@ -5,6 +5,7 @@ import {
   CheckCircle,
   XCircle,
   Ban,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -30,53 +31,6 @@ interface MenuAction {
   dividerBefore?: boolean;
 }
 
-const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
-  if (actions.length === 0) return <span className="text-gray-400 pl-2">-</span>;
-
-  return (
-    <div className="flex justify-center">
-      <PortalDropdown
-        align="right"
-        trigger={
-          <button
-            type="button"
-            className="w-7 h-7 flex items-center justify-center rounded-md transition text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-          >
-            <MoreHorizontal size={15} />
-          </button>
-        }
-      >
-        {actions.map((action, i) => (
-          <React.Fragment key={i}>
-            {action.dividerBefore && (
-              <div className="border-t border-gray-200 my-1" />
-            )}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                action.onClick();
-              }}
-              className={`
-                w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition
-                ${action.danger
-                  ? "text-red-600 hover:bg-red-50"
-                  : "text-gray-700 hover:bg-gray-100"
-                }
-              `}
-            >
-              <span className={action.danger ? "text-red-600" : "text-gray-500"}>
-                {action.icon}
-              </span>
-              {action.label}
-            </button>
-          </React.Fragment>
-        ))}
-      </PortalDropdown>
-    </div>
-  );
-};
-
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface LeaveApplyTableProps {
@@ -100,7 +54,7 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
   useEffect(() => {
     fetchLeaves();
   // }, [showHistory, filters.from_date, filters.to_date]);
-  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize]);
+  }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm]);
 
   const fetchLeaves = async () => {
     try {
@@ -140,7 +94,7 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
       const limit_start = (page - 1) * pageSize;
       const limit_page_length = pageSize;
 
-      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length);
+      const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length, searchTerm);
       setData(response || []);
     } catch (err) {
       console.error("Failed to fetch leave applications", err);
@@ -210,28 +164,6 @@ const handleStatusUpdate = async (
       },
     });
   };
-const calculateLeaveDays = (fromDateStr: string, toDateStr: string, isHalfDay: number) => {
-  if (isHalfDay === 1) return "Half Day";
-  if (!fromDateStr || !toDateStr) return "-";
-
-  // Parse API strings into Date objects
-  const date1 = new Date(fromDateStr);
-  const date2 = new Date(toDateStr);
-
-  // Set time to midnight to avoid Daylight Saving Time (DST) shift bugs
-  date1.setHours(0, 0, 0, 0);
-  date2.setHours(0, 0, 0, 0);
-
-  const differenceInMs = date2.getTime() - date1.getTime();
-  const millisecondsInDay = 1000 * 60 * 60 * 24;
-
-  // Use Math.round() instead of floor() to be safe against minor hour shifts
-  // Add + 1 because leave is inclusive (e.g., May 1 to May 1 = 1 day)
-  const days = Math.round(differenceInMs / millisecondsInDay) + 1;
-
-  return days > 0 ? days : 0; 
-};
-  // ── Columns ───────────────────────────────────────────────────────────────
 
   const columns: Column<any>[] = [
     {
@@ -294,21 +226,25 @@ const calculateLeaveDays = (fromDateStr: string, toDateStr: string, isHalfDay: n
           customMenuActions.push({
             label: "Delete",
             danger: true,
+            icon: <Trash2 size={14} />,
             onClick: () => handleStatusUpdate(leaveId, "Delete"),
             disabled: actionLoadingId === leaveId,
           });
         }
         if (isApproved) {
           const today = new Date();
+          console.log("Today", today);
           today.setHours(0, 0, 0, 0);
           
           const fromDate = new Date(row.from_date);
+          console.log("From Date", fromDate);
           fromDate.setHours(0, 0, 0, 0);
 
           if (today < fromDate) {
             customMenuActions.push({
-              label: "Cancel Leave",
+              label: "Cancelled",
               danger: true,
+              icon: <Ban size={14} />,
               onClick: () => handleStatusUpdate(leaveId, "Cancelled"),
               disabled: actionLoadingId === leaveId,
             });
@@ -330,16 +266,17 @@ const calculateLeaveDays = (fromDateStr: string, toDateStr: string, isHalfDay: n
               }
             />
 
-            {!isActionDone && (
+            {/* {!isActionDone && ( */}
               <ActionButton
                 type="edit"
                 iconOnly
+                disabled={isActionDone || actionLoadingId === leaveId}
                 onClick={() =>
                   openLeaveApplyModal(row, true, { onSuccess: fetchLeaves })
                 }
-                disabled={actionLoadingId === leaveId}
+                // disabled={actionLoadingId === leaveId}
               />
-            )}
+            {/* )} */}
 
             {/* Render action menu if there are options available */}
             {customMenuActions.length > 0 && (

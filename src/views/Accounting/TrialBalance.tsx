@@ -222,7 +222,7 @@ function FilterBar({
         {allExpanded ? <ChevronRight size={11} /> : <Layers size={11} />}
         {allExpanded ? "Collapse" : "Expand All"}
       </button> */}
-      <button onClick={onRefresh} className={`${btnClass} ml-auto`}>
+      <button onClick={onRefresh} className={`${btnClass} `}>
         <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
         Refresh
       </button>

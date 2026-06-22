@@ -21,5 +21,5 @@ export const ROUTES = {
   expenseManagement: "/Expense-Management",
   EmailTemplate: "/Email-Template",
   performance: "/performance",
-
+  scheduler: "/scheduler"
 };

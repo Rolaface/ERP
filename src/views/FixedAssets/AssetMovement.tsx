@@ -253,7 +253,7 @@ const AssetMovement: React.FC = () => {
           setPage(1);
         }}
         enableAdd={can(ASSET_MOVEMENT_MODULE, "create")}
-        addLabel="New Movement"
+        addLabel="Add Movement"
         onAdd={() => openAssetMovementModal({ mode: "create" })}
 
         enableColumnSelector

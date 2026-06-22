@@ -265,7 +265,7 @@ const AssignUserRoleModal: React.FC<AssignUserRoleModalProps> = ({
           ? "View Role"
           : isEdit
             ? "Edit Role"
-            : "Add New Role"
+            : "Add Role"
       }
       subtitle={
         isViewMode

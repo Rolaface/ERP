@@ -201,7 +201,7 @@ const BankModal: React.FC<BankModalProps> = ({
           ? "View Bank"
           : isEditMode
             ? "Edit Bank"
-            : "Add New Bank"
+            : "Add Bank"
       }
       subtitle="Provide bank name and SWIFT/BIC number"
       icon={Landmark}

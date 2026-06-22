@@ -1027,25 +1027,31 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       val: fmt(taxTotal, currency),
                       big: false,
                     },
-                    ...(rounding !== 0
-                      ? [
-                          {
-                            label: "Rounding",
-                            val: `${rounding < 0 ? "-" : "+"}${fmt(Math.abs(rounding), currency)}`,
-                            big: false,
-                          },
-                        ]
-                      : []),
                     {
-                      label: "Grand Total",
-                      val: fmt(
-                        data?.summary?.roundedTotal ??
-                          (data as any)?.roundedTotal ??
-                          grandTotal,
-                        currency,
-                      ),
-                      big: true,
-                    },
+  label: "Grand Total",
+  val: fmt(grandTotal, currency),
+  big: false,
+},
+...(data?.summary?.roundingAdjustment != null &&
+data.summary.roundingAdjustment !== 0
+  ? [
+      {
+        label: "Rounding Adjustment",
+        val: fmt(data.summary.roundingAdjustment, currency),
+        big: false,
+      },
+    ]
+  : []),
+{
+  label: "Rounded Total",
+  val: fmt(
+    data?.summary?.roundedTotal ??
+      (data as any)?.roundedTotal ??
+      grandTotal,
+    currency,
+  ),
+  big: true,
+},
                   ].map(({ label, val, big }) => (
                     <div
                       key={label}
@@ -1078,37 +1084,6 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       </span>
                     </div>
                   ))}
-                  {data.summary?.roundingAdjustment !== 0 &&
-                    data.summary?.roundingAdjustment != null && (
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 9,
-                            color: "var(--muted)",
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.07em",
-                          }}
-                        >
-                          Rounding
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            color: "var(--muted)",
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {fmt(data.summary.roundingAdjustment, currency)}
-                        </span>
-                      </div>
-                    )}
                 </div>
               </div>
 

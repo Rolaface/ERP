@@ -110,7 +110,7 @@ export const PayrollPeriodModal: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={isEdit ? "Edit Payroll Period" : "Add New Payroll Period"}
+      title={isEdit ? "Edit Payroll Period" : "Add Payroll Period"}
       subtitle="Define payroll period start and end dates"
       icon={Calendar}
       customWidth="40vw"
