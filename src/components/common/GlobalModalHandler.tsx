@@ -41,7 +41,7 @@ import { PayrollVerificationData } from "../../api/payroll/payrollEntryApi";
 
 
 
-import type { SchedulerRecord } from "../Schduler/schedulerModal";
+import type { SchedulerRecord } from "../Schduler/SchedulerModal"
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
 const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
@@ -1171,20 +1171,7 @@ case "scheduler":
   handleClose();
 }}
     />,
-  );  return wrappedModal(
-    <SchedulerModal
-      key={modal.id}
-      modalId={modal.id}
-      mode={modal.isEdit ? "edit" : context?.isViewMode ? "view" : "add"}
-      record={getInitialData<SchedulerRecord>(modal.initialData) as any}
-      onClose={handleClose}
-      onSubmit={async (values) => {
-        const record = getInitialData<SchedulerRecord>(modal.initialData) as any;
-        if (context?.onSuccess) context.onSuccess(undefined);
-        handleClose();
-      }}
-    />,
-  );
+  );  
       //preview modal of payroll entry
       case "payrollPreview":
         return wrappedModal(

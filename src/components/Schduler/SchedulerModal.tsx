@@ -100,10 +100,10 @@ const SchedulerModal: React.FC<SchedulerModalProps> = ({
       mode === "add"
         ? "Scheduler added successfully."
         : "Scheduler updated successfully."
-    ); // ✅ success popup
+    );
     resetDirty();
   } catch (err) {
-    showApiError(err); // ✅ error popup
+    showApiError(err); 
   } finally {
     setSubmitting(false);
   }
@@ -130,8 +130,8 @@ return (
       title={title}
       subtitle={subtitle}
       icon={CalendarClock}
-      maxWidth="sm"
-      height="260px"
+      maxWidth="md"
+      height="320px"
       formContainerRef={formContainerRef}
       footer={
         !isView ? (
@@ -147,7 +147,6 @@ return (
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-1">
 
-        {/* Scheduler Name */}
         <div>
           <label className="block text-sm text-gray-600 mb-1">
             Scheduler Name
