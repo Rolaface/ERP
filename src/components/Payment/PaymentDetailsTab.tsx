@@ -30,6 +30,7 @@ interface PaymentDetailsTabProps {
   isGlFromLocked?: boolean;
   isGlToLocked?: boolean;
   isModeOfPaymentLocked?: boolean;
+  isPartyTypeLocked?: boolean; 
 }
 
 const PARTY_FILLED_FIELDS = {
@@ -56,6 +57,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
   isGlToLocked = false,
   isGlFromLocked = false,
   isModeOfPaymentLocked = false,
+  isPartyTypeLocked = false,
 }) => {
   const isMountedRef = useRef(false);
   const {
@@ -736,7 +738,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
             label="Party Type"
             name="partyType"
             value={form.partyType}
-            disabled={islocked || isPartyLocked || isInternalTransfer}
+            disabled={islocked || isPartyLocked || isInternalTransfer || isPartyTypeLocked} 
             onChange={handlePartyTypeChange}
             options={[
               { label: "Supplier", value: "Supplier" },
