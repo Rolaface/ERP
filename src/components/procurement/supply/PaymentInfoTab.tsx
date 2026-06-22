@@ -185,7 +185,7 @@ const columns: Column<any>[] = useMemo(() => [
             }`}
         >
           <Plus size={14} />
-          Add New Account
+          Add Account
         </button>
       </div>
 

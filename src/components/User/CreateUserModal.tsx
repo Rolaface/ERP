@@ -203,7 +203,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
       title={
         isEditMode
           ? "Edit User"
-          : "Add New User"
+          : "Add User"
       }
       subtitle={
         isEditMode

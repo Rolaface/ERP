@@ -99,7 +99,7 @@ const schedulerPage: React.FC = () => {
           showToolbar
           loading={loading}
           enableAdd
-          addLabel="Add New Scheduler"
+          addLabel="Add Scheduler"
           onAdd={openAdd}
           enableColumnSelector
         />
