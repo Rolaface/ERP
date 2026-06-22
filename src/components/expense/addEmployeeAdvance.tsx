@@ -217,6 +217,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
                   label="Posting Date"
                   name="posting_date"
                   value={form.posting_date}
+                  disableFuture
                   onChange={(name, value) => {
                     setForm((prev) => ({ ...prev, [name]: value }));
                     if (errors.posting_date)
