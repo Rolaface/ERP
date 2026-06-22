@@ -1,5 +1,5 @@
 import React from "react";
-import { PurchaseOrderDetail } from "../../../types/Supply/purchaseOrder"; // adjust path as needed
+import { PurchaseOrderDetail } from "../../../types/Supply/purchaseOrder";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -864,9 +864,18 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                       val: fmt(totalTaxes, currency),
                       big: false,
                     },
+                    
                     {
                       label: "Grand Total",
                       val: fmt(grandTotal, currency),
+                      big: false,
+                    },
+                    ...(data?.roundingAdjustment != null && data.roundingAdjustment !== 0
+                      ? [{ label: "Rounding Adjustment", val: fmt(data.roundingAdjustment, currency), big: false }]
+                      : []),
+                    {
+                      label: "Rounded Total",
+                      val: fmt(roundedTotal, currency),
                       big: true,
                     },
                   ].map(({ label, val, big }) => (
@@ -901,36 +910,6 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                       </span>
                     </div>
                   ))}
-                  {roundedTotal !== grandTotal && (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 9,
-                          color: "var(--muted)",
-                          fontWeight: 700,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.07em",
-                        }}
-                      >
-                        Rounded Total
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: "var(--muted)",
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
-                        {fmt(roundedTotal, currency)}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
 
