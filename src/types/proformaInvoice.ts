@@ -73,6 +73,7 @@ export interface ProformaInvoice {
   destnCountryCd?: string;
   lpoNumber?: string;
   mode?: string;
+  payment_mode?: string;
   updateStock?: boolean;
   warehouse?: string;
   billingAddress: string;
