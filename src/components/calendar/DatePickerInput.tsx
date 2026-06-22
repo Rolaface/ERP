@@ -10,7 +10,7 @@ interface Props {
   name: string;
   required?: boolean;
   disabled?: boolean;
-  disableFuture?: boolean; 
+  disableFuture?: boolean;
   onChange: (name: string, value: string) => void;
   sx?: Record<string, unknown>;
 }
@@ -30,9 +30,10 @@ const DatePickerInput: React.FC<Props> = ({
   );
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setInternalValue(value ? dayjs(value) : null);
-  }, [value]);
+
+useEffect(() => {
+  setInternalValue(value ? dayjs(value) : null);
+}, [value]);
 
   const handleChange = (newValue: Dayjs | null) => {
     if (!newValue) {
@@ -41,16 +42,22 @@ const DatePickerInput: React.FC<Props> = ({
       onChange(name, "");
       return;
     }
+
     if (!newValue.isValid()) {
       setInternalValue(newValue);
       setError("Invalid date");
       return;
     }
+   if (disableFuture && newValue.isAfter(dayjs(), "day")) {
+  setError("Future date not allowed");
+  return;
+}
+
+    
     setInternalValue(newValue);
     setError(null);
     onChange(name, newValue.format("YYYY-MM-DD"));
   };
-
   return (
     <div className="flex flex-col text-sm w-full min-w-0">
       {label && (
@@ -68,10 +75,15 @@ const DatePickerInput: React.FC<Props> = ({
         enableAccessibleFieldDOMStructure={false}
         onChange={handleChange}
         onError={(reason) => {
-          if (reason === "invalidDate") setError("Invalid date");
-          else if (reason === "disableFuture") setError("Future date not allowed");
-          else if (reason === "disablePast") setError("Past date not allowed");
-          else setError(null);
+          if (!reason) return;
+
+          if (reason === "invalidDate") {
+            setError("Invalid date");
+          } else if (reason === "disableFuture") {
+            setError("Future date not allowed");
+          } else if (reason === "disablePast") {
+            setError("Past date not allowed");
+          }
         }}
         slots={{ textField: TextField }}
         slotProps={{
