@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback, useEffect } from "react";
 import * as XLSX from "xlsx";
 import {
   X,
-  FileSpreadsheet,
   Wallet,
   TrendingUp,
   TrendingDown,
@@ -726,9 +725,9 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 pb-2 relative">
+        <div className="flex flex-col gap-3 pb-2 relative h-full min-h-0">
           {/* ── Info bar ── */}
-          <div className="bg-card border border-theme rounded-xl px-4 py-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5">
+          <div className="bg-card border border-theme rounded-xl px-4 py-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 shrink-0">
             {[
               // rawData.company                 && { label: "Company",     value: rawData.company },
               rawData.posting_date && {
@@ -770,7 +769,7 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
           </div>
 
           {/* ── KPI chips ── */}
-          <div className="grid grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-4 gap-2.5 shrink-0">
             <StatChip
               icon={<Users className="w-4 h-4" />}
               label="Employees"
@@ -797,39 +796,29 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
             />
           </div>
 
-          {/* ── Export button ── */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={exportExcel}
-              disabled={employees.length === 0}
-              className="h-7 px-3 flex items-center gap-1.5 rounded-lg border border-theme bg-card hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-300 text-[11px] font-bold text-muted hover:text-emerald-700 transition disabled:opacity-40"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-              Export Excel
-            </button>
+          
+          <div className="flex-1 min-h-0">
+            <ModalTable<MappedEmployee>
+              tableId="payroll-preview-table"
+              columns={columns}
+              data={sortedEmployees}
+              rowKey={(emp) => emp.id}
+              loading={loading}
+              emptyMessage="No employees found"
+              onRowClick={(emp) => setSelectedEmp(emp)}
+              showToolbar
+              toolbarPlaceholder="Search name, ID, dept…"
+              defaultVisibleKeys={columns.map((c) => c.key)}
+              enableExport={employees.length > 0}
+              exportLabel="Export Excel"
+              onExport={exportExcel}
+              enableColumnSelector={true}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSortChange={handleSortChange}
+              totalItems={employees.length}
+            />
           </div>
-
-          {/* ── ModalTable ── */}
-          <ModalTable<MappedEmployee>
-            tableId="payroll-preview-table"
-            columns={columns}
-            data={sortedEmployees}
-            rowKey={(emp) => emp.id}
-            loading={loading}
-            emptyMessage="No employees found"
-            onRowClick={(emp) => setSelectedEmp(emp)}
-            showToolbar
-            toolbarPlaceholder="Search name, ID, dept…"
-            defaultVisibleKeys={columns.map((c) => c.key)}
-            enableExport={false}
-            enableColumnSelector={true}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSortChange={handleSortChange}
-            totalItems={employees.length}
-            bodyMaxHeight={420}
-          />
         </div>
       )}
 

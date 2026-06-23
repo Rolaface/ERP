@@ -458,6 +458,7 @@ const CustomerManagement: React.FC<Props> = ({ onAdd }) => {
             pageSize={pageSize}
             totalItems={totalItems}
             onPageChange={setPage}
+            onRowDoubleClick={handleRowClick}
           />
         </div>
       ) : selectedCustomer ? (

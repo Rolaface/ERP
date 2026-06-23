@@ -27,7 +27,7 @@ import {
   AppPageBody,
   AppSubTabs,
 } from "../../components/ui/app-shell";
-
+import { formatDate } from "../../components/UI_Utils/Datedisplay";
 import type { Item, ItemSummary, TaxInfo } from "../../types/item";
 
 // ─── PUBLIC TYPES ─────────────────────────────────────────────────────────────
@@ -77,6 +77,11 @@ export interface ItemDetailViewProps {
   onEditItem: () => void;
   onDeleteItem: () => void;
   onAddItem: () => void;
+  // ── CHANGE 1: three new optional per-tab handlers ──────────────────────────
+  onAddTaxConfig?: () => void;
+  onAddSalesInvoice?: () => void;
+  onAddPurchaseInvoice?: () => void;
+  // ──────────────────────────────────────────────────────────────────────────
   salesInvoices?: SalesInvoice[];
   purchaseInvoices?: PurchaseInvoice[];
   stockRows?: StockRow[];
@@ -336,6 +341,11 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   onEditItem,
   onDeleteItem,
   onAddItem,
+  // ── CHANGE 2: destructure the three new handlers ───────────────────────────
+  onAddTaxConfig,
+  onAddSalesInvoice,
+  onAddPurchaseInvoice,
+  // ──────────────────────────────────────────────────────────────────────────
   salesInvoices = [],
   purchaseInvoices = [],
   stockRows = [],
@@ -402,7 +412,16 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       .includes(invoiceSearch.toLowerCase()),
   );
 
-  // Build tabs for AppSubTabs — dynamically include tax count badge via label
+  // ── CHANGE 3: dynamic trailing button per active tab ──────────────────────
+  const tabActions: Record<Tab, { label: string; handler: () => void }> = {
+    overview: { label: "New Item",             handler: onAddItem },
+    tax:      { label: "New Tax Config",        handler: onAddTaxConfig      ?? onAddItem },
+    sales:    { label: "New Sales Invoice",     handler: onAddSalesInvoice   ?? onAddItem },
+    purchase: { label: "New Purchase Invoice",  handler: onAddPurchaseInvoice ?? onAddItem },
+    stock:    { label: "New Item",              handler: onAddItem },
+  };
+  // ──────────────────────────────────────────────────────────────────────────
+
   const TABS: { id: Tab; label: string; icon?: React.ReactNode }[] = [
     { id: "overview", label: "Overview" },
     {
@@ -515,11 +534,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
           RIGHT PANEL — uses AppPage shell
       ══════════════════════════════════════════════ */}
       <AppPage viewportLocked>
-        {/*
-          Single compact bar:
-            [ item name (truncated)  |  Overview  Tax Config  ...  ]   [ + New Item ]
-          Uses AppSubTabs (underline style) with trailing — no separate title row.
-        */}
         <AppSubTabs
           tabs={TABS.map((t) => ({ id: t.id, label: t.label, icon: t.icon }))}
           activeTab={activeTab}
@@ -538,13 +552,16 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
             ) : null
           }
           trailing={
+            // ── CHANGE 3 (continued): button label + handler driven by activeTab
             <button
               type="button"
-              onClick={onAddItem}
+              onClick={tabActions[activeTab].handler}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:opacity-90 active:scale-[0.98] transition-all whitespace-nowrap"
             >
               <Plus size={12} />
-              <span className="hidden sm:inline">New Item</span>
+              <span className="hidden sm:inline">
+                {tabActions[activeTab].label}
+              </span>
             </button>
           }
         />

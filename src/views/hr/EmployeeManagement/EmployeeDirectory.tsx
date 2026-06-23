@@ -411,6 +411,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
                 }
           }
           onPageChange={isEmployeeView ? undefined : setPage}
+          onRowDoubleClick={(e) => handleViewEmployee(e.id)}
         />
       ) : selectedEmployee ? (
         <EmployeeDetailView

@@ -198,17 +198,17 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <ActionButton
+          {/* <ActionButton
             type="edit"
             onClick={() => console.log("EDIT:", row)}
             iconOnly
-          />
-          <ActionButton
+          /> */}
+          {/* <ActionButton
             type="view"
             iconOnly
             title={isVisible(row.id) ? "Hide Details" : "Show Details"}
             onClick={() => toggle(row.id)}
-          />
+          /> */}
       <ActionMenu customActions={getMenuActions(row)} />
         </ActionGroup>
       ),
@@ -237,6 +237,7 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
         addLabel="Add Bank Account"
+        onRowDoubleClick={(row) => openBankAccountModal(row, true, { isViewMode: true })}
         onAdd={() => {
           openBankAccountModal(
             { accountFor: "Company" },

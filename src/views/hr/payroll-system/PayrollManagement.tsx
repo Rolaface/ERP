@@ -254,17 +254,25 @@ export default function PayrollManagement() {
           exchangeRate: payroll.exchange_rate,
           company: payroll.company,
           payrollPayableAccount: payroll.payroll_payable_account,
+          payrollPayableAccountLabel: payroll.payroll_payable_account, 
           status: payroll.status,
           salarySlipTimesheet: payroll.salary_slip_based_on_timesheet === 1,
           deductTaxForProof:
             payroll.deduct_tax_for_unsubmitted_tax_exemption_proof === 1,
           payrollFrequency: payroll.payroll_frequency,
           paymentAccount: payroll.payment_account || "",
+            paymentAccountLabel: payroll.payment_account || "",   
           bankAccount: payroll.bank_account || "",
           project: payroll.project || "",
           costCenter: payroll.cost_center || "",
           selectedEmployees:
             payroll.employees?.map((e: any) => e.employee) || [],
+             employeeStubs: payroll.employees?.map((e: any) => ({          // ← NEW
+      id: e.employee,
+      name: e.employee_name,
+      department: e.department ?? "",
+      designation: e.designation ?? "",
+    })) || [],
         },
         true,
         {
