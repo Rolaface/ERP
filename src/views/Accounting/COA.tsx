@@ -329,8 +329,8 @@ const handleExport = useCallback(() => {
         "Account Type": acc.account_type || "—",
         "Root Type": acc.root_type || "—",
         "Category": acc.is_group ? "── GROUP ──" : "Account",
-        "Balance": acc.is_group ? "" : (acc.balance_in_account_currency ?? acc.balance ?? ""),
-        "Status": acc.disabled === 1 ? "Disabled" : "Active",
+        "Balance": acc.is_group ? "—" : (acc.balance_in_account_currency ?? ""),
+        "Balance (C)": acc.balance ?? "",  
       });
 
       if (acc.children?.length) flattenAccounts(acc.children, depth + 1);
@@ -347,7 +347,7 @@ const handleExport = useCallback(() => {
     { wch: 12 },
     { wch: 14 },
     { wch: 18 },
-    { wch: 10 },
+    { wch: 18 },
   ];
 
   const wb = XLSX.utils.book_new();
