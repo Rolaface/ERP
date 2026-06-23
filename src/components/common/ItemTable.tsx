@@ -360,60 +360,6 @@ const ItemTable: React.FC<ItemTableProps> = ({
           </td>
         )}
 
-        {/* Item Name */}
-        {isQuotation && (
-          <td className="px-1 py-1.5 overflow-hidden">
-            <POItemSelect
-              value={it.itemName}
-              selectedId={it.itemCode}
-              onChange={(item: any) => {
-                // 1. Safely call the parent prop
-                onItemSelect?.(item, i);
-
-                // 2. Extract basic values
-                const code = item?.id || "";
-                const name = item?.itemName || code;
-                const rate = item?.sellingPrice || 0;
-                const pUnit = item?.packingUnit || "";
-                const pSize = item?.packingSize || "";
-                const unitOfMeasure = item?.unitOfMeasureCd || "";
-                setUnitOfMeasurement(unitOfMeasure);
-
-                let vatRate = item?.vatRate ?? 0;
-                let vatCd = item?.vatCd ?? "";
-                if (Array.isArray(item?.taxInfo) && item.taxInfo.length > 0) {
-                  const tax = item.taxInfo[0];
-                  if (
-                    tax?.totalTaxRate !== undefined &&
-                    tax.totalTaxRate !== null
-                  ) {
-                    vatRate = tax.totalTaxRate;
-                  }
-                  if (tax?.taxName) {
-                    vatCd = tax.taxName;
-                    setItemVatCode(vatCd);
-                    console.log("vatCd", vatCd);
-                  }
-                }
-
-                // 4. Update all fields at ONCE
-                actions.updateItemDirectly?.(i, {
-                  itemCode: code,
-                  itemName: name,
-                  price: rate,
-                  quantity: 1,
-                  uom: unitOfMeasure,
-                  vatRate: vatRate,
-                  vatCd: vatCd,
-                  packingUnit: pUnit,
-                  packingSize: pSize,
-                  taxCode: vatCd,
-                });
-              }}
-            />
-          </td>
-        )}
-
         {/* Pkg (U×S) */}
         <td className="px-1 py-1">
           <Tooltip
@@ -614,7 +560,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
             <input
               type="text"
               name="vatCode"
-              value={it.vatCode || "" || it.vatCd}
+              value={it.taxTypes || "" || it.taxTypes}
               className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
               disabled
               onChange={(e) => actions.handleItemChange(i, e)}

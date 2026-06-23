@@ -111,6 +111,7 @@ export interface ProformaInvoiceSummary {
   exchangeRate: string;
   validTill: string | null;
   totalAmount: number;
+  total: number;
   status: ProformaInvoiceStatus;   
   createdAt: Date;   
 

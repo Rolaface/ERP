@@ -77,6 +77,23 @@ export function LeavePeriodSetup() {
     [fetchAll]
   );
 
+    const formatDate = (date: string | Date) => {
+    if (!date) return "";
+
+    const months = [
+      "JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC",
+    ];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+
+
   const columns: Column<LeavePeriod>[] = useMemo(
     () => [
       {
@@ -90,14 +107,14 @@ export function LeavePeriodSetup() {
         key: "from_date",
         header: "From Date",
         render: (row) => (
-          <span className="text-sm text-sub">{row.from_date || "—"}</span>
+          <span className="text-sm text-sub">{formatDate(row.from_date) || "—"}</span>
         ),
       },
       {
         key: "to_date",
         header: "To Date",
         render: (row) => (
-          <span className="text-sm text-sub">{row.to_date || "—"}</span>
+          <span className="text-sm text-sub">{formatDate(row.to_date) || "—"}</span>
         ),
       },
       {
