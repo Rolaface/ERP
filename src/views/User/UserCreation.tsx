@@ -222,6 +222,7 @@ const CreateUserPage: React.FC = () => {
           setPage(p);
           fetchUsers(searchQuery, p, pageSize);
         }}
+        onRowDoubleClick={(row) => handleView(row, {} as React.MouseEvent)}
       />
     </div>
   );

@@ -824,6 +824,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        onRowDoubleClick={(inv) => handleView(inv.invoiceNumber)}
         extraFilters={
           <>
             <FilterSelect

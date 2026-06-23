@@ -159,8 +159,8 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => (
               action.onClick();
             }}
             className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${action.danger
-                ? "text-danger hover:bg-danger/10"
-                : "text-main hover:bg-row-hover"
+              ? "text-danger hover:bg-danger/10"
+              : "text-main hover:bg-row-hover"
               }`}
           >
             <span className={action.danger ? "text-danger" : "text-muted"}>
@@ -655,6 +655,9 @@ const COATab: React.FC<COATabProps> = ({
                       className="hover:bg-row-hover transition-colors h-[36px]"
                       style={{
                         borderBottom: "1px solid rgba(128,128,128,0.12)",
+                      }}
+                      onDoubleClick={() => {
+                        if (!row.original.is_group) onViewLedger?.(row.original.name);
                       }}
                     >
                       {row.getVisibleCells().map((cell) => {

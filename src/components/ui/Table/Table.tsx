@@ -43,6 +43,7 @@ interface TableProps<T> {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
   defaultVisibleCount?: number;
+  onRowDoubleClick?: (item: T) => void;
 }
 
 const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({
@@ -110,7 +111,7 @@ const TableInner = <T extends Record<string, any>>({
   loading = false,
   isFetching = false,
   emptyMessage = "No records found.",
-  tableId,  
+  tableId,
   expandedRowRender,
   onRowClick,
   showToolbar = false,
@@ -134,23 +135,24 @@ const TableInner = <T extends Record<string, any>>({
   pageSizeOptions = [10, 20, 50, 100],
   onPageChange,
   onPageSizeChange,
+  onRowDoubleClick,
 }: TableProps<T>) => {
   const allKeys = useMemo(() => columns.map((col) => col.key), [columns]);
   const { getVisibleKeys, setVisibleKeys: saveVisibleKeys } = useColumnStore();
 
-const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
-  if (tableId) {
-    const persisted = useColumnStore.getState().columnPrefs[tableId];
-    if (persisted && persisted.length > 0) {
-      const filtered = persisted.filter((k) => allKeys.includes(k));
-      if (allKeys.includes("actions") && !filtered.includes("actions")) {
-        filtered.push("actions");
+  const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
+    if (tableId) {
+      const persisted = useColumnStore.getState().columnPrefs[tableId];
+      if (persisted && persisted.length > 0) {
+        const filtered = persisted.filter((k) => allKeys.includes(k));
+        if (allKeys.includes("actions") && !filtered.includes("actions")) {
+          filtered.push("actions");
+        }
+        return filtered;
       }
-      return filtered;
     }
-  }
- return allKeys;
-});
+    return allKeys;
+  });
 
 
   const handleApplyColumns = (keys: string[]) => {
@@ -216,7 +218,7 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
                 columns={columns}
                 visibleKeys={visibleKeys}
                 allKeys={allKeys}
-                onApply={handleApplyColumns}  
+                onApply={handleApplyColumns}
               />
             )}
             {enableAdd && (
@@ -368,6 +370,7 @@ const [visibleKeys, setVisibleKeys] = useState<string[]>(() => {
                       >
                         <tr
                           onClick={() => onRowClick?.(item)}
+                          onDoubleClick={() => onRowDoubleClick?.(item)}
                           className={[
                             "group transition-colors duration-150",
                             onRowClick ? "cursor-pointer" : "",

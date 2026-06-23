@@ -170,6 +170,7 @@ const handleView = (name:string, e?: React.MouseEvent) => {
             setPageSize(size);
             setPage(1);
           }}
+          onRowDoubleClick={(row) => handleView(row.id)}
         />
       </AppPageBody>
     </AppPage>

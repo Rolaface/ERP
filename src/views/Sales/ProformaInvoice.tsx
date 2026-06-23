@@ -751,6 +751,7 @@ const handlePreviewDownload = () => {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        onRowDoubleClick={(inv) => handleView(inv.proformaId)}
       />
 
       <ProformaDetailModal

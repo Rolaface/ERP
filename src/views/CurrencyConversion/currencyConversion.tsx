@@ -233,6 +233,7 @@ const CurrencyConversion: React.FC = () => {
           totalItems={pagination.totalItems}
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
+          onRowDoubleClick={(row) => handleView(row)}
         />
       </AppPageBody>
     </AppPage>

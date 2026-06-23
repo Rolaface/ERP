@@ -523,6 +523,7 @@ const Items: React.FC = () => {
               setPage(1);
             }}
             onPageChange={setPage}
+            onRowDoubleClick={handleRowClick}
           />
         </div>
 

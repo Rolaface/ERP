@@ -312,6 +312,19 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
             setPageSize(size);
             setPage(1);
           }}
+          onRowDoubleClick={async (row) => {
+            setDrawerOpen(true);
+            setDrawerLoading(true);
+            setDrawerData(null);
+            try {
+              const res = await getPaymentEntryById(row.id);
+              if (res?.message?.status_code === 200) {
+                setDrawerData(res.message.data as PaymentEntryDetail);
+              }
+            } finally {
+              setDrawerLoading(false);
+            }
+          }}
         />
       </div>
 
