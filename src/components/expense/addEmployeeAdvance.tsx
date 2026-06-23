@@ -8,6 +8,7 @@ import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import { showApiError } from "../../utils/alert";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { getAllModeOfPayment } from "../../api/BankAccountApi";
+import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
 import {
   getAdvanceGLAccounts,
   createEmployeeAdvance,
@@ -58,6 +59,8 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
     [modals, modalId],
   );
   const isEditMode = modal?.isEdit ?? false;
+  const { markDirty, resetDirty, handleCloseWithConfirm } =
+    useUnsavedChangesGuard();
 
   const [form, setForm] = useState<EmployeeAdvanceFormData>(defaultForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,6 +80,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
     setForm(defaultForm);
     setErrors({});
     setEmployeeDisplayName("");
+    resetDirty();
   };
 
   const handleChange = (
@@ -89,6 +93,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
       [name]: type === "checkbox" ? target.checked : value,
     }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    markDirty();
   };
 
   const fetchEmployees = useCallback(async (search: string) => {
@@ -195,7 +200,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Employee Advance" : " Add Employee Advance"}
       subtitle={
         isEditMode ? "Update employee advance" : "Add a new employee advance"
@@ -222,6 +227,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
                     setForm((prev) => ({ ...prev, [name]: value }));
                     if (errors.posting_date)
                       setErrors((prev) => ({ ...prev, posting_date: "" }));
+                    markDirty();
                   }}
                 />
                 {errors.posting_date && (
@@ -243,6 +249,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
                     employee_name: option?.label || "",
                   }));
                   setEmployeeDisplayName(option?.label || "");
+                  markDirty();
                   if (errors.employee)
                     setErrors((prev) => ({ ...prev, employee: "" }));
                 }}
@@ -288,6 +295,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
                   setForm((prev) => ({ ...prev, advance_account: val || "" }));
                   if (errors.advance_account)
                     setErrors((prev) => ({ ...prev, advance_account: "" }));
+                  markDirty();
                 }}
                 fetchOptions={fetchAdvanceAccounts}
                 placeholder="Select advance account"
@@ -307,6 +315,7 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
                   setForm((prev) => ({ ...prev, payment_mode: val || "" }));
                   if (errors.payment_mode)
                     setErrors((prev) => ({ ...prev, payment_mode: "" }));
+                  markDirty();
                 }}
                 fetchOptions={fetchPaymentModes}
                 placeholder="Select payment mode"
