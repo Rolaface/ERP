@@ -10,6 +10,7 @@ import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import { CalendarClock } from "lucide-react";
 
+
 const schedulerPage: React.FC = () => {
   const {
     data,
@@ -18,6 +19,7 @@ const schedulerPage: React.FC = () => {
     openView,
     openEdit,
     handleDelete,
+    handleToggleEnable
   } = useShedular();
 
   const columns: Column<SchedulerRecord>[] = [
@@ -48,11 +50,10 @@ const schedulerPage: React.FC = () => {
       render: (row) => (
         <div className="py-1.5">
           <span
-            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-              row.enabled
+            className={`px-2 py-0.5 rounded-full text-xs font-medium ${row.enabled
                 ? "bg-green-100 text-green-700"
                 : "bg-gray-100 text-gray-500"
-            }`}
+              }`}
           >
             {row.enabled ? "Enabled" : "Disabled"}
           </span>
@@ -77,6 +78,8 @@ const schedulerPage: React.FC = () => {
           />
           <ActionMenu
             onDelete={(e) => { (e as React.MouseEvent).stopPropagation(); handleDelete(row.id); }}
+            onEnable={!row.enabled ? (e) => { (e as React.MouseEvent).stopPropagation(); handleToggleEnable(row.id, true); } : undefined}
+            onDisable={row.enabled ? (e) => { (e as React.MouseEvent).stopPropagation(); handleToggleEnable(row.id, false); } : undefined}
           />
         </ActionGroup>
       ),
