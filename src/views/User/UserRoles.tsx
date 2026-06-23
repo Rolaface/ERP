@@ -342,6 +342,7 @@ const handleView = (row: UserRole) => openRoleModal(row, false);
           setPage(p);
           fetchRoles(searchQuery, p, pageSize);
         }}
+        onRowDoubleClick={(row) => handleView(row)}
       />
     </div>
   );

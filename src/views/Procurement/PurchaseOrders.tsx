@@ -754,6 +754,7 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
+        onRowDoubleClick={(o) => handleView(o.id)}
         onPageChange={setPage}
         onPageSizeChange={(size) => setPageSize(size)}
         pageSizeOptions={[10, 25, 50, 100]}

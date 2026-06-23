@@ -84,7 +84,7 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
     );
     useEffect(() => {
         const unsubscribe = subscribeToRefresh(
-            REFRESH_KEYS.EMAIL_TEMPLATE_LIST,
+            REFRESH_KEYS.EMAIL_TEMP_LIST,
             () => fetchTemplates(),
         );
         return () => unsubscribe();
@@ -237,6 +237,7 @@ const EmailTemplates: React.FC<EmailTemplatesTableProps> = ({ onAdd }) => {
                     onPageChange={setPage}
                     onPageSizeChange={(size) => setPageSize(size)}
                     pageSizeOptions={[10, 25, 50, 100]}
+                    onRowDoubleClick={(t) => handleView(t)}
                 />
             </AppPageBody>
         </AppPage>

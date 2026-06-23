@@ -672,6 +672,7 @@ const handlePreviewQuotationPDF = async (
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        onRowDoubleClick={(q) => handleView(q.quotationNumber)}
       />
 
 

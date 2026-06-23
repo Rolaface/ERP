@@ -551,6 +551,7 @@ const handleEnableSupplier = async (
           totalItems={totalItems}
           pageSizeOptions={[10, 25, 50, 100]}
           onPageChange={setPage}
+          onRowDoubleClick={handleRowClick}
           onPageSizeChange={(size) => {
             setPageSize(size);
             setPage(1);
