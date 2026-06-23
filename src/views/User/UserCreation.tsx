@@ -75,20 +75,11 @@ const CreateUserPage: React.FC = () => {
     });
   };
 
-  const handleView = (
-    row: UserRow,
-    e: React.MouseEvent
-  ) => {
-    e.stopPropagation();
+ const handleView = (row: UserRow, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  openUserModal(row, true, { isViewMode: true });
+};
 
-    openUserModal(
-      row,
-      true,
-      {
-        isViewMode: true
-      }
-    );
-  };
 
   const handleDelete = async (userId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -222,7 +213,7 @@ const CreateUserPage: React.FC = () => {
           setPage(p);
           fetchUsers(searchQuery, p, pageSize);
         }}
-        onRowDoubleClick={(row) => handleView(row, {} as React.MouseEvent)}
+        onRowDoubleClick={(row) => handleView(row)}
       />
     </div>
   );

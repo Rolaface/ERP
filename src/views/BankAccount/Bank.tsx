@@ -60,11 +60,8 @@ const BankPage: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleView = async (
-    row: Bank,
-    e: React.MouseEvent,
-  ) => {
-    e.stopPropagation();
+const handleView = async (row: Bank, e?: React.MouseEvent) => {
+  e?.stopPropagation();
 
     try {
       const bank = await getBankById(row.name);
@@ -203,6 +200,7 @@ const BankPage: React.FC = () => {
             setSearch(value);
             setPage(1);
           }}
+          onRowDoubleClick={(row) => handleView(row)}
         />
       </AppPageBody>
     </AppPage>
