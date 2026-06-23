@@ -38,6 +38,7 @@ export interface QuotationSummary {
   totalAmount: number;
   status: QuotationStatus;   
   createdAt: Date;   
+  postingDate: Date;
   grandTotal: number;
   proformaInvoiceStatus: QuotationStatus;
 }
