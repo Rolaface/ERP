@@ -4,6 +4,7 @@ import {
   createShedular,
   editShedular,
   deleteShedularById,
+  
 } from "../api/schedulerApi";
 import type { SchedulerRecord, SchedulerFormValues } from "../api/schedulerApi";
 import { useModalStore } from "../store/modalStore";
@@ -58,7 +59,37 @@ export const useShedular = () => {
     await fetchData();
   };
 
-  // ✅ showConfirm → delete → showSuccess / showApiError
+  const handleToggleEnable = async (id: string, enable: boolean) => {
+  const confirmed = await showConfirm(
+    enable
+      ? "Are you sure you want to enable this scheduler?"
+      : "Are you sure you want to disable this scheduler?",
+    {
+      title: enable ? "Enable Scheduler" : "Disable Scheduler",
+      confirmButtonText: enable ? "Enable" : "Disable",
+    }
+  );
+
+  if (!confirmed) return;
+
+  try {
+    // pehle current record dhundo data mein se
+    const record = data.find((r) => r.id === id);
+    if (!record) return;
+
+    // poora object bhejo, sirf enabled toggle karo
+    await editShedular(id, {
+      schedulerName: record.schedulerName,
+      frequency: record.frequency,
+      enabled: enable,
+    });
+
+    showSuccess(enable ? "Scheduler enabled." : "Scheduler disabled.");
+    await fetchData();
+  } catch (err) {
+    showApiError(err);
+  }
+};
   const handleDelete = async (id: string) => {
     const confirmed = await showConfirm(
       "Are you sure you want to delete this scheduler?",
@@ -79,6 +110,9 @@ export const useShedular = () => {
     }
   };
 
+  
+
+
   return {
     data,
     loading,
@@ -87,5 +121,6 @@ export const useShedular = () => {
     openEdit,
     handleSubmit,
     handleDelete,
+    handleToggleEnable
   };
 };
