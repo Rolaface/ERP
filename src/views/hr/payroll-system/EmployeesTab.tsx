@@ -3,7 +3,6 @@ import * as XLSX from "xlsx";
 import {
   useReactTable,
   getCoreRowModel,
-  getFilteredRowModel,
   flexRender,
   createColumnHelper,
   type RowSelectionState,
@@ -52,7 +51,7 @@ interface EmployeesTabProps {
   isEditMode?: boolean;
 }
 
-// ─── Fetch-key: detects real filter changes vs re-mounts ─────────────────────
+// ─── Fetch-key ────────────────────────────────────────────────────────────────
 
 const buildFetchKey = (d: PayrollEntry) =>
   [
@@ -71,8 +70,7 @@ const toStub = (e: any): RichEmployee => ({
   taxStatus: "", esiNumber: "", managerId: "", branch: "",
   basicSalary: 0, hra: 0, allowances: 0, isActive: true,
   ctc: 0, salaryStructure: "", salaryMode: "", employmentType: "",
-  holidayList: "", payrollCostCenter: "", status: "Active",
-  image: "",
+  holidayList: "", payrollCostCenter: "", status: "Active", image: "",
 });
 
 const toStubFromId = (id: string): RichEmployee => ({
@@ -81,8 +79,7 @@ const toStubFromId = (id: string): RichEmployee => ({
   taxStatus: "", esiNumber: "", managerId: "", branch: "",
   basicSalary: 0, hra: 0, allowances: 0, isActive: true,
   ctc: 0, salaryStructure: "", salaryMode: "", employmentType: "",
-  holidayList: "", payrollCostCenter: "", status: "Active",
-  image: "",
+  holidayList: "", payrollCostCenter: "", status: "Active", image: "",
 });
 
 const mergeDetail = (stub: RichEmployee, d: any): RichEmployee => ({
@@ -110,14 +107,52 @@ const mergeDetail = (stub: RichEmployee, d: any): RichEmployee => ({
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
-const fmtCurrency = (v: number) => v > 0 ? `${v.toLocaleString("en-IN")}` : "—";
+const fmtCurrency = (v: number) => v > 0 ? v.toLocaleString("en-IN") : "—";
 
 const fmtDate = (d: string) => {
   if (!d) return "—";
   try {
-    return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    return new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric",
+    });
   } catch { return d; }
 };
+
+// ─── Search logic ─────────────────────────────────────────────────────────────
+// Scoring:
+//   3 — exact match on id or name
+//   2 — starts-with on name or id
+//   1 — contains anywhere (name, id, dept, designation, structure, employment type)
+// Employees with score 0 are excluded. Results are sorted by score desc.
+
+function scoreEmployee(emp: RichEmployee, q: string): number {
+  if (!q) return 1;
+  const query = q.toLowerCase().trim();
+  if (!query) return 1;
+
+  const name = emp.name?.toLowerCase() ?? "";
+  const id = emp.id?.toLowerCase() ?? "";
+  const dept = emp.department?.toLowerCase() ?? "";
+  const desig = emp.designation?.toLowerCase() ?? "";
+  const structure = emp.salaryStructure?.toLowerCase() ?? "";
+  const empType = emp.employmentType?.toLowerCase() ?? "";
+
+  // Exact
+  if (name === query || id === query) return 3;
+  // Starts with
+  if (name.startsWith(query) || id.startsWith(query)) return 2;
+  // Contains
+  if (
+    name.includes(query) ||
+    id.includes(query) ||
+    dept.includes(query) ||
+    desig.includes(query) ||
+    structure.includes(query) ||
+    empType.includes(query)
+  ) return 1;
+
+  return 0;
+}
 
 // ─── Excel export ─────────────────────────────────────────────────────────────
 
@@ -126,7 +161,7 @@ const exportXLSX = (employees: RichEmployee[], selectedIds: string[]) => {
   if (!rows.length) return;
   const wsData = [
     ["Employee ID","Name","Department","Designation","Grade","Employment Type",
-     "Salary Structure","CTC ()","Salary Mode","Date of Joining","Holiday List",
+     "Salary Structure","CTC","Salary Mode","Date of Joining","Holiday List",
      "Cost Center","Status","Email","Branch"],
     ...rows.map((e) => [
       e.id, e.name, e.department, e.designation, e.grade, e.employmentType,
@@ -165,7 +200,7 @@ const Badge: React.FC<{ label: string; variant?: BadgeVariant }> = ({ label, var
   );
 };
 
-// ─── Column helper (typed to RichEmployee) ────────────────────────────────────
+// ─── Column helper ────────────────────────────────────────────────────────────
 
 const columnHelper = createColumnHelper<RichEmployee>();
 
@@ -177,31 +212,40 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
   const [employees, setEmployees] = useState<RichEmployee[]>([]);
   const [enrichMap, setEnrichMap] = useState<Record<string, EnrichState>>({});
   const [listLoading, setListLoading] = useState(false);
-  const [globalFilter, setGlobalFilter] = useState("");
-
-  // TanStack row selection is index-based internally.
-  // We keep it in sync with data.selectedEmployees (id-based) via the handlers below.
+  const [searchQuery, setSearchQuery] = useState("");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const abortRef = useRef<AbortController | null>(null);
   const lastFetchKeyRef = useRef<string>("");
   const editSeededRef = useRef(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Re-derive rowSelection whenever the employees list or parent selection changes.
-  // Needed because employees array is rebuilt on fetch/enrich and row indices shift.
+  // ─── Sync rowSelection with parent selectedEmployees ─────────────────────
+
   useEffect(() => {
     const next: RowSelectionState = {};
-    employees.forEach((emp, idx) => {
+    filteredEmployees.forEach((emp, idx) => {
       if (data.selectedEmployees.includes(emp.id)) next[idx] = true;
     });
     setRowSelection(next);
-  }, [employees, data.selectedEmployees]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employees, data.selectedEmployees, searchQuery]);
+
+  // ─── Frontend search with scoring ────────────────────────────────────────
+
+  const filteredEmployees = useMemo(() => {
+    const q = searchQuery.trim();
+    if (!q) return employees;
+    return employees
+      .map((emp) => ({ emp, score: scoreEmployee(emp, q) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(({ emp }) => emp);
+  }, [employees, searchQuery]);
 
   // ─── Load employees ───────────────────────────────────────────────────────
 
   useEffect(() => {
-    // EDIT MODE: seed exactly once from the IDs returned by the edit API.
-    // After seeding, enrich each employee with full details via getEmployeeById.
     if (isEditMode && !editSeededRef.current && data.selectedEmployees.length > 0) {
       const ids = data.selectedEmployees;
       editSeededRef.current = true;
@@ -250,8 +294,6 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
     }
 
     const currentKey = buildFetchKey(data);
-
-    // Same params + employees already loaded = tab switched back, skip re-fetch
     if (currentKey === lastFetchKeyRef.current && employees.length > 0) return;
     lastFetchKeyRef.current = currentKey;
 
@@ -274,7 +316,6 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
         const stubs = (results ?? []).map(toStub);
         setEmployees(stubs);
-        // Auto-select all employees on a fresh create-mode fetch
         onChange("selectedEmployees", stubs.map((e) => e.id));
 
         const initMap: Record<string, EnrichState> = {};
@@ -314,15 +355,12 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
     data.startDate, data.endDate, data.payrollFrequency,
     data.payrollPayableAccount, data.currency, data.branch,
     data.department, data.designation, data.grade,
-    // data.selectedEmployees intentionally omitted — checkbox toggles must not re-trigger fetch
   ]);
 
-  // ─── Column definitions ───────────────────────────────────────────────────
-  // Cell renderers return only content — the <td> wrapper is applied by the row loop below.
+  // ─── Columns ──────────────────────────────────────────────────────────────
 
   const columns = useMemo(() => {
     const cols = [
-      // Checkbox column: content only (no <td> here)
       columnHelper.display({
         id: "select",
         header: ({ table }) => (
@@ -418,7 +456,6 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
       columnHelper.accessor("ctc", {
         header: "CTC",
-        // meta.align = "right" is read in the row loop to apply text-right to the <td>
         meta: { align: "right" },
         cell: ({ row }) => {
           const emp = row.original;
@@ -442,7 +479,6 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
       }),
     ];
 
-    // Only add the edit action column when the handler is provided
     if (onEditEmployee) {
       cols.push(
         columnHelper.display({
@@ -463,44 +499,32 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
     return cols;
   }, [enrichMap, onEditEmployee]);
 
-  // ─── TanStack table instance ──────────────────────────────────────────────
+  // ─── Table instance (no TanStack filtering — we do it ourselves) ──────────
 
   const table = useReactTable({
-    data: employees,
+    data: filteredEmployees,
     columns,
-    state: { globalFilter, rowSelection },
-    onGlobalFilterChange: setGlobalFilter,
+    state: { rowSelection },
     onRowSelectionChange: (updater) => {
-      // Resolve the next TanStack index-keyed selection, then push id-array to parent
       const next = typeof updater === "function" ? updater(rowSelection) : updater;
       setRowSelection(next);
-      const selectedIds = employees.filter((_, idx) => next[idx]).map((e) => e.id);
+      const selectedIds = filteredEmployees.filter((_, idx) => next[idx]).map((e) => e.id);
       onChange("selectedEmployees", selectedIds);
     },
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    // Custom global filter searches name, id, department, designation
-    globalFilterFn: (row, _columnId, filterValue: string) => {
-      const q = filterValue.toLowerCase();
-      const emp = row.original as RichEmployee;
-      return (
-        emp.name?.toLowerCase().includes(q) ||
-        emp.id?.toLowerCase().includes(q) ||
-        emp.department?.toLowerCase().includes(q) ||
-        emp.designation?.toLowerCase().includes(q)
-      );
-    },
     enableRowSelection: true,
   });
 
   // ─── Derived stats ────────────────────────────────────────────────────────
 
-  const filteredRows = table.getRowModel().rows;
+  const rows = table.getRowModel().rows;
   const enrichedCount = Object.values(enrichMap).filter((s) => s === "done").length;
   const isEnriching = employees.length > 0 && enrichedCount < employees.length && !listLoading;
   const selectedCTC = employees
     .filter((e) => data.selectedEmployees.includes(e.id))
     .reduce((s, e) => s + (e.ctc ?? 0), 0);
+
+  const isFiltered = searchQuery.trim().length > 0;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -545,26 +569,39 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
 
       {/* Toolbar */}
       <div className="flex items-center gap-2 flex-wrap">
+        {/* Search */}
         <div className="relative min-w-[200px] flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
           <input
-            type="text" value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder="Search name, ID, department…"
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search name, ID, dept, designation…"
             className="w-full h-9 pl-8 pr-7 bg-card border border-theme rounded-xl text-sm text-main placeholder:text-muted focus:outline-none focus:border-primary transition"
           />
-          {globalFilter && (
-            <button onClick={() => setGlobalFilter("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-main">
+          {searchQuery && (
+            <button
+              onClick={() => { setSearchQuery(""); searchInputRef.current?.focus(); }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-main transition"
+            >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
+
+        {/* Right side stats + actions */}
         <div className="flex items-center gap-2 ml-auto flex-wrap">
           {listLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted" />}
           {isEnriching && !listLoading && (
             <span className="flex items-center gap-1.5 text-[11px] text-muted">
               <Loader2 className="w-3 h-3 animate-spin" />
               Enriching {enrichedCount}/{employees.length}
+            </span>
+          )}
+          {isFiltered && (
+            <span className="text-[11px] font-bold bg-primary/5 border border-primary/20 px-3 py-1 rounded-full text-primary">
+              {filteredEmployees.length} result{filteredEmployees.length !== 1 ? "s" : ""}
             </span>
           )}
           {selectedCTC > 0 && (
@@ -587,7 +624,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
         </div>
       </div>
 
-      {/* Table — overflow-x-auto is on this wrapper so only the table scrolls horizontally */}
+      {/* Table */}
       <div className="border border-theme rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
         {listLoading ? (
           <SkeletonRows />
@@ -604,8 +641,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                       return (
                         <th
                           key={header.id}
-                          className={`px-3 py-2.5 text-[10px] font-extrabold text-muted uppercase tracking-wider whitespace-nowrap select-none
-                            ${isRight ? "text-right" : "text-left"}`}
+                          className={`px-3 py-2.5 text-[10px] font-extrabold text-muted uppercase tracking-wider whitespace-nowrap select-none ${isRight ? "text-right" : "text-left"}`}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                         </th>
@@ -616,14 +652,24 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
               </thead>
 
               <tbody>
-                {filteredRows.length === 0 ? (
+                {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={columns.length} className="py-10 text-center text-sm text-muted">
-                      No results for &quot;{globalFilter}&quot;
+                    <td colSpan={columns.length} className="py-10 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted">
+                        <Search className="w-6 h-6 opacity-30" />
+                        <p className="text-sm font-semibold text-main">No results</p>
+                        <p className="text-xs">No employees match &quot;{searchQuery}&quot;</p>
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="mt-1 text-xs text-primary hover:underline"
+                        >
+                          Clear search
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  filteredRows.map((row, i) => (
+                  rows.map((row, i) => (
                     <tr
                       key={row.id}
                       onClick={row.getToggleSelectedHandler()}
@@ -642,11 +688,7 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                         return (
                           <td
                             key={cell.id}
-                            className={`px-3 py-2.5
-                              ${isCheckbox || isActions ? "w-10" : ""}
-                              ${isRight ? "text-right whitespace-nowrap" : ""}
-                            `}
-                            // Prevent row toggle from firing when clicking the checkbox or edit button cell
+                            className={`px-3 py-2.5 ${isCheckbox || isActions ? "w-10" : ""} ${isRight ? "text-right whitespace-nowrap" : ""}`}
                             onClick={isCheckbox || isActions ? (e) => e.stopPropagation() : undefined}
                           >
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -658,13 +700,14 @@ export const EmployeesTab: React.FC<EmployeesTabProps> = ({
                 )}
               </tbody>
 
-              {filteredRows.length > 0 && (
+              {rows.length > 0 && (
                 <tfoot className="border-t border-theme bg-app sticky bottom-0 z-10">
                   <tr>
                     <td />
                     <td colSpan={6} className="px-3 py-2 text-[10px] text-muted font-bold uppercase tracking-wider">
-                      {filteredRows.length} of {employees.length} employees
-                      {globalFilter && " · filtered"}
+                      {isFiltered
+                        ? `${filteredEmployees.length} of ${employees.length} employees · filtered`
+                        : `${employees.length} employees`}
                     </td>
                     <td className="px-3 py-2 text-right">
                       {selectedCTC > 0 && (
