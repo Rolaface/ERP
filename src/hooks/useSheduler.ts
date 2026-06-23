@@ -73,11 +73,9 @@ export const useShedular = () => {
   if (!confirmed) return;
 
   try {
-    // pehle current record dhundo data mein se
     const record = data.find((r) => r.id === id);
     if (!record) return;
 
-    // poora object bhejo, sirf enabled toggle karo
     await editShedular(id, {
       schedulerName: record.schedulerName,
       frequency: record.frequency,
