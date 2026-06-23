@@ -165,6 +165,12 @@ export interface PayrollEntry {
   designationLabel?: string;
   grade?: string;
   gradeLabel?:string;
+    employeeStubs?: {
+  id: string;
+  name: string;
+  department: string;
+  designation: string;
+}[];
 }
 
 // ── Validation types (ERP-grade pre-payroll validation) ──────────────────────
@@ -199,4 +205,7 @@ export interface ValidationResult {
     warnings: number;
     infos: number;
   };
+
+
 }
+
