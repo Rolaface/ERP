@@ -1,12 +1,17 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { Tag,CreditCard} from "lucide-react";
+import { Tag, CreditCard } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
-import { getExpenseGLAccounts,createExpenseClaimType,updateExpenseClaimType } from "../../api/expenseClaimApi";
+import {
+  getExpenseGLAccounts,
+  createExpenseClaimType,
+  updateExpenseClaimType,
+} from "../../api/expenseClaimApi";
 import { showApiError } from "../../utils/alert";
+import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
 const getCompanyFromStorage = (): string => {
   try {
     const raw = localStorage.getItem("company-info");
@@ -18,7 +23,6 @@ const getCompanyFromStorage = (): string => {
   }
 };
 
-
 export interface ExpenseTypeFormData {
   id?: string;
   expense_type: string;
@@ -29,9 +33,6 @@ const defaultForm: ExpenseTypeFormData = {
   expense_type: "",
   account: "",
 };
-
-
-
 
 interface ExpenseTypeModalProps {
   modalId: string;
@@ -49,25 +50,28 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
   const modals = useModalStore((state) => state.modals);
   const modal = useMemo(
     () => modals.find((m) => m.id === modalId),
-    [modals, modalId]
+    [modals, modalId],
   );
 
   const [form, setForm] = useState<ExpenseTypeFormData>(defaultForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const isEditMode = modal?.isEdit ?? false;
+  const { markDirty, resetDirty, handleCloseWithConfirm } =
+    useUnsavedChangesGuard();
 
-React.useEffect(() => {
-  if (isOpen) {
-    const data = modal?.initialData as ExpenseTypeFormData | undefined;
-    setForm(data ?? defaultForm);
-    setErrors({});
-  }
-}, [isOpen]);
+  React.useEffect(() => {
+    if (isOpen) {
+      const data = modal?.initialData as ExpenseTypeFormData | undefined;
+      setForm(data ?? defaultForm);
+      setErrors({});
+    }
+  }, [isOpen]);
 
   const reset = () => {
     setForm(defaultForm);
     setErrors({});
+    resetDirty();
   };
 
   // ── Field handler ───────────────────────────────────────────────────────────
@@ -76,58 +80,50 @@ React.useEffect(() => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    markDirty();
   };
 
-
-
-
-
-
-
-const fetchGLAccounts = useCallback(async (search: string) => {
-  const results = await getExpenseGLAccounts(getCompanyFromStorage(), search);
-  return results;
-}, []);
- 
+  const fetchGLAccounts = useCallback(async (search: string) => {
+    const results = await getExpenseGLAccounts(getCompanyFromStorage(), search);
+    return results;
+  }, []);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!form.expense_type.trim())
       newErrors.expense_type = "Expense type is required";
-    if (!form.account)
-      newErrors.account = "GL Account is required";
+    if (!form.account) newErrors.account = "GL Account is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      const payload = {
+        expense_type: form.expense_type,
+        accounts: [{ default_account: form.account }],
+      };
 
-const handleSubmit = async () => {
-  if (!validate()) return;
-  setLoading(true);
-  try {
-    const payload = {
-      expense_type: form.expense_type,
-      accounts: [{ default_account: form.account }],
-    };
+      if (isEditMode) {
+        await updateExpenseClaimType(form.id!, payload);
+      } else {
+        await createExpenseClaimType(payload);
+      }
 
-    if (isEditMode) {
-      await updateExpenseClaimType(form.id!, payload);
-    } else {
-      await createExpenseClaimType(payload);
+      if (modal?.context?.callback) {
+        await modal.context.callback(payload);
+      }
+      onSubmit?.({ ...form });
+      reset();
+      onClose();
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setLoading(false);
     }
-
-    if (modal?.context?.callback) {
-      await modal.context.callback(payload);
-    }
-    onSubmit?.({ ...form });
-    reset();
-    onClose();
-  } catch (err) {
-    showApiError(err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const footer = (
     <>
@@ -135,8 +131,8 @@ const handleSubmit = async () => {
         Cancel
       </Button>
       <Button variant="primary" onClick={handleSubmit} loading={loading}>
-  {isEditMode ? "Update" : "Submit"}
-</Button>
+        {isEditMode ? "Update" : "Submit"}
+      </Button>
     </>
   );
 
@@ -145,7 +141,7 @@ const handleSubmit = async () => {
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Expense Type" : "Add Expense Type"}
       subtitle={isEditMode ? "Update expense type" : "Add a new expense type"}
       icon={CreditCard}
@@ -168,20 +164,20 @@ const handleSubmit = async () => {
             disabled={isEditMode}
             placeholder="For example: Travel"
           />
-         <SearchSelect2
-  label="GL Account"
-  required
-  value={form.account}
-  onChange={(val) => {
-    setForm((prev) => ({ ...prev, account: val || "" }));
-    if (errors.account)
-      setErrors((prev) => ({ ...prev, account: "" }));
-  }}
-  fetchOptions={fetchGLAccounts}     
-  placeholder="Select a GL account"
-  error={errors.account}
-/>
-
+          <SearchSelect2
+            label="GL Account"
+            required
+            value={form.account}
+            onChange={(val) => {
+              setForm((prev) => ({ ...prev, account: val || "" }));
+              if (errors.account)
+                setErrors((prev) => ({ ...prev, account: "" }));
+              markDirty();
+            }}
+            fetchOptions={fetchGLAccounts}
+            placeholder="Select a GL account"
+            error={errors.account}
+          />
         </div>
       </form>
     </MinimizableModal>

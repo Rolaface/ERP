@@ -32,6 +32,7 @@ import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError
 import SendEmailModal from "../../components/common/SendEmailModal";
 import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/statusActionIcons";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import { getCurrencySymbol } from "../../utils/currency";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -148,9 +149,9 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
         customerName: inv.customerName,
         currency: inv.currency,
         validTill: inv.validTill,
-        grandTotal: Number(inv.baseGrandTotal || inv.total || 0),
+        grandTotal: Number(inv.total || 0),
         status: inv.status as QuotationStatus,
-        transactionDate: inv.postingDate ? new Date(inv.postingDate).toLocaleDateString() : "",
+        transactionDate: inv.postingDate || "",
       }));
 
       // FIX: Set the correct state array (quotations, not quotation)
@@ -189,37 +190,23 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
     setSortOrder(order);
     setPage(1);
   };
-  // const handleRowStatusChange = async (
-  //   quotationNumber: string,
-  //   newStatus: QuotationStatus
-  // ) => {
-  //   try {
-  //     showLoading("Updating quotation status...");
+  
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
 
-  //     const res = await updateProformaInvoiceStatus(quotationNumber, newStatus);
+    const months = [
+      "JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC",
+    ];
 
-  //     if (!res || res.status_code !== 200) {
-  //       closeSwal();
-  //       showApiError(res?.message || "Failed to update status");
-  //       return;
-  //     }
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
 
-  //     closeSwal();
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
 
-  //     setQuotations((prev) =>
-  //       prev.map((q: any) =>
-  //         q.quotationNumber === quotationNumber
-  //           ? { ...q, status: newStatus }
-  //           : q
-  //       )
-  //     );
-
-  //     showSuccess(`Quotation marked as ${newStatus}`);
-  //   } catch (err) {
-  //     closeSwal();
-  //     showApiError(err);
-  //   }
-  // };
   const handleRowStatusChange = async (
     quotationNumber: string,
     newStatus: QuotationStatus
@@ -286,13 +273,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
     }
 
     closeSwal();
-    // openQuotationEdit(quotationId, { ...data, _initialTab: "otherDetails" });
-    // openQuotationEdit(quotationId, { 
-    //   ...data, 
-    //   status: "Lost", 
-    //   _initialTab: "otherDetails" 
-    // });
-
   } catch (err) {
     closeSwal();
     showApiError(err);
@@ -549,10 +529,18 @@ const handlePreviewQuotationPDF = async (
       render: (q) => <span className="font-semibold text-main">{q.quotationNumber}</span>,
     },
     { key: "customerName", header: "Customer", align: "left", sortable: true },
-    { key: "transactionDate", header: "Date", align: "left", sortable: true },
-    { key: "validTill", header: "Valid Till", align: "left", sortable: true },
+    { key: "transactionDate", header: "Date", align: "left", sortable: true, render: (inv: any) => (
+        <span className="text-xs text-muted">
+          {inv.transactionDate ? formatDate(inv.transactionDate) : "-"}
+        </span>
+      ), },
+    { key: "validTill", header: "Valid Till", align: "left", sortable: true,  render: (inv) => (
+        <span className="text-xs text-muted">
+          {inv.validTill ? formatDate(inv.validTill) : "-"}
+        </span>
+      ), },
     {
-      key: "grandTotal",
+      key: "total",
       header: "Amount",
       align: "right",
       sortable: true,
@@ -684,6 +672,7 @@ const handlePreviewQuotationPDF = async (
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        onRowDoubleClick={(q) => handleView(q.quotationNumber)}
       />
 
 

@@ -135,17 +135,17 @@ const TaxCategory: React.FC = () => {
     [updateStatus, fetchCategories],
   );
 
-  const handleView = useCallback(
-    (tc: TaxCategorySummary, e: React.MouseEvent) => {
-      e.stopPropagation();
-      openTaxCategoryModal(
-        { title: tc.title, disabled: tc.disabled === 1 },
-        false,
-        { isViewMode: true }
-      );
-    },
-    []
-  );
+ const handleView = useCallback(
+  (tc: TaxCategorySummary, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    openTaxCategoryModal(
+      { title: tc.title, disabled: tc.disabled === 1 },
+      false,
+      { isViewMode: true }
+    );
+  },
+  []
+);
 
   const handleDelete = useCallback(
     async (name: string, e: React.MouseEvent) => {
@@ -294,6 +294,7 @@ const TaxCategory: React.FC = () => {
         pageSize={pageSize}
         totalItems={totalItems}
         onPageChange={setPage}
+        onRowDoubleClick={(tc) => handleView(tc)}
       />
 
 

@@ -16,18 +16,18 @@ import {
 import { openLeaveApplyModal } from "../../../store/modalStore";
 import { showApiError, showSuccess, showConfirm } from "../../../utils/alert";
 import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable";
-import Table        from "../../../components/ui/Table/Table";
-import StatusBadge  from "../../../components/ui/Table/StatusBadge";
+import Table from "../../../components/ui/Table/Table";
+import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
 import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
 import ActionButton, { ActionGroup, ActionMenu } from "../../../components/ui/Table/ActionButton";
 import { parseFrappeError } from "../tabs/leave-config/hooks/parseFrappeError";
 import { useAuth } from "../../../context/AuthContext";
 interface MenuAction {
-  label:        string;
-  icon:         React.ReactNode;
-  onClick:      () => void;
-  danger?:      boolean;
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  danger?: boolean;
   dividerBefore?: boolean;
 }
 
@@ -41,11 +41,11 @@ interface LeaveApplyTableProps {
 
 const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
   const { user } = useAuth();
-  const [data,       setData]       = useState<any[]>([]);
-  const [isLoading,  setIsLoading]  = useState(true);
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [page,       setPage]       = useState(1);
-  const [pageSize,   setPageSize]   = useState(10);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [showHistory, setShowHistory] = useState(false);
   // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
   const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
@@ -53,27 +53,27 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
 
   useEffect(() => {
     fetchLeaves();
-  // }, [showHistory, filters.from_date, filters.to_date]);
+    // }, [showHistory, filters.from_date, filters.to_date]);
   }, [showHistory, filters.from_date, filters.to_date, filters.status, page, pageSize, searchTerm]);
 
   const fetchLeaves = async () => {
     try {
       setIsLoading(true);
-       const apiFilters: any[] = [
-      ["employee", "=", user?.employeeId], 
-    ];
-    //    if (showHistory) {
-    //   apiFilters.push([
-    //     "status",
-    //     "in",
-    //     ["Approved", "Rejected", "Open", "Cancelled"],
-    //   ]);
-    // } else {
-    //   apiFilters.push(["status", "=", "Open"]);
-    // }
-    if (filters.status) {
+      const apiFilters: any[] = [
+        ["employee", "=", user?.employeeId],
+      ];
+      //    if (showHistory) {
+      //   apiFilters.push([
+      //     "status",
+      //     "in",
+      //     ["Approved", "Rejected", "Open", "Cancelled"],
+      //   ]);
+      // } else {
+      //   apiFilters.push(["status", "=", "Open"]);
+      // }
+      if (filters.status) {
         apiFilters.push(["status", "=", filters.status]);
-      } 
+      }
       // else if (showHistory) {
       //   apiFilters.push([
       //     "status",
@@ -103,9 +103,9 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
     }
   };
 
-const handleStatusUpdate = async (
-    id:       string,
-    status:   string,
+  const handleStatusUpdate = async (
+    id: string,
+    status: string,
     doc_type?: string,
   ) => {
     if (status === "Delete" || status === "Cancelled") {
@@ -126,18 +126,18 @@ const handleStatusUpdate = async (
         setActionLoadingId(id);
         await deleteLeaveApplication(id);
         showSuccess("Leave application has been deleted successfully.");
-        
+
         await fetchLeaves();
         onAfterApply?.();
-        
+
         setActionLoadingId(null);
-        return; 
+        return;
       }
 
       setActionLoadingId(id);
       const payload: any = { status };
       if (doc_type) payload.doc_type = doc_type;
-      
+
       // If cancelling an approved leave, set docstatus to 2 (Cancelled in Frappe)
       if (status === "Cancelled") payload.docstatus = 2;
 
@@ -165,31 +165,48 @@ const handleStatusUpdate = async (
     });
   };
 
+   const formatDate = (date: string | Date) => {
+    if (!date) return "";
+
+    const months = [
+      "JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC",
+    ];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+
+
   const columns: Column<any>[] = [
     {
-      key:    "leave_type",
+      key: "leave_type",
       header: "Leave Type",
-      align:  "left",
+      align: "left",
       render: (e) => <span className="font-medium">{e.leave_type || "—"}</span>,
     },
-    { key: "from_date", header: "From Date", align: "left" },
+    { key: "from_date", header: "From Date", align: "left", render: (e) => (formatDate(e.to_date) || "—"), },
     {
-      key:    "to_date",
+      key: "to_date",
       header: "To Date",
       align:  "left",
-      render: (e) => (e.half_day === 1 ? "Half Day" : e.to_date || "—"),
+      render: (e) => (e.half_day === 1 ? "Half Day" : formatDate(e.to_date) || "—"),
     },
     {
-    key: "total_leave_days",
-    header: "No of Days",
-    align: "left",
-    // render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
-    render: (e) => <span className="font-medium">{e.total_leave_days || "—"}</span>,
-  },
+      key: "total_leave_days",
+      header: "No of Days",
+      align: "left",
+      // render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
+      render: (e) => <span className="font-medium">{e.total_leave_days || "—"}</span>,
+    },
     {
-      key:    "description",
+      key: "description",
       header: "Reason",
-      align:  "left",
+      align: "left",
       render: (e) => (
         <div className="max-w-xs truncate" title={e.description}>
           {e.description || "—"}
@@ -197,20 +214,20 @@ const handleStatusUpdate = async (
       ),
     },
     {
-      key:    "status",
+      key: "status",
       header: "Status",
-      align:  "left",
+      align: "left",
       render: (e) => {
         let displayStatus = e.status || "Open";
-        
+
         if (displayStatus === "Open") {
           displayStatus = "Pending Approval";
-        } 
+        }
 
         return <StatusBadge status={displayStatus} />;
       },
     },
-   {
+    {
       key: "actions",
       header: "Actions",
       align: "center",
@@ -235,7 +252,7 @@ const handleStatusUpdate = async (
           const today = new Date();
           console.log("Today", today);
           today.setHours(0, 0, 0, 0);
-          
+
           const fromDate = new Date(row.from_date);
           console.log("From Date", fromDate);
           fromDate.setHours(0, 0, 0, 0);
@@ -267,15 +284,15 @@ const handleStatusUpdate = async (
             />
 
             {/* {!isActionDone && ( */}
-              <ActionButton
-                type="edit"
-                iconOnly
-                disabled={isActionDone || actionLoadingId === leaveId}
-                onClick={() =>
-                  openLeaveApplyModal(row, true, { onSuccess: fetchLeaves })
-                }
-                // disabled={actionLoadingId === leaveId}
-              />
+            <ActionButton
+              type="edit"
+              iconOnly
+              disabled={isActionDone || actionLoadingId === leaveId}
+              onClick={() =>
+                openLeaveApplyModal(row, true, { onSuccess: fetchLeaves })
+              }
+            // disabled={actionLoadingId === leaveId}
+            />
             {/* )} */}
 
             {/* Render action menu if there are options available */}
@@ -291,17 +308,17 @@ const handleStatusUpdate = async (
 
   return (
     <Table
-     extraFilters={
-              <>
-              <DateRangeFilter
-                  from={filters.from_date}
-                  to={filters.to_date}
-                  onChange={(range) => {
-                    setFilters((prev) => ({ ...prev, ...range }));
-                    setPage(1);
-                  }}
-                />
-                <select
+      extraFilters={
+        <>
+          <DateRangeFilter
+            from={filters.from_date}
+            to={filters.to_date}
+            onChange={(range) => {
+              setFilters((prev) => ({ ...prev, ...range }));
+              setPage(1);
+            }}
+          />
+          <select
             value={filters.status}
             // disabled={!showHistory} 
             onChange={(e) => {
@@ -316,7 +333,7 @@ const handleStatusUpdate = async (
             <option value="Rejected">Rejected</option>
             <option value="Cancelled">Cancelled</option>
           </select>
-                {/* <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+          {/* <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={showHistory}
@@ -325,8 +342,8 @@ const handleStatusUpdate = async (
                   />
                   Show Leave History
                 </label> */}
-              </>
-            }
+        </>
+      }
       loading={isLoading}
       defaultVisibleCount={8}
       columns={columns}
@@ -345,6 +362,9 @@ const handleStatusUpdate = async (
       pageSizeOptions={[10, 25, 50]}
       onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
       onPageChange={setPage}
+      onRowDoubleClick={(row) =>
+        openLeaveApplyModal({ ...row, _isView: true } as any, true, { onSuccess: fetchLeaves })
+      }
     />
   );
 };

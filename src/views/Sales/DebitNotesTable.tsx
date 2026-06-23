@@ -443,6 +443,7 @@ const DebitNotesTable: React.FC = () => {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        onRowDoubleClick={(r) => handleView(r.noteNo)}
       />
 
       <PurchaseInvoiceDetailModal

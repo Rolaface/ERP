@@ -182,7 +182,7 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
               className={[
                 "py-1 px-2 pr-6 border rounded text-[11px] w-full transition-colors duration-150",
                 "bg-card text-main placeholder:text-muted",
-                "focus:outline-none",
+                "focus:outline-none","truncate",
                 disabled
                   ? "opacity-50 cursor-not-allowed border-theme"
                   : error

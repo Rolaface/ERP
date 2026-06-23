@@ -662,12 +662,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         render: (inv) => (
           <div className="py-1.5">
             <span className="block whitespace-nowrap">
-              {inv.total.toLocaleString()} {inv.currency}
+              {inv.currency} {inv.total.toLocaleString()} 
             </span>
           </div>
         ),
         tooltip: (inv) =>
-          `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
+          `Total Amount: ${inv.currency} ${inv.total.toLocaleString()} `,
       },
       {
         key: "outstandingAmount",
@@ -677,12 +677,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         render: (inv) => (
           <div className="py-1.5">
             <span className="block whitespace-nowrap">
-              {(inv.outstanding_amount ?? 0).toLocaleString()} {inv.currency}
+             {inv.currency}  {(inv.outstanding_amount ?? 0).toLocaleString()}
             </span>
           </div>
         ),
         tooltip: (inv) =>
-          `Outstanding Amount: ${(inv.outstanding_amount ?? 0).toLocaleString()} ${inv.currency} `,
+          `Outstanding Amount: ${inv.currency} ${(inv.outstanding_amount ?? 0).toLocaleString()} `,
       },
       {
         key: "invoiceStatus",
@@ -824,6 +824,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        onRowDoubleClick={(inv) => handleView(inv.invoiceNumber)}
         extraFilters={
           <>
             <FilterSelect

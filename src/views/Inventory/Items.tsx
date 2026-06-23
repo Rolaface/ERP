@@ -8,6 +8,7 @@ import {
   deleteItemByItemCode,
 } from "../../api/itemApi";
 import { ItemFilters } from "../../api/itemApi";
+import { createTemplate } from "../../api/TaxTemplateApi";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { showLoading, closeSwal } from "../../utils/alert";
 import ItemDetailView, {
@@ -15,6 +16,10 @@ import ItemDetailView, {
   type PurchaseInvoice,
   type StockRow,
 } from "../../views/Inventory/Itemdetailmodal";
+import {
+  openInvoiceModal,
+  openPurchaseInvoiceModal,openTaxTemplateModal
+} from "../../store/modalStore";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -91,8 +96,10 @@ const flattenItemDetail = (fullItem: any): Item => {
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
 const Items: React.FC = () => {
-  const { openItemCreate, openItemEdit } =
-    useOutletContext<OutletContextType>();
+  const {
+    openItemCreate,
+    openItemEdit,
+  } = useOutletContext<OutletContextType>();
 
   const subscribeToRefresh = useDataRefreshStore(
     (state) => state.subscribeToRefresh,
@@ -261,6 +268,34 @@ const Items: React.FC = () => {
   const handleAddItem = useCallback(() => {
     openItemCreate({ onSuccess: refetchItemData });
   }, [openItemCreate, refetchItemData]);
+
+
+const handleAddTaxConfig = useCallback(() => {
+  openTaxTemplateModal(undefined, false, {
+    callback: async (payload: any) => {
+      try {
+        const res = await createTemplate(payload);
+        if (res?.status_code && ![200, 201].includes(res.status_code)) {
+          showApiError(res);
+          throw new Error("Tax template creation failed");
+        }
+        showSuccess(res?.message || "Tax template created successfully");
+      } catch (err) {
+        showApiError(err);
+        throw err; 
+      }
+    },
+  });
+}, []);
+
+const handleAddSalesInvoice = useCallback(() => {
+  openInvoiceModal();
+}, []);
+
+const handleAddPurchaseInvoice = useCallback(() => {
+  openPurchaseInvoiceModal();
+}, []);
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleRowClick = async (summary: ItemSummary) => {
     setActiveSummary(summary);
@@ -496,11 +531,9 @@ const Items: React.FC = () => {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    // Single root: fills whatever space the outlet gives — no padding leaks
     <div className="flex flex-1 flex-col min-h-0 h-full">
       {viewMode === "table" ? (
 
-        /* Table mode — full height, no extra wrapper padding */
         <div className="flex flex-1 flex-col min-h-0">
           <Table
             loading={loading || initialLoad}
@@ -523,17 +556,12 @@ const Items: React.FC = () => {
               setPage(1);
             }}
             onPageChange={setPage}
+            onRowDoubleClick={handleRowClick}
           />
         </div>
 
       ) : (
 
-        /*
-          Detail mode — edge-to-edge, no padding.
-          ItemDetailView already manages its own height internally
-          via height: calc(100vh - 8rem). Adding outer padding was
-          causing the double-chrome / wasted-space issue.
-        */
         <ItemDetailView
           isOpen={true}
           onClose={handleBack}
@@ -544,6 +572,10 @@ const Items: React.FC = () => {
           onEditItem={handleDetailEdit}
           onDeleteItem={handleDetailDelete}
           onAddItem={handleAddItem}
+          onAddTaxConfig={handleAddTaxConfig}
+          onAddSalesInvoice={handleAddSalesInvoice}
+          onAddPurchaseInvoice={handleAddPurchaseInvoice}
+          // ───────────────────────────────────────────────────────────────
           salesInvoices={salesInvoices}
           purchaseInvoices={purchaseInvoices}
           stockRows={stockRows}

@@ -604,7 +604,7 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
             editData={getInitialData(modal.initialData) as any}
             actionLoading={false}
-            isViewMode={context?.isViewMode ?? false}  // ← add this
+            isViewMode={context?.isViewMode ?? false} 
 
 
           />,
