@@ -9,7 +9,7 @@ import { AppPage, AppPageBody, AppPageHeader } from "../../components/ui/app-she
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import { CalendarClock } from "lucide-react";
-
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 const schedulerPage: React.FC = () => {
   const {
@@ -77,10 +77,22 @@ const schedulerPage: React.FC = () => {
             onClick={(e) => { e.stopPropagation(); openEdit(row); }}
           />
           <ActionMenu
-            onDelete={(e) => { (e as React.MouseEvent).stopPropagation(); handleDelete(row.id); }}
-            onEnable={!row.enabled ? (e) => { (e as React.MouseEvent).stopPropagation(); handleToggleEnable(row.id, true); } : undefined}
-            onDisable={row.enabled ? (e) => { (e as React.MouseEvent).stopPropagation(); handleToggleEnable(row.id, false); } : undefined}
-          />
+  customActions={[
+    {
+      label: row.enabled ? "Disable" : "Enable",
+      icon: row.enabled ? ACTION_ICONS.DISABLE : ACTION_ICONS.ENABLE,
+      onClick: () => handleToggleEnable(row.id, !row.enabled),
+      disabled: false,
+      danger: row.enabled,
+    },
+    {
+      label: "Delete",
+      icon: ACTION_ICONS.DELETE,
+      onClick: () => handleDelete(row.id),
+      danger: true,
+    },
+  ]}
+/>
         </ActionGroup>
       ),
     },

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import { openBankAccountModal } from "../../store/modalStore";
-import { Copy, CheckCircle } from "lucide-react";
+import { Copy } from "lucide-react";
+
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -56,7 +57,8 @@ const BankDetails: React.FC = () => {
   }, [bankAccounts, search]);
 
   // ── Actions hook ──────────────────────────────────────────────────────────
-  const { handleToggleDisable, handleSetDefault, actionLoadingId } = useBankAccountActions(fetchAccounts);
+const { getMenuActions } = useBankAccountActions(fetchAccounts);
+
 
   // ── Date formatter ────────────────────────────────────────────────────────
   const formatDate = (date: string | Date) => {
@@ -207,18 +209,7 @@ const BankDetails: React.FC = () => {
             title={isVisible(row.id) ? "Hide Details" : "Show Details"}
             onClick={() => toggle(row.id)}
           />
-          <ActionMenu
-            onEnable={row.isDisabled ? () => handleToggleDisable(row) : undefined}
-            onDisable={!row.isDisabled ? () => handleToggleDisable(row) : undefined}
-            customActions={[
-              {
-                label: "Set Default",
-                onClick: () => handleSetDefault(row),
-                disabled: row.isDefault || actionLoadingId === String(row.id),
-                icon: <CheckCircle className="w-4 h-4 text-blue-500" />,
-              },
-            ]}
-          />
+      <ActionMenu customActions={getMenuActions(row)} />
         </ActionGroup>
       ),
     },
