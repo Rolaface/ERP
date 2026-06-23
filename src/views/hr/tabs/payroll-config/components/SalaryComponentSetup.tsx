@@ -216,6 +216,7 @@ export function SalaryComponentSetup() {
       }}
       enableColumnSelector
       tableId="salary-components"
+      onRowDoubleClick={(row) => handleView(row)}
     />
     </div>
   );

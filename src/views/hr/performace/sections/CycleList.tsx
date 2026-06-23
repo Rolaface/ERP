@@ -273,6 +273,7 @@ const CycleList = () => {
         pageSizeOptions={[10, 25, 50]}
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
+        onRowDoubleClick={(row) => handleView(row)}
       />
 
       {/* ── Create modal ── */}

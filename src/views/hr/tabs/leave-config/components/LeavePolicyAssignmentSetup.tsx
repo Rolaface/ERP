@@ -116,11 +116,10 @@ export function LeavePolicyAssignmentSetup() {
         header: "Carry Forward",
         render: (row) => (
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              row.carry_forward
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.carry_forward
                 ? "bg-emerald-100 text-emerald-700"
                 : "bg-gray-100 text-gray-700"
-            }`}
+              }`}
           >
             {row.carry_forward ? "Yes" : "No"}
           </span>
@@ -152,7 +151,7 @@ export function LeavePolicyAssignmentSetup() {
         align: "center",
         render: (row) => {
           const menuActions = [];
-          
+
           if (row.docstatus === 1) {
             menuActions.push({
               label: "Cancel",
@@ -160,7 +159,7 @@ export function LeavePolicyAssignmentSetup() {
               disabled: actionLoadingId === row.name,
             });
           }
-          
+
           if (row.docstatus === 0 || row.docstatus === 2) {
             menuActions.push({
               label: "Delete",
@@ -173,15 +172,15 @@ export function LeavePolicyAssignmentSetup() {
               <ActionButton
                 type="view"
                 iconOnly
-                onClick={() => 
+                onClick={() =>
                   openLeavePolicyAssignmentModal(
-                    { ...row, _isView: true } as any,  
-                    true,                             
-                    { onSuccess: fetchAll }           
+                    { ...row, _isView: true } as any,
+                    true,
+                    { onSuccess: fetchAll }
                   )
                 }
               />
-               {menuActions.length > 0 && (
+              {menuActions.length > 0 && (
                 <ActionMenu customActions={menuActions} />
               )}
             </ActionGroup>
@@ -193,34 +192,41 @@ export function LeavePolicyAssignmentSetup() {
   );
 
   return (
-     <div className="h-[calc(100vh-220px)]"> 
-    <ModalTable
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(row) => row.name!}
-      showToolbar
-      searchValue={search}
-      onSearch={(v) => {
-        setSearch(v);
-        setPage(1);
-      }}
-      enableAdd
-      addLabel="Add Assignment"
-      onAdd={() => openLeavePolicyAssignmentModal(null, false, { onSuccess: fetchAll })}
-      currentPage={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      pageSize={pageSize}
-      pageSizeOptions={[10, 25, 50]}
-      onPageChange={setPage}
-      onPageSizeChange={(s) => {
-        setPageSize(s);
-        setPage(1);
-      }}
-      enableColumnSelector
-      tableId="leave-policy-assignments-table"
-    />
+    <div className="h-[calc(100vh-220px)]">
+      <ModalTable
+        columns={columns}
+        data={rows}
+        loading={loading}
+        rowKey={(row) => row.name!}
+        showToolbar
+        searchValue={search}
+        onSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Assignment"
+        onAdd={() => openLeavePolicyAssignmentModal(null, false, { onSuccess: fetchAll })}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 25, 50]}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        enableColumnSelector
+        tableId="leave-policy-assignments-table"
+        onRowDoubleClick={(row) =>
+          openLeavePolicyAssignmentModal(
+            { ...row, _isView: true } as any,
+            true,
+            { onSuccess: fetchAll }
+          )
+        }
+      />
     </div>
   );
 }

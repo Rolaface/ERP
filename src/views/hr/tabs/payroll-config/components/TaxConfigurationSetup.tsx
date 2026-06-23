@@ -269,6 +269,7 @@ export function TaxConfigurationSetup() {
       }}
       enableColumnSelector
       tableId="tax-configurations"
+      onRowDoubleClick={(row) => handleEdit(row)}
     />
     </div>
   );

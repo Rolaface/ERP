@@ -76,11 +76,10 @@ export function LeaveTypeSetup() {
         header: "LWP",
         render: (row) => (
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              row.is_lwp
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.is_lwp
                 ? "bg-red-100 text-red-700"
                 : "bg-gray-100 text-gray-700"
-            }`}
+              }`}
           >
             {row.is_lwp ? "Yes" : "No"}
           </span>
@@ -91,11 +90,10 @@ export function LeaveTypeSetup() {
         header: "Carry Forward",
         render: (row) => (
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              row.is_carry_forward
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.is_carry_forward
                 ? "bg-emerald-100 text-emerald-700"
                 : "bg-gray-100 text-gray-700"
-            }`}
+              }`}
           >
             {row.is_carry_forward ? "Yes" : "No"}
           </span>
@@ -128,11 +126,11 @@ export function LeaveTypeSetup() {
             <ActionButton
               type="view"
               iconOnly
-              onClick={() => 
+              onClick={() =>
                 openLeaveTypeModal(
-                  { ...row, _isView: true } as any,  
-                  true,                             
-                  { onSuccess: fetchAll }           
+                  { ...row, _isView: true } as any,
+                  true,
+                  { onSuccess: fetchAll }
                 )
               }
             />
@@ -159,34 +157,41 @@ export function LeaveTypeSetup() {
   );
 
   return (
-     <div className="h-[calc(100vh-220px)]"> 
-    <ModalTable
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(row) => row.name ?? row.leave_type_name}
-      showToolbar
-      searchValue={search}
-      onSearch={(v) => {
-        setSearch(v);
-        setPage(1);
-      }}
-      enableAdd
-      addLabel="Add Leave Type"
-      onAdd={() => openLeaveTypeModal(null, false, { onSuccess: fetchAll })}
-      currentPage={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      pageSize={pageSize}
-      pageSizeOptions={[10, 25, 50]}
-      onPageChange={setPage}
-      onPageSizeChange={(s) => {
-        setPageSize(s);
-        setPage(1);
-      }}
-      enableColumnSelector
-      tableId="leave-types-table"
-    />
+    <div className="h-[calc(100vh-220px)]">
+      <ModalTable
+        columns={columns}
+        data={rows}
+        loading={loading}
+        rowKey={(row) => row.name ?? row.leave_type_name}
+        showToolbar
+        searchValue={search}
+        onSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Leave Type"
+        onAdd={() => openLeaveTypeModal(null, false, { onSuccess: fetchAll })}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 25, 50]}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        enableColumnSelector
+        tableId="leave-types-table"
+        onRowDoubleClick={(row) =>
+          openLeaveTypeModal(
+            { ...row, _isView: true } as any,
+            true,
+            { onSuccess: fetchAll }
+          )
+        }
+      />
     </div>
   );
 }

@@ -116,42 +116,49 @@ export function HolidayListSetup() {
   );
 
   return (
-     <div className="h-[calc(100vh-220px)]"> 
-    <ModalTable
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(row) => row.name!}
-      tableId="holiday-lists-table"
-      showToolbar
-      toolbarPlaceholder="Search holiday lists..."
-      searchValue={search}
-      onSearch={(v) => {
-        setSearch(v);
-        setPage(1);
-      }}
-      enableAdd
-      addLabel="+ Add Holiday List"
-      onAdd={() => openHolidayListModal(null, false, { onSuccess: fetchAll })}
-      enableColumnSelector
-      defaultVisibleKeys={[
-        "holiday_list_name",
-        "from_date",
-        "to_date",
-        "actions",
-      ]}
-      currentPage={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      pageSize={pageSize}
-      pageSizeOptions={[10, 25, 50]}
-      onPageChange={setPage}
-      onPageSizeChange={(s) => {
-        setPageSize(s);
-        setPage(1);
-      }}
-      
-    />
+    <div className="h-[calc(100vh-220px)]">
+      <ModalTable
+        columns={columns}
+        data={rows}
+        loading={loading}
+        rowKey={(row) => row.name!}
+        tableId="holiday-lists-table"
+        showToolbar
+        toolbarPlaceholder="Search holiday lists..."
+        searchValue={search}
+        onSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="+ Add Holiday List"
+        onAdd={() => openHolidayListModal(null, false, { onSuccess: fetchAll })}
+        enableColumnSelector
+        defaultVisibleKeys={[
+          "holiday_list_name",
+          "from_date",
+          "to_date",
+          "actions",
+        ]}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 25, 50]}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        onRowDoubleClick={(row) =>
+          openHolidayListModal(
+            row,
+            true,
+            { onSuccess: fetchAll, isViewMode: true },
+            { title: "" }
+          )
+        }
+      />
     </div>
   );
 }
