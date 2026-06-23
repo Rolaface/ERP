@@ -334,6 +334,7 @@ const BankAccountSetup: React.FC = () => {
             setPageSize(size);
             setPage(1);
           }}
+          onRowDoubleClick={(row) => openBankAccountModal(row, true, { isViewMode: true })}
           onPageChange={setPage}
           addLabel="Add Bank Account"
           onAdd={() =>

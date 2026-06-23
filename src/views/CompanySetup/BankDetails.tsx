@@ -237,6 +237,7 @@ const { getMenuActions } = useBankAccountActions(fetchAccounts);
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
         addLabel="Add Bank Account"
+        onRowDoubleClick={(row) => openBankAccountModal(row, true, { isViewMode: true })}
         onAdd={() => {
           openBankAccountModal(
             { accountFor: "Company" },
