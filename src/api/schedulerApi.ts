@@ -118,3 +118,14 @@ export async function editShedular(
 export async function deleteShedularById(name: string): Promise<void> {
   await api.delete(`${SCHEDULER_URL}/${name}`);
 }
+
+export async function toggleSchedulerEnable(
+  name: string,
+  enabled: boolean,
+): Promise<void> {
+  const resp: AxiosResponse = await api.put(
+    `${SCHEDULER_URL}/${name}`,
+    { enabled: enabled ? 1 : 0 },
+  );
+  console.log("Toggle response:", resp?.data); 
+}

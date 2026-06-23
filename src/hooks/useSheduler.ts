@@ -4,11 +4,12 @@ import {
   createShedular,
   editShedular,
   deleteShedularById,
-  
+  toggleSchedulerEnable
+
 } from "../api/schedulerApi";
 import type { SchedulerRecord, SchedulerFormValues } from "../api/schedulerApi";
 import { useModalStore } from "../store/modalStore";
-import { showConfirm, showSuccess, showApiError } from "../utils/alert"; 
+import { showConfirm, showSuccess, showApiError } from "../utils/alert";
 
 export const useShedular = () => {
   const [data, setData] = useState<SchedulerRecord[]>([]);
@@ -60,34 +61,26 @@ export const useShedular = () => {
   };
 
   const handleToggleEnable = async (id: string, enable: boolean) => {
-  const confirmed = await showConfirm(
-    enable
-      ? "Are you sure you want to enable this scheduler?"
-      : "Are you sure you want to disable this scheduler?",
-    {
-      title: enable ? "Enable Scheduler" : "Disable Scheduler",
-      confirmButtonText: enable ? "Enable" : "Disable",
+    const confirmed = await showConfirm(
+      enable
+        ? "Are you sure you want to enable this scheduler?"
+        : "Are you sure you want to disable this scheduler?",
+      {
+        title: enable ? "Enable Scheduler" : "Disable Scheduler",
+        confirmButtonText: enable ? "Enable" : "Disable",
+      }
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await toggleSchedulerEnable(id, enable);
+      showSuccess(enable ? "Scheduler enabled." : "Scheduler disabled.");
+      await fetchData();
+    } catch (err) {
+      showApiError(err);
     }
-  );
-
-  if (!confirmed) return;
-
-  try {
-    const record = data.find((r) => r.id === id);
-    if (!record) return;
-
-    await editShedular(id, {
-      schedulerName: record.schedulerName,
-      frequency: record.frequency,
-      enabled: enable,
-    });
-
-    showSuccess(enable ? "Scheduler enabled." : "Scheduler disabled.");
-    await fetchData();
-  } catch (err) {
-    showApiError(err);
-  }
-};
+  };
   const handleDelete = async (id: string) => {
     const confirmed = await showConfirm(
       "Are you sure you want to delete this scheduler?",
