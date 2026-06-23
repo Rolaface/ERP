@@ -190,34 +190,41 @@ export function LeavePolicySetup() {
   );
 
   return (
-     <div className="h-[calc(100vh-220px)]"> 
-    <ModalTable
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(row) => row.name!}
-      showToolbar
-      searchValue={search}
-      onSearch={(v) => {
-        setSearch(v);
-        setPage(1);
-      }}
-      enableAdd
-      addLabel="Add Leave Policy"
-      onAdd={() => openLeavePolicyModal(null, false, { onSuccess: fetchAll })}
-      currentPage={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      pageSize={pageSize}
-      pageSizeOptions={[10, 25, 50]}
-      onPageChange={setPage}
-      onPageSizeChange={(s) => {
-        setPageSize(s);
-        setPage(1);
-      }}
-      enableColumnSelector
-      tableId="leave-policies-table"
-    />
+    <div className="h-[calc(100vh-220px)]">
+      <ModalTable
+        columns={columns}
+        data={rows}
+        loading={loading}
+        rowKey={(row) => row.name!}
+        showToolbar
+        searchValue={search}
+        onSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Leave Policy"
+        onAdd={() => openLeavePolicyModal(null, false, { onSuccess: fetchAll })}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 25, 50]}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        enableColumnSelector
+        tableId="leave-policies-table"
+        onRowDoubleClick={(row) =>
+          openLeavePolicyModal(
+            { ...row, _isView: true } as any,
+            true,
+            { onSuccess: fetchAll }
+          )
+        }
+      />
     </div>
   );
 }

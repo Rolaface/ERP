@@ -51,6 +51,8 @@ interface ModalTableProps<T> {
   onPageChange?:     (page: number) => void;
   onPageSizeChange?: (size: number) => void;
 
+  onRowDoubleClick?: (item: T) => void;
+
   // bodyMaxHeight removed — table now fills available space via flex-1
 }
 
@@ -95,7 +97,7 @@ const ModalTableInner = <T extends Record<string, any>>({
   isFetching   = false,
   emptyMessage = "No records found",
   onRowClick,
-
+  onRowDoubleClick,
   showToolbar          = false,
   extraFilters,
   toolbarPlaceholder   = "Search...",
@@ -304,6 +306,7 @@ const ModalTableInner = <T extends Record<string, any>>({
                     <tr
                       key={itemKey}
                       onClick={() => onRowClick?.(item)}
+                      onDoubleClick={() => onRowDoubleClick?.(item)}
                       className={[
                         "group transition-colors duration-150",
                         onRowClick ? "cursor-pointer" : "",

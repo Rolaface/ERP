@@ -247,6 +247,7 @@ export const PayrollDashboard: React.FC<Props> = ({
       totalPages={totalPages}
       onPageChange={onPageChange}
       pageSize={10}
+      onRowDoubleClick={(row) => setDetailEntryId((row as any).name)}
       searchValue={searchTerm}
       onSearch={(q) => {
         setSearchTerm(q);
