@@ -51,7 +51,7 @@ export const MonthlySalesBarChart: React.FC<Props> = ({ data }) => {
       valueFormatter: (value: any) => currencyFormatter.format(Number(value))
     },
     legend: {
-      data: ['Total Sales', 'Received', 'Receivable'],
+      data: ['Received', 'Receivable'],
       bottom: 0
     },
  grid: {
@@ -87,14 +87,14 @@ export const MonthlySalesBarChart: React.FC<Props> = ({ data }) => {
       }
     ],
     series: [
-      {
-        name: 'Total Sales',
-        type: 'bar',
-        stack: 'Ad',
-        emphasis: { focus: 'series' },
-        itemStyle: { color: '#3b82f6' }, // Blue
-        data: data.map((item) => item["total-sales"])
-      },
+      // {
+      //   name: 'Total Sales',
+      //   type: 'bar',
+      //   stack: 'Ad',
+      //   emphasis: { focus: 'series' },
+      //   itemStyle: { color: '#3b82f6' }, // Blue
+      //   data: data.map((item) => item["total-sales"])
+      // },
       {
         name: 'Received',
         type: 'bar',

@@ -17,6 +17,8 @@ export interface ProformaDetail {
   status?: string;
   invoiceStatus?: string;    
   grandTotal?: number;
+  roundingAdjustment?: number;
+  roundedTotal?: number;
   netTotal?: number;
   invoiceType?: string;
   taxCategory?: string;
@@ -429,7 +431,9 @@ const ProformaDetailModal: React.FC<Props> = ({
                 {[
                   { label: "Subtotal",    val: fmt(subtotal, currency),              big: false, red: false },
                   ...(totalDisc > 0 ? [{ label: "Total Discount", val: `- ${fmt(totalDisc, currency)}`, big: false, red: true }] : []),
-                  { label: "Total Amount", val: fmt(grandTotal, currency),     big: true,  red: false },
+                  { label: "Total Amount", val: fmt(grandTotal, currency), big: false, red: false },
+                  ...(data.roundingAdjustment ? [{ label: "Rounding Adjustment", val: fmt(data.roundingAdjustment, currency), big: false, red: false }] : []),
+                  { label: "Rounded Total", val: fmt(data.roundedTotal ?? grandTotal, currency), big: true, red: false },
                 ].map(({ label, val, big, red }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</span>

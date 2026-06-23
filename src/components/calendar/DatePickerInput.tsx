@@ -10,7 +10,7 @@ interface Props {
   name: string;
   required?: boolean;
   disabled?: boolean;
-  disableFuture?: boolean; 
+  disableFuture?: boolean;
   onChange: (name: string, value: string) => void;
   sx?: Record<string, unknown>;
 }
@@ -29,10 +29,31 @@ const DatePickerInput: React.FC<Props> = ({
     value ? dayjs(value) : null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     setInternalValue(value ? dayjs(value) : null);
   }, [value]);
+
+  // Soft notice auto-clears after a couple seconds instead of staying stuck.
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 2500);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
+  const commitValue = (newValue: Dayjs) => {
+    setInternalValue(newValue);
+    setError(null);
+    onChange(name, newValue.format("YYYY-MM-DD"));
+  };
+
+  // Falls back to "today" when a future date is entered/picked while disableFuture is on.
+  const fallbackToToday = () => {
+    const today = dayjs();
+    setNotice("Future date not allowed — set to today");
+    commitValue(today);
+  };
 
   const handleChange = (newValue: Dayjs | null) => {
     if (!newValue) {
@@ -41,14 +62,19 @@ const DatePickerInput: React.FC<Props> = ({
       onChange(name, "");
       return;
     }
+
     if (!newValue.isValid()) {
       setInternalValue(newValue);
       setError("Invalid date");
       return;
     }
-    setInternalValue(newValue);
-    setError(null);
-    onChange(name, newValue.format("YYYY-MM-DD"));
+
+    if (disableFuture && newValue.isAfter(dayjs(), "day")) {
+      fallbackToToday();
+      return;
+    }
+
+    commitValue(newValue);
   };
 
   return (
@@ -68,10 +94,23 @@ const DatePickerInput: React.FC<Props> = ({
         enableAccessibleFieldDOMStructure={false}
         onChange={handleChange}
         onError={(reason) => {
-          if (reason === "invalidDate") setError("Invalid date");
-          else if (reason === "disableFuture") setError("Future date not allowed");
-          else if (reason === "disablePast") setError("Past date not allowed");
-          else setError(null);
+          if (!reason) {
+            setError(null);
+            return;
+          }
+
+          if (reason === "invalidDate") {
+            setError("Invalid date");
+          } else if (reason === "disableFuture") {
+            // MUI's own future-date guard (e.g. clicking a disabled day in the
+            // calendar popup) lands here rather than onChange. Apply the same
+            // soft fallback so the UX is consistent regardless of entry path.
+            fallbackToToday();
+          } else if (reason === "disablePast") {
+            setError("Past date not allowed");
+          } else {
+            setError(null);
+          }
         }}
         slots={{ textField: TextField }}
         slotProps={{
@@ -198,6 +237,18 @@ const DatePickerInput: React.FC<Props> = ({
           }}
         >
           {error}
+        </FormHelperText>
+      )}
+
+      {!error && notice && (
+        <FormHelperText
+          sx={{
+            margin: "2px 0 0",
+            fontSize: "10px",
+            color: "red",
+          }}
+        >
+          {notice}
         </FormHelperText>
       )}
     </div>

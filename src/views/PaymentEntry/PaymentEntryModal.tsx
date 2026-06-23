@@ -134,10 +134,15 @@ function buildPayload(
     total: Number(t.total ?? 0),
   }));
 
+  const isInternalTransfer = form?.paymentType === "Internal Transfer";
+
+
   const payload: CreatePaymentEntryPayload = {
-    payment_type: form?.paymentType ?? "Pay",
-    party_type: form?.partyType ?? "",
-    party_id: form?.partyId || "",
+    payment_type: form?.paymentType ?? "",
+    ...(!isInternalTransfer && {
+      party_type: form?.partyType ?? "",
+      party_id: form?.partyId || "",
+    }),
     mode_of_payment: form?.mode ?? "",
     payment_date: form?.date ?? new Date().toISOString().split("T")[0],
     reference_no: form?.referenceNo ?? "",
@@ -156,7 +161,7 @@ function buildPayload(
     paid_to_account_currency: form?.currencyTo ?? "",
     paid_to_amount: receivedAmount,
 
-    references,
+    references: isInternalTransfer ? [] : references,
     taxes,
   };
 
@@ -406,9 +411,9 @@ const PaymentEntryModal: React.FC<Props> = ({
       // Amount just changed with party selected → allocation will run → show spinner NOW
       setIsAllocating(true);
     }
-     else if (!hasParty) {
-    setIsAllocating(false); 
-  }
+    else if (!hasParty) {
+      setIsAllocating(false);
+    }
 
     prevAmountRef.current = amountFrom;
   }, [amountFrom]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -744,6 +749,7 @@ const PaymentEntryModal: React.FC<Props> = ({
                 isPartyLocked={Boolean(
                   form?.referenceName && form?.partyName && form?.partyType,
                 )}
+                isPartyTypeLocked={Boolean(form?.partyType && !form?.referenceName)}
                 partyFetchKeyRef={lastFetchedPartyKeyRef}
               />
             </div>

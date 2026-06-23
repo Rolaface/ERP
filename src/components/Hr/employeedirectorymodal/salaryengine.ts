@@ -86,8 +86,20 @@ export interface CompensationPayload {
 
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
+// Converts a component name to a valid JS identifier key.
+// Strips anything that isn't alphanumeric or underscore so keys like
+// "SSF Employee Contribution 5.5%" become "ssf_employee_contribution_5_5"
+// and can safely be used as new Function() parameter names.
+// Converts any component name into a valid JS identifier.
+// Keeps only [a-z0-9], collapses everything else into a single underscore.
+// "SSF Employee Contribution 5.5%" → "ssf_employee_contribution_5_5"
+// "HRA/Transport (Monthly)"        → "hra_transport_monthly"
 const toNameKey = (name: string): string =>
-  name.trim().toLowerCase().replace(/\s+/g, "_");
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")  // any non-alphanumeric run → single underscore
+    .replace(/^_+|_+$/g, "");     // trim leading/trailing underscores
 
 const toAbbrKey = (abbr?: string | null): string | null =>
   abbr?.trim() ? abbr.trim().toLowerCase() : null;
@@ -101,11 +113,22 @@ const isTaxComponent = (comp: SalaryComponentDef): boolean =>
 
 const normaliseAmount = (v: unknown): number => r2(Number(v ?? 0));
 
-// Only write keys that are valid JS identifiers — keys with spaces break
-// new Function() in strict mode and cause all formulas to silently return 0.
+// Keys with spaces or special characters break new Function() in strict mode.
 const isValidIdentifier = (k: string): boolean =>
   /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(k);
 
+// Writes a value into ctx under all reasonable lookup keys for a component.
+// All keys are stored lowercase — case-insensitive resolution happens at
+// formula evaluation time via normalizeCaseInFormula(), not here.
+//
+// Keys written (examples for "Basic Salary", abbr "BS"):
+//   nameKey:   "basic_salary"
+//   firstWord: "basic"           ← useful for short formulas like `basic * 0.4`
+//   abbrKey:   "bs"
+//   origSnake: "basic_salary"    ← snake_case of original name (usually same as nameKey)
+//   camelCase: "BasicSalary"     ← for structures that use PascalCase in formulas
+//
+// To add a new alias pattern, add a write() call here.
 const writeCtx = (
   ctx:           CalcContext,
   nameKey:       string,
@@ -118,39 +141,33 @@ const writeCtx = (
   };
 
   write(nameKey);
-  write(nameKey.toUpperCase());
 
+  // First word of snake_case key — e.g. "basic" from "basic_salary"
   const firstWord = nameKey.split("_")[0];
   if (firstWord && firstWord !== nameKey) {
     write(firstWord);
-    write(firstWord.toUpperCase());
-    write(firstWord.charAt(0).toUpperCase() + firstWord.slice(1));
   }
 
   if (originalName?.trim()) {
-    const orig      = originalName.trim();
-    const origLower = orig.toLowerCase();
-    const origUpper = orig.toUpperCase();
-    const origSnake = origLower.replace(/\s+/g, "_");
+    const origLower = originalName.trim().toLowerCase();
+    // Same sanitization as toNameKey — strips %, dots, parens, etc.
+    const origSnake = origLower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
     const origTitle = origLower.replace(/\b\w/g, (c) => c.toUpperCase());
 
-    // Skip keys with spaces — not valid JS identifiers
-    write(orig);       // works only if single word e.g. "BASIC"
-    write(origLower);  // "basic"
-    write(origUpper);  // "BASIC"
-    write(origSnake);  // "basic_salary"
-    write(origSnake.toUpperCase()); // "BASIC_SALARY"
-    write(origTitle.replace(/\s+/g, "")); // "BasicSalary" — camelCase without spaces
+    write(origSnake);                          // "ssf_employee_contribution_5_5"
+    write(origTitle.replace(/\s+/g, ""));      // "BasicSalary"
   }
 
   if (abbrKey) {
     write(abbrKey);
-    write(abbrKey.toUpperCase());
   }
 };
 
 // ─── Python → JS Transpiler ───────────────────────────────────────────────────
 
+// Converts ERPNext-style Python formula syntax to valid JavaScript.
+// Handles: ternary (`x if cond else y`), `and`, `or`, `not`.
+// To support new Python syntax, add a replacement here.
 function pythonToJS(formula: string): string {
   let result = formula;
 
@@ -162,36 +179,61 @@ function pythonToJS(formula: string): string {
   }
 
   return result
-    .replace(/\band\b/g, "&&")
-    .replace(/\bor\b/g,  "||")
-    .replace(/\bnot\b/g, "!");
+    .replace(/\band\b/g,    "&&")
+    .replace(/\bor\b/g,     "||")
+    .replace(/\bnot\b/g,    "!")
+   
+   
+    .replace(/\bmin\s*\(/g, "Math.min(")
+    .replace(/\bmax\s*\(/g, "Math.max(")
+    .replace(/\bint\s*\(/g,   "Math.trunc(") 
+    .replace(/\babs\s*\(/g, "Math.abs(")
+    .replace(/\bTrue\b/g,   "true")
+    .replace(/\bFalse\b/g,  "false");
 }
 
 // ─── Formula Helpers ──────────────────────────────────────────────────────────
 
+// These are injected as named parameters into every formula evaluation.
+// Add new helpers here if ERPNext formulas use additional built-in functions.
 const FORMULA_HELPERS = {
   IF:  (cond: unknown, a: number, b: number): number => (cond ? a : b),
   AND: (...args: unknown[]): number => (args.every(Boolean) ? 1 : 0),
   OR:  (...args: unknown[]): number => (args.some(Boolean)  ? 1 : 0),
 } as const;
 
+// ─── Case-Insensitive Formula Normalizer ──────────────────────────────────────
+
+// Rewrites every identifier in a formula to match the actual key stored in ctx,
+// using a case-insensitive lookup. This means formula authors can freely write
+// BASIC, Basic, basic, or bAsIc — all will resolve to the same ctx entry.
+//
+// Only identifiers that exist in ctx (case-insensitively) are rewritten.
+// Literals, operators, and unknown tokens are left untouched.
+function normalizeCaseInFormula(formula: string, ctx: CalcContext): string {
+  const lowerMap: Record<string, string> = {};
+  for (const key of Object.keys(ctx)) {
+    lowerMap[key.toLowerCase()] = key;
+  }
+
+  return formula.replace(/\b[a-zA-Z_$][a-zA-Z0-9_$]*\b/g, (token) =>
+    lowerMap[token.toLowerCase()] ?? token,
+  );
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export function evaluateFormula(formula: string, ctx: CalcContext): number {
   if (!formula?.trim()) return 0;
   try {
-    const jsFormula = pythonToJS(formula);
+    // Step 1: convert Python syntax → JS syntax
+    // Step 2: normalize all identifiers to match ctx keys (case-insensitive)
+    const normalized = normalizeCaseInFormula(pythonToJS(formula), ctx);
 
-   
-    const merged: Record<string, unknown> = {
-      ...FORMULA_HELPERS,
-      ...ctx,
-    };
+    const merged: Record<string, unknown> = { ...FORMULA_HELPERS, ...ctx };
 
-    // Filter to valid JS identifiers only — spaces and special chars
-    // in keys cause new Function to throw and silently return 0.
-    const safeKeys:   string[]   = [];
-    const safeValues: unknown[]  = [];
+    const safeKeys:   string[]  = [];
+    const safeValues: unknown[] = [];
 
     for (const [k, v] of Object.entries(merged)) {
       if (isValidIdentifier(k)) {
@@ -201,10 +243,7 @@ export function evaluateFormula(formula: string, ctx: CalcContext): number {
     }
 
     // eslint-disable-next-line no-new-func
-    const fn = new Function(
-      ...safeKeys,
-      `"use strict"; return +(${jsFormula});`,
-    );
+    const fn = new Function(...safeKeys, `"use strict"; return +(${normalized});`);
 
     const n = Number(fn(...safeValues));
     return isFinite(n) ? n : 0;
@@ -282,7 +321,7 @@ export function calculateSalary(
   const ctx: CalcContext = {};
   writeCtx(ctx, "base", null, r2(monthlyBase), "base");
 
-  // Pass 1 — fixed non-tax components
+  // Pass 1 — fixed-amount non-tax components
   for (let i = 0; i < normalisedComponents.length; i++) {
     const comp = normalisedComponents[i];
     if (comp.amount_based_on_formula === 1 || isTaxComponent(comp)) continue;
@@ -292,7 +331,7 @@ export function calculateSalary(
     writeCtx(ctx, nameKey, abbrKey, r2(override ?? comp.amount), comp.salary_component);
   }
 
-  // Pass 2 — formula non-tax components (iterate until stable)
+  // Pass 2 — formula-based non-tax components (re-evaluated until stable)
   for (let pass = 0; pass < 10; pass++) {
     let changed = false;
     for (let i = 0; i < normalisedComponents.length; i++) {
@@ -315,7 +354,7 @@ export function calculateSalary(
     if (!changed) break;
   }
 
-  // Pass 3 — pre-tax gross
+  // Pass 3 — pre-tax gross (sum of all Earning components)
   const preTaxGross = r2(
     normalisedComponents
       .filter((c) => c.type === "Earning")
@@ -325,7 +364,7 @@ export function calculateSalary(
       }, 0),
   );
 
-  // Pass 4 — income tax
+  // Pass 4 — income tax calculation
   let annualTax  = 0;
   let monthlyTax = 0;
   if (taxConfig) {
@@ -336,7 +375,7 @@ export function calculateSalary(
   writeCtx(ctx, "annual_tax",  null, annualTax,  "annual_tax");
   writeCtx(ctx, "monthly_tax", null, monthlyTax, "monthly_tax");
 
-  // Pass 5 — tax-variable components
+  // Pass 5 — tax-variable components (depend on computed tax values above)
   for (let i = 0; i < normalisedComponents.length; i++) {
     const comp = normalisedComponents[i];
     if (!isTaxComponent(comp)) continue;
@@ -350,7 +389,7 @@ export function calculateSalary(
     writeCtx(ctx, nameKey, abbrKey, taxAmount, comp.salary_component);
   }
 
-  // Pass 6 — final results
+  // Pass 6 — assemble final result
   const resultComponents: ComponentResult[] = normalisedComponents.map((comp, i) => ({
     name:      comp.salary_component,
     key:       keys[i].nameKey,

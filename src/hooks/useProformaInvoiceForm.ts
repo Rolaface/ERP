@@ -102,6 +102,7 @@ export function buildInvoicePayload(
     tax_category: formData.taxCategory,
     updateStock: formData.updateStock ?? true,
     paymentMode: formData.mode,
+    payment_mode: formData.payment_mode,
     warehouse: formData.warehouse ?? "",
     billingAddress: formData.billingAddress ?? "",
     shippingAddress: formData.shippingAddress ?? "",
@@ -223,7 +224,7 @@ useEffect(() => {
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
-  const enableExchange = mode === "invoice";
+  const enableExchange = mode === "proforma";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
 
   const getBaseCurrencyFromStorage = () => {
@@ -696,6 +697,43 @@ if (
     });
   };
   //charge temeplete--------------------
+  // const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
+  //   setFormData((prev) => {
+  //     // calculate subtotal first
+  //     const subTotal = prev.items.reduce((sum, item) => {
+  //       const qty = Number(item.quantity || 0);
+  //       const price = Number(item.price || 0);
+  //       const discount = Number(item.discount || 0);
+  //       const net = qty * price * (1 - discount / 100);
+  //       return sum + net;
+  //     }, 0);
+
+  //     const mappedTaxes = taxes.map((t: any) => {
+  //       const rate = Number(t.rate) || 0;
+
+  //       const amount =
+  //         t.charge_type === "Actual"
+  //           ? Number(t.tax_amount) || 0
+  //           : (subTotal * rate) / 100;
+  //       const isActual = t.charge_type === "Actual";
+
+  //       return {
+  //         chargeType: t.charge_type,
+  //         accountHead: t.account_head,
+  //         description: t.description || "",
+  //         ...(isActual
+  //           ? { amount: Number(t.tax_amount) || 0 }
+  //           : { rate: Number(t.rate) || 0 }),
+  //       };
+  //     });
+
+  //     return {
+  //       ...prev,
+  //       taxes: mappedTaxes,
+  //       salesTaxTemplate: templateName,
+  //     };
+  //   });
+  // };
   const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
     setFormData((prev) => {
       // calculate subtotal first
@@ -709,20 +747,17 @@ if (
 
       const mappedTaxes = taxes.map((t: any) => {
         const rate = Number(t.rate) || 0;
-
-        const amount =
-          t.charge_type === "Actual"
+        const isActual = t.charge_type === "Actual";
+        const amount = isActual
             ? Number(t.tax_amount) || 0
             : (subTotal * rate) / 100;
-        const isActual = t.charge_type === "Actual";
 
         return {
-          chargeType: t.charge_type,
-          accountHead: t.account_head,
+          chargeType: t.charge_type || "",
+          accountHead: t.account_head || "",
           description: t.description || "",
-          ...(isActual
-            ? { amount: Number(t.tax_amount) || 0 }
-            : { rate: Number(t.rate) || 0 }),
+          rate: isActual ? null : rate, // Explicitly provide rate (or null)
+          amount: amount,               // Explicitly provide amount
         };
       });
 
@@ -880,6 +915,7 @@ items[index] = updatedItem;
       validTill: invoice.validTill,
       
       mode: invoice.paymentMode ?? prev.mode ?? "",
+      payment_mode: invoice.payment_mode ?? prev.payment_mode ?? "",
       currencyCode: invoice.currency,
       dateOfInvoice: invoice.postingDate,
       exchangeRt:

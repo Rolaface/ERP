@@ -425,15 +425,16 @@ const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
             />
 
             {/* Edit is only available if it is a Draft (docstatus === 0) */}
-            {isDraft && (
+            {/* {isDraft && ( */}
               <ActionButton
                 type="edit"
                 iconOnly
+                disabled= {!isDraft}
                 onClick={() =>
                   JournalEntriesModal(row.name, true, { onSuccess: fetchJE })
                 }
               />
-            )}
+            {/* )} */}
 
             {/* Render action menu if there are options available */}
             {customMenuActions.length > 0 && (
