@@ -260,6 +260,13 @@ const settingsItems: SettingsItem[] = [
     modules: ["Email Template"],
     hideInEmployeeView: true,
   },
+   {
+    to: "/scheduler",
+    label: "Scheduler",
+    icon: <CalendarClock {...iconProps} />,
+    modules: ["scheduler"],
+    hideInEmployeeView: true,
+},
   {
     to: "/settings",
     label: "User Preferences",
@@ -267,13 +274,7 @@ const settingsItems: SettingsItem[] = [
     modules: [],
     hideInEmployeeView: true, // ← hidden in employee view
   },
-  {
-    to: "/scheduler",
-    label: "Scheduler",
-    icon: <CalendarClock {...iconProps} />,
-    modules: ["scheduler"],
-    hideInEmployeeView: true,
-},
+ 
 ];
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
