@@ -350,6 +350,7 @@ export const usePurchaseInvoiceForm = ({
         }));
 
         setForm({ ...mapped, attachments: existingAttachments });
+        setUsePO(!!mapped.poNumber?.trim());
         const supplierAddrId = mapped.addresses?.supplierAddress?.id || "";
         const dispatchAddrId = mapped.addresses?.dispatchAddress?.id || "";
         const shippingAddrId = mapped.addresses?.shippingAddress?.id || "";

@@ -108,7 +108,7 @@ const PurchaseinvoicesTable: React.FC<PurchaseinvoicesTableProps> = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -721,7 +721,7 @@ const handleViewAttachment = (file: any) => {
         totalItems={totalItems}
         onPageChange={setPage}
         onPageSizeChange={(size) => setPageSize(size)}
-        pageSizeOptions={[10, 25, 50, 100]}
+         pageSizeOptions={[20, 50, 100,200]}
         extraFilters={
           <>
             <FilterSelect

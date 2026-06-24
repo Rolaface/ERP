@@ -65,7 +65,7 @@ const UserRolePage: React.FC = () => {
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [searchQuery, setSearchQuery] = useState("");
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -332,7 +332,7 @@ const handleView = (row: UserRole) => openRoleModal(row, false);
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
+         pageSizeOptions={[20, 50, 100,200]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
