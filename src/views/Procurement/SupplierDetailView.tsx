@@ -1,8 +1,27 @@
-import React, { useState, useEffect, useRef , useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
-  X, Search, FileText, Mail, Building2, FileBarChart, Globe, CreditCard, ShoppingCart, Receipt,
-  Menu, PanelLeftClose, PanelLeftOpen, Phone, MapPin, Tag, BadgeCheck, Banknote, Users, CalendarDays,
-  ChevronRight, Layers,
+  X,
+  Search,
+  FileText,
+  Mail,
+  Building2,
+  FileBarChart,
+  Globe,
+  CreditCard,
+  ShoppingCart,
+  Receipt,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Phone,
+  MapPin,
+  Tag,
+  BadgeCheck,
+  Banknote,
+  Users,
+  CalendarDays,
+  ChevronRight,
+  Layers,
 } from "lucide-react";
 import { usePermission } from "../../hooks/permission/usePermission";
 import type { Supplier } from "../../types/Supply/supplier";
@@ -15,7 +34,6 @@ import type { BankAccount } from "../../types/BankAccount/bank";
 import SupplierDetailViewPayments from "./SupplierDetailViewPayment";
 import { showApiError } from "../../utils/alert";
 
-
 interface Props {
   supplier: Supplier;
   suppliers: Supplier[];
@@ -25,12 +43,42 @@ interface Props {
 }
 
 const ALL_TABS = [
-  { id: "overview",        label: "Overview",        icon: <Globe />,        module: null },
-  { id: "bank-accounts",   label: "Bank Accounts",   icon: <Building2 />,   module: "Bank Account",   action: "read" as const },
-  { id: "purchase-orders", label: "Purchase Orders", icon: <ShoppingCart />, module: "Purchase Order", action: "read" as const },
-  { id: "bills",           label: "Bills",           icon: <Receipt />,      module: "Purchase Invoice", action: "read" as const },
-  { id: "payments",        label: "Payments",        icon: <CreditCard />,   module: "Payment Entry",  action: "read" as const },
-  { id: "statement",       label: "Statement",       icon: <FileBarChart />, module: "Supplier",       action: "report" as const },
+  { id: "overview", label: "Overview", icon: <Globe />, module: null },
+  {
+    id: "bank-accounts",
+    label: "Bank Accounts",
+    icon: <Building2 />,
+    module: "Bank Account",
+    action: "read" as const,
+  },
+  {
+    id: "purchase-orders",
+    label: "Purchase Orders",
+    icon: <ShoppingCart />,
+    module: "Purchase Order",
+    action: "read" as const,
+  },
+  {
+    id: "bills",
+    label: "Bills",
+    icon: <Receipt />,
+    module: "Purchase Invoice",
+    action: "read" as const,
+  },
+  {
+    id: "payments",
+    label: "Payments",
+    icon: <CreditCard />,
+    module: "Payment Entry",
+    action: "read" as const,
+  },
+  {
+    id: "statement",
+    label: "Statement",
+    icon: <FileBarChart />,
+    module: "Supplier",
+    action: "report" as const,
+  },
 ] as const;
 
 type TabId = (typeof ALL_TABS)[number]["id"];
@@ -42,7 +90,11 @@ const fmtDate = (raw?: string | null): string => {
   const d = new Date(raw);
   return isNaN(d.getTime())
     ? raw
-    : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    : d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
 };
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
@@ -54,32 +106,43 @@ const SupplierDetailView: React.FC<Props> = ({
   onSupplierSelect,
   onEdit,
 }) => {
-  
-  const [searchTerm,       setSearchTerm]       = useState("");
-  const [activeTab,        setActiveTab]        = useState<TabId>("overview");
-  const [showBankModal,    setShowBankModal]    = useState(false);
-  const [statement,        setStatement]        = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [statement, setStatement] = useState<any>(null);
   const [statementLoading, setStatementLoading] = useState(false);
-  const [editingRow,       setEditingRow]       = useState<BankAccount | null>(null);
-  const [sidebarOpen,      setSidebarOpen]      = useState(true);
-  const [mobileDrawer,     setMobileDrawer]     = useState(false);
+  const [editingRow, setEditingRow] = useState<BankAccount | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileDrawer, setMobileDrawer] = useState(false);
+  const [statementPage, setStatementPage] = useState(1);
+  const [statementPageSize, setStatementPageSize] = useState(10);
+
   const { can } = usePermission();
 
-const visibleTabs = useMemo(
-  () => ALL_TABS.filter((t) => !t.module || can(t.module, t.action)),
-  [can],
-);
+  const visibleTabs = useMemo(
+    () => ALL_TABS.filter((t) => !t.module || can(t.module, t.action)),
+    [can],
+  );
 
   const bankAccountsRefresh = useRef<(() => void) | null>(null);
-  const supplierId   = (supplier as any)?.id   ?? (supplier as any)?.supplierId;
-  const supplierName = (supplier as any)?.name ?? supplier?.supplierName ?? (supplier as any)?.supplierName;
-  const taxCategory  = (supplier as any)?.supplierTaxCategory ?? (supplier as any)?.taxCategory ?? supplier?.taxCategory;
-  const createdAt    = (supplier as any)?.createdAt ?? supplier?.dateOfAddition;
+
+  const supplierId = (supplier as any)?.id ?? (supplier as any)?.supplierId;
+  const supplierName =
+    (supplier as any)?.name ??
+    supplier?.supplierName ??
+    (supplier as any)?.supplierName;
+  const taxCategory =
+    (supplier as any)?.supplierTaxCategory ??
+    (supplier as any)?.taxCategory ??
+    supplier?.taxCategory;
+  const createdAt = (supplier as any)?.createdAt ?? supplier?.dateOfAddition;
   const contacts = (supplier as any)?.contacts ?? supplier?.contacts ?? [];
   const primaryContact = contacts.find((c: any) => c.isPrimary) ?? contacts[0];
-  const addresses    = (supplier as any)?.addresses ?? supplier?.addresses ?? [];
-  const billingAddr  = addresses.find((a: any) => a.type === "Billing") ?? addresses[0];
-  const terms = (supplier?.terms as any)?.Buying ?? (supplier?.terms as any)?.buying;
+  const addresses = (supplier as any)?.addresses ?? supplier?.addresses ?? [];
+  const billingAddr =
+    addresses.find((a: any) => a.type === "Billing") ?? addresses[0];
+  const terms =
+    (supplier?.terms as any)?.Buying ?? (supplier?.terms as any)?.buying;
 
   const billingLines = billingAddr
     ? [
@@ -92,7 +155,7 @@ const visibleTabs = useMemo(
   const q = searchTerm.trim().toLowerCase();
   const filteredSuppliers = suppliers.filter((s) => {
     const sName = ((s as any).name ?? s.supplierName ?? "").toLowerCase();
-    const sId   = ((s as any).id   ?? (s as any).supplierId ?? "").toLowerCase();
+    const sId = ((s as any).id ?? (s as any).supplierId ?? "").toLowerCase();
     const sTpin = (s.tpin ?? "").toLowerCase();
     return sName.includes(q) || sId.includes(q) || sTpin.includes(q);
   });
@@ -103,12 +166,17 @@ const visibleTabs = useMemo(
     return false;
   };
 
+  // ── Statement fetch — re-runs when tab opens OR page/pageSize changes ──
   useEffect(() => {
     if (activeTab !== "statement" || !supplierId) return;
     const load = async () => {
       try {
         setStatementLoading(true);
-        const res = await getSupplierStatement(supplierId);
+        const res = await getSupplierStatement(
+          supplierId,
+          statementPage,
+          statementPageSize,
+        );
         if (res?.message.status_code === 200) setStatement(res.message.data);
       } catch (err) {
         showApiError(err);
@@ -117,7 +185,7 @@ const visibleTabs = useMemo(
       }
     };
     load();
-  }, [activeTab, supplierId]);
+  }, [activeTab, supplierId, statementPage, statementPageSize]);
 
   const renderActionButton = () => {
     switch (activeTab) {
@@ -134,9 +202,7 @@ const visibleTabs = useMemo(
     }
   };
 
-  // ── Sidebar List ────────────────────────────────────────────────────────
-  // CHANGED: outer div h-[450px] → h-[490px] no-scrollbar (matches customer)
-  // CHANGED: inner scroll div removed min-h-0, added rounded-2xl (matches customer)
+  // ── Sidebar List ─────────────────────────────────────────────────────────
   const SidebarList = () => (
     <div className="flex flex-col h-[490px] no-scrollbar">
       <div className="px-3 py-2.5 border-b border-theme shrink-0">
@@ -153,32 +219,45 @@ const visibleTabs = useMemo(
       </div>
       <div className="overflow-y-auto px-2 py-1.5 flex-1 rounded-2xl no-scrollbar">
         {filteredSuppliers.length === 0 && (
-          <p className="text-[10px] text-muted text-center py-6">No suppliers found</p>
+          <p className="text-[10px] text-muted text-center py-6">
+            No suppliers found
+          </p>
         )}
         {filteredSuppliers.map((s) => {
           const active = isActive(s);
-          const sName  = (s as any).name ?? s.supplierName ?? "?";
-          const sId    = (s as any).id   ?? (s as any).supplierId ?? "—";
+          const sName = (s as any).name ?? s.supplierName ?? "?";
+          const sId = (s as any).id ?? (s as any).supplierId ?? "—";
           return (
             <button
               key={sId}
-              onClick={() => { onSupplierSelect(s); setMobileDrawer(false); }}
+              onClick={() => {
+                onSupplierSelect(s);
+                setMobileDrawer(false);
+              }}
               className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center gap-3 border mb-0.5 ${
                 active
                   ? "bg-primary text-white border-primary shadow-sm"
                   : "bg-transparent border-transparent hover:bg-row-hover"
               }`}
             >
-              <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-bold text-[11px] ${
-                active ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
-              }`}>
+              <div
+                className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-bold text-[11px] ${
+                  active
+                    ? "bg-white/20 text-white"
+                    : "bg-primary/10 text-primary"
+                }`}
+              >
                 {sName.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`font-bold text-[11px] truncate leading-tight ${active ? "text-white" : "text-main"}`}>
+                <p
+                  className={`font-bold text-[11px] truncate leading-tight ${active ? "text-white" : "text-main"}`}
+                >
                   {sName}
                 </p>
-                <p className={`text-[9px] font-mono uppercase tracking-wider ${active ? "text-white/60" : "text-muted"}`}>
+                <p
+                  className={`text-[9px] font-mono uppercase tracking-wider ${active ? "text-white/60" : "text-muted"}`}
+                >
                   {sId}
                 </p>
               </div>
@@ -192,38 +271,42 @@ const visibleTabs = useMemo(
   // ═══════════════════ RENDER ═══════════════════════════════════════════════
   return (
     <div className="flex flex-col bg-app text-main overflow-hidden flex-1 min-h-0">
-
       {/* ── HEADER ── */}
       <header className="bg-card px-4 py-2.5 flex items-center justify-between border-b border-theme shrink-0 gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          {/* Mobile drawer toggle */}
-          <button onClick={() => setMobileDrawer(true)}
-            className="lg:hidden p-1.5 hover:bg-row-hover rounded-lg border border-theme transition-all">
+          <button
+            onClick={() => setMobileDrawer(true)}
+            className="lg:hidden p-1.5 hover:bg-row-hover rounded-lg border border-theme transition-all"
+          >
             <Menu size={15} className="text-muted" />
           </button>
-          {/* Desktop sidebar toggle */}
           <button
             onClick={() => setSidebarOpen((v) => !v)}
             className="hidden lg:flex p-1.5 hover:bg-row-hover rounded-lg border border-theme transition-all"
             title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
-            {sidebarOpen
-              ? <PanelLeftClose size={15} className="text-muted" />
-              : <PanelLeftOpen  size={15} className="text-muted" />}
+            {sidebarOpen ? (
+              <PanelLeftClose size={15} className="text-muted" />
+            ) : (
+              <PanelLeftOpen size={15} className="text-muted" />
+            )}
           </button>
-          <button onClick={onBack}
-            className="p-1.5 hover:bg-row-hover rounded-lg border border-theme transition-all">
+          <button
+            onClick={onBack}
+            className="p-1.5 hover:bg-row-hover rounded-lg border border-theme transition-all"
+          >
             <X size={15} className="text-muted" />
           </button>
 
           <div className="flex items-center gap-2.5 min-w-0 ml-1">
-            {/* Avatar */}
             <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center font-black text-[13px] text-primary shrink-0 border border-primary/20">
               {(supplierName ?? "?").charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-[13px] font-black tracking-tight leading-none truncate">{supplierName ?? "—"}</h2>
+                <h2 className="text-[13px] font-black tracking-tight leading-none truncate">
+                  {supplierName ?? "—"}
+                </h2>
                 {supplierId && (
                   <span className="text-[9px] font-bold text-muted bg-row-hover px-1.5 py-0.5 rounded border border-theme uppercase shrink-0">
                     {supplierId}
@@ -253,29 +336,43 @@ const visibleTabs = useMemo(
 
       {/* ── BODY ── */}
       <div className="flex-1 flex overflow-hidden min-h-0 relative">
-
         {/* Mobile overlay drawer */}
         {mobileDrawer && (
           <>
-            <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileDrawer(false)} />
+            <div
+              className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+              onClick={() => setMobileDrawer(false)}
+            />
             <div className="fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-theme z-50 flex flex-col lg:hidden shadow-2xl">
               <div className="flex items-center justify-between px-4 py-3 border-b border-theme shrink-0">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted">Suppliers</span>
-                <button onClick={() => setMobileDrawer(false)} className="p-1 rounded-lg hover:bg-row-hover transition-all">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+                  Suppliers
+                </span>
+                <button
+                  onClick={() => setMobileDrawer(false)}
+                  className="p-1 rounded-lg hover:bg-row-hover transition-all"
+                >
                   <X size={14} className="text-muted" />
                 </button>
               </div>
-              <div className="flex-1 min-h-0 overflow-hidden"><SidebarList /></div>
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <SidebarList />
+              </div>
             </div>
           </>
         )}
 
         {/* Desktop sidebar */}
-        <aside className={`hidden lg:flex flex-col bg-card border-r border-theme transition-all duration-300 shrink-0 overflow-hidden ${sidebarOpen ? "w-64" : "w-0 border-0"}`}>
+        <aside
+          className={`hidden lg:flex flex-col bg-card border-r border-theme transition-all duration-300 shrink-0 overflow-hidden ${sidebarOpen ? "w-64" : "w-0 border-0"}`}
+        >
           {sidebarOpen && (
             <div className="px-4 py-3 border-b border-theme shrink-0">
               <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted">
-                All Suppliers <span className="ml-1.5 text-primary font-black">{suppliers.length}</span>
+                All Suppliers{" "}
+                <span className="ml-1.5 text-primary font-black">
+                  {suppliers.length}
+                </span>
               </p>
             </div>
           )}
@@ -286,7 +383,6 @@ const visibleTabs = useMemo(
 
         {/* ── MAIN CONTENT ── */}
         <main className="flex-1 flex flex-col min-w-0 min-h-0 bg-app/20">
-
           {/* Tabs */}
           <div className="bg-card border-b border-theme px-4 shrink-0 z-10">
             <div className="flex overflow-x-auto scrollbar-hide">
@@ -300,7 +396,9 @@ const visibleTabs = useMemo(
                       : "border-transparent text-muted hover:text-main"
                   }`}
                 >
-                  {React.cloneElement(t.icon as React.ReactElement, { size: 13 })}
+                  {React.cloneElement(t.icon as React.ReactElement, {
+                    size: 13,
+                  })}
                   {t.label}
                 </button>
               ))}
@@ -309,22 +407,24 @@ const visibleTabs = useMemo(
 
           {/* Tab content */}
           <div className="flex-1 min-w-0 overflow-auto">
-
             {/* ════ OVERVIEW ════════════════════════════════════════════ */}
             {activeTab === "overview" && (
               <div className="p-4 space-y-4">
-
-                {/* CHANGED: grid-cols-5 → grid-cols-6 to match customer layout width */}
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
                   <KpiCard
                     icon={<Users size={15} />}
                     label="Supplier Type"
-                    value={(supplier as any)?.type ?? (supplier as any)?.supplierType}
+                    value={
+                      (supplier as any)?.type ?? (supplier as any)?.supplierType
+                    }
                   />
                   <KpiCard
                     icon={<Globe size={15} />}
                     label="Registration No"
-                    value={(supplier as any)?.registrationNo ?? (supplier as any)?.registration_no}
+                    value={
+                      (supplier as any)?.registrationNo ??
+                      (supplier as any)?.registration_no
+                    }
                   />
                   <KpiCard
                     icon={<Banknote size={15} />}
@@ -349,20 +449,24 @@ const visibleTabs = useMemo(
                   />
                 </div>
 
-                {/* Contact + Terms */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-                  {/* CHANGED: contact card — overflow-hidden → overflow-auto h-[390px] no-scrollbar (matches customer) */}
                   <div className="bg-card rounded-2xl border border-theme overflow-auto h-[390px] no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme">
                       <Mail size={12} className="text-primary" />
-                      <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Contact Channels</h4>
+                      <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">
+                        Contact Channels
+                      </h4>
                     </div>
                     <div className="divide-y divide-theme">
                       <DataRow
                         icon={<Users size={11} />}
                         label="Contact Person"
-                        value={primaryContact?.fullName ?? [primaryContact?.firstName, primaryContact?.lastName].filter(Boolean).join(" ")}
+                        value={
+                          primaryContact?.fullName ??
+                          [primaryContact?.firstName, primaryContact?.lastName]
+                            .filter(Boolean)
+                            .join(" ")
+                        }
                       />
                       <DataRow
                         icon={<Phone size={11} />}
@@ -382,28 +486,35 @@ const visibleTabs = useMemo(
                       />
                     </div>
 
-                    {/* Addresses block — matches customer's Physical Locations section */}
                     <div className="border-t border-theme">
                       <div className="flex items-center gap-2 px-5 py-3 border-b border-theme bg-row-hover/30">
                         <MapPin size={12} className="text-primary" />
-                        <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Physical Locations</h4>
+                        <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">
+                          Physical Locations
+                        </h4>
                       </div>
-
                       {billingLines.length > 0 && (
                         <div className="px-4 py-3 border-b border-theme last:border-0">
-                          <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-1.5">Billing Address</p>
+                          <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-1.5">
+                            Billing Address
+                          </p>
                           {billingLines.map((line, i) => (
-                            <p key={i} className="text-xs font-medium text-main leading-snug">{line}</p>
+                            <p
+                              key={i}
+                              className="text-xs font-medium text-main leading-snug"
+                            >
+                              {line}
+                            </p>
                           ))}
                         </div>
                       )}
-
                       {!billingLines.length && (
-                        <p className="px-4 py-4 text-xs text-muted italic">No addresses on file</p>
+                        <p className="px-4 py-4 text-xs text-muted italic">
+                          No addresses on file
+                        </p>
                       )}
                     </div>
 
-                    {/* All contacts list — if more than one */}
                     {contacts.length > 1 && (
                       <div className="px-4 py-3 border-t border-theme">
                         <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-2">
@@ -411,16 +522,30 @@ const visibleTabs = useMemo(
                         </p>
                         <div className="space-y-2">
                           {contacts.map((c: any, i: number) => (
-                            <div key={c.id ?? i} className="flex items-center gap-3 p-2.5 rounded-xl border border-theme bg-app/50">
+                            <div
+                              key={c.id ?? i}
+                              className="flex items-center gap-3 p-2.5 rounded-xl border border-theme bg-app/50"
+                            >
                               <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black shrink-0">
-                                {(c.fullName ?? c.firstName ?? "?").charAt(0).toUpperCase()}
+                                {(c.fullName ?? c.firstName ?? "?")
+                                  .charAt(0)
+                                  .toUpperCase()}
                               </div>
                               <div className="min-w-0">
                                 <p className="text-xs font-bold text-main truncate">
-                                  {c.fullName ?? [c.firstName, c.lastName].filter(Boolean).join(" ")}
-                                  {c.isPrimary && <span className="ml-1.5 text-[8px] font-black text-primary uppercase">Primary</span>}
+                                  {c.fullName ??
+                                    [c.firstName, c.lastName]
+                                      .filter(Boolean)
+                                      .join(" ")}
+                                  {c.isPrimary && (
+                                    <span className="ml-1.5 text-[8px] font-black text-primary uppercase">
+                                      Primary
+                                    </span>
+                                  )}
                                 </p>
-                                <p className="text-[10px] text-muted truncate">{c.email}</p>
+                                <p className="text-[10px] text-muted truncate">
+                                  {c.email}
+                                </p>
                               </div>
                             </div>
                           ))}
@@ -429,71 +554,121 @@ const visibleTabs = useMemo(
                     )}
                   </div>
 
-                  {/* CHANGED: terms card — removed inline style maxHeight, use h-[390px] no-scrollbar (matches customer) */}
                   <div className="bg-card rounded-2xl border border-theme flex flex-col h-[390px] no-scrollbar">
                     <div className="flex items-center gap-2 px-5 py-3.5 border-b border-theme shrink-0">
                       <FileText size={12} className="text-primary" />
-                      <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">Terms & Conditions</h4>
+                      <h4 className="text-[10px] font-black text-muted uppercase tracking-widest">
+                        Terms & Conditions
+                      </h4>
                     </div>
-
                     <div className="overflow-y-auto flex-1 p-5 space-y-4 text-xs text-muted no-scrollbar">
-
-                      {/* General */}
                       {terms?.general && (
                         <TermsSection title="General">
                           <p className="leading-relaxed">{terms.general}</p>
                         </TermsSection>
                       )}
-
-                      {/* Payment phases */}
                       {(terms?.payment?.phases?.length ?? 0) > 0 && (
                         <TermsSection title="Payment Phases">
                           <div className="space-y-2">
-                            {terms.payment.phases.map((phase: any, i: number) => (
-                              <div key={phase.id ?? i} className="rounded-xl border border-theme p-3 bg-app/50">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs font-bold text-main capitalize">{phase.name}</span>
-                                  <span className="text-xs font-black text-primary">
-                                    {String(phase.percentage).includes("%") ? phase.percentage : `${phase.percentage}%`}
-                                  </span>
+                            {terms.payment.phases.map(
+                              (phase: any, i: number) => (
+                                <div
+                                  key={phase.id ?? i}
+                                  className="rounded-xl border border-theme p-3 bg-app/50"
+                                >
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-bold text-main capitalize">
+                                      {phase.name}
+                                    </span>
+                                    <span className="text-xs font-black text-primary">
+                                      {String(phase.percentage).includes("%")
+                                        ? phase.percentage
+                                        : `${phase.percentage}%`}
+                                    </span>
+                                  </div>
+                                  {phase.condition && (
+                                    <p className="text-[10px] text-muted">
+                                      {phase.condition}
+                                    </p>
+                                  )}
+                                  {phase.credit_days && (
+                                    <p className="text-[10px] text-muted">
+                                      Credit:{" "}
+                                      <span className="font-semibold text-main">
+                                        {phase.credit_days} days
+                                      </span>
+                                    </p>
+                                  )}
                                 </div>
-                                {phase.condition && (
-                                  <p className="text-[10px] text-muted">{phase.condition}</p>
-                                )}
-                                {phase.credit_days && (
-                                  <p className="text-[10px] text-muted">
-                                    Credit: <span className="font-semibold text-main">{phase.credit_days} days</span>
-                                  </p>
-                                )}
-                              </div>
-                            ))}
+                              ),
+                            )}
                           </div>
                         </TermsSection>
                       )}
-
-                      {/* Payment extras */}
-                      {(terms?.payment?.dueDates || terms?.payment?.lateCharges || terms?.payment?.taxes || terms?.payment?.notes) && (
+                      {(terms?.payment?.dueDates ||
+                        terms?.payment?.lateCharges ||
+                        terms?.payment?.taxes ||
+                        terms?.payment?.notes) && (
                         <TermsSection title="Payment Details">
                           <div className="space-y-1">
-                            {terms.payment.dueDates    && <TermLine label="Due Dates"     value={terms.payment.dueDates} />}
-                            {terms.payment.lateCharges && <TermLine label="Late Charges"  value={terms.payment.lateCharges} />}
-                            {terms.payment.taxes       && <TermLine label="Taxes"         value={terms.payment.taxes} />}
-                            {terms.payment.notes       && <TermLine label="Notes"         value={terms.payment.notes} />}
+                            {terms.payment.dueDates && (
+                              <TermLine
+                                label="Due Dates"
+                                value={terms.payment.dueDates}
+                              />
+                            )}
+                            {terms.payment.lateCharges && (
+                              <TermLine
+                                label="Late Charges"
+                                value={terms.payment.lateCharges}
+                              />
+                            )}
+                            {terms.payment.taxes && (
+                              <TermLine
+                                label="Taxes"
+                                value={terms.payment.taxes}
+                              />
+                            )}
+                            {terms.payment.notes && (
+                              <TermLine
+                                label="Notes"
+                                value={terms.payment.notes}
+                              />
+                            )}
                           </div>
                         </TermsSection>
                       )}
-
-                      {terms?.delivery     && <TermsSection title="Delivery"><p>{terms.delivery}</p></TermsSection>}
-                      {terms?.cancellation && <TermsSection title="Cancellation"><p>{terms.cancellation}</p></TermsSection>}
-                      {terms?.warranty     && <TermsSection title="Warranty"><p>{terms.warranty}</p></TermsSection>}
-                      {terms?.liability    && <TermsSection title="Liability"><p>{terms.liability}</p></TermsSection>}
-
+                      {terms?.delivery && (
+                        <TermsSection title="Delivery">
+                          <p>{terms.delivery}</p>
+                        </TermsSection>
+                      )}
+                      {terms?.cancellation && (
+                        <TermsSection title="Cancellation">
+                          <p>{terms.cancellation}</p>
+                        </TermsSection>
+                      )}
+                      {terms?.warranty && (
+                        <TermsSection title="Warranty">
+                          <p>{terms.warranty}</p>
+                        </TermsSection>
+                      )}
+                      {terms?.liability && (
+                        <TermsSection title="Liability">
+                          <p>{terms.liability}</p>
+                        </TermsSection>
+                      )}
                       {!terms && (
                         <div className="flex flex-col items-center justify-center py-10 gap-3">
                           <div className="w-10 h-10 rounded-xl border-2 border-dashed border-theme flex items-center justify-center">
-                            <FileText size={16} className="text-muted opacity-30" />
+                            <FileText
+                              size={16}
+                              className="text-muted opacity-30"
+                            />
                           </div>
-                          <p className="text-[11px] text-muted italic">No terms defined for this supplier</p>
+                          <p className="text-[11px] text-muted italic">
+                            No terms defined for this supplier
+                          </p>
                         </div>
                       )}
                     </div>
@@ -507,8 +682,13 @@ const visibleTabs = useMemo(
               <div className="p-2 w-full min-w-0 overflow-hidden">
                 <SupplierBankDetails
                   supplierName={supplierId}
-                  onAdd={(refresh) => { bankAccountsRefresh.current = refresh; }}
-                  onEdit={(row) => { setEditingRow(row); setShowBankModal(true); }}
+                  onAdd={(refresh) => {
+                    bankAccountsRefresh.current = refresh;
+                  }}
+                  onEdit={(row) => {
+                    setEditingRow(row);
+                    setShowBankModal(true);
+                  }}
                 />
               </div>
             )}
@@ -545,6 +725,13 @@ const visibleTabs = useMemo(
               <SupplierStatement
                 supplier={supplier}
                 statement={statement}
+                page={statementPage}
+                pageSize={statementPageSize}
+                onPageChange={setStatementPage}
+                onPageSizeChange={(size) => {
+                  setStatementPageSize(size);
+                  setStatementPage(1);
+                }}
                 onMakePayment={(entry) => console.log("pay", entry)}
                 onViewEntry={(entry) => console.log("view", entry)}
               />
@@ -554,7 +741,9 @@ const visibleTabs = useMemo(
                 <div className="p-5 rounded-2xl bg-row-hover text-muted mb-4">
                   <FileText size={28} />
                 </div>
-                <p className="text-[10px] text-muted font-bold uppercase mt-1">Statement data could not be loaded</p>
+                <p className="text-[10px] text-muted font-bold uppercase mt-1">
+                  Statement data could not be loaded
+                </p>
               </div>
             )}
           </div>
@@ -566,9 +755,11 @@ const visibleTabs = useMemo(
 
 // ─── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 
-/** KPI banner card */
 const KpiCard = ({
-  icon, label, value, mono,
+  icon,
+  label,
+  value,
+  mono,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -580,17 +771,23 @@ const KpiCard = ({
       {icon}
     </div>
     <div className="min-w-0">
-      <p className="text-[8px] font-black text-muted uppercase tracking-wider mb-0.5">{label}</p>
-      <p className={`text-xs font-bold text-main truncate ${mono ? "font-mono" : ""}`}>
+      <p className="text-[8px] font-black text-muted uppercase tracking-wider mb-0.5">
+        {label}
+      </p>
+      <p
+        className={`text-xs font-bold text-main truncate ${mono ? "font-mono" : ""}`}
+      >
         {value || "—"}
       </p>
     </div>
   </div>
 );
 
-/** Data row inside Contact card */
 const DataRow = ({
-  icon, label, value, mono,
+  icon,
+  label,
+  value,
+  mono,
 }: {
   icon?: React.ReactNode;
   label: string;
@@ -600,16 +797,25 @@ const DataRow = ({
   <div className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-row-hover/60 transition-colors">
     <div className="flex items-center gap-1.5 shrink-0">
       {icon && <span className="text-muted">{icon}</span>}
-      <span className="text-[9px] font-black text-muted uppercase tracking-widest">{label}</span>
+      <span className="text-[9px] font-black text-muted uppercase tracking-widest">
+        {label}
+      </span>
     </div>
-    <span className={`text-xs font-semibold text-main text-right max-w-[200px] truncate ${mono ? "font-mono" : ""}`}>
+    <span
+      className={`text-xs font-semibold text-main text-right max-w-[200px] truncate ${mono ? "font-mono" : ""}`}
+    >
       {value || "—"}
     </span>
   </div>
 );
 
-/** Terms section wrapper */
-const TermsSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const TermsSection = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
   <div>
     <p className="text-[9px] font-black text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
       <ChevronRight size={9} className="text-primary" />
@@ -619,7 +825,6 @@ const TermsSection = ({ title, children }: { title: string; children: React.Reac
   </div>
 );
 
-/** Single term key-value line */
 const TermLine = ({ label, value }: { label: string; value: string }) => (
   <p>
     <span className="font-semibold text-main">{label}: </span>
