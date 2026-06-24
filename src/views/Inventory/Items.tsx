@@ -60,6 +60,9 @@ const flattenItemDetail = (fullItem: any): Item => {
     taxCategory: Array.isArray(taxInfo)
       ? (taxInfo[0]?.taxCategory ?? fullItem.taxCategory ?? "")
       : ((taxInfo as any)?.taxCategory ?? fullItem.taxCategory ?? ""),
+       taxTitle: Array.isArray(taxInfo)
+    ? (taxInfo[0]?.taxTitle ?? "")
+    : "",
 
     taxPreference:
       fullItem.taxInfo?.taxPreference ?? fullItem.taxPreference ?? "",
@@ -176,6 +179,9 @@ const Items: React.FC = () => {
         taxCategory: Array.isArray(it.taxInfo)
           ? (it.taxInfo[0]?.taxCategory ?? "")
           : (it.taxInfo?.taxCategory ?? ""),
+          taxTitle: Array.isArray(it.taxInfo)
+    ? (it.taxInfo[0]?.taxTitle ?? "")
+    : "",
         taxPreference: it.taxInfo?.taxPreference ?? "",
         taxType: it.taxInfo?.taxType ?? "",
         taxCode: it.taxInfo?.taxCode ?? "",
@@ -491,6 +497,19 @@ const handleAddPurchaseInvoice = useCallback(() => {
       ),
       tooltip: (i) => i.sellingPrice,
     },
+    {
+  key: "taxTitle",
+  header: "Tax Title",
+  align: "center",
+  render: (i) => (
+    <div className="py-1.5">
+      <span className="block">
+        {i.taxTitle || "-"}
+      </span>
+    </div>
+  ),
+  tooltip: (i) => i.taxTitle || "-",
+},
     {
       key: "actions",
       header: "Actions",
