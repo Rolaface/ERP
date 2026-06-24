@@ -115,7 +115,7 @@ const SupplierDetailView: React.FC<Props> = ({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileDrawer, setMobileDrawer] = useState(false);
   const [statementPage, setStatementPage] = useState(1);
-  const [statementPageSize, setStatementPageSize] = useState(10);
+  const [statementPageSize, setStatementPageSize] = useState(20);
 
   const { can } = usePermission();
 

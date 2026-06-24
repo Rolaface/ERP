@@ -1,144 +1,306 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
+import { createPortal } from "react-dom";
 import { getAllCustomers } from "../../api/customerApi";
+
+// ─── TYPES ────────────────────────────────────────────────────────────────────
 
 type Customer = {
   id: string;
   name: string;
   customerCode?: string;
+  currency?: string;
+  type?: string;
+  status?: string;
+  taxCategory?: string;
 };
+
+export interface CustomerSelectValue {
+  id: string;
+  name: string;
+  customerCode?: string;
+  currency?: string;
+  type?: string;
+  status?: string;
+  taxCategory?: string;
+}
 
 interface CustomerSelectProps {
   value?: string;
   selectedId?: string;
-  onChange: (customer: { id: string; name: string }) => void;
+  onChange: (customer: CustomerSelectValue) => void;
+  onClear?: () => void;
   className?: string;
   label?: string;
+  placeholder?: string;
   taxCategory?: string;
   required?: boolean;
+  disabled?: boolean;
+  error?: string;
 }
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+const mapCustomer = (c: any): Customer => ({
+  id: c.id,
+  name: c.name,
+  customerCode: c.code ?? c.customerCode,
+  currency: c.currency,
+  type: c.type,
+  status: c.status,
+  taxCategory: c.customerTaxCategory,
+});
+
+function getDropStyle(
+  rect: DOMRect,
+  vw: number,
+  vh: number,
+): React.CSSProperties {
+  const PADDING = 8;
+  const DROP_H = 230;
+  const width = rect.width;
+
+  let left = rect.left;
+  if (left + width > vw - PADDING)
+    left = Math.max(PADDING, vw - width - PADDING);
+
+  const spaceBelow = vh - rect.bottom - PADDING;
+  const spaceAbove = rect.top - PADDING;
+  const flipUp = spaceBelow < DROP_H && spaceAbove > spaceBelow;
+
+  const vertPos = flipUp
+    ? { bottom: vh - rect.top + 4, top: "auto" as const }
+    : { top: rect.bottom + 4, bottom: "auto" as const };
+
+  return { position: "fixed", ...vertPos, left, width, zIndex: 9999 };
+}
+
+// ─── COMPONENT ────────────────────────────────────────────────────────────────
 
 export default function CustomerSelect({
   value = "",
   selectedId,
   onChange,
+  onClear,
   className = "",
   label = "Customer",
+  placeholder = "Select",
   taxCategory,
   required = false,
+  disabled = false,
+  error,
 }: CustomerSelectProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetched, setFetched] = useState(false);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
+  const [dropRect, setDropRect] = useState<DOMRect | null>(null);
+
+  const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch customers from API — called on click/focus of the input
-  const fetchCustomers = async () => {
-    try {
-      setLoading(true);
-      const res = await getAllCustomers(1, 100, taxCategory, "", "active");
-      if (res?.status_code !== 200) return;
-
-      setCustomers(
-        res.data.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          customerCode: c.code ?? c.customerCode,
-        })),
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ── Sync display value ────────────────────────────────────────────────────
   useEffect(() => {
     setSearch(value);
   }, [value]);
 
   useEffect(() => {
-    if (!selectedId || customers.length === 0) return;
-    const selected = customers.find((c) => c.id === selectedId);
-    if (selected) setSearch(selected.name);
-  }, [selectedId, customers]);
+    if (value) {
+      setSearch(value);
+      return;
+    }
+    if (selectedId && customers.length > 0) {
+      const found = customers.find((c) => c.id === selectedId);
+      if (found) setSearch(found.name);
+    }
+  }, [value, selectedId, customers]);
 
+  // ── Outside click ─────────────────────────────────────────────────────────
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const t = e.target as Node;
       if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
+        dropdownRef.current?.contains(t) ||
+        containerRef.current?.contains(t)
+      )
+        return;
+      setOpen(false);
+      if (!customers.find((c) => c.name === search)) setSearch(value);
     };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open, search, customers, value]);
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // ── Reposition on scroll / resize ────────────────────────────────────────
+  useEffect(() => {
+    if (!open) return;
+    const update = () =>
+      setDropRect(containerRef.current?.getBoundingClientRect() ?? null);
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open]);
 
-  const filteredCustomers = customers.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  // ── Load customers once ───────────────────────────────────────────────────
+  const loadCustomers = useCallback(async () => {
+    if (fetched) return;
+    try {
+      setLoading(true);
+      const res = await getAllCustomers(1, 1000, taxCategory, "", "active");
+      if (res?.status_code !== 200) return;
+      const raw: any[] = Array.isArray(res.data) ? res.data : [];
+      setCustomers(raw.map(mapCustomer));
+      setFetched(true);
+    } catch (err) {
+      console.error("CustomerSelect: failed to load customers", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetched, taxCategory]);
 
+  const handleOpen = useCallback(() => {
+    if (disabled) return;
+    setDropRect(containerRef.current?.getBoundingClientRect() ?? null);
+    setOpen(true);
+    inputRef.current?.select();
+    loadCustomers();
+  }, [disabled, loadCustomers]);
+
+  // ── Filtered list ─────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.id.toLowerCase().includes(q) ||
+        (c.customerCode ?? "").toLowerCase().includes(q),
+    );
+  }, [customers, search]);
+
+  // ── Select ────────────────────────────────────────────────────────────────
+  const handleSelect = (c: Customer) => {
+    setSearch(c.name);
+    setOpen(false);
+    onChange({
+      id: c.id,
+      name: c.name,
+      customerCode: c.customerCode,
+      currency: c.currency,
+      type: c.type,
+      status: c.status,
+      taxCategory: c.taxCategory,
+    });
+  };
+
+  // ── Dropdown style ────────────────────────────────────────────────────────
+  const dropStyle = useMemo((): React.CSSProperties => {
+    if (!dropRect) return {};
+    return getDropStyle(dropRect, window.innerWidth, window.innerHeight);
+  }, [dropRect]);
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
   return (
     <div className={`w-full min-w-0 flex flex-col ${className}`}>
-      <span className="block text-[10px] font-medium text-main mb-1">
-        {label}
-        {required && <span className="text-danger">*</span>}
-      </span>
+      {label && (
+        <span className="block text-[10px] font-medium text-main mb-1">
+          {label}
+          {required && <span className="text-danger ml-0.5">*</span>}
+        </span>
+      )}
 
       <div ref={containerRef} className="relative w-full">
         <input
+          ref={inputRef}
+          type="text"
+          autoComplete="off"
+          disabled={disabled}
           className={[
             "py-1 px-2 border rounded text-[11px] text-main bg-card w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap",
-            "border-[var(--border)] hover:border-primary/40",
+            disabled
+              ? "opacity-50 cursor-not-allowed border-theme"
+              : error
+                ? "border-red-400/60"
+                : "border-theme hover:border-primary/40 focus:outline-none focus:border-primary",
           ].join(" ")}
-          placeholder={loading ? "Loading..." : "Select"}
+          placeholder={loading ? "Loading..." : placeholder}
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setOpen(true);
+            if (!open) {
+              setDropRect(
+                containerRef.current?.getBoundingClientRect() ?? null,
+              );
+              setOpen(true);
+              loadCustomers();
+            }
           }}
-          onClick={() => {
-            setOpen(true);
-            fetchCustomers(); 
-          }}
+          onFocus={handleOpen}
         />
-        {open && (
-          <div className="absolute left-0 top-full mt-1 w-full max-w-full bg-card border border-[var(--border)] shadow rounded z-30">
-            <ul className="max-h-56 overflow-y-auto text-[13px]">
-              {loading && (
-                <li className="px-2 py-1 text-muted text-[11px]">Loading...</li>
-              )}
 
-              {!loading &&
-                filteredCustomers.map((customer) => (
+        {error && (
+          <p className="text-[10px] text-red-500 mt-1 font-medium">{error}</p>
+        )}
+      </div>
+
+      {open &&
+        dropRect &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            style={dropStyle}
+            className="bg-card border border-theme rounded-lg shadow-xl overflow-hidden"
+          >
+            <ul className="max-h-56 overflow-y-auto text-[11px]">
+              {loading ? (
+                <li className="px-3 py-2 text-muted text-[11px]">
+                  Loading…
+                </li>
+              ) : filtered.length === 0 ? (
+                <li className="px-3 py-2 text-muted text-[11px]">
+                  {search ? `No match for "${search}"` : "No customers found"}
+                </li>
+              ) : (
+                filtered.map((c) => (
                   <li
-                    key={customer.id}
-                    className="px-2 py-1 cursor-pointer hover:bg-primary/5 text-main text-[11px]"
-                    onClick={() => {
-                      setSearch(customer.name);
-                      setOpen(false);
-                      onChange({ id: customer.id, name: customer.name });
+                    key={c.id}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelect(c);
                     }}
+                    onClick={() => {}}
+                    className={[
+                      "px-3 py-1.5 cursor-pointer border-b border-theme last:border-none transition-colors",
+                      c.id === selectedId
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "hover:bg-primary/5 text-main",
+                    ].join(" ")}
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="truncate">{customer.name}</span>
-                      {customer.customerCode && (
-                        <span className="text-xs text-muted">
-                          {customer.customerCode}
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="truncate">{c.name}</span>
+                      {c.currency && (
+                        <span className="text-[10px] text-muted shrink-0">
+                          {c.currency}
                         </span>
                       )}
                     </div>
                   </li>
-                ))}
-
-              {!loading && filteredCustomers.length === 0 && (
-                <li className="px-2 py-1 text-muted text-[11px]">No match found</li>
+                ))
               )}
             </ul>
-          </div>
+          </div>,
+          document.body,
         )}
-      </div>
     </div>
   );
 }
