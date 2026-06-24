@@ -21,7 +21,7 @@ const EmployeeHistory: React.FC = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<string>("");
   const [loading, setLoading]   = useState(false);
   const [page, setPage]         = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [leaves, setLeaves]     = useState<LeaveUI[]>([]);
@@ -161,7 +161,7 @@ const EmployeeHistory: React.FC = () => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
+         pageSizeOptions={[20, 50, 100,200]}
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
       />

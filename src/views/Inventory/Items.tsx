@@ -112,7 +112,7 @@ const Items: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [filters, setFilters] = useState<ItemFilters>({});
@@ -550,7 +550,7 @@ const handleAddPurchaseInvoice = useCallback(() => {
             totalPages={totalPages}
             pageSize={pageSize}
             totalItems={totalItems}
-            pageSizeOptions={[10, 25, 50, 100]}
+             pageSizeOptions={[20, 50, 100,200]}
             onPageSizeChange={(size) => {
               setPageSize(size);
               setPage(1);
