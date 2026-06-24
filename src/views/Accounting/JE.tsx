@@ -96,7 +96,7 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => {
 // ─── Main Component ────────────────────────────────────────────────────────
 const JETab: React.FC<JETabProps> = ({ searchTerm, setSearchTerm }) => {
   const [jeData, setJeData] = useState<JournalEntry[]>([]);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);

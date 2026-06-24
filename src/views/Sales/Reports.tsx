@@ -80,7 +80,7 @@ export default function ReportTable() {
   const [rows, setRows] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
 
   /* ── Data fetching ── */
 
@@ -448,7 +448,7 @@ export default function ReportTable() {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={filteredData.length}
-        pageSizeOptions={[10, 25, 50, 100]}
+         pageSizeOptions={[20, 50, 100,200]}
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
       />

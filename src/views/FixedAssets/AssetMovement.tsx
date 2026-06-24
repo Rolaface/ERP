@@ -31,7 +31,7 @@ const AssetMovement: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({ from_date: "", to_date: "" });
   const [sortBy, setSortBy] = useState<keyof AssetMovementRecord | null>(null);
@@ -261,7 +261,7 @@ const AssetMovement: React.FC = () => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
+         pageSizeOptions={[20, 50, 100,200]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
