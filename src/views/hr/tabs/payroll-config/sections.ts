@@ -11,8 +11,7 @@ export const SETUP_SECTIONS: AppSetupSection[] = [
    {
     key: "tax",
     label: "Tax Configurations",
-    icon: Add Tax Configuration
-,
+    icon: LayoutList,
     description: "Tax rules and settings",
   },
   {
