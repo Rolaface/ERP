@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FileText, Users } from "lucide-react";
+import { FaMoneyCheckAlt } from "react-icons/fa";
 import type { PayrollEntry } from "../../../types/payrolltypes";
 import {
   DEFAULT_COMPANY,
@@ -186,6 +187,7 @@ const NewPayrollEntry: React.FC<Props> = ({
       modalId={modalId}
       isOpen={isOpen}
       onClose={handleClose}
+      icon={FaMoneyCheckAlt}
       title={isEdit ? "Edit Payroll Entry" : "Add Payroll Entry"}
       subtitle="Add payroll entries"
       maxWidth="6xl"

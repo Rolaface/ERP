@@ -402,6 +402,7 @@ export const HolidayListModal: React.FC<Props> = ({
             ? "Edit Holiday List"
             : "Add Holiday List"
       }
+      subtitle="Manage company holidays and schedules"
       icon={Calendar}
       maxWidth="5xl"
       height="80vh"

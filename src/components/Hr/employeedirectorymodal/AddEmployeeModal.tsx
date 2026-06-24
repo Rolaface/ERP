@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { uploadEmployeePhoto } from "../../../api/employeeapi";
+import {
+  FaUserFriends,
+} from "react-icons/fa";
+
 import ModalFooter from "../../common/ModalFooter";
 import IdentityVerificationModal from "./IdentityVerificationModal";
 import PersonalInfoTab from "./PersonalInfoTab";
@@ -495,6 +499,7 @@ const AddEmployeeModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
+      icon={FaUserFriends}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       formContainerRef={containerRef}
       title={editData ? "Edit Employee" : "Add Employee"}

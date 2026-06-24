@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Target } from "lucide-react";
+  import{FaSlidersH,
+} from "react-icons/fa";
 import { MinimizableModal } from "../../../../components/common/MinimizableModal";
 import type { SetupRow } from "../..../../../../../views/hr/performace/types";
 import { useUnsavedChanges } from "../../../../hooks/useUnsavedChanges";
@@ -87,7 +88,7 @@ export default function AddKRAModal({
             ? "Update Key Result Area"
             : "Add a new Key Result Area"
       }
-      icon={Target}
+      icon={FaSlidersH}
       customWidth="500px"
       height="fit-content"
       footer={
