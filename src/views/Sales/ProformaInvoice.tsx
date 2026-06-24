@@ -89,7 +89,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
 
   // ── Pagination (server)
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -740,7 +740,7 @@ const handlePreviewDownload = () => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
+        pageSizeOptions={[20, 35, 45,55, 100]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
