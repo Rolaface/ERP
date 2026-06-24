@@ -32,7 +32,7 @@ export function LeavePeriodSetup() {
   } = useLeavePeriods();
 
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-   const handleDelete = useCallback(
+  const handleDelete = useCallback(
     async (row: LeavePeriod) => {
       if (!row.name) return;
       try {
@@ -49,7 +49,7 @@ export function LeavePeriodSetup() {
         if (deleted) {
           fetchAll();
         }
-      } catch(err: any){
+      } catch (err: any) {
         showApiError(parseFrappeError(err) || "Failed to delete Leave Period.");
       }
       finally {
@@ -64,18 +64,35 @@ export function LeavePeriodSetup() {
       if (!row.name) return;
       try {
         setActionLoadingId(row.name);
-        
+
         const newStatus = row.is_active ? 0 : 1;
         await updateLeavePeriod(row.name, { is_active: newStatus });
         fetchAll();
       } catch (error) {
         showApiError(parseFrappeError(error) || "Failed to update status.");
-       } finally {
+      } finally {
         setActionLoadingId(null);
       }
     },
     [fetchAll]
   );
+
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
+
+    const months = [
+      "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+    ];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+
 
   const columns: Column<LeavePeriod>[] = useMemo(
     () => [
@@ -90,14 +107,14 @@ export function LeavePeriodSetup() {
         key: "from_date",
         header: "From Date",
         render: (row) => (
-          <span className="text-sm text-sub">{row.from_date || "—"}</span>
+          <span className="text-sm text-sub">{formatDate(row.from_date) || "—"}</span>
         ),
       },
       {
         key: "to_date",
         header: "To Date",
         render: (row) => (
-          <span className="text-sm text-sub">{row.to_date || "—"}</span>
+          <span className="text-sm text-sub">{formatDate(row.to_date) || "—"}</span>
         ),
       },
       {
@@ -105,11 +122,10 @@ export function LeavePeriodSetup() {
         header: "Status",
         render: (row) => (
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              row.is_active
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.is_active
                 ? "bg-emerald-100 text-emerald-700"
                 : "bg-gray-100 text-gray-700"
-            }`}
+              }`}
           >
             {row.is_active ? "Active" : "Inactive"}
           </span>
@@ -121,28 +137,28 @@ export function LeavePeriodSetup() {
         align: "center",
         render: (row) => (
           <ActionGroup>
-<ActionButton
-  type="view"
-  iconOnly
-  onClick={() => 
-    openLeavePeriodModal(
-      { ...row, _isView: true } as any,  
-      true,                             
-      { onSuccess: fetchAll }           
-    )
-  }
-/>
+            <ActionButton
+              type="view"
+              iconOnly
+              onClick={() =>
+                openLeavePeriodModal(
+                  { ...row, _isView: true } as any,
+                  true,
+                  { onSuccess: fetchAll }
+                )
+              }
+            />
             {/* Edit Button: Normal edit behavior */}
             <ActionButton
               type="edit"
               iconOnly
               onClick={() => openLeavePeriodModal(row, true, { onSuccess: fetchAll })}
               disabled={actionLoadingId === row.name}
-            />          
-             <ActionMenu
+            />
+            <ActionMenu
               customActions={[
-                 {
-                  label: row.is_active? "Inactive" : "Active",
+                {
+                  label: row.is_active ? "Inactive" : "Active",
                   onClick: () => handleStatus(row),
                   disabled: actionLoadingId === row.name,
                 },
@@ -161,34 +177,41 @@ export function LeavePeriodSetup() {
   );
 
   return (
-     <div className="h-[calc(100vh-220px)]"> 
-    <ModalTable
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(row) => row.name}
-      showToolbar
-      searchValue={search}
-      onSearch={(v) => {
-        setSearch(v);
-        setPage(1);
-      }}
-      enableAdd
-      addLabel="Add Leave Period"
-      onAdd={() => openLeavePeriodModal(null, false, { onSuccess: fetchAll })}
-      currentPage={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      pageSize={pageSize}
-      pageSizeOptions={[10, 25, 50]}
-      onPageChange={setPage}
-      onPageSizeChange={(s) => {
-        setPageSize(s);
-        setPage(1);
-      }}
-      enableColumnSelector
-      tableId="leave-periods-table"
-    />
+    <div className="h-[calc(100vh-220px)]">
+      <ModalTable
+        columns={columns}
+        data={rows}
+        loading={loading}
+        rowKey={(row) => row.name}
+        showToolbar
+        searchValue={search}
+        onSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Leave Period"
+        onAdd={() => openLeavePeriodModal(null, false, { onSuccess: fetchAll })}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 25, 50]}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        enableColumnSelector
+        tableId="leave-periods-table"
+        onRowDoubleClick={(row) =>
+          openLeavePeriodModal(
+            { ...row, _isView: true } as any,
+            true,
+            { onSuccess: fetchAll }
+          )
+        }
+      />
     </div>
   );
 }

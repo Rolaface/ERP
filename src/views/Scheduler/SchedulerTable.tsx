@@ -9,6 +9,7 @@ import { AppPage, AppPageBody, AppPageHeader } from "../../components/ui/app-she
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import { CalendarClock } from "lucide-react";
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 const schedulerPage: React.FC = () => {
   const {
@@ -18,6 +19,7 @@ const schedulerPage: React.FC = () => {
     openView,
     openEdit,
     handleDelete,
+    handleToggleEnable
   } = useShedular();
 
   const columns: Column<SchedulerRecord>[] = [
@@ -48,11 +50,10 @@ const schedulerPage: React.FC = () => {
       render: (row) => (
         <div className="py-1.5">
           <span
-            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-              row.enabled
+            className={`px-2 py-0.5 rounded-full text-xs font-medium ${row.enabled
                 ? "bg-green-100 text-green-700"
                 : "bg-gray-100 text-gray-500"
-            }`}
+              }`}
           >
             {row.enabled ? "Enabled" : "Disabled"}
           </span>
@@ -76,8 +77,22 @@ const schedulerPage: React.FC = () => {
             onClick={(e) => { e.stopPropagation(); openEdit(row); }}
           />
           <ActionMenu
-            onDelete={(e) => { (e as React.MouseEvent).stopPropagation(); handleDelete(row.id); }}
-          />
+  customActions={[
+    {
+      label: row.enabled ? "Disable" : "Enable",
+      icon: row.enabled ? ACTION_ICONS.DISABLE : ACTION_ICONS.ENABLE,
+      onClick: () => handleToggleEnable(row.id, !row.enabled),
+      disabled: false,
+      danger: row.enabled,
+    },
+    {
+      label: "Delete",
+      icon: ACTION_ICONS.DELETE,
+      onClick: () => handleDelete(row.id),
+      danger: true,
+    },
+  ]}
+/>
         </ActionGroup>
       ),
     },

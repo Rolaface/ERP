@@ -183,17 +183,7 @@ return (
           </select>
         </div>
 
-        {/* Enabled */}
-        <div className="flex items-center gap-2 mt-1">
-          <input
-            type="checkbox"
-            disabled={isView}
-            checked={values.enabled}
-            onChange={(e) => handleChange("enabled", e.target.checked)}
-            className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
-          />
-          <label className="text-sm text-main">Enabled</label>
-        </div>
+      
 
       </div>
     </MinimizableModal>

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import type { BankAccount } from "../../types/BankAccount/bank";
 import { openBankAccountModal } from "../../store/modalStore";
 import { Copy } from "lucide-react";
+
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
   ActionGroup,
@@ -45,7 +46,6 @@ const BankDetails: React.FC = () => {
   }, [page, pageSize]);
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
-
   const filteredData = useMemo(() => {
     const q = search.toLowerCase();
     return bankAccounts.filter((b) =>
@@ -57,7 +57,8 @@ const BankDetails: React.FC = () => {
   }, [bankAccounts, search]);
 
   // ── Actions hook ──────────────────────────────────────────────────────────
-  const { getMenuActions } = useBankAccountActions(fetchAccounts);
+const { getMenuActions } = useBankAccountActions(fetchAccounts);
+
 
   // ── Date formatter ────────────────────────────────────────────────────────
   const formatDate = (date: string | Date) => {
@@ -197,18 +198,18 @@ const BankDetails: React.FC = () => {
       align: "center",
       render: (row) => (
         <ActionGroup>
-          <ActionButton
+          {/* <ActionButton
             type="edit"
             onClick={() => console.log("EDIT:", row)}
             iconOnly
-          />
-          <ActionButton
+          /> */}
+          {/* <ActionButton
             type="view"
             iconOnly
             title={isVisible(row.id) ? "Hide Details" : "Show Details"}
             onClick={() => toggle(row.id)}
-          />
-          <ActionMenu customActions={getMenuActions(row)} />
+          /> */}
+      <ActionMenu customActions={getMenuActions(row)} />
         </ActionGroup>
       ),
     },
@@ -236,6 +237,7 @@ const BankDetails: React.FC = () => {
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
         addLabel="Add Bank Account"
+        onRowDoubleClick={(row) => openBankAccountModal(row, true, { isViewMode: true })}
         onAdd={() => {
           openBankAccountModal(
             { accountFor: "Company" },

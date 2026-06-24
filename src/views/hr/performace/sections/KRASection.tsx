@@ -181,6 +181,7 @@ export default function KRASection() {
       pageSize={PAGE_SIZE}
       totalItems={totalItems}
       onPageChange={setPage}
+      onRowDoubleClick={(row) => openDetail(row.id, "view")}
     />
      </div>
 

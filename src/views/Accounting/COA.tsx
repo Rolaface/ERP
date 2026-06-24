@@ -47,7 +47,9 @@ import NewAccountModal from "../../components/Coa/NewAccountModal";
 import type { COAAccount, COAResponse, COAResponseData } from "../../types/coa";
 import ViewAccountModal from "../../components/Coa/ViewAccountModal";
 import { getCurrencySymbol } from "../../utils/currency";
-
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { Download } from "lucide-react";
 export interface COATabProps {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -159,8 +161,8 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => (
               action.onClick();
             }}
             className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${action.danger
-                ? "text-danger hover:bg-danger/10"
-                : "text-main hover:bg-row-hover"
+              ? "text-danger hover:bg-danger/10"
+              : "text-main hover:bg-row-hover"
               }`}
           >
             <span className={action.danger ? "text-danger" : "text-muted"}>
@@ -185,6 +187,7 @@ function FilterBar({
   loading,
   allExpanded,
   onToggleExpand,
+  onExport,
 }: {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -194,6 +197,7 @@ function FilterBar({
   loading: boolean;
   allExpanded: boolean;
   onToggleExpand: () => void;
+  onExport: () => void;
 }) {
   const btnClass =
     "h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40 rounded-md transition-all whitespace-nowrap";
@@ -231,9 +235,15 @@ function FilterBar({
           {allExpanded ? <ChevronRight size={11} /> : <Layers size={11} />}
           {allExpanded ? "Collapse" : "Expand All"}
         </button>
+
         <button onClick={onRefresh} className={btnClass}>
           <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
           Refresh
+        </button>
+
+        <button onClick={onExport} className={btnClass}>
+          <Download size={11} />
+          Export
         </button>
       </div>
     </div>
@@ -301,6 +311,56 @@ const COATab: React.FC<COATabProps> = ({
     const accounts = coaData?.accounts ?? [];
     return filterTree(accounts, searchTerm);
   }, [coaData, searchTerm]);
+
+const handleExport = useCallback(() => {
+  if (!coaData?.accounts) return;
+
+  const rows: any[] = [];
+
+  const flattenAccounts = (accounts: COAAccount[], depth = 0) => {
+    accounts.forEach((acc) => {
+      const indent = "    ".repeat(depth);
+      const prefix = acc.is_group
+        ? depth === 0 ? "▶ " : "▸ "
+        : "• ";
+
+      rows.push({
+        "Account Name": indent + prefix + acc.account_name,
+        "Account Type": acc.account_type || "—",
+        "Root Type": acc.root_type || "—",
+        "Category": acc.is_group ? "── GROUP ──" : "Account",
+        "Balance": acc.is_group ? "—" : (acc.balance_in_account_currency ?? ""),
+        "Balance (C)": acc.balance ?? "",  
+      });
+
+      if (acc.children?.length) flattenAccounts(acc.children, depth + 1);
+    });
+  };
+
+  flattenAccounts(tableData);
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  ws["!cols"] = [
+    { wch: 50 },
+    { wch: 18 },
+    { wch: 12 },
+    { wch: 14 },
+    { wch: 18 },
+    { wch: 18 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Chart of Accounts");
+
+  saveAs(
+    new Blob(
+      [XLSX.write(wb, { bookType: "xlsx", type: "array" })],
+      { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+    ),
+    "chart_of_accounts.xlsx"
+  );
+}, [coaData, tableData]);
 
   // default-collapsed (depth 0), matching original defaultExpandDepth={0}
   const isFirstLoad = useRef(true);
@@ -587,6 +647,8 @@ const COATab: React.FC<COATabProps> = ({
           loading={loading}
           allExpanded={allExpanded}
           onToggleExpand={handleToggleExpand}
+          onExport={handleExport} 
+
         />
 
         <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
@@ -655,6 +717,9 @@ const COATab: React.FC<COATabProps> = ({
                       className="hover:bg-row-hover transition-colors h-[36px]"
                       style={{
                         borderBottom: "1px solid rgba(128,128,128,0.12)",
+                      }}
+                      onDoubleClick={() => {
+                        if (!row.original.is_group) onViewLedger?.(row.original.name);
                       }}
                     >
                       {row.getVisibleCells().map((cell) => {

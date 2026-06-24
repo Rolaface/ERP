@@ -712,6 +712,7 @@ const handleViewAttachment = (file: any) => {
           openPICreate();
         }}
         enableExport={can(PI_MODULE, "export")}
+        onRowDoubleClick={(o) => handleViewClick(o.pId)}
         onExport={handleExportExcel}
         enableColumnSelector
         currentPage={page}

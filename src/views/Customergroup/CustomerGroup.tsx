@@ -286,9 +286,9 @@ return (
                   onClick={() =>
                     setModalConfig({ isOpen: true, mode: "create", data: null })
                   }
-                  className="flex items-center gap-1.5 px-3 py-1.5 ml-2 bg-[#0e1726] hover:bg-[#1a2942] text-white rounded text-xs font-medium transition-colors"
+                  className="whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 flex items-center gap-2"
                 >
-                  <Plus size={14} />
+                  <Plus size={16} />
                   Add Group
                 </button>
               )}

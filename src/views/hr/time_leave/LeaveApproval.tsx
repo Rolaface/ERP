@@ -54,26 +54,26 @@ export default function LeaveApproval() {
   const getAllLeaveApplied = async () => {
     try {
       setIsLoading(true);
-    //    const apiFilters: any[] = [
-    //   ["leave_approver", "=", user?.email], 
-    // ];
-    const apiFilters: any[] = [];
-    const isAdmin = user?.roles?.includes("Administrator");
+      //    const apiFilters: any[] = [
+      //   ["leave_approver", "=", user?.email], 
+      // ];
+      const apiFilters: any[] = [];
+      const isAdmin = user?.roles?.includes("Administrator");
       if (!isAdmin) {
-        apiFilters.push(["leave_approver", "=", user?.email]); 
+        apiFilters.push(["leave_approver", "=", user?.email]);
       }
-    if (filters.status) {
+      if (filters.status) {
         apiFilters.push(["status", "=", filters.status]);
-      } 
+      }
       // else if (showHistory) {
-    //     apiFilters.push([
-    //       "status",
-    //       "in",
-    //       ["Approved", "Rejected", "Open", "Cancelled"],
-    //     ]);
-    //   } else {
-    //     apiFilters.push(["status", "=", "Open"]);
-    //   }
+      //     apiFilters.push([
+      //       "status",
+      //       "in",
+      //       ["Approved", "Rejected", "Open", "Cancelled"],
+      //     ]);
+      //   } else {
+      //     apiFilters.push(["status", "=", "Open"]);
+      //   }
 
       if (filters.from_date) {
         apiFilters.push(["from_date", ">=", filters.from_date]);
@@ -128,15 +128,31 @@ export default function LeaveApproval() {
     } catch (err: any) {
       showApiError(
         parseFrappeError(err) ||
-          err?.message ||
-          `Failed to update status.`,
+        err?.message ||
+        `Failed to update status.`,
       );
       setIsLoading(false);
     }
   };
 
+  const formatDate = (date: string | Date) => {
+    if (!date) return "";
+
+    const months = [
+      "JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC",
+    ];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+
   const columns: Column<any>[] = [
-     {
+    {
       key: "employee_name",
       header: "Employee Name",
       align: "left",
@@ -148,20 +164,22 @@ export default function LeaveApproval() {
       align: "left",
       render: (e) => <span className="font-base">{e.leave_type || "-"}</span>,
     },
-    { key: "from_date", header: "From Date", align: "left" },
+    { key: "from_date", header: "From Date", align: "left",
+      render: (e) => (formatDate(e.from_date) || "-"),
+     },
     {
       key: "to_date",
       header: "To Date",
       align: "left",
-      render: (e) => (e.half_day === 1 ? "Half Day" : e.to_date || "-"),
+      render: (e) => (e.half_day === 1 ? "Half Day" : formatDate(e.to_date) || "-"),
     },
-   {
-    key: "total_leave_days",
-    header: "No of Days",
-    align: "left",
-    // render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
-    render: (e) => <span className="font-medium">{e.total_leave_days || "—"}</span>,
-  },
+    {
+      key: "total_leave_days",
+      header: "No of Days",
+      align: "left",
+      // render: (e) => calculateLeaveDays(e.from_date, e.to_date, e.half_day),
+      render: (e) => <span className="font-medium">{e.total_leave_days || "—"}</span>,
+    },
     {
       key: "description",
       header: "Reason",
@@ -178,10 +196,10 @@ export default function LeaveApproval() {
       align: "left",
       render: (e) => {
         let displayStatus = e.status ?? "Open";
-        
+
         if (displayStatus === "Open") {
           displayStatus = "Pending Approval";
-        } 
+        }
 
         return <StatusBadge status={displayStatus} />;
       },
@@ -194,16 +212,16 @@ export default function LeaveApproval() {
       //   const leaveId = e.name || e.id;
       //   const isActionDone = ["Approved", "Rejected"].includes(e.status);
       render: (row) => {
-       const leaveId = row.name || row.id;
-       const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(row.status);
+        const leaveId = row.name || row.id;
+        const isActionDone = ["Approved", "Rejected", "Cancelled"].includes(row.status);
         // const actions: MenuAction[] = [];
 
         // if (canApproveReject && !isActionDone) {
         //   actions.push({
         const customMenuActions: MenuAction[] = [];
 
-if (canApproveReject && !isActionDone) {
-  customMenuActions.push({
+        if (canApproveReject && !isActionDone) {
+          customMenuActions.push({
             label: "Approve",
             icon: <CheckCircle size={14} className="text-green-600" />,
             onClick: () => handleStatusUpdate(leaveId, "Approved", "1"),
@@ -211,7 +229,7 @@ if (canApproveReject && !isActionDone) {
           });
           // actions.push({
           customMenuActions.push({
-  label: "Reject",
+            label: "Reject",
             // label: "Reject",
             icon: <XCircle size={14} />,
             onClick: () => handleStatusUpdate(leaveId, "Rejected", "1"),
@@ -220,24 +238,24 @@ if (canApproveReject && !isActionDone) {
         }
 
         // return <RowActionMenu actions={actions} />;
-        return(
-        <ActionGroup>
-                    {/* View is typically always available */}
-                    <ActionButton
-                      type="view"
-                      iconOnly
-                      onClick={() =>
-                        openLeaveApplyModal(
-                          { ...row, _isView: true } as any,
-                          true,
-                          { onSuccess: getAllLeaveApplied }
-                        )
-                      }
-                    />
-                    {customMenuActions.length > 0 && (
-                      <ActionMenu customActions={customMenuActions} />
-                    )}
-                  </ActionGroup>
+        return (
+          <ActionGroup>
+            {/* View is typically always available */}
+            <ActionButton
+              type="view"
+              iconOnly
+              onClick={() =>
+                openLeaveApplyModal(
+                  { ...row, _isView: true } as any,
+                  true,
+                  { onSuccess: getAllLeaveApplied }
+                )
+              }
+            />
+            {customMenuActions.length > 0 && (
+              <ActionMenu customActions={customMenuActions} />
+            )}
+          </ActionGroup>
         );
       },
     },
@@ -248,7 +266,7 @@ if (canApproveReject && !isActionDone) {
       <Table
         extraFilters={
           <>
-           <DateRangeFilter
+            <DateRangeFilter
               from={filters.from_date}
               to={filters.to_date}
               onChange={(range) => {
@@ -289,9 +307,9 @@ if (canApproveReject && !isActionDone) {
         showToolbar
         searchValue={searchTerm}
         onSearch={(val) => {
-  setSearchTerm(val);
-  setPage(1);
-}}
+          setSearchTerm(val);
+          setPage(1);
+        }}
         enableColumnSelector
         currentPage={page}
         pageSize={pageSize}
@@ -305,6 +323,9 @@ if (canApproveReject && !isActionDone) {
           setPage(1);
         }}
         onPageChange={setPage}
+        onRowDoubleClick={(row) =>
+          openLeaveApplyModal({ ...row, _isView: true } as any, true, { onSuccess: getAllLeaveApplied })
+        }
       />
     </div>
   );

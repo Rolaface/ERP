@@ -232,10 +232,12 @@ const Upload: React.FC<UploadProps> = ({ COMPANY_ID, onUploadSuccess }) => {
 
       try {
         const preview = await simulateUpload(file, type);
+        const safeName = file.name.replace(/\s+/g, "_");
+        const renamedFile = new File([file], safeName, { type: file.type });
 
         const uploadedFile: UploadedFile = {
           id: `new-${Date.now()}`,
-          file,
+          file: renamedFile,
           preview,
           uploadedAt: new Date(),
           size: formatFileSize(file.size),

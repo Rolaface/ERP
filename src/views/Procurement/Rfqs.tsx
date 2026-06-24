@@ -284,6 +284,7 @@ const handleCancel = async (rfq: RFQ) => {
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
         pageSizeOptions={[10, 25, 50, 100]}
+        onRowDoubleClick={(o) => handleView(o)}
       />
     </div>
   );

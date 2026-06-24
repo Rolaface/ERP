@@ -588,6 +588,7 @@ const ExpenseHistory: React.FC = () => {
           setPage(1);
         }}
         onPageChange={setPage}
+        onRowDoubleClick={(exp) => handleViewDetail(exp)}
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={({ sortBy: col, sortOrder: ord }) => {

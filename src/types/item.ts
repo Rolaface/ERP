@@ -68,6 +68,7 @@ export interface ItemSummary {
   itemClassCode: string;
   unitOfMeasureCd: string;
   sellingPrice: number;
+  taxTitle:string;
   preferredVendor: string;
   minStockLevel: string;
   maxStockLevel: string;

@@ -74,6 +74,21 @@ export default function TemplateSection() {
     fetchTemplates();
   }, [page, search]);
 
+  const openViewDetail = async (id: string) => {
+  try {
+    const detail = await getTemplateById(id);
+    setSelectedTemplate({
+      id: detail.name,
+      title: detail.template_title,
+      description: detail.description || "-",
+    });
+    setIsViewMode(true);
+    setShowModal(true);
+  } catch (err) {
+    console.error("Failed to fetch Template detail", err);
+  }
+};
+
  const deleteRow = async (id: string) => {
   const result = await fireManagedSwal({
     icon: "warning",
@@ -248,6 +263,7 @@ export default function TemplateSection() {
         pageSize={PAGE_SIZE}
         totalItems={totalItems}
         onPageChange={setPage}
+        onRowDoubleClick={(row) => openViewDetail(row.id)}
       />
 
       {showModal && (

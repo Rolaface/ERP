@@ -18,10 +18,11 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
-import {  getEmployeeById } from "../../api/employeeapi";
+import { getEmployeeById } from "../../api/employeeapi";
 import EmployeeAdvanceList from "../../views/ExpenseManagement/advanceList";
 import { useHRView } from "../../hooks/permission/useHRView";
 import { useAuth } from "../../context/AuthContext";
+import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
 import {
   createExpenseClaim,
   CreateExpenseClaimPayload,
@@ -46,7 +47,6 @@ const getCurrencyFromStorage = (): string => {
     return "";
   }
 };
-
 
 export interface ExpenseFormData {
   claim_title: string;
@@ -309,8 +309,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const isEditMode = modal?.isEdit ?? false;
   const { viewMode } = useHRView();
   const { user } = useAuth();
+  const { markDirty, resetDirty, handleCloseWithConfirm } =
+    useUnsavedChangesGuard();
   const isEmployeeView = viewMode === "employee";
-
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("expense");
   const [useAdvance, setUseAdvance] = useState(false);
@@ -336,7 +337,6 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [advanceAllocations, setAdvanceAllocations] = useState<
     Record<string, number>
   >({});
-
 
   const currency = getCurrencyFromStorage();
 
@@ -364,12 +364,16 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     if (isOpen) {
       const data = modal?.initialData as any;
 
-      setForm(data ? {
-        ...defaultExpenseForm,
-        ...data,
-        receipts: data.receipts ?? [],
-        existingAttachments: data.existingAttachments ?? [],
-      } : defaultExpenseForm);
+      setForm(
+        data
+          ? {
+              ...defaultExpenseForm,
+              ...data,
+              receipts: data.receipts ?? [],
+              existingAttachments: data.existingAttachments ?? [],
+            }
+          : defaultExpenseForm,
+      );
       setAdvanceForm(defaultAdvanceForm);
       setErrors({});
       setSelectedEmployee(null);
@@ -405,7 +409,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   employee?.message?.data?.expense_approver ?? "",
               }));
             })
-            .catch(() => { });
+            .catch(() => {});
         }
       }
     }
@@ -422,6 +426,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     setAdvanceAllocations({});
     setEmployeeAdvances([]);
     setAdvancesFetchError(undefined);
+    resetDirty();
   };
 
   const fetchAdvancesForEmployee = useCallback(async (employeeId: string) => {
@@ -449,6 +454,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       [name]: type === "checkbox" ? target.checked : value,
     }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    markDirty();
   };
 
   const handleFile = (files: FileList | null) => {
@@ -508,18 +514,18 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     }
   }, []);
 
-const fetchEmployees = useCallback(async (search: string) => {
-  try {
-    const data = await getAllEmployees(search);
-    return data.map((emp: any) => ({
-      value: emp.value,
-      label: emp.label,
-    }));
-  } catch (err) {
-    showApiError(err);
-    return [];
-  }
-}, []);
+  const fetchEmployees = useCallback(async (search: string) => {
+    try {
+      const data = await getAllEmployees(search);
+      return data.map((emp: any) => ({
+        value: emp.value,
+        label: emp.label,
+      }));
+    } catch (err) {
+      showApiError(err);
+      return [];
+    }
+  }, []);
 
   const validateExpense = () => {
     const newErrors: Record<string, string> = {};
@@ -597,9 +603,7 @@ const fetchEmployees = useCallback(async (search: string) => {
       if (form.receipts.length > 0) {
         await Promise.allSettled(
           form.receipts.map((file) =>
-            attachDocumentToExpenseClaim(claimId, file).catch((err) => {
-
-            }),
+            attachDocumentToExpenseClaim(claimId, file).catch((err) => {}),
           ),
         );
       }
@@ -633,7 +637,7 @@ const fetchEmployees = useCallback(async (search: string) => {
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Expense Claim" : " Add Expense Claim"}
       subtitle={
         isEditMode ? "Update expense claim" : "Submit a new expense claim"
@@ -641,7 +645,7 @@ const fetchEmployees = useCallback(async (search: string) => {
       icon={CreditCard}
       footer={footer}
       customWidth="46vw"
-      height="460px"
+      height="90vh"
     >
       <form
         onSubmit={(e) => e.preventDefault()}
@@ -661,7 +665,7 @@ const fetchEmployees = useCallback(async (search: string) => {
             className="px-4 pb-4 pt-2 flex flex-col gap-4 overflow-y-auto"
             style={{ height: "360px" }}
           >
-<div className="grid grid-cols-12 gap-4">
+            <div className="grid grid-cols-12 gap-4">
               <div className="col-span-6">
                 <ModalInput
                   label="Claim title"
@@ -693,7 +697,6 @@ const fetchEmployees = useCallback(async (search: string) => {
                   )}
                 </div>
               </div>
-
             </div>
 
             <div className="grid grid-cols-12 gap-4 items-start">
@@ -717,6 +720,7 @@ const fetchEmployees = useCallback(async (search: string) => {
                       }));
 
                       setEmployeeDisplayName(option?.label || "");
+                      markDirty();
 
                       if (errors.employee)
                         setErrors((prev) => ({
@@ -756,7 +760,7 @@ const fetchEmployees = useCallback(async (search: string) => {
                   />
                 )}
               </div>
-                            <div className="col-span-4">
+              <div className="col-span-4">
                 <SearchSelect2
                   label="Category"
                   required
@@ -765,13 +769,14 @@ const fetchEmployees = useCallback(async (search: string) => {
                     setForm((prev) => ({ ...prev, category: val || "" }));
                     if (errors.category)
                       setErrors((prev) => ({ ...prev, category: "" }));
+                    markDirty();
                   }}
                   fetchOptions={fetchCategories}
                   placeholder="Select a category"
                   error={errors.category}
                 />
               </div>
-              
+
               <div className="col-span-4">
                 <ModalInput
                   label="Amount"
@@ -793,36 +798,39 @@ const fetchEmployees = useCallback(async (search: string) => {
                   type="button"
                   role="checkbox"
                   aria-checked={useAdvance}
-                  
-onClick={() => {
-  const next = !useAdvance;
-  setUseAdvance(next);
-  if (!next) {
-    const cleared: Record<string, number> = {};
-    employeeAdvances.forEach((a) => { cleared[a.id] = 0; });
-    setAdvanceAllocations(cleared);
-  } else {
-
-    const expAmt = form.amount === "" ? 0 : Number(form.amount);
-    const autoAlloc: Record<string, number> = {};
-    let remaining = expAmt;
-    const sorted = [...employeeAdvances].sort((a, b) =>
-      (a.advanceDate ?? "").localeCompare(b.advanceDate ?? "")
-    );
-    for (const adv of sorted) {
-      autoAlloc[adv.id] = 0;
-    }
-    for (const adv of sorted) {
-      if (remaining <= 0) break;
-      const available = adv.unclaimedAmount ?? 0;
-      const allocated = Math.min(available, remaining);
-      autoAlloc[adv.id] = allocated;
-      remaining -= allocated;
-    }
-    setAdvanceAllocations(autoAlloc);
-    setActiveTab("advance");
-  }
-}}
+                  onClick={() => {
+                    const next = !useAdvance;
+                    setUseAdvance(next);
+                    if (!next) {
+                      const cleared: Record<string, number> = {};
+                      employeeAdvances.forEach((a) => {
+                        cleared[a.id] = 0;
+                      });
+                      setAdvanceAllocations(cleared);
+                    } else {
+                      const expAmt =
+                        form.amount === "" ? 0 : Number(form.amount);
+                      const autoAlloc: Record<string, number> = {};
+                      let remaining = expAmt;
+                      const sorted = [...employeeAdvances].sort((a, b) =>
+                        (a.advanceDate ?? "").localeCompare(
+                          b.advanceDate ?? "",
+                        ),
+                      );
+                      for (const adv of sorted) {
+                        autoAlloc[adv.id] = 0;
+                      }
+                      for (const adv of sorted) {
+                        if (remaining <= 0) break;
+                        const available = adv.unclaimedAmount ?? 0;
+                        const allocated = Math.min(available, remaining);
+                        autoAlloc[adv.id] = allocated;
+                        remaining -= allocated;
+                      }
+                      setAdvanceAllocations(autoAlloc);
+                      setActiveTab("advance");
+                    }
+                  }}
                   style={{
                     width: "16px",
                     height: "16px",
@@ -854,30 +862,40 @@ onClick={() => {
                 <label
                   className="text-xs font-medium text-main cursor-pointer select-none"
                   onClick={() => {
-  const next = !useAdvance;
-  setUseAdvance(next);
-  if (!next) {
-    const cleared: Record<string, number> = {};
-    employeeAdvances.forEach((a) => { cleared[a.id] = 0; });
-    setAdvanceAllocations(cleared);
-  } else {
-    const expAmt = form.amount === "" ? 0 : Number(form.amount);
-    const sorted = [...employeeAdvances].sort((a, b) =>
-      (a.advanceDate ?? "").localeCompare(b.advanceDate ?? ""),
-    );
-    const autoAlloc: Record<string, number> = {};
-    for (const adv of sorted) { autoAlloc[adv.id] = 0; }
-    let remaining = expAmt;
-    for (const adv of sorted) {
-      if (remaining <= 0) break;
-      const allocated = Math.min(adv.unclaimedAmount ?? 0, remaining);
-      autoAlloc[adv.id] = allocated;
-      remaining -= allocated;
-    }
-    setAdvanceAllocations(autoAlloc);
-    setActiveTab("advance");
-  }
-}}
+                    const next = !useAdvance;
+                    setUseAdvance(next);
+                    if (!next) {
+                      const cleared: Record<string, number> = {};
+                      employeeAdvances.forEach((a) => {
+                        cleared[a.id] = 0;
+                      });
+                      setAdvanceAllocations(cleared);
+                    } else {
+                      const expAmt =
+                        form.amount === "" ? 0 : Number(form.amount);
+                      const sorted = [...employeeAdvances].sort((a, b) =>
+                        (a.advanceDate ?? "").localeCompare(
+                          b.advanceDate ?? "",
+                        ),
+                      );
+                      const autoAlloc: Record<string, number> = {};
+                      for (const adv of sorted) {
+                        autoAlloc[adv.id] = 0;
+                      }
+                      let remaining = expAmt;
+                      for (const adv of sorted) {
+                        if (remaining <= 0) break;
+                        const allocated = Math.min(
+                          adv.unclaimedAmount ?? 0,
+                          remaining,
+                        );
+                        autoAlloc[adv.id] = allocated;
+                        remaining -= allocated;
+                      }
+                      setAdvanceAllocations(autoAlloc);
+                      setActiveTab("advance");
+                    }
+                  }}
                 >
                   Settle Against Advance
                 </label>
@@ -906,8 +924,8 @@ onClick={() => {
                   onViewAdvances={() => setActiveTab("advance")}
                 />
               )}
-              
-           <div className="grid grid-cols-12 gap-4">
+
+            <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12">
                 <label className="block text-xs font-medium text-muted mb-1">
                   Description
@@ -925,111 +943,111 @@ onClick={() => {
               </div>
             </div>
 
-
-        {/* receipt upload */}
+            {/* receipt upload */}
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12">
-              <label className="block text-xs font-medium text-muted mb-1">
-                Upload Receipt
-              </label>
+                <label className="block text-xs font-medium text-muted mb-1">
+                  Upload Receipt
+                </label>
 
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragOver(true);
-                }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed
                   py-1 cursor-pointer transition-colors
-                  ${isDragOver
-                    ? "border-primary bg-primary/5"
-                    : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"
+                  ${
+                    isDragOver
+                      ? "border-primary bg-primary/5"
+                      : "border-[var(--border)] hover:border-primary/50 bg-[var(--border)]/10"
                   }`}
-              >
-                <Upload size={22} className="text-muted" />
-                <p className="text-sm text-muted">
-                  Drag and drop files, or{" "}
-                  <span className="text-primary font-medium cursor-pointer">
-                    Browse
-                  </span>
-                </p>
-                <p className="text-xs text-muted">Max 10MB per file</p>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,application/pdf"
-                multiple
-                className="hidden"
-                onChange={(e) => handleFile(e.target.files)}
-              />
-              {errors.receipt && (
-                <p className="text-xs text-danger mt-1">{errors.receipt}</p>
-              )}
+                >
+                  <Upload size={22} className="text-muted" />
+                  <p className="text-sm text-muted">
+                    Drag and drop files, or{" "}
+                    <span className="text-primary font-medium cursor-pointer">
+                      Browse
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted">Max 10MB per file</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFile(e.target.files)}
+                />
+                {errors.receipt && (
+                  <p className="text-xs text-danger mt-1">{errors.receipt}</p>
+                )}
 
-              {form.existingAttachments.length > 0 && (
-                <div className="flex flex-col gap-2 mt-2">
-                  {form.existingAttachments.map((att) => (
-                    <div
-                      key={att.name}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10"
-                    >
-                      <FileText size={16} className="text-primary shrink-0" />
-                      <span className="text-sm text-main truncate flex-1">
-                        {att.file_name}
-                      </span>
-                      <span className="text-xs text-muted shrink-0">
-                        {(att.file_size / 1024).toFixed(0)} KB
-                      </span>
-                      
+                {form.existingAttachments.length > 0 && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    {form.existingAttachments.map((att) => (
+                      <div
+                        key={att.name}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10"
+                      >
+                        <FileText size={16} className="text-primary shrink-0" />
+                        <span className="text-sm text-main truncate flex-1">
+                          {att.file_name}
+                        </span>
+                        <span className="text-xs text-muted shrink-0">
+                          {(att.file_size / 1024).toFixed(0)} KB
+                        </span>
+
                         <a
-                        href={att.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline shrink-0"
-                      >
-                        View
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => removeExistingAttachment(att.name)}
-                        className="text-muted hover:text-danger ml-1"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                          href={att.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline shrink-0"
+                        >
+                          View
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => removeExistingAttachment(att.name)}
+                          className="text-muted hover:text-danger ml-1"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-              {form.receipts.length > 0 && (
-                <div className="flex flex-col gap-2 mt-2">
-                  {form.receipts.map((file, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10"
-                    >
-                      <FileText size={16} className="text-primary shrink-0" />
-                      <span className="text-sm text-main truncate flex-1">
-                        {file.name}
-                      </span>
-                      <span className="text-xs text-muted shrink-0">
-                        {(file.size / 1024).toFixed(0)} KB
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeNewReceipt(index)}
-                        className="text-muted hover:text-danger ml-1"
+                {form.receipts.length > 0 && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    {form.receipts.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--border)]/10"
                       >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                        <FileText size={16} className="text-primary shrink-0" />
+                        <span className="text-sm text-main truncate flex-1">
+                          {file.name}
+                        </span>
+                        <span className="text-xs text-muted shrink-0">
+                          {(file.size / 1024).toFixed(0)} KB
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeNewReceipt(index)}
+                          className="text-muted hover:text-danger ml-1"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

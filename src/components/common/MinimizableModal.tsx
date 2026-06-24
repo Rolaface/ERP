@@ -204,7 +204,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
           }`}
           style={{
             pointerEvents: "auto",
-            minHeight: height,           // ← changed: was `height`, now `minHeight` — no bounce on tab switch
+            height,
             width: customWidth || undefined,
             maxWidth: customWidth ? "calc(100vw - 16px)" : undefined,
             maxHeight: "calc(100dvh - 16px)",
@@ -266,7 +266,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
                 ).current = node;
               }
             }}
-            className="min-h-0 flex-1 overflow-x-auto overflow-y-auto bg-app px-4 py-3 text-sm text-main"
+            className="flex min-h-0 flex-1 flex-col overflow-x-auto overflow-y-auto bg-app px-4 py-3 text-sm text-main"
           >
             {children}
           </section>

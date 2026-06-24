@@ -32,6 +32,7 @@ interface ModalTableProps<T> {
   addLabel?:             string;
   onAdd?:                () => void;
   enableExport?:         boolean;
+  exportLabel?:          string;
   onExport?:             () => void;
   enableColumnSelector?: boolean;
   defaultVisibleKeys?:   string[];
@@ -49,6 +50,8 @@ interface ModalTableProps<T> {
   pageSizeOptions?:  number[];
   onPageChange?:     (page: number) => void;
   onPageSizeChange?: (size: number) => void;
+
+  onRowDoubleClick?: (item: T) => void;
 
   // bodyMaxHeight removed — table now fills available space via flex-1
 }
@@ -94,7 +97,7 @@ const ModalTableInner = <T extends Record<string, any>>({
   isFetching   = false,
   emptyMessage = "No records found",
   onRowClick,
-
+  onRowDoubleClick,
   showToolbar          = false,
   extraFilters,
   toolbarPlaceholder   = "Search...",
@@ -104,6 +107,7 @@ const ModalTableInner = <T extends Record<string, any>>({
   addLabel             = "+ Add",
   onAdd,
   enableExport         = false,
+  exportLabel          = "Export",
   onExport,
   enableColumnSelector = false,
   defaultVisibleKeys,
@@ -219,9 +223,9 @@ const ModalTableInner = <T extends Record<string, any>>({
             {enableExport && (
               <button
                 onClick={onExport}
-                className="rounded-xl border border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-main transition-colors hover:bg-row-hover"
+                className="rounded-xl border border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-main transition-colors hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 dark:hover:bg-emerald-900/20"
               >
-                Export
+                {exportLabel}
               </button>
             )}
           </div>
@@ -302,6 +306,7 @@ const ModalTableInner = <T extends Record<string, any>>({
                     <tr
                       key={itemKey}
                       onClick={() => onRowClick?.(item)}
+                      onDoubleClick={() => onRowDoubleClick?.(item)}
                       className={[
                         "group transition-colors duration-150",
                         onRowClick ? "cursor-pointer" : "",
@@ -372,17 +377,17 @@ const ModalTableInner = <T extends Record<string, any>>({
         </table>
       </div>
 
-      {/* ── Footer ───────────────────────────────────────────────────────── */}
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] bg-card px-3 py-1.5 text-xs">
-        <div className="text-xs font-medium text-muted">Total: {totalItems}</div>
+      {/* ── Footer — minimal height so the table body gets maximum vertical room ── */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] bg-card px-3 py-0.5 text-[10px] leading-tight min-h-0">
+        <div className="text-[10px] font-medium text-muted">Total: {totalItems}</div>
 
         {onPageSizeChange && (
-          <div className="flex items-center gap-1.5">
-            <label className="text-xs font-medium text-muted">Show:</label>
+          <div className="flex items-center gap-1">
+            <label className="text-[10px] font-medium text-muted">Show:</label>
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="cursor-pointer rounded-lg border border-[var(--border)] bg-card px-2 py-1 text-xs text-main outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className="cursor-pointer rounded-md border border-[var(--border)] bg-card px-1 py-0 text-[10px] leading-tight text-main outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
             >
               {pageSizeOptions.map((size) => (
                 <option key={size} value={size}>{size}</option>

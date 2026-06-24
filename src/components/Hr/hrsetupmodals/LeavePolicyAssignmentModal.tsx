@@ -1,6 +1,6 @@
 // ─── LeavePolicyAssignmentModal.tsx ──────────────────────────────────────────
 import React, { useCallback, useEffect, useState } from "react";
-import { Link2, Save, X } from "lucide-react";
+import { UserCheck, Save, X } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
 
 import { 
@@ -191,7 +191,7 @@ const fetchLeavePeriodsOptions = async (query: string) => {
       onClose={onClose}
       title={isView ? "View Leave Policy Assignment" : isEdit ? "Edit Leave Policy Assignment" : "Add Leave Policy Assignment"}
       subtitle="Link an Employee to a Leave Policy"
-      icon={Link2}
+      icon={UserCheck}
       maxWidth="xl"
       height="auto"
       footer={footer}

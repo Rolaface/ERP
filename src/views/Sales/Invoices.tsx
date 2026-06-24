@@ -138,7 +138,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
   // ── Pagination (server)
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -662,12 +662,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         render: (inv) => (
           <div className="py-1.5">
             <span className="block whitespace-nowrap">
-              {inv.total.toLocaleString()} {inv.currency}
+              {inv.currency} {inv.total.toLocaleString()} 
             </span>
           </div>
         ),
         tooltip: (inv) =>
-          `Total Amount: ${inv.total.toLocaleString()} ${inv.currency}`,
+          `Total Amount: ${inv.currency} ${inv.total.toLocaleString()} `,
       },
       {
         key: "outstandingAmount",
@@ -677,12 +677,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         render: (inv) => (
           <div className="py-1.5">
             <span className="block whitespace-nowrap">
-              {(inv.outstanding_amount ?? 0).toLocaleString()} {inv.currency}
+             {inv.currency}  {(inv.outstanding_amount ?? 0).toLocaleString()}
             </span>
           </div>
         ),
         tooltip: (inv) =>
-          `Outstanding Amount: ${(inv.outstanding_amount ?? 0).toLocaleString()} ${inv.currency} `,
+          `Outstanding Amount: ${inv.currency} ${(inv.outstanding_amount ?? 0).toLocaleString()} `,
       },
       {
         key: "invoiceStatus",
@@ -815,7 +815,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
+         pageSizeOptions={[20, 35, 45,55, 100]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
@@ -824,6 +824,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        onRowDoubleClick={(inv) => handleView(inv.invoiceNumber)}
         extraFilters={
           <>
             <FilterSelect

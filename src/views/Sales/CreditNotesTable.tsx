@@ -476,6 +476,7 @@ const CreditNotesTable: React.FC = () => {
           setPage(1);
         }}
         onPageChange={setPage}
+        onRowDoubleClick={(r) => handleView(r.noteNo)}
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}

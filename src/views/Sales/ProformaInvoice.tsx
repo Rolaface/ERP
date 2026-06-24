@@ -36,6 +36,7 @@ import ProformaDetailModal, {
 } from "./Proformadetailmodal";
 import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/statusActionIcons";
 import SendEmailModal from "../../components/common/SendEmailModal";
+import { getCurrencySymbol } from "../../utils/currency";
 
 type OutletContextType = {
   openProformaCreate: () => void;
@@ -88,7 +89,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
 
   // ── Pagination (server)
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -154,9 +155,9 @@ const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
   currency: inv.currency,
   exchangeRate: inv.exchangeRate || 1,
   validTill: inv.validTill,
-  totalAmount: Number(inv.baseGrandTotal || inv.total || 0),
+  totalAmount: Number(inv.total || 0),
   status: inv.status as ProformaInvoiceStatus,
-  proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, // <-- Populates the ActionMenu
+  proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, 
   createdAt: inv.postingDate ? new Date(inv.postingDate) : new Date(),
 }));
 
@@ -248,27 +249,6 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
       }
     };
   
-    // ── PDF preview modal (table row action — kept, do not remove)
-    // const handlePreviewPDF = async (
-    //   inv: ProformaInvoiceSummary,
-    //   e?: React.MouseEvent,
-    // ) => {
-    //   e?.stopPropagation();
-    //   try {
-    //     showLoading("Preparing invoice preview...");
-    //     // const blob = await getPdf(inv.proformaId, "Proforma Invoice");
-    //     const blob = await getPdf(inv.proformaId, "Quotation");
-    //     const blobUrl = URL.createObjectURL(blob);
-    //     closeSwal();
-    //     setPdfUrl(blobUrl);
-    //     setSelectedProformaInvoice(null); 
-    //     setPdfOpen(true);
-    //   } catch (err: any) {
-    //     closeSwal();
-    //     showApiError(err);
-    //   }
-    // };
-    // ── PDF preview modal (table row action)
 const handlePreviewPDF = async (
     inv: ProformaInvoiceSummary,
     e?: React.MouseEvent,
@@ -325,16 +305,6 @@ const handlePreviewPDF = async (
         );
 
         if (res?.status_code === 200) {
-          // const mapped = res.data.map((inv: any) => ({
-          //   proformaId: inv.proformaId,
-          //   customerName: inv.customerName,
-          //   currency: inv.currency,
-          //   exchangeRate: inv.exchangeRate,
-          //   dueDate: inv.dueDate,
-          //   totalAmount: Number(inv.totalAmount),
-          //   status: inv.status as ProformaInvoiceStatus,
-          //   createdAt: new Date(inv.createdAt.replace(" ", "T")),
-          // }));
           const mapped = res.data.map((inv: any) => ({
   proformaId: inv.name || inv.proformaId || inv.id,
   customerName: inv.customerName,
@@ -402,6 +372,33 @@ const handlePreviewPDF = async (
       closeSwal();
       showApiError(error);
     }
+  };
+
+   const formatDate = (date: string | Date) => {
+    if (!date) return "";
+
+    const months = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
+
+    if (typeof date === "string") {
+      const [year, month, day] = date.split("T")[0].split("-").map(Number);
+      return `${String(day).padStart(2, "0")}-${months[month - 1]}-${year}`;
+    }
+
+    // Date object — use local methods
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
 
   const handleRowStatusChange = async (
@@ -589,7 +586,8 @@ const handlePreviewDownload = () => {
       sortable: true,
       render: (inv) => (
         <span className="text-xs text-muted">
-          {inv.createdAt.toLocaleDateString()}
+          {/* {inv.createdAt.toLocaleDateString()} */}
+          {inv.createdAt ? formatDate(inv.createdAt) : "-"}
         </span>
       ),
     },
@@ -600,12 +598,12 @@ const handlePreviewDownload = () => {
       sortable: true,
       render: (inv) => (
         <span className="text-xs text-muted">
-          {inv.validTill}
+          {inv.validTill ? formatDate(inv.validTill) : "-"}
         </span>
       ),
     },
     {
-      key: "baseGandTotal",
+      key: "total",
       header: "Amount",
       align: "right",
       sortable: true,
@@ -742,7 +740,7 @@ const handlePreviewDownload = () => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50, 100]}
+        pageSizeOptions={[20, 35, 45,55, 100]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
@@ -751,6 +749,7 @@ const handlePreviewDownload = () => {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
+        onRowDoubleClick={(inv) => handleView(inv.proformaId)}
       />
 
       <ProformaDetailModal
