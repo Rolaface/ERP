@@ -486,40 +486,54 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
     }
   };
 
-  const handleStatusChange = async (poId: string, newStatus: POStatus) => {
-    if (newStatus === "Cancelled") {
-      const result = await fireManagedSwal({
-        icon: "warning",
-        title: "Confirm Cancellation",
-        text: `Are you sure you want to cancel this Purchase Order?`,
-        showCancelButton: true,
-        confirmButtonColor: "#ef4444",
-        cancelButtonColor: "#6b7280",
-        confirmButtonText: "Yes, Cancel",
-        cancelButtonText: "No",
-      });
-      if (!result.isConfirmed) return;
+ const handleStatusChange = async (poId: string, newStatus: POStatus) => {
+  if (newStatus === "Cancelled") {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Confirm Cancellation",
+      text: `Are you sure you want to cancel this Purchase Order?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Cancel",
+      cancelButtonText: "No",
+    });
+    if (!result.isConfirmed) return;
+  }
+
+  if (newStatus === "Approved") {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Approve Purchase Order?",
+      text: `Are you sure you want to approve this Purchase Order?`,
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Approve",
+      cancelButtonText: "No",
+    });
+    if (!result.isConfirmed) return;
+  }
+
+  try {
+    const res = await updatePurchaseOrderStatus(poId, newStatus);
+
+    if (!res || res.status_code !== 200) {
+      showApiError(res);
+      return;
     }
 
-    try {
-      const res = await updatePurchaseOrderStatus(poId, newStatus);
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === poId ? { ...o, status: res.data?.status || newStatus } : o,
+      ),
+    );
 
-      if (!res || res.status_code !== 200) {
-        showApiError(res);
-        return;
-      }
-
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === poId ? { ...o, status: res.data?.status || newStatus } : o,
-        ),
-      );
-
-      showSuccess(res.message || `Purchase Order marked as ${newStatus}`);
-    } catch (error: any) {
-      showApiError(error);
-    }
-  };
+    showSuccess(res.message || `Purchase Order marked as ${newStatus}`);
+  } catch (error: any) {
+    showApiError(error);
+  }
+};  
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 

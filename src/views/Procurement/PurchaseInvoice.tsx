@@ -454,22 +454,50 @@ const handleViewAttachment = (file: any) => {
     }
   };
 
-  const handleStatusChange = async (pId: string, newStatus: PIStatus) => {
-    try {
-      showLoading("Updating status...");
-      const res = await updatePurchaseinvoiceStatus(pId, newStatus);
-      closeSwal();
-      if (!res || res.status_code !== 200) {
-        showApiError(res || "Failed to update Purchase Invoice status");
-        return;
-      }
-      await fetchInvoice();
-      showSuccess("Purchase Invoice updated");
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
+ const handleStatusChange = async (pId: string, newStatus: PIStatus) => {
+  if (newStatus === "Submitted") {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Approve Purchase Invoice?",
+      text: `Are you sure you want to approve this Purchase Invoice?`,
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Approve",
+      cancelButtonText: "No",
+    });
+    if (!result.isConfirmed) return;
+  }
+
+  if (newStatus === "Cancelled") {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Cancel Purchase Invoice?",
+      text: `Are you sure you want to cancel this Purchase Invoice?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Cancel",
+      cancelButtonText: "No",
+    });
+    if (!result.isConfirmed) return;
+  }
+
+  try {
+    showLoading("Updating status...");
+    const res = await updatePurchaseinvoiceStatus(pId, newStatus);
+    closeSwal();
+    if (!res || res.status_code !== 200) {
+      showApiError(res || "Failed to update Purchase Invoice status");
+      return;
     }
-  };
+    await fetchInvoice();
+    showSuccess("Purchase Invoice updated");
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   const formatDate = (date: string | Date) => {
     if (!date) return "";
