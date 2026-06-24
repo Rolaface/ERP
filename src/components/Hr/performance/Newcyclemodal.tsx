@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { ClipboardList, Trash2, Plus } from "lucide-react";
+import { ClipboardList, Trash2, Plus ,Repeat} from "lucide-react";
+
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import { ModalInput } from "../../../components/ui/modal/modalComponent";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
@@ -452,7 +453,7 @@ const NewCycleModal = ({
           ? "Read-only view of this performance review cycle"
           : "Configure and launch a new performance review cycle"
       }
-      icon={ClipboardList}
+      icon={Repeat}
       customWidth="70vw"
       height="620px"
       footer={footer}

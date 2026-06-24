@@ -1,6 +1,6 @@
 // ─── LeaveTypeModal.tsx ──────────────────────────────────────────────────────
 import React, { useCallback, useEffect, useState } from "react";
-import { CalendarRange, Save, X } from "lucide-react";
+import {Save, X, Layers } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
 
 import {
@@ -162,7 +162,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
       // title={isEdit ? "Edit Leave Type" : "New Leave Type"}
       title={isView ? "View Leave Type" : isEdit ? "Edit Leave Type" : "Add Leave Type"}
       subtitle="Configure leave policies and rules"
-      icon={CalendarRange}
+      icon={Layers}
       maxWidth="2xl"
       height="auto"
       footer={footer}

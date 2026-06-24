@@ -9,7 +9,7 @@ import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import { getDefaultAccounts } from "../../api/BankAccountApi";
 import { useModeOfPaymentLogic } from "./useModeOfPaymentLogic";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-
+import {Wallet} from "lucide-react"
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -106,6 +106,7 @@ const AddModeOfPaymentModal: React.FC<Props> = ({
             ? "Edit payment configuration"
             : "Configure a new payment method"
       }
+      icon={Wallet}
       footer={footer}
       customWidth="60vw"
       height="48vh"

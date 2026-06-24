@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Percent, Save, Trash2, X } from "lucide-react";
+import { LayoutList, Save, Trash2, X } from "lucide-react";
 
 import { MinimizableModal } from "../../common/MinimizableModal";
 import DatePickerInput from "../../calendar/DatePickerInput";
@@ -376,7 +376,7 @@ const updateCharge = <K extends keyof TaxChargeDraftRow>(idx: number, key: K, va
 
       title={isEdit ? "Edit Tax Configuration" : " Add Tax Configuration"}
       subtitle="Configure income tax slabs and exemptions"
-      icon={Percent}
+      icon={LayoutList}
       customWidth="60vw"
       height="84vh"
       footer={footer}

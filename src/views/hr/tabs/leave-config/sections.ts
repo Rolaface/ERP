@@ -1,4 +1,11 @@
-import { Layers, LayoutList } from "lucide-react";
+import {
+  Layers,
+  CalendarRange,
+  FileText,
+  UserCheck,
+  Calendar,
+  Clock,
+} from "lucide-react";
 import type { AppSetupSection } from "../../../../components/ui/app-shell";
 
 export const SETUP_SECTIONS: AppSetupSection[] = [
@@ -11,31 +18,31 @@ export const SETUP_SECTIONS: AppSetupSection[] = [
   {
     key: "period",
     label: "Leave Period",
-    icon: LayoutList,
+    icon: CalendarRange,
     description: "Leave duration",
   },
   {
     key: "policy",
     label: "Leave Policy",
-    icon: LayoutList,
+    icon: FileText,
     description: "Leave rules",
   },
   {
     key: "assign",
     label: "Leave Policy Assignment",
-    icon: LayoutList,
+    icon: UserCheck,
     description: "Leave policy assignment",
   },
   {
     key: "holiday",
     label: "Holiday List",
-    icon: LayoutList,
+    icon: Calendar,
     description: "Holiday list management",
   },
   {
     key: "shift",
     label: "Shift Type",
-    icon: LayoutList,
+    icon: Clock,
     description: "Shift type management",
   },
 ];
