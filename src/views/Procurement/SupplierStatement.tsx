@@ -73,14 +73,32 @@ const formatDate = (date: string) => {
 };
 
 const exportToCsv = (rows: LedgerEntry[], filename: string) => {
-  const headers = ["Date", "Type", "Ref", "Debit", "Credit", "Balance", "Notes"];
+  const headers = [
+    "Date",
+    "Type",
+    "Ref",
+    "Debit",
+    "Credit",
+    "Balance",
+    "Notes",
+  ];
   const csvRows = [
     headers.join(","),
     ...rows.map((r) =>
-      [r.date, `"${r.type}"`, `"${r.ref}"`, r.debit || 0, r.credit || 0, r.balance, `"${r.note ?? ""}"`].join(",")
+      [
+        r.date,
+        `"${r.type}"`,
+        `"${r.ref}"`,
+        r.debit || 0,
+        r.credit || 0,
+        r.balance,
+        `"${r.note ?? ""}"`,
+      ].join(","),
     ),
   ];
-  const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([csvRows.join("\n")], {
+    type: "text/csv;charset=utf-8;",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -103,22 +121,33 @@ const SupplierStatement = ({
 
   // Always use server metadata for totals — never ledger.length
   const serverPagination = statement?.pagination;
-  const totalItems = serverPagination?.total       ?? ledger.length;
-  const totalPages = serverPagination?.total_pages ?? (Math.ceil(totalItems / pageSize) || 1);
+  const totalItems = serverPagination?.total ?? ledger.length;
+  const totalPages =
+    serverPagination?.total_pages ?? (Math.ceil(totalItems / pageSize) || 1);
 
   const summary = {
-    totalPurchases: statement?.summary?.totalBilled    ?? 0,
-    totalPaid:      statement?.summary?.totalPaid      ?? 0,
-    outstanding:    statement?.summary?.netOutstanding ?? 0,
+    totalPurchases: statement?.summary?.totalBilled ?? 0,
+    totalPaid: statement?.summary?.totalPaid ?? 0,
+    outstanding: statement?.summary?.netOutstanding ?? 0,
   };
 
   const aging = statement?.aging ?? {
-    current: 0, "1_30": 0, "31_60": 0, "61_90": 0, "90_plus": 0,
+    current: 0,
+    "1_30": 0,
+    "31_60": 0,
+    "61_90": 0,
+    "90_plus": 0,
   };
 
   // Page-level debit/credit totals (only current page rows available)
-  const totalDebit  = useMemo(() => ledger.reduce((s, r) => s + (r.debit  || 0), 0), [ledger]);
-  const totalCredit = useMemo(() => ledger.reduce((s, r) => s + (r.credit || 0), 0), [ledger]);
+  const totalDebit = useMemo(
+    () => ledger.reduce((s, r) => s + (r.debit || 0), 0),
+    [ledger],
+  );
+  const totalCredit = useMemo(
+    () => ledger.reduce((s, r) => s + (r.credit || 0), 0),
+    [ledger],
+  );
 
   const columns = [
     {
@@ -135,63 +164,96 @@ const SupplierStatement = ({
       header: "Transaction",
       render: (row: LedgerEntry) => (
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl ${
-            row.debit > 0 ? "bg-warning/10 text-warning"
-            : row.credit > 0 ? "bg-success/10 text-success"
-            : "bg-row-hover text-muted"
-          }`}>
-            {row.debit > 0 ? <ArrowUpRight size={14} />
-              : row.credit > 0 ? <ArrowDownLeft size={14} />
-              : <FileText size={14} />}
+          <div
+            className={`p-2 rounded-xl ${
+              row.debit > 0
+                ? "bg-warning/10 text-warning"
+                : row.credit > 0
+                  ? "bg-success/10 text-success"
+                  : "bg-row-hover text-muted"
+            }`}
+          >
+            {row.debit > 0 ? (
+              <ArrowUpRight size={14} />
+            ) : row.credit > 0 ? (
+              <ArrowDownLeft size={14} />
+            ) : (
+              <FileText size={14} />
+            )}
           </div>
           <div>
             <p className="text-xs font-bold text-main">{row.type}</p>
-            <p className="text-[9px] font-mono text-muted uppercase">{row.ref}</p>
+            <p className="text-[9px] font-mono text-muted uppercase">
+              {row.ref}
+            </p>
           </div>
         </div>
       ),
     },
     {
-      key: "debit", header: "Debit", align: "right" as const,
+      key: "debit",
+      header: "Debit",
+      align: "right" as const,
       render: (row: LedgerEntry) =>
-        row.debit > 0
-          ? <span className="text-xs font-bold text-warning">{fmt(row.debit)}</span>
-          : <span className="text-muted text-xs">—</span>,
+        row.debit > 0 ? (
+          <span className="text-xs font-bold text-warning">
+            {fmt(row.debit)}
+          </span>
+        ) : (
+          <span className="text-muted text-xs">—</span>
+        ),
     },
     {
-      key: "credit", header: "Credit", align: "right" as const,
+      key: "credit",
+      header: "Credit",
+      align: "right" as const,
       render: (row: LedgerEntry) =>
-        row.credit > 0
-          ? <span className="text-xs font-bold text-success">{fmt(row.credit)}</span>
-          : <span className="text-muted text-xs">—</span>,
+        row.credit > 0 ? (
+          <span className="text-xs font-bold text-success">
+            {fmt(row.credit)}
+          </span>
+        ) : (
+          <span className="text-muted text-xs">—</span>
+        ),
     },
     {
-      key: "balance", header: "Balance", align: "right" as const,
+      key: "balance",
+      header: "Balance",
+      align: "right" as const,
       render: (row: LedgerEntry) => {
         const isNeg = row.balance < 0;
         return (
-          <span className={`text-sm font-black tabular-nums ${
-            row.balance === 0 ? "text-muted" : isNeg ? "text-danger" : "text-primary"
-          }`}>
-            {isNeg ? "−" : ""}{fmt(row.balance)}
+          <span
+            className={`text-sm font-black tabular-nums ${
+              row.balance === 0
+                ? "text-muted"
+                : isNeg
+                  ? "text-danger"
+                  : "text-primary"
+            }`}
+          >
+            {isNeg ? "−" : ""}
+            {fmt(row.balance)}
           </span>
         );
       },
     },
     {
-      key: "note", header: "Notes",
+      key: "note",
+      header: "Notes",
       render: (row: LedgerEntry) =>
-        row.note && row.note !== "No Remarks"
-          ? <span className="text-xs text-muted italic">{row.note}</span>
-          : <span className="text-muted text-xs">—</span>,
+        row.note && row.note !== "No Remarks" ? (
+          <span className="text-xs text-muted italic">{row.note}</span>
+        ) : (
+          <span className="text-muted text-xs">—</span>
+        ),
     },
   ];
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-5 p-4 sm:p-6">
-
+    <div className="max-w-[1400px] mx-auto flex flex-col gap-4 p-4 sm:p-5 h-[calc(95vh-160px)]">
       {/* ── SUMMARY + AGING ── */}
-      <div className="bg-card border border-theme rounded-2xl flex items-stretch overflow-x-auto divide-x divide-theme">
+      <div className="bg-card border border-theme rounded-2xl flex items-stretch overflow-x-auto divide-x divide-theme shrink-0">
         <StatCell
           label="Total Purchases"
           icon={<TrendingUp size={12} className="text-warning" />}
@@ -206,7 +268,12 @@ const SupplierStatement = ({
         />
         <StatCell
           label="Outstanding"
-          icon={<Minus size={12} className={summary.outstanding > 0 ? "text-danger" : "text-muted"} />}
+          icon={
+            <Minus
+              size={12}
+              className={summary.outstanding > 0 ? "text-danger" : "text-muted"}
+            />
+          }
           value={summary.outstanding}
           valueClass={summary.outstanding > 0 ? "text-danger" : "text-muted"}
           highlight={summary.outstanding > 0}
@@ -215,24 +282,26 @@ const SupplierStatement = ({
           <div className="flex items-center justify-center px-2 border-r border-theme shrink-0">
             <span
               className="text-[8px] font-black uppercase tracking-[0.2em] text-muted select-none"
-              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+              style={{
+                writingMode: "vertical-rl",
+                transform: "rotate(180deg)",
+              }}
             >
               Aging
             </span>
           </div>
           <div className="flex flex-1 divide-x divide-theme">
-            <AgingCell label="Current"  value={aging.current}     active />
-            <AgingCell label="1 – 30"   value={aging["1_30"]}            />
-            <AgingCell label="31 – 60"  value={aging["31_60"]}           />
-            <AgingCell label="61 – 90"  value={aging["61_90"]}           />
-            <AgingCell label="90 +"     value={aging["90_plus"]}  warn   />
+            <AgingCell label="Current" value={aging.current} active />
+            <AgingCell label="1 – 30" value={aging["1_30"]} />
+            <AgingCell label="31 – 60" value={aging["31_60"]} />
+            <AgingCell label="61 – 90" value={aging["61_90"]} />
+            <AgingCell label="90 +" value={aging["90_plus"]} warn />
           </div>
         </div>
       </div>
 
       {/* ── LEDGER TABLE ── */}
-      <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col">
-
+      <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-theme flex-wrap shrink-0">
           <div className="flex items-center gap-2">
@@ -246,17 +315,25 @@ const SupplierStatement = ({
             </span>
           </div>
           <div className="flex items-center gap-3 text-[11px]">
-            <span className="font-bold text-muted uppercase tracking-widest text-[9px]">Page Debits</span>
-            <span className="font-black text-warning tabular-nums">{fmt(totalDebit)}</span>
+            <span className="font-bold text-muted uppercase tracking-widest text-[9px]">
+              Page Debits
+            </span>
+            <span className="font-black text-warning tabular-nums">
+              {fmt(totalDebit)}
+            </span>
             <div className="w-px h-3 bg-border" />
-            <span className="font-bold text-muted uppercase tracking-widest text-[9px]">Page Credits</span>
-            <span className="font-black text-success tabular-nums">{fmt(totalCredit)}</span>
+            <span className="font-bold text-muted uppercase tracking-widest text-[9px]">
+              Page Credits
+            </span>
+            <span className="font-black text-success tabular-nums">
+              {fmt(totalCredit)}
+            </span>
             <div className="w-px h-3 bg-border" />
             <button
               onClick={() =>
                 exportToCsv(
                   ledger,
-                  `Supplier_Statement_${(supplier as any)?.name ?? (supplier as any)?.supplierName ?? "export"}.csv`
+                  `Supplier_Statement_${(supplier as any)?.name ?? (supplier as any)?.supplierName ?? "export"}.csv`,
                 )
               }
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 dark:hover:bg-emerald-900/20 text-main transition-colors"
@@ -281,7 +358,7 @@ const SupplierStatement = ({
             onPageSizeChange(size);
             onPageChange(1);
           }}
-          pageSizeOptions={[10, 25, 50]}
+          pageSizeOptions={[20, 50, 100,200]}
         />
       </div>
     </div>
@@ -291,29 +368,61 @@ const SupplierStatement = ({
 /* ── SUB-COMPONENTS ── */
 
 const StatCell = ({
-  label, icon, value, valueClass, highlight = false,
+  label,
+  icon,
+  value,
+  valueClass,
+  highlight = false,
 }: {
-  label: string; icon: React.ReactNode; value: number; valueClass: string; highlight?: boolean;
+  label: string;
+  icon: React.ReactNode;
+  value: number;
+  valueClass: string;
+  highlight?: boolean;
 }) => (
-  <div className={`flex flex-col justify-center gap-0.5 px-3 py-2 min-w-[90px] sm:min-w-[110px] flex-shrink-0 ${highlight ? "bg-danger/5" : ""}`}>
+  <div
+    className={`flex flex-col justify-center gap-0.5 px-3 py-2 min-w-[90px] sm:min-w-[110px] flex-shrink-0 ${highlight ? "bg-danger/5" : ""}`}
+  >
     <div className="flex items-center gap-1">
       {icon}
-      <span className="text-[7.5px] font-black uppercase tracking-[0.1em] text-muted whitespace-nowrap leading-none">{label}</span>
+      <span className="text-[7.5px] font-black uppercase tracking-[0.1em] text-muted whitespace-nowrap leading-none">
+        {label}
+      </span>
     </div>
-    <span className={`text-[13px] font-black leading-tight tabular-nums ${valueClass}`}>{fmt(value)}</span>
+    <span
+      className={`text-[13px] font-black leading-tight tabular-nums ${valueClass}`}
+    >
+      {fmt(value)}
+    </span>
   </div>
 );
 
 const AgingCell = ({
-  label, value, active = false, warn = false,
+  label,
+  value,
+  active = false,
+  warn = false,
 }: {
-  label: string; value: number; active?: boolean; warn?: boolean;
+  label: string;
+  value: number;
+  active?: boolean;
+  warn?: boolean;
 }) => {
   const isHot = warn && value > 0;
   return (
-    <div className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 sm:px-2 ${active ? "bg-primary/8" : isHot ? "bg-danger/5" : ""}`}>
-      <span className={`text-[6.5px] font-black uppercase tracking-widest mb-0.5 whitespace-nowrap ${active ? "text-primary" : isHot ? "text-danger" : "text-muted"}`}>{label}</span>
-      <span className={`text-[11px] font-black tabular-nums leading-tight ${active ? "text-primary" : isHot ? "text-danger" : "text-main"}`}>{fmt(value)}</span>
+    <div
+      className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 sm:px-2 ${active ? "bg-primary/8" : isHot ? "bg-danger/5" : ""}`}
+    >
+      <span
+        className={`text-[6.5px] font-black uppercase tracking-widest mb-0.5 whitespace-nowrap ${active ? "text-primary" : isHot ? "text-danger" : "text-muted"}`}
+      >
+        {label}
+      </span>
+      <span
+        className={`text-[11px] font-black tabular-nums leading-tight ${active ? "text-primary" : isHot ? "text-danger" : "text-main"}`}
+      >
+        {fmt(value)}
+      </span>
     </div>
   );
 };

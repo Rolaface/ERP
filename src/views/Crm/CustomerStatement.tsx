@@ -14,11 +14,13 @@ import {
   X,
   ExternalLink,
   Loader2,
-
-  Scale
+  Scale,
 } from "lucide-react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
-import { getCustomerStatement, getCustomerStatementPdf } from "../../api/statementApi";
+import {
+  getCustomerStatement,
+  getCustomerStatementPdf,
+} from "../../api/statementApi";
 import { showApiError } from "../../utils/alert";
 import { DateRangeFilter } from "../../components/ui/modal/DateRangeFilter";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
@@ -32,8 +34,6 @@ import type {
   AgingCellProps,
 } from "./Customerstatement.types";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const VOUCHER_OPTIONS = [
   { value: "Sales Invoice", label: "Sales Invoice" },
   { value: "Purchase Invoice", label: "Purchase Invoice" },
@@ -43,15 +43,16 @@ const VOUCHER_OPTIONS = [
   { value: "Journal Entry", label: "Journal Entry" },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const fmt = (n: number) => (n || 0).toLocaleString("en-IN");
-
 
 const fmtDateRange = (from?: string, to?: string) => {
   if (!from && !to) return "";
   const d = (s: string) =>
-    new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    new Date(s).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   if (from && to) return `${d(from)} – ${d(to)}`;
   return from ? `From ${d(from)}` : `Up to ${d(to!)}`;
 };
@@ -65,38 +66,54 @@ const triggerDownload = (blob: Blob, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-// ─── StatCell ─────────────────────────────────────────────────────────────────
-
-const StatCell = ({ label, icon, value, valueClass, highlight = false }: StatCellProps) => (
-  <div className={`flex flex-col justify-center gap-1.5 px-4 sm:px-6 py-4 min-w-[120px] sm:min-w-[148px] flex-shrink-0 ${highlight ? "bg-danger/5" : ""}`}>
+const StatCell = ({
+  label,
+  icon,
+  value,
+  valueClass,
+  highlight = false,
+}: StatCellProps) => (
+  <div
+    className={`flex flex-col justify-center gap-1.5 px-4 sm:px-6 py-4 min-w-[120px] sm:min-w-[148px] flex-shrink-0 ${highlight ? "bg-danger/5" : ""}`}
+  >
     <div className="flex items-center gap-1.5">
       {icon}
-      <span className="text-[9px] font-black uppercase tracking-[0.14em] text-muted whitespace-nowrap">{label}</span>
+      <span className="text-[9px] font-black uppercase tracking-[0.14em] text-muted whitespace-nowrap">
+        {label}
+      </span>
     </div>
-    <span className={`text-lg sm:text-[22px] font-black leading-none tabular-nums ${valueClass}`}>
+    <span
+      className={`text-lg sm:text-[22px] font-black leading-none tabular-nums ${valueClass}`}
+    >
       {fmt(value)}
     </span>
   </div>
 );
 
-// ─── AgingCell ────────────────────────────────────────────────────────────────
-
-const AgingCell = ({ label, value, active = false, warn = false }: AgingCellProps) => {
+const AgingCell = ({
+  label,
+  value,
+  active = false,
+  warn = false,
+}: AgingCellProps) => {
   const isHot = warn && value > 0;
   return (
-    <div className={`flex-1 flex flex-col items-center justify-center py-3 px-1 sm:px-2 ${active ? "bg-primary/8" : isHot ? "bg-danger/5" : ""}`}>
-      <span className={`text-[7px] font-black uppercase tracking-widest mb-1.5 whitespace-nowrap ${active ? "text-primary" : isHot ? "text-danger" : "text-muted"}`}>
+    <div
+      className={`flex-1 flex flex-col items-center justify-center py-3 px-1 sm:px-2 ${active ? "bg-primary/8" : isHot ? "bg-danger/5" : ""}`}
+    >
+      <span
+        className={`text-[7px] font-black uppercase tracking-widest mb-1.5 whitespace-nowrap ${active ? "text-primary" : isHot ? "text-danger" : "text-muted"}`}
+      >
         {label}
       </span>
-      <span className={`text-[12px] sm:text-[13px] font-black tabular-nums ${active ? "text-primary" : isHot ? "text-danger" : "text-main"}`}>
+      <span
+        className={`text-[12px] sm:text-[13px] font-black tabular-nums ${active ? "text-primary" : isHot ? "text-danger" : "text-main"}`}
+      >
         {fmt(value)}
       </span>
     </div>
   );
 };
-
-
-// ─── PDF: Viewer Modal ────────────────────────────────────────────────────────
 
 interface PdfViewerModalProps {
   blobUrl: string;
@@ -108,69 +125,98 @@ interface PdfViewerModalProps {
   onClose: () => void;
 }
 
-const PdfViewerModal = ({ blobUrl, blob, filename, customerName, dateRange, onClose }: PdfViewerModalProps) => {
+const PdfViewerModal = ({
+  blobUrl,
+  blob,
+  filename,
+  customerName,
+  dateRange,
+  onClose,
+}: PdfViewerModalProps) => {
   const [showShare, setShowShare] = useState(false);
 
   useEffect(() => {
-    const h = (e: KeyboardEvent) => e.key === "Escape" && !showShare && onClose();
+    const h = (e: KeyboardEvent) =>
+      e.key === "Escape" && !showShare && onClose();
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [onClose, showShare]);
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, []);
 
   return (
     <>
-      <div className="fixed inset-0 flex items-center justify-center" style={{ zIndex: 9999 }}
-        onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div
+        className="fixed inset-0 flex items-center justify-center"
+        style={{ zIndex: 9999 }}
+        onClick={(e) => e.target === e.currentTarget && onClose()}
+      >
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-        <div className="relative flex flex-col bg-card rounded-2xl shadow-2xl overflow-hidden"
-          style={{ width: "min(960px, 96vw)", height: "min(92vh, 920px)", zIndex: 10000 }}
-          onClick={(e) => e.stopPropagation()}>
-
-          {/* Header */}
+        <div
+          className="relative flex flex-col bg-card rounded-2xl shadow-2xl overflow-hidden"
+          style={{
+            width: "min(960px, 96vw)",
+            height: "min(92vh, 920px)",
+            zIndex: 10000,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-theme bg-app shrink-0 gap-2 flex-wrap">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <FileText className="w-4 h-4 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-main leading-tight truncate">{customerName}</p>
-                <p className="text-[10px] text-muted">Statement · {dateRange}</p>
+                <p className="text-[13px] font-semibold text-main leading-tight truncate">
+                  {customerName}
+                </p>
+                <p className="text-[10px] text-muted">
+                  Statement · {dateRange}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-             
-              <button onClick={() => triggerDownload(blob, filename)}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors">
-                <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Download</span>
+              <button
+                onClick={() => triggerDownload(blob, filename)}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Download</span>
               </button>
-              <a href={blobUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors">
-                <ExternalLink className="w-3.5 h-3.5" /><span className="hidden sm:inline">Open</span>
+              <a
+                href={blobUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Open</span>
               </a>
-              <button onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-red-50 hover:text-red-500 text-muted transition-colors">
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg hover:bg-red-50 hover:text-red-500 text-muted transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* PDF iframe */}
           <div className="flex-1 bg-gray-100 overflow-hidden">
-            <iframe src={blobUrl} className="w-full h-full border-0" title="Customer Statement PDF" />
+            <iframe
+              src={blobUrl}
+              className="w-full h-full border-0"
+              title="Customer Statement PDF"
+            />
           </div>
         </div>
       </div>
-
-      
     </>
   );
 };
-
-// ─── PDF: Dropdown Menu ───────────────────────────────────────────────────────
 
 type PdfAction = "preview" | "download" | "share";
 
@@ -183,27 +229,61 @@ const PdfDropdown = ({ onSelect, onClose }: PdfDropdownProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [onClose]);
 
-  const items: { action: PdfAction; icon: React.ReactNode; label: string; sub: string }[] = [
-    { action: "preview", icon: <Eye className="w-3.5 h-3.5" />, label: "Preview", sub: "View in-app" },
-    { action: "download", icon: <Download className="w-3.5 h-3.5" />, label: "Download", sub: "Save as PDF" },
-    { action: "share", icon: <Mail className="w-3.5 h-3.5" />, label: "Compose Email", sub: "Send to customer" },
+  const items: {
+    action: PdfAction;
+    icon: React.ReactNode;
+    label: string;
+    sub: string;
+  }[] = [
+    {
+      action: "preview",
+      icon: <Eye className="w-3.5 h-3.5" />,
+      label: "Preview",
+      sub: "View in-app",
+    },
+    {
+      action: "download",
+      icon: <Download className="w-3.5 h-3.5" />,
+      label: "Download",
+      sub: "Save as PDF",
+    },
+    {
+      action: "share",
+      icon: <Mail className="w-3.5 h-3.5" />,
+      label: "Compose Email",
+      sub: "Send to customer",
+    },
   ];
 
   return (
-    <div ref={ref}
+    <div
+      ref={ref}
       className="absolute right-0 top-full mt-1.5 w-52 bg-card border border-theme rounded-xl shadow-xl overflow-hidden"
-      style={{ zIndex: 9000 }}>
+      style={{ zIndex: 9000 }}
+    >
       {items.map(({ action, icon, label, sub }, idx) => (
-        <button key={action} onClick={() => { onSelect(action); onClose(); }}
-          className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-row-hover transition-colors group ${idx < items.length - 1 ? "border-b border-theme/50" : ""}`}>
-          <span className="text-muted group-hover:text-primary transition-colors">{icon}</span>
+        <button
+          key={action}
+          onClick={() => {
+            onSelect(action);
+            onClose();
+          }}
+          className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-row-hover transition-colors group ${idx < items.length - 1 ? "border-b border-theme/50" : ""}`}
+        >
+          <span className="text-muted group-hover:text-primary transition-colors">
+            {icon}
+          </span>
           <div>
-            <p className="text-[12px] font-semibold text-main leading-tight">{label}</p>
+            <p className="text-[12px] font-semibold text-main leading-tight">
+              {label}
+            </p>
             <p className="text-[10px] text-muted">{sub}</p>
           </div>
         </button>
@@ -211,8 +291,6 @@ const PdfDropdown = ({ onSelect, onClose }: PdfDropdownProps) => {
     </div>
   );
 };
-
-// ─── PDF: Button (orchestrator) ───────────────────────────────────────────────
 
 interface PdfButtonProps {
   customerId: string;
@@ -224,28 +302,44 @@ interface PdfButtonProps {
   periodText: string;
 }
 
-const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, defaultEmail ,periodText  }: PdfButtonProps) => {
+const PdfButton = ({
+  customerId,
+  customerName,
+  fromDate,
+  toDate,
+  voucherType,
+  defaultEmail,
+  periodText,
+}: PdfButtonProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewer, setViewer] = useState<{ blobUrl: string; blob: Blob } | null>(null);
+  const [viewer, setViewer] = useState<{ blobUrl: string; blob: Blob } | null>(
+    null,
+  );
   const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailAttachments, setEmailAttachments] = useState<{ name: string; file_name: string }[]>([]);
+  const [emailAttachments, setEmailAttachments] = useState<
+    { name: string; file_name: string }[]
+  >([]);
   const [emailUploading, setEmailUploading] = useState(false);
   const cachedRef = useRef<Blob | null>(null);
   const dateRange = fmtDateRange(fromDate, toDate);
   const filename = `Statement_${customerName.replace(/\s+/g, "_")}_${dateRange.replace(/[\s–]/g, "")}.pdf`;
 
-  // Invalidate cache when filters change
-  useEffect(() => { cachedRef.current = null; }, [customerId, fromDate, toDate, voucherType]);
+  useEffect(() => {
+    cachedRef.current = null;
+  }, [customerId, fromDate, toDate, voucherType]);
 
   const fetchBlob = async (): Promise<Blob | null> => {
     if (cachedRef.current) return cachedRef.current;
     try {
       setLoading(true);
       setError(null);
-      // Replace with your actual API call: getCustomerStatementPdf(customerId, { from_date: fromDate, to_date: toDate, voucher_type: voucherType })
-      const blob = await getCustomerStatementPdf(customerId, { from_date: fromDate, to_date: toDate, voucher_type: voucherType });
+      const blob = await getCustomerStatementPdf(customerId, {
+        from_date: fromDate,
+        to_date: toDate,
+        voucher_type: voucherType,
+      });
       cachedRef.current = blob;
       return blob;
     } catch {
@@ -259,15 +353,20 @@ const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, de
   const handleSelect = async (action: PdfAction) => {
     const blob = await fetchBlob();
     if (!blob) return;
-    if (action === "preview") { setViewer({ blobUrl: URL.createObjectURL(blob), blob }); }
-    if (action === "download") { triggerDownload(blob, filename); }
+    if (action === "preview") {
+      setViewer({ blobUrl: URL.createObjectURL(blob), blob });
+    }
+    if (action === "download") {
+      triggerDownload(blob, filename);
+    }
     if (action === "share") {
-      // Convert blob to File, upload it, get the server name back, open modal
       try {
         setEmailUploading(true);
         const file = new File([blob], filename, { type: "application/pdf" });
         const uploaded = await uploadFile(file, customerId, "Customer");
-        setEmailAttachments([{ name: uploaded.name, file_name: uploaded.file_name }]);
+        setEmailAttachments([
+          { name: uploaded.name, file_name: uploaded.file_name },
+        ]);
         setEmailModalOpen(true);
       } catch (err) {
         setError("Failed to attach PDF. Please try again.");
@@ -285,27 +384,53 @@ const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, de
   return (
     <>
       <div className="relative inline-flex">
-        <button onClick={() => setOpen((v) => !v)} disabled={loading || emailUploading}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors disabled:opacity-60">
-          {(loading || emailUploading)
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-            : <FileText className="w-3.5 h-3.5 text-primary" />}
-          <span>{loading ? "Generating…" : emailUploading ? "Attaching…" : "PDF"}</span>
-          <ChevronDown className={`w-3 h-3 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
+        <button
+          onClick={() => setOpen((v) => !v)}
+          disabled={loading || emailUploading}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors disabled:opacity-60"
+        >
+          {loading || emailUploading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+          ) : (
+            <FileText className="w-3.5 h-3.5 text-primary" />
+          )}
+          <span>
+            {loading ? "Generating…" : emailUploading ? "Attaching…" : "PDF"}
+          </span>
+          <ChevronDown
+            className={`w-3 h-3 text-muted transition-transform ${open ? "rotate-180" : ""}`}
+          />
         </button>
-        {open && <PdfDropdown onSelect={handleSelect} onClose={() => setOpen(false)} />}
+        {open && (
+          <PdfDropdown onSelect={handleSelect} onClose={() => setOpen(false)} />
+        )}
       </div>
 
       {error && (
-        <div className="fixed bottom-4 right-4 flex items-center gap-2 bg-danger text-white text-[12px] font-semibold px-4 py-2.5 rounded-xl shadow-lg" style={{ zIndex: 11000 }}>
+        <div
+          className="fixed bottom-4 right-4 flex items-center gap-2 bg-danger text-white text-[12px] font-semibold px-4 py-2.5 rounded-xl shadow-lg"
+          style={{ zIndex: 11000 }}
+        >
           {error}
-          <button onClick={() => setError(null)} className="ml-1 opacity-70 hover:opacity-100"><X className="w-3.5 h-3.5" /></button>
+          <button
+            onClick={() => setError(null)}
+            className="ml-1 opacity-70 hover:opacity-100"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
       {viewer && (
-        <PdfViewerModal blobUrl={viewer.blobUrl} blob={viewer.blob} filename={filename}
-          customerName={customerName} dateRange={dateRange} defaultEmail={defaultEmail} onClose={closeViewer} />
+        <PdfViewerModal
+          blobUrl={viewer.blobUrl}
+          blob={viewer.blob}
+          filename={filename}
+          customerName={customerName}
+          dateRange={dateRange}
+          defaultEmail={defaultEmail}
+          onClose={closeViewer}
+        />
       )}
 
       {emailModalOpen && (
@@ -316,7 +441,7 @@ const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, de
           contactEmail={defaultEmail}
           customerName={customerName}
           invoiceAttachments={emailAttachments}
-          periodText={periodText} 
+          periodText={periodText}
           onClose={() => {
             setEmailModalOpen(false);
             setEmailAttachments([]);
@@ -327,25 +452,22 @@ const PdfButton = ({ customerId, customerName, fromDate, toDate, voucherType, de
   );
 };
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
-const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps & { customerEmail?: string }) => {
+const CustomerStatement = ({
+  customerId,
+  customerEmail,
+}: CustomerStatementProps & { customerEmail?: string }) => {
   const [data, setData] = useState<StatementData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pagination
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(4);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // Filters
   const [fromDate, setFromDate] = useState<string | undefined>();
   const [toDate, setToDate] = useState<string | undefined>();
   const [voucherType, setVoucherType] = useState("");
-
-  // ─── Fetch ──────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!customerId) return;
@@ -354,7 +476,9 @@ const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps
         setLoading(true);
         setError(null);
         const resp = await getCustomerStatement(customerId, page, pageSize, {
-          from_date: fromDate, to_date: toDate, voucher_type: voucherType || undefined,
+          from_date: fromDate,
+          to_date: toDate,
+          voucher_type: voucherType || undefined,
         });
         if (resp?.message?.status_code === 200) {
           setData(resp.message.data);
@@ -372,9 +496,9 @@ const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps
     fetchStatement();
   }, [customerId, page, pageSize, fromDate, toDate, voucherType]);
 
-  useEffect(() => { setPage(1); }, [customerId, fromDate, toDate, voucherType]);
-
-  // ─── Table columns ───────────────────────────────────────────────────────
+  useEffect(() => {
+    setPage(1);
+  }, [customerId, fromDate, toDate, voucherType]);
 
   const statementColumns = [
     {
@@ -382,7 +506,11 @@ const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps
       header: "Date",
       render: (row: LedgerEntry) => (
         <span className="text-[10px] font-black text-muted uppercase tracking-widest">
-          {new Date(row.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+          {new Date(row.date).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}
         </span>
       ),
     },
@@ -391,57 +519,83 @@ const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps
       header: "Transaction",
       render: (row: LedgerEntry) => (
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl ${row.debit > 0 ? "bg-warning/10 text-warning" : row.credit > 0 ? "bg-success/10 text-success" : "bg-row-hover text-muted"}`}>
-            {row.debit > 0 ? <ArrowUpRight size={14} /> : row.credit > 0 ? <ArrowDownLeft size={14} /> : <FileText size={14} />}
+          <div
+            className={`p-2 rounded-xl ${row.debit > 0 ? "bg-warning/10 text-warning" : row.credit > 0 ? "bg-success/10 text-success" : "bg-row-hover text-muted"}`}
+          >
+            {row.debit > 0 ? (
+              <ArrowUpRight size={14} />
+            ) : row.credit > 0 ? (
+              <ArrowDownLeft size={14} />
+            ) : (
+              <FileText size={14} />
+            )}
           </div>
           <div>
             <p className="text-xs font-bold text-main">{row.type}</p>
-            <p className="text-[9px] font-mono text-muted uppercase">{row.ref}</p>
+            <p className="text-[9px] font-mono text-muted uppercase">
+              {row.ref}
+            </p>
           </div>
         </div>
       ),
     },
     {
-      key: "debit", header: "Debit", align: "right" as const,
+      key: "debit",
+      header: "Debit",
+      align: "right" as const,
       render: (row: LedgerEntry) =>
-        row.debit > 0
-          ? <span className="text-xs font-bold text-warning">{fmt(row.debit)}</span>
-          : <span className="text-muted text-xs">—</span>,
+        row.debit > 0 ? (
+          <span className="text-xs font-bold text-warning">
+            {fmt(row.debit)}
+          </span>
+        ) : (
+          <span className="text-muted text-xs">—</span>
+        ),
     },
     {
-      key: "credit", header: "Credit", align: "right" as const,
+      key: "credit",
+      header: "Credit",
+      align: "right" as const,
       render: (row: LedgerEntry) =>
-        row.credit > 0
-          ? <span className="text-xs font-bold text-success">{fmt(row.credit)}</span>
-          : <span className="text-muted text-xs">—</span>,
+        row.credit > 0 ? (
+          <span className="text-xs font-bold text-success">
+            {fmt(row.credit)}
+          </span>
+        ) : (
+          <span className="text-muted text-xs">—</span>
+        ),
     },
     {
-      key: "balance", header: "Balance", align: "right" as const,
+      key: "balance",
+      header: "Balance",
+      align: "right" as const,
       render: (row: LedgerEntry) => {
         const neg = row.balance < 0;
         return (
-          <span className={`text-sm font-black tabular-nums ${row.balance === 0 ? "text-muted" : neg ? "text-danger" : "text-primary"}`}>
-            {neg ? "−" : ""}{fmt(row.balance)}
+          <span
+            className={`text-sm font-black tabular-nums ${row.balance === 0 ? "text-muted" : neg ? "text-danger" : "text-primary"}`}
+          >
+            {neg ? "−" : ""}
+            {fmt(row.balance)}
           </span>
         );
       },
     },
     {
-      key: "note", header: "Notes",
+      key: "note",
+      header: "Notes",
       render: (row: LedgerEntry) =>
-        row.note && row.note !== "No Remarks"
-          ? <span className="text-xs text-muted italic">{row.note}</span>
-          : <span className="text-muted text-xs">—</span>,
+        row.note && row.note !== "No Remarks" ? (
+          <span className="text-xs text-muted italic">{row.note}</span>
+        ) : (
+          <span className="text-muted text-xs">—</span>
+        ),
     },
   ];
-
-  // ─── Derived ─────────────────────────────────────────────────────────────
 
   const totalDebit = data?.summary.totalDebit ?? 0;
   const totalCredit = data?.summary.totalCredit ?? 0;
   const netOutstanding = data?.summary.netOutstanding ?? 0;
-
-  // ─── Guards ───────────────────────────────────────────────────────────────
 
   if (loading)
     return (
@@ -459,58 +613,97 @@ const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps
 
   if (!data) return null;
 
-  // ─── UI ───────────────────────────────────────────────────────────────────
-
   return (
-    <div className="max-w-[1400px] mx-auto space-y-5 p-4 sm:p-6">
-
-      {/* Summary + Aging */}
-      <div className="bg-card border border-theme rounded-2xl flex items-stretch overflow-x-auto divide-x divide-theme">
-        <StatCell label="Total Debit" icon={<TrendingUp size={12} className="text-warning" />} value={totalDebit} valueClass="text-warning" />
-        <StatCell label="Total Credit" icon={<TrendingDown size={12} className="text-success" />} value={totalCredit} valueClass="text-success" />
-        <StatCell label="Net Outstanding"
-          icon={<Scale size={12} className={netOutstanding > 0 ? "text-danger" : "text-muted"} />}
+    <div className="max-w-[1400px] mx-auto flex flex-col gap-4 p-4 sm:p-5 h-[calc(95vh-160px)]">
+      <div className="bg-card border border-theme rounded-2xl flex items-stretch overflow-x-auto divide-x divide-theme shrink-0">
+        <StatCell
+          label="Total Debit"
+          icon={<TrendingUp size={12} className="text-warning" />}
+          value={totalDebit}
+          valueClass="text-warning"
+        />
+        <StatCell
+          label="Total Credit"
+          icon={<TrendingDown size={12} className="text-success" />}
+          value={totalCredit}
+          valueClass="text-success"
+        />
+        <StatCell
+          label="Net Outstanding"
+          icon={
+            <Scale
+              size={12}
+              className={netOutstanding > 0 ? "text-danger" : "text-muted"}
+            />
+          }
           value={netOutstanding}
           valueClass={netOutstanding > 0 ? "text-danger" : "text-muted"}
-          highlight={netOutstanding > 0} />
+          highlight={netOutstanding > 0}
+        />
 
         <div className="flex flex-1 items-stretch min-w-0">
           <div className="flex items-center justify-center px-3 bg-row-hover/50 border-r border-theme shrink-0">
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted select-none"
-              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+            <span
+              className="text-[8px] font-black uppercase tracking-[0.2em] text-muted select-none"
+              style={{
+                writingMode: "vertical-rl",
+                transform: "rotate(180deg)",
+              }}
+            >
               Aging
             </span>
           </div>
           <div className="flex flex-1 divide-x divide-theme">
             <AgingCell label="Not Due Yet" value={data.aging.current} active />
             <AgingCell label="1 - 30 Days Overdue" value={data.aging["1_30"]} />
-            <AgingCell label="31 - 60 Days Overdue" value={data.aging["31_60"]} />
-            <AgingCell label="61 - 90 Days Overdue" value={data.aging["61_90"]} />
-            <AgingCell label="90 + Days Overdue" value={data.aging["90_plus"]} warn />
+            <AgingCell
+              label="31 - 60 Days Overdue"
+              value={data.aging["31_60"]}
+            />
+            <AgingCell
+              label="61 - 90 Days Overdue"
+              value={data.aging["61_90"]}
+            />
+            <AgingCell
+              label="90 + Days Overdue"
+              value={data.aging["90_plus"]}
+              warn
+            />
           </div>
         </div>
       </div>
 
-      {/* Ledger table */}
-      <div className="bg-card border border-theme rounded-2xl overflow-visible">
-
-        {/* Toolbar */}
-        <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-theme flex-wrap">
-
-          {/* Left: title + count */}
+      <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-theme flex-wrap shrink-0">
           <div className="flex items-center gap-2">
             <FileText size={13} className="text-primary" />
-            <span className="text-[11px] font-black uppercase tracking-widest text-main">Ledger Entries</span>
-            <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold">{totalItems}</span>
+            <span className="text-[11px] font-black uppercase tracking-widest text-main">
+              Ledger Entries
+            </span>
+            <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold">
+              {totalItems}
+            </span>
           </div>
 
-          {/* Right: filters + PDF */}
           <div className="flex items-center gap-2 flex-wrap">
-            <FilterSelect value={voucherType} options={VOUCHER_OPTIONS}
-              onChange={(e) => { setVoucherType(e.target.value); setPage(1); }} />
+            <FilterSelect
+              value={voucherType}
+              options={VOUCHER_OPTIONS}
+              onChange={(e) => {
+                setVoucherType(e.target.value);
+                setPage(1);
+              }}
+            />
 
-            <DateRangeFilter from={fromDate} to={toDate}
-              onChange={({ from_date, to_date }) => { setFromDate(from_date); setToDate(to_date); setPage(1); }} />
+            <DateRangeFilter
+              from={fromDate}
+              to={toDate}
+              onChange={({ from_date, to_date }) => {
+                setFromDate(from_date);
+                setToDate(to_date);
+                setPage(1);
+              }}
+            />
 
             <PdfButton
               customerId={customerId}
@@ -519,7 +712,7 @@ const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps
               toDate={toDate}
               voucherType={voucherType}
               defaultEmail={customerEmail ?? data.customerEmail}
-              periodText={fmtDateRange(fromDate, toDate)} 
+              periodText={fmtDateRange(fromDate, toDate)}
             />
           </div>
         </div>
@@ -534,8 +727,11 @@ const CustomerStatement = ({ customerId, customerEmail }: CustomerStatementProps
           pageSize={pageSize}
           onPageChange={setPage}
           enableExport
-          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
-          pageSizeOptions={[4, 10, 25]}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          pageSizeOptions={[20, 50, 100, 200]}
         />
       </div>
     </div>
