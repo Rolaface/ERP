@@ -27,7 +27,7 @@ const AppraisalTable: React.FC<AppraisalTableProps> = ({ onAddAppraisal }) => {
 
   // ── Pagination ────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 

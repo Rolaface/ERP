@@ -128,7 +128,7 @@ export function useServerPagination<T>(options: {
   const [isInitialLoading, setIsInitialLoading] = useState(immediate);
   const [isFetching, setIsFetching] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");

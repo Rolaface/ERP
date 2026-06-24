@@ -37,7 +37,7 @@ const BankAccountSetup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const { can } = usePermission();
@@ -329,7 +329,7 @@ const BankAccountSetup: React.FC = () => {
           tableId="bank-accounts"
           pageSize={pageSize}
           totalItems={totalItems}
-          pageSizeOptions={[10, 25, 50, 100]}
+           pageSizeOptions={[20, 50, 100,200]}
           onPageSizeChange={(size) => {
             setPageSize(size);
             setPage(1);

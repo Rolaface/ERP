@@ -24,7 +24,7 @@ const History: React.FC<HistoryProps> = ({ onNewRequest, onEditLeave }) => {
   const [loading, setLoading] = useState(false);
   const [selectedLeaveId, setSelectedLeaveId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
