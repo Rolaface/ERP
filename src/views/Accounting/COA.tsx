@@ -43,7 +43,7 @@ import {
   ChevronRight,
   Search,
 } from "lucide-react";
-import NewAccountModal from "../../components/Coa/NewAccountModal";
+import { openCoaGLAccountModal } from "../../store/modalStore";
 import type { COAAccount, COAResponse, COAResponseData } from "../../types/coa";
 import ViewAccountModal from "../../components/Coa/ViewAccountModal";
 import { getCurrencySymbol } from "../../utils/currency";
@@ -260,11 +260,8 @@ const COATab: React.FC<COATabProps> = ({
   const [coaData, setCoaData] = useState<COAResponseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showNewAccount, setShowNewAccount] = useState(false);
   const [hideZero, setHideZero] = useState(false);
   const [viewAccount, setViewAccount] = useState<COAAccount | null>(null);
-  const [selectedParent, setSelectedParent] = useState<COAAccount | null>(null);
-  const [editAccount, setEditAccount] = useState<COAAccount | null>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
 
@@ -378,10 +375,18 @@ const handleExport = useCallback(() => {
     }
   }, [coaData, searchTerm, tableData]);
 
-  const handleAddChild = (row: COAAccount) => {
-    setSelectedParent(row);
-    setShowNewAccount(true);
-  };
+const handleAddChild = (row: COAAccount) => {
+  openCoaGLAccountModal(
+    { parentAccount: row },
+    false,
+    {
+      onSuccess: async () => {
+        await fetchCOA();
+      },
+    },
+  );
+};
+
 
   const handleDeleteAccount = async (row: COAAccount) => {
     const confirmed = await showConfirm(
@@ -401,28 +406,30 @@ const handleExport = useCallback(() => {
     }
   };
 
-  const handleModalClose = () => {
-    setShowNewAccount(false);
-    setSelectedParent(null);
-    setEditAccount(null);
-  };
 
-  const handleEditAccount = async (row: COAAccount) => {
-    try {
-      showLoading("Loading account details...");
-      const data = await getCOAById(row.name);
-      closeSwal();
-      if (!data) {
-        showApiError("Failed to load account details.");
-        return;
-      }
-      setEditAccount({ ...row, ...data });
-      setShowNewAccount(true);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
+const handleEditAccount = async (row: COAAccount) => {
+  try {
+    showLoading("Loading account details...");
+    const data = await getCOAById(row.name);
+    closeSwal();
+    if (!data) {
+      showApiError("Failed to load account details.");
+      return;
     }
-  };
+    openCoaGLAccountModal(
+      { editAccount: { ...row, ...data } },
+      true,
+      {
+        onSuccess: async () => {
+          await fetchCOA();
+        },
+      },
+    );
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   const columns = useMemo<ColumnDef<COAAccount>[]>(
     () => [
@@ -624,13 +631,6 @@ const handleExport = useCallback(() => {
 
   return (
     <>
-      <NewAccountModal
-        isOpen={showNewAccount}
-        onClose={handleModalClose}
-        onSuccess={fetchCOA}
-        parentAccount={selectedParent}
-        editAccount={editAccount}
-      />
       <ViewAccountModal
         isOpen={viewAccount !== null}
         onClose={() => setViewAccount(null)}
