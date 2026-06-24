@@ -7,7 +7,7 @@ import type { CustomerDetail } from "../../types/customer";
 import type { Supplier } from "../../types/Supply/supplier";
 import type { ItemInitialData } from "../inventory/ItemModal";
 import type { FeedbackRow } from "../../components/Hr/performance/section/AddFeedbackModal";
-
+import type { COAAccount } from "../../types/coa";
 import type { SetupRow } from "../../views/hr/performace/types";
 import type { TaxCategoryFormData as TaxTemplateFormData } from "../../types/tax/taxTemplate";
 import type { SalesTaxTemplateFormData } from "../../types/tax/salesTemplate";
@@ -192,6 +192,9 @@ const DesignationModal = lazy(
     import("../empployeesetupmodal/DesignationModal").then((m) => ({
       default: m.DesignationModal,
     })),
+);
+const CoaGLAccountModal = lazy(
+  () => import("../../components/Coa/NewAccountModal"),
 );
 const GradeModal = lazy(
   () =>
@@ -1184,6 +1187,23 @@ case "scheduler":
             loading={context?.loading as boolean | undefined}
           />,
         );
+
+        case "coaGLAccount": {
+  const d = isRecord(modal.initialData) ? modal.initialData : {};
+  return wrappedModal(
+    <CoaGLAccountModal
+      key={modal.id}
+      modalId={modal.id}
+      isOpen={true}
+      onClose={handleClose}
+      onSuccess={() => {
+        if (context?.onSuccess) context.onSuccess(undefined);
+      }}
+      parentAccount={(d.parentAccount as COAAccount) ?? null}
+      editAccount={(d.editAccount as COAAccount) ?? null}
+    />,
+  );
+}
 
     }
   };

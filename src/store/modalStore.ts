@@ -60,6 +60,8 @@ export type ModalType =
   |"employeeAdvance"
   |"payrollPreview"
   | "scheduler"
+  | "scheduler"
+  | "coaGLAccount"
   
   
 
@@ -948,3 +950,13 @@ export const openPayrollPreviewModal = (
   useModalStore
     .getState()
     .openModal("payrollPreview", initialData, isEdit, context, meta);
+
+export const openCoaGLAccountModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("coaGLAccount", initialData, isEdit, context, meta);
