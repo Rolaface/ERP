@@ -510,52 +510,59 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
   const handleRowStatusChange = async (
-    invoiceNumber: string,
-    status: InvoiceStatus,
-  ) => {
-    if (CRITICAL_STATUSES.includes(status)) {
-      const result = await fireManagedSwal({
-        icon: "warning",
-        title: "Confirm Status Change",
-        text: `Mark invoice ${invoiceNumber} as ${status}?`,
-        showCancelButton: true,
-        confirmButtonColor: "#ef0000",
-        cancelButtonColor: "#6b7280",
-        confirmButtonText: "Yes",
-        cancelButtonText: "Cancel",
-      });
+  invoiceNumber: string,
+  status: InvoiceStatus,
+) => {
+  if (status === "Approved") {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Approve Invoice?",
+      text: `Are you sure you want to approve invoice ${invoiceNumber}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Approve",
+      cancelButtonText: "No",
+    });
+    if (!result.isConfirmed) return;
+  }
 
-      if (!result.isConfirmed) return;
+  if (CRITICAL_STATUSES.includes(status)) {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Confirm Status Change",
+      text: `Mark invoice ${invoiceNumber} as ${status}?`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef0000",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes",
+      cancelButtonText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
+  }
+
+  try {
+    showLoading("Updating invoice status...");
+    const res = await updateInvoiceStatus(invoiceNumber, status);
+    closeSwal();
+    if (!res.message || res.message.status_code !== 200) {
+      showApiError(res?.message.message || "Failed to update invoice status");
+      return;
     }
-
-    try {
-      showLoading("Updating invoice status...");
-
-      const res = await updateInvoiceStatus(invoiceNumber, status);
-
-      closeSwal();
-
-      if (!res.message || res.message.status_code !== 200) {
-        showApiError(res?.message.message || "Failed to update invoice status");
-        return;
-      }
-
-      const updatedStatus = res.message.data?.status;
-
-      setInvoices((prev) =>
-        prev.map((inv) =>
-          inv.invoiceNumber === invoiceNumber
-            ? { ...inv, invoiceStatus: updatedStatus }
-            : inv,
-        ),
-      );
-
-      showSuccess(`Invoice marked as ${status}`);
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
+    const updatedStatus = res.message.data?.status;
+    setInvoices((prev) =>
+      prev.map((inv) =>
+        inv.invoiceNumber === invoiceNumber
+          ? { ...inv, invoiceStatus: updatedStatus }
+          : inv,
+      ),
+    );
+    showSuccess(`Invoice marked as ${status}`);
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
   const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 

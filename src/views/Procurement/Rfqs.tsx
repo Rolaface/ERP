@@ -130,6 +130,18 @@ const RFQsTable: React.FC<RFQsTableProps> = ({ onAdd }) => {
     }
   };
 const handleSubmit = async (rfq: RFQ) => {
+  const confirm = await fireManagedSwal({
+    icon: "warning",
+    title: "Approve RFQ?",
+    text: `This will approve "${rfq.name}". This action cannot be undone.`,
+    showCancelButton: true,
+    confirmButtonColor: "#22c55e",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, approve",
+  });
+
+  if (!confirm.isConfirmed) return;  // ✅ yahan ruk jayega agar cancel kiya
+
   try {
     showLoading("Submitting RFQ...");
     await updateStatus(rfq.name, "submit");
@@ -238,8 +250,8 @@ const handleCancel = async (rfq: RFQ) => {
       ? [{
           label: "Approve",
           icon: <CheckCircle className="w-4 h-4" />,
-          onClick: () => handleSubmit(o),
-        }]
+          onClick: () => { handleSubmit(o); },      
+          }]
       : []),
     ...(can(RFQ_MODULE, "cancel") && o.status === "Submitted"
       ? [{
