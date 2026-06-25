@@ -13,8 +13,8 @@ import type { UserRoleFormData } from "../../types/RoleManagement/UserRole";
 import { useAuth } from "../../context/AuthContext";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-
-
+import { fireManagedSwal } from "../../utils/swalManager";
+import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 const mapApiRoleToUserRole = (apiRole: {
   Id: string;
   roleName: string;
@@ -146,19 +146,35 @@ const UserRolePage: React.FC = () => {
 const handleView = (row: UserRole) => openRoleModal(row, false);
   const handleEdit = (row: UserRole) => openRoleModal(row, true);
 
-  const handleToggleStatus = async (row: UserRole) => {
-    const id = row.roleId ?? row.role;
-    setTogglingId(id);
-    try {
-      await updateUserRoleStatus(id, row.disabled ? 0 : 1);
-      showSuccess(`Role ${row.disabled ? "enabled" : "disabled"} successfully`);
-      fetchRoles(searchQuery, page, pageSize);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setTogglingId(null);
-    }
-  };
+ const handleToggleStatus = async (row: UserRole) => {
+  const isDisabling = !row.disabled;
+
+  const result = await fireManagedSwal({
+    icon: "warning",
+    title: isDisabling ? "Disable Role?" : "Enable Role?",
+    text: isDisabling
+      ? `Are you sure you want to disable "${row.role}" role?`
+      : `Are you sure you want to enable "${row.role}" role?`,
+    showCancelButton: true,
+    confirmButtonColor: isDisabling ? "#ef4444" : "#22c55e",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: isDisabling ? "Yes, Disable" : "Yes, Enable",
+    cancelButtonText: "No",
+  });
+  if (!result.isConfirmed) return;
+
+  const id = row.roleId ?? row.role;
+  setTogglingId(id);
+  try {
+    await updateUserRoleStatus(id, row.disabled ? 0 : 1);
+    showSuccess(`Role ${row.disabled ? "enabled" : "disabled"} successfully`);
+    fetchRoles(searchQuery, page, pageSize);
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setTogglingId(null);
+  }
+};
 
   // const handleDelete = useCallback(
   //   async (role: string, e: React.MouseEvent) => {
@@ -284,17 +300,12 @@ const handleView = (row: UserRole) => openRoleModal(row, false);
         <ActionMenu
           customActions={[
             {
-              label:
-                togglingId === (row.roleId ?? row.role)
-                  ? "Updating..."
-                  : row.disabled
-                    ? "Enable"
-                    : "Disable",
-              onClick: () => {
-                handleToggleStatus(row);
-              },
-              disabled: togglingId === (row.roleId ?? row.role),
-            },
+  label: togglingId === (row.roleId ?? row.role) ? "Updating..." : row.disabled ? "Enable" : "Disable",
+  icon: row.disabled ? ACTION_ICONS.ENABLE : ACTION_ICONS.DISABLE,
+  onClick: () => handleToggleStatus(row),
+  disabled: togglingId === (row.roleId ?? row.role),
+  danger: !row.disabled,
+},
           ]}
         />
       )}
