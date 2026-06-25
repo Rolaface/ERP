@@ -864,14 +864,18 @@ const PurchaseOrderDetailModal: React.FC<Props> = ({
                       val: fmt(totalTaxes, currency),
                       big: false,
                     },
-                    
+                    {
+                      label: "Round Off",
+                      val: fmt(data.roundingAdjustment, currency),
+                      big: false,
+                    },
                     {
                       label: "Grand Total",
                       val: fmt(grandTotal, currency),
                       big: false,
                     },
                     ...(data?.roundingAdjustment != null && data.roundingAdjustment !== 0
-                      ? [{ label: "Rounding Adjustment", val: fmt(data.roundingAdjustment, currency), big: false }]
+                      ? [{ label: "Round Off", val: fmt(data.roundingAdjustment, currency), big: false }]
                       : []),
                     {
                       label: "Rounded Total",
