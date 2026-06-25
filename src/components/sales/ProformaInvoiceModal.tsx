@@ -294,15 +294,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         <div className="flex-1 overflow-y-auto px-8 py-4">
           {/* ===== DETAILS ===== */}
           {ui.activeTab === "details" && (
-            <div className="flex flex-col gap-6 max-w-[1600px] mx-auto">
-              <div className="">
-                <div
-                  className={`grid ${
-                    ui.isExport
-                      ? "grid-cols-[minmax(120px,0.6fr)_100px_100px_90px_110px_120px_100px]"
-                      : "grid-cols-[220px_130px_130px_110px_120px_120px]"
-                  } gap-x-2 items-start`}
-                >
+           <div className="flex flex-col gap-4">
+              {/* ── Top fields row — flex-wrap so they flow on any width ── */}
+              <div className="flex flex-wrap gap-3 items-end">
                   <div>
                     <CustomerSelect
                       value={customerNameDisplay}
@@ -340,33 +334,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     />
                   </div>
 
-                  {/* <div>
-                    <ModalSelect
-                      label="Invoice Status"
-                      name="invoiceStatus"
-                      value={formData.invoiceStatus}
-                      onChange={actions.handleInputChange}
-                      options={[...invoiceStatusOptions]}
-                      disabled={mode === "edit"}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  </div> */}
-
-                  {/* <div>
-                    <ModalSelect
-                      label="Payment Method"
-                      name="paymentMethod"
-                      value={formData.paymentInformation?.paymentMethod}
-                      onChange={(
-                        e: React.ChangeEvent<
-                          HTMLInputElement | HTMLSelectElement
-                        >,
-                      ) => actions.handleInputChange(e, "paymentInformation")}
-                      options={[...paymentMethodOptions]}
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  </div> */}
-
                   {showExchangeRate && (
     <div className="w-full sm:w-[110px]">
       <ModalInput
@@ -399,20 +366,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   />
                 </div>
 
-                  {/* {ui.isExport && (
-                    <div>
-                      <ModalInput
-                        label="Export To Country"
-                        name="destnCountryCd"
-                        type="text"
-                        disabled
-                        value={formData.destnCountryCd}
-                        onChange={actions.handleInputChange}
-                        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                      />
-                    </div>
-                  )} */}
-
                   {ui.isLocal && (
                     <ModalInput
                       label="LPO Number"
@@ -425,7 +378,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   )}
-                </div>
+                 
               </div>
 
               {/* ITEMS + SUMMARY */}
