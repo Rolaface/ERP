@@ -432,7 +432,7 @@ const ProformaDetailModal: React.FC<Props> = ({
                   { label: "Subtotal",    val: fmt(subtotal, currency),              big: false, red: false },
                   ...(totalDisc > 0 ? [{ label: "Total Discount", val: `- ${fmt(totalDisc, currency)}`, big: false, red: true }] : []),
                   { label: "Total Amount", val: fmt(grandTotal, currency), big: false, red: false },
-                  ...(data.roundingAdjustment ? [{ label: "Rounding Adjustment", val: fmt(data.roundingAdjustment, currency), big: false, red: false }] : []),
+                  ...(data.roundingAdjustment ? [{ label: "Round Off", val: fmt(data.roundingAdjustment, currency), big: false, red: false }] : []),
                   { label: "Rounded Total", val: fmt(data.roundedTotal ?? grandTotal, currency), big: true, red: false },
                 ].map(({ label, val, big, red }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

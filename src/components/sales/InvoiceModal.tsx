@@ -90,7 +90,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     !!ui.baseCurrency &&
     !!formData.currencyCode &&
     formData.currencyCode.trim().toUpperCase() !==
-      ui.baseCurrency.trim().toUpperCase();
+    ui.baseCurrency.trim().toUpperCase();
 
   const handleModeFetchOptions = async (q: string) => {
     const res = await getAllModeOfPayment(1, 10, q || "", 1);
@@ -112,7 +112,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     setSubmitting(true);
     try {
       const payload = await actions.handleSubmit({
-        preventDefault: () => {},
+        preventDefault: () => { },
       } as React.FormEvent);
 
       if (!payload) return;
@@ -213,11 +213,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   key={tab}
                   type="button"
                   onClick={() => ui.setActiveTab(tab)}
-                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
-                    ui.activeTab === tab
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${ui.activeTab === tab
                       ? "text-primary border-b-[3px] border-primary"
                       : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+                    }`}
                 >
                   {tab === "details" && "Details"}
                   {tab === "address" && "Additional Details"}
@@ -277,7 +276,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 </div>
 
                 {/* Currency */}
-                <div className="w-full sm:w-[100px]">
+                {/* <div className="w-full sm:w-[100px]">
                   <ModalSelect
                     label="Currency"
                     name="currencyCode"
@@ -296,7 +295,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     disabled
                     className="w-full border border-theme rounded text-[11px] text-main bg-card"
                   />
-                </div>
+                </div> */}
 
                 {/* Exchange Rate — only when foreign currency selected */}
                 {showExchangeRate && (
@@ -429,6 +428,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           {customerDetails?.customerTaxCategory || "—"}
                         </span>
                       </div>
+                      <div className="flex justify-between text-[10px] mt-1">
+                        <span className="text-muted">Currency</span>
+                        <span className="text-main font-medium">
+                          {formData.currencyCode || "—"}
+                        </span>
+                      </div>
                       <div className="flex justify-between text-[10px]">
                         <span className="text-muted">Country</span>
                         <span className="text-main font-medium">
@@ -439,35 +444,53 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   </div>
 
                   {/* Summary card */}
+                  {/* Summary card */}
                   <div className="bg-card rounded-lg p-3 flex-1 xl:flex-none w-full">
                     <h3 className="text-[13px] font-semibold text-main mb-2">
                       Summary
                     </h3>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted">Total Items</span>
-                        <span className="font-medium text-main">
-                          {formData.items.length}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Qty</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalQuantity.toFixed(0)}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs">
+
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Amount</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalAmount.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Discount</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalDiscount.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs">
                         <span className="text-muted">Subtotal</span>
-                        <span className="font-medium text-main">
+                        <span className="font-medium text-main tabular-nums">
                           {totals.subTotal.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted">Total Tax</span>
-                        <span className="font-medium text-main">
+
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Tax</span>
+                        <span className="font-medium text-main tabular-nums">
                           {totals.totalTax.toFixed(2)}
                         </span>
                       </div>
-                      <div className="mt-2 p-2 bg-primary rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-white">
+
+                      <div className="border-t border-theme mt-1 pt-2">
+                        <div className="flex justify-between items-center bg-primary rounded-lg px-2 py-1.5">
+                          <span className="text-xs font-semibold text-white">
                             Grand Total
                           </span>
-                          <span className="text-sm font-bold text-white">
+                          <span className="text-xs font-bold text-white tabular-nums">
                             {totals.grandTotal.toFixed(2)}
                           </span>
                         </div>

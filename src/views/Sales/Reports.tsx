@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getAllQuotations } from "../../api/quotationApi";
 import { getAllProformaInvoices } from "../../api/proformaInvoiceApi";
-import {
-  getAllSalesInvoices,
-} from "../../api/salesApi";
+import { getAllSalesInvoices } from "../../api/salesApi";
 import { getAllCreditNotes } from "../../api/CreditNoteapi";
 import { getAllDebitNotes } from "../../api/DebitNoteapi";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
@@ -11,8 +9,13 @@ import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { showLoading, closeSwal, showSuccess, showApiError } from "../../utils/alert";
-
+import {
+  showLoading,
+  closeSwal,
+  showSuccess,
+  showApiError,
+} from "../../utils/alert";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 /*  TYPES  */
 
 type ReportType =
@@ -110,11 +113,18 @@ export default function ReportTable() {
             : Promise.resolve(null),
         ]);
 
-        const mappedQuotations: ReportRow[] = Array.isArray(qRes?.data?.quotations)
+        const mappedQuotations: ReportRow[] = Array.isArray(
+          qRes?.data?.quotations,
+        )
           ? qRes.data.quotations.map((q: any) => ({
               type: "Quotations" as ReportType,
               documentNo: q?.id ?? q?.quotationNumber ?? "",
-              customerName: q?.customerName ?? q?.customer?.name ?? q?.clientName ?? q?.name ?? "",
+              customerName:
+                q?.customerName ??
+                q?.customer?.name ??
+                q?.clientName ??
+                q?.name ??
+                "",
               date: q?.transactionDate ?? q?.quotationDate ?? "",
               dueDate: q?.validTill ?? q?.validUntil ?? "",
               currency: q?.currency ?? q?.currencyCode ?? "",
@@ -127,7 +137,12 @@ export default function ReportTable() {
           ? pRes.data.map((p: any) => ({
               type: "Proforma Invoice" as ReportType,
               documentNo: p?.proformaId ?? p?.id ?? "",
-              customerName: p?.customerName ?? p?.customer?.name ?? p?.clientName ?? p?.name ?? "",
+              customerName:
+                p?.customerName ??
+                p?.customer?.name ??
+                p?.clientName ??
+                p?.name ??
+                "",
               date: p?.dateofinvoice ?? p?.dateOfInvoice ?? p?.createdAt ?? "",
               dueDate: p?.dueDate ?? "",
               currency: p?.currency ?? p?.currencyCode ?? "",
@@ -141,7 +156,12 @@ export default function ReportTable() {
           ? iRes.data.map((inv: any) => ({
               type: "Invoices" as ReportType,
               documentNo: inv?.invoiceNumber ?? "",
-              customerName: inv?.customerName ?? inv?.customer?.name ?? inv?.clientName ?? inv?.name ?? "",
+              customerName:
+                inv?.customerName ??
+                inv?.customer?.name ??
+                inv?.clientName ??
+                inv?.name ??
+                "",
               date: inv?.dateOfInvoice ?? "",
               dueDate: inv?.dueDate ?? "",
               currency: inv?.currency ?? inv?.currencyCode ?? "",
@@ -155,7 +175,12 @@ export default function ReportTable() {
           ? cRes.data.map((cn: any) => ({
               type: "Credit Notes" as ReportType,
               documentNo: cn?.invoiceNumber ?? cn?.creditNoteNumber ?? "",
-              customerName: cn?.customerName ?? cn?.customer?.name ?? cn?.clientName ?? cn?.name ?? "",
+              customerName:
+                cn?.customerName ??
+                cn?.customer?.name ??
+                cn?.clientName ??
+                cn?.name ??
+                "",
               date: cn?.dateOfInvoice ?? cn?.date ?? "",
               currency: cn?.currency ?? cn?.currencyCode ?? "",
               amount: Math.abs(Number(cn?.totalAmount ?? 0)),
@@ -168,7 +193,12 @@ export default function ReportTable() {
           ? dRes.data.map((dn: any) => ({
               type: "Debit Notes" as ReportType,
               documentNo: dn?.invoiceNumber ?? dn?.debitNoteNumber ?? "",
-              customerName: dn?.customerName ?? dn?.customer?.name ?? dn?.clientName ?? dn?.name ?? "",
+              customerName:
+                dn?.customerName ??
+                dn?.customer?.name ??
+                dn?.clientName ??
+                dn?.name ??
+                "",
               date: dn?.dateOfInvoice ?? dn?.date ?? "",
               currency: dn?.currency ?? dn?.currencyCode ?? dn?.currCd ?? "",
               amount: Number(dn?.totalAmount ?? 0),
@@ -178,11 +208,21 @@ export default function ReportTable() {
           : [];
 
         const all = [
-          ...(reportType === "All" || reportType === "Quotations" ? mappedQuotations : []),
-          ...(reportType === "All" || reportType === "Proforma Invoice" ? mappedProforma : []),
-          ...(reportType === "All" || reportType === "Invoices" ? mappedInvoices : []),
-          ...(reportType === "All" || reportType === "Credit Notes" ? mappedCreditNotes : []),
-          ...(reportType === "All" || reportType === "Debit Notes" ? mappedDebitNotes : []),
+          ...(reportType === "All" || reportType === "Quotations"
+            ? mappedQuotations
+            : []),
+          ...(reportType === "All" || reportType === "Proforma Invoice"
+            ? mappedProforma
+            : []),
+          ...(reportType === "All" || reportType === "Invoices"
+            ? mappedInvoices
+            : []),
+          ...(reportType === "All" || reportType === "Credit Notes"
+            ? mappedCreditNotes
+            : []),
+          ...(reportType === "All" || reportType === "Debit Notes"
+            ? mappedDebitNotes
+            : []),
         ];
 
         if (!cancelled) setRows(all);
@@ -192,7 +232,9 @@ export default function ReportTable() {
     };
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [reportType]);
 
   /* ── Unique statuses for filter ── */
@@ -213,9 +255,15 @@ export default function ReportTable() {
     return rows.filter((row) => {
       if (term) {
         const matches =
-          String(row.customerName ?? "").toLowerCase().includes(term) ||
-          String(row.documentNo ?? "").toLowerCase().includes(term) ||
-          String(row.type ?? "").toLowerCase().includes(term);
+          String(row.customerName ?? "")
+            .toLowerCase()
+            .includes(term) ||
+          String(row.documentNo ?? "")
+            .toLowerCase()
+            .includes(term) ||
+          String(row.type ?? "")
+            .toLowerCase()
+            .includes(term);
         if (!matches) return false;
       }
 
@@ -232,7 +280,9 @@ export default function ReportTable() {
 
   /* ── Reset page on filter change ── */
 
-  useEffect(() => { setPage(1); }, [reportType, dateFrom, dateTo, statusFilter, searchTerm, pageSize]);
+  useEffect(() => {
+    setPage(1);
+  }, [reportType, dateFrom, dateTo, statusFilter, searchTerm, pageSize]);
 
   /* ── Pagination ── */
 
@@ -318,7 +368,10 @@ export default function ReportTable() {
       header: "Customer",
       align: "left",
       render: (row) => (
-        <span className="text-sm text-main truncate max-w-[220px] block" title={row.customerName}>
+        <span
+          className="text-sm text-main truncate max-w-[220px] block"
+          title={row.customerName}
+        >
           {row.customerName || "—"}
         </span>
       ),
@@ -354,7 +407,12 @@ export default function ReportTable() {
       key: "status",
       header: "Status",
       align: "left",
-      render: (row) => row.status ? <StatusBadge status={row.status} /> : <span className="text-muted">—</span>,
+      render: (row) =>
+        row.status ? (
+          <StatusBadge status={row.status} />
+        ) : (
+          <span className="text-muted">—</span>
+        ),
     },
     {
       key: "currency",
@@ -377,7 +435,8 @@ export default function ReportTable() {
         ) : (
           <span className="text-muted">—</span>
         ),
-      tooltip: (row) => `Amount: ${row.currency ?? ""} ${Number(row.amount ?? 0).toLocaleString()}`,
+      tooltip: (row) =>
+        `Amount: ${row.currency ?? ""} ${Number(row.amount ?? 0).toLocaleString()}`,
     },
   ];
 
@@ -392,24 +451,18 @@ export default function ReportTable() {
         onChange={(e) => setReportType(e.target.value as ReportType | "All")}
       >
         {REPORT_TYPE_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
         ))}
       </select>
-
-      {/* Date From */}
-      <input
-        type="date"
-        className="bg-card border border-theme rounded-lg text-sm text-main shadow-sm focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition px-3 py-2 w-40"
-        value={dateFrom}
-        onChange={(e) => setDateFrom(e.target.value)}
-      />
-
-      {/* Date To */}
-      <input
-        type="date"
-        className="bg-card border border-theme rounded-lg text-sm text-main shadow-sm focus:ring-2 focus:ring-primary/10 focus:border-primary outline-none transition px-3 py-2 w-40"
-        value={dateTo}
-        onChange={(e) => setDateTo(e.target.value)}
+      <DateRangeFilter
+        from={dateFrom}
+        to={dateTo}
+        onChange={({ from_date, to_date }) => {
+          setDateFrom(from_date ?? "");
+          setDateTo(to_date ?? "");
+        }}
       />
 
       {/* Status */}
@@ -420,7 +473,9 @@ export default function ReportTable() {
       >
         <option value="All">All Statuses</option>
         {uniqueStatuses.map((s) => (
-          <option key={s} value={s}>{s}</option>
+          <option key={s} value={s}>
+            {s}
+          </option>
         ))}
       </select>
     </div>
@@ -429,9 +484,7 @@ export default function ReportTable() {
   return (
     <div className="h-full min-h-0">
       {/* Extra filters row */}
-      <div className="px-0 pb-3">
-        {extraFilters}
-      </div>
+      <div className="px-0 pb-3">{extraFilters}</div>
 
       <Table
         columns={columns}
@@ -440,7 +493,10 @@ export default function ReportTable() {
         loading={loading}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableColumnSelector
         enableExport
         onExport={handleExportExcel}
@@ -448,8 +504,11 @@ export default function ReportTable() {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={filteredData.length}
-         pageSizeOptions={[20, 50, 100,200]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        pageSizeOptions={[20, 50, 100, 200]}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
       />
     </div>

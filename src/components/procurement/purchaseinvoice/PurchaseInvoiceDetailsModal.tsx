@@ -1036,7 +1036,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
 data.summary.roundingAdjustment !== 0
   ? [
       {
-        label: "Rounding Adjustment",
+        label: "Round Off",
         val: fmt(data.summary.roundingAdjustment, currency),
         big: false,
       },
