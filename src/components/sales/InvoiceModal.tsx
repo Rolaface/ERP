@@ -90,7 +90,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     !!ui.baseCurrency &&
     !!formData.currencyCode &&
     formData.currencyCode.trim().toUpperCase() !==
-      ui.baseCurrency.trim().toUpperCase();
+    ui.baseCurrency.trim().toUpperCase();
 
   const handleModeFetchOptions = async (q: string) => {
     const res = await getAllModeOfPayment(1, 10, q || "", 1);
@@ -112,7 +112,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     setSubmitting(true);
     try {
       const payload = await actions.handleSubmit({
-        preventDefault: () => {},
+        preventDefault: () => { },
       } as React.FormEvent);
 
       if (!payload) return;
@@ -213,11 +213,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   key={tab}
                   type="button"
                   onClick={() => ui.setActiveTab(tab)}
-                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
-                    ui.activeTab === tab
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${ui.activeTab === tab
                       ? "text-primary border-b-[3px] border-primary"
                       : "text-muted border-b-[3px] border-transparent hover:text-main"
-                  }`}
+                    }`}
                 >
                   {tab === "details" && "Details"}
                   {tab === "address" && "Additional Details"}
@@ -277,7 +276,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 </div>
 
                 {/* Currency */}
-                <div className="w-full sm:w-[100px]">
+                {/* <div className="w-full sm:w-[100px]">
                   <ModalSelect
                     label="Currency"
                     name="currencyCode"
@@ -296,7 +295,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     disabled
                     className="w-full border border-theme rounded text-[11px] text-main bg-card"
                   />
-                </div>
+                </div> */}
 
                 {/* Exchange Rate — only when foreign currency selected */}
                 {showExchangeRate && (
@@ -427,6 +426,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                         <span className="text-muted">Tax</span>
                         <span className="text-main font-medium">
                           {customerDetails?.customerTaxCategory || "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-[10px] mt-1">
+                        <span className="text-muted">Currency</span>
+                        <span className="text-main font-medium">
+                          {formData.currencyCode || "—"}
                         </span>
                       </div>
                       <div className="flex justify-between text-[10px]">
