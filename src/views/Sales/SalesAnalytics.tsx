@@ -12,6 +12,7 @@ import {
   type ColumnDef,
   type VisibilityState,
 } from "@tanstack/react-table";
+import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
   getSalesAnalytics,
   type SalesAnalyticsFilters,
@@ -334,7 +335,7 @@ const SalesAnalytics: React.FC = () => {
     to_date: currentYearEnd(),
     range: "Monthly",
     page: 1,
-    page_size: 10,
+    page_size: 20,
   });
 
   const [data, setData] = useState<SalesData | null>(null);
@@ -613,23 +614,29 @@ const SalesAnalytics: React.FC = () => {
 
         {/* Date range */}
         <div className="flex items-center gap-1">
-          <input
-            type="date"
-            value={filters.from_date || ""}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, from_date: e.target.value, page: 1 }))
-            }
-            className="h-7 px-2 text-[11px] border border-[var(--border)] bg-card text-main rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-32"
-          />
+          <DatePickerInput
+  name="from_date"
+  value={filters.from_date}
+  onChange={(name, value) =>
+    setFilters((f) => ({
+      ...f,
+      [name]: value,
+      page: 1,
+    }))
+  }
+/>
           <span className="text-muted text-[10px]">–</span>
-          <input
-            type="date"
-            value={filters.to_date || ""}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, to_date: e.target.value, page: 1 }))
-            }
-            className="h-7 px-2 text-[11px] border border-[var(--border)] bg-card text-main rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-32"
-          />
+         <DatePickerInput
+  name="to_date"
+  value={filters.to_date}
+  onChange={(name, value) =>
+    setFilters((f) => ({
+      ...f,
+      [name]: value,
+      page: 1,
+    }))
+  }
+/>
         </div>
 
         {/* Clear */}

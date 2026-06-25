@@ -12,7 +12,10 @@ import PaymentInfoBlock from "./PaymentInfoBlock";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { getAllCustomers } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";
-import { createProformaInvoice, editProformaInvoice } from "../../api/proformaInvoiceApi";
+import {
+  createProformaInvoice,
+  editProformaInvoice,
+} from "../../api/proformaInvoiceApi";
 // import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import { useProformaInvoiceForm } from "../../hooks/useProformaInvoiceForm";
 
@@ -21,14 +24,16 @@ import DatePickerInput from "../calendar/DatePickerInput";
 import ItemTable from "../common/ItemTable";
 import {
   invoiceStatusOptions,
-  
   paymentMethodOptions,
 } from "../../constants/invoice.constants";
 import type { ModalSubmitHandler } from "../../types/modal";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
 // Add these to your existing imports
-import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../store/dataRefreshStore";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { getAllModeOfPayment } from "../../api/BankAccountApi";
 interface ProformaInvoiceModalProps {
@@ -60,10 +65,10 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       modalId ||
       (mode === "edit" && initialData?.proformaId
         ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
-        : `proforma-create-${Date.now()}`)
+        : `proforma-create-${Date.now()}`),
   );
   const [submitting, setSubmitting] = useState(false);
-  
+
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     formData,
@@ -81,7 +86,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     initialData,
   );
 
-    const primaryContact =
+  const primaryContact =
     customerDetails?.contacts?.find((c: any) => c.isPrimary) || {};
   const billingAddress =
     customerDetails?.addresses?.find((a: any) => a.type === "Billing") || {};
@@ -97,7 +102,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       ui.setActiveTab("details");
     }
   }, [isOpen]);
-  
+
   const validateDetailsOrFocus = () => {
     try {
       actions.validateForm();
@@ -109,21 +114,21 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     }
   };
 
-    const handleNext = () => {
+  const handleNext = () => {
     const currentIndex = tabs.indexOf(ui.activeTab as any);
     if (currentIndex < tabs.length - 1) {
       ui.setActiveTab(tabs[currentIndex + 1]);
     }
   };
 
-   const handleModeFetchOptions = async (q: string) => {
-      const res = await getAllModeOfPayment(1, 10, q || "", 1);
-      return res.data.map((item: any) => ({
-        label: item.name,
-        value: item.name,
-        meta: item,
-      }));
-    };
+  const handleModeFetchOptions = async (q: string) => {
+    const res = await getAllModeOfPayment(1, 10, q || "", 1);
+    return res.data.map((item: any) => ({
+      label: item.name,
+      value: item.name,
+      meta: item,
+    }));
+  };
 
   const handleModeChange = (_: string, option: any) => {
     actions.handleInputChange({
@@ -131,7 +136,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     } as any);
   };
 
- const handleSave = async () => {
+  const handleSave = async () => {
     if (!validateDetailsOrFocus()) return;
     if (submitting) return;
 
@@ -139,20 +144,21 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       const payload = await actions.handleSubmit({
         preventDefault: () => {},
       } as React.FormEvent);
-      
+
       if (!payload) return;
-      
+
       const finalPayload = {
         ...payload,
         documentType: "Proforma Invoice",
       };
-      
+
       let response;
 
       if (mode === "edit") {
-        const invoiceNumber = formData.invoiceNumber ?? initialData?.id ?? initialData?.proformaId;
+        const invoiceNumber =
+          formData.invoiceNumber ?? initialData?.id ?? initialData?.proformaId;
         console.log("Editing Proforma Invoice with number:", invoiceNumber);
-        
+
         if (!invoiceNumber) {
           showValidationError("Invalid invoice reference");
           return;
@@ -164,7 +170,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         response = await createProformaInvoice(finalPayload);
       }
 
-       const res = response?.message || response;
+      const res = response?.message || response;
 
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(res?.message || res || "Failed to save proforma invoice");
@@ -179,10 +185,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       resetDirty();
       // actions.handleReset();
       onClose();
-      
+
       // Refresh the table data in the background
       useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.PROFORMA_LIST);
-      
     } catch (error: any) {
       showApiError(error);
     }
@@ -200,7 +205,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
   const [custLoading, setCustLoading] = useState(true);
   const symbol = "";
-  
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -238,9 +243,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       isOpen={isOpen}
       icon={FileClock}
       onClose={() => handleCloseWithConfirm(handleClose, resolvedModalId)}
-      title={
-        mode === "edit" ? "Edit Proforma Invoice" : "Add Proforma Invoice"
-      }
+      title={mode === "edit" ? "Edit Proforma Invoice" : "Add Proforma Invoice"}
       subtitle="Add and manage proforma invoice details"
       footer={
         <ModalFooter
@@ -258,7 +261,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         />
       }
       maxWidth="full"
-     height="650px"
+      height="650px"
     >
       <form
         id="proforma-form"
@@ -271,22 +274,23 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           <div className="flex gap-8">
             {(["details", "address", "otherCharges", "terms"] as const).map(
               (tab) => (
-              <button
-    key={tab}
-    type="button"
-    onClick={() => ui.setActiveTab(tab)}
-    className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${
-      ui.activeTab === tab
-        ? "text-primary border-b-[3px] border-primary"
-        : "text-muted border-b-[3px] border-transparent hover:text-main"
-    }`}
-  >
-    {tab === "details" && "Details"}
-    {tab === "address" && "Additional Details"}
-    {tab === "otherCharges" && "Shipping & Other Charges"}
-    {tab === "terms" && "Terms & Conditions"}
-  </button>
-            ))}
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => ui.setActiveTab(tab)}
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all ${
+                    ui.activeTab === tab
+                      ? "text-primary border-b-[3px] border-primary"
+                      : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  }`}
+                >
+                  {tab === "details" && "Details"}
+                  {tab === "address" && "Additional Details"}
+                  {tab === "otherCharges" && "Shipping & Other Charges"}
+                  {tab === "terms" && "Terms & Conditions"}
+                </button>
+              ),
+            )}
           </div>
         </div>
 
@@ -368,36 +372,36 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   </div> */}
 
                   {showExchangeRate && (
-    <div className="w-full sm:w-[110px]">
-      <ModalInput
-        label={
-          ui.exchangeRateLoading
-            ? "Exchange Rate (Loading...)"
-            : "Exchange Rate"
-        }
-        name="exchangeRt"
-        value={formData.exchangeRt || "1"}
-        onChange={actions.handleInputChange}
-        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-        disabled
-      />
-      {!!ui.exchangeRateError && (
-        <div className="mt-1 text-[10px] text-danger">
-          {ui.exchangeRateError}
-        </div>
-      )}
-    </div>
-  )}
-                    <div className="w-full sm:w-[200px]">
-                  <SearchSelect2
-                    label="Mode of Payment"
-                    value={formData.payment_mode ?? ""}
-                    onChange={handleModeChange}
-                    fetchOptions={handleModeFetchOptions}
-                    placeholder="search mode of payment"
-                    // required
-                  />
-                </div>
+                    <div className="w-full sm:w-[110px]">
+                      <ModalInput
+                        label={
+                          ui.exchangeRateLoading
+                            ? "Exchange Rate (Loading...)"
+                            : "Exchange Rate"
+                        }
+                        name="exchangeRt"
+                        value={formData.exchangeRt || "1"}
+                        onChange={actions.handleInputChange}
+                        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                        disabled
+                      />
+                      {!!ui.exchangeRateError && (
+                        <div className="mt-1 text-[10px] text-danger">
+                          {ui.exchangeRateError}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="w-full sm:w-[200px]">
+                    <SearchSelect2
+                      label="Mode of Payment"
+                      value={formData.payment_mode ?? ""}
+                      onChange={handleModeChange}
+                      fetchOptions={handleModeFetchOptions}
+                      placeholder="search mode of payment"
+                      // required
+                    />
+                  </div>
 
                   {/* {ui.isExport && (
                     <div>
@@ -430,7 +434,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
 
               {/* ITEMS + SUMMARY */}
               <div className="grid grid-cols-[4fr_1fr] gap-4 items-start">
-                
                 {/* Reusable ItemTable Component */}
                 <ItemTable
                   paginatedItems={paginatedItems}
@@ -440,7 +443,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   symbol={symbol}
                   ITEMS_PER_PAGE={ITEMS_PER_PAGE}
                   isSalesInvoice={false}
-                  taxCategory={formData.taxCategory || customerDetails?.customerTaxCategory}
+                  taxCategory={
+                    formData.taxCategory || customerDetails?.customerTaxCategory
+                  }
                 />
 
                 {/* RIGHT SIDE: CUSTOMER DETAILS & SUMMARY */}
@@ -457,32 +462,36 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2 text-[10px] text-muted">
-                                              <Mail size={12} className="shrink-0" />
-                                              <span className="truncate">
-                                                {primaryContact?.email || customerDetails?.email || "—"}
-                                              </span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-[10px] text-muted">
-                                              <Phone size={12} className="shrink-0" />
-                                              <span className="truncate">
-                                                {primaryContact?.mobile || customerDetails?.mobile || "—"}
-                                              </span>
-                                            </div>
+                        <Mail size={12} className="shrink-0" />
+                        <span className="truncate">
+                          {primaryContact?.email ||
+                            customerDetails?.email ||
+                            "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-muted">
+                        <Phone size={12} className="shrink-0" />
+                        <span className="truncate">
+                          {primaryContact?.mobile ||
+                            customerDetails?.mobile ||
+                            "—"}
+                        </span>
+                      </div>
                       {customerDetails && (
                         <div className="bg-card rounded-lg ">
                           <div className="flex flex-col gap-1">
-                           <div className="flex justify-between text-[10px] mt-1">
-                        <span className="text-muted">Tax</span>
-                        <span className="text-main font-medium">
-                          {customerDetails?.customerTaxCategory || "—"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[10px]">
-                        <span className="text-muted">Country</span>
-                        <span className="text-main font-medium">
-                          {billingAddress?.country || "—"}
-                        </span>
-                      </div>
+                            <div className="flex justify-between text-[10px] mt-1">
+                              <span className="text-muted">Tax</span>
+                              <span className="text-main font-medium">
+                                {customerDetails?.customerTaxCategory || "—"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-[10px]">
+                              <span className="text-muted">Country</span>
+                              <span className="text-main font-medium">
+                                {billingAddress?.country || "—"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -494,35 +503,49 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                       Summary
                     </h3>
 
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted">Total Items</span>
-                        <span className="font-medium text-main">
-                          {formData.items.length}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Qty</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalQuantity.toFixed(0)}
                         </span>
                       </div>
 
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Amount</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalAmount.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Discount</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalDiscount.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs">
                         <span className="text-muted">Subtotal</span>
-                        <span className="font-medium text-main">
-                          {symbol} {totals.subTotal.toFixed(2)}
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.subTotal.toFixed(2)}
                         </span>
                       </div>
 
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted">Total Tax</span>
-                        <span className="font-medium text-main">
-                          {symbol} {totals.totalTax.toFixed(2)}
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Tax</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalTax.toFixed(2)}
                         </span>
                       </div>
 
-                      <div className="mt-2 p-2 bg-primary rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-white">
+                      <div className="border-t border-theme mt-1 pt-2">
+                        <div className="flex justify-between items-center bg-primary rounded-lg px-2 py-1.5">
+                          <span className="text-xs font-semibold text-white">
                             Grand Total
                           </span>
-                          <span className="text-sm font-bold text-white">
-                            {symbol} {totals.grandTotal.toFixed(2)}
+                          <span className="text-xs font-bold text-white tabular-nums">
+                            {totals.grandTotal.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -533,7 +556,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
             </div>
           )}
 
-           {/* ──────────── ADDITIONAL DETAILS (Address) ──────────── */}
+          {/* ──────────── ADDITIONAL DETAILS (Address) ──────────── */}
           {ui.activeTab === "address" && (
             <div className="space-y-6 overflow-hidden">
               {/* Payment Info */}
@@ -556,7 +579,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           )}
 
           {/* ──────────── SHIPPING & OTHER CHARGES ──────────── */}
-         {ui.activeTab === "otherCharges" && (
+          {ui.activeTab === "otherCharges" && (
             <InvoiceChargesTab
               taxes={formData.taxes || []}
               charges={formData.invoiceCharges || []}
