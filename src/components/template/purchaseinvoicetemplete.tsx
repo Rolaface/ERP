@@ -310,7 +310,7 @@ addressBoxes.forEach((box, index) => {
         "EXP",
         "Packing",
         "Qty",
-        "UOM",
+         "Unit Of Measure",
         "Rate",
         "Tax",
         `Amount(${cur})`,

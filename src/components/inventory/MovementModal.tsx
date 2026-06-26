@@ -261,7 +261,7 @@ const MovementModal: React.FC<MovementModalProps> = ({
                           <td className="px-2 py-1">
                             <input
                               className="border rounded p-1 w-full"
-                              placeholder="UOM"
+                              placeholder= "Unit Of Measure"
                               name="uom"
                               value={item.uom}
                               onChange={(e) => handleItemChange(e, idx)}
