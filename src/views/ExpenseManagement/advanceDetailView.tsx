@@ -1,5 +1,18 @@
 import React from "react";
 
+export interface ExpenseClaimEntry {
+  name: string;
+  parent: string;
+  posting_date: string;
+  advance_paid: number;
+  allocated_amount: number;
+  unclaimed_amount: number;
+  return_amount: number;
+  advance_account: string;
+  exchange_rate: number;
+  docstatus: number;
+}
+
 export interface EmployeeAdvanceDetail {
   name: string;
   employee: string;
@@ -19,6 +32,7 @@ export interface EmployeeAdvanceDetail {
   repay_unclaimed_amount_from_salary: number;
   status: string;
   amended_from: string | null;
+  expense_claims?: ExpenseClaimEntry[];
 }
 
 interface Props {
@@ -248,6 +262,141 @@ const EmployeeAdvanceDetailModal: React.FC<Props> = ({ open, data, loading, onCl
                   </div>
                 ))}
               </div>
+
+              {/* ── LINKED EXPENSE CLAIMS ── */}
+              {Array.isArray(data.expense_claims) && data.expense_claims.length > 0 && (
+                <>
+                  <S title="Linked Expense Claims" />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {data.expense_claims.map((ec, i) => (
+                      <div
+                        key={ec.name}
+                        style={{
+                          borderRadius: 7,
+                          border: "1px solid var(--border)",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {/* Claim header */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "7px 10px",
+                            background: "var(--bg)",
+                            borderBottom: "1px solid var(--border)",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span
+                              style={{
+                                fontSize: 9,
+                                fontWeight: 800,
+                                color: "var(--muted)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.07em",
+                              }}
+                            >
+                              #{i + 1}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: "var(--primary)",
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              {ec.parent}
+                            </span>
+                          </div>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              color: "var(--muted)",
+                            }}
+                          >
+                            {fmtDate(ec.posting_date)}
+                          </span>
+                        </div>
+
+                        {/* Claim amounts grid */}
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(3, 1fr)",
+                            borderBottom: "1px solid var(--border)",
+                          }}
+                        >
+                          {[
+                            { label: "Advance Paid",  value: ec.advance_paid },
+                            { label: "Allocated",     value: ec.allocated_amount },
+                            { label: "Unclaimed",     value: ec.unclaimed_amount },
+                          ].map(({ label, value }, j) => (
+                            <div
+                              key={label}
+                              style={{
+                                padding: "7px 10px",
+                                borderRight: j < 2 ? "1px solid var(--border)" : "none",
+                              }}
+                            >
+                              <p
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.07em",
+                                  color: "var(--muted)",
+                                  marginBottom: 2,
+                                }}
+                              >
+                                {label}
+                              </p>
+                              <p
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  color: "var(--text)",
+                                  fontVariantNumeric: "tabular-nums",
+                                }}
+                              >
+                                {fmt(value, currency)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Account row */}
+                        <div style={{ padding: "6px 10px", background: "var(--card)" }}>
+                          <span
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.07em",
+                              color: "var(--muted)",
+                            }}
+                          >
+                            Account:{" "}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: "var(--text)",
+                              fontFamily: "monospace",
+                            }}
+                          >
+                            {ec.advance_account}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               <div style={{ height: 12 }} />
             </>
