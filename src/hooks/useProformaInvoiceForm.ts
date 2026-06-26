@@ -3,8 +3,8 @@ import { getCustomerByCustomerCode } from "../api/customerApi";
 import { getCompanyById } from "../api/companySetupApi";
 import type { TermSection } from "../types/termsAndCondition";
 // import type { ProformaInvoice, InvoiceItem } from "../types/invoice";
-import { ProformaInvoice, InvoiceItem} from "../types/proformaInvoice";
-import {getStockReport} from "../api/stockApi";
+import { ProformaInvoice, InvoiceItem } from "../types/proformaInvoice";
+import { getStockReport } from "../api/stockApi";
 import { getRolaCountryList } from "../api/lookupApi";
 
 import { getExchangeRate } from "../api/currencyExchangeApi";
@@ -38,9 +38,12 @@ type NestedSection =
 
 const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!invoiceDate) return "";
-  
+
   // Add this fallback for when terms are empty
-  if (!terms) return dayjs(invoiceDate, ["DD-MMM-YYYY", "YYYY-MM-DD"]).format("YYYY-MM-DD");
+  if (!terms)
+    return dayjs(invoiceDate, ["DD-MMM-YYYY", "YYYY-MM-DD"]).format(
+      "YYYY-MM-DD",
+    );
 
   const match = terms.match(/(\d+)/);
   const days = match ? Number(match[1]) : 0;
@@ -128,7 +131,6 @@ export function buildInvoicePayload(
   };
 }
 
-
 export const useProformaInvoiceForm = (
   isOpen: boolean,
   _onClose: () => void,
@@ -155,55 +157,54 @@ export const useProformaInvoiceForm = (
     }));
   }, [isOpen]);
 
-  
-// useEffect(() => {
-//   const terms =
-//     formData.terms?.selling?.payment?.dueDates ||
-//     formData.paymentInformation?.paymentTerms;
+  // useEffect(() => {
+  //   const terms =
+  //     formData.terms?.selling?.payment?.dueDates ||
+  //     formData.paymentInformation?.paymentTerms;
 
-//   if (!terms || !formData.dateOfInvoice) return;
+  //   if (!terms || !formData.dateOfInvoice) return;
 
-//   const due = calculateDueDate(
-//     formData.dateOfInvoice,
-//     terms,
-//   );
+  //   const due = calculateDueDate(
+  //     formData.dateOfInvoice,
+  //     terms,
+  //   );
 
-//   setFormData((prev) => ({
-//     ...prev,
-//     dueDate: due,
-//   }));
-// }, [
-//   formData.dateOfInvoice,
-//   formData.terms?.selling?.payment?.dueDates,
-//   formData.paymentInformation?.paymentTerms,
-// ]);
-// Auto-calculate validTill date from payment terms
-useEffect(() => {
-  if (!formData.dateOfInvoice) return;
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     dueDate: due,
+  //   }));
+  // }, [
+  //   formData.dateOfInvoice,
+  //   formData.terms?.selling?.payment?.dueDates,
+  //   formData.paymentInformation?.paymentTerms,
+  // ]);
+  // Auto-calculate validTill date from payment terms
+  useEffect(() => {
+    if (!formData.dateOfInvoice) return;
 
-  const dueDatesValue = formData.terms?.selling?.payment?.dueDates;
+    const dueDatesValue = formData.terms?.selling?.payment?.dueDates;
 
-  // If dueDates is explicitly set (even empty), use it
-  // If not set at all (null/undefined), fall back to paymentTerms
-  const terms =
-    dueDatesValue != null
-      ? dueDatesValue
-      : formData.paymentInformation?.paymentTerms ?? "";
+    // If dueDates is explicitly set (even empty), use it
+    // If not set at all (null/undefined), fall back to paymentTerms
+    const terms =
+      dueDatesValue != null
+        ? dueDatesValue
+        : (formData.paymentInformation?.paymentTerms ?? "");
 
-  // calculateDueDate handles "" → returns invoiceDate (today)
-  const due = calculateDueDate(formData.dateOfInvoice, terms);
+    // calculateDueDate handles "" → returns invoiceDate (today)
+    const due = calculateDueDate(formData.dateOfInvoice, terms);
 
-  if (due) {
-    setFormData((prev) => ({
-      ...prev,
-      validTill: due, // Changed from dueDate to validTill
-    }));
-  }
-}, [
-  formData.dateOfInvoice,
-  formData.terms?.selling?.payment?.dueDates,
-  formData.paymentInformation?.paymentTerms,
-]);
+    if (due) {
+      setFormData((prev) => ({
+        ...prev,
+        validTill: due, // Changed from dueDate to validTill
+      }));
+    }
+  }, [
+    formData.dateOfInvoice,
+    formData.terms?.selling?.payment?.dueDates,
+    formData.paymentInformation?.paymentTerms,
+  ]);
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
   const [page, setPage] = useState(0);
@@ -239,14 +240,14 @@ useEffect(() => {
     }
   };
 
-//   useEffect(() => {
-//     if (!isOpen) return;
-//     if (mode === "edit" && initialData?.id) {
-//       setFormDataFromInvoice(initialData);
-//     }
-//   }, [isOpen, initialData, mode]);
- 
- useEffect(() => {
+  //   useEffect(() => {
+  //     if (!isOpen) return;
+  //     if (mode === "edit" && initialData?.id) {
+  //       setFormDataFromInvoice(initialData);
+  //     }
+  //   }, [isOpen, initialData, mode]);
+
+  useEffect(() => {
     if (!isOpen) return;
     if (mode === "edit" && (initialData?.id || initialData?.proformaId)) {
       setFormDataFromInvoice(initialData);
@@ -279,7 +280,7 @@ useEffect(() => {
         setFormData((prev) => ({
           ...prev,
           items: prev.items.map((item: any) => {
-            if (item._piecesPerBoxLoaded) return item; 
+            if (item._piecesPerBoxLoaded) return item;
             if (!item.itemCode) return item;
             if (item.piecesPerBox && item.piecesPerBox > 0) {
               return { ...item, _piecesPerBoxLoaded: true };
@@ -362,7 +363,7 @@ useEffect(() => {
         if (cancelled) return;
         setExchangeRateError(err?.message || "Exchange rate not found");
         setFormData((prev) => {
-          if (prev.exchangeRt === "1") return prev; 
+          if (prev.exchangeRt === "1") return prev;
           return { ...prev, exchangeRt: "1" };
         });
         showApiError(err);
@@ -548,17 +549,17 @@ useEffect(() => {
         shippingAddressObj?.country || billingAddressObj?.country,
       );
 
-const paymentInformation = {
-  paymentTerms:
-    data?.terms?.selling?.payment?.dueDates ??
-    company?.terms?.selling?.payment?.dueDates ??
-    "",
-  paymentMethod: "01",
-  bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-  accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-  routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-  swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-};
+      const paymentInformation = {
+        paymentTerms:
+          data?.terms?.selling?.payment?.dueDates ??
+          company?.terms?.selling?.payment?.dueDates ??
+          "",
+        paymentMethod: "01",
+        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+        accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+        routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+        swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+      };
 
       setFormData((prev) => {
         const billingId = billingAddressObj?.id || "";
@@ -609,72 +610,72 @@ const paymentInformation = {
               ? Number(value)
               : null;
       }
-  if (name === "quantity" && nextValue !== null) {
-      const item = items[idx];
-      if (!item._skipCap) {
-        if (!item.isServiceItem) {
-        const stockAvailable = item.availableQty ?? item.qty ?? 0;
-const thisRowOriginal = Number(item.originalQty ?? 0);
+      if (name === "quantity" && nextValue !== null) {
+        const item = items[idx];
+        if (!item._skipCap) {
+          if (!item.isServiceItem) {
+            const stockAvailable = item.availableQty ?? item.qty ?? 0;
+            const thisRowOriginal = Number(item.originalQty ?? 0);
 
-// Total pool = actual stock remaining + what this invoice already reserved
-const available = stockAvailable + thisRowOriginal;
+            // Total pool = actual stock remaining + what this invoice already reserved
+            const available = stockAvailable + thisRowOriginal;
 
-// How much other rows of same batch are using
-const usedByOthers = items
-  .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
-  .reduce((sum, x) => {
-    const qty = Number(x.quantity || 0);
-    const orig = Number(x.originalQty || 0);
-    // Net consumption = current qty - what was already allocated
-    // (original was already counted in stockAvailable pool)
-    return sum + Math.max(0, qty - orig);
-  }, 0);
+            // How much other rows of same batch are using
+            const usedByOthers = items
+              .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
+              .reduce((sum, x) => {
+                const qty = Number(x.quantity || 0);
+                const orig = Number(x.originalQty || 0);
+                // Net consumption = current qty - what was already allocated
+                // (original was already counted in stockAvailable pool)
+                return sum + Math.max(0, qty - orig);
+              }, 0);
 
-const maxAllowed = Math.max(0, available - usedByOthers);
-          if (nextValue > maxAllowed) {
-            nextValue = maxAllowed;
-            showValidationError(
-              `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
-            );
+            const maxAllowed = Math.max(0, available - usedByOthers);
+            if (nextValue > maxAllowed) {
+              nextValue = maxAllowed;
+              showValidationError(
+                `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
+              );
+            }
           }
         }
       }
-    }
       // ─────────────────────────────────────────────────────
 
       const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
       if (name === "quantity") {
-  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+        const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
 
-  if (piecesPerBox > 0) {
-    const totalBoxes = Math.ceil(
-      Number(updatedItem.quantity || 0) / piecesPerBox
-    );
+        if (piecesPerBox > 0) {
+          const totalBoxes = Math.ceil(
+            Number(updatedItem.quantity || 0) / piecesPerBox,
+          );
 
-    const boxStart =
-      Number(updatedItem.boxStart || 0) > 0
-        ? Number(updatedItem.boxStart)
-        : idx === 0
-          ? 1
-          : Number(items[idx - 1]?.boxEnd || 0) + 1;
+          const boxStart =
+            Number(updatedItem.boxStart || 0) > 0
+              ? Number(updatedItem.boxStart)
+              : idx === 0
+                ? 1
+                : Number(items[idx - 1]?.boxEnd || 0) + 1;
 
-    updatedItem.boxStart = boxStart;
-    updatedItem.boxEnd = boxStart + totalBoxes - 1;
-  }
-}
-if (
-  (name === "boxStart" || name === "boxEnd") &&
-  updatedItem.piecesPerBox
-) {
-  const start = Number(updatedItem.boxStart || 0);
-  const end = Number(updatedItem.boxEnd || 0);
-  const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+          updatedItem.boxStart = boxStart;
+          updatedItem.boxEnd = boxStart + totalBoxes - 1;
+        }
+      }
+      if (
+        (name === "boxStart" || name === "boxEnd") &&
+        updatedItem.piecesPerBox
+      ) {
+        const start = Number(updatedItem.boxStart || 0);
+        const end = Number(updatedItem.boxEnd || 0);
+        const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
 
-  if (start > 0 && end >= start) {
-    const totalBoxes = end - start + 1;
-    updatedItem.quantity = totalBoxes * piecesPerBox;
-  }
-}
+        if (start > 0 && end >= start) {
+          const totalBoxes = end - start + 1;
+          updatedItem.quantity = totalBoxes * piecesPerBox;
+        }
+      }
       const start = Number(updatedItem.boxStart || 0);
       const end = Number(updatedItem.boxEnd || 0);
 
@@ -749,15 +750,15 @@ if (
         const rate = Number(t.rate) || 0;
         const isActual = t.charge_type === "Actual";
         const amount = isActual
-            ? Number(t.tax_amount) || 0
-            : (subTotal * rate) / 100;
+          ? Number(t.tax_amount) || 0
+          : (subTotal * rate) / 100;
 
         return {
           chargeType: t.charge_type || "",
           accountHead: t.account_head || "",
           description: t.description || "",
           rate: isActual ? null : rate, // Explicitly provide rate (or null)
-          amount: amount,               // Explicitly provide amount
+          amount: amount, // Explicitly provide amount
         };
       });
 
@@ -787,11 +788,11 @@ if (
     setFormData((prev) => {
       const items = [...prev.items];
       const updatedItem = {
-  ...items[index],
-  ...updated,
-};
+        ...items[index],
+        ...updated,
+      };
 
-items[index] = updatedItem;
+      items[index] = updatedItem;
       return { ...prev, items };
     });
   };
@@ -904,16 +905,17 @@ items[index] = updatedItem;
       invoiceNumber: invoice.id ?? invoice.invoiceNumber,
       customerId: invoice.customerId ?? prev.customerId,
       invoiceType: invoice.invoiceType ?? "",
-      
+
       // FIX 1: API returns `taxCategory` (camelCase), hook was checking `tax_category`
-      taxCategory: invoice.taxCategory ?? invoice.tax_category ?? prev.taxCategory,
-      
+      taxCategory:
+        invoice.taxCategory ?? invoice.tax_category ?? prev.taxCategory,
+
       // FIX 2: Map API `status` to `invoiceStatus` used by modal
       invoiceStatus: invoice.status ?? prev.invoiceStatus,
-      
+
       // FIX 3: Map API `validTill` used by modal
       validTill: invoice.validTill,
-      
+
       mode: invoice.paymentMode ?? prev.mode ?? "",
       payment_mode: invoice.payment_mode ?? prev.payment_mode ?? "",
       currencyCode: invoice.currency,
@@ -1096,24 +1098,47 @@ items[index] = updatedItem;
 
   // ─── Computed totals ─────────────────────────────────────────────────────────
 
-  const { subTotal, totalTax, grandTotal } = useMemo(() => {
+  const {
+    subTotal,
+    totalTax,
+    grandTotal,
+    totalQuantity,
+    totalAmount,
+    totalDiscount,
+  } = useMemo(() => {
+    let qty_sum = 0;
+    let gross = 0;
+    let disc_sum = 0;
     let sub = 0;
     let tax = 0;
+
     formData.items.forEach((item) => {
       const qty = Number(item.quantity || 0);
       const price = Number(item.price || 0);
       const discount = Number(item.discount || 0);
       const vatRate = Number(item.vatRate || 0);
-      const lineAmount = qty * price;
-      const discountAmount = lineAmount * (discount / 100);
-      const netAmount = lineAmount - discountAmount;
-      const amount = netAmount * (vatRate / 100);
-      sub += netAmount;
-      tax += amount;
-    });
-    return { subTotal: sub, totalTax: tax, grandTotal: sub + tax };
-  }, [formData.items]);
 
+      const lineGross = qty * price;
+      const lineDiscount = lineGross * (discount / 100);
+      const lineNet = lineGross - lineDiscount;
+      const lineTax = lineNet * (vatRate / 100);
+
+      qty_sum += qty;
+      gross += lineGross;
+      disc_sum += lineDiscount;
+      sub += lineNet;
+      tax += lineTax;
+    });
+
+    return {
+      totalQuantity: qty_sum,
+      totalAmount: gross,
+      totalDiscount: disc_sum,
+      subTotal: sub,
+      totalTax: tax,
+      grandTotal: sub + tax,
+    };
+  }, [formData.items]);
   const paginatedItems = formData.items.slice(
     page * ITEMS_PER_PAGE,
     (page + 1) * ITEMS_PER_PAGE,
@@ -1130,7 +1155,14 @@ items[index] = updatedItem;
     customerNameDisplay,
     paginatedItems,
     paginatedCharges,
-    totals: { subTotal, totalTax, grandTotal },
+    totals: {
+      totalQuantity,
+      totalAmount,
+      totalDiscount,
+      subTotal,
+      totalTax,
+      grandTotal,
+    },
     ui: {
       page,
       setPage,

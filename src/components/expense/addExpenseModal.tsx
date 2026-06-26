@@ -662,8 +662,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
         {activeTab === "expense" && (
           <div
-            className="px-4 pb-4 pt-2 flex flex-col gap-4 overflow-y-auto"
-            style={{ height: "360px" }}
+             className="px-4 pb-4 pt-2 flex flex-col gap-4 overflow-y-auto flex-1 min-h-0"
           >
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-6">
@@ -1053,7 +1052,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
         )}
 
         {activeTab === "advance" && (
-          <div className="p-4 overflow-y-auto" style={{ height: "360px" }}>
+          <div className="p-4 overflow-y-auto flex-1 min-h-0">  
             {!form.employee ? (
               <div className="flex items-center justify-center h-full text-muted">
                 <span className="text-sm">

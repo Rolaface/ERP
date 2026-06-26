@@ -17,9 +17,19 @@ import ModalFooter from "../common/ModalFooter";
 import type { ModalSubmitHandler } from "../../types/modal";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
-import { showApiError, showSuccess, showValidationError } from "../../utils/alert";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../store/dataRefreshStore";
-import { createProformaInvoice, editProformaInvoice } from "../../api/proformaInvoiceApi";
+import {
+  showApiError,
+  showSuccess,
+  showValidationError,
+} from "../../utils/alert";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../store/dataRefreshStore";
+import {
+  createProformaInvoice,
+  editProformaInvoice,
+} from "../../api/proformaInvoiceApi";
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import QuotationItemTable from "../common/QuotationItemTable";
 
@@ -45,9 +55,9 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       modalId ||
       (mode === "edit" && initialData?.id
         ? `quotation-edit-${initialData.id}-${Date.now()}`
-        : `quotation-create-${Date.now()}`)
+        : `quotation-create-${Date.now()}`),
   );
-const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const {
@@ -130,7 +140,9 @@ const [submitting, setSubmitting] = useState(false);
 
       const res = response?.message || response;
       if (!res || ![200, 201].includes(res.status_code)) {
-        showApiError(parseFrappeError || res?.message || res || "Failed to save Quotation");
+        showApiError(
+          parseFrappeError || res?.message || res || "Failed to save Quotation",
+        );
         return;
       }
 
@@ -140,7 +152,9 @@ const [submitting, setSubmitting] = useState(false);
 
       resetDirty();
       onClose();
-      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.QUOTATION_LIST);
+      useDataRefreshStore
+        .getState()
+        .triggerRefresh(REFRESH_KEYS.QUOTATION_LIST);
     } catch (error: any) {
       showApiError(error);
     }
@@ -150,7 +164,7 @@ const [submitting, setSubmitting] = useState(false);
     e.preventDefault();
     await handleSave();
   };
- 
+
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -188,36 +202,35 @@ const [submitting, setSubmitting] = useState(false);
         {/* ── Tabs ── */}
         <div className="bg-app border-b border-theme px-3 sm:px-8 shrink-0">
           <div className="flex gap-4 sm:gap-8 overflow-x-auto scrollbar-none">
-            {(["details", "address", "otherCharges", "terms"] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => ui.setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
-                  ui.activeTab === tab
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
-              >
-                {tab === "details" && "Details"}
-                {tab === "address" && "Additional Details"}
-                {tab === "otherCharges" && "Shipping & Other Charges"}
-                {tab === "terms" && "Terms & Conditions"}
-              </button>
-            ))}
+            {(["details", "address", "otherCharges", "terms"] as const).map(
+              (tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => ui.setActiveTab(tab)}
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
+                    ui.activeTab === tab
+                      ? "text-primary border-b-[3px] border-primary"
+                      : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  }`}
+                >
+                  {tab === "details" && "Details"}
+                  {tab === "address" && "Additional Details"}
+                  {tab === "otherCharges" && "Shipping & Other Charges"}
+                  {tab === "terms" && "Terms & Conditions"}
+                </button>
+              ),
+            )}
           </div>
         </div>
 
         {/* ── Tab Content ── */}
         <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-8 py-4">
-
           {/* ──────────── DETAILS ──────────── */}
           {ui.activeTab === "details" && (
-  <div className="flex flex-col gap-4">
-
+            <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
-
                 {/* Customer */}
                 <div className="w-full sm:w-[220px]">
                   <CustomerSelect
@@ -236,7 +249,9 @@ const [submitting, setSubmitting] = useState(false);
                     value={formData.dateOfInvoice}
                     required
                     onChange={(name, value) =>
-                      actions.handleInputChange({ target: { name, value } } as any)
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
                     }
                   />
                 </div>
@@ -249,7 +264,9 @@ const [submitting, setSubmitting] = useState(false);
                     value={formData.validTill}
                     required
                     onChange={(name, value) =>
-                      actions.handleInputChange({ target: { name, value } } as any)
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
                     }
                   />
                 </div>
@@ -263,7 +280,12 @@ const [submitting, setSubmitting] = useState(false);
                     onChange={actions.handleInputChange}
                     options={
                       formData.currencyCode
-                        ? [{ value: formData.currencyCode, label: formData.currencyCode }]
+                        ? [
+                            {
+                              value: formData.currencyCode,
+                              label: formData.currencyCode,
+                            },
+                          ]
                         : []
                     }
                     disabled
@@ -278,7 +300,6 @@ const [submitting, setSubmitting] = useState(false);
                   - minmax(0, 1fr) prevents the table from pushing the grid wider
                     than the modal container                                       ── */}
               <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_220px] gap-4 items-start">
-
                 {/* Table column — min-w-0 so it can shrink below natural content width */}
                 <div className="min-w-0">
                   <QuotationItemTable
@@ -290,13 +311,15 @@ const [submitting, setSubmitting] = useState(false);
                     symbol={symbol}
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
                     isSalesInvoice={false}
-                    taxCategory={formData.taxCategory || customerDetails?.customerTaxCategory}
+                    taxCategory={
+                      formData.taxCategory ||
+                      customerDetails?.customerTaxCategory
+                    }
                   />
                 </div>
 
                 {/* Sidebar — full width on mobile, 220px column on xl+ */}
                 <div className="flex flex-row xl:flex-col gap-4 xl:sticky xl:top-0 h-fit">
-
                   {/* Customer Details card */}
                   <div className="bg-card rounded-lg p-2 flex-1 xl:flex-none w-full">
                     <h3 className="text-[12px] font-semibold text-main mb-2">
@@ -305,18 +328,24 @@ const [submitting, setSubmitting] = useState(false);
                     <div className="flex flex-col gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted shrink-0" />
-                        <span className="truncate">{customerDetails?.name ?? "Customer Name"}</span>
+                        <span className="truncate">
+                          {customerDetails?.name ?? "Customer Name"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Mail size={12} className="shrink-0" />
                         <span className="truncate">
-                          {primaryContact?.email || customerDetails?.email || "—"}
+                          {primaryContact?.email ||
+                            customerDetails?.email ||
+                            "—"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Phone size={12} className="shrink-0" />
                         <span className="truncate">
-                          {primaryContact?.mobile || customerDetails?.mobile || "—"}
+                          {primaryContact?.mobile ||
+                            customerDetails?.mobile ||
+                            "—"}
                         </span>
                       </div>
                       <div className="flex justify-between text-[10px] mt-1">
@@ -335,36 +364,59 @@ const [submitting, setSubmitting] = useState(false);
                   </div>
 
                   {/* Summary card */}
+                  {/* Summary card */}
                   <div className="bg-card rounded-lg p-3 flex-1 xl:flex-none w-full">
-                    <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted">Total Items</span>
-                        <span className="font-medium text-main">{formData.items.length}</span>
+                    <h3 className="text-[13px] font-semibold text-main mb-2">
+                      Summary
+                    </h3>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Qty</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalQuantity.toFixed(0)}
+                        </span>
                       </div>
-                      <div className="flex justify-between text-xs">
+
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Amount</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalAmount.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Discount</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalDiscount.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs">
                         <span className="text-muted">Subtotal</span>
-                        <span className="font-medium text-main">
-                          {symbol} {totals.subTotal.toFixed(2)}
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.subTotal.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted">Total Tax</span>
-                        <span className="font-medium text-main">
-                          {symbol} {totals.totalTax.toFixed(2)}
+
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Tax</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {totals.totalTax.toFixed(2)}
                         </span>
                       </div>
-                      <div className="mt-2 p-2 bg-primary rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-white">Grand Total</span>
-                          <span className="text-sm font-bold text-white">
-                            {symbol} {totals.grandTotal.toFixed(2)}
+
+                      <div className="border-t border-theme mt-1 pt-2">
+                        <div className="flex justify-between items-center bg-primary rounded-lg px-2 py-1.5">
+                          <span className="text-xs font-semibold text-white">
+                            Grand Total
+                          </span>
+                          <span className="text-xs font-bold text-white tabular-nums">
+                            {totals.grandTotal.toFixed(2)}
                           </span>
                         </div>
                       </div>
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>
@@ -375,7 +427,9 @@ const [submitting, setSubmitting] = useState(false);
             <div className="space-y-6">
               <PaymentInfoBlock
                 data={formData.paymentInformation}
-                onChange={(e) => actions.handleInputChange(e, "paymentInformation")}
+                onChange={(e) =>
+                  actions.handleInputChange(e, "paymentInformation")
+                }
                 paymentMethodOptions={paymentMethodOptions}
                 showPaymentMethod={false}
               />
@@ -398,7 +452,9 @@ const [submitting, setSubmitting] = useState(false);
               onChange={actions.handleOtherChargeChange}
               onRemove={actions.removeOtherCharge}
               selectedTemplate={formData.salesTaxTemplate}
-              onTemplateSelect={(name, taxes) => actions.handleTemplateSelect(name, taxes)}
+              onTemplateSelect={(name, taxes) =>
+                actions.handleTemplateSelect(name, taxes)
+              }
               onTaxChange={actions.handleTaxChange}
             />
           )}
@@ -414,7 +470,6 @@ const [submitting, setSubmitting] = useState(false);
               />
             </div>
           )}
-
         </div>
       </form>
     </MinimizableModal>

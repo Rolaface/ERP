@@ -1114,22 +1114,40 @@ export const useInvoiceForm = (
 
   // ─── Computed totals ─────────────────────────────────────────────────────────
 
-  const { subTotal, totalTax, grandTotal } = useMemo(() => {
-    let sub = 0;
-    let tax = 0;
+ const { subTotal, totalTax, grandTotal, totalQuantity, totalAmount, totalDiscount } =
+  useMemo(() => {
+    let qty_sum   = 0;   // totalQuantity
+    let gross     = 0;   // totalAmount  (qty × rate, no deductions)
+    let disc_sum  = 0;   // totalDiscount (absolute £ discount)
+    let sub       = 0;   // subTotal     (after discount, before tax)
+    let tax       = 0;   // totalTax
+
     formData.items.forEach((item) => {
-      const qty = Number(item.quantity || 0);
-      const price = Number(item.price || 0);
-      const discount = Number(item.discount || 0);
-      const vatRate = Number(item.vatRate || 0);
-      const lineAmount = qty * price;
-      const discountAmount = lineAmount * (discount / 100);
-      const netAmount = lineAmount - discountAmount;
-      const taxAmount = netAmount * (vatRate / 100);
-      sub += netAmount;
-      tax += taxAmount;
+      const qty        = Number(item.quantity || 0);
+      const price      = Number(item.price    || 0);
+      const discount   = Number(item.discount || 0);
+      const vatRate    = Number(item.vatRate  || 0);
+
+      const lineGross      = qty * price;
+      const lineDiscount   = lineGross * (discount / 100);
+      const lineNet        = lineGross - lineDiscount;
+      const lineTax        = lineNet   * (vatRate  / 100);
+
+      qty_sum  += qty;
+      gross    += lineGross;
+      disc_sum += lineDiscount;
+      sub      += lineNet;
+      tax      += lineTax;
     });
-    return { subTotal: sub, totalTax: tax, grandTotal: sub + tax };
+
+    return {
+      totalQuantity: qty_sum,
+      totalAmount:   gross,
+      totalDiscount: disc_sum,
+      subTotal:      sub,
+      totalTax:      tax,
+      grandTotal:    sub + tax,
+    };
   }, [formData.items]);
 
   const paginatedItems = formData.items.slice(
@@ -1148,7 +1166,7 @@ export const useInvoiceForm = (
     customerNameDisplay,
     paginatedItems,
     paginatedCharges,
-    totals: { subTotal, totalTax, grandTotal },
+    totals: { totalQuantity, totalAmount, totalDiscount, subTotal, totalTax, grandTotal },
     ui: {
       page,
       setPage,

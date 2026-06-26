@@ -3,7 +3,7 @@ import { getCustomerByCustomerCode } from "../api/customerApi";
 import { getCompanyById } from "../api/companySetupApi";
 import type { TermSection } from "../types/termsAndCondition";
 // import type { ProformaInvoice, InvoiceItem } from "../types/invoice";
-import { ProformaInvoice, InvoiceItem} from "../types/proformaInvoice";
+import { ProformaInvoice, InvoiceItem } from "../types/proformaInvoice";
 import { getRolaCountryList } from "../api/lookupApi";
 
 import { getExchangeRate } from "../api/currencyExchangeApi";
@@ -76,7 +76,7 @@ export function buildInvoicePayload(
       description: item.description ?? "",
       discount: Number(item.discount ?? 0),
       vatRate: String(item.vatRate ?? 0),
-      vatCode: item.vatCode || item?.vatCd || "" ,
+      vatCode: item.vatCode || item?.vatCd || "",
       uom: item.uom ?? item.unitOfMeasureCd ?? "",
     }));
   const mappedTaxes = (formData.taxes || []).map((t: any) => ({
@@ -121,7 +121,6 @@ export function buildInvoicePayload(
   };
 }
 
-
 export const useQuotationForm = (
   isOpen: boolean,
   _onClose: () => void,
@@ -148,35 +147,33 @@ export const useQuotationForm = (
     }));
   }, [isOpen]);
 
-  
-useEffect(() => {
-  const terms =
-    formData.terms?.selling?.payment?.dueDates ||
-    formData.paymentInformation?.paymentTerms;
+  useEffect(() => {
+    const terms =
+      formData.terms?.selling?.payment?.dueDates ||
+      formData.paymentInformation?.paymentTerms;
 
-  if (!terms || !formData.dateOfInvoice) return;
+    if (!terms || !formData.dateOfInvoice) return;
 
-  const due = calculateDueDate(
+    const due = calculateDueDate(formData.dateOfInvoice, terms);
+
+    setFormData((prev) => ({
+      ...prev,
+      dueDate: due,
+    }));
+  }, [
     formData.dateOfInvoice,
-    terms,
-  );
-
-  setFormData((prev) => ({
-    ...prev,
-    dueDate: due,
-  }));
-}, [
-  formData.dateOfInvoice,
-  formData.terms?.selling?.payment?.dueDates,
-  formData.paymentInformation?.paymentTerms,
-]);
+    formData.terms?.selling?.payment?.dueDates,
+    formData.paymentInformation?.paymentTerms,
+  ]);
 
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
   const [page, setPage] = useState(0);
   const [chargePage, setChargePage] = useState(0);
   // Change it to this:
-const [activeTab, setActiveTab] = useState<"details" | "address" | "otherCharges" | "terms" | "otherDetails">("details");
+  const [activeTab, setActiveTab] = useState<
+    "details" | "address" | "otherCharges" | "terms" | "otherDetails"
+  >("details");
 
   const [isShippingOpen, setIsShippingOpen] = useState(false);
   const [sameAsBilling, setSameAsBilling] = useState(true);
@@ -205,13 +202,13 @@ const [activeTab, setActiveTab] = useState<"details" | "address" | "otherCharges
     }
   };
   // Load edit data
-//   useEffect(() => {
-//     if (!isOpen) return;
-//     if (mode === "edit" && initialData?.id) {
-//       setFormDataFromInvoice(initialData);
-//     }
-//   }, [isOpen, initialData, mode]);
- 
+  //   useEffect(() => {
+  //     if (!isOpen) return;
+  //     if (mode === "edit" && initialData?.id) {
+  //       setFormDataFromInvoice(initialData);
+  //     }
+  //   }, [isOpen, initialData, mode]);
+
   useEffect(() => {
     if (!isOpen) return;
     if (mode === "edit" && (initialData?.id || initialData?.proformaId)) {
@@ -280,7 +277,7 @@ const [activeTab, setActiveTab] = useState<"details" | "address" | "otherCharges
         if (cancelled) return;
         setExchangeRateError(err?.message || "Exchange rate not found");
         setFormData((prev) => {
-          if (prev.exchangeRt === "1") return prev; 
+          if (prev.exchangeRt === "1") return prev;
           return { ...prev, exchangeRt: "1" };
         });
         showApiError(err);
@@ -466,17 +463,17 @@ const [activeTab, setActiveTab] = useState<"details" | "address" | "otherCharges
         shippingAddressObj?.country || billingAddressObj?.country,
       );
 
-const paymentInformation = {
-  paymentTerms:
-    data?.terms?.selling?.payment?.dueDates ??
-    company?.terms?.selling?.payment?.dueDates ??
-    "",
-  paymentMethod: "01",
-  bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
-  accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
-  routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
-  swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
-};
+      const paymentInformation = {
+        paymentTerms:
+          data?.terms?.selling?.payment?.dueDates ??
+          company?.terms?.selling?.payment?.dueDates ??
+          "",
+        paymentMethod: "01",
+        bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
+        accountNumber: getDefaultBank(company?.bankAccounts)?.accountNo ?? "",
+        routingNumber: getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
+        swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
+      };
 
       setFormData((prev) => {
         const billingId = billingAddressObj?.id || "";
@@ -507,82 +504,82 @@ const paymentInformation = {
     }
   };
 
-//   const handleItemChange = (
-//     idx: number,
-//     e: React.ChangeEvent<
-//       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-//     >,
-//   ) => {
-//     const { name, value } = e.target;
-//     const isNum = NUM_FIELDS.includes(name);
+  //   const handleItemChange = (
+  //     idx: number,
+  //     e: React.ChangeEvent<
+  //       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+  //     >,
+  //   ) => {
+  //     const { name, value } = e.target;
+  //     const isNum = NUM_FIELDS.includes(name);
 
-//     setFormData((prev) => {
-//       const items = [...prev.items];
-//       let nextValue: any = value;
-//       if (isNum) {
-//         nextValue =
-//           value === "" || value === null
-//             ? null
-//             : Number.isFinite(Number(value))
-//               ? Number(value)
-//               : null;
-//       }
-//   if (name === "quantity" && nextValue !== null) {
-//       const item = items[idx];
-//       if (!item._skipCap) {
-//         if (!item.isServiceItem) {
-//         const stockAvailable = item.availableQty ?? item.qty ?? 0;
-// const thisRowOriginal = Number(item.originalQty ?? 0);
+  //     setFormData((prev) => {
+  //       const items = [...prev.items];
+  //       let nextValue: any = value;
+  //       if (isNum) {
+  //         nextValue =
+  //           value === "" || value === null
+  //             ? null
+  //             : Number.isFinite(Number(value))
+  //               ? Number(value)
+  //               : null;
+  //       }
+  //   if (name === "quantity" && nextValue !== null) {
+  //       const item = items[idx];
+  //       if (!item._skipCap) {
+  //         if (!item.isServiceItem) {
+  //         const stockAvailable = item.availableQty ?? item.qty ?? 0;
+  // const thisRowOriginal = Number(item.originalQty ?? 0);
 
-// // Total pool = actual stock remaining + what this invoice already reserved
-// const available = stockAvailable + thisRowOriginal;
+  // // Total pool = actual stock remaining + what this invoice already reserved
+  // const available = stockAvailable + thisRowOriginal;
 
-// // How much other rows of same batch are using
-// const usedByOthers = items
-//   .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
-//   .reduce((sum, x) => {
-//     const qty = Number(x.quantity || 0);
-//     const orig = Number(x.originalQty || 0);
-//     // Net consumption = current qty - what was already allocated
-//     // (original was already counted in stockAvailable pool)
-//     return sum + Math.max(0, qty - orig);
-//   }, 0);
+  // // How much other rows of same batch are using
+  // const usedByOthers = items
+  //   .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
+  //   .reduce((sum, x) => {
+  //     const qty = Number(x.quantity || 0);
+  //     const orig = Number(x.originalQty || 0);
+  //     // Net consumption = current qty - what was already allocated
+  //     // (original was already counted in stockAvailable pool)
+  //     return sum + Math.max(0, qty - orig);
+  //   }, 0);
 
-// const maxAllowed = Math.max(0, available - usedByOthers);
-//           if (nextValue > maxAllowed) {
-//             nextValue = maxAllowed;
-//             showValidationError(
-//               `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
-//             );
-//           }
-//         }
-//       }
-//     }
-//       // ─────────────────────────────────────────────────────
+  // const maxAllowed = Math.max(0, available - usedByOthers);
+  //           if (nextValue > maxAllowed) {
+  //             nextValue = maxAllowed;
+  //             showValidationError(
+  //               `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
+  //             );
+  //           }
+  //         }
+  //       }
+  //     }
+  //       // ─────────────────────────────────────────────────────
 
-//       const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
-//       const start = Number(updatedItem.boxStart || 0);
-//       const end = Number(updatedItem.boxEnd || 0);
+  //       const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
+  //       const start = Number(updatedItem.boxStart || 0);
+  //       const end = Number(updatedItem.boxEnd || 0);
 
-//       if (idx > 0 && name === "boxStart") {
-//         const prevEnd = Number(items[idx - 1]?.boxEnd || 0);
-//         const expected = prevEnd + 1;
-//         if (prevEnd > 0 && start !== expected && start > expected) {
-//           showValidationError(
-//             `Row ${idx + 1}: Box must start from ${expected}`,
-//           );
-//           return prev;
-//         }
-//       }
+  //       if (idx > 0 && name === "boxStart") {
+  //         const prevEnd = Number(items[idx - 1]?.boxEnd || 0);
+  //         const expected = prevEnd + 1;
+  //         if (prevEnd > 0 && start !== expected && start > expected) {
+  //           showValidationError(
+  //             `Row ${idx + 1}: Box must start from ${expected}`,
+  //           );
+  //           return prev;
+  //         }
+  //       }
 
-//       items[idx] = updatedItem;
-//       if (name === "boxEnd" && end >= start && items[idx + 1]) {
-//         items[idx + 1] = { ...items[idx + 1], boxStart: end + 1 };
-//       }
-//       return { ...prev, items };
-//     });
-//   };
-const handleItemChange = (
+  //       items[idx] = updatedItem;
+  //       if (name === "boxEnd" && end >= start && items[idx + 1]) {
+  //         items[idx + 1] = { ...items[idx + 1], boxStart: end + 1 };
+  //       }
+  //       return { ...prev, items };
+  //     });
+  //   };
+  const handleItemChange = (
     idx: number,
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -798,16 +795,17 @@ const handleItemChange = (
       invoiceNumber: invoice.id ?? invoice.invoiceNumber,
       customerId: invoice.customerId ?? prev.customerId,
       invoiceType: invoice.invoiceType ?? "",
-      
+
       // FIX 1: API returns `taxCategory` (camelCase), hook was checking `tax_category`
-      taxCategory: invoice.taxCategory ?? invoice.tax_category ?? prev.taxCategory,
-      
+      taxCategory:
+        invoice.taxCategory ?? invoice.tax_category ?? prev.taxCategory,
+
       // FIX 2: Map API `status` to `invoiceStatus` used by modal
       invoiceStatus: invoice.status ?? prev.invoiceStatus,
-      
+
       // FIX 3: Map API `validTill` used by modal
       validTill: invoice.validTill,
-      
+
       mode: invoice.paymentMode ?? prev.mode ?? "",
       currencyCode: invoice.currency,
       dateOfInvoice: invoice.postingDate,
@@ -884,7 +882,12 @@ const handleItemChange = (
           price,
           discount,
           vatRate: it.taxInfo?.[0]?.totalTaxRate ?? taxRate,
-          vatCode: it.itemTaxTemplate ?? it.vatCode ?? it.taxInfo?.[0]?.taxName ?? it.vatCd ?? "",
+          vatCode:
+            it.itemTaxTemplate ??
+            it.vatCode ??
+            it.taxInfo?.[0]?.taxName ??
+            it.vatCd ??
+            "",
           // vatCd: it.vatCd ?? "",
           taxTypes: taxTypes,
           uom: it.uom ?? it.unitOfMeasureCd ?? "",
@@ -934,7 +937,7 @@ const handleItemChange = (
           invoiceCharges: [],
           salesTaxTemplate: "",
           dateOfInvoice: today,
-          validTill:"",
+          validTill: "",
           exchangeRt: "1",
           warehouse: "",
           updateStock: true,
@@ -990,22 +993,46 @@ const handleItemChange = (
 
   // ─── Computed totals ─────────────────────────────────────────────────────────
 
-  const { subTotal, totalTax, grandTotal } = useMemo(() => {
+  const {
+    subTotal,
+    totalTax,
+    grandTotal,
+    totalQuantity,
+    totalAmount,
+    totalDiscount,
+  } = useMemo(() => {
+    let qty_sum = 0;
+    let gross = 0;
+    let disc_sum = 0;
     let sub = 0;
     let tax = 0;
+
     formData.items.forEach((item) => {
       const qty = Number(item.quantity || 0);
       const price = Number(item.price || 0);
       const discount = Number(item.discount || 0);
       const vatRate = Number(item.vatRate || 0);
-      const lineAmount = qty * price;
-      const discountAmount = lineAmount * (discount / 100);
-      const netAmount = lineAmount - discountAmount;
-      const amount = netAmount * (vatRate / 100);
-      sub += netAmount;
-      tax += amount;
+
+      const lineGross = qty * price;
+      const lineDiscount = lineGross * (discount / 100);
+      const lineNet = lineGross - lineDiscount;
+      const lineTax = lineNet * (vatRate / 100);
+
+      qty_sum += qty;
+      gross += lineGross;
+      disc_sum += lineDiscount;
+      sub += lineNet;
+      tax += lineTax;
     });
-    return { subTotal: sub, totalTax: tax, grandTotal: sub + tax };
+
+    return {
+      totalQuantity: qty_sum,
+      totalAmount: gross,
+      totalDiscount: disc_sum,
+      subTotal: sub,
+      totalTax: tax,
+      grandTotal: sub + tax,
+    };
   }, [formData.items]);
 
   const paginatedItems = formData.items.slice(
@@ -1024,7 +1051,14 @@ const handleItemChange = (
     customerNameDisplay,
     paginatedItems,
     paginatedCharges,
-    totals: { subTotal, totalTax, grandTotal },
+    totals: {
+      totalQuantity,
+      totalAmount,
+      totalDiscount,
+      subTotal,
+      totalTax,
+      grandTotal,
+    },
     ui: {
       page,
       setPage,
