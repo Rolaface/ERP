@@ -241,10 +241,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
               value={it.itemName}
               selectedId={it.itemCode}
               onChange={(item: any) => {
-                // 1. Safely call the parent prop
                 onItemSelect?.(item, i);
-
-                // 2. Extract basic values
                 const code = item?.id || "";
                 const name = item?.itemName || code;
                 const rate = item?.sellingPrice || 0;
@@ -282,6 +279,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
                   packingUnit: pUnit,
                   packingSize: pSize,
                   taxCode: vatCd,
+                  piecesPerBox: Number(item?.inventoryInfo?.piecesPerBox) || 0,
                 });
               }}
             />
