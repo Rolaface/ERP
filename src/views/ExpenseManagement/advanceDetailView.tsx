@@ -333,7 +333,6 @@ const EmployeeAdvanceDetailModal: React.FC<Props> = ({ open, data, loading, onCl
                           {[
                             { label: "Advance Paid",  value: ec.advance_paid },
                             { label: "Allocated",     value: ec.allocated_amount },
-                            { label: "Unclaimed",     value: ec.unclaimed_amount },
                           ].map(({ label, value }, j) => (
                             <div
                               key={label}
