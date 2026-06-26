@@ -166,14 +166,16 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
       header: "Remaining",
       align: "right",
       render: (ec) => {
-        const remaining = (ec.advance_paid ?? 0) - (ec.allocated_amount ?? 0);
         return (
-          <span style={{
-            color: remaining > 0 ? "#dc2626" : "var(--muted)",
-            fontWeight: 700, fontSize: 12,
-            fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
-          }}>
-            {fmt(remaining, currency)}
+          <span
+            style={{
+              fontWeight: 700,
+              fontSize: 12,
+              fontVariantNumeric: "tabular-nums",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {fmt(ec.unclaimed_amount, currency)}
           </span>
         );
       },

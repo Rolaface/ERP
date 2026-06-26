@@ -39,6 +39,7 @@ const PAYMENT_MODULE = "Payment Entry";
 
 interface ExpenseSummary {
   id: string;
+  claimName: string;
   approver: string;
   date: string;
   category: string;
@@ -118,6 +119,7 @@ const ExpenseHistory: React.FC = () => {
         res.data.map((claim: any) => ({
           id: claim.name,
           approver: claim.expense_approver_name ?? "",
+          claimName: claim.name,
           name: claim.employee_name,
           employeeId: claim.employee ?? "",
           date: claim.posting_date,
@@ -392,6 +394,17 @@ const ExpenseHistory: React.FC = () => {
 
   const columns: Column<ExpenseSummary>[] = useMemo(
     () => [
+      {
+        key: "claimName",
+        header: "Name",
+        align: "left",
+        render: (exp) => (
+          <div className="py-1.5">
+            <span className="block font-medium">{exp.claimName}</span>
+          </div>
+        ),
+        tooltip: (exp) => `Name: ${exp.claimName}`,
+      },
       {
         key: "date",
         header: "Date",
