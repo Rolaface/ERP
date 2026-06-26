@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useMemo, useCallback } from "react";
 import { useOutletContext } from "react-router-dom";
-import { LayoutDashboard, Users, CreditCard, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3 , Receipt, FolderTree} from "lucide-react";
 import {
   AppPage,
   AppPageBody,
@@ -55,14 +55,14 @@ const ALL_TABS = [
   {
     id: "payments",
     label: "Payment Entry",
-    icon: <CreditCard {...iconProps} />,
+    icon: <Receipt {...iconProps} />,
     module: "Payment Entry",
     action: "read" as const,
   },
   {
     id: "CustomerGroup",
     label: "Customer Group",
-    icon: <Users {...iconProps} />,
+    icon: <FolderTree {...iconProps} />,
     module: "Customer Group",
     action: "read" as const,
   },
