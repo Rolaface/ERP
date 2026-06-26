@@ -52,27 +52,49 @@ const EmployeeAdvanceTable: React.FC = () => {
   const [viewMode, setViewMode] = useState<"table" | "detail">("table");
   const [detailData, setDetailData] = useState<EmployeeAdvanceDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-
-  const handleViewClick = async (ea: EmployeeAdvance, e?: React.MouseEvent<HTMLButtonElement>) => {
-    if (e) e.stopPropagation();
-    setDetailData(null);
-    setDetailLoading(true);
-    setViewMode("detail");
-    try {
-      const advance = await getAdvanceByIdForView(ea.id);
-      setDetailData(advance);
-    } catch (err) {
-      showApiError(err);
-      setViewMode("table");         // revert on error
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
-  const handleBack = () => {
+  const [detailDateRange, setDetailDateRange] = useState<{ from_date?: string; to_date?: string }>({});
+const [currentAdvanceId, setCurrentAdvanceId] = useState<string | null>(null);
+const handleViewClick = async (ea: EmployeeAdvance, e?: React.MouseEvent<HTMLButtonElement>) => {
+  if (e) e.stopPropagation();
+  setDetailData(null);
+  setDetailLoading(true);
+  setDetailDateRange({});        
+  setViewMode("detail");
+  setCurrentAdvanceId(ea.id);      
+  try {
+    const advance = await getAdvanceByIdForView(ea.id);
+    setDetailData(advance);
+  } catch (err) {
+    showApiError(err);
     setViewMode("table");
-    setDetailData(null);
-  };
+  } finally {
+    setDetailLoading(false);
+  }
+};
+
+const handleDetailDateChange = async (range: { from_date?: string; to_date?: string }) => {
+  setDetailDateRange(range);
+  setDetailLoading(true);
+  try {
+    const advance = await getAdvanceByIdForView(
+      currentAdvanceId!,
+      range.from_date,
+      range.to_date,
+    );
+    setDetailData(advance);
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setDetailLoading(false);
+  }
+};
+
+const handleBack = () => {
+  setViewMode("table");
+  setDetailData(null);
+  setDetailDateRange({});
+  setCurrentAdvanceId(null);
+};
 
   const [employeeAdvances, setEmployeeAdvances] = useState<EmployeeAdvance[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -480,10 +502,12 @@ const EmployeeAdvanceTable: React.FC = () => {
       ) : (
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           <EmployeeAdvanceDetailView
-            data={detailData}
-            loading={detailLoading}
-            onBack={handleBack}
-          />
+  data={detailData}
+  loading={detailLoading}
+  onBack={handleBack}
+  dateRange={detailDateRange}
+  onDateRangeChange={handleDetailDateChange}
+/>
         </div>
       )}
     </div>
