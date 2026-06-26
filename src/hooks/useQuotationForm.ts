@@ -52,6 +52,7 @@ const NUM_FIELDS = [
   "vatRate",
   "boxStart",
   "boxEnd",
+  "piecesPerBox",
 ];
 
 // ─── Payload Builder ──────────────────────────────────────────────────────────
@@ -114,7 +115,6 @@ export function buildInvoicePayload(
     subTotal: totals.subTotal,
     totalTax: totals.totalTax,
     grandTotal: totals.grandTotal,
-    // Pass through address objects for reference
     addresses: formData.addresses,
     taxes: mappedTaxes,
     salesTaxTemplate: formData.salesTaxTemplate ?? "",
@@ -221,8 +221,6 @@ export const useQuotationForm = (
 
     const base = getBaseCurrencyFromStorage();
 
-    console.log("Base Currency:", base);
-
     setBaseCurrency(base);
     lastCurrencyRef.current = base;
 
@@ -232,7 +230,6 @@ export const useQuotationForm = (
     }));
   }, [isOpen]);
 
-  // Exchange rate auto-fetch
   useEffect(() => {
     if (!isOpen || !enableExchange) return;
     const code = String(formData.currencyCode ?? "")
@@ -604,7 +601,37 @@ export const useQuotationForm = (
       // (Stock quantity validation block removed for Quotations)
       // ─────────────────────────────────────────────────────
 
-      const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
+        const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
+
+      if (
+        (name === "boxStart" || name === "boxEnd") &&
+        updatedItem.piecesPerBox
+      ) {
+        const start = Number(updatedItem.boxStart || 0);
+        const end = Number(updatedItem.boxEnd || 0);
+        const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+        if (start > 0 && end >= start) {
+          updatedItem.quantity = (end - start + 1) * piecesPerBox;
+        }
+      }
+
+      if (name === "quantity") {
+        const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+        if (piecesPerBox > 0) {
+          const totalBoxes = Math.ceil(
+            Number(updatedItem.quantity || 0) / piecesPerBox,
+          );
+          const boxStart =
+            Number(updatedItem.boxStart || 0) > 0
+              ? Number(updatedItem.boxStart)
+              : idx === 0
+                ? 1
+                : Number(items[idx - 1]?.boxEnd || 0) + 1;
+          updatedItem.boxStart = boxStart;
+          updatedItem.boxEnd = boxStart + totalBoxes - 1;
+        }
+      }
+
       const start = Number(updatedItem.boxStart || 0);
       const end = Number(updatedItem.boxEnd || 0);
 
@@ -679,10 +706,21 @@ export const useQuotationForm = (
     });
   };
 
-  const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
+    const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
       const items = [...prev.items];
-      items[index] = { ...items[index], ...updated };
+      const updatedItem = { ...items[index], ...updated };
+
+      const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+      if (piecesPerBox > 0 && Number(updatedItem.quantity || 0) > 0) {
+        const totalBoxes = Math.ceil(
+          Number(updatedItem.quantity) / piecesPerBox,
+        );
+        updatedItem.boxEnd =
+          Number(updatedItem.boxStart || 1) + totalBoxes - 1;
+      }
+
+      items[index] = updatedItem;
       return { ...prev, items };
     });
   };
@@ -897,9 +935,17 @@ export const useQuotationForm = (
           boxStart: Number(it.boxStart) || "",
           boxEnd: Number(it.boxEnd) || "",
           mfgDate: it.mfgDate ?? "",
-          expDate: it.expDate ?? "",
-          warehouse: it.warehouse ?? "",
+          expDate: it.expDate ?? "", warehouse: it.warehouse ?? "",
           originalQty: Number(it.quantity),
+          piecesPerBox: (() => {
+            const stored = Number(it.piecesPerBox) || 0;
+            if (stored > 0) return stored;
+            const boxStart = Number(it.boxStart) || 0;
+            const boxEnd = Number(it.boxEnd) || 0;
+            const qty = Number(it.quantity) || 0;
+            const totalBoxes = boxEnd - boxStart + 1;
+            return totalBoxes > 0 ? Math.round(qty / totalBoxes) : 0;
+          })(),
           _skipCap: true,
         };
       }),
