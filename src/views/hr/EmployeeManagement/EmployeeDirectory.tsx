@@ -401,7 +401,7 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({
           totalPages={isEmployeeView ? 1 : totalPages}
           pageSize={isEmployeeView ? totalItems || 1 : pageSize}
           totalItems={totalItems}
-          pageSizeOptions={isEmployeeView ? undefined : [10, 25, 50, 100]}
+          pageSizeOptions={isEmployeeView ? undefined : [20, 50, 100, 200]}
           onPageSizeChange={
             isEmployeeView
               ? undefined

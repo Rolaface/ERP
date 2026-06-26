@@ -129,7 +129,8 @@ const AppraisalTable: React.FC<AppraisalTableProps> = ({ onAddAppraisal }) => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-        pageSizeOptions={[10, 25, 50]}
+        pageSizeOptions={[20, 50, 100,200]}
+
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
         sortBy={sortBy}
