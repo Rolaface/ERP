@@ -237,7 +237,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
                 {/* Customer — full width on mobile, fixed on sm+ */}
-                <div className="w-full sm:w-[220px]">
+                <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
                     onChange={actions.handleCustomerSelect}
@@ -403,7 +403,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     <div className="flex flex-col gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted shrink-0" />
-                        <span className="truncate">
+                        <span className="break-words">
                           {customerDetails?.name ?? "Customer Name"}
                         </span>
                       </div>

@@ -232,7 +232,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
                 {/* Customer */}
-                <div className="w-full sm:w-[220px]">
+            <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
                     onChange={actions.handleCustomerSelect}
@@ -328,9 +328,9 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     <div className="flex flex-col gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted shrink-0" />
-                        <span className="truncate">
-                          {customerDetails?.name ?? "Customer Name"}
-                        </span>
+                      <span className="break-words">
+  {customerDetails?.name ?? "Customer Name"}
+</span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Mail size={12} className="shrink-0" />

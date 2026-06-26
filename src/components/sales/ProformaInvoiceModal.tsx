@@ -261,7 +261,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         />
       }
       maxWidth="full"
-      height="650px"
+      height="700px"
     >
       <form
         id="proforma-form"
@@ -301,7 +301,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
             <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
-                <div>
+                <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
                     onChange={actions.handleCustomerSelect}
@@ -339,22 +339,24 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                 </div>
 
                 {showExchangeRate && (
-                  <div className="w-full sm:w-[110px]">
+                  <div className="w-full sm:w-[110px] relative">
                     <ModalInput
-                      label={
-                        ui.exchangeRateLoading
-                          ? "Exchange Rate (Loading...)"
-                          : "Exchange Rate"
-                      }
+                      label="Exchange Rate"
                       name="exchangeRt"
-                      value={formData.exchangeRt || "1"}
+                      value={
+                        ui.exchangeRateLoading ? "" : formData.exchangeRt || "1"
+                      }
+                      placeholder={ui.exchangeRateLoading ? "Loading..." : ""}
                       onChange={actions.handleInputChange}
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                       disabled
                     />
                     {!!ui.exchangeRateError && (
-                      <div className="mt-1 text-[10px] text-danger">
-                        {ui.exchangeRateError}
+                      <div
+                        className="absolute left-0 top-full mt-0.5 text-[9px] text-danger whitespace-nowrap z-10"
+                        title={ui.exchangeRateError}
+                      >
+                        Rate not found
                       </div>
                     )}
                   </div>
@@ -385,24 +387,27 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
               </div>
 
               {/* ITEMS + SUMMARY */}
-              <div className="grid grid-cols-[4fr_1fr] gap-4 items-start">
+              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_220px] gap-4 items-start">
                 {/* Reusable ItemTable Component */}
-                <ItemTable
-                  paginatedItems={paginatedItems}
-                  ui={ui}
-                  actions={actions}
-                  formData={formData}
-                  symbol={symbol}
-                  ITEMS_PER_PAGE={ITEMS_PER_PAGE}
-                  isSalesInvoice={false}
-                  taxCategory={
-                    formData.taxCategory || customerDetails?.customerTaxCategory
-                  }
-                />
+                <div className="min-w-0">
+                  <ItemTable
+                    paginatedItems={paginatedItems}
+                    ui={ui}
+                    actions={actions}
+                    formData={formData}
+                    symbol={symbol}
+                    ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                    isSalesInvoice={false}
+                    taxCategory={
+                      formData.taxCategory ||
+                      customerDetails?.customerTaxCategory
+                    }
+                  />
+                </div>
 
                 {/* RIGHT SIDE: CUSTOMER DETAILS & SUMMARY */}
-                <div className="col-span-1 sticky top-0 flex flex-col items-center gap-6 px-4 lg:px-6 h-fit">
-                  <div className="bg-card rounded-lg p-2 w-[220px]">
+                <div className="flex flex-row xl:flex-col gap-4 xl:sticky xl:top-0 h-fit">
+                  <div className="bg-card rounded-lg p-2 flex-1 xl:flex-none w-full">
                     <h3 className="text-[12px] font-semibold text-main mb-2">
                       Customer Details
                     </h3>
@@ -410,7 +415,9 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     <div className="flex flex-col gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted" />
-                        {customerDetails?.name ?? "Customer Name"}
+                        <span className="break-words">
+                          {customerDetails?.name ?? "Customer Name"}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-2 text-[10px] text-muted">
@@ -456,7 +463,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-card rounded-lg p-3 w-[220px]">
+                  <div className="bg-card rounded-lg p-3 flex-1 xl:flex-none w-full">
                     <h3 className="text-[13px] font-semibold text-main mb-2">
                       Summary
                     </h3>
