@@ -12,7 +12,8 @@ import {
   FileMinus,
   BarChart3,
   ShoppingBag,
-  Barcode
+  Barcode,
+  ShoppingCart 
 } from "lucide-react";
 import {
   AppPage,
@@ -71,7 +72,7 @@ const ALL_PROCUREMENT_TABS = [
   {
     id: "payments",
     label: "Payment Entry",
-    icon: <CreditCard {...iconProps} />,
+    icon: <Receipt {...iconProps} />,
     module: "Payment Entry",
     action: "read" as const,
   },
@@ -92,7 +93,7 @@ const ALL_PROCUREMENT_TABS = [
   {
     id: "purchase",
     label: "Purchase Invoice",
-    icon: <Receipt {...iconProps} />,
+    icon: <ShoppingCart  {...iconProps} />,
     module: "Purchase Invoice",
     action: "read" as const,
   },

@@ -514,7 +514,8 @@ const SalesTaxTemplate: React.FC = () => {
         setPageSize(size);
         setPage(1);
       }}
-      pageSizeOptions={[10, 25, 50, 100]}
+       pageSizeOptions={[20, 50, 100,200]}
+
       searchValue={searchTerm}
       onSearch={(val) => {
         setSearchTerm(val);
