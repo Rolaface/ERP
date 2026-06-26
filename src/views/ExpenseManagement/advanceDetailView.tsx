@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
+import ModalTable from "../../components/ui/Table/ModalTableInside";
+import type { Column } from "../../components/ui/Table/type";
 
 export interface ExpenseClaimEntry {
   name: string;
   parent: string;
   posting_date: string;
-  expense_posting_date: string,
+  expense_posting_date: string;
   advance_paid: number;
   allocated_amount: number;
   unclaimed_amount: number;
@@ -21,7 +23,7 @@ export interface EmployeeAdvanceDetail {
   employee: string;
   employee_name: string;
   posting_date: string;
-  expense_posting_date: string
+  expense_posting_date: string;
   company: string;
   department: string;
   currency: string;
@@ -49,10 +51,10 @@ interface Props {
 const fmtDate = (d?: string) =>
   d
     ? new Date(d).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "—";
 
 const fmt = (n?: number, currency = "INR") => {
@@ -76,14 +78,12 @@ const initials = (name?: string) =>
     .join("");
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  draft:     { bg: "#f3f4f6", color: "#6b7280" },
-  unpaid:    { bg: "#fef3c7", color: "#d97706" },
-  paid:      { bg: "#d1fae5", color: "#059669" },
-  claimed:   { bg: "#dbeafe", color: "#2563eb" },
+  draft: { bg: "#f3f4f6", color: "#6b7280" },
+  unpaid: { bg: "#fef3c7", color: "#d97706" },
+  paid: { bg: "#d1fae5", color: "#059669" },
+  claimed: { bg: "#dbeafe", color: "#2563eb" },
   cancelled: { bg: "#fee2e2", color: "#dc2626" },
 };
-
-const CLAIMS_PREVIEW = 5;
 
 /* ── small reusable presentational pieces ── */
 
@@ -108,38 +108,77 @@ const Field: React.FC<{ label: string; value: React.ReactNode; mono?: boolean }>
   </div>
 );
 
-const Metric: React.FC<{ label: string; value: React.ReactNode; variant?: "primary" | "danger" }> = ({ label, value, variant }) => {
-  const isPrimary = variant === "primary";
-  const isDanger = variant === "danger";
-  return (
-    <div style={{ padding: "10px 14px", background: isPrimary ? "var(--primary)" : "var(--card)" }}>
-      <p style={{
-        fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em",
-        color: isPrimary ? "rgba(255,255,255,0.65)" : "var(--muted)", marginBottom: 4,
-      }}>
-        {label}
-      </p>
-      <p style={{
-        fontSize: 15, fontWeight: 800, lineHeight: 1.1, fontVariantNumeric: "tabular-nums",
-        color: isPrimary ? "#fff" : isDanger ? "#dc2626" : "var(--text)",
-      }}>
-        {value}
-      </p>
-    </div>
-  );
-};
-
 const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) => {
-  const [showAllClaims, setShowAllClaims] = useState(false);
-
-  const statusKey   = data?.status?.toLowerCase() ?? "draft";
+  const statusKey = data?.status?.toLowerCase() ?? "draft";
   const statusStyle = STATUS_COLORS[statusKey] ?? STATUS_COLORS.draft;
-  const currency    = data?.currency ?? "";
-  const claims      = data?.expense_claims ?? [];
-  const visibleClaims = showAllClaims ? claims : claims.slice(0, CLAIMS_PREVIEW);
-  const hasMore     = claims.length > CLAIMS_PREVIEW;
+  const currency = data?.currency ?? "INR";
+  const claims = data?.expense_claims ?? [];
 
-  const COLS = ["Claim ID", "Description", "Date", "Claimed", "Remaining"];
+  /* ── ModalTable columns ── */
+  const claimColumns: Column<ExpenseClaimEntry>[] = [
+    {
+      key: "parent",
+      header: "Claim ID",
+      render: (ec) => (
+        <span style={{
+          color: "var(--primary)", fontFamily: "monospace",
+          fontWeight: 700, fontSize: 11,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          display: "block",
+        }}>
+          {ec.parent}
+        </span>
+      ),
+    },
+    {
+      key: "description",
+      header: "Description",
+      render: (ec) => (
+        <span style={{ color: "var(--muted)", fontSize: 11 }}>
+          {ec.claim_title || ec.description || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "expense_posting_date",
+      header: "Date",
+      render: (ec) => (
+        <span style={{ color: "var(--muted)", fontSize: 11, whiteSpace: "nowrap" }}>
+          {fmtDate(ec.expense_posting_date)}
+        </span>
+      ),
+    },
+    {
+      key: "allocated_amount",
+      header: "Claimed",
+      align: "right",
+      render: (ec) => (
+        <span style={{
+          color: "#059669", fontWeight: 700, fontSize: 12,
+          fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+        }}>
+          {fmt(ec.allocated_amount, currency)}
+        </span>
+      ),
+    },
+    {
+      key: "unclaimed_amount",
+      header: "Remaining",
+      align: "right",
+      render: (ec) => {
+        const remaining = (ec.advance_paid ?? 0) - (ec.allocated_amount ?? 0);
+        return (
+          <span style={{
+            color: remaining > 0 ? "#dc2626" : "var(--muted)",
+            fontWeight: 700, fontSize: 12,
+            fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+          }}>
+            {fmt(remaining, currency)}
+          </span>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="eadv" style={{
@@ -150,11 +189,6 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
       <style>{`
         .eadv, .eadv * { box-sizing: border-box; }
         @keyframes adv-spin { to { transform: rotate(360deg); } }
-
-        .eadv .adv-claim-row { transition: background .12s; }
-        .eadv .adv-claim-row:hover { background: var(--bg) !important; }
-        .eadv .adv-viewmore-btn { transition: background .12s; }
-        .eadv .adv-viewmore-btn:hover { background: var(--bg) !important; }
         .eadv button { font: inherit; }
         .eadv button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
@@ -167,28 +201,8 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
           background: var(--card);
         }
 
-        /* Metrics: 4 tiles -> 2x2 on small screens; hairlines via 1px gap */
-        .eadv-metrics {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 1px;
-          background: var(--border);
-        }
-        @media (max-width: 560px) { .eadv-metrics { grid-template-columns: repeat(2, 1fr); } }
-
-        /* Claims table: shared grid for header + rows, horizontal scroll when tight */
-        .eadv-claims-scroll { overflow-x: auto; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
-        .eadv-claim-grid {
-          display: grid;
-          grid-template-columns: 150px minmax(170px, 1fr) 110px 120px 130px;
-          align-items: center;
-        }
-        @media (max-width: 480px) {
-          .eadv-claim-grid { grid-template-columns: 128px minmax(140px, 1fr) 96px 104px 112px; }
-        }
-
         @media (prefers-reduced-motion: reduce) {
-          .eadv .adv-claim-row, .eadv .adv-viewmore-btn { transition: none; }
+          .eadv * { transition: none !important; animation: none !important; }
         }
       `}</style>
 
@@ -283,12 +297,16 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
               border: "1px solid var(--border)", borderRadius: 10,
               overflow: "hidden", marginBottom: 12,
             }}>
-              {/* Identity */}
+              {/* Identity row — employee info on left, Total Advance highlight on right */}
               <div style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "11px 14px", background: "var(--bg)",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "11px 14px",
+                background: "var(--bg)",
                 borderBottom: "1px solid var(--border)",
               }}>
+                {/* Avatar */}
                 <div style={{
                   width: 34, height: 34, borderRadius: "50%",
                   background: "var(--primary)", display: "flex",
@@ -297,6 +315,8 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
                 }}>
                   {initials(data.employee_name)}
                 </div>
+
+                {/* Name + sub */}
                 <div style={{ minWidth: 0 }}>
                   <p style={{
                     fontSize: 13, fontWeight: 700, color: "var(--text)", marginBottom: 1,
@@ -311,196 +331,80 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
                     {data.employee} · {data.department}
                   </p>
                 </div>
+
+                {/* ── Total Advance highlight — right side ── */}
+                <div style={{
+                  marginLeft: 16,
+                  flexShrink: 0,
+                  textAlign: "right",
+                  background: "var(--primary)",
+                  borderRadius: 8,
+                  padding: "6px 12px",
+                  alignSelf: "center",
+                }}>
+                  <p style={{
+                    fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+                    letterSpacing: "0.07em", color: "rgba(255,255,255,0.7)", marginBottom: 3,
+                  }}>
+                    Total Advance
+                  </p>
+                  <p style={{
+                    fontSize: 15, fontWeight: 800, color: "#fff",
+                    fontVariantNumeric: "tabular-nums", lineHeight: 1.1,
+                  }}>
+                    {fmt(data.advance_amount, currency)}
+                  </p>
+                </div>
               </div>
 
-              {/* Attributes */}
+              {/* Attributes — removed Total Advance from here since it's now in identity row */}
               <div className="eadv-attrs">
-                <Field label="Advance Date"    value={fmtDate(data.posting_date)} />
-                <Field label="Currency"        value={data.currency} />
+                <Field label="Advance Date" value={fmtDate(data.posting_date)} />
+                <Field label="Currency" value={data.currency} />
                 <Field label="Mode of Payment" value={data.mode_of_payment || "—"} />
-                <Field label="Purpose / Reason" value={data.purpose || "—"} />
-                <Field label="Advance Account"  value={data.advance_account} mono />
+                <Field label="Purpose" value={data.purpose || "—"} />
+                <Field label="Advance Account" value={data.advance_account} mono />
               </div>
             </div>
 
-            {/* ── METRIC STRIP ── */}
+            {/* ── EXPENSE CLAIMS via ModalTable ── */}
             <div style={{
               border: "1px solid var(--border)", borderRadius: 10,
-              overflow: "hidden", marginBottom: 12,
+              overflow: "hidden", marginBottom: 16,
             }}>
-              <div className="eadv-metrics">
-                <Metric label="Total Advance" value={fmt(data.advance_amount, currency)} variant="primary" />
-                <Metric label="Total Claimed" value={fmt(data.claimed_amount, currency)} />
-                <Metric
-                  label="Unclaimed"
-                  value={fmt(data.pending_amount, currency)}
-                  variant={(data.pending_amount ?? 0) > 0 ? "danger" : undefined}
+              {/* Section label */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 14px", borderBottom: "1px solid var(--border)",
+                background: "var(--bg)",
+              }}>
+                <span style={{
+                  fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
+                  textTransform: "uppercase", color: "var(--muted)",
+                }}>
+                  Expense Claims Against This Advance
+                </span>
+                <span style={{
+                  fontSize: 9, fontWeight: 700, color: "var(--muted)",
+                  background: "var(--card)", border: "1px solid var(--border)",
+                  borderRadius: 20, padding: "1px 7px", flexShrink: 0,
+                }}>
+                  {claims.length}
+                </span>
+              </div>
+
+              {/* ModalTable — bounded height, no pagination needed */}
+              <div style={{ maxHeight: 320 }}>
+                <ModalTable<ExpenseClaimEntry>
+                  columns={claimColumns}
+                  data={claims}
+                  rowKey={(ec) => ec.name}
+                  emptyMessage="No expense claims yet"
+                  totalItems={claims.length}
+                  pageSize={claims.length || 10}
                 />
-                <Metric label="No. of Claims" value={claims.length} />
               </div>
             </div>
-
-            {/* ── EXPENSE CLAIMS ── */}
-            {claims.length > 0 ? (
-              <div style={{
-                border: "1px solid var(--border)", borderRadius: 10,
-                overflow: "hidden", marginBottom: 16,
-              }}>
-                {/* Section label */}
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  padding: "8px 14px", borderBottom: "1px solid var(--border)",
-                  background: "var(--bg)",
-                }}>
-                  <span style={{
-                    fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
-                    textTransform: "uppercase", color: "var(--muted)",
-                  }}>
-                    Expense Claims Against This Advance
-                  </span>
-                  <span style={{
-                    fontSize: 9, fontWeight: 700, color: "var(--muted)",
-                    background: "var(--card)", border: "1px solid var(--border)",
-                    borderRadius: 20, padding: "1px 7px", flexShrink: 0,
-                  }}>
-                    {claims.length}
-                  </span>
-                </div>
-
-                {/* Scrollable table region */}
-                <div className="eadv-claims-scroll">
-                  <div role="table" aria-label="Expense claims against this advance">
-                    {/* Column headers */}
-                    <div
-                      className="eadv-claim-grid"
-                      role="row"
-                      style={{ padding: "6px 14px", borderBottom: "1px solid var(--border)", background: "var(--bg)" }}
-                    >
-                      {COLS.map((col, i) => (
-                        <span key={col} role="columnheader" style={{
-                          fontSize: 9, fontWeight: 700,
-                          textTransform: "uppercase", letterSpacing: "0.07em",
-                          color: "var(--muted)",
-                          textAlign: i >= 3 ? "right" : "left",
-                        }}>
-                          {col}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Rows */}
-                    {visibleClaims.map((ec, i) => {
-                      const remaining = (ec.advance_paid ?? 0) - (ec.allocated_amount ?? 0);
-                      const reason    = ec.claim_title || ec.description || "—";
-                      const isLast    = i === visibleClaims.length - 1 && !hasMore;
-
-                      return (
-                        <div
-                          key={ec.name}
-                          className="eadv-claim-grid adv-claim-row"
-                          role="row"
-                          style={{
-                            padding: "9px 14px",
-                            borderBottom: isLast ? "none" : "1px solid var(--border)",
-                            background: "var(--card)",
-                          }}
-                        >
-                          <span role="cell" style={{
-                            fontSize: 11, fontWeight: 700,
-                            color: "var(--primary)", fontFamily: "monospace",
-                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                          }}>
-                            {ec.parent}
-                          </span>
-                          <span
-                            role="cell"
-                            title={reason}
-                            style={{
-                              fontSize: 11, color: "var(--muted)",
-                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                              paddingRight: 8,
-                            }}
-                          >
-                            {reason}
-                          </span>
-                          <span role="cell" style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
-                            {fmtDate(ec.expense_posting_date)}
-                          </span>
-                          <span role="cell" style={{
-                            fontSize: 12, fontWeight: 700, color: "#059669",
-                            textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
-                          }}>
-                            {fmt(ec.allocated_amount, currency)}
-                          </span>
-                          <span role="cell" style={{
-                            fontSize: 12, fontWeight: 700,
-                            color: remaining > 0 ? "#dc2626" : "var(--muted)",
-                            textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
-                          }}>
-                            {fmt(remaining, currency)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* View More / Less */}
-                {hasMore && (
-                  <div style={{ borderTop: "1px solid var(--border)" }}>
-                    <button
-                      className="adv-viewmore-btn"
-                      onClick={() => setShowAllClaims((v) => !v)}
-                      aria-expanded={showAllClaims}
-                      aria-label={showAllClaims ? "Show fewer claims" : `Show all ${claims.length} claims`}
-                      style={{
-                        width: "100%", padding: "8px 14px",
-                        background: "var(--bg)", border: "none",
-                        cursor: "pointer", display: "flex",
-                        alignItems: "center", justifyContent: "center",
-                        gap: 5, color: "var(--primary)",
-                        fontSize: 11, fontWeight: 700, transition: "background .12s",
-                      }}
-                    >
-                      {showAllClaims ? (
-                        <>
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-                            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                            <polyline points="18 15 12 9 6 15" />
-                          </svg>
-                          Show Less
-                        </>
-                      ) : (
-                        <>
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-                            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
-                          View {claims.length - CLAIMS_PREVIEW} More
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{
-                textAlign: "center", padding: "28px 14px",
-                border: "1px dashed var(--border)", borderRadius: 10,
-                color: "var(--muted)", marginBottom: 16,
-              }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-                  style={{ marginBottom: 8, opacity: 0.5 }}>
-                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-                  <rect x="9" y="3" width="6" height="4" rx="1" />
-                  <line x1="9" y1="12" x2="15" y2="12" />
-                  <line x1="9" y1="16" x2="13" y2="16" />
-                </svg>
-                <p style={{ fontSize: 12, fontWeight: 500 }}>No expense claims yet</p>
-                <p style={{ fontSize: 11, marginTop: 3 }}>No claims have been made against this advance</p>
-              </div>
-            )}
           </>
         )}
 
