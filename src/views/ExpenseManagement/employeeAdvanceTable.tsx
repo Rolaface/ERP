@@ -16,7 +16,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openEmployeeAdvanceModal } from "../../store/modalStore";
-import { getAllAdvances, getAdvanceById, deleteEmployeeAdvance, updateAdvanceStatus } from "../../api/expenseClaimApi";
+import { getAllAdvances, getAdvanceById, getAdvanceByIdForView, deleteEmployeeAdvance, updateAdvanceStatus } from "../../api/expenseClaimApi";
 import EmployeeAdvanceDetailModal, { EmployeeAdvanceDetail } from "../../views/ExpenseManagement/advanceDetailView";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import {
@@ -57,7 +57,7 @@ const EmployeeAdvanceTable: React.FC = () => {
     setDrawerLoading(true);
     setDrawerData(null);
     try {
-      const advance = await getAdvanceById(ea.id);
+      const advance = await getAdvanceByIdForView(ea.id);
       setDrawerData(advance);
     } catch (err) {
       showApiError(err);
@@ -453,7 +453,7 @@ const EmployeeAdvanceTable: React.FC = () => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-         pageSizeOptions={[20, 50, 100,200]}
+        pageSizeOptions={[20, 50, 100, 200]}
         onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
         onPageChange={setPage}
         sortBy={sortBy}
@@ -467,7 +467,7 @@ const EmployeeAdvanceTable: React.FC = () => {
           setDrawerOpen(true);
           setDrawerLoading(true);
           setDrawerData(null);
-          getAdvanceById(ea.id)
+          getAdvanceByIdForView(ea.id)
             .then(setDrawerData)
             .catch(showApiError)
             .finally(() => setDrawerLoading(false));

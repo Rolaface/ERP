@@ -447,6 +447,7 @@ export const API = {
     getExpenseType: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.get_expense_claim_types`,
     approveClaim: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.update_expense_claim_status`,
     getAdvanceById: `${ERP_BASE}/api/resource/Employee Advance`,
+    getAdvanceByIdView: `${ERP_BASE}/api/method/custom_hrms.api.employee_advance.api.get_by_id`,
     attachDocument:`${ERP_BASE}/api/method/upload_file`,
     advance: `${ERP_BASE}/api/resource/Employee Advance`,
     changeAdvanceStatus: `${ERP_BASE}/api/method/frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs`,
