@@ -383,6 +383,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 </div>
 
                 {/* Update Stock */}
+                {invoiceType === "Product" && (
                 <div className="w-full sm:w-auto flex flex-col justify-end">
                   <label className="text-[11px] text-transparent select-none">
                     ‎
@@ -400,6 +401,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     </span>
                   </label>
                 </div>
+                )}
 
                 {/* LPO Number — only when LPO tax category */}
                 {ui.isLocal && (
