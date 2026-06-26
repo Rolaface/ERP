@@ -15,6 +15,8 @@ import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeavePeriodModal } from "../../../../../store/modalStore";
 import { showApiError } from "../../../../../utils/alert";
 import { parseFrappeError } from "../hooks/parseFrappeError";
+import { Shield, ShieldOff, Trash2 } from "lucide-react";
+import { tr } from "date-fns/locale";
 
 export function LeavePeriodSetup() {
   const {
@@ -157,16 +159,23 @@ export function LeavePeriodSetup() {
             />
             <ActionMenu
               customActions={[
-                {
-                  label: row.is_active ? "Inactive" : "Active",
-                  onClick: () => handleStatus(row),
-                  disabled: actionLoadingId === row.name,
-                },
-                {
-                  label: "Delete",
-                  onClick: () => handleDelete(row),
-                  disabled: actionLoadingId === row.name,
-                },
+             {
+  label: row.is_active ? "Inactive" : "Activate",
+  onClick: () => handleStatus(row),
+  icon: row.is_active ? (
+    <ShieldOff size={14} />
+  ) : (
+    <Shield size={14} />
+  ),
+  disabled: actionLoadingId === row.name,
+},
+                 {
+      label: "Delete",
+      icon: <Trash2 size={14} className=" text-red-600" />,
+      onClick: () => handleDelete(row),
+      disabled: actionLoadingId === row.name, 
+      danger: true,
+    },
               ]}
             />
           </ActionGroup>

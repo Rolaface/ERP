@@ -12,6 +12,7 @@ import {
 import { useLeaveTypes } from "../hooks/useLeaveTypes";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeaveTypeModal } from "../../../../../store/modalStore";
+import { Trash2 } from "lucide-react";
 
 export function LeaveTypeSetup() {
   const {
@@ -144,11 +145,13 @@ export function LeaveTypeSetup() {
               customActions={[
                 {
                   label: "Delete",
+                  icon: <Trash2 size={14} className=" text-red-600"/>,
                   onClick: () => handleDelete(row),
                   disabled: actionLoadingId === row.name,
+                  danger: true,
                 },
               ]}
-            />
+            /> 
           </ActionGroup>
         ),
       },
