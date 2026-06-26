@@ -1,12 +1,12 @@
 import React from "react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import type { Column } from "../../components/ui/Table/type";
+import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
 
 export interface ExpenseClaimEntry {
   name: string;
   parent: string;
   posting_date: string;
-  expense_posting_date: string;
   advance_paid: number;
   allocated_amount: number;
   unclaimed_amount: number;
@@ -23,7 +23,6 @@ export interface EmployeeAdvanceDetail {
   employee: string;
   employee_name: string;
   posting_date: string;
-  expense_posting_date: string;
   company: string;
   department: string;
   currency: string;
@@ -45,6 +44,8 @@ interface Props {
   data: EmployeeAdvanceDetail | null;
   loading?: boolean;
   onBack: () => void;
+  dateRange: { from_date?: string; to_date?: string };
+  onDateRangeChange: (range: { from_date?: string; to_date?: string }) => void;
 }
 
 /* ── helpers ── */
@@ -108,14 +109,29 @@ const Field: React.FC<{ label: string; value: React.ReactNode; mono?: boolean }>
   </div>
 );
 
-const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) => {
+const EmployeeAdvanceDetailView: React.FC<Props> = ({
+  data,
+  loading,
+  onBack,
+  dateRange,
+  onDateRangeChange,
+}) => {
   const statusKey = data?.status?.toLowerCase() ?? "draft";
   const statusStyle = STATUS_COLORS[statusKey] ?? STATUS_COLORS.draft;
-  const currency = data?.currency ?? "INR";
+  const currency = data?.currency ?? "";
   const claims = data?.expense_claims ?? [];
 
   /* ── ModalTable columns ── */
   const claimColumns: Column<ExpenseClaimEntry>[] = [
+    {
+      key: "posting_date",
+      header: "Date",
+      render: (ec) => (
+        <span style={{ color: "var(--muted)", fontSize: 11, whiteSpace: "nowrap" }}>
+          {fmtDate(ec.posting_date)}
+        </span>
+      ),
+    },
     {
       key: "parent",
       header: "Claim ID",
@@ -131,23 +147,24 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
       ),
     },
     {
-      key: "description",
-      header: "Description",
+      key: "Claim Title",
+      header: "Claim Title",
       render: (ec) => (
         <span style={{ color: "var(--muted)", fontSize: 11 }}>
-          {ec.claim_title || ec.description || "—"}
+          {ec.claim_title || "—"}
         </span>
       ),
     },
     {
-      key: "expense_posting_date",
-      header: "Date",
+      key: "description",
+      header: "Description",
       render: (ec) => (
-        <span style={{ color: "var(--muted)", fontSize: 11, whiteSpace: "nowrap" }}>
-          {fmtDate(ec.expense_posting_date)}
+        <span style={{ color: "var(--muted)", fontSize: 11 }}>
+          {ec.description || "—"}
         </span>
       ),
     },
+
     {
       key: "allocated_amount",
       header: "Claimed",
@@ -357,6 +374,50 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
                     {fmt(data.advance_amount, currency)}
                   </p>
                 </div>
+                <div style={{
+                  marginLeft: 16,
+                  flexShrink: 0,
+                  textAlign: "right",
+                  background: "var(--primary)",
+                  borderRadius: 8,
+                  padding: "6px 12px",
+                  alignSelf: "center",
+                }}>
+                  <p style={{
+                    fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+                    letterSpacing: "0.07em", color: "rgba(255,255,255,0.7)", marginBottom: 3,
+                  }}>
+                    Total Claimed Amount
+                  </p>
+                  <p style={{
+                    fontSize: 15, fontWeight: 800, color: "#fff",
+                    fontVariantNumeric: "tabular-nums", lineHeight: 1.1,
+                  }}>
+                    {fmt(data.claimed_amount, currency)}
+                  </p>
+                </div>
+                <div style={{
+                  marginLeft: 16,
+                  flexShrink: 0,
+                  textAlign: "right",
+                  background: "var(--primary)",
+                  borderRadius: 8,
+                  padding: "6px 12px",
+                  alignSelf: "center",
+                }}>
+                  <p style={{
+                    fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+                    letterSpacing: "0.07em", color: "rgba(255,255,255,0.7)", marginBottom: 3,
+                  }}>
+                    Unclaimed Amount
+                  </p>
+                  <p style={{
+                    fontSize: 15, fontWeight: 800, color: "#fff",
+                    fontVariantNumeric: "tabular-nums", lineHeight: 1.1,
+                  }}>
+                    {fmt(data.pending_amount, currency)}
+                  </p>
+                </div>
               </div>
 
               {/* Attributes — removed Total Advance from here since it's now in identity row */}
@@ -369,7 +430,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
               </div>
             </div>
 
-            {/* ── EXPENSE CLAIMS via ModalTable ── */}
+            {/* ── EXPENSE CLAIM ── */}
             <div style={{
               border: "1px solid var(--border)", borderRadius: 10,
               overflow: "hidden", marginBottom: 16,
@@ -393,6 +454,14 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({ data, loading, onBack }) =
                 }}>
                   {claims.length}
                 </span>
+
+                <div style={{ marginLeft: 8 }}>
+                  <DateRangeFilter
+                    from={dateRange.from_date}
+                    to={dateRange.to_date}
+                    onChange={onDateRangeChange}
+                  />
+                </div>
               </div>
 
               {/* ModalTable — bounded height, no pagination needed */}
