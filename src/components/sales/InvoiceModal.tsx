@@ -53,6 +53,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [submitting, setSubmitting] = useState(false);
+  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
 
   const {
     formData,
@@ -196,6 +197,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       icon={Receipt}
       footer={footerContent}
       maxWidth="full"
+      // maxWidth={invoiceType === "Service" ? "10xl" : "full"}
       height="700px"
     >
       <form
@@ -236,6 +238,23 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
+
+              {/* Invoice Type  */} 
+               {/* Invoice Type  */} 
+              <div className="w-full sm:w-[130px]">
+                  <ModalSelect
+                    label="Invoice Type"
+                    name="invoiceType"
+                    value={invoiceType} // Use local state
+                    onChange={(e: any) => setInvoiceType(e.target.value)} // Update local state
+                    options={[
+                      { value: "Product", label: "Product" },
+                      { value: "Service", label: "Service" },
+                    ]}
+                    className="w-full border border-theme rounded text-[11px] text-main bg-card"
+                  />
+                </div>
+
                 {/* Customer — full width on mobile, fixed on sm+ */}
                 <div className="w-full sm:w-[280px]">
                   <CustomerSelect
@@ -385,6 +404,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     formData={formData}
                     symbol=""
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                   invoiceType={invoiceType}
                     isSalesInvoice={true}
                     taxCategory={
                       formData.taxCategory ||

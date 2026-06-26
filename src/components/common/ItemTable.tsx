@@ -44,6 +44,7 @@ interface ItemTableProps {
   symbol: string;
   ITEMS_PER_PAGE: number;
   taxCategory?: string;
+  invoiceType?: "Product" | "Service";
   isSalesInvoice?: boolean;
   title?: string;
   isQuotation?: boolean;
@@ -59,16 +60,48 @@ interface ItemTableProps {
   ) => React.ReactNode;
 }
 
+// interface InvoiceHeadersProps {
+//   isSalesInvoice: boolean;
+//   isQuotation: boolean;
+//   invoiceType?: "Product" | "Service";
+// }
+
+//Rollback don't remove it
+// const InvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
+//   isSalesInvoice,
+//   isQuotation,
+// }) => (
+  // <colgroup>
+  //   {/* #          */} <col style={{ width: "28px" }} />
+  //   {/* Item       */} <col style={{ width: isQuotation ? "30%" : "18%" }} />
+  //   {/* Pkg (U×S)  */} <col style={{ width: "5%" }} />
+  //   {/* Box        */} {!isQuotation && <col style={{ width: "6%" }} />}
+  //   {/* Batch No   */} {isSalesInvoice && <col style={{ width: "9%" }} />}
+  //   {/* UOM        */} {isQuotation && <col style={{ width: "10%" }} />}
+  //   {/* Qty        */} <col style={{ width: "5%" }} />
+  //   {/* Mfg Date   */} {!isQuotation && <col style={{ width: "10%" }} />}
+  //   {/* Expiry     */} {!isQuotation && <col style={{ width: "10%" }} />}
+  //   {/* Warehouse  */} {!isQuotation && <col style={{ width: "12%" }} />}
+  //   {/* Unit Price */} <col style={{ width: "7%" }} />
+  //   {/* Dis(%)     */} {!isQuotation && <col style={{ width: "5%" }} />}
+  //   {/* Tax(%)     */} <col style={{ width: "4%" }} />
+  //   {/* Tax Name   */} <col style={{ width: "12%" }} />
+  //   {/* Amount     */} <col style={{ width: "7%" }} />
+  //   {/* Actions    */} <col style={{ width: "44px" }} />
+  // </colgroup>
+// );
+
 interface InvoiceHeadersProps {
   isSalesInvoice: boolean;
   isQuotation: boolean;
+  invoiceType?: "Product" | "Service"; // Ensure this is here
 }
 
-const InvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
+const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
   isSalesInvoice,
   isQuotation,
 }) => (
-  <colgroup>
+    <colgroup>
     {/* #          */} <col style={{ width: "28px" }} />
     {/* Item       */} <col style={{ width: isQuotation ? "30%" : "18%" }} />
     {/* Pkg (U×S)  */} <col style={{ width: "5%" }} />
@@ -88,45 +121,105 @@ const InvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
   </colgroup>
 );
 
+const ServiceInvoiceColGroup: React.FC = () => (
+  <colgroup>
+    <col style={{ width: "28px" }} /> {/* # */}
+    <col style={{ width: "22%" }} />  {/* Item */}
+    <col style={{ width: "10%" }} />  {/* Qty */}
+    <col style={{ width: "15%" }} />  {/* Price */}
+    <col style={{ width: "10%" }} />  {/* Tax% */}
+    <col style={{ width: "15%" }} />  {/* Tax Name */}
+    <col style={{ width: "15%" }} />  {/* Amount */}
+    <col style={{ width: "8%" }} />  {/* Amount */}
+    <col style={{ width: "44px" }} /> {/* Actions */}
+  </colgroup>
+);
+
+// 3. Main ColGroup Component that switches between them
+const InvoiceColGroup: React.FC<InvoiceHeadersProps> = (props) => {
+  const isService = props.isSalesInvoice && props.invoiceType === "Service";
+  
+  if (isService) {
+    return <ServiceInvoiceColGroup />;
+  }
+  
+  return <ProductInvoiceColGroup {...props} />;
+};
+
 const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
   isSalesInvoice,
   isQuotation,
-}) => (
-  <tr className="border-b border-theme">
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">#</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Item</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Pkg</th>
-    {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Box</th>
-    )}
-    {isSalesInvoice && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Batch</th>
-    )}
-    {isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">UOM</th>
-    )}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Qty</th>
-    {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Mfg</th>
-    )}
-    {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Expiry</th>
-    )}
-    {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Warehouse</th>
-    )}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Price <span className="text-danger">*</span>
-    </th>
-    {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Dis%</th>
-    )}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax%</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax Name</th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Amount</th>
-    <th />
-  </tr>
-);
+  invoiceType = "Product",
+}) => {
+  const isService = isSalesInvoice && invoiceType === "Service";
+  return (
+    <tr className="border-b border-theme">
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">#</th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Item</th>
+      
+      {/* Hide Labels if Service */}
+      {!isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Pkg</th>}
+      {!isQuotation && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Box</th>}
+      {isSalesInvoice && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Batch</th>}
+      
+      {isQuotation && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">UOM</th>}
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Qty</th>
+      
+      {/* Hide Labels if Service */}
+      {!isQuotation && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Mfg</th>}
+      {!isQuotation && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Expiry</th>}
+      {!isQuotation && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Warehouse</th>}
+      
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Price <span className="text-danger">*</span></th>
+      {!isQuotation && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Dis%</th>}
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax%</th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax Name</th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Amount</th>
+      <th />
+    </tr>
+  );
+};
+
+//Rollback don't remove it
+// const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
+//   isSalesInvoice,
+//   isQuotation,
+// }) => (
+//   <tr className="border-b border-theme">
+//     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">#</th>
+//     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Item</th>
+//     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Pkg</th>
+//     {!isQuotation && (
+//       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Box</th>
+//     )}
+//     {isSalesInvoice && (
+//       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Batch</th>
+//     )}
+//     {isQuotation && (
+//       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">UOM</th>
+//     )}
+//     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Qty</th>
+//     {!isQuotation && (
+//       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Mfg</th>
+//     )}
+//     {!isQuotation && (
+//       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Expiry</th>
+//     )}
+//     {!isQuotation && (
+//       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Warehouse</th>
+//     )}
+//     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+//       Price <span className="text-danger">*</span>
+//     </th>
+//     {!isQuotation && (
+//       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Dis%</th>
+//     )}
+//     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax%</th>
+//     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax Name</th>
+//     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Amount</th>
+//     <th />
+//   </tr>
+// );
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -143,6 +236,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
   columnHeaders,
   colGroup,
   renderRow,
+  invoiceType = "Product",
   isSalesInvoice = false,
   isQuotation = false,
 }) => {
@@ -232,9 +326,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
       );
     }
   });
-
-  const [itemVatCode, setItemVatCode] = useState();
-  const [unitOfMeasurement, setUnitOfMeasurement] = useState();
+   
+  const isService = isSalesInvoice && invoiceType === "Service";  
 
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);
@@ -310,6 +403,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Pkg (U×S) */}
+        {!isService && (
         <td className="px-1 py-1">
           <Tooltip
             content={
@@ -331,9 +425,10 @@ const ItemTable: React.FC<ItemTableProps> = ({
             />
           </Tooltip>
         </td>
+        )}
 
         {/* Box */}
-        {!isQuotation && (
+        {!isService && (
           <td className="px-0.5 py-1">
             <div className="flex items-center gap-0.5">
               <input
@@ -356,7 +451,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Batch No */}
-        {isSalesInvoice && (
+        {isSalesInvoice && !isService && (
           <td className="px-0.5 py-1">
             <Tooltip content={`Batch No: ${it.batchNo || "—"}`}>
               <input
@@ -402,7 +497,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         {/* Mfg Date — full date visible, no truncation */}
-        {!isQuotation && (
+       {!isService && (
           <td className="px-0.5 py-1">
             <Tooltip content={it.mfgDate || "No Mfg Date"}>
               <DatePickerInput
@@ -419,7 +514,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Expiry Date — full date visible, no truncation */}
-        {!isQuotation && (
+        {!isService && (
           <td className="px-0.5 py-1">
             <Tooltip content={it.expDate || "No Expiry Date"}>
               <DatePickerInput
@@ -436,7 +531,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Warehouse */}
-        {!isQuotation && (
+        {!isService && (
           <td className="px-0.5 py-1">
             <Tooltip content={it.warehouse || "No warehouse selected"}>
               <WarehouseSelect
@@ -560,6 +655,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
     <InvoiceColGroup
       isSalesInvoice={isSalesInvoice}
       isQuotation={isQuotation}
+      invoiceType={invoiceType}
     />
   );
 
@@ -580,6 +676,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
               <InvoiceHeaders
                 isSalesInvoice={isSalesInvoice}
                 isQuotation={isQuotation}
+                invoiceType={invoiceType}
               />
             )}
           </thead>
