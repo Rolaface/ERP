@@ -18,7 +18,7 @@ import {
   AppPageBody,
 } from "../../components/ui/app-shell";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
-import { showApiError, showSuccess } from "../../utils/alert";
+import { showApiError, showSuccess ,showConfirm} from "../../utils/alert";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 
@@ -68,15 +68,26 @@ const BankAccountSetup: React.FC = () => {
 
   const handleToggleDisable = useCallback(
     async (row: BankAccount) => {
+      const confirmed = await showConfirm(
+        row.isDisabled
+          ? `Are you sure you want to enable this bank account?`
+          : `Are you sure you want to disable this bank account?`,
+        {
+          title: row.isDisabled ? "Enable Account" : "Disable Account",
+          confirmButtonText: row.isDisabled ? "Enable" : "Disable",
+        }
+      );
+
+      if (!confirmed) return;
+
       try {
         setActionLoadingId(String(row.id));
-
         await updateBankAccountStatus({
           bankAccountId: String(row.id),
           isDisabled: row.isDisabled ? 0 : 1,
           isDefault: row.isDisabled ? (row.isDefault ? 1 : 0) : 0,
         });
-
+        showSuccess(row.isDisabled ? "Account enabled." : "Account disabled.");
         await fetchAccounts();
       } catch (err) {
         showApiError(err);
