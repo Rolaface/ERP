@@ -317,7 +317,8 @@ export default function LeaveApproval() {
         totalItems={(page - 1) * pageSize + data.length}
         // totalPages={Math.ceil(data.length / pageSize) || 1}
         totalPages={data.length === pageSize ? page + 1 : page}
-        pageSizeOptions={[10, 25, 50]}
+        pageSizeOptions={[20, 50, 100,200]}
+
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);

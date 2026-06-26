@@ -208,7 +208,8 @@ export function SalaryComponentSetup() {
       totalPages={totalPages}
       totalItems={totalItems}
       pageSize={pageSize}
-      pageSizeOptions={[10, 25, 50]}
+      pageSizeOptions={[20, 50, 100,200]}
+
       onPageChange={setPage}
       onPageSizeChange={(s) => {
         setPageSize(s);

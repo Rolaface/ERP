@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { CreditCard } from "lucide-react";
+import { CreditCard, FileText, Wallet, ClipboardCheck  } from "lucide-react";
 import { usePermission } from "../../hooks/permission/usePermission";
 import {
   AppPage,
@@ -14,21 +14,21 @@ const ALL_EXPENSE_TABS = [
   {
     id: "expenseType",
     label: "Expense Type",
-    icon: <CreditCard size={16} strokeWidth={1.75} />,
+    icon: <FileText  size={16} strokeWidth={1.75} />,
     module: "Expense Claim Type",
     action: "create" as const,
   },
   {
     id: "expenseHistory",
     label: "Expense Claim",
-    icon: <CreditCard size={16} strokeWidth={1.75} />,
+    icon: <ClipboardCheck  size={16} strokeWidth={1.75} />,
     module: "Expense Claim",
     action: "read" as const,
   },
   {
     id: "advance",
     label: "Employee Advance",
-    icon: <CreditCard size={16} strokeWidth={1.75} />,
+    icon: <Wallet  size={16} strokeWidth={1.75} />,
     module: "Employee Advance",
     action: "read" as const,
   },

@@ -439,6 +439,12 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                               </span>
                             </div>
                             <div className="flex justify-between text-[10px]">
+                              <span className="text-muted">Currency</span>
+                              <span className="text-main font-medium">
+                                {formData.currencyCode || "—"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-[10px]">
                               <span className="text-muted">Country</span>
                               <span className="text-main font-medium">
                                 {billingAddress?.country || "—"}

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { Tag, CreditCard } from "lucide-react";
+import { Tag, CreditCard, FileText } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
@@ -144,7 +144,7 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Expense Type" : "Add Expense Type"}
       subtitle={isEditMode ? "Update expense type" : "Add a new expense type"}
-      icon={CreditCard}
+      icon={FileText}
       footer={footer}
       customWidth="38vw"
       height="auto"
