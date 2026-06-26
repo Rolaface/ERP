@@ -26,7 +26,9 @@ interface DetailsTabProps {
   ) => void;
   onSupplierChange: (s: any) => void;
   onItemChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
     idx: number,
   ) => void;
   onAddItem: () => void;
@@ -38,22 +40,27 @@ interface DetailsTabProps {
   setFromPO?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+// ─── Columns ─────────────────────────────────────────────────────────────────
+// # | Item | Pkg | Req.By | Warehouse | Qty | UOM | Rate | Tax% | Tax | Amount | Actions
+// Percentages so they scale with container; hidden cols excluded from budget.
+
 const POColGroup: React.FC = () => (
   <colgroup>
     <col style={{ width: "24px" }} /> {/* # */}
-    <col style={{ width: "18%" }} /> {/* Item Name — back to 18% */}
-    <col className="hidden md:table-column" style={{ width: "44px" }} />
-    <col className="hidden md:table-column" style={{ width: "82px" }} />
-    <col className="hidden md:table-column" style={{ width: "110px" }} />
-    <col style={{ width: "52px" }} />
-    <col className="hidden lg:table-column" style={{ width: "40px" }} />
-    <col style={{ width: "58px" }} />
-    <col className="hidden md:table-column" style={{ width: "40px" }} />
-    <col className="hidden md:table-column" style={{ width: "44px" }} />
-    <col style={{ width: "68px" }} />
-    <col style={{ width: "40px" }} />
+    <col style={{ width: "18%" }} /> {/* Item Name */}
+    <col style={{ width: "44px" }} /> {/* Pkg */}
+    <col style={{ width: "9%" }} /> {/* Req. By */}
+    <col style={{ width: "12%" }} /> {/* Warehouse */}
+    <col style={{ width: "5%" }} /> {/* Qty */}
+    <col style={{ width: "5%" }} /> {/* UOM */}
+    <col style={{ width: "7%" }} /> {/* Rate */}
+    <col style={{ width: "5%" }} /> {/* Tax% */}
+    <col style={{ width: "16%" }} /> {/* Tax NAME */}
+    <col style={{ width: "8%" }} /> {/* Amount */}
+    <col style={{ width: "40px" }} /> {/* Actions */}
   </colgroup>
 );
+
 const POColumnHeaders: React.FC = () => (
   <tr className="border-b border-theme">
     <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
@@ -84,7 +91,7 @@ const POColumnHeaders: React.FC = () => (
       Tax%
     </th>
     <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
-      Tax
+      Tax Name
     </th>
     <th className="px-1 py-1 text-right text-muted font-medium text-[10px]">
       Amount
@@ -144,10 +151,7 @@ export const DetailsTab = ({
 
   const tableUI: ItemTableUI = {
     page,
-    setPage: (p) => {
-      console.log("SET PAGE", p);
-      setPage(p);
-    },
+    setPage: (p) => setPage(p),
     itemCount: items.length,
   };
 
@@ -204,26 +208,22 @@ export const DetailsTab = ({
 
         {/* Required By */}
         <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
-          <div className="w-full">
-            <DatePickerInput
-              name="requiredBy"
-              value={it.requiredBy || ""}
-              onChange={(name, value) =>
-                onItemChange({ target: { name, value } } as any, i)
-              }
-            />
-          </div>
+          <DatePickerInput
+            name="requiredBy"
+            value={it.requiredBy || ""}
+            onChange={(name, value) =>
+              onItemChange({ target: { name, value } } as any, i)
+            }
+          />
         </td>
 
         {/* Warehouse */}
         <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
-          <div className="w-full">
-            <WarehouseSelect
-              compact
-              value={it.warehouse || ""}
-              onChange={(e) => onItemChange(e, i)}
-            />
-          </div>
+          <WarehouseSelect
+            compact
+            value={it.warehouse || ""}
+            onChange={(e) => onItemChange(e, i)}
+          />
         </td>
 
         {/* Qty */}
@@ -264,7 +264,7 @@ export const DetailsTab = ({
           />
         </td>
 
-        {/* VAT Rate */}
+        {/* Tax% */}
         <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
           <NumericInput
             name="vatRate"
@@ -278,20 +278,25 @@ export const DetailsTab = ({
           />
         </td>
 
-        {/* VAT Code */}
+        {/* Tax — vatCd, same 12% width as Invoice Tax Name */}
         <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
-          <input
-            name="vatCd"
-            value={it.vatCd || ""}
-            onChange={(e) => onItemChange(e, i)}
-            disabled
-            className="w-full py-1 px-1 border border-theme rounded text-[10px] bg-card text-main"
-          />
+          <Tooltip content={it.vatCd || "No Tax"}>
+            <input
+              name="vatCd"
+              value={it.vatCd || ""}
+              onChange={(e) => onItemChange(e, i)}
+              disabled
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main truncate"
+            />
+          </Tooltip>
         </td>
 
         {/* Amount */}
         <td className="px-1 py-1.5 overflow-hidden">
-          <span className="text-[10px] font-medium text-main whitespace-nowrap block text-right">
+          <span
+            className="text-[10px] font-medium text-main whitespace-nowrap block truncate text-right"
+            title={`${symbol} ${amount.toFixed(2)}`}
+          >
             {symbol} {amount.toFixed(2)}
           </span>
         </td>
@@ -322,7 +327,7 @@ export const DetailsTab = ({
   };
 
   return (
-    <div className="flex flex-col gap-3 bg-app text-main p-3">
+    <div className="flex flex-col gap-3 bg-app text-main p-3 min-h-0">
       {/* ── Top fields ── */}
       <div className="flex flex-wrap gap-2 items-end">
         <div className="w-full sm:w-[180px]">
@@ -384,7 +389,6 @@ export const DetailsTab = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_190px] gap-2 min-w-0 items-start">
-        {/* ── Table column: must be min-w-0 to allow shrinking ── */}
         <div className="min-w-0 overflow-x-auto">
           <ItemTable
             title="Order Items"
@@ -402,7 +406,7 @@ export const DetailsTab = ({
 
         {/* ── Sidebar ── */}
         <div className="flex flex-row lg:flex-col gap-2 lg:w-[190px] lg:sticky lg:top-0">
-          {/* Supplier Details card */}
+          {/* Supplier Details */}
           <div className="bg-card rounded-lg p-2 flex-1 lg:flex-none w-full">
             <h3 className="text-[12px] font-semibold text-main mb-2">
               Supplier Details
@@ -439,7 +443,7 @@ export const DetailsTab = ({
             </div>
           </div>
 
-          {/* Summary card */}
+          {/* Summary */}
           <div className="bg-card rounded-lg p-2 flex-1 lg:flex-none w-full">
             <h3 className="text-[13px] font-semibold text-main mb-2">
               Summary

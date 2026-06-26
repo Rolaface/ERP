@@ -90,7 +90,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     !!ui.baseCurrency &&
     !!formData.currencyCode &&
     formData.currencyCode.trim().toUpperCase() !==
-    ui.baseCurrency.trim().toUpperCase();
+      ui.baseCurrency.trim().toUpperCase();
 
   const handleModeFetchOptions = async (q: string) => {
     const res = await getAllModeOfPayment(1, 10, q || "", 1);
@@ -112,7 +112,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     setSubmitting(true);
     try {
       const payload = await actions.handleSubmit({
-        preventDefault: () => { },
+        preventDefault: () => {},
       } as React.FormEvent);
 
       if (!payload) return;
@@ -196,7 +196,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       icon={Receipt}
       footer={footerContent}
       maxWidth="full"
-      height="650px"
+      height="700px"
     >
       <form
         id="invoiceForm"
@@ -213,10 +213,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   key={tab}
                   type="button"
                   onClick={() => ui.setActiveTab(tab)}
-                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${ui.activeTab === tab
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
+                    ui.activeTab === tab
                       ? "text-primary border-b-[3px] border-primary"
                       : "text-muted border-b-[3px] border-transparent hover:text-main"
-                    }`}
+                  }`}
                 >
                   {tab === "details" && "Details"}
                   {tab === "address" && "Additional Details"}
@@ -374,7 +375,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   - Desktop (xl+): table takes remaining space, sidebar is 220px
                   - minmax(0, 1fr) prevents the table from pushing the grid wider
                     than the modal container                                       ── */}
-              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_160px] gap-4 items-start">
+              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_220px] gap-4 items-start">
                 {/* Table column — min-w-0 so it can shrink below natural content width */}
                 <div className="min-w-0">
                   <ItemTable
@@ -444,12 +445,17 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   </div>
 
                   {/* Summary card */}
-                  {/* Summary card */}
                   <div className="bg-card rounded-lg p-3 flex-1 xl:flex-none w-full">
                     <h3 className="text-[13px] font-semibold text-main mb-2">
                       Summary
                     </h3>
                     <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Items</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {formData.items.length}
+                        </span>
+                      </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-muted">Total Qty</span>
                         <span className="font-medium text-main tabular-nums">

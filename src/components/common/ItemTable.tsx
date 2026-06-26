@@ -26,7 +26,7 @@ export interface ItemTableActions {
   addItem: () => void;
   duplicateItem: (absoluteIndex: number) => void;
   fetchByBarcode?: (index: number, barcode: string) => Promise<void>;
-   getItemMax?: (index: number) => number | undefined; 
+  getItemMax?: (index: number) => number | undefined;
 }
 
 export interface ItemTableUI {
@@ -59,19 +59,6 @@ interface ItemTableProps {
   ) => React.ReactNode;
 }
 
-// ─── Column headers + colgroup (default invoice layout) ──────────────────────
-//
-// All columns are always rendered — no responsive hide/show. On narrow
-// screens the table scrolls horizontally (see the overflow-x-auto wrapper
-// in the component below) instead of dropping columns. This keeps the
-// colgroup / <th> / <td> lists trivially in sync: same conditions
-// (isSalesInvoice / isQuotation) everywhere, no breakpoint classes to
-// also keep in lockstep.
-//
-// Width strategy — all percentages, table-layout:fixed, minWidth fallback
-// on the table itself so it never gets crushed; the wrapper's
-// overflow-x-auto handles anything narrower than that.
-
 interface InvoiceHeadersProps {
   isSalesInvoice: boolean;
   isQuotation: boolean;
@@ -83,20 +70,20 @@ const InvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
 }) => (
   <colgroup>
     {/* #          */} <col style={{ width: "28px" }} />
-    {/* Item       */} <col style={{ width: isQuotation ? "30%" : "20%" }} />
-    {/* Pkg (U×S)  */} <col style={{ width: "6%" }} />
-    {/* Box        */} {!isQuotation && <col style={{ width: "7%" }} />}
-    {/* Batch No   */} {isSalesInvoice && <col style={{ width: "10%" }} />}
+    {/* Item       */} <col style={{ width: isQuotation ? "30%" : "18%" }} />
+    {/* Pkg (U×S)  */} <col style={{ width: "5%" }} />
+    {/* Box        */} {!isQuotation && <col style={{ width: "6%" }} />}
+    {/* Batch No   */} {isSalesInvoice && <col style={{ width: "9%" }} />}
     {/* UOM        */} {isQuotation && <col style={{ width: "10%" }} />}
-    {/* Qty        */} <col style={{ width: "6%" }} />
-    {/* Mfg Date   */} {!isQuotation && <col style={{ width: "8%" }} />}
-    {/* Expiry     */} {!isQuotation && <col style={{ width: "8%" }} />}
-    {/* Warehouse  */} {!isQuotation && <col style={{ width: "9%" }} />}
+    {/* Qty        */} <col style={{ width: "5%" }} />
+    {/* Mfg Date   */} {!isQuotation && <col style={{ width: "10%" }} />}
+    {/* Expiry     */} {!isQuotation && <col style={{ width: "10%" }} />}
+    {/* Warehouse  */} {!isQuotation && <col style={{ width: "12%" }} />}
     {/* Unit Price */} <col style={{ width: "7%" }} />
     {/* Dis(%)     */} {!isQuotation && <col style={{ width: "5%" }} />}
-    {/* Tax(%)     */} <col style={{ width: "5%" }} />
-    {/* Tax Name   */} <col style={{ width: "6%" }} />
-    {/* Amount     */} <col style={{ width: "8%" }} />
+    {/* Tax(%)     */} <col style={{ width: "4%" }} />
+    {/* Tax Name   */} <col style={{ width: "12%" }} />
+    {/* Amount     */} <col style={{ width: "7%" }} />
     {/* Actions    */} <col style={{ width: "44px" }} />
   </colgroup>
 );
@@ -106,65 +93,37 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
   isQuotation,
 }) => (
   <tr className="border-b border-theme">
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      #
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Item
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Pkg
-    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">#</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Item</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Pkg</th>
     {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-        Box
-      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Box</th>
     )}
     {isSalesInvoice && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-        Batch
-      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Batch</th>
     )}
     {isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-        UOM
-      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">UOM</th>
     )}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Qty
-    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Qty</th>
     {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-        Mfg
-      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Mfg</th>
     )}
     {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-        Expiry
-      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Expiry</th>
     )}
     {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-        Warehouse
-      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Warehouse</th>
     )}
     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
       Price <span className="text-danger">*</span>
     </th>
     {!isQuotation && (
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-        Dis%
-      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Dis%</th>
     )}
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Tax%
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Tax
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Amount
-    </th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax%</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax Name</th>
+    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Amount</th>
     <th />
   </tr>
 );
@@ -217,10 +176,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
           if (matchingBatch) matchedWarehouse = matchingBatch.warehouse;
         }
       } catch (stockError) {
-        console.error(
-          "Could not fetch warehouse for scanned item:",
-          stockError,
-        );
+        console.error("Could not fetch warehouse for scanned item:", stockError);
       }
 
       const existingIndex = formData.items.findIndex(
@@ -257,8 +213,6 @@ const ItemTable: React.FC<ItemTableProps> = ({
         batchNo: itemData.batch_no || "",
         quantity: 1,
         availableQty: Number(itemData.quantity || 0),
-        // availableQty above came from a live lookup just now, so this row's
-        // stock cap can be enforced immediately.
         _stockLoaded: true,
         mfgDate: itemData.manufacturing_date || itemData.mfgDate || "",
         expDate: itemData.expiry_date || itemData.expiryDate || "",
@@ -278,8 +232,10 @@ const ItemTable: React.FC<ItemTableProps> = ({
       );
     }
   });
+
   const [itemVatCode, setItemVatCode] = useState();
   const [unitOfMeasurement, setUnitOfMeasurement] = useState();
+
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);
     const insertPage = Math.floor((absoluteIndex + 1) / ITEMS_PER_PAGE);
@@ -298,9 +254,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
         {/* # */}
-        <td className="px-2 py-1 text-center text-[10px] text-muted">
-          {i + 1}
-        </td>
+        <td className="px-2 py-1 text-center text-[10px] text-muted">{i + 1}</td>
 
         {/* Item */}
         {!isQuotation && (
@@ -312,7 +266,6 @@ const ItemTable: React.FC<ItemTableProps> = ({
               taxCategory={taxCategory}
               isQuotation={isQuotation}
               onChange={(item: SelectedStockItem) => {
-                console.log("ITEM RESPONSE", item);
                 actions.updateItemDirectly?.(i, {
                   itemCode: item.itemCode,
                   itemName: item.itemName,
@@ -330,10 +283,6 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   isServiceItem: item.isServiceItem,
                   vatRate: item.vatRate,
                   vatCode: item.vatCode,
-                  // availableQty above is fresh from the stock picker, so this
-                  // row's stock cap can be enforced immediately — without this
-                  // flag, the cap-gate in handleItemChange would treat the row
-                  // as "stock unknown" and let quantity through uncapped.
                   _stockLoaded: true,
                   taxTypes: (item.taxInfo || [])
                     .flatMap((tax: any) => tax.taxRates || [])
@@ -406,7 +355,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
           </td>
         )}
 
-        {/* Batch No — always visible for sales invoice */}
+        {/* Batch No */}
         {isSalesInvoice && (
           <td className="px-0.5 py-1">
             <Tooltip content={`Batch No: ${it.batchNo || "—"}`}>
@@ -442,7 +391,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
             name="quantity"
             value={it.quantity ?? ""}
             placeholder="0"
-             max={actions.getItemMax?.(i)}  
+            max={actions.getItemMax?.(i)}
             className="w-full min-w-[32px]"
             onChange={(value) =>
               actions.handleItemChange(i, {
@@ -452,33 +401,37 @@ const ItemTable: React.FC<ItemTableProps> = ({
           />
         </td>
 
-        {/* Mfg Date */}
+        {/* Mfg Date — full date visible, no truncation */}
         {!isQuotation && (
           <td className="px-0.5 py-1">
-            <DatePickerInput
-              label=""
-              name="mfgDate"
-              value={it.mfgDate}
-              disabled
-              onChange={(name, value) =>
-                actions.handleItemChange(i, { target: { name, value } } as any)
-              }
-            />
+            <Tooltip content={it.mfgDate || "No Mfg Date"}>
+              <DatePickerInput
+                label=""
+                name="mfgDate"
+                value={it.mfgDate}
+                disabled
+                onChange={(name, value) =>
+                  actions.handleItemChange(i, { target: { name, value } } as any)
+                }
+              />
+            </Tooltip>
           </td>
         )}
 
-        {/* Expiry Date */}
+        {/* Expiry Date — full date visible, no truncation */}
         {!isQuotation && (
           <td className="px-0.5 py-1">
-            <DatePickerInput
-              label=""
-              name="expDate"
-              value={it.expDate}
-              disabled
-              onChange={(name, value) =>
-                actions.handleItemChange(i, { target: { name, value } } as any)
-              }
-            />
+            <Tooltip content={it.expDate || "No Expiry Date"}>
+              <DatePickerInput
+                label=""
+                name="expDate"
+                value={it.expDate}
+                disabled
+                onChange={(name, value) =>
+                  actions.handleItemChange(i, { target: { name, value } } as any)
+                }
+              />
+            </Tooltip>
           </td>
         )}
 
@@ -603,8 +556,6 @@ const ItemTable: React.FC<ItemTableProps> = ({
     );
   };
 
-  // Use built-in colgroup for default invoice layout;
-  // custom colGroup prop (PO table etc.) overrides it entirely.
   const resolvedColGroup = colGroup ?? (
     <InvoiceColGroup
       isSalesInvoice={isSalesInvoice}
@@ -618,17 +569,10 @@ const ItemTable: React.FC<ItemTableProps> = ({
         <h3 className="text-sm font-semibold text-main mb-2">{title}</h3>
       )}
 
-      {/*
-        table-layout:fixed + colgroup percentages = columns scale to container.
-        All columns always render (no responsive hide/show) — on narrow
-        screens this wrapper's overflow-x-auto lets the table scroll
-        horizontally instead of dropping columns, so the column <-> cell
-        mapping can never drift out of sync.
-      */}
       <div className="w-full overflow-x-auto scrollbar-thin">
         <table
           className="w-full border-collapse text-[10px] leading-tight"
-          style={{ tableLayout: "fixed", minWidth: "900px" }}
+          style={{ tableLayout: "fixed", minWidth: "980px" }}
         >
           {resolvedColGroup}
           <thead>

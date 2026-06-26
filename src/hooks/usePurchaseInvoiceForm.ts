@@ -454,29 +454,43 @@ export const usePurchaseInvoiceForm = ({
 
   // ── Totals (derived from items) ────────────
   useEffect(() => {
-    let subTotal = 0;
-    let totalTax = 0;
+  let qty_sum  = 0;
+  let gross    = 0;
+  let disc_sum = 0;
+  let sub      = 0;
+  let tax      = 0;
 
-    form.items.forEach((item) => {
-      const qty = Number(item.quantity || 0);
-      const rate = Number(item.rate || 0);
-      const discount = Number(item.discount || 0);
-      const vatRate = Number(item.vatRate || 0);
+  form.items.forEach((item) => {
+    const qty      = Number(item.quantity || 0);
+    const rate     = Number(item.rate     || 0);
+    const discount = Number(item.discount || 0);
+    const vatRate  = Number(item.vatRate  || 0);
 
-      const lineAmount = qty * rate;
-      const netAmount = lineAmount - lineAmount * (discount / 100);
-      subTotal += lineAmount;
-      totalTax += netAmount * (vatRate / 100);
-    });
+    const lineGross    = qty * rate;
+    const lineDiscount = lineGross * (discount / 100);
+    const lineNet      = lineGross - lineDiscount;
+    const lineTax      = lineNet   * (vatRate  / 100);
 
-    const grandTotal = subTotal + totalTax;
-    const totalQuantity = form.items.reduce(
-      (s, i) => s + Number(i.quantity || 0),
-      0,
-    );
+    qty_sum  += qty;
+    gross    += lineGross;
+    disc_sum += lineDiscount;
+    sub      += lineNet;
+    tax      += lineTax;
+  });
 
-    setForm((p) => ({ ...p, totalQuantity, subTotal, totalTax, grandTotal }));
-  }, [form.items]);
+  const grandTotal    = sub + tax;
+  const totalQuantity = qty_sum;
+
+  setForm((p) => ({
+    ...p,
+    totalQuantity,
+    subTotal:    sub,
+      totalAmount:   gross,    
+    totalDiscount: disc_sum,
+    totalTax:    tax,
+    grandTotal,
+  }));
+}, [form.items]);
 
   // ── Field defaults ─────────────────────────
   useFieldDefault(isOpen, form.costCenter, fetchCostCenters, (val) =>

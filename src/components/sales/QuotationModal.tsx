@@ -225,7 +225,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
         </div>
 
         {/* ── Tab Content ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-8 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
           {/* ──────────── DETAILS ──────────── */}
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-4">
@@ -370,6 +370,12 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                       Summary
                     </h3>
                     <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Items</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {formData.items.length}
+                        </span>
+                      </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-muted">Total Qty</span>
                         <span className="font-medium text-main tabular-nums">

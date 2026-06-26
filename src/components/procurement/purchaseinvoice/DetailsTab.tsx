@@ -57,7 +57,7 @@ const PIColGroup: React.FC<{ hasRequiresBatch: boolean }> = ({ hasRequiresBatch 
     <col style={{ width: "12%" }} />           {/* Warehouse */}
     <col style={{ width: "44px" }} />          {/* Dis% */}
     <col style={{ width: "44px" }} />          {/* Tax% */}
-    <col style={{ width: "48px" }} />          {/* Tax Name */}
+    <col style={{ width: "90px" }} />          {/* Tax Name */}
     <col style={{ width: "64px" }} />          {/* Amount */}
     <col style={{ width: "44px" }} />          {/* Actions */}
   </colgroup>
@@ -87,7 +87,7 @@ const PIColumnHeaders: React.FC<{ items: ItemRow[] }> = ({ items }) => {
       <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Warehouse</th>
       <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Dis%</th>
       <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Tax%</th>
-      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Tax</th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Tax Name</th>
       <th className="px-1 py-1 text-right text-muted font-medium text-[10px]">Amount</th>
       <th className="px-1 py-1" />
     </tr>
@@ -521,45 +521,58 @@ export const DetailsTab = ({
           </div>
 
           {/* Summary */}
-          <div className="bg-card rounded-lg p-2 flex-1 lg:flex-none w-full">
-            <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-muted">Total Items</span>
-                <span className="font-medium text-main">{items.length}</span>
-              </div>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-muted">Total Quantity</span>
-                <span className="font-medium text-main">{form.totalQuantity}</span>
-              </div>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-muted">Subtotal</span>
-                <span className="font-medium text-main whitespace-nowrap">
-                  {symbol} {form.subTotal?.toFixed(2) || "0.00"}
-                </span>
-              </div>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-muted">Total Tax</span>
-                <span className="font-medium text-main whitespace-nowrap">
-                  {symbol} {form.totalTax?.toFixed(2) || "0.00"}
-                </span>
-              </div>
-              <div className="border-t border-theme my-1" />
-              <div className="flex justify-between text-xs font-semibold">
-                <span className="text-main">Grand Total</span>
-                <span className="text-main whitespace-nowrap">
-                  {symbol} {form.grandTotal?.toFixed(2) || "0.00"}
-                </span>
-              </div>
-              <div className="border-t border-theme my-1" />
-              <div className="flex justify-between text-xs font-semibold">
-                <span className="text-main">Advance</span>
-                <span className="text-main whitespace-nowrap">
-                  {symbol} {form.advanceAmount?.toFixed(2) || "0.00"}
-                </span>
-              </div>
-            </div>
-          </div>
+          {/* Summary */}
+<div className="bg-card rounded-lg p-2 flex-1 lg:flex-none w-full">
+  <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
+  <div className="flex flex-col gap-1.5">
+    <div className="flex justify-between text-[11px]">
+      <span className="text-muted">Total Items</span>
+      <span className="font-medium text-main">{items.length}</span>
+    </div>
+    <div className="flex justify-between text-[11px]">
+      <span className="text-muted">Total Quantity</span>
+      <span className="font-medium text-main">{form.totalQuantity}</span>
+    </div>
+    <div className="flex justify-between text-[11px]">
+      <span className="text-muted">Total Amount</span>
+      <span className="font-medium text-main whitespace-nowrap">
+        {symbol} {form.totalAmount?.toFixed(2) ?? "0.00"}
+      </span>
+    </div>
+    <div className="flex justify-between text-[11px]">
+      <span className="text-muted">Discount</span>
+      <span className="font-medium text-main whitespace-nowrap">
+        {symbol} {form.totalDiscount?.toFixed(2) ?? "0.00"}
+      </span>
+    </div>
+    <div className="flex justify-between text-[11px]">
+      <span className="text-muted">Subtotal</span>
+      <span className="font-medium text-main whitespace-nowrap">
+        {symbol} {form.subTotal?.toFixed(2) ?? "0.00"}
+      </span>
+    </div>
+    <div className="flex justify-between text-[11px]">
+      <span className="text-muted">Total Tax</span>
+      <span className="font-medium text-main whitespace-nowrap">
+        {symbol} {form.totalTax?.toFixed(2) ?? "0.00"}
+      </span>
+    </div>
+    <div className="border-t border-theme my-1" />
+    <div className="flex justify-between text-xs font-semibold">
+      <span className="text-main">Grand Total</span>
+      <span className="text-main whitespace-nowrap">
+        {symbol} {form.grandTotal?.toFixed(2) ?? "0.00"}
+      </span>
+    </div>
+    <div className="border-t border-theme my-1" />
+    <div className="flex justify-between text-xs font-semibold">
+      <span className="text-main">Advance</span>
+      <span className="text-main whitespace-nowrap">
+        {symbol} {form.advanceAmount?.toFixed(2) ?? "0.00"}
+      </span>
+    </div>
+  </div>
+</div>
 
         </div>
       </div>

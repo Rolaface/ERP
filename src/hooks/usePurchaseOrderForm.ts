@@ -428,34 +428,44 @@ export const usePurchaseOrderForm = ({
   }, [isOpen, poId]);
 
   // Calculate totals (Items + Taxes + Rounding) - NO STATE UPDATE, pure derived value
-  const totals = useMemo(() => {
-    let subTotal = 0;
-    let totalTax = 0;
+const totals = useMemo(() => {
+  let qty_sum  = 0;
+  let gross    = 0;
+  let disc_sum = 0;
+  let sub      = 0;
+  let tax      = 0;
 
-    for (const item of form.items) {
-      const qty = Number(item.quantity || 0);
-      const rate = Number(item.rate || 0);
-      const vatRate = Number(item.vatRate || 0);
-      subTotal += qty * rate;
-      totalTax += (qty * rate * vatRate) / 100;
-    }
+  for (const item of form.items) {
+    const qty      = Number(item.quantity || 0);
+    const rate     = Number(item.rate     || 0);
+    const discount = Number(item.discount || 0);  
+    const vatRate  = Number(item.vatRate  || 0);
 
-    for (const t of form.taxRows) {
-      totalTax += (Number(t.amount || 0) * Number(t.taxRate || 0)) / 100;
-    }
+    const lineGross    = qty * rate;
+    const lineDiscount = lineGross * (discount / 100);
+    const lineNet      = lineGross - lineDiscount;
+    const lineTax      = lineNet   * (vatRate  / 100);
 
-    const totalQuantity = form.items.reduce(
-      (sum, item) => sum + Number(item.quantity || 0),
-      0,
-    );
+    qty_sum  += qty;
+    gross    += lineGross;
+    disc_sum += lineDiscount;
+    sub      += lineNet;
+    tax      += lineTax;
+  }
 
-    return {
-      subTotal,
-      totalTax,
-      grandTotal: subTotal + totalTax,
-      totalQuantity,
-    };
-  }, [form.items, form.taxRows]);
+  for (const t of form.taxRows) {
+    tax += (Number(t.amount || 0) * Number(t.taxRate || 0)) / 100;
+  }
+
+  return {
+    totalQuantity: qty_sum,
+    totalAmount:   gross,    // ← add
+    totalDiscount: disc_sum, // ← add
+    subTotal:      sub,
+    totalTax:      tax,
+    grandTotal:    sub + tax,
+  };
+}, [form.items, form.taxRows]);
 
   useFieldDefault(isOpen, form.costCenter, fetchCostCenters, (val) =>
     setForm((prev) => ({ ...prev, costCenter: val })),

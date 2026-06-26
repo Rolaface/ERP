@@ -295,94 +295,93 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto px-8 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
           {/* ===== DETAILS ===== */}
           {ui.activeTab === "details" && (
-           <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
-                  <div>
-                    <CustomerSelect
-                      value={customerNameDisplay}
-                      onChange={actions.handleCustomerSelect}
-                      className="w-full"
-                    />
-                  </div>
+                <div>
+                  <CustomerSelect
+                    value={customerNameDisplay}
+                    onChange={actions.handleCustomerSelect}
+                    className="w-full"
+                  />
+                </div>
 
-                  <div>
-                    <DatePickerInput
-                      label="Date of Invoice"
-                      name="dateOfInvoice"
-                      value={formData.dateOfInvoice}
-                      required
-                      onChange={(name, value) =>
-                        actions.handleInputChange({
-                          target: { name, value },
-                        } as any)
-                      }
-                    />
-                  </div>
+                <div>
+                  <DatePickerInput
+                    label="Date of Invoice"
+                    name="dateOfInvoice"
+                    value={formData.dateOfInvoice}
+                    required
+                    onChange={(name, value) =>
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
+                    }
+                  />
+                </div>
 
-                  <div>
-                    <DatePickerInput
-                      label="Due Date"
-                      name="validTill"
-                      value={formData.validTill}
-                      required
-                      disabled
-                      onChange={(name, value) =>
-                        actions.handleInputChange({
-                          target: { name, value },
-                        } as any)
-                      }
-                    />
-                  </div>
+                <div>
+                  <DatePickerInput
+                    label="Due Date"
+                    name="validTill"
+                    value={formData.validTill}
+                    required
+                    disabled
+                    onChange={(name, value) =>
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
+                    }
+                  />
+                </div>
 
-                  {showExchangeRate && (
-                    <div className="w-full sm:w-[110px]">
-                      <ModalInput
-                        label={
-                          ui.exchangeRateLoading
-                            ? "Exchange Rate (Loading...)"
-                            : "Exchange Rate"
-                        }
-                        name="exchangeRt"
-                        value={formData.exchangeRt || "1"}
-                        onChange={actions.handleInputChange}
-                        className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                        disabled
-                      />
-                      {!!ui.exchangeRateError && (
-                        <div className="mt-1 text-[10px] text-danger">
-                          {ui.exchangeRateError}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="w-full sm:w-[200px]">
-                    <SearchSelect2
-                      label="Mode of Payment"
-                      value={formData.payment_mode ?? ""}
-                      onChange={handleModeChange}
-                      fetchOptions={handleModeFetchOptions}
-                      placeholder="search mode of payment"
-                      // required
-                    />
-                  </div>
-
-                  {ui.isLocal && (
+                {showExchangeRate && (
+                  <div className="w-full sm:w-[110px]">
                     <ModalInput
-                      label="LPO Number"
-                      name="lpoNumber"
-                      value={formData.lpoNumber}
+                      label={
+                        ui.exchangeRateLoading
+                          ? "Exchange Rate (Loading...)"
+                          : "Exchange Rate"
+                      }
+                      name="exchangeRt"
+                      value={formData.exchangeRt || "1"}
                       onChange={actions.handleInputChange}
-                      inputMode="numeric"
-                      pattern="\d{10}"
-                      placeholder="Enter 10 digits"
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                      disabled
                     />
-                  )}
-                 
+                    {!!ui.exchangeRateError && (
+                      <div className="mt-1 text-[10px] text-danger">
+                        {ui.exchangeRateError}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="w-full sm:w-[200px]">
+                  <SearchSelect2
+                    label="Mode of Payment"
+                    value={formData.payment_mode ?? ""}
+                    onChange={handleModeChange}
+                    fetchOptions={handleModeFetchOptions}
+                    placeholder="search mode of payment"
+                    // required
+                  />
+                </div>
+
+                {ui.isLocal && (
+                  <ModalInput
+                    label="LPO Number"
+                    name="lpoNumber"
+                    value={formData.lpoNumber}
+                    onChange={actions.handleInputChange}
+                    inputMode="numeric"
+                    pattern="\d{10}"
+                    placeholder="Enter 10 digits"
+                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                  />
+                )}
               </div>
 
               {/* ITEMS + SUMMARY */}
@@ -457,6 +456,12 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     </h3>
 
                     <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Items</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {formData.items.length}
+                        </span>
+                      </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-muted">Total Qty</span>
                         <span className="font-medium text-main tabular-nums">

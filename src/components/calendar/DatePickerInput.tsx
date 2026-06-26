@@ -35,7 +35,6 @@ const DatePickerInput: React.FC<Props> = ({
     setInternalValue(value ? dayjs(value) : null);
   }, [value]);
 
-  // Soft notice auto-clears after a couple seconds instead of staying stuck.
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(null), 2500);
@@ -48,7 +47,6 @@ const DatePickerInput: React.FC<Props> = ({
     onChange(name, newValue.format("YYYY-MM-DD"));
   };
 
-  // Falls back to "today" when a future date is entered/picked while disableFuture is on.
   const fallbackToToday = () => {
     const today = dayjs();
     setNotice("Future date not allowed — set to today");
@@ -93,18 +91,17 @@ const DatePickerInput: React.FC<Props> = ({
         disableFuture={disableFuture}
         enableAccessibleFieldDOMStructure={false}
         onChange={handleChange}
+        // When disabled, hide the open-picker button entirely so the field
+        // looks like a plain read-only text cell — no clickable calendar icon.
+        slots={disabled ? { openPickerButton: () => null } : undefined}
         onError={(reason) => {
           if (!reason) {
             setError(null);
             return;
           }
-
           if (reason === "invalidDate") {
             setError("Invalid date");
           } else if (reason === "disableFuture") {
-            // MUI's own future-date guard (e.g. clicking a disabled day in the
-            // calendar popup) lands here rather than onChange. Apply the same
-            // soft fallback so the UX is consistent regardless of entry path.
             fallbackToToday();
           } else if (reason === "disablePast") {
             setError("Past date not allowed");
@@ -112,7 +109,6 @@ const DatePickerInput: React.FC<Props> = ({
             setError(null);
           }
         }}
-        slots={{ textField: TextField }}
         slotProps={{
           popper: {
             disablePortal: false,
@@ -126,7 +122,6 @@ const DatePickerInput: React.FC<Props> = ({
             placeholder: "DD-MMM-YYYY",
             inputProps: { "aria-label": label ?? "Date" },
             sx: {
-              // ── Make the whole field respect its container width ──
               width: "100%",
               minWidth: 0,
 
@@ -138,7 +133,8 @@ const DatePickerInput: React.FC<Props> = ({
                 color: "var(--input-text)",
                 minWidth: 0,
                 width: "100%",
-                paddingRight: "2px",
+                // When icon is hidden, remove the right padding reserved for it
+                paddingRight: disabled ? "8px" : "2px",
                 display: "flex",
                 alignItems: "center",
                 overflow: "hidden",
@@ -161,7 +157,6 @@ const DatePickerInput: React.FC<Props> = ({
                 opacity: 0.6,
               },
 
-              // ── Calendar icon: fixed size, never forces width ──
               "& .MuiIconButton-root": {
                 padding: "2px",
                 marginRight: "2px",
@@ -181,7 +176,6 @@ const DatePickerInput: React.FC<Props> = ({
                 flexShrink: 0,
               },
 
-              // ── Border states, theme-driven ──
               "& fieldset": {
                 borderColor: "var(--input-border)",
               },
@@ -194,7 +188,6 @@ const DatePickerInput: React.FC<Props> = ({
                 boxShadow: `0 0 0 3px var(--input-focus-ring)`,
               },
 
-              // ── Disabled state ──
               "&.Mui-disabled": {
                 backgroundColor: "var(--input-bg-disabled)",
               },
@@ -206,7 +199,6 @@ const DatePickerInput: React.FC<Props> = ({
                 borderColor: "var(--input-border)",
               },
 
-              // ── Error state ──
               "&.Mui-error .MuiOutlinedInput-root, & .Mui-error": {
                 backgroundColor: "var(--input-bg-error)",
               },
@@ -230,11 +222,7 @@ const DatePickerInput: React.FC<Props> = ({
       {error && (
         <FormHelperText
           error
-          sx={{
-            margin: "2px 0 0",
-            fontSize: "10px",
-            color: "var(--danger)",
-          }}
+          sx={{ margin: "2px 0 0", fontSize: "10px", color: "var(--danger)" }}
         >
           {error}
         </FormHelperText>
@@ -242,11 +230,7 @@ const DatePickerInput: React.FC<Props> = ({
 
       {!error && notice && (
         <FormHelperText
-          sx={{
-            margin: "2px 0 0",
-            fontSize: "10px",
-            color: "red",
-          }}
+          sx={{ margin: "2px 0 0", fontSize: "10px", color: "red" }}
         >
           {notice}
         </FormHelperText>
