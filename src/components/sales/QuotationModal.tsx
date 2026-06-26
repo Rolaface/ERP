@@ -190,7 +190,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
         />
       }
       maxWidth="full"
-      height="650px"
+      height="700px"
     >
       <form
         id="quotationForm"
@@ -272,7 +272,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                 </div>
 
                 {/* Currency */}
-                <div className="w-full sm:w-[100px]">
+                {/* <div className="w-full sm:w-[100px]">
                   <ModalSelect
                     label="Currency"
                     name="currencyCode"
@@ -291,7 +291,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     disabled
                     className="w-full border border-theme rounded text-[11px] text-main bg-card"
                   />
-                </div>
+                </div> */}
               </div>
 
               {/* ── Items table + sidebar ──
@@ -355,6 +355,13 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                         </span>
                       </div>
                       <div className="flex justify-between text-[10px]">
+                        <span className="text-muted">Currency</span>
+                        <span className="text-main font-medium">
+                          {formData.currencyCode || "—"}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between text-[10px]">
                         <span className="text-muted">Country</span>
                         <span className="text-main font-medium">
                           {billingAddress?.country || "—"}
@@ -363,7 +370,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Summary card */}
                   {/* Summary card */}
                   <div className="bg-card rounded-lg p-3 flex-1 xl:flex-none w-full">
                     <h3 className="text-[13px] font-semibold text-main mb-2">
