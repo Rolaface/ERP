@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ClipboardList } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
 import ModalFooter from "../../common/ModalFooter";
 import { ModalInput } from "../../ui/modal/modalComponent";
@@ -343,7 +343,7 @@ const AppraisalModal: React.FC<AppraisalModalProps> = ({
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Appraisal" : "Add Appraisal"}
       subtitle="Manage employee performance appraisal"
-      icon={ClipboardList}
+      icon={ClipboardCheck}
       footer={footerContent}
       maxWidth="4xl"
     >

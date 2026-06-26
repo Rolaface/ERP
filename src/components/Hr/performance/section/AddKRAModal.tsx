@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-  import{FaSlidersH,
-} from "react-icons/fa";
+ 
 import { MinimizableModal } from "../../../../components/common/MinimizableModal";
 import type { SetupRow } from "../..../../../../../views/hr/performace/types";
 import { useUnsavedChanges } from "../../../../hooks/useUnsavedChanges";
@@ -14,6 +13,7 @@ import {
 } from "../../../../api/Appraisalapi/kraApi";
 
 import { showApiError, showSuccess } from "../../../../utils/alert";
+import { Target } from "lucide-react";
 interface Props {
   selectedKRA?: SetupRow | null;
   isViewMode?: boolean;
@@ -88,7 +88,7 @@ export default function AddKRAModal({
             ? "Update Key Result Area"
             : "Add a new Key Result Area"
       }
-      icon={FaSlidersH}
+      icon={Target}
       customWidth="500px"
       height="fit-content"
       footer={
