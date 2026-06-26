@@ -208,7 +208,8 @@ if (company?.documents?.companyLogoUrl) {
   ═══════════════════════════════════════════════ */
   autoTable(doc, {
     startY: stripY + 6,
-    head: [["Item #", "Description", "Packaging","Unit of Measure", "Unit Price", "Tax %", "Tax Code", "Quantity", "Total"]],
+    head: [["Item #", "Description", "Packaging",  "Unit of Measure"
+, "Unit Price", "Tax %", "Tax Code", "Quantity", "Total"]],
     body: (po?.items || []).map((item: any) => {
       const taxRate = po?.tax?.taxRate ? po.tax.taxRate : "0%";
       return [

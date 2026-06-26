@@ -661,7 +661,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         value={item.countryOfOrigin}
                       />
                       <DetailField label="Packing" value={packingDisplay} />
-                      <DetailField label= "Unit of Measure" value={item.unitOfMeasureCd} />
+                      <DetailField label= "Unit of Measure"
+ value={item.unitOfMeasureCd} />
                       <DetailField
                         label="Service Charge"
                         value={item.svcCharge}

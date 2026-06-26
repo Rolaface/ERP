@@ -469,7 +469,8 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                   </div>
 
                   <div>
-                    <FL text="UOM" />
+                    <FL text="Unit of Measure"
+ />
                     <input
                       className="scm-field scm-field-input"
                       value={form.uom}

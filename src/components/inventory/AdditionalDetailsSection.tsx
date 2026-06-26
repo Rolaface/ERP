@@ -54,7 +54,8 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
         {/* UOM */}
         <div className="w-[140px] min-w-0">
           <SearchSelect2
-            label=  "Unit of Measure"
+            label= "Unit of Measure"
+
             value={form.unitOfMeasureCd ?? ""}
             fetchOptions={async (q) => {
               const data = await fetchUoms();
