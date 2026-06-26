@@ -12,6 +12,7 @@ import {
   CreditCard,
   AlertTriangle,
   CheckCircle2,
+  ClipboardCheck 
 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
@@ -642,7 +643,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       subtitle={
         isEditMode ? "Update expense claim" : "Submit a new expense claim"
       }
-      icon={CreditCard}
+      icon={ClipboardCheck }
       footer={footer}
       customWidth="46vw"
       height="90vh"

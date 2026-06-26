@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { Building2, MapPin, FileText, Receipt } from "lucide-react";
+import { Building2, MapPin, FileText, Receipt ,ShoppingCart} from "lucide-react";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { AttachmentsTab } from "../procurement/purchaseinvoice/AttachmentsTab";
 import { DetailsTab } from "../procurement/purchaseinvoice/DetailsTab";
@@ -274,7 +274,7 @@ const handleItemChangeWithDirty = useCallback(
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={pId ? "Edit Purchase Invoice" : "Add Purchase Invoice"}
       subtitle="Add and manage purchase invoice"
-      icon={Receipt}
+      icon={ShoppingCart }
       maxWidth="full"
       height="88vh"
       footer={footer}
