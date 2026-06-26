@@ -23,7 +23,8 @@ const ItemSummaryBar: React.FC<ItemSummaryBarProps> = ({ form, taxRows }) => {
       { label: "Type",     value: ITEM_TYPE_LABELS[form.itemTypeCode ?? ""] ?? "" },
       { label: "Category", value: form.itemGroup?.trim() ?? "" },
       { label: "SKU",      value: form.sku?.trim() ?? "" },
-      { label: "UOM",      value: form.unitOfMeasureCd?.trim() ?? "" },
+      { label:  "Unit of Measure"
+,      value: form.unitOfMeasureCd?.trim() ?? "" },
       { label: "Sell",     value: form.sellingPrice ? String(form.sellingPrice) : "" },
       { label: "Buy",      value: form.buyingPrice  ? String(form.buyingPrice)  : "" },
       {

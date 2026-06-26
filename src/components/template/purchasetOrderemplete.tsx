@@ -323,7 +323,8 @@ export const generatePurchaseOrderPDF = async (
         "Item Code",
         "Item Name",
         "Packing",
-        "UOM",
+         "Unit of Measure"
+,
         "Required By",
         "Qty",
         "Rate",
