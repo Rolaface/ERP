@@ -137,7 +137,8 @@ const ServiceInvoiceColGroup: React.FC = () => (
 
 // 3. Main ColGroup Component that switches between them
 const InvoiceColGroup: React.FC<InvoiceHeadersProps> = (props) => {
-  const isService = props.isSalesInvoice && props.invoiceType === "Service";
+  // const isService = props.isSalesInvoice && props.invoiceType === "Service";
+  const isService = props.invoiceType === "Service";
   
   if (isService) {
     return <ServiceInvoiceColGroup />;
@@ -151,7 +152,8 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
   isQuotation,
   invoiceType = "Product",
 }) => {
-  const isService = isSalesInvoice && invoiceType === "Service";
+  // const isService = isSalesInvoice && invoiceType === "Service";
+  const isService = invoiceType === "Service";
   return (
     <tr className="border-b border-theme">
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">#</th>
@@ -327,7 +329,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
     }
   });
    
-  const isService = isSalesInvoice && invoiceType === "Service";  
+  // const isService = isSalesInvoice && invoiceType === "Service";
+  const isService = invoiceType === "Service";  
 
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);

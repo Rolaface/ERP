@@ -36,6 +36,7 @@ import {
 } from "../../store/dataRefreshStore";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { getAllModeOfPayment } from "../../api/BankAccountApi";
+import { useCompanyData } from "../../hooks/useCompanyData";
 interface ProformaInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -70,6 +71,22 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+    const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
+  
+  const { domain } = useCompanyData();
+  console.log("Domain ", domain);
+
+useEffect(() => {
+    if (mode === "edit" && initialData?.items?.length > 0) {
+      // Check if the first item (or any item) is a service
+      const isService = initialData.items[0]?.isServiceItem;
+      setInvoiceType(isService ? "Service" : "Product");
+    } else if (mode === "create") {
+      // Default to company domain for new invoices (fallback to Product)
+      setInvoiceType(domain === "Service" ? "Service" : "Product");
+    }
+  }, [initialData, mode, isOpen, domain]);
+
   const {
     formData,
     customerDetails,
@@ -301,6 +318,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
             <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
+
                 <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
@@ -372,18 +390,81 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   />
                 </div>
 
-                {ui.isLocal && (
-                  <ModalInput
-                    label="LPO Number"
-                    name="lpoNumber"
-                    value={formData.lpoNumber}
-                    onChange={actions.handleInputChange}
-                    inputMode="numeric"
-                    pattern="\d{10}"
-                    placeholder="Enter 10 digits"
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                )}
+                  {/* Invoice Type */}
+              {/* <div className="w-full sm:w-auto flex flex-col justify-end">
+                 <label className="text-[11px] text-muted mb-1">Invoice Type</label>
+                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[27px]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Product"
+                      checked={invoiceType === "Product"}
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Product</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Service"
+                      checked={invoiceType === "Service"}
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Service</span>
+                  </label>
+                </div>
+              </div> */}
+             {/* Invoice Type */}
+              <div className="w-full sm:w-auto flex flex-col justify-end">
+                <label className="text-[11px] text-muted mb-1">Invoice Type</label>
+                <div className="flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max">
+                  
+                  <label 
+                    className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
+                      invoiceType === "Product" 
+                        ? "bg-primary text-white shadow-sm" 
+                        : "text-muted hover:text-main bg-transparent"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Product"
+                      checked={invoiceType === "Product"}
+                      // Keep whatever onChange logic you had here (including the updateStock logic from earlier if you used it)
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="hidden"
+                    />
+                    Product
+                  </label>
+                  
+                  <label 
+                    className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
+                      invoiceType === "Service" 
+                        ? "bg-primary text-white shadow-sm" 
+                        : "text-muted hover:text-main bg-transparent"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Service"
+                      checked={invoiceType === "Service"}
+                      // Keep whatever onChange logic you had here
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="hidden"
+                    />
+                    Service
+                  </label>
+                  
+                </div>
+              </div>
+              
               </div>
 
               {/* ITEMS + SUMMARY */}
@@ -397,6 +478,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     formData={formData}
                     symbol={symbol}
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                    invoiceType={invoiceType}
                     isSalesInvoice={false}
                     taxCategory={
                       formData.taxCategory ||

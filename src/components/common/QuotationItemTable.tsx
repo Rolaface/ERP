@@ -44,6 +44,7 @@ interface ItemTableProps {
   isQuotation?: boolean;
   columnHeaders?: React.ReactNode;
   colGroup?: React.ReactNode;
+  invoiceType?: "Product" | "Service";
   renderRow?: (
     item: any,
     absoluteIndex: number,
@@ -68,9 +69,42 @@ interface ItemTableProps {
 interface InvoiceHeadersProps {
   isSalesInvoice: boolean;
   isQuotation: boolean;
+  invoiceType?: "Product" | "Service";
 }
 
-const QuoteColGroup: React.FC<InvoiceHeadersProps> = () => (
+// const QuoteColGroup: React.FC<InvoiceHeadersProps> = () => (
+//   <colgroup>
+//     <col style={{ width: "24px" }} />   {/* # */}
+//     <col style={{ width: "22%" }} />    {/* Item */}
+//     <col style={{ width: "52px" }} />   {/* Pkg */}
+//     <col style={{ width: "72px" }} />   {/* Box */}
+//     <col style={{ width: "52px" }} />   {/* Qty */}
+//     <col style={{ width: "60px" }} />   {/* UOM */}
+//     <col style={{ width: "8%" }} />     {/* Price */}
+//     <col style={{ width: "52px" }} />   {/* Dis% */}
+//     <col style={{ width: "48px" }} />   {/* Tax% */}
+//     <col style={{ width: "14%" }} />    {/* Tax Name */}
+//     <col style={{ width: "8%" }} />     {/* Amount */}
+//     <col style={{ width: "44px" }} />   {/* Actions */}
+//   </colgroup>
+// );
+// const QuoteHeaders: React.FC<InvoiceHeadersProps> = () => (
+//   <tr className="border-b border-theme">
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">#</th>
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Item</th>
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Pkg</th>
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Box</th>
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Qty</th>
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden lg:table-cell">UOM</th>
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Price <span className="text-danger">*</span></th>
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Dis%</th>
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax%</th>
+//     <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax</th>
+//     <th className="px-1 py-1 text-right text-muted font-medium text-[10px]">Amount</th>
+//     <th className="px-1 py-1" />
+//   </tr>
+// );
+const ProductQuoteColGroup: React.FC<InvoiceHeadersProps> = () => (
   <colgroup>
     <col style={{ width: "24px" }} />   {/* # */}
     <col style={{ width: "22%" }} />    {/* Item */}
@@ -86,22 +120,44 @@ const QuoteColGroup: React.FC<InvoiceHeadersProps> = () => (
     <col style={{ width: "44px" }} />   {/* Actions */}
   </colgroup>
 );
-const QuoteHeaders: React.FC<InvoiceHeadersProps> = () => (
-  <tr className="border-b border-theme">
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">#</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Item</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Pkg</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Box</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Qty</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden lg:table-cell">UOM</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Price <span className="text-danger">*</span></th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Dis%</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax%</th>
-    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax</th>
-    <th className="px-1 py-1 text-right text-muted font-medium text-[10px]">Amount</th>
-    <th className="px-1 py-1" />
-  </tr>
+
+const ServiceQuoteColGroup: React.FC = () => (
+  <colgroup>
+    <col style={{ width: "24px" }} />   {/* # */}
+    <col style={{ width: "32%" }} />    {/* Item */}
+    <col style={{ width: "10%" }} />    {/* Qty */}
+    <col style={{ width: "10%" }} />    {/* Price */}
+    <col style={{ width: "8%" }} />     {/* Dis% */}
+    <col style={{ width: "8%" }} />     {/* Tax% */}
+    <col style={{ width: "15%" }} />    {/* Tax Name */}
+    <col style={{ width: "10%" }} />    {/* Amount */}
+    <col style={{ width: "44px" }} />   {/* Actions */}
+  </colgroup>
 );
+
+const QuoteColGroup: React.FC<InvoiceHeadersProps> = (props) => {
+  if (props.invoiceType === "Service") return <ServiceQuoteColGroup />;
+  return <ProductQuoteColGroup {...props} />;
+};
+const QuoteHeaders: React.FC<InvoiceHeadersProps> = ({ invoiceType = "Product" }) => {
+  const isService = invoiceType === "Service";
+  return (
+    <tr className="border-b border-theme">
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">#</th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Item</th>
+      {!isService && <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Pkg</th>}
+      {!isService && <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Box</th>}
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Qty</th>
+      {!isService &&<th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden lg:table-cell">UOM</th>}
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Price <span className="text-danger">*</span></th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Dis%</th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax%</th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax</th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Amount</th>
+      <th className="px-1 py-1" />
+    </tr>
+  );
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -120,7 +176,9 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
   renderRow,
   isSalesInvoice = false,
   isQuotation = false,
+  invoiceType = "Product",
 }) => {
+  const isService = invoiceType === "Service";
   useBarcodeScanner(async (barcode) => {
     try {
       const response = await getItemDetailsByBarcodeId(barcode);
@@ -286,6 +344,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
           </td> 
 
         {/* Pkg (U×S) — hidden < md */}
+        {!isService && (
         <td className="px-1 py-1 md:table-cell">
           <Tooltip
             content={
@@ -307,6 +366,8 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
             />
           </Tooltip>
         </td>
+        )}
+        {!isService && (
         <td className="px-0.5 py-1">
             <div className="flex items-center gap-0.5">
               <input
@@ -326,6 +387,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
               />
             </div>
           </td>
+        )}
 
 
         {/* Qty */}
@@ -345,6 +407,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         {/* UOM — quotation only */}
+        {!isService && (
            <td className="px-2 py-1 md:table-cell">
             <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
               <input
@@ -356,6 +419,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
               />
             </Tooltip>
           </td> 
+        )}
 
         {/* Unit Price */}
         <td className="px-0.5 py-1">
@@ -464,6 +528,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
     <QuoteColGroup
       isSalesInvoice={isSalesInvoice}
       isQuotation={isQuotation}
+      invoiceType={invoiceType}
     />
   );
 
@@ -489,6 +554,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
               <QuoteHeaders
                 isSalesInvoice={isSalesInvoice}
                 isQuotation={isQuotation}
+                invoiceType={invoiceType}
               />
             )}
           </thead>
