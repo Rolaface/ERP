@@ -59,6 +59,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   );
   const [submitting, setSubmitting] = useState(false);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
 
   const {
     formData,
@@ -231,6 +232,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
             <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
+
                 {/* Customer */}
             <div className="w-full sm:w-[280px]">
                   <CustomerSelect
@@ -271,34 +273,38 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   />
                 </div>
 
-                {/* Currency */}
-                {/* <div className="w-full sm:w-[100px]">
-                  <ModalSelect
-                    label="Currency"
-                    name="currencyCode"
-                    value={formData.currencyCode}
-                    onChange={actions.handleInputChange}
-                    options={
-                      formData.currencyCode
-                        ? [
-                            {
-                              value: formData.currencyCode,
-                              label: formData.currencyCode,
-                            },
-                          ]
-                        : []
-                    }
-                    disabled
-                    className="w-full border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                </div> */}
+                  {/* Invoice Type */}
+              <div className="w-full sm:w-auto flex flex-col justify-end">
+                 <label className="text-[11px] text-muted mb-1">Quotation Type</label>
+                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[27px]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Product"
+                      checked={invoiceType === "Product"}
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Product</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Service"
+                      checked={invoiceType === "Service"}
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Service</span>
+                  </label>
+                </div>
               </div>
 
-              {/* ── Items table + sidebar ──
-                  - Mobile/tablet (< xl): single column, sidebar stacks below table
-                  - Desktop (xl+): table takes remaining space, sidebar is 220px
-                  - minmax(0, 1fr) prevents the table from pushing the grid wider
-                    than the modal container                                       ── */}
+              </div>
+
               <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_220px] gap-4 items-start">
                 {/* Table column — min-w-0 so it can shrink below natural content width */}
                 <div className="min-w-0">
@@ -310,6 +316,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     isQuotation={true}
                     symbol={symbol}
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                    invoiceType={invoiceType}
                     isSalesInvoice={false}
                     taxCategory={
                       formData.taxCategory ||
