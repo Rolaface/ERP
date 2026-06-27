@@ -208,7 +208,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       icon={Receipt}
       footer={footerContent}
       maxWidth="full"
-      // maxWidth={invoiceType === "Service" ? "10xl" : "full"}
       height="700px"
     >
       <form
@@ -264,36 +263,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     className="w-full border border-theme rounded text-[11px] text-main bg-card"
                   />
                 </div> */}
-                {/* Invoice Type */}
-              <div className="w-full sm:w-auto flex flex-col justify-end">
-                {/* Optional visible label to align with other inputs; use text-transparent if you only want the box */}
-                <label className="text-[11px] text-muted mb-1">Invoice Type</label>
-                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[30px]">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Product"
-                      checked={invoiceType === "Product"}
-                      onChange={(e: any) => setInvoiceType(e.target.value)}
-                      className="w-4 h-4 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[12px] text-main whitespace-nowrap">Product</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Service"
-                      checked={invoiceType === "Service"}
-                      onChange={(e: any) => setInvoiceType(e.target.value)}
-                      className="w-4 h-4 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[12px] text-main whitespace-nowrap">Service</span>
-                  </label>
-                </div>
-              </div>
 
                 {/* Customer — full width on mobile, fixed on sm+ */}
                 <div className="w-full sm:w-[280px]">
@@ -429,6 +398,47 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     />
                   </div>
                 )}
+
+               {/* Invoice Type */}
+              <div className="w-full sm:w-auto flex flex-col justify-end">
+                 <label className="text-[11px] text-muted mb-1">Invoice Type</label>
+                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[27px]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Product"
+                      checked={invoiceType === "Product"}
+                      onChange={(e: any) => {
+                        setInvoiceType(e.target.value);
+                        actions.handleInputChange({
+                          target: { name: "updateStock", type: "checkbox", checked: true }
+                        } as any);
+                      }}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Product</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Service"
+                      checked={invoiceType === "Service"}
+                      onChange={(e: any) => {
+                        setInvoiceType(e.target.value);
+                        actions.handleInputChange({
+                          target: { name: "updateStock", type: "checkbox", checked: false }
+                        } as any);
+                      }}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Service</span>
+                  </label>
+                </div>
+              </div>
+
               </div>
 
               {/* ── Items table + sidebar ──
