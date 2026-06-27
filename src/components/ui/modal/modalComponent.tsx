@@ -105,15 +105,23 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   icon?: React.ReactNode;
   error?: string;
+  /**
+   * Optional button/icon rendered inside the input box, right-aligned and
+   * vertically centered against the input itself (not the label above it).
+   * Use for inline actions like "open a picker" or "search this field".
+   * Pass a fully-formed <button> (or similar) — ModalInput only positions it.
+   */
+  trailingIcon?: React.ReactNode;
 }
 
 export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, icon, className = "", error, ...props }, ref) => {
+  ({ label, icon, className = "", error, trailingIcon, ...props }, ref) => {
     const isNumber = props.type === "number";
 
     const inputClass = [
       "py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0",
       isNumber ? "no-spinner" : "",
+      trailingIcon ? "pr-7" : "",
       error
         ? "border-danger focus:border-danger"
         : props.disabled
@@ -172,6 +180,42 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
               className="absolute right-0 top-0 opacity-0 w-7 h-full cursor-pointer"
               tabIndex={-1}
             />
+          </div>
+        ) : trailingIcon ? (
+          /* INPUT WITH TRAILING ICON — wrapper hugs only the input row
+             (sibling of the label span above), so absolute positioning
+             centers against the input's own height, never the label. */
+          <div className="relative w-full min-w-0">
+            <input
+              ref={ref}
+              {...props}
+              value={props.value ?? ""}
+              className={inputClass + " w-full"}
+              onWheel={isNumber ? numberInputProps.onWheel : props.onWheel}
+              onKeyDown={
+                isNumber
+                  ? (e) => {
+                      numberInputProps.onKeyDown(e);
+                      props.onKeyDown?.(e);
+                    }
+                  : props.onKeyDown
+              }
+              onFocus={(e) => {
+                if (!props.disabled) {
+                  e.currentTarget.style.boxShadow = error
+                    ? "0 0 0 3px rgba(239,68,68,0.18)"
+                    : "0 0 0 3px rgba(37,99,235,0.16)";
+                }
+                props.onFocus?.(e);
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.boxShadow = "";
+                props.onBlur?.(e);
+              }}
+            />
+            <div className="absolute right-1 top-0 bottom-0 flex items-center">
+              {trailingIcon}
+            </div>
           </div>
         ) : (
           /* REGULAR INPUT */
