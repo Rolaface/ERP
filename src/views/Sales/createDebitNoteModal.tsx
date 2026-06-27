@@ -133,8 +133,8 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
       subtitle="Add and manage debit notes"
       icon={FileMinus}
       footer={footer}
-      maxWidth="6xl"
-      height="82vh"
+      maxWidth="full"
+      height="700px"
     >
       <form
         id={FORM_ID}
@@ -142,11 +142,11 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
         className="h-full flex flex-col"
       >
         {/* ── Tab bar ── */}
-        <div className="bg-app border-b border-theme px-8 shrink-0">
+      <div className="bg-app border-b border-theme px-4 sm:px-8 shrink-0">
           <div className="flex gap-8">
             <button
               type="button"
-              className="py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all text-primary border-b-[3px] border-primary"
+              className="py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all text-primary border-b-[3px] border-primary whitespace-nowrap shrink-0"
             >
               Details
             </button>
@@ -154,8 +154,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
         </div>
 
         {/* ── Tab content ── */}
-        <section className="flex-1 overflow-y-auto">
-          {tabContent}
+        <section className="flex-1 min-h-0 overflow-y-auto">         {tabContent}
         </section>
       </form>
     </MinimizableModal>
