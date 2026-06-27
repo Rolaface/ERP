@@ -1,10 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  Layers,
-  Plus,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
   Tag,
   AlertCircle,
 } from "lucide-react";
@@ -53,7 +48,7 @@ interface InvoiceChargesTabProps {
   onTemplateSelect?: (templateName: string, taxes: TemplateTax[]) => void;
 
   taxes: any[];
-  onTaxChange?: (index: number, field: string, value: any) => void; // ✅ ADD THIS
+  onTaxChange?: (index: number, field: string, value: any) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -73,7 +68,6 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [templateError, setTemplateError] = useState<string | null>(null);
-  const [previewExpanded, setPreviewExpanded] = useState(true);
 
   // ── Fetch templates once on mount ─────────────────────────────────────────
 
@@ -106,9 +100,7 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
     0,
   );
 
-  // CIF = subTotal + charges total + totalTax
   const cifValue = totals.subTotal + chargesTotal;
-  // FOB = subTotal (Free On Board — before insurance/freight)
   const fobValue = totals.subTotal;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -121,19 +113,22 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
     }
     const tpl = templates.find((t) => t.name === val);
     onTemplateSelect?.(val, tpl?.taxes ?? []);
-    setPreviewExpanded(true);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex gap-4 items-start max-w-[1600px] mx-auto">
-      {/* ── Left: Template + Charges ── */}
-      <div className="flex-1 flex flex-col gap-4">
+    /* Mirrors InvoiceModal: single column on mobile, sidebar layout on xl+ */
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_220px] gap-4 items-start w-full">
+
+      {/* ── Left: Template + Tax table ── */}
+      <div className="flex flex-col gap-4 min-w-0">
+
         {/* ── Sales Tax Template Selector ── */}
         <div className="bg-card rounded-lg border border-theme overflow-hidden">
+
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-theme">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-theme">
             <div className="flex items-center gap-2">
               <Tag size={14} className="text-primary" />
               <span className="text-xs font-semibold text-main">
@@ -145,27 +140,9 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
                 </span>
               )}
             </div>
-
-            {selectedTemplateObj && selectedTemplateObj.taxes.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setPreviewExpanded((p) => !p)}
-                className="flex items-center gap-1 text-[10px] text-muted hover:text-main transition-colors bg-transparent border-none cursor-pointer"
-              >
-                {previewExpanded ? (
-                  <>
-                    <ChevronDown size={12} /> Hide details
-                  </>
-                ) : (
-                  <>
-                    <ChevronRight size={12} /> Show details
-                  </>
-                )}
-              </button>
-            )}
           </div>
 
-          {/* Selector */}
+          {/* Selector row */}
           <div className="px-4 py-3">
             {templateError ? (
               <div className="flex items-center gap-2 text-xs text-danger">
@@ -202,7 +179,6 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
               </select>
             )}
 
-            {/* Clear template */}
             {selectedTemplate && (
               <button
                 type="button"
@@ -214,38 +190,56 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
             )}
           </div>
 
-          {/* Template charges preview */}
+          {/* Tax rows table — horizontally scrollable on narrow screens */}
           {taxes && taxes.length > 0 && (
-            <div className="border-t border-theme">
-              <table className="w-full text-xs border-collapse">
+            <div className="border-t border-theme overflow-x-auto">
+              <table className="w-full text-xs border-collapse min-w-[580px]" style={{ tableLayout: "fixed" }}>
+                <colgroup>
+                  <col style={{ width: "22%" }} /> {/* Account Head */}
+                  <col style={{ width: "18%" }} /> {/* Charge Type */}
+                  <col style={{ width: "13%" }} /> {/* Rate */}
+                  <col style={{ width: "13%" }} /> {/* Amount */}
+                  <col style={{ width: "34%" }} /> {/* Description */}
+                </colgroup>
                 <thead>
                   <tr className="bg-primary/5">
-                    <th className="px-4 py-2 text-left w-[15%]">
+                    <th className="px-3 py-2 text-left text-[11px] font-semibold text-muted whitespace-nowrap">
                       Account Head
                     </th>
-                    <th className="px-4 py-2 text-left w-[20%]">Charge Type</th>
-                    <th className="px-4 py-2 text-left w-[12%]">Rate(%)</th>
-                    <th className="px-4 py-2 text-left w-[12%]">Amount</th>
-                    <th className="px-4 py-2 text-left w-[30%]">Description</th>
+                    <th className="px-3 py-2 text-left text-[11px] font-semibold text-muted whitespace-nowrap">
+                      Charge Type
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-semibold text-muted whitespace-nowrap">
+                      Rate (%)
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-semibold text-muted whitespace-nowrap">
+                      Amount
+                    </th>
+                    <th className="px-3 py-2 text-left text-[11px] font-semibold text-muted whitespace-nowrap">
+                      Description
+                    </th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {taxes.map((tax, i) => (
                     <tr key={i} className="border-t border-theme">
-                      <td className="w-[20%] py-1 px-2">
-                        <div className="w-full py-1 px-2 border border-transparent rounded text-[11px] text-main bg-primary/5">
+                      {/* Account Head — read-only pill */}
+                      <td className="py-1.5 px-3">
+                        <div className="py-1 px-2 border border-transparent rounded text-[11px] text-main bg-primary/5 truncate">
                           {tax.accountHead || "-"}
                         </div>
                       </td>
 
-                      <td className="w-[10%] py-1 px-2">
-                        <div className="py-1 px-2 text-[11px] text-main">
+                      {/* Charge Type — display only */}
+                      <td className="py-1.5 px-3">
+                        <div className="py-1 px-2 text-[11px] text-main truncate">
                           {tax.chargeType}
                         </div>
                       </td>
 
-                      <td className="w-[15%] py-1 px-2">
+                      {/* Rate — editable only when not Actual */}
+                      <td className="py-1.5 px-3">
                         <input
                           type="number"
                           value={tax.rate ?? ""}
@@ -261,7 +255,8 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
                         />
                       </td>
 
-                      <td className="w-[15%] py-1 px-2">
+                      {/* Amount — editable only when Actual */}
+                      <td className="py-1.5 px-3">
                         <input
                           type="number"
                           value={tax.amount ?? ""}
@@ -277,7 +272,8 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
                         />
                       </td>
 
-                      <td className="w-[40%] py-1 px-2">
+                      {/* Description */}
+                      <td className="py-1.5 px-3">
                         <input
                           value={tax.description}
                           onChange={(e) =>
@@ -301,30 +297,28 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
         </div>
       </div>
 
-      {/* ── Right: Summary panel ── */}
-      <div className="w-[220px] shrink-0 flex flex-col gap-3 sticky top-0">
-        {/* CIF */}
-        <div className="bg-card border border-theme rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-2">
-            <span className="text-xs font-semibold text-main">Summary</span>
-          </div>
+      {/* ── Right: Summary panel — stacks below on mobile, sticky sidebar on xl+ ── */}
+      <div className="flex flex-row xl:flex-col gap-3 xl:sticky xl:top-0 h-fit">
 
+        {/* Summary */}
+        <div className="bg-card border border-theme rounded-lg p-3 flex-1 xl:flex-none">
+          <span className="text-xs font-semibold text-main block mb-2">Summary</span>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between text-xs">
               <span className="text-muted">Subtotal</span>
-              <span className="font-medium text-main">
+              <span className="font-medium text-main tabular-nums">
                 {totals.subTotal.toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-muted">Tax</span>
-              <span className="font-medium text-main">
+              <span className="font-medium text-main tabular-nums">
                 {totals.totalTax.toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-muted">Charges</span>
-              <span className="font-medium text-main">
+              <span className="font-medium text-main tabular-nums">
                 {chargesTotal.toFixed(2)}
               </span>
             </div>
@@ -332,24 +326,26 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
         </div>
 
         {/* CIF Value */}
-        <div className="bg-card border border-theme rounded-lg p-3">
+        <div className="bg-card border border-theme rounded-lg p-3 flex-1 xl:flex-none">
           <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-0.5">
             CIF Value
           </p>
           <p className="text-[10px] text-muted mb-2">
             Cost + Insurance + Freight
           </p>
-          <p className="text-lg font-bold text-main">{cifValue.toFixed(2)}</p>
+          <p className="text-lg font-bold text-main tabular-nums">
+            {cifValue.toFixed(2)}
+          </p>
         </div>
 
         {/* FOB Value */}
         <div
-          className="rounded-lg p-3"
+          className="rounded-lg p-3 flex-1 xl:flex-none"
           style={{ background: "var(--primary, #c97d2e)" }}
         >
           <div className="flex items-center gap-1 mb-1">
             <svg
-              className="w-3 h-3 text-white/80"
+              className="w-3 h-3 text-white/80 shrink-0"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -363,14 +359,16 @@ const InvoiceChargesTab: React.FC<InvoiceChargesTabProps> = ({
             </p>
           </div>
           <p className="text-[10px] text-white/70 mb-1">Free On Board</p>
-          <p className="text-xl font-bold text-white">{fobValue.toFixed(2)}</p>
+          <p className="text-xl font-bold text-white tabular-nums">
+            {fobValue.toFixed(2)}
+          </p>
         </div>
 
-        {/* Grand total */}
-        <div className="bg-card border border-theme rounded-lg p-3">
+        {/* Grand Total */}
+        <div className="bg-card border border-theme rounded-lg p-3 flex-1 xl:flex-none">
           <div className="flex justify-between items-center">
             <span className="text-xs font-semibold text-main">Grand Total</span>
-            <span className="text-sm font-bold text-primary">
+            <span className="text-sm font-bold text-primary tabular-nums">
               {totals.grandTotal.toFixed(2)}
             </span>
           </div>

@@ -445,7 +445,7 @@ export default function AddTemplateModal({
           } : undefined}
           onSubmit={!isViewMode ? handleSave : undefined}
           cancelLabel={isViewMode ? "Close" : "Cancel"}
-          submitLabel={selectedTemplate ? "Update" : "Save"}
+          submitLabel={selectedTemplate ? "Update" : "Submit"}
           isSubmitting={loading}
         />
       }

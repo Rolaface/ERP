@@ -70,61 +70,36 @@ interface InvoiceHeadersProps {
   isQuotation: boolean;
 }
 
-const InvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
-}) => (
+const QuoteColGroup: React.FC<InvoiceHeadersProps> = () => (
   <colgroup>
-    {/* #          */} <col style={{ width: "28px" }} />
-    {/* Item       */} <col style={{ width: "30%" }} />
-    {/* Pkg (U×S)  */} <col style={{ width: "6%" }} />
-    {/* Tax Name   */} <col style={{ width: "8%" }} />
-    {/* PKG        */} <col style={{ width: "8%" }} />
-    {/* UOM        */} <col style={{ width: "20%" }} />
-    {/* Unit Price */} <col style={{ width: "7%" }} />
-    {/* Discnt */} <col style={{ width: "7%" }} />
-    {/* Tax(%)     */} <col style={{ width: "5%" }} />
-    {/* Tax Name   */} <col style={{ width: "18%" }} />
-    {/* Amount     */} <col style={{ width: "8%" }} />
-    {/* Actions    */} <col style={{ width: "44px" }} />
+    <col style={{ width: "24px" }} />   {/* # */}
+    <col style={{ width: "22%" }} />    {/* Item */}
+    <col style={{ width: "52px" }} />   {/* Pkg */}
+    <col style={{ width: "72px" }} />   {/* Box */}
+    <col style={{ width: "52px" }} />   {/* Qty */}
+    <col style={{ width: "60px" }} />   {/* UOM */}
+    <col style={{ width: "8%" }} />     {/* Price */}
+    <col style={{ width: "52px" }} />   {/* Dis% */}
+    <col style={{ width: "48px" }} />   {/* Tax% */}
+    <col style={{ width: "14%" }} />    {/* Tax Name */}
+    <col style={{ width: "8%" }} />     {/* Amount */}
+    <col style={{ width: "44px" }} />   {/* Actions */}
   </colgroup>
 );
-
-const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
-}) => (
+const QuoteHeaders: React.FC<InvoiceHeadersProps> = () => (
   <tr className="border-b border-theme">
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      #
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Item
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] md:table-cell">
-      Pkg
-    </th>
-     <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-        Box
-      </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Qty
-    </th>
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px] xl:table-cell">
-        UOM
-      </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Price <span className="text-danger">*</span>
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-        Dis%
-      </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] md:table-cell">
-      Tax%
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] md:table-cell">
-      Tax
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-      Amount
-    </th>
-    <th />
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">#</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Item</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Pkg</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Box</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Qty</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden lg:table-cell">UOM</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Price <span className="text-danger">*</span></th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Dis%</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax%</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax</th>
+    <th className="px-1 py-1 text-right text-muted font-medium text-[10px]">Amount</th>
+    <th className="px-1 py-1" />
   </tr>
 );
 
@@ -266,10 +241,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
               value={it.itemName}
               selectedId={it.itemCode}
               onChange={(item: any) => {
-                // 1. Safely call the parent prop
                 onItemSelect?.(item, i);
-
-                // 2. Extract basic values
                 const code = item?.id || "";
                 const name = item?.itemName || code;
                 const rate = item?.sellingPrice || 0;
@@ -307,6 +279,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
                   packingUnit: pUnit,
                   packingSize: pSize,
                   taxCode: vatCd,
+                  piecesPerBox: Number(item?.inventoryInfo?.piecesPerBox) || 0,
                 });
               }}
             />
@@ -488,7 +461,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
   // Use built-in colgroup for default invoice layout;
   // custom colGroup prop (PO table etc.) overrides it entirely.
   const resolvedColGroup = colGroup ?? (
-    <InvoiceColGroup
+    <QuoteColGroup
       isSalesInvoice={isSalesInvoice}
       isQuotation={isQuotation}
     />
@@ -513,7 +486,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
           {resolvedColGroup}
           <thead>
             {columnHeaders || (
-              <InvoiceHeaders
+              <QuoteHeaders
                 isSalesInvoice={isSalesInvoice}
                 isQuotation={isQuotation}
               />

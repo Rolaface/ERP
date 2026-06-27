@@ -126,7 +126,7 @@ const currentY = new Date().getFullYear();
           <Users size={16} className="text-black-500" />
           <p className="text-gray-500 text-sm">Employees</p>
           </div>
-          <h2 className="text-2xl font-bold mt-2">
+          <h2 className="text-lg font-bold mt-2">
             {summaryLoading ? "..." : summaryData?.active_working || "0"}
           </h2>
           <p className="text-green-500 text-sm mt-1">+{summaryLoading ? "..." : summaryData?.active_working || "0"} this month</p>
@@ -142,7 +142,7 @@ const currentY = new Date().getFullYear();
           <CalendarRange size={16} className="text-blue-500" />
           <p className="text-gray-500 text-sm">Attendance</p>
           </div>
-          <h2 className="text-2xl font-bold mt-2">
+          <h2 className="text-lg font-bold mt-2">
             {summaryLoading 
               ? "..." 
               : `${summaryData?.active_working ? Math.round((summaryData.present_today / summaryData.active_working) * 100) : 0}%`
@@ -165,7 +165,7 @@ const currentY = new Date().getFullYear();
             <NotebookPen size={16} className="text-red-500" />
             <p className="text-gray-500 text-sm">Pending Leaves</p>
           </div>
-          <h2 className="text-2xl font-bold mt-2">
+          <h2 className="text-lg font-bold mt-2">
             {summaryLoading ? "..." : summaryData?.pending_leaves || "0"}
           </h2>
           <p className="text-orange-500 text-sm mt-1">Need Approval</p>
@@ -176,7 +176,7 @@ const currentY = new Date().getFullYear();
           <HandCoins size={16} className="text-green-500" />
           <p className="text-gray-500 text-sm">Reimbursements</p>
           </div>
-          <h2 className="text-2xl font-bold mt-2">8</h2>
+          <h2 className="text-lg font-bold mt-2">8</h2>
           <p className="text-red-500 text-sm mt-1">Pending Claims</p>
         </div>
 
@@ -185,7 +185,7 @@ const currentY = new Date().getFullYear();
           <UserCheck size={16} className="text-green-500" />
           <p className="text-gray-500 text-sm">Upcoming Appraisals</p>
           </div>
-          <h2 className="text-2xl font-bold mt-2">21</h2>
+          <h2 className="text-lg font-bold mt-2">21</h2>
           <p className="text-purple-500 text-sm mt-1">Next 30 days</p>
         </div>
 
@@ -194,7 +194,7 @@ const currentY = new Date().getFullYear();
           <Gavel size={16} className="text-black-500" />
           <p className="text-gray-500 text-sm">Compliance</p>
           </div>
-          <h2 className="text-2xl font-bold mt-2">87%</h2>
+          <h2 className="text-lg font-bold mt-2">87%</h2>
           <p className="text-green-500 text-sm mt-1">Completed</p>
         </div>
       </div>
@@ -291,13 +291,13 @@ const currentY = new Date().getFullYear();
 
             {/* Payroll (Rose Type EChart) */}
             <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Department Wise Payroll</h2>
+              <h2 className="text-lg font-semibold mb-4">Department Wise Payroll</h2>
               <DepartmentPayrollChart data={dashboardData?.["Department Wise Payroll"]} loading={dashboardLoading} />
             </div>
 
             {/* Attendance (Dataset Link EChart) */}
             <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Attendance Pattern</h2>
+              <h2 className="text-lg font-semibold mb-4">Attendance Pattern</h2>
               <AttendancePatternChart data={dashboardData?.["Attendance Pattern"]} loading={dashboardLoading} />
             </div>
 
@@ -342,7 +342,7 @@ const currentY = new Date().getFullYear();
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-center gap-2 mb-4">
               <Cake size={20} className="text-pink-500" />
-              <h2 className="text-xl font-semibold">Upcoming Birthdays</h2>
+              <h2 className="text-lg font-semibold">Upcoming Birthdays</h2>
             </div>
             
             <div className="pb-3">
@@ -404,7 +404,7 @@ const currentY = new Date().getFullYear();
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-center gap-2 mb-4">
               <FileText size={20} className="text-indigo-500" />
-              <h2 className="text-xl font-semibold">Leave Summary</h2>
+              <h2 className="text-lg font-semibold">Leave Summary</h2>
             </div>
 
             <div className="space-y-2.5">

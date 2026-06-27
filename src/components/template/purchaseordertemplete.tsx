@@ -260,7 +260,8 @@ addressBoxes.forEach((box, index) => {
         "Shelf Life (Months)",
         "Packing",
         "Qty",
-        "UOM",
+         "Unit of Measure"
+,
         "Rate",
         "Tax",
         `Amount(${cur})`,

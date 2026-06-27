@@ -14,6 +14,7 @@ export const EMPTY_ITEM: InvoiceItem = {
   expDate: "",
   boxStart:0,
   boxEnd: 0,
+  piecesPerBox: 0,
   batchNo: "",
   warehouse: "",
 };

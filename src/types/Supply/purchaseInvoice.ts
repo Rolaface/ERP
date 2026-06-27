@@ -89,6 +89,8 @@ export interface PurchaseInvoiceFormData {
   transactionProgress: string;
   supplierInvoiceNumber: string;
   supplierInvoiceDate: string;
+   totalAmount?: number;    // ← add this
+  
   attachments?: AttachmentItem[];
 
   destnCountryCd: string;

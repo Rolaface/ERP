@@ -16,6 +16,7 @@ import { parseFrappeError } from "../hooks/parseFrappeError";
 import { useLeavePolicies } from "../hooks/useLeavePolicies";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeavePolicyModal } from "../../../../../store/modalStore";
+import { Ban, Trash2 } from "lucide-react";
 
 export function LeavePolicySetup() {
   const {
@@ -152,19 +153,24 @@ export function LeavePolicySetup() {
             dropdownActions.push({
               label: "Delete",
               onClick: () => handleDelete(row),
+              icon: <Trash2 size={14} className=" text-red-600"/>,
               disabled: actionLoadingId === row.name,
+              danger: true,
             });
           } else if (row.docstatus === 1) {
             dropdownActions.push({
-              label: "Cancel Policy",
+              label: "Cancelled",
+              icon: <Ban size={14} className=" text-red-600"/>,
               onClick: () => handleStatusChange(row, 2),
               disabled: actionLoadingId === row.name,
             });
           } else if (row.docstatus === 2) {
             dropdownActions.push({
               label: "Delete",
+              icon: <Trash2 size={14} className=" text-red-600"/>,
               onClick: () => handleDelete(row),
               disabled: actionLoadingId === row.name,
+               danger: true,
             });
           }
           return (
@@ -177,6 +183,11 @@ export function LeavePolicySetup() {
                     onSuccess: fetchAll,
                   })
                 }
+              />
+              <ActionButton
+                type="edit"
+                iconOnly
+                disabled
               />
               {dropdownActions.length > 0 && (
                 <ActionMenu customActions={dropdownActions} />
@@ -209,7 +220,8 @@ export function LeavePolicySetup() {
         totalPages={totalPages}
         totalItems={totalItems}
         pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
+        pageSizeOptions={[20, 50, 100,200]}
+
         onPageChange={setPage}
         onPageSizeChange={(s) => {
           setPageSize(s);

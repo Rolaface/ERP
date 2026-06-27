@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2, Users } from "lucide-react";
+import { FolderTree, Trash2 } from "lucide-react";
 import Modal from "../../components/ui/modal/modal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { ModalInput } from "../../components/ui/modal/modalComponent";
@@ -107,7 +107,7 @@ Submit        </Button>
       title={title}
       subtitle="Manage customer group details"
       footer={footer}
-      icon={Users}
+      icon={FolderTree}
       customWidth="50vw"
       height="82vh"
     >

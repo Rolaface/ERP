@@ -271,7 +271,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       subtitle="Add and manage purchase order"
       icon={ClipboardList}
       maxWidth="full"
-      height="75vh"
+      height="80vh"
       footer={footer}
     >
       <form
@@ -311,7 +311,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           </div>
         </div>
 
-        <section className="flex-1 min-h-0 overflow-hidden p-0">{tabContent}</section>
+       <section className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-0">{tabContent}</section>
       </form>
     </MinimizableModal>
   );

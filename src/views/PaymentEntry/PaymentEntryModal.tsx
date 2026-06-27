@@ -72,6 +72,7 @@ function buildPayload(
 ): CreatePaymentEntryPayload {
   const paymentAmount = Number(form?.amountFrom ?? form?.amount ?? 0);
   const receivedAmount = Number(form?.amountTo ?? paymentAmount);
+  
   const parsedExchangeRate = Number(form?.exchangeRate);
   const exchangeRate =
     Number.isFinite(parsedExchangeRate) && parsedExchangeRate > 0

@@ -15,14 +15,29 @@ const SUMMARY_STATS = [
   { label: "Absent", value: "2", diff: "0 vs last month", diffColor: "text-gray-400" },
 ];
 
-type SegmentType = "checked_in" | "checked_in_active" | "checked_out" | "overtime" | "overtime_active";
+type SegmentType = "checked_in" | "checked_in_active" | "checked_out" | "overtime" | "overtime_active" | "break";
 
 const segmentColors: Record<SegmentType, string> = {
   checked_in:        "bg-[#2578C5]",
   checked_in_active: "bg-[#2578C5]",   
-  checked_out:       "bg-[#F58B1E]",
+  checked_out:       "bg-[#b7d7e8]",
   overtime:          "bg-red-500",       
   overtime_active:   "bg-red-500",
+  break:             "bg-[#E5E7EB]",
+};
+
+const segmentLabels: Record<SegmentType, string> = {
+  checked_in:        "Working Time",
+  checked_in_active: "Working Time",
+  checked_out:       "Working Time",
+  overtime:          "Over Time",
+  overtime_active:   "Over Time",
+  break:             "Break",
+};
+
+const getTextColor = (type: SegmentType): string => {
+  if (type === "break") return "text-gray-600";
+  return "text-white";
 };
 
 const TimelineScale = () => (
@@ -60,25 +75,33 @@ const TimelineRow = ({ data }: { data: TimelineRowData }) => (
       {/* Timeline Bar */}
       <div className="flex-1 relative pb-1">
         <TimelineScale />
-        <div className="h-6 bg-gray-50 rounded-sm relative flex w-full">
-          {data.segments?.map((seg, i) => (
-            <div
-              key={i}
-              className={`absolute h-full flex items-center justify-center text-[10px] text-white font-medium shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] ${segmentColors[seg.type]} ${
-                i === 0 ? "rounded-l-sm" : ""
-              } ${i === data.segments.length - 1 ? "rounded-r-sm" : ""}`}
-              style={{
-                left: `${seg.start}%`,
-                width: `${seg.end - seg.start}%`,
-              }}
-            >
-              {seg.label}
-              
-              {(i === 0 || i === data.segments.length -1) && (
-                <div className={`absolute ${i===0 ? 'left-0' : 'right-0'} w-1 h-8 ${segmentColors[seg.type]} top-[-4px]`}></div>
-              )}
-            </div>
-          ))}
+        <div className="h-6 bg-gray-50 rounded-sm relative flex w-full overflow-hidden">
+          {data.segments?.map((seg, i) => {
+            const segmentWidth = seg.end - seg.start;
+            const minWidthForText = 5; // Minimum width % to show text
+            const showText = segmentWidth >= minWidthForText;
+            const label = segmentLabels[seg.type];
+            
+            return (
+              <div
+                key={i}
+                className={`absolute h-full flex items-center justify-center text-[10px] font-medium shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] overflow-hidden whitespace-nowrap px-1 ${segmentColors[seg.type]} ${getTextColor(seg.type)} ${
+                  i === 0 ? "rounded-l-sm" : ""
+                } ${i === data.segments.length - 1 ? "rounded-r-sm" : ""}`}
+                style={{
+                  left: `${seg.start}%`,
+                  width: `${segmentWidth}%`,
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {showText && label}
+                
+                {(i === 0 || i === data.segments.length -1) && (
+                  <div className={`absolute ${i===0 ? 'left-0' : 'right-0'} w-1 h-8 ${segmentColors[seg.type]} top-[-4px]`}></div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -138,156 +161,6 @@ interface TimelineRowData {
   duration: string;
   segments: TimelineSegment[];
 }
-// const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
-//   if (!apiData || !apiData.length) return [];
-
-//   // Sort logs chronologically
-//   const sortedLogs = [...apiData].sort(
-//     (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
-//   );
-  
-//   // Group by Date (YYYY-MM-DD)
-//   const groupedByDate: Record<string, any[]> = sortedLogs.reduce((acc, log) => {
-//     const [date, time] = log.time.split(" ");
-//     if (!acc[date]) acc[date] = [];
-//     acc[date].push({ ...log, timeOnly: time.substring(0, 5) });
-//     return acc;
-//   }, {});
-
-//   const timelineRows: TimelineRowData[] = [];
-
-//   Object.entries(groupedByDate).forEach(([dateStr, logs]) => {
-//     const ins = logs.filter((l: any) => l.log_type === "IN");
-//     const outs = logs.filter((l: any) => l.log_type === "OUT");
-
-//     // For the text display on the left/right of the bar
-//     const firstIn = ins.length > 0 ? ins[0] : null;
-//     const lastOut = outs.length > 0 ? outs[outs.length - 1] : null;
-
-//     const clockIn = firstIn ? firstIn.timeOnly : "--:--";
-//     const clockOut = lastOut ? lastOut.timeOnly : "--:--";
-    
-//     const segments: TimelineSegment[] = [];
-//     let currentIn: any = null;
-//     let totalDurationMs = 0;
-//     let lastStartPct: number = 0;
-
-//     const addSegments = (segmentsArr: any[], start: number, end: number, shiftEnd: number, isActive: boolean) => {
-//       if (start >= shiftEnd) {
-//         // Entirely overtime
-//         segmentsArr.push({ start, end, type: isActive ? "overtime_active" : "overtime", label: "" });
-//       } else if (end > shiftEnd) {
-//         // Split segment at shift end
-//         segmentsArr.push({ start, end: shiftEnd, type: isActive ? "checked_in_active" : "checked_in", label: "" });
-//         segmentsArr.push({ start: shiftEnd, end, type: isActive ? "overtime_active" : "overtime", label: "" });
-//       } else {
-//         // Entirely normal hours
-//         segmentsArr.push({ start, end, type: isActive ? "checked_in_active" : "checked_in", label: "" });
-//       }
-//     };
-
-//     // Loop through all logs for this day to pair INs and OUTs
-//     logs.forEach((log) => {
-//       if (log.log_type === "IN") {
-//         if (!currentIn) {
-//           currentIn = log;
-//           lastStartPct = timeToPercent(log.timeOnly);
-//          } 
-//       } else if (log.log_type === "OUT" && currentIn) {
-//         // Close the segment
-//         const startPct = timeToPercent(currentIn.timeOnly);
-//         const endPct = timeToPercent(log.timeOnly);
-//         const endPctClamped = Math.max(startPct + 0.5, endPct);
-
-//         // segments.push({
-//         //   start: startPct,
-//         //    end: Math.max(startPct + 0.5, endPct), 
-//         //   type: "checked_in",
-//         //   label: "" 
-//         // });
-
-//         const shiftEndStr = currentIn.shift_end 
-//           ? currentIn.shift_end.split(" ")[1].substring(0, 5) 
-//           : "17:00";
-//         const shiftEndPct = timeToPercent(shiftEndStr);
-
-//         addSegments(segments, startPct, endPctClamped, shiftEndPct, false);
-
-//         totalDurationMs += new Date(log.time).getTime() - new Date(currentIn.time).getTime();
-//         currentIn = null; // Reset for the next pair
-//       }
-//     });
-
-// //   if (currentIn) {
-// //   const now = new Date();
-// //   const nowPct = timeToPercent(
-// //     `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
-// //   );
-
-// //   segments.push({
-// //     start: lastStartPct,
-// //     end: Math.max(lastStartPct + 0.5, nowPct),
-// //     type: "checked_in_active",   // ← new type
-// //     label: ""
-// //   });
-
-// //    totalDurationMs += now.getTime() - new Date(currentIn.time).getTime();
-// // }
-// if (currentIn) {
-//       const now = new Date();
-//       const checkInTime = new Date(currentIn.time).getTime();
-//       const diffMs = now.getTime() - checkInTime;
-
-//       const shiftEndStr = currentIn.shift_end 
-//         ? currentIn.shift_end.split(" ")[1].substring(0, 5) 
-//         : "17:00";
-//       const shiftEndPct = timeToPercent(shiftEndStr);
-
-//       if (diffMs >= 24 * 60 * 60 * 1000) {
-//         // --- AUTO CHECKOUT AFTER 24 HOURS ---
-//         const endPct = timeToPercent("23:59"); 
-//         addSegments(segments, lastStartPct, endPct, shiftEndPct, false);
-        
-//         totalDurationMs += (24 * 60 * 60 * 1000); 
-//         currentIn = null; 
-//       } else {
-//         // --- NORMAL ACTIVE CHECK-IN ---
-//         const nowPct = timeToPercent(
-//           `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
-//         );
-//         const endPct = Math.max(lastStartPct + 0.5, nowPct);
-        
-//         addSegments(segments, lastStartPct, endPct, shiftEndPct, true);
-//         totalDurationMs += diffMs;
-//       }
-//     }
-
-//     // Format Duration
-//     let duration = "--h --m";
-//     if (totalDurationMs > 0) {
-//       const hours = Math.floor(totalDurationMs / 3600000);
-//       const mins = Math.floor((totalDurationMs % 3600000) / 60000);
-//       duration = `${hours}h ${mins}m`;
-//     }
-
-//     // Format date for title
-//     const dateObj = new Date(dateStr);
-//     const title = dateObj.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
-
-//     timelineRows.push({
-//       id: dateStr,
-//       title: title,
-//       status: (!currentIn && firstIn) ? "Completed" : "Active",
-//       clockIn,
-//       clockOut: currentIn ? "--:--" : clockOut, 
-//       duration,
-//       segments
-//     });
-//   });
-
-//   // Return newest dates first
-//   return timelineRows.sort((a, b) => new Date(b.id).getTime() - new Date(a.id).getTime());
-// };
 
 const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
   if (!apiData || !apiData.length) return [];
@@ -373,7 +246,7 @@ const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
       }
     };
 
-    logs.forEach((log) => {
+    logs.forEach((log, logIndex) => {
       if (log.log_type === "IN") {
         if (!currentIn) {
           currentIn = log;
@@ -390,6 +263,19 @@ const formatTimelineData = (apiData: any[]): TimelineRowData[] => {
         const shiftEndPct = timeToPercent(shiftEndStr);
 
         addSegments(segments, startPct, endPctClamped, shiftEndPct, false);
+
+        // Add BREAK segment if there's a next IN
+        const nextLogIndex = logs.findIndex((l: any, idx: number) => idx > logIndex && l.log_type === "IN");
+        if (nextLogIndex !== -1) {
+          const nextInLog = logs[nextLogIndex];
+          const nextInPct = timeToPercent(nextInLog.timeOnly);
+          segments.push({ 
+            start: endPctClamped, 
+            end: nextInPct, 
+            type: "break", 
+            label: "" 
+          });
+        }
 
         totalDurationMs += new Date(log.time).getTime() - new Date(currentIn.time).getTime();
         currentIn = null; 
@@ -454,32 +340,6 @@ const EmployeeAttendance = () => {
     return { from_date: toYMD(from), to_date: toYMD(to) };
   });
 
-//  const fetchAttendanceData = async () => {
-//     if (!user?.employeeId) return;
-
-//     try {
-//       const response = await getEmployeeByEmployeeId(user.employeeId);
-//       const rawLogs = response?.data?.data || response?.data;
-
-//       if (Array.isArray(rawLogs) && rawLogs.length > 0) {
-//         const formattedData = formatTimelineData(rawLogs);
-//         setTimelineData(formattedData);
-
-//         const sorted = [...rawLogs].sort(
-//           (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
-//         );
-//         const latestLog = sorted[sorted.length - 1];
-//         if (latestLog) {
-//           setIsCheckedIn(latestLog.log_type === "IN");
-//         }
-//       } else {
-//         setTimelineData([]);
-//       }
-//     } catch (error) {
-//       console.error("Attendance Fetch Error:", error);
-//       showApiError("Failed to fetch attendance records.");
-//     }
-//   };
 const fetchAttendanceData = async () => {
     if (!user?.employeeId) return;
 

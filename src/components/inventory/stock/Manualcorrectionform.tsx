@@ -97,10 +97,12 @@ export const ManualCorrectionForm: React.FC<Props> = ({
 
                 {/* UOM */}
                 <div className="flex flex-col gap-0.5">
-                  <FieldLabel label="Unit of Measure" />
+                  <FieldLabel label="Unit of Measure"
+ />
                   <UOMWrapper>
                     <ItemGenericSelect
-                      label="UOM"
+                      label= "Unit of Measure"
+
                       fetchData={getUOMs}
                       value={form.unitOfMeasureCd || ""}
                       onChange={({ id }) => setField("unitOfMeasureCd", id as any)}

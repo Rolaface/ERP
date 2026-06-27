@@ -16,8 +16,8 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openEmployeeAdvanceModal } from "../../store/modalStore";
-import { getAllAdvances, getAdvanceById, deleteEmployeeAdvance, updateAdvanceStatus } from "../../api/expenseClaimApi";
-import EmployeeAdvanceDetailModal, { EmployeeAdvanceDetail } from "../../views/ExpenseManagement/advanceDetailView";
+import { getAllAdvances, getAdvanceById, getAdvanceByIdForView, deleteEmployeeAdvance, updateAdvanceStatus } from "../../api/expenseClaimApi";
+import EmployeeAdvanceDetailView, { EmployeeAdvanceDetail } from "../../views/ExpenseManagement/advanceDetailView";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import {
   ACTION_ICONS,
@@ -47,24 +47,54 @@ interface EmployeeAdvance {
 const EmployeeAdvanceTable: React.FC = () => {
   const mountedRef = useRef(true);
   const { can } = usePermission();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerData, setDrawerData] = useState<EmployeeAdvanceDetail | null>(null);
-  const [drawerLoading, setDrawerLoading] = useState(false);
-  const handleViewClick = async (ea: EmployeeAdvance, e?: React.MouseEvent<HTMLButtonElement>) => {
-    if (!e) return;
-    e.stopPropagation();
-    setDrawerOpen(true);
-    setDrawerLoading(true);
-    setDrawerData(null);
-    try {
-      const advance = await getAdvanceById(ea.id);
-      setDrawerData(advance);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setDrawerLoading(false);
-    }
-  };
+
+  // ── view mode: "table" | "detail" ─────────────────────────────────────────
+  const [viewMode, setViewMode] = useState<"table" | "detail">("table");
+  const [detailData, setDetailData] = useState<EmployeeAdvanceDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailDateRange, setDetailDateRange] = useState<{ from_date?: string; to_date?: string }>({});
+const [currentAdvanceId, setCurrentAdvanceId] = useState<string | null>(null);
+const handleViewClick = async (ea: EmployeeAdvance, e?: React.MouseEvent<HTMLButtonElement>) => {
+  if (e) e.stopPropagation();
+  setDetailData(null);
+  setDetailLoading(true);
+  setDetailDateRange({});        
+  setViewMode("detail");
+  setCurrentAdvanceId(ea.id);      
+  try {
+    const advance = await getAdvanceByIdForView(ea.id);
+    setDetailData(advance);
+  } catch (err) {
+    showApiError(err);
+    setViewMode("table");
+  } finally {
+    setDetailLoading(false);
+  }
+};
+
+const handleDetailDateChange = async (range: { from_date?: string; to_date?: string }) => {
+  setDetailDateRange(range);
+  setDetailLoading(true);
+  try {
+    const advance = await getAdvanceByIdForView(
+      currentAdvanceId!,
+      range.from_date,
+      range.to_date,
+    );
+    setDetailData(advance);
+  } catch (err) {
+    showApiError(err);
+  } finally {
+    setDetailLoading(false);
+  }
+};
+
+const handleBack = () => {
+  setViewMode("table");
+  setDetailData(null);
+  setDetailDateRange({});
+  setCurrentAdvanceId(null);
+};
 
   const [employeeAdvances, setEmployeeAdvances] = useState<EmployeeAdvance[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -412,73 +442,74 @@ const EmployeeAdvanceTable: React.FC = () => {
     [handleDelete, handleOpenEdit, handleViewClick, handleMakePayment, can]
   );
 
+  // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div className="h-full min-h-0">
-      <Table
-        columns={columns}
-        data={employeeAdvances}
-        rowKey={(row) => row.id}
-        tableId="employee-advance"
-        loading={isInitialLoad}
-        isFetching={isFetching}
-        showToolbar
-        searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
-        extraFilters={
-          <FilterSelect
-            value={filters.status ?? ""}
-            options={statusOptions}
-            onChange={(e) =>
-              setFilters((prev) => ({
-                ...prev,
-                status: e.target.value || undefined,
-              }))
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+      {viewMode === "table" ? (
+        <div className="h-full min-h-0">
+          <Table
+            columns={columns}
+            data={employeeAdvances}
+            rowKey={(row) => row.id}
+            tableId="employee-advance"
+            loading={isInitialLoad}
+            isFetching={isFetching}
+            showToolbar
+            searchValue={searchTerm}
+            onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+            extraFilters={
+              <FilterSelect
+                value={filters.status ?? ""}
+                options={statusOptions}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    status: e.target.value || undefined,
+                  }))
+                }
+              />
             }
+            enableAdd={can(EMPLOYEE_ADVANCE_MODULE, "create")}
+            addLabel="Add Employee Advance"
+            onAdd={() =>
+              openEmployeeAdvanceModal(null, false, {
+                onSuccess: async () => {
+                  showSuccess("Employee advance added successfully");
+                  fetchEmployeeAdvances();
+                },
+              })
+            }
+            enableColumnSelector
+            enableExport={can(EMPLOYEE_ADVANCE_MODULE, "export")}
+            onExport={handleExportExcel}
+            currentPage={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            pageSizeOptions={[20, 50, 100, 200]}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+            onPageChange={setPage}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={({ sortBy: col, sortOrder: ord }) => {
+              setSortBy(col);
+              setSortOrder(ord);
+              setPage(1);
+            }}
+            onRowDoubleClick={(ea) => handleViewClick(ea)}
           />
-        }
-        enableAdd={can(EMPLOYEE_ADVANCE_MODULE, "create")}
-        addLabel="Add Employee Advance"
-        onAdd={() =>
-          openEmployeeAdvanceModal(null, false, {
-            onSuccess: async () => {
-              showSuccess("Employee advance added successfully");
-              fetchEmployeeAdvances();
-            },
-          })
-        }
-        enableColumnSelector
-        enableExport={can(EMPLOYEE_ADVANCE_MODULE, "export")}
-        onExport={handleExportExcel}
-        currentPage={page}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        totalItems={totalItems}
-         pageSizeOptions={[20, 50, 100,200]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
-        onPageChange={setPage}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSortChange={({ sortBy: col, sortOrder: ord }) => {
-          setSortBy(col);
-          setSortOrder(ord);
-          setPage(1);
-        }}
-        onRowDoubleClick={(ea) => {
-          setDrawerOpen(true);
-          setDrawerLoading(true);
-          setDrawerData(null);
-          getAdvanceById(ea.id)
-            .then(setDrawerData)
-            .catch(showApiError)
-            .finally(() => setDrawerLoading(false));
-        }}
-      />
-      <EmployeeAdvanceDetailModal
-        open={drawerOpen}
-        data={drawerData}
-        loading={drawerLoading}
-        onClose={() => { setDrawerOpen(false); setDrawerData(null); }}
-      />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <EmployeeAdvanceDetailView
+  data={detailData}
+  loading={detailLoading}
+  onBack={handleBack}
+  dateRange={detailDateRange}
+  onDateRangeChange={handleDetailDateChange}
+/>
+        </div>
+      )}
     </div>
   );
 };

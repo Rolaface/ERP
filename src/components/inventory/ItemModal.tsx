@@ -425,7 +425,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
       icon={Package}
       footer={footer}
       customWidth="min(92vw, 1280px)"
-      height="64vh"
+      height="75vh"
       summaryBar={<ItemSummaryBar form={form} taxRows={taxRows} />}
     >
 

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from "react";
-import { ArrowDownLeft,FileMinus} from "lucide-react";
+import { FileMinus } from "lucide-react";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import { Button } from "../../components/ui/modal/formComponent";
 import { CreditNoteDetailsTab } from "./CreditNoteDetailsTab";
@@ -30,7 +30,6 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
   initialData,
   isEdit = false,
 }) => {
-  // Stable modal ID — computed once per mount, same strategy as Asset modal
   const resolvedModalId = useRef(
     modalId ??
       (isEdit && initialData?.name
@@ -51,13 +50,10 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
     toggleUpdateStock,
     reset,
     handleSubmit,
-    handleCloseWithConfirm, // ← from useUnsavedChanges inside the hook
+    handleCloseWithConfirm,
   } = useCreditNoteForm(onSubmit, onClose, initialData, isEdit);
 
-  // ── Close handler — asks for confirmation when dirty ────────────────────
   const handleClose = () => handleCloseWithConfirm(onClose, resolvedModalId);
-
-  // ── Footer ───────────────────────────────────────────────────────────────
 
   const footer = useMemo(
     () => (
@@ -66,11 +62,7 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
           Cancel
         </Button>
         <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={reset}
-          >
+          <Button variant="secondary" type="button" onClick={reset}>
             Reset
           </Button>
           <Button
@@ -79,20 +71,13 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
             form={FORM_ID}
             disabled={saving}
           >
-            {saving
-              ? "Saving..."
-              : isEdit
-                ? "Update"
-                : "Submit"}
+            {saving ? "Saving..." : isEdit ? "Update" : "Submit"}
           </Button>
         </div>
       </>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [saving, isEdit],
   );
-
-  // ── Tab content ──────────────────────────────────────────────────────────
 
   const tabContent = useMemo(
     () => (
@@ -121,19 +106,17 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
     ],
   );
 
-  // ── Render ───────────────────────────────────────────────────────────────
-
   return (
     <MinimizableModal
       modalId={resolvedModalId}
       isOpen={isOpen}
-      onClose={handleClose} // ← guarded close
+      onClose={handleClose}
       title={isEdit ? "Edit Credit Note" : "Add Credit Note"}
       subtitle="Add and manage credit notes"
       icon={FileMinus}
       footer={footer}
-      maxWidth="6xl"
-      height="82vh"
+      maxWidth="full"
+      height="700px"
     >
       <form
         id={FORM_ID}
@@ -141,11 +124,11 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
         className="h-full flex flex-col"
       >
         {/* ── Tab bar ── */}
-        <div className="bg-app border-b border-theme px-8 shrink-0">
+        <div className="bg-app border-b border-theme px-4 sm:px-8 shrink-0">
           <div className="flex gap-8">
             <button
               type="button"
-              className="py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all text-primary border-b-[3px] border-primary"
+              className="py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all text-primary border-b-[3px] border-primary whitespace-nowrap shrink-0"
             >
               Details
             </button>
@@ -153,7 +136,7 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
         </div>
 
         {/* ── Tab content ── */}
-        <section className="flex-1 overflow-y-auto">
+        <section className="flex-1 min-h-0 overflow-y-auto">
           {tabContent}
         </section>
       </form>

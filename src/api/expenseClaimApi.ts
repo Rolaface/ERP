@@ -455,3 +455,19 @@ export const addComment = async (payload: {
   const res = await api.post(ExpenseClaimAPI.addComment, payload);
   return res.data;
 };
+
+
+export async function getAdvanceByIdForView(
+  id: string,
+  from_date?: string,
+  to_date?: string,
+): Promise<any> {
+  const params = new URLSearchParams();
+  params.append("id", encodeURIComponent(id));
+  if (from_date) params.append("from_date", from_date);
+  if (to_date) params.append("to_date", to_date);
+
+  const url = `${ExpenseClaimAPI.getAdvanceByIdView}?${params.toString()}`;
+  const resp: AxiosResponse = await api.get(url);
+  return resp.data?.message?.data || null;
+}

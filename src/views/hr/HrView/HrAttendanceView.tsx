@@ -303,7 +303,8 @@ const HrAttendanceView: React.FC = () => {
       pageSize={pageSize}
       totalItems={filteredData.length}
       totalPages={Math.ceil(filteredData.length / pageSize) || 1}
-      pageSizeOptions={[10, 25, 50, 100]}
+       pageSizeOptions={[20, 50, 100,200]}
+
       onPageSizeChange={(size) => {
         setPageSize(size);
         setPage(1);

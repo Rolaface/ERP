@@ -15,6 +15,7 @@ import { useLeavePolicyAssignments } from "../hooks/useLeavePolicyAssignments";
 import { confirmCancel } from "../../../../../api/utils/confirmCancel";
 import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeavePolicyAssignmentModal } from "../../../../../store/modalStore";
+import { Ban } from "lucide-react";
 
 export function LeavePolicyAssignmentSetup() {
   const {
@@ -154,7 +155,8 @@ export function LeavePolicyAssignmentSetup() {
 
           if (row.docstatus === 1) {
             menuActions.push({
-              label: "Cancel",
+              label: "Cancelled",
+              icon: <Ban size={14} className=" text-red-600"/>, 
               onClick: () => handleCancel(row),
               disabled: actionLoadingId === row.name,
             });
@@ -180,6 +182,11 @@ export function LeavePolicyAssignmentSetup() {
                   )
                 }
               />
+               <ActionButton
+                              type="edit"
+                              iconOnly
+                              disabled
+                            />
               {menuActions.length > 0 && (
                 <ActionMenu customActions={menuActions} />
               )}
@@ -211,7 +218,8 @@ export function LeavePolicyAssignmentSetup() {
         totalPages={totalPages}
         totalItems={totalItems}
         pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
+        pageSizeOptions={[20, 50, 100,200]}
+
         onPageChange={setPage}
         onPageSizeChange={(s) => {
           setPageSize(s);

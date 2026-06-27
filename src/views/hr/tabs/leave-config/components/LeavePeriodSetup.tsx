@@ -15,6 +15,9 @@ import { confirmDelete } from "../../../../../api/utils/confirmDelete";
 import { openLeavePeriodModal } from "../../../../../store/modalStore";
 import { showApiError } from "../../../../../utils/alert";
 import { parseFrappeError } from "../hooks/parseFrappeError";
+import { Shield, ShieldOff, Trash2 } from "lucide-react";
+import { tr } from "date-fns/locale";
+import { ACTION_ICONS } from "../../../../../components/UI_Utils/statusActionIcons";
 
 export function LeavePeriodSetup() {
   const {
@@ -127,7 +130,7 @@ export function LeavePeriodSetup() {
                 : "bg-gray-100 text-gray-700"
               }`}
           >
-            {row.is_active ? "Active" : "Inactive"}
+            {row.is_active ? "Enabled" : "Disabled"}
           </span>
         ),
       },
@@ -156,17 +159,33 @@ export function LeavePeriodSetup() {
               disabled={actionLoadingId === row.name}
             />
             <ActionMenu
-              customActions={[
+//               customActions={[
+//              {
+//   label: row.is_active ? "Inactive" : "Activate",
+//   onClick: () => handleStatus(row),
+//   icon: row.is_active ? (
+//     <ShieldOff size={14} />
+//   ) : (
+//     <Shield size={14} />
+//   ),
+//   disabled: actionLoadingId === row.name,
+// },
+customActions={[
                 {
-                  label: row.is_active ? "Inactive" : "Active",
+                  label: row.is_active ? "Disable" : "Enable",
+                  icon: row.is_active
+                    ? ACTION_ICONS.DISABLE
+                    : ACTION_ICONS.ENABLE,
                   onClick: () => handleStatus(row),
                   disabled: actionLoadingId === row.name,
                 },
-                {
-                  label: "Delete",
-                  onClick: () => handleDelete(row),
-                  disabled: actionLoadingId === row.name,
-                },
+                 {
+      label: "Delete",
+      icon: <Trash2 size={14} className=" text-red-600" />,
+      onClick: () => handleDelete(row),
+      disabled: actionLoadingId === row.name, 
+      danger: true,
+    },
               ]}
             />
           </ActionGroup>
@@ -196,7 +215,8 @@ export function LeavePeriodSetup() {
         totalPages={totalPages}
         totalItems={totalItems}
         pageSize={pageSize}
-        pageSizeOptions={[10, 25, 50]}
+        pageSizeOptions={[20, 50, 100,200]}
+
         onPageChange={setPage}
         onPageSizeChange={(s) => {
           setPageSize(s);

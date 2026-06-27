@@ -53,6 +53,18 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [submitting, setSubmitting] = useState(false);
+  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
+
+   useEffect(() => {
+    if (mode === "edit" && initialData?.items?.length > 0) {
+      // Check if the first item (or any item) is a service
+      const isService = initialData.items[0]?.isServiceItem;
+      setInvoiceType(isService ? "Service" : "Product");
+    } else if (mode === "create") {
+      // Default to Product for new invoices
+      setInvoiceType("Product");
+    }
+  }, [initialData, mode, isOpen]);
 
   const {
     formData,
@@ -90,7 +102,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     !!ui.baseCurrency &&
     !!formData.currencyCode &&
     formData.currencyCode.trim().toUpperCase() !==
-    ui.baseCurrency.trim().toUpperCase();
+      ui.baseCurrency.trim().toUpperCase();
 
   const handleModeFetchOptions = async (q: string) => {
     const res = await getAllModeOfPayment(1, 10, q || "", 1);
@@ -112,7 +124,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     setSubmitting(true);
     try {
       const payload = await actions.handleSubmit({
-        preventDefault: () => { },
+        preventDefault: () => {},
       } as React.FormEvent);
 
       if (!payload) return;
@@ -196,7 +208,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       icon={Receipt}
       footer={footerContent}
       maxWidth="full"
-      height="650px"
+      // maxWidth={invoiceType === "Service" ? "10xl" : "full"}
+      height="700px"
     >
       <form
         id="invoiceForm"
@@ -213,10 +226,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   key={tab}
                   type="button"
                   onClick={() => ui.setActiveTab(tab)}
-                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${ui.activeTab === tab
+                  className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
+                    ui.activeTab === tab
                       ? "text-primary border-b-[3px] border-primary"
                       : "text-muted border-b-[3px] border-transparent hover:text-main"
-                    }`}
+                  }`}
                 >
                   {tab === "details" && "Details"}
                   {tab === "address" && "Additional Details"}
@@ -235,8 +249,54 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
+
+              {/* Invoice Type  */}  
+              {/* <div className="w-full sm:w-[130px]">
+                  <ModalSelect
+                    label="Invoice Type"
+                    name="invoiceType"
+                    value={invoiceType} // Use local state
+                    onChange={(e: any) => setInvoiceType(e.target.value)} // Update local state
+                    options={[
+                      { value: "Product", label: "Product" },
+                      { value: "Service", label: "Service" },
+                    ]}
+                    className="w-full border border-theme rounded text-[11px] text-main bg-card"
+                  />
+                </div> */}
+                {/* Invoice Type */}
+              <div className="w-full sm:w-auto flex flex-col justify-end">
+                {/* Optional visible label to align with other inputs; use text-transparent if you only want the box */}
+                <label className="text-[11px] text-muted mb-1">Invoice Type</label>
+                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[30px]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Product"
+                      checked={invoiceType === "Product"}
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="w-4 h-4 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[12px] text-main whitespace-nowrap">Product</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Service"
+                      checked={invoiceType === "Service"}
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="w-4 h-4 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[12px] text-main whitespace-nowrap">Service</span>
+                  </label>
+                </div>
+              </div>
+
                 {/* Customer — full width on mobile, fixed on sm+ */}
-                <div className="w-full sm:w-[220px]">
+                <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
                     onChange={actions.handleCustomerSelect}
@@ -334,6 +394,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 </div>
 
                 {/* Update Stock */}
+                {invoiceType === "Product" && (
                 <div className="w-full sm:w-auto flex flex-col justify-end">
                   <label className="text-[11px] text-transparent select-none">
                     ‎
@@ -351,6 +412,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     </span>
                   </label>
                 </div>
+                )}
 
                 {/* LPO Number — only when LPO tax category */}
                 {ui.isLocal && (
@@ -374,7 +436,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   - Desktop (xl+): table takes remaining space, sidebar is 220px
                   - minmax(0, 1fr) prevents the table from pushing the grid wider
                     than the modal container                                       ── */}
-              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_160px] gap-4 items-start">
+              <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_220px] gap-4 items-start">
                 {/* Table column — min-w-0 so it can shrink below natural content width */}
                 <div className="min-w-0">
                   <ItemTable
@@ -384,6 +446,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     formData={formData}
                     symbol=""
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                   invoiceType={invoiceType}
                     isSalesInvoice={true}
                     taxCategory={
                       formData.taxCategory ||
@@ -402,7 +465,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     <div className="flex flex-col gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted shrink-0" />
-                        <span className="truncate">
+                        <span className="break-words">
                           {customerDetails?.name ?? "Customer Name"}
                         </span>
                       </div>
@@ -444,12 +507,17 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   </div>
 
                   {/* Summary card */}
-                  {/* Summary card */}
                   <div className="bg-card rounded-lg p-3 flex-1 xl:flex-none w-full">
                     <h3 className="text-[13px] font-semibold text-main mb-2">
                       Summary
                     </h3>
                     <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Total Items</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {formData.items.length}
+                        </span>
+                      </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-muted">Total Qty</span>
                         <span className="font-medium text-main tabular-nums">
