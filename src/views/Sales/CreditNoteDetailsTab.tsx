@@ -8,6 +8,7 @@ import type {
 import WarehouseSelect from "../../components/selects/WarehouseSelect";
 import ItemTable from "../../components/common/ItemTable";
 import { NumericInput } from "../../components/ui/modal/modalComponent";
+import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 
 // ─── Invoice Search Select ────────────────────────────────────────────────────
 
@@ -78,13 +79,13 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
   };
 
   return (
-    <div ref={containerRef} className="relative flex flex-col gap-1">
+    <div ref={containerRef} className="relative flex flex-col gap-1 w-full sm:w-[280px]">
       <label className="text-[11px] font-medium text-muted">
-        Invoice Number <span className="text-red-500">*</span>
+        Invoice Number <span className="text-danger">*</span>
       </label>
 
       <div
-        className="flex items-center gap-1.5 border border-theme rounded px-2 py-1 bg-card cursor-text"
+        className="flex items-center gap-1.5 border border-theme rounded px-2 py-1 bg-card cursor-text h-[30px]"
         onClick={handleOpen}
       >
         <Search className="w-3 h-3 text-muted shrink-0" />
@@ -114,10 +115,11 @@ const InvoiceSearchSelect: React.FC<InvoiceSearchSelectProps> = ({
               <div
                 key={opt.value}
                 onClick={() => handleSelect(opt)}
-                className={`px-3 py-2 text-[11px] cursor-pointer hover:bg-primary/10 transition-colors ${opt.value === value
-                  ? "bg-primary/10 font-medium text-primary"
-                  : "text-main"
-                  }`}
+                className={`px-3 py-2 text-[11px] cursor-pointer hover:bg-primary/10 transition-colors ${
+                  opt.value === value
+                    ? "bg-primary/10 font-medium text-primary"
+                    : "text-main"
+                }`}
               >
                 <span className="font-medium">{opt.label}</span>
                 <span className="ml-2 text-muted">{opt.customerName}</span>
@@ -148,42 +150,42 @@ export interface CreditNoteDetailsTabProps {
   onItemChange: (
     index: number,
     field: keyof CreditNoteItem,
-  value: string | number | null,
+    value: string | number | null,
   ) => void;
   onWarehouseDefault: (index: number, warehouse: string) => void;
   onRemoveItem: (index: number) => void;
   onToggleUpdateStock: () => void;
 }
 
-// ─── Credit Note column headers ───────────────────────────────────────────────
+// ─── Column headers ───────────────────────────────────────────────────────────
+
+const CreditNoteColGroup: React.FC = () => (
+  <colgroup>
+    <col style={{ width: "24px" }} />   {/* # */}
+    <col style={{ width: "22%" }} />    {/* Item */}
+    <col style={{ width: "7%" }} />     {/* Qty */}
+    <col style={{ width: "8%" }} />     {/* Rate */}
+    <col style={{ width: "12%" }} />    {/* Batch No */}
+    <col style={{ width: "18%" }} />    {/* Warehouse */}
+    <col style={{ width: "8%" }} />     {/* Amount */}
+    <col style={{ width: "36px" }} />   {/* Actions */}
+  </colgroup>
+);
 
 const CreditNoteHeaders: React.FC = () => (
   <tr className="border-b border-theme">
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[25px]">
-      #
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] min-w-[150px]">
-      Item
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">
-      Qty
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[80px]">
-      Rate
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] w-[120px]">
-      Batch No.
-    </th>
-    <th className="px-2 py-1 text-left text-muted font-medium text-[11px] min-w-[160px]">
-      Warehouse
-    </th>
-    <th className="px-2 py-1 text-right text-muted font-medium text-[11px] w-[80px]">
-      Amount
-    </th>
-    <th className="w-8" />
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">#</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Item</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Qty</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Rate</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Batch No</th>
+    <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Warehouse</th>
+    <th className="px-1 py-1 text-right text-muted font-medium text-[10px]">Amount</th>
+    <th className="px-1 py-1" />
   </tr>
 );
 
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const EMPTY_ITEM: CreditNoteItem = {
   item_code: "",
@@ -194,11 +196,9 @@ const EMPTY_ITEM: CreditNoteItem = {
   warehouse: "",
 };
 
-const PLACEHOLDER_COUNT = 1;
+const ITEMS_PER_PAGE = 10;
 
 // ─── Component ────────────────────────────────────────────────────────────────
-
-const ITEMS_PER_PAGE = 10;
 
 export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
   form,
@@ -213,7 +213,6 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
 }) => {
   const [page, setPage] = useState(0);
 
-  // Reset page when invoice changes
   useEffect(() => {
     setPage(0);
   }, [form.return_against]);
@@ -222,7 +221,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
   const showPlaceholders = noInvoice || invoiceLoading;
 
   const displayItems: CreditNoteItem[] = showPlaceholders
-    ? Array.from({ length: PLACEHOLDER_COUNT }, () => ({ ...EMPTY_ITEM }))
+    ? [{ ...EMPTY_ITEM }]
     : form.items;
 
   const itemCount = displayItems.length;
@@ -231,13 +230,13 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
     (page + 1) * ITEMS_PER_PAGE,
   );
 
-  // ── ItemTable shim ─────────────────────────────────────────────────────────
+  // ── ItemTable shim ────────────────────────────────────────────────────────
 
   const ui = { page, setPage, itemCount };
 
   const actions = {
-    addItem: () => { },
-    duplicateItem: () => { },
+    addItem: () => {},
+    duplicateItem: () => {},
     removeItem: onRemoveItem,
     handleItemChange: (
       index: number,
@@ -253,7 +252,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
 
   const formData = { items: displayItems };
 
-  // ── renderRow ──────────────────────────────────────────────────────────────
+  // ── renderRow ─────────────────────────────────────────────────────────────
 
   const renderRow = (
     it: CreditNoteItem,
@@ -267,81 +266,66 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
     const isPulsing = invoiceLoading;
     const amount = Math.abs(it.qty) * it.rate;
 
-    const inputCls = `w-full py-1 px-2 border border-theme rounded text-[11px] bg-card text-main
-  focus:outline-none focus:ring-1 focus:ring-primary no-spinner
-  ${isPulsing ? "animate-pulse opacity-60" : ""}`;
+    const inputCls = `w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main
+      focus:outline-none focus:ring-1 focus:ring-primary no-spinner
+      ${isPulsing ? "animate-pulse opacity-60" : ""}`;
 
     return (
       <tr
         key={`row-${absoluteIndex}`}
-        className="border-b border-theme hover:bg-primary/5 transition-colors"
+        className="border-b border-theme bg-card hover:bg-primary/5 transition-colors"
       >
         {/* # */}
-        <td className="px-2 py-1 text-center text-[10px] text-muted">
-          {absoluteIndex + 1}
-        </td>
+        <td className="px-1 py-1.5 text-[10px] text-muted">{absoluteIndex + 1}</td>
 
-        {/* Item name + code */}
-        <td className="px-2 py-1">
+        {/* Item */}
+        <td className="px-1 py-1.5 overflow-hidden">
           {isPlaceholder ? (
-            // Mimic the two-line item display with shimmer bars
-            <>
-              <div
-                className={`h-3.5 w-28 bg-app rounded ${isPulsing ? "animate-pulse bg-primary/10" : ""}`}
-              />
-              <div
-                className={`h-2.5 w-20 bg-app rounded mt-1 ${isPulsing ? "animate-pulse bg-primary/10" : ""}`}
-              />
-            </>
+            <div className="flex flex-col gap-1">
+              <div className={`h-3 w-28 bg-app rounded ${isPulsing ? "animate-pulse bg-primary/10" : ""}`} />
+              <div className={`h-2.5 w-20 bg-app rounded ${isPulsing ? "animate-pulse bg-primary/10" : ""}`} />
+            </div>
           ) : (
             <>
-              <div className="text-[11px] font-medium text-main leading-tight">
+              <div className="text-[10px] font-medium text-main leading-tight truncate">
                 {it.item_name || it.item_code}
               </div>
-              <div className="text-[10px] text-muted font-mono">
-                {it.item_code}
-              </div>
+              <div className="text-[9px] text-muted font-mono truncate">{it.item_code}</div>
             </>
           )}
         </td>
 
         {/* Qty */}
-        <td className="px-1 py-1">
+        <td className="px-1 py-1.5 overflow-hidden">
           <NumericInput
-  name="qty"
- value={it.qty == null ? null : Math.abs(it.qty)}
-  disabled={isPlaceholder}
-  className={isPulsing ? "animate-pulse opacity-60 w-full" : "w-full"}
-  onChange={(value) => {
-    onItemChange(
-      absoluteIndex,
-      "qty",
-      value === null
-        ? null
-        : value > 0
-          ? -value
-          : value,
-    );
-  }}
-/>
+            name="qty"
+            value={it.qty == null ? null : Math.abs(it.qty)}
+            disabled={isPlaceholder}
+            className={isPulsing ? "animate-pulse opacity-60 w-full" : "w-full"}
+            onChange={(value) =>
+              onItemChange(
+                absoluteIndex,
+                "qty",
+                value === null ? null : value > 0 ? -value : value,
+              )
+            }
+          />
         </td>
 
         {/* Rate */}
-        <td className="px-1 py-1">
-        <NumericInput
-  name="rate"
- value={it.rate}
-  disabled={isPlaceholder}
-  decimalScale={4}
-  className={isPulsing ? "animate-pulse opacity-60 w-full" : "w-full"}
-  onChange={(value) =>
-    onItemChange(absoluteIndex, "rate", value)
-  }
-/>
+        <td className="px-1 py-1.5 overflow-hidden">
+          <NumericInput
+            name="rate"
+            value={it.rate}
+            disabled={isPlaceholder}
+            decimalScale={4}
+            className={isPulsing ? "animate-pulse opacity-60 w-full" : "w-full"}
+            onChange={(value) => onItemChange(absoluteIndex, "rate", value)}
+          />
         </td>
 
         {/* Batch No */}
-        <td className="px-1 py-1">
+        <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
           <input
             type="text"
             name="batch_no"
@@ -354,7 +338,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
         </td>
 
         {/* Warehouse */}
-        <td className="px-1 py-1">
+        <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
           <WarehouseSelect
             compact
             disabled={isPlaceholder}
@@ -364,16 +348,17 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
         </td>
 
         {/* Amount */}
-        <td className="px-2 py-1 text-right text-[11px] font-medium text-main whitespace-nowrap">
-          {isPlaceholder ? (
-            <span className="text-muted">—</span>
-          ) : (
-            amount.toFixed(2)
-          )}
+        <td className="px-1 py-1.5 overflow-hidden">
+          <span
+            className="text-[10px] font-medium text-main whitespace-nowrap block truncate text-right"
+            title={amount.toFixed(2)}
+          >
+            {isPlaceholder ? "—" : amount.toFixed(2)}
+          </span>
         </td>
 
         {/* Delete */}
-        <td className="px-1 py-1">
+        <td className="px-1 py-1.5 overflow-hidden">
           {!isPlaceholder && (
             <button
               type="button"
@@ -381,7 +366,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
               className="p-0.5 rounded bg-danger/10 text-danger hover:bg-danger/20 transition"
               title="Remove item"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3 h-3" />
             </button>
           )}
         </td>
@@ -389,62 +374,78 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
     );
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-5 px-8 py-5">
+    <div className="flex flex-col gap-4 p-3">
 
-      {/* ── Top controls row ── */}
-      <div className="grid grid-cols-3 gap-4 items-end">
-        <InvoiceSearchSelect
-          value={form.return_against}
-          fetchOptions={fetchInvoiceOptions}
-          onChange={onInvoiceSelect}
-          detailsLoading={invoiceLoading}
-        />
+      {/* ── Top controls ── */}
+     {/* ── Top controls ── */}
+<div className="flex flex-wrap gap-3 items-end">
+  <div className="w-full sm:w-[280px]">
+    <SearchSelect2
+      label="Invoice Number"
+      value={form.return_against}
+      onChange={(_: string, option: any) => onInvoiceSelect(option?.meta)}
+      fetchOptions={async (q) => {
+        const results = await fetchInvoiceOptions(q);
+        return results.map((opt) => ({
+          label: opt.label,
+          value: opt.value,
+          meta: opt,
+        }));
+      }}
+      placeholder="Search invoice…"
+      required
+      loading={invoiceLoading}  
+    />
+  </div>
 
-        <label className="flex items-center gap-2 pb-1">
-          <input
-            type="checkbox"
-            name="updateStock"
-            checked={form.update_stock ?? true}
-            onChange={onToggleUpdateStock}
-            className="w-3.5 h-3.5 accent-primary"
+  <div className="flex flex-col justify-end">
+    <label className="text-[11px] text-transparent select-none">‎</label>
+    <label className="flex items-center gap-2 h-[30px]">
+      <input
+        type="checkbox"
+        name="updateStock"
+        checked={form.update_stock ?? true}
+        onChange={onToggleUpdateStock}
+        className="w-3.5 h-3.5 accent-primary"
+      />
+      <span className="text-xs text-main whitespace-nowrap">Update Stock</span>
+    </label>
+  </div>
+</div>
+
+      {/* ── Main grid: table + sidebar ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_220px] gap-4 items-start">
+
+        {/* Table */}
+        <div className="min-w-0">
+          <ItemTable
+            title="Return Items"
+            paginatedItems={paginatedItems}
+            formData={formData}
+            ui={ui}
+            actions={actions}
+            symbol=""
+            ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+            colGroup={<CreditNoteColGroup />}
+            columnHeaders={<CreditNoteHeaders />}
+            renderRow={renderRow}
           />
-          <span className="text-xs text-main whitespace-nowrap">
-            Update Stock
-          </span>
-        </label>
-      </div>
-
-      {/* ── Main grid: ItemTable + sidebar ── */}
-      <div className="grid grid-cols-[1fr_220px] gap-4 items-start">
-
-        <ItemTable
-          title="Return Items"
-          paginatedItems={paginatedItems}
-          formData={formData}
-          ui={ui}
-          actions={actions}
-          symbol=""
-          ITEMS_PER_PAGE={ITEMS_PER_PAGE}
-          columnHeaders={<CreditNoteHeaders />}
-          renderRow={renderRow}
-        />
+        </div>
 
         {/* ── Sidebar ── */}
-        <div className="flex flex-col gap-4 sticky top-0">
+        <div className="flex flex-row xl:flex-col gap-4 xl:sticky xl:top-0 h-fit">
 
           {/* Customer card */}
-          <div className="bg-card rounded-lg p-3 shadow-sm">
-            <h3 className="text-[12px] font-semibold text-main mb-2">
-              Customer
-            </h3>
+          <div className="bg-card rounded-lg p-2 flex-1 xl:flex-none w-full">
+            <h3 className="text-[12px] font-semibold text-main mb-2">Customer</h3>
             {form.customer ? (
               <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  <User size={12} className="text-muted shrink-0" />
-                  <span className="text-[11px] text-main font-medium">
+                <div className="flex items-center gap-1.5">
+                  <User size={14} className="text-muted shrink-0" />
+                  <span className="text-xs text-main font-medium break-words">
                     {form.customer.name}
                   </span>
                 </div>
@@ -460,28 +461,25 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
           </div>
 
           {/* Summary card */}
-          <div className="bg-card rounded-lg p-3 shadow-sm">
-            <h3 className="text-[12px] font-semibold text-main mb-2">
-              Summary
-            </h3>
+          <div className="bg-card rounded-lg p-2 flex-1 xl:flex-none w-full">
+            <h3 className="text-[13px] font-semibold text-main mb-2">Summary</h3>
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between text-[11px]">
-                <span className="text-muted">Items</span>
-                <span className="text-main font-medium">
+                <span className="text-muted">Total Items</span>
+                <span className="font-medium text-main tabular-nums">
                   {form.items.length}
                 </span>
               </div>
               <div className="flex justify-between text-[11px]">
                 <span className="text-muted">Total Qty</span>
-                <span className="text-main font-medium">
+                <span className="font-medium text-main tabular-nums">
                   {form.items.reduce((s, it) => s + Math.abs(it.qty), 0)}
                 </span>
               </div>
-              <div className="mt-1.5 p-2 bg-primary rounded-lg flex justify-between items-center">
-                <span className="text-white text-[11px] font-semibold">
-                  Credit Total
-                </span>
-                <span className="text-white text-[12px] font-bold">
+              <div className="border-t border-theme my-1" />
+              <div className="flex justify-between items-center bg-primary rounded-lg px-2 py-1.5">
+                <span className="text-xs font-semibold text-white">Credit Total</span>
+                <span className="text-xs font-bold text-white tabular-nums">
                   {grandTotal.toFixed(2)}
                 </span>
               </div>
