@@ -189,7 +189,7 @@ const LeaveApplyTable: React.FC<LeaveApplyTableProps> = ({ onAfterApply }) => {
       align: "left",
       render: (e) => <span className="font-medium">{e.leave_type || "—"}</span>,
     },
-    { key: "from_date", header: "From Date", align: "left", render: (e) => (formatDate(e.to_date) || "—"), },
+    { key: "from_date", header: "From Date", align: "left", render: (e) => (formatDate(e.from_date) || "—"), },
     {
       key: "to_date",
       header: "To Date",
