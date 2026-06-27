@@ -7,8 +7,10 @@ import {
   Repeat,
   Layers,
   FileText,
-  UploadCloud, Hash
+  UploadCloud,
+  Hash,
 } from "lucide-react";
+import { useCompanyStore } from "../../store/companyStore";
 import {
   AppPage,
   AppPageBody,
@@ -88,7 +90,6 @@ const navTabs = [
     label: "Naming Series",
     icon: <Hash {...iconProps} />,
   },
-
 ];
 
 const CompanySetup: React.FC = () => {
@@ -104,12 +105,16 @@ const CompanySetup: React.FC = () => {
   // ── Data state (unchanged from original)
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [financialConfig, setFinancialConfig] = useState<FinancialConfig>();
+  const setCompanyInfo = useCompanyStore((s) => s.setCompanyInfo);
   const [terms, setTerms] = useState<Terms>();
   const [companyDetail, setCompanyDetail] = useState<Company | null>(null);
   const [modules, setModules] = useState<ModuleSubscriptions | null>(null);
-  const [accountingSetup, setAccountingSetup] = useState<AccountingSetup | null>(null);
-  const [companytemplates, setCompanyTemplates] = useState<CompanyTemplates | null>(null);
-  const [companyDocuments, setCompanyDocuments] = useState<CompanyDocuments | null>(null);
+  const [accountingSetup, setAccountingSetup] =
+    useState<AccountingSetup | null>(null);
+  const [companytemplates, setCompanyTemplates] =
+    useState<CompanyTemplates | null>(null);
+  const [companyDocuments, setCompanyDocuments] =
+    useState<CompanyDocuments | null>(null);
   const [loading, setLoading] = useState(true);
   const [basicDetail, setBasicDetail] = useState<BasicDetailsForm>({
     registration: {
@@ -120,6 +125,8 @@ const CompanySetup: React.FC = () => {
       companyType: "",
       companyStatus: "",
       industryType: "",
+      domain: "",
+      defaultModeOfPayment:"",
     },
     contact: {
       companyEmail: "",
@@ -156,6 +163,8 @@ const CompanySetup: React.FC = () => {
         companyType: response.data.companyType ?? "",
         companyStatus: response.data.companyStatus ?? "",
         industryType: response.data.industryType ?? "",
+        domain: response.data.primaryBusinessDomain ?? "",
+        defaultModeOfPayment: response.data.defaultPaymentMode ?? "",
       };
 
       setAccountingSetup(
@@ -168,7 +177,7 @@ const CompanySetup: React.FC = () => {
           roundOffCostCenter: "CC-001-MAIN",
           depreciationAccount: "5100-DEPRECIATION",
           appreciationAccount: "5200-ASSET-APPRECIATION",
-        }
+        },
       );
 
       setBasicDetail({
@@ -176,6 +185,13 @@ const CompanySetup: React.FC = () => {
         contact: response.data.contactInfo,
         address: response.data.address,
       });
+      setCompanyInfo({
+  companyName:  response.data.companyName      ?? "",
+  baseCurrency: response.data.baseCurrency     ?? "",
+  domain:       response.data.primaryBusinessDomain ?? "",
+  industryType: response.data.industryType     ?? "",
+  companyAddress: response.data.address ?? {},
+});
 
       setBankAccounts(response.data.bankAccounts ?? []);
       setTerms(response.data.terms);
@@ -195,51 +211,49 @@ const CompanySetup: React.FC = () => {
   }, [fetchCompanyDetail]);
 
   // ── Stable tab components — no remount on tab switch (same pattern as Inventory)
-  const tabComponents = useMemo(() => ({
-    basic: (
-      <BasicDetails
-        basic={basicDetail}
-        onSaveSuccess={fetchCompanyDetail}
-        terms={terms}
-      />
-    ),
-    bank: (
-      <BankDetails
-        bankAccounts={bankAccounts}
-        setBankAccounts={setBankAccounts}
-        terms={terms}
-      />
-    ),
-    accounting: (
-      <AccountingDetails
-        financialConfig={financialConfig}
-        accountingSetup={accountingSetup}
-        terms={terms}
-      />
-    ),
-    buyingSelling: (
-      <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
-    ),
-    naming: (
-      <NamingSeries onSaveSuccess={fetchCompanyDetail} />
-    ),
-    subscribed: <SubscribedModules />,
-    Templates: <Templates templates={companytemplates} />,
-    logo: (
-      <Upload
-        COMPANY_ID={COMPANY_ID}
-        onUploadSuccess={fetchCompanyDetail}
-      />
-    ),
-  }), [
-    basicDetail,
-    bankAccounts,
-    financialConfig,
-    accountingSetup,
-    companytemplates,
-    terms,
-    fetchCompanyDetail,
-  ]);
+  const tabComponents = useMemo(
+    () => ({
+      basic: (
+        <BasicDetails
+          basic={basicDetail}
+          onSaveSuccess={fetchCompanyDetail}
+          terms={terms}
+        />
+      ),
+      bank: (
+        <BankDetails
+          bankAccounts={bankAccounts}
+          setBankAccounts={setBankAccounts}
+          terms={terms}
+        />
+      ),
+      accounting: (
+        <AccountingDetails
+          financialConfig={financialConfig}
+          accountingSetup={accountingSetup}
+          terms={terms}
+        />
+      ),
+      buyingSelling: (
+        <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
+      ),
+      naming: <NamingSeries onSaveSuccess={fetchCompanyDetail} />,
+      subscribed: <SubscribedModules />,
+      Templates: <Templates templates={companytemplates} />,
+      logo: (
+        <Upload COMPANY_ID={COMPANY_ID} onUploadSuccess={fetchCompanyDetail} />
+      ),
+    }),
+    [
+      basicDetail,
+      bankAccounts,
+      financialConfig,
+      accountingSetup,
+      companytemplates,
+      terms,
+      fetchCompanyDetail,
+    ],
+  );
 
   const currentTabComponent =
     tabComponents[activeTab as keyof typeof tabComponents] ??
@@ -247,18 +261,13 @@ const CompanySetup: React.FC = () => {
 
   return (
     <AppPage viewportLocked={isBasicTab}>
-      <AppPageHeader
-        title="Company Setup"
-        icon={<Building2 />}
-      />
+      <AppPageHeader title="Company Setup" icon={<Building2 />} />
       <AppTabs
         tabs={navTabs}
         activeTab={activeTab}
         onChange={handleTabChange}
       />
-      <AppPageBody viewportLocked={isBasicTab}>
-        {currentTabComponent}
-      </AppPageBody>
+      <AppPageBody>{currentTabComponent}</AppPageBody>
     </AppPage>
   );
 };
