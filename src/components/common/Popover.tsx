@@ -234,23 +234,25 @@ export const Popover: React.FC<PopoverProps> = ({
           aria-hidden="true"
         />
       )}
-      <div
-        ref={popoverRef}
-        role="dialog"
-        style={{
-          position: "fixed",
-          top: coords.top,
-          left: coords.left,
-          width,
-          maxHeight,
-          zIndex: "var(--z-popover, 2000)" as unknown as number,
-        }}
-        className={[
-          "flex flex-col overflow-hidden rounded-lg border border-theme bg-card shadow-lg",
-          "motion-scale-in",
-          className,
-        ].join(" ")}
-      >
+     // Popover.tsx - style fix
+<div
+  ref={popoverRef}
+  role="dialog"
+  style={{
+    position: "fixed",
+    ...(coords.top !== undefined ? { top: coords.top } : {}),
+    ...(coords.bottom !== undefined ? { bottom: coords.bottom } : {}),
+    left: coords.left,
+    width: coords.width,
+    maxHeight: coords.maxHeight,  
+    zIndex: "var(--z-popover, 2000)" as unknown as number,
+  }}
+  className={[
+    "flex flex-col overflow-hidden rounded-lg border border-theme bg-card shadow-lg",
+    "motion-scale-in",
+    className,
+  ].join(" ")}
+>
         {children}
       </div>
     </PopoverContext.Provider>,
