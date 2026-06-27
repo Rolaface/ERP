@@ -113,7 +113,7 @@ export const usePurchaseInvoiceForm = ({
   pId,
 }: UsePurchaseInvoiceFormProps) => {
   const [form, setForm] = useState<PurchaseInvoiceFormData>(emptyPOForm);
-  const [usePO, setUsePO] = useState(true);
+  const [usePO, setUsePO] = useState(false);
   const [activeTab, setActiveTab] = useState<POTab>("details");
   const [saving, setSaving] = useState(false);
   const [poList, setPoList] = useState<any[]>([]);
@@ -217,7 +217,6 @@ export const usePurchaseInvoiceForm = ({
     if (!isOpen) {
       setForm(emptyPOForm);
       setActiveTab("details");
-      setUsePO(true);
       hasLoadedRef.current = false;
       // Reset address selector state too
       setSelected({
@@ -350,7 +349,7 @@ export const usePurchaseInvoiceForm = ({
         }));
 
         setForm({ ...mapped, attachments: existingAttachments });
-        setUsePO(!!mapped.poNumber?.trim());
+        
         const supplierAddrId = mapped.addresses?.supplierAddress?.id || "";
         const dispatchAddrId = mapped.addresses?.dispatchAddress?.id || "";
         const shippingAddrId = mapped.addresses?.shippingAddress?.id || "";
@@ -436,6 +435,7 @@ export const usePurchaseInvoiceForm = ({
         });
 
         hasLoadedRef.current = true;
+        setUsePO(!!mapped.poNumber?.trim());
       } catch (e) {
         closeSwal();
         showApiError(e);
@@ -1323,7 +1323,6 @@ export const usePurchaseInvoiceForm = ({
 
   // ── Reset ──────────────────────────────────
   const reset = () => {
-    setUsePO(true);
     setForm({
       ...emptyPOForm,
       attachments: [],
