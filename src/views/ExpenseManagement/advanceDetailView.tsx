@@ -2,6 +2,7 @@ import React from "react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import type { Column } from "../../components/ui/Table/type";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
+import { Wallet, CheckSquare, Clock } from "lucide-react";
 
 export interface ExpenseClaimEntry {
   name: string;
@@ -52,10 +53,10 @@ interface Props {
 const fmtDate = (d?: string) =>
   d
     ? new Date(d).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "—";
 
 const fmt = (n?: number, currency = "INR") => {
@@ -86,26 +87,56 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   cancelled: { bg: "#fee2e2", color: "#dc2626" },
 };
 
-/* ── small reusable presentational pieces ── */
+/* ── StatCell — mirrors CustomerStatement's StatCell exactly ── */
+interface StatCellProps {
+  label: string;
+  icon: React.ReactNode;
+  value: React.ReactNode;
+  valueClass?: string;
+  highlight?: boolean;
+}
 
-const Field: React.FC<{ label: string; value: React.ReactNode; mono?: boolean }> = ({ label, value, mono }) => (
-  <div style={{ minWidth: 0 }}>
-    <p style={{
-      fontSize: 9, fontWeight: 700, textTransform: "uppercase",
-      letterSpacing: "0.07em", color: "var(--muted)", marginBottom: 3,
-    }}>
-      {label}
-    </p>
-    <p
-      title={typeof value === "string" ? value : undefined}
-      style={{
-        fontSize: 12, fontWeight: 500, color: "var(--text)",
-        fontFamily: mono ? "monospace" : undefined,
-        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-      }}
+const StatCell: React.FC<StatCellProps> = ({
+  label,
+  icon,
+  value,
+  valueClass = "",
+  highlight = false,
+}) => (
+  <div
+    className={`flex flex-col justify-center gap-1.5 px-4 sm:px-6 py-4 min-w-[120px] sm:min-w-[148px] flex-shrink-0 ${highlight ? "bg-danger/5" : ""}`}
+  >
+    <div className="flex items-center gap-1.5">
+      {icon}
+      <span className="text-[9px] font-black uppercase tracking-[0.14em] text-muted whitespace-nowrap">
+        {label}
+      </span>
+    </div>
+    <span
+      className={`text-lg sm:text-[22px] font-black leading-none tabular-nums ${valueClass}`}
     >
       {value}
-    </p>
+    </span>
+  </div>
+);
+
+/* ── DetailCell — mirrors AgingCell style for the details strip ── */
+interface DetailCellProps {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}
+
+const DetailCell: React.FC<DetailCellProps> = ({ label, value, mono }) => (
+  <div className="flex-1 flex flex-col items-center justify-center py-3 px-2 sm:px-3 min-w-[110px]">
+    <span className="text-[9px] font-black uppercase tracking-widest mb-1.5 whitespace-nowrap text-muted">
+      {label}
+    </span>
+    <span
+      className={`text-[11px] font-medium text-main text-center leading-snug break-all ${mono ? "font-mono" : ""}`}
+    >
+      {value || "—"}
+    </span>
   </div>
 );
 
@@ -118,8 +149,10 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
 }) => {
   const statusKey = data?.status?.toLowerCase() ?? "draft";
   const statusStyle = STATUS_COLORS[statusKey] ?? STATUS_COLORS.draft;
-  const currency = data?.currency ?? "";
+  const currency = data?.currency ?? "INR";
   const claims = data?.expense_claims ?? [];
+
+  const fmtAmount = (n?: number) => fmt(n, currency);
 
   /* ── ModalTable columns ── */
   const claimColumns: Column<ExpenseClaimEntry>[] = [
@@ -127,7 +160,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
       key: "posting_date",
       header: "Date",
       render: (ec) => (
-        <span style={{ color: "var(--muted)", fontSize: 11, whiteSpace: "nowrap" }}>
+        <span className="text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap">
           {fmtDate(ec.posting_date)}
         </span>
       ),
@@ -136,12 +169,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
       key: "parent",
       header: "Claim ID",
       render: (ec) => (
-        <span style={{
-          color: "var(--primary)", fontFamily: "monospace",
-          fontWeight: 700, fontSize: 11,
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          display: "block",
-        }}>
+        <span className="text-primary font-mono font-bold text-[11px] block overflow-hidden text-ellipsis whitespace-nowrap">
           {ec.parent}
         </span>
       ),
@@ -150,31 +178,23 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
       key: "Claim Title",
       header: "Claim Title",
       render: (ec) => (
-        <span style={{ color: "var(--muted)", fontSize: 11 }}>
-          {ec.claim_title || "—"}
-        </span>
+        <span className="text-muted text-[11px]">{ec.claim_title || "—"}</span>
       ),
     },
     {
       key: "description",
       header: "Description",
       render: (ec) => (
-        <span style={{ color: "var(--muted)", fontSize: 11 }}>
-          {ec.description || "—"}
-        </span>
+        <span className="text-muted text-[11px]">{ec.description || "—"}</span>
       ),
     },
-
     {
       key: "allocated_amount",
       header: "Claimed",
       align: "right",
       render: (ec) => (
-        <span style={{
-          color: "#059669", fontWeight: 700, fontSize: 12,
-          fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
-        }}>
-          {fmt(ec.allocated_amount, currency)}
+        <span className="text-success font-bold text-xs tabular-nums whitespace-nowrap">
+          {fmtAmount(ec.allocated_amount)}
         </span>
       ),
     },
@@ -182,326 +202,235 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
       key: "unclaimed_amount",
       header: "Remaining",
       align: "right",
-      render: (ec) => {
-        return (
-          <span
-            style={{
-              fontWeight: 700,
-              fontSize: 12,
-              fontVariantNumeric: "tabular-nums",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {fmt(ec.unclaimed_amount, currency)}
-          </span>
-        );
-      },
+      render: (ec) => (
+        <span className="font-bold text-xs tabular-nums whitespace-nowrap text-main">
+          {fmtAmount(ec.unclaimed_amount)}
+        </span>
+      ),
     },
   ];
 
   return (
-    <div className="eadv" style={{
-      display: "flex", flexDirection: "column",
-      height: "100%", minHeight: 0,
-      background: "var(--card)", color: "var(--text)",
-    }}>
-      <style>{`
-        .eadv, .eadv * { box-sizing: border-box; }
-        @keyframes adv-spin { to { transform: rotate(360deg); } }
-        .eadv button { font: inherit; }
-        .eadv button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-
-        /* Attributes: fluid grid, wraps cleanly from many columns down to one */
-        .eadv-attrs {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-          gap: 11px 18px;
-          padding: 12px 14px;
-          background: var(--card);
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .eadv * { transition: none !important; animation: none !important; }
-        }
-      `}</style>
-
-      {/* ── HEADER ── */}
-      <div style={{
-        padding: "10px 16px",
-        borderBottom: "1px solid var(--border)",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        background: "var(--card)", flexShrink: 0,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          {/* Back button */}
-          <button
-            onClick={onBack}
-            aria-label="Go back"
-            style={{
-              width: 28, height: 28, borderRadius: 7,
-              border: "1px solid var(--border)", background: "transparent",
-              cursor: "pointer", display: "flex", alignItems: "center",
-              justifyContent: "center", color: "var(--muted)", flexShrink: 0,
-            }}
-            title="Back"
+    <div
+      className="max-w-[1400px] mx-auto flex flex-col gap-4 p-4 sm:p-5 h-[calc(95vh-160px)]"
+    >
+      {/* ── HEADER — mirrors CustomerStatement header style ── */}
+      <div className="bg-card border border-theme rounded-2xl px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0">
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          aria-label="Go back"
+          className="w-8 h-8 rounded-lg border border-theme bg-transparent cursor-pointer flex items-center justify-center text-muted hover:bg-row-hover transition-colors shrink-0"
+          title="Back"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
 
-          {/* Icon */}
-          <div style={{
-            width: 30, height: 30, borderRadius: 7,
-            background: "var(--primary)", display: "flex",
-            alignItems: "center", justifyContent: "center", flexShrink: 0,
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-              stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2" />
-              <path d="M8 21h8M12 17v4" />
-            </svg>
-          </div>
+        {/* Icon */}
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-primary"
+          >
+            <rect x="2" y="3" width="20" height="14" rx="2" />
+            <path d="M8 21h8M12 17v4" />
+          </svg>
+        </div>
 
-          <div style={{ lineHeight: 1.1, minWidth: 0 }}>
-            <p style={{
-              fontSize: 9, color: "var(--muted)", fontWeight: 700,
-              textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2,
-            }}>
-              Employee Advance
-            </p>
-            <p style={{
-              fontSize: 15, fontWeight: 800, color: "var(--text)",
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}>
-              {data?.name ?? "—"}
-            </p>
-          </div>
+        <div className="min-w-0">
+          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-muted">
+            Employee Advance
+          </p>
+          <p className="text-[15px] font-black text-main leading-tight truncate">
+            {data?.name ?? "—"}
+          </p>
+        </div>
 
-          {data?.status && (
-            <span style={{
-              display: "inline-flex", alignItems: "center",
-              padding: "2px 9px", borderRadius: 20, fontSize: 10, fontWeight: 700,
-              background: statusStyle.bg, color: statusStyle.color, flexShrink: 0,
-            }}>
-              {data.status}
+        {data?.status && (
+          <span
+            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0"
+            style={{
+              background: statusStyle.bg,
+              color: statusStyle.color,
+            }}
+          >
+            {data.status}
+          </span>
+        )}
+      </div>
+
+      {/* ── STATS BAR — exact mirror of CustomerStatement's top bar ── */}
+      <div className="bg-card border border-theme rounded-2xl flex items-stretch overflow-x-auto divide-x divide-theme shrink-0">
+        {/* Stat cells */}
+        <StatCell
+          label="Total Advance"
+          icon={<Wallet size={12} className="text-primary" />}
+          value={fmtAmount(data?.advance_amount)}
+          valueClass="text-primary"
+        />
+        <StatCell
+          label="Total Claimed"
+          icon={<CheckSquare  size={12} className="text-success" />}
+          value={fmtAmount(data?.claimed_amount)}
+          valueClass="text-success"
+        />
+        <StatCell
+          label="Unclaimed Amount"
+          icon={
+            <Clock
+              size={12}
+              className={
+                (data?.pending_amount ?? 0) > 0 ? "text-danger" : "text-muted"
+              }
+            />
+          }
+          value={fmtAmount(data?.pending_amount)}
+          valueClass={
+            (data?.pending_amount ?? 0) > 0 ? "text-danger" : "text-muted"
+          }
+          highlight={(data?.pending_amount ?? 0) > 0}
+        />
+
+        {/* Details strip — mirrors Aging strip */}
+        <div className="flex flex-1 items-stretch min-w-0">
+          <div className="flex items-center justify-center px-3 bg-row-hover/50 border-r border-theme shrink-0">
+            <span
+              className="text-[8px] font-black uppercase tracking-[0.2em] text-muted select-none"
+              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+            >
+              Details
             </span>
-          )}
+          </div>
+          <div className="flex flex-1 divide-x divide-theme">
+            <DetailCell label="Advance Date" value={fmtDate(data?.posting_date)} />
+            <DetailCell label="Currency" value={data?.currency} />
+            <DetailCell label="Mode of Payment" value={data?.mode_of_payment} />
+            <DetailCell label="Purpose" value={data?.purpose} />
+            <DetailCell label="Advance Account" value={data?.advance_account} mono />
+          </div>
         </div>
       </div>
 
-      {/* ── BODY ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px" }}>
+      {/* ── MAIN CARD ── */}
+      <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
 
         {/* Loading */}
         {loading && (
-          <div role="status" aria-live="polite" style={{
-            display: "flex", alignItems: "center",
-            justifyContent: "center", height: 200, gap: 10, color: "var(--muted)",
-          }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-              stroke="var(--primary)" strokeWidth="2"
-              style={{ animation: "adv-spin 1s linear infinite" }}>
+          <div
+            className="flex items-center justify-center h-48 gap-3 text-muted"
+            role="status"
+            aria-live="polite"
+          >
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="text-primary animate-spin"
+            >
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
-            <span style={{ fontSize: 13 }}>Loading advance details…</span>
+            <span className="text-sm">Loading advance details…</span>
           </div>
         )}
 
         {!loading && data && (
           <>
-            {/* ── EMPLOYEE CARD: identity + attributes ── */}
-            <div style={{
-              border: "1px solid var(--border)", borderRadius: 10,
-              overflow: "hidden", marginBottom: 12,
-            }}>
-              {/* Identity row — employee info on left, Total Advance highlight on right */}
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "11px 14px",
-                background: "var(--bg)",
-                borderBottom: "1px solid var(--border)",
-              }}>
-                {/* Avatar */}
-                <div style={{
-                  width: 34, height: 34, borderRadius: "50%",
-                  background: "var(--primary)", display: "flex",
-                  alignItems: "center", justifyContent: "center",
-                  fontSize: 13, fontWeight: 700, color: "#fff", flexShrink: 0,
-                }}>
+            {/* Employee identity row — merged with Expense Claims label + Date Range */}
+            <div className="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-theme shrink-0">
+              {/* Left — Avatar + Name */}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-[13px] font-bold text-white shrink-0">
                   {initials(data.employee_name)}
                 </div>
-
-                {/* Name + sub */}
-                <div style={{ minWidth: 0 }}>
-                  <p style={{
-                    fontSize: 13, fontWeight: 700, color: "var(--text)", marginBottom: 1,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-bold text-main leading-tight truncate">
                     {data.employee_name}
                   </p>
-                  <p style={{
-                    fontSize: 11, color: "var(--muted)",
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>
+                  <p className="text-[11px] text-muted truncate">
                     {data.employee} · {data.department}
                   </p>
                 </div>
-
-                {/* ── Total Advance highlight — right side ── */}
-                <div style={{
-                  marginLeft: 16,
-                  flexShrink: 0,
-                  textAlign: "right",
-                  background: "var(--primary)",
-                  borderRadius: 8,
-                  padding: "6px 12px",
-                  alignSelf: "center",
-                }}>
-                  <p style={{
-                    fontSize: 9, fontWeight: 700, textTransform: "uppercase",
-                    letterSpacing: "0.07em", color: "rgba(255,255,255,0.7)", marginBottom: 3,
-                  }}>
-                    Total Advance
-                  </p>
-                  <p style={{
-                    fontSize: 15, fontWeight: 800, color: "#fff",
-                    fontVariantNumeric: "tabular-nums", lineHeight: 1.1,
-                  }}>
-                    {fmt(data.advance_amount, currency)}
-                  </p>
-                </div>
-                <div style={{
-                  marginLeft: 16,
-                  flexShrink: 0,
-                  textAlign: "right",
-                  background: "var(--primary)",
-                  borderRadius: 8,
-                  padding: "6px 12px",
-                  alignSelf: "center",
-                }}>
-                  <p style={{
-                    fontSize: 9, fontWeight: 700, textTransform: "uppercase",
-                    letterSpacing: "0.07em", color: "rgba(255,255,255,0.7)", marginBottom: 3,
-                  }}>
-                    Total Claimed Amount
-                  </p>
-                  <p style={{
-                    fontSize: 15, fontWeight: 800, color: "#fff",
-                    fontVariantNumeric: "tabular-nums", lineHeight: 1.1,
-                  }}>
-                    {fmt(data.claimed_amount, currency)}
-                  </p>
-                </div>
-                <div style={{
-                  marginLeft: 16,
-                  flexShrink: 0,
-                  textAlign: "right",
-                  background: "var(--primary)",
-                  borderRadius: 8,
-                  padding: "6px 12px",
-                  alignSelf: "center",
-                }}>
-                  <p style={{
-                    fontSize: 9, fontWeight: 700, textTransform: "uppercase",
-                    letterSpacing: "0.07em", color: "rgba(255,255,255,0.7)", marginBottom: 3,
-                  }}>
-                    Unclaimed Amount
-                  </p>
-                  <p style={{
-                    fontSize: 15, fontWeight: 800, color: "#fff",
-                    fontVariantNumeric: "tabular-nums", lineHeight: 1.1,
-                  }}>
-                    {fmt(data.pending_amount, currency)}
-                  </p>
-                </div>
               </div>
 
-              {/* Attributes — removed Total Advance from here since it's now in identity row */}
-              <div className="eadv-attrs">
-                <Field label="Advance Date" value={fmtDate(data.posting_date)} />
-                <Field label="Currency" value={data.currency} />
-                <Field label="Mode of Payment" value={data.mode_of_payment || "—"} />
-                <Field label="Purpose" value={data.purpose || "—"} />
-                <Field label="Advance Account" value={data.advance_account} mono />
+              
+
+              {/* Right — Date Range */}
+              <div className="flex-1 flex justify-start pl-8 min-w-0">
+                <DateRangeFilter
+                  from={dateRange.from_date}
+                  to={dateRange.to_date}
+                  onChange={onDateRangeChange}
+                />
               </div>
             </div>
 
-            {/* ── EXPENSE CLAIM ── */}
-            <div style={{
-              border: "1px solid var(--border)", borderRadius: 10,
-              overflow: "hidden", marginBottom: 16,
-            }}>
-              {/* Section label */}
-              <div style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 14px", borderBottom: "1px solid var(--border)",
-                background: "var(--bg)",
-              }}>
-                <span style={{
-                  fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
-                  textTransform: "uppercase", color: "var(--muted)",
-                }}>
-                  Expense Claims Against This Advance
-                </span>
-                <span style={{
-                  fontSize: 9, fontWeight: 700, color: "var(--muted)",
-                  background: "var(--card)", border: "1px solid var(--border)",
-                  borderRadius: 20, padding: "1px 7px", flexShrink: 0,
-                }}>
-                  {claims.length}
-                </span>
-
-                <div style={{ marginLeft: 8 }}>
-                  <DateRangeFilter
-                    from={dateRange.from_date}
-                    to={dateRange.to_date}
-                    onChange={onDateRangeChange}
-                  />
-                </div>
-              </div>
-
-              {/* ModalTable — bounded height, no pagination needed */}
-              <div style={{ maxHeight: 320 }}>
-                <ModalTable<ExpenseClaimEntry>
-                  columns={claimColumns}
-                  data={claims}
-                  rowKey={(ec) => ec.name}
-                  emptyMessage="No expense claims yet"
-                  totalItems={claims.length}
-                  pageSize={claims.length || 10}
-                />
-              </div>
+            {/* Table */}
+            <div className="flex-1 min-h-0 overflow-auto">
+              <ModalTable<ExpenseClaimEntry>
+                columns={claimColumns}
+                data={claims}
+                rowKey={(ec) => ec.name}
+                emptyMessage="No expense claims yet"
+                totalItems={claims.length}
+                pageSize={claims.length || 10}
+                showToolbar={false}
+              />
             </div>
           </>
         )}
 
         {!loading && !data && (
-          <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            height: "100%", minHeight: 200, color: "var(--muted)", textAlign: "center", padding: "24px 16px",
-          }}>
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-              style={{ marginBottom: 10, opacity: 0.5 }}>
+          <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-muted text-center p-6">
+            <svg
+              width="34"
+              height="34"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mb-2.5 opacity-50"
+            >
               <circle cx="12" cy="12" r="9" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>Advance not found</p>
-            <p style={{ fontSize: 12, marginTop: 4, maxWidth: 280 }}>
-              This advance could not be loaded. It may have been removed or the link is invalid.
+            <p className="text-[13px] font-semibold text-main">
+              Advance not found
+            </p>
+            <p className="text-[12px] mt-1 max-w-[280px]">
+              This advance could not be loaded. It may have been removed or the
+              link is invalid.
             </p>
             <button
               onClick={onBack}
-              style={{
-                marginTop: 14, padding: "7px 16px", borderRadius: 8,
-                border: "1px solid var(--border)", background: "var(--card)",
-                color: "var(--text)", fontSize: 12, fontWeight: 600, cursor: "pointer",
-              }}
+              className="mt-3.5 px-4 py-1.5 rounded-lg border border-theme bg-card text-main text-[12px] font-semibold cursor-pointer hover:bg-row-hover transition-colors"
             >
               Go back
             </button>
