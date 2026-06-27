@@ -55,6 +55,17 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
 
+   useEffect(() => {
+    if (mode === "edit" && initialData?.items?.length > 0) {
+      // Check if the first item (or any item) is a service
+      const isService = initialData.items[0]?.isServiceItem;
+      setInvoiceType(isService ? "Service" : "Product");
+    } else if (mode === "create") {
+      // Default to Product for new invoices
+      setInvoiceType("Product");
+    }
+  }, [initialData, mode, isOpen]);
+
   const {
     formData,
     customerDetails,
