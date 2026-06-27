@@ -97,6 +97,8 @@ setCompanyInfo({
     matchedCurrency?.symbol ||
     company?.baseCurrency ||
     "",
+    domain: company?.primaryBusinessDomain ?? "",   
+  industryType: company?.industryType ?? "",    
 companyAddress:
   company?.address || {},
 });

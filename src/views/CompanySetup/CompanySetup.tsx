@@ -50,46 +50,14 @@ const iconProps = {
 };
 
 const navTabs = [
-  {
-    id: "basic",
-    label: "Basic Details",
-    icon: <IdCard {...iconProps} />,
-  },
-  {
-    id: "bank",
-    label: "Bank Details",
-    icon: <Landmark {...iconProps} />,
-  },
-  {
-    id: "accounting",
-    label: "Accounting Details",
-    icon: <Wallet {...iconProps} />,
-  },
-  {
-    id: "buyingSelling",
-    label: "Buying & Selling",
-    icon: <Repeat {...iconProps} />,
-  },
-  {
-    id: "subscribed",
-    label: "Subscription",
-    icon: <Layers {...iconProps} />,
-  },
-  {
-    id: "Templates",
-    label: "Templates",
-    icon: <FileText {...iconProps} />,
-  },
-  {
-    id: "logo",
-    label: "Logo & Signature",
-    icon: <UploadCloud {...iconProps} />,
-  },
-  {
-    id: "naming",
-    label: "Naming Series",
-    icon: <Hash {...iconProps} />,
-  },
+  { id: "basic", label: "Basic Details", icon: <IdCard {...iconProps} /> },
+  { id: "bank", label: "Bank Details", icon: <Landmark {...iconProps} /> },
+  { id: "accounting", label: "Accounting Details", icon: <Wallet {...iconProps} /> },
+  { id: "buyingSelling", label: "Buying & Selling", icon: <Repeat {...iconProps} /> },
+  { id: "subscribed", label: "Subscription", icon: <Layers {...iconProps} /> },
+  { id: "Templates", label: "Templates", icon: <FileText {...iconProps} /> },
+  { id: "logo", label: "Logo & Signature", icon: <UploadCloud {...iconProps} /> },
+  { id: "naming", label: "Naming Series", icon: <Hash {...iconProps} /> },
 ];
 
 const CompanySetup: React.FC = () => {
@@ -102,20 +70,16 @@ const CompanySetup: React.FC = () => {
 
   const isBasicTab = activeTab === DEFAULT_TAB;
 
-  // ── Data state (unchanged from original)
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [financialConfig, setFinancialConfig] = useState<FinancialConfig>();
-  const setCompanyInfo = useCompanyStore((s) => s.setCompanyInfo);
+
   const [terms, setTerms] = useState<Terms>();
-  const [companyDetail, setCompanyDetail] = useState<Company | null>(null);
-  const [modules, setModules] = useState<ModuleSubscriptions | null>(null);
-  const [accountingSetup, setAccountingSetup] =
-    useState<AccountingSetup | null>(null);
-  const [companytemplates, setCompanyTemplates] =
-    useState<CompanyTemplates | null>(null);
-  const [companyDocuments, setCompanyDocuments] =
-    useState<CompanyDocuments | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setCompanyDetail] = useState<Company | null>(null);
+  const [, setModules] = useState<ModuleSubscriptions | null>(null);
+  const [accountingSetup, setAccountingSetup] = useState<AccountingSetup | null>(null);
+  const [companytemplates, setCompanyTemplates] = useState<CompanyTemplates | null>(null);
+  const [, setCompanyDocuments] = useState<CompanyDocuments | null>(null);
+  const [, setLoading] = useState(true);
   const [basicDetail, setBasicDetail] = useState<BasicDetailsForm>({
     registration: {
       registerNo: "",
@@ -126,7 +90,7 @@ const CompanySetup: React.FC = () => {
       companyStatus: "",
       industryType: "",
       domain: "",
-      defaultModeOfPayment:"",
+      defaultModeOfPayment: "",
     },
     contact: {
       companyEmail: "",
@@ -185,13 +149,16 @@ const CompanySetup: React.FC = () => {
         contact: response.data.contactInfo,
         address: response.data.address,
       });
-      setCompanyInfo({
-  companyName:  response.data.companyName      ?? "",
-  baseCurrency: response.data.baseCurrency     ?? "",
-  domain:       response.data.primaryBusinessDomain ?? "",
-  industryType: response.data.industryType     ?? "",
-  companyAddress: response.data.address ?? {},
-});
+
+  
+      useCompanyStore.getState().setCompanyInfo({
+        companyName: response.data.companyName ?? "",
+        baseCurrency: response.data.baseCurrency ?? "",
+        domain: response.data.primaryBusinessDomain ?? "",
+        industryType: response.data.industryType ?? "",
+        currencySymbol: response.data.currencySymbol ?? response.data.baseCurrency ?? "",
+        companyAddress: response.data.address ?? {},
+      });
 
       setBankAccounts(response.data.bankAccounts ?? []);
       setTerms(response.data.terms);
@@ -204,13 +171,12 @@ const CompanySetup: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // ✅ dependency array bhi clean — setCompanyInfo nahi hai ab
 
   useEffect(() => {
     fetchCompanyDetail();
   }, [fetchCompanyDetail]);
 
-  // ── Stable tab components — no remount on tab switch (same pattern as Inventory)
   const tabComponents = useMemo(
     () => ({
       basic: (
@@ -262,11 +228,7 @@ const CompanySetup: React.FC = () => {
   return (
     <AppPage viewportLocked={isBasicTab}>
       <AppPageHeader title="Company Setup" icon={<Building2 />} />
-      <AppTabs
-        tabs={navTabs}
-        activeTab={activeTab}
-        onChange={handleTabChange}
-      />
+      <AppTabs tabs={navTabs} activeTab={activeTab} onChange={handleTabChange} />
       <AppPageBody>{currentTabComponent}</AppPageBody>
     </AppPage>
   );
