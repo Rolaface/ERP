@@ -42,14 +42,17 @@ import {
   Layers,
   ChevronRight,
   Search,
+  Download,
 } from "lucide-react";
 import { openCoaGLAccountModal } from "../../store/modalStore";
 import type { COAAccount, COAResponse, COAResponseData } from "../../types/coa";
 import ViewAccountModal from "../../components/Coa/ViewAccountModal";
-import { getCurrencySymbol } from "../../utils/currency";
+// ✅ STEP 1: Removed getCurrencySymbol — replaced with these two
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesTree } from "../../utils/Extractcurrencycodes";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { Download } from "lucide-react";
+
 export interface COATabProps {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -75,25 +78,18 @@ function matchCOANode(node: COAAccount, term: string): boolean {
   );
 }
 
-/* filters the tree to nodes that match the term OR have a descendant that matches,
-   preserving ancestry chains so the result is still a valid tree */
 function filterTree(nodes: COAAccount[], term: string): COAAccount[] {
   if (!term.trim()) return nodes;
-
   const walk = (list: COAAccount[]): COAAccount[] =>
     list.reduce<COAAccount[]>((acc, node) => {
       const children = Array.isArray(node.children) ? walk(node.children) : [];
       const selfMatch = matchCOANode(node, term);
-      if (selfMatch || children.length) {
-        acc.push({ ...node, children });
-      }
+      if (selfMatch || children.length) acc.push({ ...node, children });
       return acc;
     }, []);
-
   return walk(nodes);
 }
 
-/* builds the {rowId: true} map needed to expand the tree to N levels by default */
 const buildExpandedToDepth = (
   nodes: COAAccount[],
   depth: number,
@@ -110,7 +106,6 @@ const buildExpandedToDepth = (
   return state;
 };
 
-/* expand every ancestor chain so search results are visible */
 const buildExpandedForSearch = (
   nodes: COAAccount[],
   path = "",
@@ -160,10 +155,11 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => (
               e.stopPropagation();
               action.onClick();
             }}
-            className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${action.danger
-              ? "text-danger hover:bg-danger/10"
-              : "text-main hover:bg-row-hover"
-              }`}
+            className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${
+              action.danger
+                ? "text-danger hover:bg-danger/10"
+                : "text-main hover:bg-row-hover"
+            }`}
           >
             <span className={action.danger ? "text-danger" : "text-muted"}>
               {action.icon}
@@ -176,7 +172,7 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => (
   </div>
 );
 
-/* ───────────────── FILTER BAR (AccountsPayable / TrialBalance style) ───────────────── */
+/* ───────────────── FILTER BAR ───────────────── */
 
 function FilterBar({
   searchTerm,
@@ -265,6 +261,17 @@ const COATab: React.FC<COATabProps> = ({
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
 
+  // ✅ STEP 2: Extract unique currency codes from the COA tree
+  // e.g. coaData has GHS + USD accounts → currencyCodes = ["GHS", "USD"]
+  const currencyCodes = useMemo(
+    () => extractCurrencyCodesTree(coaData?.accounts, "account_currency"),
+    [coaData],
+  );
+
+  // ✅ STEP 3: Hook fetches symbols only for those codes, in parallel
+  // getSymbol("USD") → "$" | getSymbol("GHS") → "₵" | unknown → "EUR"
+  const { getSymbol } = useCurrencySymbols(currencyCodes);
+
   const handleToggleExpand = useCallback(() => {
     if (allExpanded) {
       setExpanded({});
@@ -303,63 +310,74 @@ const COATab: React.FC<COATabProps> = ({
     fetchCOA();
   }, [fetchCOA]);
 
-  // tree data: filtered by search term, same matching logic as before (matchCOANode)
   const tableData: COAAccount[] = useMemo(() => {
     const accounts = coaData?.accounts ?? [];
     return filterTree(accounts, searchTerm);
   }, [coaData, searchTerm]);
 
-const handleExport = useCallback(() => {
-  if (!coaData?.accounts) return;
+  // ✅ STEP 4: getSymbol used in export for currency column
+  const handleExport = useCallback(() => {
+    if (!coaData?.accounts) return;
 
-  const rows: any[] = [];
+    const rows: any[] = [];
 
-  const flattenAccounts = (accounts: COAAccount[], depth = 0) => {
-    accounts.forEach((acc) => {
-      const indent = "    ".repeat(depth);
-      const prefix = acc.is_group
-        ? depth === 0 ? "▶ " : "▸ "
-        : "• ";
+    const flattenAccounts = (accounts: COAAccount[], depth = 0) => {
+      accounts.forEach((acc) => {
+        const indent = "    ".repeat(depth);
+        const prefix = acc.is_group ? (depth === 0 ? "▶ " : "▸ ") : "• ";
+        const symbol = getSymbol(acc.account_currency);
+        const baseSymbol = getSymbol(coaData.base_currency);
 
-      rows.push({
-        "Account Name": indent + prefix + acc.account_name,
-        "Account Type": acc.account_type || "—",
-        "Root Type": acc.root_type || "—",
-        "Category": acc.is_group ? "── GROUP ──" : "Account",
-        "Balance": acc.is_group ? "—" : (acc.balance_in_account_currency ?? ""),
-        "Balance (C)": acc.balance ?? "",  
+        rows.push({
+          "Account Name": indent + prefix + acc.account_name,
+          "Account Type": acc.account_type || "—",
+          "Root Type": acc.root_type || "—",
+          "Category": acc.is_group ? "── GROUP ──" : "Account",
+          // e.g. "₵ (GHS)" or "$ (USD)"
+          "Currency": acc.account_currency
+            ? `${symbol} (${acc.account_currency})`
+            : "—",
+          // balance in account's own currency
+          "Balance (Account CCY)": acc.is_group
+            ? "—"
+            : (acc.balance_in_account_currency ?? "—"),
+          // balance converted to base currency
+          [`Balance (${baseSymbol} ${coaData.base_currency})`]: acc.is_group
+            ? "—"
+            : (acc.balance ?? "—"),
+        });
+
+        if (acc.children?.length) flattenAccounts(acc.children, depth + 1);
       });
+    };
 
-      if (acc.children?.length) flattenAccounts(acc.children, depth + 1);
-    });
-  };
+    flattenAccounts(tableData);
 
-  flattenAccounts(tableData);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = [
+      { wch: 50 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 22 },
+    ];
 
-  const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Chart of Accounts");
 
-  ws["!cols"] = [
-    { wch: 50 },
-    { wch: 18 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 18 },
-    { wch: 18 },
-  ];
+    saveAs(
+      new Blob(
+        [XLSX.write(wb, { bookType: "xlsx", type: "array" })],
+        {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        },
+      ),
+      "chart_of_accounts.xlsx",
+    );
+  }, [coaData, tableData, getSymbol]);
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Chart of Accounts");
-
-  saveAs(
-    new Blob(
-      [XLSX.write(wb, { bookType: "xlsx", type: "array" })],
-      { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-    ),
-    "chart_of_accounts.xlsx"
-  );
-}, [coaData, tableData]);
-
-  // default-collapsed (depth 0), matching original defaultExpandDepth={0}
   const isFirstLoad = useRef(true);
 
   useEffect(() => {
@@ -368,25 +386,17 @@ const handleExport = useCallback(() => {
       setExpanded(buildExpandedForSearch(tableData));
       return;
     }
-    // only reset expand state on first load, not on every refresh
     if (isFirstLoad.current) {
       setExpanded(buildExpandedToDepth(tableData, 0));
       isFirstLoad.current = false;
     }
   }, [coaData, searchTerm, tableData]);
 
-const handleAddChild = (row: COAAccount) => {
-  openCoaGLAccountModal(
-    { parentAccount: row },
-    false,
-    {
-      onSuccess: async () => {
-        await fetchCOA();
-      },
-    },
-  );
-};
-
+  const handleAddChild = (row: COAAccount) => {
+    openCoaGLAccountModal({ parentAccount: row }, false, {
+      onSuccess: async () => { await fetchCOA(); },
+    });
+  };
 
   const handleDeleteAccount = async (row: COAAccount) => {
     const confirmed = await showConfirm(
@@ -406,31 +416,25 @@ const handleAddChild = (row: COAAccount) => {
     }
   };
 
-
-const handleEditAccount = async (row: COAAccount) => {
-  try {
-    showLoading("Loading account details...");
-    const data = await getCOAById(row.name);
-    closeSwal();
-    if (!data) {
-      showApiError("Failed to load account details.");
-      return;
+  const handleEditAccount = async (row: COAAccount) => {
+    try {
+      showLoading("Loading account details...");
+      const data = await getCOAById(row.name);
+      closeSwal();
+      if (!data) { showApiError("Failed to load account details."); return; }
+      openCoaGLAccountModal(
+        { editAccount: { ...row, ...data } },
+        true,
+        { onSuccess: async () => { await fetchCOA(); } },
+      );
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
     }
-    openCoaGLAccountModal(
-      { editAccount: { ...row, ...data } },
-      true,
-      {
-        onSuccess: async () => {
-          await fetchCOA();
-        },
-      },
-    );
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+  };
 
+  // ✅ STEP 5: getSymbol used in both balance columns
+  // ✅ STEP 6: getSymbol + coaData?.base_currency added to deps array
   const columns = useMemo<ColumnDef<COAAccount>[]>(
     () => [
       {
@@ -440,7 +444,6 @@ const handleEditAccount = async (row: COAAccount) => {
         cell: ({ row }) => {
           const node = row.original;
           const canExpand = row.getCanExpand();
-
           return (
             <div
               className="flex items-center gap-1.5"
@@ -454,8 +457,9 @@ const handleEditAccount = async (row: COAAccount) => {
                 >
                   <ChevronRight
                     size={12}
-                    className={`transition-transform duration-150 ${row.getIsExpanded() ? "rotate-90" : ""
-                      }`}
+                    className={`transition-transform duration-150 ${
+                      row.getIsExpanded() ? "rotate-90" : ""
+                    }`}
                   />
                   {row.getIsExpanded() ? (
                     <FolderOpen size={13} />
@@ -464,13 +468,12 @@ const handleEditAccount = async (row: COAAccount) => {
                   )}
                 </button>
               ) : (
-                <BookOpen
-                  size={12}
-                  className="text-muted opacity-50 shrink-0"
-                />
+                <BookOpen size={12} className="text-muted opacity-50 shrink-0" />
               )}
               <span
-                className={`text-xs truncate ${node.is_group ? "font-semibold text-main" : "font-normal text-main"}`}
+                className={`text-xs truncate ${
+                  node.is_group ? "font-semibold text-main" : "font-normal text-main"
+                }`}
               >
                 {node.account_name}
               </span>
@@ -508,9 +511,7 @@ const handleEditAccount = async (row: COAAccount) => {
           const rootType = row.original.root_type;
           const badge = badgeClass[rootType] ?? "bg-info text-info";
           return rootType ? (
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badge}`}
-            >
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badge}`}>
               {rootType}
             </span>
           ) : (
@@ -520,33 +521,37 @@ const handleEditAccount = async (row: COAAccount) => {
       },
       {
         id: "balance",
+        // Balance in the account's OWN currency
+        // Debtors (GHS) → "₵ 6,891"  |  Debtor-USD → "$ 574,350"
         header: "Balance",
         size: 150,
         meta: { align: "right" },
         cell: ({ row }) => {
           const node = row.original;
-          if (node.is_group)
-            return <span className="text-muted text-xs">—</span>;
+          if (node.is_group) return <span className="text-muted text-xs">—</span>;
           return (
             <code className="text-xs px-2 py-1 rounded bg-row-hover text-success">
-              {getCurrencySymbol()}{" "}
+              {getSymbol(node.account_currency)}{" "}
               {node.balance_in_account_currency ?? node.balance}
             </code>
           );
         },
       },
       {
-        id: "balance_in_account_currency",
-        header: `Balance (${getCurrencySymbol()})`,
-        size: 150,
+        id: "balance_base",
+        // Balance converted to base currency (from API: base_currency = "GHS")
+        // Header: "Balance (₵)" | Cell: "₵ 3,688,944,999"
+        header: `Balance (${getSymbol(coaData?.base_currency)} ${coaData?.base_currency ?? ""})`,
+        size: 160,
         meta: { align: "right" },
         cell: ({ row }) => {
           const node = row.original;
+          if (node.is_group) return <span className="text-muted text-xs">—</span>;
           if (node.balance === null || node.balance === undefined)
             return <span className="text-muted text-xs">—</span>;
           return (
             <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-              {node.balance}
+              {getSymbol(coaData?.base_currency)} {node.balance}
             </code>
           );
         },
@@ -570,20 +575,9 @@ const handleEditAccount = async (row: COAAccount) => {
               onClick: () => setViewAccount(node),
             },
             ...(node.is_group === 1
-              ? [
-                {
-                  label: "Add Child",
-                  icon: <GitBranch size={12} />,
-                  onClick: () => handleAddChild(node),
-                },
-              ]
-              : [
-                {
-                  label: "View Ledger",
-                  icon: <BookMarked size={12} />,
-                  onClick: () => onViewLedger?.(node.name),
-                },
-              ]),
+              ? [{ label: "Add Child", icon: <GitBranch size={12} />, onClick: () => handleAddChild(node) }]
+              : [{ label: "View Ledger", icon: <BookMarked size={12} />, onClick: () => onViewLedger?.(node.name) }]
+            ),
             {
               label: "Delete",
               icon: <Trash2 size={12} />,
@@ -596,7 +590,7 @@ const handleEditAccount = async (row: COAAccount) => {
         },
       },
     ],
-    [onViewLedger],
+    [onViewLedger, getSymbol, coaData?.base_currency], // ✅ correct deps
   );
 
   const table = useReactTable({
@@ -616,9 +610,7 @@ const handleEditAccount = async (row: COAAccount) => {
     return (
       <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col items-center justify-center py-24 gap-4">
         <AlertCircle size={28} className="text-danger" />
-        <p className="text-xs font-bold text-danger uppercase tracking-widest">
-          {error}
-        </p>
+        <p className="text-xs font-bold text-danger uppercase tracking-widest">{error}</p>
         <button
           onClick={fetchCOA}
           className="flex items-center gap-2 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest bg-primary rounded-xl transition-all hover:opacity-90"
@@ -647,19 +639,14 @@ const handleEditAccount = async (row: COAAccount) => {
           loading={loading}
           allExpanded={allExpanded}
           onToggleExpand={handleToggleExpand}
-          onExport={handleExport} 
-
+          onExport={handleExport}
         />
 
         <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
           <div className="overflow-x-auto overflow-y-auto relative max-h-[520px]">
             <table
               className="border-collapse"
-              style={{
-                tableLayout: "fixed",
-                width: "max-content",
-                minWidth: "100%",
-              }}
+              style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}
             >
               <colgroup>
                 {table.getAllLeafColumns().map((col) => (
@@ -679,10 +666,7 @@ const handleEditAccount = async (row: COAAccount) => {
                           key={header.id}
                           className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align}`}
                         >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          {flexRender(header.column.columnDef.header, header.getContext())}
                         </th>
                       );
                     })}
@@ -694,19 +678,13 @@ const handleEditAccount = async (row: COAAccount) => {
                   <tr>
                     <td colSpan={columns.length} style={{ height: "300px" }}>
                       <div className="flex justify-center items-center h-full">
-                        <Loader2
-                          size={20}
-                          className="animate-spin text-muted"
-                        />
+                        <Loader2 size={20} className="animate-spin text-muted" />
                       </div>
                     </td>
                   </tr>
                 ) : table.getRowModel().rows.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={columns.length}
-                      className="py-16 text-center text-xs text-muted"
-                    >
+                    <td colSpan={columns.length} className="py-16 text-center text-xs text-muted">
                       No accounts found.
                     </td>
                   </tr>
@@ -715,9 +693,7 @@ const handleEditAccount = async (row: COAAccount) => {
                     <tr
                       key={row.id}
                       className="hover:bg-row-hover transition-colors h-[36px]"
-                      style={{
-                        borderBottom: "1px solid rgba(128,128,128,0.12)",
-                      }}
+                      style={{ borderBottom: "1px solid rgba(128,128,128,0.12)" }}
                       onDoubleClick={() => {
                         if (!row.original.is_group) onViewLedger?.(row.original.name);
                       }}
@@ -728,14 +704,8 @@ const handleEditAccount = async (row: COAAccount) => {
                             ? "text-right"
                             : "text-left";
                         return (
-                          <td
-                            key={cell.id}
-                            className={`px-3 py-1 whitespace-nowrap ${align}`}
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
+                          <td key={cell.id} className={`px-3 py-1 whitespace-nowrap ${align}`}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>
                         );
                       })}
