@@ -5,6 +5,8 @@ type CompanyState = {
   companyName: string;
   baseCurrency: string;
   currencySymbol: string;
+  domain: "Service" | "Product" | "";
+  industryType: string;
   companyAddress: {
     addressLine1?: string;
     addressLine2?: string;
@@ -21,6 +23,8 @@ type CompanyState = {
     companyName?: string;
     baseCurrency?: string;
     currencySymbol?: string;
+    domain?: "Service" | "Product" | "";
+    industryType?: string;
     companyAddress?: {
       addressLine1?: string;
       addressLine2?: string;
@@ -45,6 +49,9 @@ export const useCompanyStore = create<CompanyState>()(
       companyName: "",
       baseCurrency: "",
       currencySymbol: "",
+      domain: "",
+      industryType: "",
+
       companyAddress: {},
       isHydrated: false,
 
@@ -57,6 +64,8 @@ export const useCompanyStore = create<CompanyState>()(
           currencySymbol: data.currencySymbol ?? state.currencySymbol,
 
           companyAddress: data.companyAddress ?? state.companyAddress,
+          domain: data.domain ?? state.domain,
+          industryType: data.industryType ?? state.industryType,
         })),
 
       setCurrencySymbol: (symbol) =>
@@ -69,6 +78,8 @@ export const useCompanyStore = create<CompanyState>()(
           companyName: "",
           baseCurrency: "",
           currencySymbol: "",
+          domain: "",
+          industryType: "",
           companyAddress: {},
         }),
 
