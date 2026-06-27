@@ -80,6 +80,13 @@ export const NightingaleChart: React.FC<NightingaleChartProps> = ({ data }) => {
         itemStyle: {
           borderRadius: 6,
         },
+        label: {
+          show: true,
+          formatter: (params: any) => {
+            const formattedValue = currencyFormatter.format(params.value);
+            return `${params.name}\n${formattedValue}`; // You can change \n to : if you want them on the same line
+          },
+        },
         // 3. Feed the sorted/sliced Top 3 data here
         data: top3Data,
         color: ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#14b8a6"],
