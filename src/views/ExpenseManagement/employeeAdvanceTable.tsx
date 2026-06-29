@@ -327,6 +327,10 @@ const handleBack = () => {
   const columns: Column<EmployeeAdvance>[] = useMemo(
     () => [
       {
+        key: "id",
+        header: "Name"
+      },
+      {
         key: "posting_date",
         header: "Posting Date",
         align: "left",

@@ -155,6 +155,18 @@ export interface DebitNoteDetailsTabProps {
   onRemoveItem: (index: number) => void;
   onToggleUpdateStock: () => void;
 }
+const DebitNoteColGroup: React.FC = () => (
+  <colgroup>
+    <col style={{ width: "24px" }} />   {/* # */}
+    <col style={{ width: "22%" }} />    {/* Item */}
+    <col style={{ width: "7%" }} />     {/* Qty */}
+    <col style={{ width: "8%" }} />     {/* Rate */}
+    <col style={{ width: "12%" }} />    {/* Batch No */}
+    <col style={{ width: "18%" }} />    {/* Warehouse */}
+    <col style={{ width: "8%" }} />     {/* Amount */}
+    <col style={{ width: "36px" }} />   {/* Actions */}
+  </colgroup>
+);
 
 const DebitNoteHeaders: React.FC = () => (
   <tr className="border-b border-theme">
@@ -426,6 +438,8 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
           actions={actions}
           symbol=""
           ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+          colGroup={<DebitNoteColGroup />}
+
           columnHeaders={<DebitNoteHeaders />}
           renderRow={renderRow}
         />
