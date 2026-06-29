@@ -664,7 +664,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
         {!loading && data && (
           <>
             {/* Employee identity row — Avatar + Name + DateRange + PDF Button */}
-            <div className="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-theme shrink-0">
+            <div className="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-theme shrink-0 min-w-0 overflow-x-auto">
               {/* Left — Avatar + Name */}
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-[13px] font-bold text-white shrink-0">
@@ -697,7 +697,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
             </div>
 
             {/* Table */}
-            <div className="flex-1 min-h-0 overflow-auto">
+            <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto">
               <ModalTable<ExpenseClaimEntry>
                 columns={claimColumns}
                 data={claims}
