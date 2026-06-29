@@ -120,6 +120,7 @@ export default function StockItemSelect({
   itemName,
   onChange,
   onClear,
+  invoiceType = "Product",
   taxCategory,
   disabled = false,
   isQuotation = false,
@@ -143,6 +144,9 @@ export default function StockItemSelect({
       const raw = res?.message?.data ?? [];
       const rows: any[] = [];
       raw.forEach((item: any) => {
+        const isService = item.is_service_item === 1;
+        if (invoiceType === "Service" && !isService) return;
+        if (invoiceType === "Product" && isService) return;
         const base = {
           itemCode: item.item_code,
           itemName: item.item_name,
@@ -184,6 +188,12 @@ export default function StockItemSelect({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (flatRows.length > 0) {
+      load();
+    }
+  }, [invoiceType]);
 
   const handleSelect = (row: any) => {
     setSelected(row);
