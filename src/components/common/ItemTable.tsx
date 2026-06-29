@@ -412,6 +412,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
               itemName={it.itemName}
               taxCategory={taxCategory}
               isQuotation={isQuotation}
+              invoiceType={invoiceType}
               onChange={(item: SelectedStockItem) => {
                 actions.updateItemDirectly?.(i, {
                   itemCode: item.itemCode,
