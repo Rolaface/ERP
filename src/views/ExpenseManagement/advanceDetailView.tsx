@@ -1,8 +1,19 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import type { Column } from "../../components/ui/Table/type";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
-import { Wallet, CheckSquare, Clock } from "lucide-react";
+import {
+  Wallet,
+  CheckSquare,
+  Clock,
+  FileText,
+  Download,
+  Eye,
+  X,
+  ChevronDown,
+  Loader2,
+} from "lucide-react";
+import { getAdvanceStatementPdf } from "../../api/expenseClaimApi";
 
 export interface ExpenseClaimEntry {
   name: string;
@@ -49,7 +60,7 @@ interface Props {
   onDateRangeChange: (range: { from_date?: string; to_date?: string }) => void;
 }
 
-/* ── helpers ── */
+/* ── helpers ─────────────────────────────────────────────────────────────── */
 const fmtDate = (d?: string) =>
   d
     ? new Date(d).toLocaleDateString("en-GB", {
@@ -79,6 +90,15 @@ const initials = (name?: string) =>
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
 
+const triggerDownload = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   draft: { bg: "#f3f4f6", color: "#6b7280" },
   unpaid: { bg: "#fef3c7", color: "#d97706" },
@@ -87,7 +107,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   cancelled: { bg: "#fee2e2", color: "#dc2626" },
 };
 
-/* ── StatCell — mirrors CustomerStatement's StatCell exactly ── */
+/* ── StatCell ────────────────────────────────────────────────────────────── */
 interface StatCellProps {
   label: string;
   icon: React.ReactNode;
@@ -104,7 +124,9 @@ const StatCell: React.FC<StatCellProps> = ({
   highlight = false,
 }) => (
   <div
-    className={`flex flex-col justify-center gap-1.5 px-4 sm:px-6 py-4 min-w-[120px] sm:min-w-[148px] flex-shrink-0 ${highlight ? "bg-danger/5" : ""}`}
+    className={`flex flex-col justify-center gap-1.5 px-4 sm:px-6 py-4 min-w-[120px] sm:min-w-[148px] flex-shrink-0 ${
+      highlight ? "bg-danger/5" : ""
+    }`}
   >
     <div className="flex items-center gap-1.5">
       {icon}
@@ -120,7 +142,7 @@ const StatCell: React.FC<StatCellProps> = ({
   </div>
 );
 
-/* ── DetailCell — mirrors AgingCell style for the details strip ── */
+/* ── DetailCell ──────────────────────────────────────────────────────────── */
 interface DetailCellProps {
   label: string;
   value: React.ReactNode;
@@ -133,13 +155,295 @@ const DetailCell: React.FC<DetailCellProps> = ({ label, value, mono }) => (
       {label}
     </span>
     <span
-      className={`text-[11px] font-medium text-main text-center leading-snug break-all ${mono ? "font-mono" : ""}`}
+      className={`text-[11px] font-medium text-main text-center leading-snug break-all ${
+        mono ? "font-mono" : ""
+      }`}
     >
       {value || "—"}
     </span>
   </div>
 );
 
+/* ── PdfViewerModal ──────────────────────────────────────────────────────── */
+interface PdfViewerModalProps {
+  blobUrl: string;
+  blob: Blob;
+  filename: string;
+  title: string;
+  onClose: () => void;
+}
+
+const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
+  blobUrl,
+  blob,
+  filename,
+  title,
+  onClose,
+}) => {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center"
+      style={{ zIndex: 9999 }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative flex flex-col bg-card rounded-2xl shadow-2xl overflow-hidden"
+        style={{
+          width: "min(960px, 96vw)",
+          height: "min(92vh, 920px)",
+          zIndex: 10000,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-theme bg-app shrink-0 gap-2 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <FileText className="w-4 h-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-main leading-tight truncate">
+                {title}
+              </p>
+              <p className="text-[10px] text-muted">
+                Employee Advance Statement
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              onClick={() => triggerDownload(blob, filename)}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Download</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-red-50 hover:text-red-500 text-muted transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* PDF iframe */}
+        <div className="flex-1 bg-gray-100 overflow-hidden">
+          <iframe
+            src={blobUrl}
+            className="w-full h-full border-0"
+            title="Employee Advance Statement PDF"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── AdvancePdfButton ────────────────────────────────────────────────────── */
+type PdfAction = "preview" | "download";
+
+interface AdvancePdfButtonProps {
+  advanceId: string;
+  advanceName: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
+const AdvancePdfButton: React.FC<AdvancePdfButtonProps> = ({
+  advanceId,
+  advanceName,
+  fromDate,
+  toDate,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{
+    blobUrl: string;
+    blob: Blob;
+  } | null>(null);
+
+  const cachedRef = useRef<Blob | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const filename = `Advance_Statement_${advanceName.replace(/\s+/g, "_")}.pdf`;
+
+  // Invalidate cached blob whenever filters or id change
+  useEffect(() => {
+    cachedRef.current = null;
+  }, [advanceId, fromDate, toDate]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const fetchBlob = async (): Promise<Blob | null> => {
+    if (cachedRef.current) return cachedRef.current;
+    try {
+      setLoading(true);
+      setError(null);
+      const blob = await getAdvanceStatementPdf(advanceId, {
+        from_date: fromDate,
+        to_date: toDate,
+      });
+      cachedRef.current = blob;
+      return blob;
+    } catch {
+      setError("Failed to generate PDF. Please try again.");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelect = async (action: PdfAction) => {
+    setOpen(false);
+    const blob = await fetchBlob();
+    if (!blob) return;
+
+    if (action === "preview") {
+      setViewer({ blobUrl: URL.createObjectURL(blob), blob });
+    }
+    if (action === "download") {
+      triggerDownload(blob, filename);
+    }
+  };
+
+  const closeViewer = () => {
+    if (viewer) URL.revokeObjectURL(viewer.blobUrl);
+    setViewer(null);
+  };
+
+  const items: {
+    action: PdfAction;
+    icon: React.ReactNode;
+    label: string;
+    sub: string;
+  }[] = [
+    {
+      action: "preview",
+      icon: <Eye className="w-3.5 h-3.5" />,
+      label: "Preview",
+      sub: "View in-app",
+    },
+    {
+      action: "download",
+      icon: <Download className="w-3.5 h-3.5" />,
+      label: "Download",
+      sub: "Save as PDF",
+    },
+  ];
+
+  return (
+    <>
+      <div className="relative inline-flex" ref={dropdownRef}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-theme hover:bg-primary/8 hover:border-primary/30 text-main transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+          ) : (
+            <FileText className="w-3.5 h-3.5 text-primary" />
+          )}
+          <span>{loading ? "Generating…" : "PDF"}</span>
+          <ChevronDown
+            className={`w-3 h-3 text-muted transition-transform duration-150 ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {open && (
+          <div
+            className="absolute right-0 top-full mt-1.5 w-48 bg-card border border-theme rounded-xl shadow-xl overflow-hidden"
+            style={{ zIndex: 9000 }}
+          >
+            {items.map(({ action, icon, label, sub }, idx) => (
+              <button
+                key={action}
+                onClick={() => handleSelect(action)}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-row-hover transition-colors group ${
+                  idx < items.length - 1 ? "border-b border-theme/50" : ""
+                }`}
+              >
+                <span className="text-muted group-hover:text-primary transition-colors">
+                  {icon}
+                </span>
+                <div>
+                  <p className="text-[12px] font-semibold text-main leading-tight">
+                    {label}
+                  </p>
+                  <p className="text-[10px] text-muted">{sub}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Error toast */}
+      {error && (
+        <div
+          className="fixed bottom-4 right-4 flex items-center gap-2 bg-danger text-white text-[12px] font-semibold px-4 py-2.5 rounded-xl shadow-lg"
+          style={{ zIndex: 11000 }}
+        >
+          {error}
+          <button
+            onClick={() => setError(null)}
+            className="ml-1 opacity-70 hover:opacity-100"
+            aria-label="Dismiss error"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* PDF Viewer Modal */}
+      {viewer && (
+        <PdfViewerModal
+          blobUrl={viewer.blobUrl}
+          blob={viewer.blob}
+          filename={filename}
+          title={advanceName}
+          onClose={closeViewer}
+        />
+      )}
+    </>
+  );
+};
+
+/* ── EmployeeAdvanceDetailView ───────────────────────────────────────────── */
 const EmployeeAdvanceDetailView: React.FC<Props> = ({
   data,
   loading,
@@ -211,10 +515,8 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
   ];
 
   return (
-    <div
-      className="max-w-[1400px] mx-auto flex flex-col gap-4 p-4 sm:p-5 h-[calc(95vh-160px)]"
-    >
-      {/* ── HEADER — mirrors CustomerStatement header style ── */}
+    <div className="max-w-[1400px] mx-auto flex flex-col gap-4 p-4 sm:p-5 h-[calc(95vh-160px)]">
+      {/* ── HEADER ── */}
       <div className="bg-card border border-theme rounded-2xl px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0">
         {/* Back button */}
         <button
@@ -279,9 +581,8 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
         )}
       </div>
 
-      {/* ── STATS BAR — exact mirror of CustomerStatement's top bar ── */}
+      {/* ── STATS BAR ── */}
       <div className="bg-card border border-theme rounded-2xl flex items-stretch overflow-x-auto divide-x divide-theme shrink-0">
-        {/* Stat cells */}
         <StatCell
           label="Total Advance"
           icon={<Wallet size={12} className="text-primary" />}
@@ -290,7 +591,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
         />
         <StatCell
           label="Total Claimed"
-          icon={<CheckSquare  size={12} className="text-success" />}
+          icon={<CheckSquare size={12} className="text-success" />}
           value={fmtAmount(data?.claimed_amount)}
           valueClass="text-success"
         />
@@ -311,7 +612,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
           highlight={(data?.pending_amount ?? 0) > 0}
         />
 
-        {/* Details strip — mirrors Aging strip */}
+        {/* Details strip */}
         <div className="flex flex-1 items-stretch min-w-0">
           <div className="flex items-center justify-center px-3 bg-row-hover/50 border-r border-theme shrink-0">
             <span
@@ -326,14 +627,17 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
             <DetailCell label="Currency" value={data?.currency} />
             <DetailCell label="Mode of Payment" value={data?.mode_of_payment} />
             <DetailCell label="Purpose" value={data?.purpose} />
-            <DetailCell label="Advance Account" value={data?.advance_account} mono />
+            <DetailCell
+              label="Advance Account"
+              value={data?.advance_account}
+              mono
+            />
           </div>
         </div>
       </div>
 
       {/* ── MAIN CARD ── */}
       <div className="bg-card border border-theme rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0">
-
         {/* Loading */}
         {loading && (
           <div
@@ -359,7 +663,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
 
         {!loading && data && (
           <>
-            {/* Employee identity row — merged with Expense Claims label + Date Range */}
+            {/* Employee identity row — Avatar + Name + DateRange + PDF Button */}
             <div className="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-theme shrink-0">
               {/* Left — Avatar + Name */}
               <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -376,14 +680,18 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
                 </div>
               </div>
 
-              
-
-              {/* Right — Date Range */}
-              <div className="flex-1 flex justify-start pl-8 min-w-0">
+              {/* Right — Date Range + PDF Button */}
+              <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
                 <DateRangeFilter
                   from={dateRange.from_date}
                   to={dateRange.to_date}
                   onChange={onDateRangeChange}
+                />
+                <AdvancePdfButton
+                  advanceId={data.name}
+                  advanceName={data.name}
+                  fromDate={dateRange.from_date}
+                  toDate={dateRange.to_date}
                 />
               </div>
             </div>

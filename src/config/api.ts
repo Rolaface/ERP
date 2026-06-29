@@ -452,6 +452,7 @@ export const API = {
     advance: `${ERP_BASE}/api/resource/Employee Advance`,
     changeAdvanceStatus: `${ERP_BASE}/api/method/frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs`,
     addComment: `${ERP_BASE}/api/method/frappe.desk.form.utils.add_comment`,
+    getPdf: `${ERP_BASE}/api/method/custom_hrms.api.employee_advance.api.generate_advance_statement_pdf`
     
   },
   /* =========================
