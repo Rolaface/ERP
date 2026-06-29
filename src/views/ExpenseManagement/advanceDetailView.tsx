@@ -464,7 +464,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
       key: "posting_date",
       header: "Date",
       render: (ec) => (
-        <span className="text-[10px] font-black text-muted uppercase tracking-widest whitespace-nowrap">
+        <span className="text-[10px] font-black text-muted uppercase tracking-widest ">
           {fmtDate(ec.posting_date)}
         </span>
       ),
@@ -473,7 +473,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
       key: "parent",
       header: "Claim ID",
       render: (ec) => (
-        <span className="text-primary font-mono font-bold text-[11px] block overflow-hidden text-ellipsis whitespace-nowrap">
+        <span className="text-primary font-mono font-bold text-[11px] block overflow-hidden text-ellipsis ">
           {ec.parent}
         </span>
       ),
@@ -497,7 +497,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
       header: "Claimed",
       align: "right",
       render: (ec) => (
-        <span className="text-success font-bold text-xs tabular-nums whitespace-nowrap">
+        <span className="text-success font-bold text-xs tabular-nums">
           {fmtAmount(ec.allocated_amount)}
         </span>
       ),
@@ -507,7 +507,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
       header: "Remaining",
       align: "right",
       render: (ec) => (
-        <span className="font-bold text-xs tabular-nums whitespace-nowrap text-main">
+        <span className="font-bold text-xs tabular-nums text-main">
           {fmtAmount(ec.unclaimed_amount)}
         </span>
       ),
