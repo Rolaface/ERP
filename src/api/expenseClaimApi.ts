@@ -471,3 +471,21 @@ export async function getAdvanceByIdForView(
   const resp: AxiosResponse = await api.get(url);
   return resp.data?.message?.data || null;
 }
+
+
+export async function getAdvanceStatementPdf(
+  id: string,
+  filters: { from_date?: string; to_date?: string } = {},
+): Promise<Blob> {
+  const resp: AxiosResponse = await api.get(
+    ExpenseClaimAPI.getPdf,
+    {
+      params: {
+        id,
+        ...filters,
+      },
+      responseType: "blob",
+    },
+  );
+  return resp.data;
+}
