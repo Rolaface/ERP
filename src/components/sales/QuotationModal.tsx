@@ -32,7 +32,7 @@ import {
 } from "../../api/proformaInvoiceApi";
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import QuotationItemTable from "../common/QuotationItemTable";
-import { useCompanyData } from "../../hooks/useCompanyData";
+import { useDefault } from "../../hooks/usedefaultdata";
 
 interface QuotationModalProps {
   isOpen: boolean;
@@ -61,7 +61,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
-  const { domain } = useCompanyData();
+  const domain = useDefault("primary_business_domain");
     console.log("Domain ", domain);
   
   useEffect(() => {

@@ -4,7 +4,8 @@ import {
   updateCompanyDefaults,
 } from "../api/companySetupApi";
 import { showApiError, showSuccessWithWarnings } from "../utils/alert";
-import { useDataRefreshStore, REFRESH_KEYS } from "../store/dataRefreshStore";
+import { useDataRefreshStore } from "../store/dataRefreshStore";
+import { useCompanyDefaultsStore } from "../store/Companydefaultsstore";
 
 type DefaultValues = Record<string, string>;
 
@@ -63,9 +64,14 @@ export function useCompanyDefaults() {
       const resp = await updateCompanyDefaults(dirty);
       const payload = resp?.message;
 
-      showSuccessWithWarnings(payload?.message || "Defaults updated successfully", payload?.data?.warnings);
+      showSuccessWithWarnings(
+        payload?.message || "Defaults updated successfully",
+        payload?.data?.warnings,
+      );
 
       useDataRefreshStore.getState().triggerRefresh("COMPANY_DEFAULTS" as any);
+      useCompanyDefaultsStore.getState().setDefaults(values);      
+      useCompanyDefaultsStore.getState().fetchDefaults(true);       
     } catch (err: any) {
       setError(err?.message);
       showApiError(err);
