@@ -71,24 +71,24 @@ interface ItemTableProps {
 //   isSalesInvoice,
 //   isQuotation,
 // }) => (
-  // <colgroup>
-  //   {/* #          */} <col style={{ width: "28px" }} />
-  //   {/* Item       */} <col style={{ width: isQuotation ? "30%" : "18%" }} />
-  //   {/* Pkg (U×S)  */} <col style={{ width: "5%" }} />
-  //   {/* Box        */} {!isQuotation && <col style={{ width: "6%" }} />}
-  //   {/* Batch No   */} {isSalesInvoice && <col style={{ width: "9%" }} />}
-  //   {/* UOM        */} {isQuotation && <col style={{ width: "10%" }} />}
-  //   {/* Qty        */} <col style={{ width: "5%" }} />
-  //   {/* Mfg Date   */} {!isQuotation && <col style={{ width: "10%" }} />}
-  //   {/* Expiry     */} {!isQuotation && <col style={{ width: "10%" }} />}
-  //   {/* Warehouse  */} {!isQuotation && <col style={{ width: "12%" }} />}
-  //   {/* Unit Price */} <col style={{ width: "7%" }} />
-  //   {/* Dis(%)     */} {!isQuotation && <col style={{ width: "5%" }} />}
-  //   {/* Tax(%)     */} <col style={{ width: "4%" }} />
-  //   {/* Tax Name   */} <col style={{ width: "12%" }} />
-  //   {/* Amount     */} <col style={{ width: "7%" }} />
-  //   {/* Actions    */} <col style={{ width: "44px" }} />
-  // </colgroup>
+// <colgroup>
+//   {/* #          */} <col style={{ width: "28px" }} />
+//   {/* Item       */} <col style={{ width: isQuotation ? "30%" : "18%" }} />
+//   {/* Pkg (U×S)  */} <col style={{ width: "5%" }} />
+//   {/* Box        */} {!isQuotation && <col style={{ width: "6%" }} />}
+//   {/* Batch No   */} {isSalesInvoice && <col style={{ width: "9%" }} />}
+//   {/* UOM        */} {isQuotation && <col style={{ width: "10%" }} />}
+//   {/* Qty        */} <col style={{ width: "5%" }} />
+//   {/* Mfg Date   */} {!isQuotation && <col style={{ width: "10%" }} />}
+//   {/* Expiry     */} {!isQuotation && <col style={{ width: "10%" }} />}
+//   {/* Warehouse  */} {!isQuotation && <col style={{ width: "12%" }} />}
+//   {/* Unit Price */} <col style={{ width: "7%" }} />
+//   {/* Dis(%)     */} {!isQuotation && <col style={{ width: "5%" }} />}
+//   {/* Tax(%)     */} <col style={{ width: "4%" }} />
+//   {/* Tax Name   */} <col style={{ width: "12%" }} />
+//   {/* Amount     */} <col style={{ width: "7%" }} />
+//   {/* Actions    */} <col style={{ width: "44px" }} />
+// </colgroup>
 // );
 
 interface InvoiceHeadersProps {
@@ -101,7 +101,7 @@ const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
   isSalesInvoice,
   isQuotation,
 }) => (
-    <colgroup>
+  <colgroup>
     {/* #          */} <col style={{ width: "28px" }} />
     {/* Item       */} <col style={{ width: isQuotation ? "30%" : "18%" }} />
     {/* Pkg (U×S)  */} <col style={{ width: "5%" }} />
@@ -124,13 +124,13 @@ const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
 const ServiceInvoiceColGroup: React.FC = () => (
   <colgroup>
     <col style={{ width: "28px" }} /> {/* # */}
-    <col style={{ width: "22%" }} />  {/* Item */}
-    <col style={{ width: "10%" }} />  {/* Qty */}
-    <col style={{ width: "15%" }} />  {/* Price */}
-    <col style={{ width: "10%" }} />  {/* Tax% */}
-    <col style={{ width: "15%" }} />  {/* Tax Name */}
-    <col style={{ width: "15%" }} />  {/* Amount */}
-    <col style={{ width: "8%" }} />  {/* Amount */}
+    <col style={{ width: "22%" }} /> {/* Item */}
+    <col style={{ width: "10%" }} /> {/* Qty */}
+    <col style={{ width: "15%" }} /> {/* Price */}
+    <col style={{ width: "10%" }} /> {/* Tax% */}
+    <col style={{ width: "15%" }} /> {/* Tax Name */}
+    <col style={{ width: "15%" }} /> {/* Amount */}
+    <col style={{ width: "8%" }} /> {/* Amount */}
     <col style={{ width: "44px" }} /> {/* Actions */}
   </colgroup>
 );
@@ -139,11 +139,11 @@ const ServiceInvoiceColGroup: React.FC = () => (
 const InvoiceColGroup: React.FC<InvoiceHeadersProps> = (props) => {
   // const isService = props.isSalesInvoice && props.invoiceType === "Service";
   const isService = props.invoiceType === "Service";
-  
+
   if (isService) {
     return <ServiceInvoiceColGroup />;
   }
-  
+
   return <ProductInvoiceColGroup {...props} />;
 };
 
@@ -156,27 +156,73 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
   const isService = invoiceType === "Service";
   return (
     <tr className="border-b border-theme">
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">#</th>
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Item</th>
-      
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        #
+      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        Item
+      </th>
+
       {/* Hide Labels if Service */}
-      {!isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Pkg</th>}
-      {!isQuotation && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Box</th>}
-      {isSalesInvoice && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Batch</th>}
-      
-      {isQuotation && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">UOM</th>}
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Qty</th>
-      
+      {!isService && (
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          Pkg
+        </th>
+      )}
+      {!isQuotation && !isService && (
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          Box
+        </th>
+      )}
+      {isSalesInvoice && !isService && (
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          Batch
+        </th>
+      )}
+
+      {isQuotation && (
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          UOM
+        </th>
+      )}
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        Qty
+      </th>
+
       {/* Hide Labels if Service */}
-      {!isQuotation && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Mfg</th>}
-      {!isQuotation && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Expiry</th>}
-      {!isQuotation && !isService && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Warehouse</th>}
-      
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Price <span className="text-danger">*</span></th>
-      {!isQuotation && <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Dis%</th>}
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax%</th>
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Tax Name</th>
-      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">Amount</th>
+      {!isQuotation && !isService && (
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          Mfg
+        </th>
+      )}
+      {!isQuotation && !isService && (
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          Expiry
+        </th>
+      )}
+      {!isQuotation && !isService && (
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          Warehouse
+        </th>
+      )}
+
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        Price <span className="text-danger">*</span>
+      </th>
+      {!isQuotation && (
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          Dis%
+        </th>
+      )}
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        Tax%
+      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        Tax Name
+      </th>
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        Amount
+      </th>
       <th />
     </tr>
   );
@@ -272,7 +318,10 @@ const ItemTable: React.FC<ItemTableProps> = ({
           if (matchingBatch) matchedWarehouse = matchingBatch.warehouse;
         }
       } catch (stockError) {
-        console.error("Could not fetch warehouse for scanned item:", stockError);
+        console.error(
+          "Could not fetch warehouse for scanned item:",
+          stockError,
+        );
       }
 
       const existingIndex = formData.items.findIndex(
@@ -328,9 +377,9 @@ const ItemTable: React.FC<ItemTableProps> = ({
       );
     }
   });
-   
+
   // const isService = isSalesInvoice && invoiceType === "Service";
-  const isService = invoiceType === "Service";  
+  const isService = invoiceType === "Service";
 
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);
@@ -350,7 +399,9 @@ const ItemTable: React.FC<ItemTableProps> = ({
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
         {/* # */}
-        <td className="px-2 py-1 text-center text-[10px] text-muted">{i + 1}</td>
+        <td className="px-2 py-1 text-center text-[10px] text-muted">
+          {i + 1}
+        </td>
 
         {/* Item */}
         {!isQuotation && (
@@ -407,27 +458,27 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Pkg (U×S) */}
         {!isService && (
-        <td className="px-1 py-1">
-          <Tooltip
-            content={
-              it.packingUnit && it.packingSize
-                ? `Packing: ${it.packingUnit} × ${it.packingSize}`
-                : "No packing defined"
-            }
-          >
-            <input
-              type="text"
-              name="packing"
-              value={
+          <td className="px-1 py-1">
+            <Tooltip
+              content={
                 it.packingUnit && it.packingSize
-                  ? `${it.packingUnit}×${it.packingSize}`
-                  : ""
+                  ? `Packing: ${it.packingUnit} × ${it.packingSize}`
+                  : "No packing defined"
               }
-              disabled
-              className="w-full h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
-            />
-          </Tooltip>
-        </td>
+            >
+              <input
+                type="text"
+                name="packing"
+                value={
+                  it.packingUnit && it.packingSize
+                    ? `${it.packingUnit}×${it.packingSize}`
+                    : ""
+                }
+                disabled
+                className="w-full h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+              />
+            </Tooltip>
+          </td>
         )}
 
         {/* Box */}
@@ -500,7 +551,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         {/* Mfg Date — full date visible, no truncation */}
-       {!isService && (
+        {!isService && (
           <td className="px-0.5 py-1">
             <Tooltip content={it.mfgDate || "No Mfg Date"}>
               <DatePickerInput
@@ -509,7 +560,9 @@ const ItemTable: React.FC<ItemTableProps> = ({
                 value={it.mfgDate}
                 disabled
                 onChange={(name, value) =>
-                  actions.handleItemChange(i, { target: { name, value } } as any)
+                  actions.handleItemChange(i, {
+                    target: { name, value },
+                  } as any)
                 }
               />
             </Tooltip>
@@ -526,7 +579,9 @@ const ItemTable: React.FC<ItemTableProps> = ({
                 value={it.expDate}
                 disabled
                 onChange={(name, value) =>
-                  actions.handleItemChange(i, { target: { name, value } } as any)
+                  actions.handleItemChange(i, {
+                    target: { name, value },
+                  } as any)
                 }
               />
             </Tooltip>
@@ -671,7 +726,10 @@ const ItemTable: React.FC<ItemTableProps> = ({
       <div className="w-full overflow-x-auto scrollbar-thin">
         <table
           className="w-full border-collapse text-[10px] leading-tight"
-          style={{ tableLayout: "fixed", minWidth: "980px" }}
+          style={{
+            tableLayout: "fixed",
+            minWidth: isService ? "520px" : "980px",
+          }}
         >
           {resolvedColGroup}
           <thead>

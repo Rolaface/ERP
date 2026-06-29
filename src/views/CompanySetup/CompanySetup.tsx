@@ -9,6 +9,7 @@ import {
   FileText,
   UploadCloud,
   Hash,
+  Sliders
 } from "lucide-react";
 import { useCompanyStore } from "../../store/companyStore";
 import {
@@ -25,6 +26,7 @@ import SubscribedModules from "./subscribedmodule";
 import BankDetails from "./BankDetails";
 import Upload from "./upload";
 import NamingSeries from "./NamingSeries";
+import CompanyDefaults from "./CompanyDefaults";
 import Templates from "./Templates";
 import type {
   CompanyDocuments,
@@ -58,6 +60,7 @@ const navTabs = [
   { id: "Templates", label: "Templates", icon: <FileText {...iconProps} /> },
   { id: "logo", label: "Logo & Signature", icon: <UploadCloud {...iconProps} /> },
   { id: "naming", label: "Naming Series", icon: <Hash {...iconProps} /> },
+  { id: "defaults", label: "Company Defaults", icon: <Sliders {...iconProps} /> },
 ];
 
 const CompanySetup: React.FC = () => {
@@ -204,6 +207,11 @@ const CompanySetup: React.FC = () => {
         <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
       ),
       naming: <NamingSeries onSaveSuccess={fetchCompanyDetail} />,
+      defaults: (
+        <CompanyDefaults
+          onSaveSuccess={fetchCompanyDetail}
+        />
+      ),
       subscribed: <SubscribedModules />,
       Templates: <Templates templates={companytemplates} />,
       logo: (
