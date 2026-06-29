@@ -17,12 +17,13 @@ import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
 import { getAllModeOfPayment } from "../../api/BankAccountApi";
-import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
+
 import { paymentMethodOptions } from "../../constants/invoice.constants";
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import ItemTable from "../common/ItemTable";
 import type { ModalSubmitHandler } from "../../types/modal";
-import { useCompanyData } from "../../hooks/useCompanyData";
+import { useDefault } from "../../hooks/usedefaultdata";
+import ModeOfPaymentSelect from "../selects/defaults/Modeofpaymentselect";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
     "Product",
   );
-  const { domain } = useCompanyData();
+  const domain = useDefault("primary_business_domain");
   console.log("Domain ", domain);
 
   useEffect(() => {
@@ -109,20 +110,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
 
-  const handleModeFetchOptions = async (q: string) => {
-    const res = await getAllModeOfPayment(1, 10, q || "", 1);
-    return res.data.map((item: any) => ({
-      label: item.name,
-      value: item.name,
-      meta: item,
-    }));
-  };
 
-  const handleModeChange = (_: string, option: any) => {
-    actions.handleInputChange({
-      target: { name: "mode", value: option?.value || "" },
-    } as any);
-  };
 
   const handleSubmitForm = async () => {
     if (submitting) return;
@@ -334,12 +322,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 )}
                 {/* Mode of Payment */}
                 <div className="w-full sm:w-[200px]">
-                  <SearchSelect2
-                    label="Mode of Payment"
+                  <ModeOfPaymentSelect
                     value={formData.mode ?? ""}
-                    onChange={handleModeChange}
-                    fetchOptions={handleModeFetchOptions}
-                    placeholder="search mode of payment"
+                    onChange={(val) =>
+                      actions.handleInputChange({
+                        target: { name: "mode", value: val },
+                      } as any)
+                    }
                     required
                   />
                 </div>
