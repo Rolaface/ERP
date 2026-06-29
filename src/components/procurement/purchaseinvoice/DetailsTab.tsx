@@ -6,7 +6,7 @@ import type {
 } from "../../../types/Supply/purchaseInvoice";
 import SupplierSelect from "../../selects/procurement/SupplierSelect";
 import POItemSelect from "../../selects/procurement/POItemSelect";
-import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
+
 import {
   ModalInput,
   ModalSelect,
@@ -19,7 +19,7 @@ import ProjectSelect from "../../selects/ProjectSelect";
 import Tooltip from "../../Tooltip";
 import ItemTable from "../../common/ItemTable";
 import type { ItemTableActions, ItemTableUI } from "../../common/ItemTable";
-import { getAllModeOfPayment } from "../../../api/BankAccountApi";
+import ModeOfPaymentSelect from "../../selects/defaults/Modeofpaymentselect";
 
 interface DetailsTabProps {
   form: PurchaseInvoiceFormData;
@@ -116,21 +116,7 @@ export const DetailsTab = ({
   const symbol = getCurrencySymbol();
   const [page, setPage] = useState(0);
 
-  const handleModeFetchOptions = async (q: string) => {
-    const res = await getAllModeOfPayment(1, 10, q || "", 1);
-    const list = res?.data?.modeOfPayments || res?.data || [];
-    return list.map((item: any) => ({
-      label: item.name || item.modeOfPayment,
-      value: item.name || item.modeOfPayment,
-      meta: item,
-    }));
-  };
 
-  const handleModeChange = (_: string, option: any) => {
-    onFormChange({
-      target: { name: "paymentType", value: option?.label || option?.value || "" },
-    } as any);
-  };
 
   const handleTopWarehouseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     onFormChange(e);
@@ -434,16 +420,17 @@ export const DetailsTab = ({
           />
         </div>
 
-        <div className="w-[110px]">
-          <SearchSelect2
-            label="Mode of Payment"
-            value={form.paymentType ?? ""}
-            onChange={handleModeChange}
-            fetchOptions={handleModeFetchOptions}
-            required
-          />
-        </div>
-
+ <div className="w-[110px]">
+  <ModeOfPaymentSelect
+    value={form.paymentType ?? ""}
+    onChange={(val) =>
+      onFormChange({
+        target: { name: "paymentType", value: val },
+      } as any)
+    }
+    required
+  />
+</div>
         <div className="w-[110px]">
           <WarehouseSelect
             name="warehouse"
