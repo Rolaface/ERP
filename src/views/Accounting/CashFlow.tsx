@@ -30,6 +30,12 @@ import type {
 } from "../../types/Accounting/Cashflow";
 import { getCompanyCurrentFiscalYear } from "../../api/utils/frappeUtilsApi";
 import { getCurrencySymbol } from "../../utils/currency";
+import { getCompanyById } from "../../api/companySetupApi";
+import { useCompanyStore } from "../../store/companyStore";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesTree } from "../../utils/Extractcurrencycodes";
+
+const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 /* ───────────────── TYPES ───────────────── */
 
@@ -80,6 +86,9 @@ const currentMonthEnd = (): string => {
 
 /* ───────────────── FORMAT ───────────────── */
 
+// Legacy fallback formatter — used only as a last resort if no currency code
+// can be resolved through the currency store at all (see `displayAmount`
+// inside the main component below, which is what's actually used in render).
 const nf = (value?: number | null) => {
   if (value === undefined || value === null) return "—";
 
@@ -172,9 +181,11 @@ const getSummaryIcon = (label: string) => {
 function KpiStrip({
   summary,
   loading,
+  displayAmount,
 }: {
   summary: CFSummaryItem[];
   loading: boolean;
+  displayAmount: (amount: number, currency?: string) => string;
 }) {
   const items = summary.length
     ? summary
@@ -199,7 +210,7 @@ function KpiStrip({
             <span
               className={`text-sm font-extrabold tabular-nums ${getSummaryColor(item)}`}
             >
-              {nf(item.value)}
+              {displayAmount(item.value, (item as any).currency)}
             </span>
           )}
         </div>
@@ -390,6 +401,46 @@ const CashFlow: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
+  const [company, setCompany] = useState<any | null>(null);
+
+  // ── Currency symbol resolution (same pattern as AccountsPayable/Receivable/
+  // ProfitLoss/BalanceSheet). Each cash-flow node can carry its own
+  // `currency`, so the fallback chain is: row's own currency → company's
+  // base currency → store's `sym` value (which on some setups itself holds
+  // a currency *code* like "GHS" rather than an actual symbol, so it's
+  // resolved through the store too instead of being printed raw).
+  const { currencySymbol } = useCompanyStore();
+  const sym = currencySymbol || "–";
+  const baseCurrency = company?.default_currency || company?.currency;
+
+  const currencyCodes = useMemo(() => {
+    const codes = new Set<string>(
+      extractCurrencyCodesTree(tree, "currency" as any),
+    );
+    if (baseCurrency) codes.add(baseCurrency);
+    if (sym && sym !== "–") codes.add(sym);
+    return [...codes];
+  }, [tree, baseCurrency, sym]);
+
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+
+  const displayAmount = useCallback(
+    (amount: number, currency?: string) => {
+      const candidates = [currency, baseCurrency, sym].filter(Boolean) as string[];
+      for (const code of candidates) {
+        const formatted = formatAmount(code, amount, { withSymbol: true });
+        if (formatted) return formatted;
+      }
+      return nf(amount);
+    },
+    [formatAmount, baseCurrency, sym],
+  );
+
+  useEffect(() => {
+    getCompanyById(COMPANY_ID).then((res) => {
+      if (res?.status_code === 200) setCompany(res.data);
+    });
+  }, []);
 
   const handleToggleExpand = useCallback(() => {
     if (allExpanded) {
@@ -527,13 +578,13 @@ const CashFlow: React.FC = () => {
                   : "text-muted";
             return (
               <span className={`text-xs tabular-nums ${colorClass}`}>
-                {nf(val)}
+                {displayAmount(val, row.original.currency)}
               </span>
             );
           },
         };
       });
-  }, [data]);
+  }, [data, displayAmount]);
 
   const table = useReactTable({
     data: tree,
@@ -565,7 +616,11 @@ const CashFlow: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-3">
-      <KpiStrip summary={data?.summary ?? []} loading={loading && !data} />
+      <KpiStrip
+        summary={data?.summary ?? []}
+        loading={loading && !data}
+        displayAmount={displayAmount}
+      />
 
       <FilterBar
         filters={filters}

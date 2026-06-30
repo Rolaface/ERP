@@ -261,16 +261,17 @@ const COATab: React.FC<COATabProps> = ({
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
 
-  // ✅ STEP 2: Extract unique currency codes from the COA tree
+  // Extract unique currency codes from the COA tree
   // e.g. coaData has GHS + USD accounts → currencyCodes = ["GHS", "USD"]
   const currencyCodes = useMemo(
     () => extractCurrencyCodesTree(coaData?.accounts, "account_currency"),
     [coaData],
   );
 
-  // ✅ STEP 3: Hook fetches symbols only for those codes, in parallel
-  // getSymbol("USD") → "$" | getSymbol("GHS") → "₵" | unknown → "EUR"
-  const { getSymbol } = useCurrencySymbols(currencyCodes);
+  // Hook fetches symbols + number formats only for those codes, in parallel
+  // getSymbol("USD") → "$" | getSymbol("GHS") → "₵" | unknown → code itself
+  // formatAmount("ARS", 1234567.5, { withSymbol: true }) → "$ 1.234.567,50"
+  const { getSymbol, formatAmount } = useCurrencySymbols(currencyCodes);
 
   const handleToggleExpand = useCallback(() => {
     if (allExpanded) {
@@ -315,7 +316,9 @@ const COATab: React.FC<COATabProps> = ({
     return filterTree(accounts, searchTerm);
   }, [coaData, searchTerm]);
 
-  // ✅ STEP 4: getSymbol used in export for currency column
+  // Export to Excel — balances are kept as RAW NUMBERS (not formatted strings)
+  // so Excel treats them as real numeric cells (right-aligned, summable,
+  // chart-friendly). Only the "Currency" column uses the display symbol.
   const handleExport = useCallback(() => {
     if (!coaData?.accounts) return;
 
@@ -332,16 +335,16 @@ const COATab: React.FC<COATabProps> = ({
           "Account Name": indent + prefix + acc.account_name,
           "Account Type": acc.account_type || "—",
           "Root Type": acc.root_type || "—",
-          "Category": acc.is_group ? "── GROUP ──" : "Account",
+          Category: acc.is_group ? "── GROUP ──" : "Account",
           // e.g. "₵ (GHS)" or "$ (USD)"
-          "Currency": acc.account_currency
+          Currency: acc.account_currency
             ? `${symbol} (${acc.account_currency})`
             : "—",
-          // balance in account's own currency
+          // balance in account's own currency — raw number for Excel
           "Balance (Account CCY)": acc.is_group
             ? "—"
             : (acc.balance_in_account_currency ?? "—"),
-          // balance converted to base currency
+          // balance converted to base currency — raw number for Excel
           [`Balance (${baseSymbol} ${coaData.base_currency})`]: acc.is_group
             ? "—"
             : (acc.balance ?? "—"),
@@ -368,12 +371,9 @@ const COATab: React.FC<COATabProps> = ({
     XLSX.utils.book_append_sheet(wb, ws, "Chart of Accounts");
 
     saveAs(
-      new Blob(
-        [XLSX.write(wb, { bookType: "xlsx", type: "array" })],
-        {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        },
-      ),
+      new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
       "chart_of_accounts.xlsx",
     );
   }, [coaData, tableData, getSymbol]);
@@ -394,7 +394,9 @@ const COATab: React.FC<COATabProps> = ({
 
   const handleAddChild = (row: COAAccount) => {
     openCoaGLAccountModal({ parentAccount: row }, false, {
-      onSuccess: async () => { await fetchCOA(); },
+      onSuccess: async () => {
+        await fetchCOA();
+      },
     });
   };
 
@@ -421,20 +423,24 @@ const COATab: React.FC<COATabProps> = ({
       showLoading("Loading account details...");
       const data = await getCOAById(row.name);
       closeSwal();
-      if (!data) { showApiError("Failed to load account details."); return; }
-      openCoaGLAccountModal(
-        { editAccount: { ...row, ...data } },
-        true,
-        { onSuccess: async () => { await fetchCOA(); } },
-      );
+      if (!data) {
+        showApiError("Failed to load account details.");
+        return;
+      }
+      openCoaGLAccountModal({ editAccount: { ...row, ...data } }, true, {
+        onSuccess: async () => {
+          await fetchCOA();
+        },
+      });
     } catch (err) {
       closeSwal();
       showApiError(err);
     }
   };
 
-  // ✅ STEP 5: getSymbol used in both balance columns
-  // ✅ STEP 6: getSymbol + coaData?.base_currency added to deps array
+  // formatAmount used in both balance columns — applies each currency's own
+  // number_format pattern (group/decimal separators, decimal places) plus
+  // its symbol, instead of rendering the raw number.
   const columns = useMemo<ColumnDef<COAAccount>[]>(
     () => [
       {
@@ -468,11 +474,16 @@ const COATab: React.FC<COATabProps> = ({
                   )}
                 </button>
               ) : (
-                <BookOpen size={12} className="text-muted opacity-50 shrink-0" />
+                <BookOpen
+                  size={12}
+                  className="text-muted opacity-50 shrink-0"
+                />
               )}
               <span
                 className={`text-xs truncate ${
-                  node.is_group ? "font-semibold text-main" : "font-normal text-main"
+                  node.is_group
+                    ? "font-semibold text-main"
+                    : "font-normal text-main"
                 }`}
               >
                 {node.account_name}
@@ -511,7 +522,9 @@ const COATab: React.FC<COATabProps> = ({
           const rootType = row.original.root_type;
           const badge = badgeClass[rootType] ?? "bg-info text-info";
           return rootType ? (
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badge}`}>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badge}`}
+            >
               {rootType}
             </span>
           ) : (
@@ -521,18 +534,23 @@ const COATab: React.FC<COATabProps> = ({
       },
       {
         id: "balance",
-        // Balance in the account's OWN currency
-        // Debtors (GHS) → "₵ 6,891"  |  Debtor-USD → "$ 574,350"
+        // Balance in the account's OWN currency, formatted per that
+        // currency's number_format pattern.
+        // Debtors (GHS) → "₵ 6,891.00"  |  Debtor-USD → "$ 574,350.00"
         header: "Balance",
         size: 150,
         meta: { align: "right" },
         cell: ({ row }) => {
           const node = row.original;
-          if (node.is_group) return <span className="text-muted text-xs">—</span>;
+          if (node.is_group)
+            return <span className="text-muted text-xs">—</span>;
           return (
             <code className="text-xs px-2 py-1 rounded bg-row-hover text-success">
-              {getSymbol(node.account_currency)}{" "}
-              {node.balance_in_account_currency ?? node.balance}
+              {formatAmount(
+                node.account_currency,
+                node.balance_in_account_currency ?? node.balance,
+                { withSymbol: true },
+              )}
             </code>
           );
         },
@@ -540,18 +558,21 @@ const COATab: React.FC<COATabProps> = ({
       {
         id: "balance_base",
         // Balance converted to base currency (from API: base_currency = "GHS")
-        // Header: "Balance (₵)" | Cell: "₵ 3,688,944,999"
+        // Header: "Balance (₵ GHS)" | Cell: "₵ 3,688,944,999.00"
         header: `Balance (${getSymbol(coaData?.base_currency)} ${coaData?.base_currency ?? ""})`,
         size: 160,
         meta: { align: "right" },
         cell: ({ row }) => {
           const node = row.original;
-          if (node.is_group) return <span className="text-muted text-xs">—</span>;
+          if (node.is_group)
+            return <span className="text-muted text-xs">—</span>;
           if (node.balance === null || node.balance === undefined)
             return <span className="text-muted text-xs">—</span>;
           return (
             <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-              {getSymbol(coaData?.base_currency)} {node.balance}
+              {formatAmount(coaData?.base_currency, node.balance, {
+                withSymbol: true,
+              })}
             </code>
           );
         },
@@ -575,9 +596,20 @@ const COATab: React.FC<COATabProps> = ({
               onClick: () => setViewAccount(node),
             },
             ...(node.is_group === 1
-              ? [{ label: "Add Child", icon: <GitBranch size={12} />, onClick: () => handleAddChild(node) }]
-              : [{ label: "View Ledger", icon: <BookMarked size={12} />, onClick: () => onViewLedger?.(node.name) }]
-            ),
+              ? [
+                  {
+                    label: "Add Child",
+                    icon: <GitBranch size={12} />,
+                    onClick: () => handleAddChild(node),
+                  },
+                ]
+              : [
+                  {
+                    label: "View Ledger",
+                    icon: <BookMarked size={12} />,
+                    onClick: () => onViewLedger?.(node.name),
+                  },
+                ]),
             {
               label: "Delete",
               icon: <Trash2 size={12} />,
@@ -590,7 +622,7 @@ const COATab: React.FC<COATabProps> = ({
         },
       },
     ],
-    [onViewLedger, getSymbol, coaData?.base_currency], // ✅ correct deps
+    [onViewLedger, getSymbol, formatAmount, coaData?.base_currency],
   );
 
   const table = useReactTable({
@@ -610,7 +642,9 @@ const COATab: React.FC<COATabProps> = ({
     return (
       <div className="bg-card rounded-2xl border border-[var(--border)] flex flex-col items-center justify-center py-24 gap-4">
         <AlertCircle size={28} className="text-danger" />
-        <p className="text-xs font-bold text-danger uppercase tracking-widest">{error}</p>
+        <p className="text-xs font-bold text-danger uppercase tracking-widest">
+          {error}
+        </p>
         <button
           onClick={fetchCOA}
           className="flex items-center gap-2 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest bg-primary rounded-xl transition-all hover:opacity-90"
@@ -646,7 +680,11 @@ const COATab: React.FC<COATabProps> = ({
           <div className="overflow-x-auto overflow-y-auto relative max-h-[520px]">
             <table
               className="border-collapse"
-              style={{ tableLayout: "fixed", width: "max-content", minWidth: "100%" }}
+              style={{
+                tableLayout: "fixed",
+                width: "max-content",
+                minWidth: "100%",
+              }}
             >
               <colgroup>
                 {table.getAllLeafColumns().map((col) => (
@@ -666,7 +704,10 @@ const COATab: React.FC<COATabProps> = ({
                           key={header.id}
                           className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align}`}
                         >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                         </th>
                       );
                     })}
@@ -678,13 +719,19 @@ const COATab: React.FC<COATabProps> = ({
                   <tr>
                     <td colSpan={columns.length} style={{ height: "300px" }}>
                       <div className="flex justify-center items-center h-full">
-                        <Loader2 size={20} className="animate-spin text-muted" />
+                        <Loader2
+                          size={20}
+                          className="animate-spin text-muted"
+                        />
                       </div>
                     </td>
                   </tr>
                 ) : table.getRowModel().rows.length === 0 ? (
                   <tr>
-                    <td colSpan={columns.length} className="py-16 text-center text-xs text-muted">
+                    <td
+                      colSpan={columns.length}
+                      className="py-16 text-center text-xs text-muted"
+                    >
                       No accounts found.
                     </td>
                   </tr>
@@ -693,9 +740,12 @@ const COATab: React.FC<COATabProps> = ({
                     <tr
                       key={row.id}
                       className="hover:bg-row-hover transition-colors h-[36px]"
-                      style={{ borderBottom: "1px solid rgba(128,128,128,0.12)" }}
+                      style={{
+                        borderBottom: "1px solid rgba(128,128,128,0.12)",
+                      }}
                       onDoubleClick={() => {
-                        if (!row.original.is_group) onViewLedger?.(row.original.name);
+                        if (!row.original.is_group)
+                          onViewLedger?.(row.original.name);
                       }}
                     >
                       {row.getVisibleCells().map((cell) => {
@@ -704,8 +754,14 @@ const COATab: React.FC<COATabProps> = ({
                             ? "text-right"
                             : "text-left";
                         return (
-                          <td key={cell.id} className={`px-3 py-1 whitespace-nowrap ${align}`}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          <td
+                            key={cell.id}
+                            className={`px-3 py-1 whitespace-nowrap ${align}`}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
                           </td>
                         );
                       })}

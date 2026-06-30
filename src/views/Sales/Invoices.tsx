@@ -52,6 +52,9 @@ import {
   getStatusActionIcon,
 } from "../../components/UI_Utils/statusActionIcons";
 
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+
 type OutletContextType = {
   openInvoiceCreate: () => void;
   openInvoiceEdit: (invoiceNumber: string, data: any) => void;
@@ -63,8 +66,7 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   Cancelled: [],
   Approved: ["Paid", "Cancelled"],
   Unpaid: ["Cancelled"],
-  Overdue:["Cancelled"]
-  
+  Overdue: ["Cancelled"],
 };
 // const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 //   Draft: ["Rejected", "Approved"],
@@ -74,10 +76,7 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 //   Approved: ["Paid", "Cancelled"],
 // };
 
-const CRITICAL_STATUSES: InvoiceStatus[] = [
-  "Paid",
-  "Cancelled",
-];
+const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid", "Cancelled"];
 
 const statusOptions = [
   { label: "Draft", value: "Draft" },
@@ -147,6 +146,15 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
   const [sortBy, setSortBy] = useState("invoiceNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // ── Currency symbols + per-currency number formatting for the currencies
+  // present in the currently loaded page of invoices (e.g. "GHS", "USD").
+  // formatAmount("USD", 1234.5, { withSymbol: true }) → "$ 1,234.50"
+  const currencyCodes = useMemo(
+    () => extractCurrencyCodesFlat(invoices),
+    [invoices],
+  );
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
 
   // ── Reset page when search changes
   useEffect(() => {
@@ -383,6 +391,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           "Due Date": inv.dueDate
             ? new Date(inv.dueDate).toLocaleDateString()
             : "",
+          // Raw numeric values — kept as real numbers in Excel (not
+          // pre-formatted strings) so the cells stay sortable/summable.
           Amount: inv.total,
           OutStanding: inv.outstanding_amount,
           Currency: inv.currency,
@@ -510,59 +520,59 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
   const handleRowStatusChange = async (
-  invoiceNumber: string,
-  status: InvoiceStatus,
-) => {
-  if (status === "Approved") {
-    const result = await fireManagedSwal({
-      icon: "warning",
-      title: "Approve Invoice?",
-      text: `Are you sure you want to approve invoice ${invoiceNumber}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#22c55e",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, Approve",
-      cancelButtonText: "No",
-    });
-    if (!result.isConfirmed) return;
-  }
-
-  if (CRITICAL_STATUSES.includes(status)) {
-    const result = await fireManagedSwal({
-      icon: "warning",
-      title: "Confirm Status Change",
-      text: `Mark invoice ${invoiceNumber} as ${status}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef0000",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes",
-      cancelButtonText: "Cancel",
-    });
-    if (!result.isConfirmed) return;
-  }
-
-  try {
-    showLoading("Updating invoice status...");
-    const res = await updateInvoiceStatus(invoiceNumber, status);
-    closeSwal();
-    if (!res.message || res.message.status_code !== 200) {
-      showApiError(res?.message.message || "Failed to update invoice status");
-      return;
+    invoiceNumber: string,
+    status: InvoiceStatus,
+  ) => {
+    if (status === "Approved") {
+      const result = await fireManagedSwal({
+        icon: "warning",
+        title: "Approve Invoice?",
+        text: `Are you sure you want to approve invoice ${invoiceNumber}?`,
+        showCancelButton: true,
+        confirmButtonColor: "#22c55e",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, Approve",
+        cancelButtonText: "No",
+      });
+      if (!result.isConfirmed) return;
     }
-    const updatedStatus = res.message.data?.status;
-    setInvoices((prev) =>
-      prev.map((inv) =>
-        inv.invoiceNumber === invoiceNumber
-          ? { ...inv, invoiceStatus: updatedStatus }
-          : inv,
-      ),
-    );
-    showSuccess(`Invoice marked as ${status}`);
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+
+    if (CRITICAL_STATUSES.includes(status)) {
+      const result = await fireManagedSwal({
+        icon: "warning",
+        title: "Confirm Status Change",
+        text: `Mark invoice ${invoiceNumber} as ${status}?`,
+        showCancelButton: true,
+        confirmButtonColor: "#ef0000",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes",
+        cancelButtonText: "Cancel",
+      });
+      if (!result.isConfirmed) return;
+    }
+
+    try {
+      showLoading("Updating invoice status...");
+      const res = await updateInvoiceStatus(invoiceNumber, status);
+      closeSwal();
+      if (!res.message || res.message.status_code !== 200) {
+        showApiError(res?.message.message || "Failed to update invoice status");
+        return;
+      }
+      const updatedStatus = res.message.data?.status;
+      setInvoices((prev) =>
+        prev.map((inv) =>
+          inv.invoiceNumber === invoiceNumber
+            ? { ...inv, invoiceStatus: updatedStatus }
+            : inv,
+        ),
+      );
+      showSuccess(`Invoice marked as ${status}`);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
   const handleDelete = async (invoiceNumber: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
@@ -669,12 +679,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         render: (inv) => (
           <div className="py-1.5">
             <span className="block whitespace-nowrap">
-              {inv.currency} {inv.total.toLocaleString()} 
+              {formatAmount(inv.currency, inv.total, { withSymbol: true })}
             </span>
           </div>
         ),
         tooltip: (inv) =>
-          `Total Amount: ${inv.currency} ${inv.total.toLocaleString()} `,
+          `Total Amount: ${formatAmount(inv.currency, inv.total, { withSymbol: true })}`,
       },
       {
         key: "outstandingAmount",
@@ -684,12 +694,14 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         render: (inv) => (
           <div className="py-1.5">
             <span className="block whitespace-nowrap">
-             {inv.currency}  {(inv.outstanding_amount ?? 0).toLocaleString()}
+              {formatAmount(inv.currency, inv.outstanding_amount ?? 0, {
+                withSymbol: true,
+              })}
             </span>
           </div>
         ),
         tooltip: (inv) =>
-          `Outstanding Amount: ${inv.currency} ${(inv.outstanding_amount ?? 0).toLocaleString()} `,
+          `Outstanding Amount: ${formatAmount(inv.currency, inv.outstanding_amount ?? 0, { withSymbol: true })}`,
       },
       {
         key: "invoiceStatus",
@@ -725,64 +737,94 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                 }
               />
             </PermissionGate>
-           {(() => {
-  const isCancelled = inv.invoiceStatus === "Cancelled";
-  const hasDelete = can(SALES_MODULE, "delete") && inv.invoiceStatus === "Draft";
+            {(() => {
+              const isCancelled = inv.invoiceStatus === "Cancelled";
+              const hasDelete =
+                can(SALES_MODULE, "delete") && inv.invoiceStatus === "Draft";
 
-  const customActions = [
-    ...(inv.invoiceStatus !== "Draft" &&
-    inv.invoiceStatus !== "Cancelled" &&
-    inv.outstanding_amount > 0 &&
-    can(PAYMENT_MODULE, "create")
-      ? [{ label: "Receive Payment", icon: ACTION_ICONS.PAYMENT, onClick: () => handleReceivePayment(inv) }]
-      : []),
+              const customActions = [
+                ...(inv.invoiceStatus !== "Draft" &&
+                inv.invoiceStatus !== "Cancelled" &&
+                inv.outstanding_amount > 0 &&
+                can(PAYMENT_MODULE, "create")
+                  ? [
+                      {
+                        label: "Receive Payment",
+                        icon: ACTION_ICONS.PAYMENT,
+                        onClick: () => handleReceivePayment(inv),
+                      },
+                    ]
+                  : []),
 
-    ...(inv.invoiceStatus !== "Draft" && !isCancelled
-      ? [{
-          label: "Compose Email",
-          icon: ACTION_ICONS.EMAIL,
-          onClick: async () => {
-            setEmailInvoice(inv);
-            setEmailContactEmail(null);
-            setEmailInvoiceAttachments([]);
-            setEmailModalOpen(true);
-            try {
-              const res = await getSalesInvoiceById(inv.invoiceNumber);
-              if (res?.message?.status_code === 200) {
-                setEmailContactEmail(res.message.data?.contact_email ?? null);
-                setEmailInvoiceAttachments(res.message.data?.attachments ?? []);
-              }
-            } catch {}
-          },
-        }]
-      : []),
+                ...(inv.invoiceStatus !== "Draft" && !isCancelled
+                  ? [
+                      {
+                        label: "Compose Email",
+                        icon: ACTION_ICONS.EMAIL,
+                        onClick: async () => {
+                          setEmailInvoice(inv);
+                          setEmailContactEmail(null);
+                          setEmailInvoiceAttachments([]);
+                          setEmailModalOpen(true);
+                          try {
+                            const res = await getSalesInvoiceById(
+                              inv.invoiceNumber,
+                            );
+                            if (res?.message?.status_code === 200) {
+                              setEmailContactEmail(
+                                res.message.data?.contact_email ?? null,
+                              );
+                              setEmailInvoiceAttachments(
+                                res.message.data?.attachments ?? [],
+                              );
+                            }
+                          } catch {}
+                        },
+                      },
+                    ]
+                  : []),
 
-    ...(!isCancelled
-      ? [{ label: "View PDF", icon: ACTION_ICONS.PDF, onClick: () => handlePreviewPDF(inv) }]
-      : []),
+                ...(!isCancelled
+                  ? [
+                      {
+                        label: "View PDF",
+                        icon: ACTION_ICONS.PDF,
+                        onClick: () => handlePreviewPDF(inv),
+                      },
+                    ]
+                  : []),
 
-    ...(can(SALES_MODULE, "write")
-      ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map((status) => ({
-          label: status === "Approved" ? "Approve" : status,
-          icon: getStatusActionIcon(status),
-          danger: status === "Paid" || status === "Cancelled",
-          onClick: () => handleRowStatusChange(inv.invoiceNumber, status),
-        }))
-      : []),
-  ];
+                ...(can(SALES_MODULE, "write")
+                  ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
+                      (status) => ({
+                        label: status === "Approved" ? "Approve" : status,
+                        icon: getStatusActionIcon(status),
+                        danger: status === "Paid" || status === "Cancelled",
+                        onClick: () =>
+                          handleRowStatusChange(inv.invoiceNumber, status),
+                      }),
+                    )
+                  : []),
+              ];
 
-  const isMenuEmpty = customActions.length === 0 && !hasDelete;
+              const isMenuEmpty = customActions.length === 0 && !hasDelete;
 
-  return (
-    <div className={isMenuEmpty ? "opacity-40 pointer-events-none" : ""}>
-      <ActionMenu
-        showDownload
-        {...(hasDelete ? { onDelete: (e) => handleDelete(inv.invoiceNumber, e) } : {})}
-        customActions={customActions}
-      />
-    </div>
-  );
-})()}
+              return (
+                <div
+                  className={
+                    isMenuEmpty ? "opacity-40 pointer-events-none" : ""
+                  }
+                >
+                  <ActionMenu
+                    showDownload
+                    {...(hasDelete
+                      ? { onDelete: (e) => handleDelete(inv.invoiceNumber, e) }
+                      : {})}
+                    customActions={customActions}
+                  />
+                </div>
+              );
+            })()}
           </div>
         ),
       },
@@ -794,6 +836,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       handleReceivePayment,
       handleRowStatusChange,
       handlePreviewPDF,
+      formatAmount,
     ],
   );
 
@@ -822,7 +865,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-         pageSizeOptions={[20, 35, 45,55, 100]}
+        pageSizeOptions={[20, 35, 45, 55, 100]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
