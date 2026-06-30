@@ -47,7 +47,7 @@ import {
 import { openCoaGLAccountModal } from "../../store/modalStore";
 import type { COAAccount, COAResponse, COAResponseData } from "../../types/coa";
 import ViewAccountModal from "../../components/Coa/ViewAccountModal";
-// ✅ STEP 1: Removed getCurrencySymbol — replaced with these two
+
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesTree } from "../../utils/Extractcurrencycodes";
 import * as XLSX from "xlsx";

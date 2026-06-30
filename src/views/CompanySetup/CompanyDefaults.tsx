@@ -3,7 +3,9 @@ import { ModalInput, ModalSelect } from "../../components/ui/modal/modalComponen
 import { Save } from "lucide-react";
 import { useCompanyDefaults } from "../../hooks/useCompanyDefaults";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
-import { getAllModeOfPayment } from "../../api/BankAccountApi";
+import { getAllModeOfPayment, getAllBankAccounts } from "../../api/BankAccountApi";
+import { getCurrencyList } from "../../api/lookupApi";
+import { getPayrollPayableAccounts } from "../../api/faapi";
 
 interface DefaultsField {
   key: string;
@@ -23,14 +25,13 @@ export const SECTIONS: DefaultsSection[] = [
     id: "basic",
     title: "BASIC INFO",
     fields: [
-      { key: "default_currency", label: "DEFAULT CURRENCY" },
+      // default_currency is rendered via CurrencySelect below, not as a plain ModalInput
     ],
   },
   {
     id: "accounts",
     title: "ACCOUNTS",
     fields: [
-      { key: "default_bank_account",                    label: "DEFAULT BANK ACCOUNT" },
       { key: "default_cash_account",                    label: "DEFAULT CASH ACCOUNT" },
       { key: "default_receivable_account",              label: "DEFAULT RECEIVABLE ACCOUNT" },
       { key: "default_payable_account",                 label: "DEFAULT PAYABLE ACCOUNT" },
@@ -80,6 +81,94 @@ export const SECTIONS: DefaultsSection[] = [
     ],
   },
 ];
+
+// ─── CurrencySelect ───────────────────────────────────────────────────────────
+
+const CurrencySelect: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ value, onChange }) => {
+  const fetchOptions = async (q: string) => {
+    try {
+      const data = await getCurrencyList({ search: q || undefined });
+      return data.map((item: { name: string; currency_name?: string; symbol?: string | null }) => ({
+        label: item.name,
+        value: item.name,
+        subLabel: item.symbol ? `${item.currency_name ?? item.name} · ${item.symbol}` : item.currency_name ?? undefined,
+      }));
+    } catch {
+      return [];
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        DEFAULT CURRENCY
+      </span>
+      <div className="[&_input]:!py-1 [&_input]:!px-2 [&_input]:!text-[11px] [&_input]:!rounded [&_input]:!border-theme [&_input]:!h-auto">
+        <SearchSelect2
+          label=""
+          value={value}
+          onChange={(val) => onChange(val)}
+          fetchOptions={fetchOptions}
+          placeholder="Search currency..."
+        />
+      </div>
+    </div>
+  );
+};
+
+// ─── CompanyBankAccountSelect ─────────────────────────────────────────────────
+
+const maskAccountNo = (val?: string | number) => {
+  const str = val != null ? String(val) : "";
+  if (!str) return "";
+  if (str.length <= 4) return "*".repeat(str.length);
+  return "*".repeat(str.length - 4) + str.slice(-4);
+};
+
+const CompanyBankAccountSelect: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ value, onChange }) => {
+  const fetchOptions = async (q: string) => {
+    try {
+      const res = await getAllBankAccounts({
+        company: true,
+        search: q || undefined,
+        page: 1,
+        page_size: 20,
+      });
+      return res.data.map((item) => ({
+        label: String(item.bankName || item.id),
+        value: String(item.id),
+        subLabel: [maskAccountNo(item.accountNo), item.currency ? String(item.currency) : ""]
+          .filter(Boolean)
+          .join(" · "),
+      }));
+    } catch {
+      return [];
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        DEFAULT BANK ACCOUNT
+      </span>
+      <div className="[&_input]:!py-1 [&_input]:!px-2 [&_input]:!text-[11px] [&_input]:!rounded [&_input]:!border-theme [&_input]:!h-auto">
+        <SearchSelect2
+          label=""
+          value={value}
+          onChange={(val) => onChange(val)}
+          fetchOptions={fetchOptions}
+          placeholder="Search bank account..."
+        />
+      </div>
+    </div>
+  );
+};
 
 // ─── ModeOfPaymentSelect ──────────────────────────────────────────────────────
 
@@ -135,6 +224,14 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-4">
+      {/* Default Bank Account — SearchSelect2, company's own bank accounts */}
+      {section.id === "accounts" && (
+        <CompanyBankAccountSelect
+          value={values["default_bank_account"] ?? ""}
+          onChange={(val) => onChange("default_bank_account", val)}
+        />
+      )}
+
       {section.fields.map((field) => (
         <ModalInput
           key={field.key}
@@ -148,6 +245,12 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
       {/* Inject custom fields into the BASIC INFO section */}
       {section.id === "basic" && (
         <>
+          {/* Default Currency — SearchSelect2 */}
+          <CurrencySelect
+            value={values["default_currency"] ?? ""}
+            onChange={(val) => onChange("default_currency", val)}
+          />
+
           {/* Primary Business Domain — select with Product / Service */}
           <ModalSelect
             label="PRIMARY BUSINESS DOMAIN"

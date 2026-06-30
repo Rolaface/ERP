@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import { getAssetCategories as fetchAssetCategoriesAPI } from "../../api/faapi";
+import {
+  getAssetCategories as fetchAssetCategoriesAPI,
+  deleteAssetCategory,
+} from "../../api/faapi";
+
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -59,10 +63,7 @@ const getAssetCategories = async (
   };
 };
 
-const deleteAssetCategory = async (_id: string) => {
 
-  return { status: 200 };
-};
 
 const ASSET_CATEGORY_MODULE = "Asset Category";
 
@@ -141,38 +142,35 @@ const AssetCategoryTable: React.FC = () => {
     openModal("assetCategory", row, true, { isViewMode: true });
   };
 
-  const handleDelete = async (row: AssetCategory, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const confirm = await fireManagedSwal({
-      icon: "warning",
-      title: "Are you sure?",
-      text: `Delete Asset Category "${row.assetCategoryName}"?`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete",
-    });
+ const handleDelete = async (row: AssetCategory, e: React.MouseEvent) => {
+  e.stopPropagation();
 
-    if (!confirm.isConfirmed) return;
+  const result = await fireManagedSwal({
+    icon: "warning",
+    title: "Are you sure?",
+    text: `Delete Asset Category "${row.assetCategoryName}"?`,
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, delete",
+    reverseButtons: true,
+  });
 
-    try {
-      showLoading("Deleting Asset Category...");
-      const res = await deleteAssetCategory(row.id);
+  if (!result.isConfirmed) return;
 
-      if (!res || res.status < 200 || res.status >= 300) {
-        closeSwal();
-        showApiError("Delete failed");
-        return;
-      }
+  try {
+    showLoading("Deleting Asset Category...");
 
-      closeSwal();
-      showSuccess("Asset Category deleted successfully");
-      await fetchCategories();
-    } catch (error) {
-      closeSwal();
-      showApiError(error);
-    }
-  };
+    await deleteAssetCategory(row.id);
+
+    closeSwal();
+    showSuccess("Asset Category deleted successfully");
+    await fetchCategories();
+  } catch (error) {
+    closeSwal();
+    showApiError(error);
+  }
+};
 
   // ── Columns ─────────────────────────────────────────────────
   const columns: Column<AssetCategory>[] = [
