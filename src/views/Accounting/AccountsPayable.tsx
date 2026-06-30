@@ -55,6 +55,8 @@ import JournalEntryDetailModal, {
 import { getJournalEntryById } from "../../api/Accounting/JournalEntryApi";
 import { showApiError } from "../../utils/alert";
 import { useCompanyStore } from "../../store/companyStore";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -117,6 +119,7 @@ type Payable = {
   invoicedAmount: number;
   paidAmount: number;
   outstandingAmount: number;
+  currency?: string;
   due: string;
   status: string;
   days: number;
@@ -155,35 +158,37 @@ const formatDate = (date?: string | Date | null): string => {
 };
 
 // ── KPI Strip ─────────────────────────────────────────────────────────────────
-const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
+const KpiStrip: React.FC<{
+  kpis: KPIs;
+  loading: boolean;
+  formatAmount: (amount: number) => string;
+}> = ({
   kpis,
-  sym,
   loading,
+  formatAmount,
 }) => {
   const sections = [
     {
       icon: (
-        <div className="h-4 w-4 flex items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
-          {sym}
-        </div>
+       <ReceiptText size={11} className="text-emerald-500" />
       ),
       label: "Outstanding",
       items: [
         {
           label: "Total",
-          value: fmt(kpis.total_outstanding, sym),
+          value: formatAmount(kpis.total_outstanding),
           color: "text-emerald-600",
           bold: true,
         },
         {
           label: "Overdue",
-          value: fmt(kpis.overdue_amount, sym),
+          value: formatAmount(kpis.overdue_amount),
           color: "text-red-500",
           bold: true,
         },
         {
           label: "Invoiced",
-          value: fmt(kpis.total_invoiced, sym),
+        value: formatAmount(kpis.total_invoiced),
           color: "text-blue-500",
         },
       ],
@@ -200,7 +205,7 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
         },
         {
           label: "Paid",
-          value: fmt(kpis.total_paid, sym),
+  value: formatAmount(kpis.total_paid),
           color: "text-emerald-600",
         },
         {
@@ -225,7 +230,11 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
               : key === "61_90"
                 ? "text-orange-500"
                 : "text-red-600";
-        return { label, value: fmt(abs, sym), color: bucket };
+        return {
+  label,
+  value: formatAmount(abs),
+  color: bucket,
+};
       }),
     },
   ];
@@ -411,6 +420,37 @@ const AccountsPayable = () => {
     useState<JournalEntryDetail | null>(null);
   const [journalDrawerLoading, setJournalDrawerLoading] = useState(false);
 
+  // ── Currency symbols + per-currency number formatting for the currencies
+  // present in the currently loaded page of payables, PLUS the company's
+  // base currency AND the store's `sym` value (in some setups `sym` itself
+  // holds a currency *code* like "GHS" rather than an actual symbol — so we
+  // resolve it through the same currency store instead of printing it raw).
+  const baseCurrency = company?.default_currency || company?.currency;
+
+  const currencyCodes = useMemo(() => {
+    const codes = extractCurrencyCodesFlat(payables);
+    if (baseCurrency && !codes.includes(baseCurrency)) codes.push(baseCurrency);
+    if (sym && sym !== "–" && !codes.includes(sym)) codes.push(sym);
+    return codes;
+  }, [payables, baseCurrency, sym]);
+
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+
+  // Safe display helper: tries, in order, the row's own currency, then the
+  // company's base currency, then the store's `sym` value — resolving each
+  // through formatAmount so we always get a real symbol, never raw code text.
+  const displayAmount = useCallback(
+    (currency: string | undefined | null, amount: number) => {
+      const candidates = [currency, baseCurrency, sym].filter(Boolean) as string[];
+      for (const code of candidates) {
+        const formatted = formatAmount(code, amount, { withSymbol: true });
+        if (formatted) return formatted;
+      }
+      return fmt(amount, "");
+    },
+    [formatAmount, baseCurrency, sym],
+  );
+
   useEffect(() => {
     getCompanyById(COMPANY_ID).then((res) => {
       if (res?.status_code === 200) setCompany(res.data);
@@ -543,6 +583,7 @@ const AccountsPayable = () => {
               paidAmount: row.amounts?.paid ?? row.paid ?? 0,
               outstandingAmount:
                 row.amounts?.outstanding ?? row.outstanding ?? 0,
+              currency: row.currency,
               due: dueDisplay,
               status: row.status || status,
               days: daysLeft,
@@ -633,7 +674,7 @@ const AccountsPayable = () => {
           <span
             className={`text-xs tabular-nums text-blue-500 ${row.original.isSummary ? "font-bold" : "font-medium"}`}
           >
-            {fmt(row.original.invoicedAmount, sym)}
+            {displayAmount(row.original.currency, row.original.invoicedAmount)}
           </span>
         ),
       },
@@ -646,7 +687,7 @@ const AccountsPayable = () => {
           <span
             className={`text-xs tabular-nums text-emerald-600 ${row.original.isSummary ? "font-bold" : "font-medium"}`}
           >
-            {fmt(row.original.paidAmount, sym)}
+            {displayAmount(row.original.currency, row.original.paidAmount)}
           </span>
         ),
       },
@@ -659,7 +700,7 @@ const AccountsPayable = () => {
           <span
             className={`text-xs tabular-nums ${row.original.outstandingAmount > 0 ? "text-red-500" : "text-emerald-600"} ${row.original.isSummary ? "font-extrabold" : "font-semibold"}`}
           >
-            {fmt(row.original.outstandingAmount, sym)}
+            {displayAmount(row.original.currency, row.original.outstandingAmount)}
           </span>
         ),
       },
@@ -722,7 +763,7 @@ const AccountsPayable = () => {
           ),
       },
     ],
-    [sym],
+    [displayAmount],
   );
 
   const table = useReactTable({
@@ -907,7 +948,13 @@ const AccountsPayable = () => {
     <div className="flex flex-col gap-3">
       {/* KPI Strip */}
       {kpis ? (
-        <KpiStrip kpis={kpis} sym={sym} loading={isLoading} />
+    <KpiStrip
+  kpis={kpis}
+  loading={isLoading}
+  formatAmount={(amount) =>
+    displayAmount(baseCurrency, amount)
+  }
+/>
       ) : (
         <div className="flex flex-col lg:flex-row gap-2">
           {Array.from({ length: 3 }).map((_, i) => (

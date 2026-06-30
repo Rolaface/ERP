@@ -13,7 +13,7 @@ import {
 } from "@tanstack/react-table";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
-  FaFilter,
+
   FaDownload,
   FaEye,
   FaClock,
@@ -25,8 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  DollarSign,
-  AlertTriangle,
+ 
   Users,
   ReceiptText,
   SlidersHorizontal,
@@ -57,6 +56,8 @@ import JournalEntryDetailModal, {
 import { getJournalEntryById } from "../../api/Accounting/JournalEntryApi";
 import { showApiError } from "../../utils/alert";
 import { useCompanyStore } from "../../store/companyStore";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 type ReceivableVoucherType =
@@ -114,6 +115,7 @@ type Receivable = {
   invoicedAmount: number;
   paidAmount: number;
   outstandingAmount: number;
+  currency?: string;
   due: string;
   status: string;
   days: number;
@@ -152,35 +154,37 @@ const formatDate = (date?: string | Date | null): string => {
 };
 
 // ── Compact KPI Strip (mirrors GLView style) ─────────────────────────────────
-const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
+const KpiStrip: React.FC<{
+  kpis: KPIs;
+  loading: boolean;
+  formatAmount: (amount: number) => string;
+}> = ({
   kpis,
-  sym,
   loading,
+  formatAmount,
 }) => {
   const sections = [
     {
       icon: (
-        <div className="h-4 w-4 flex items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
-          {sym}
-        </div>
+       <ReceiptText size={11} className="text-emerald-500" />
       ),
       label: "Outstanding",
       items: [
         {
           label: "Total",
-          value: fmt(kpis.total_outstanding, sym),
+          value: formatAmount(kpis.total_outstanding),
           color: "text-emerald-600",
           bold: true,
         },
         {
           label: "Overdue",
-          value: fmt(kpis.overdue_amount, sym),
+          value: formatAmount(kpis.overdue_amount),
           color: "text-red-500",
           bold: true,
         },
         {
           label: "Invoiced",
-          value: fmt(kpis.total_invoiced, sym),
+        value: formatAmount(kpis.total_invoiced),
           color: "text-blue-500",
         },
       ],
@@ -197,7 +201,7 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
         },
         {
           label: "Paid",
-          value: fmt(kpis.total_paid, sym),
+          value: formatAmount(kpis.total_paid),
           color: "text-emerald-600",
         },
         {
@@ -222,7 +226,11 @@ const KpiStrip: React.FC<{ kpis: KPIs; sym: string; loading: boolean }> = ({
               : key === "61_90"
                 ? "text-orange-500"
                 : "text-red-600";
-        return { label, value: fmt(abs, sym), color: bucket };
+        return {
+  label,
+  value: formatAmount(abs),
+  color: bucket,
+};
       }),
     },
   ];
@@ -418,6 +426,28 @@ const AccountsReceivable = () => {
     useState<JournalEntryDetail | null>(null);
   const [journalDrawerLoading, setJournalDrawerLoading] = useState(false);
 
+  // ── Currency symbols + per-currency number formatting for the currencies
+  // present in the currently loaded page of receivables. Falls back to the
+  // company's base currency (the `sym`/store value) for rows that don't
+  // carry their own `currency` field.
+  const currencyCodes = useMemo(
+    () => extractCurrencyCodesFlat(receivables),
+    [receivables],
+  );
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+  const baseCurrency = company?.default_currency || company?.currency;
+
+  const displayAmount = useCallback(
+  (currency: string | undefined | null, amount: number) => {
+    return (
+      formatAmount(currency || baseCurrency, amount, {
+        withSymbol: true,
+      }) || fmt(amount, "")
+    );
+  },
+  [formatAmount, baseCurrency],
+);
+
   // ── Effects ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     getCompanyById(COMPANY_ID).then((res) => {
@@ -547,6 +577,7 @@ const AccountsReceivable = () => {
               paidAmount: row.amounts?.paid ?? row.paid ?? 0,
               outstandingAmount:
                 row.amounts?.outstanding ?? row.outstanding ?? 0,
+              currency: row.currency,
               due: dueDisplay,
               status: row.status || status,
               days: daysLeft,
@@ -631,7 +662,11 @@ const AccountsReceivable = () => {
           <span
             className={`text-xs tabular-nums text-blue-500 ${row.original.isSummary ? "font-bold" : "font-medium"}`}
           >
-            {fmt(row.original.invoicedAmount, sym)}
+            {formatAmount(
+              row.original.currency || baseCurrency,
+              row.original.invoicedAmount,
+              { withSymbol: true },
+            )}
           </span>
         ),
       },
@@ -645,7 +680,11 @@ const AccountsReceivable = () => {
           <span
             className={`text-xs tabular-nums text-emerald-600 ${row.original.isSummary ? "font-bold" : "font-medium"}`}
           >
-            {fmt(row.original.paidAmount, sym)}
+            {formatAmount(
+              row.original.currency || baseCurrency,
+              row.original.paidAmount,
+              { withSymbol: true },
+            )}
           </span>
         ),
       },
@@ -659,7 +698,11 @@ const AccountsReceivable = () => {
           <span
             className={`text-xs tabular-nums ${row.original.outstandingAmount > 0 ? "text-red-500" : "text-emerald-600"} ${row.original.isSummary ? "font-extrabold" : "font-semibold"}`}
           >
-            {fmt(row.original.outstandingAmount, sym)}
+            {formatAmount(
+              row.original.currency || baseCurrency,
+              row.original.outstandingAmount,
+              { withSymbol: true },
+            )}
           </span>
         ),
       },
@@ -725,7 +768,7 @@ const AccountsReceivable = () => {
           ),
       },
     ],
-    [sym],
+    [formatAmount, baseCurrency],
   );
 
   const table = useReactTable({
@@ -913,7 +956,11 @@ const AccountsReceivable = () => {
     <div className="flex flex-col gap-3">
       {/* ── KPI Strip ── */}
       {kpis ? (
-        <KpiStrip kpis={kpis} sym={sym} loading={isLoading} />
+       <KpiStrip
+  kpis={kpis}
+  loading={isLoading}
+  formatAmount={(amount) => displayAmount(baseCurrency, amount)}
+/>
       ) : (
         <div className="flex flex-col lg:flex-row gap-2">
           {Array.from({ length: 3 }).map((_, i) => (
