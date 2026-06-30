@@ -16,6 +16,7 @@ import {
   EMPTY_TERMS,
 } from "../constants/profromaInvoiceConstants";
 import dayjs from "dayjs";
+import { useUnsavedChanges } from "./useUnsavedChanges";
 
 // ─── Constants
 
@@ -227,6 +228,7 @@ export const useProformaInvoiceForm = (
   const customerTaxCategoryRef = useRef<string>("");
   const enableExchange = mode === "proforma";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const getBaseCurrencyFromStorage = () => {
     try {
@@ -450,6 +452,7 @@ export const useProformaInvoiceForm = (
         ...prev,
         updateStock: (e.target as HTMLInputElement).checked,
       }));
+      markDirty();
       return;
     }
 
@@ -474,6 +477,7 @@ export const useProformaInvoiceForm = (
         setExchangeRateLoading(true);
         setExchangeRateError(null);
         setFormData((prev) => ({ ...prev, [name]: value }));
+        markDirty();
         return;
       }
       if (name === "lpoNumber") {
@@ -481,10 +485,12 @@ export const useProformaInvoiceForm = (
           .replace(/\D/g, "")
           .slice(0, 10);
         setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
+        markDirty();
         return;
       }
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+    markDirty();
   };
 
   const getCountryCode = (
@@ -514,6 +520,7 @@ export const useProformaInvoiceForm = (
   }) => {
     setCustomerNameDisplay(name);
     setFormData((p) => ({ ...p, customerId: id }));
+    markDirty();
 
     try {
       const [customerRes, companyRes] = await Promise.all([
@@ -696,6 +703,7 @@ export const useProformaInvoiceForm = (
       }
       return { ...prev, items };
     });
+      markDirty();
   };
   //charge temeplete--------------------
   // const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
@@ -768,6 +776,7 @@ export const useProformaInvoiceForm = (
         salesTaxTemplate: templateName,
       };
     });
+    markDirty();
   };
   const handleTaxChange = (index: number, field: string, value: any) => {
     setFormData((prev) => {
@@ -782,6 +791,7 @@ export const useProformaInvoiceForm = (
         taxes: updated,
       };
     });
+        markDirty();
   };
 
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
@@ -795,6 +805,7 @@ export const useProformaInvoiceForm = (
       items[index] = updatedItem;
       return { ...prev, items };
     });
+        markDirty();
   };
 
   const handleBulkItemChange = (field: keyof InvoiceItem, value: string) => {
@@ -804,6 +815,7 @@ export const useProformaInvoiceForm = (
       warehouse: value,
       items: prev.items.map((item) => ({ ...item, warehouse: value })),
     }));
+        markDirty();
   };
 
   const addOtherCharge = () => {
@@ -814,6 +826,7 @@ export const useProformaInvoiceForm = (
         { charge_type: "", amount: "" },
       ],
     }));
+        markDirty();
   };
 
   const handleOtherChargeChange = (
@@ -826,6 +839,7 @@ export const useProformaInvoiceForm = (
       updated[index] = { ...updated[index], [field]: value };
       return { ...prev, invoiceCharges: updated };
     });
+        markDirty();
   };
 
   const removeOtherCharge = (index: number) => {
@@ -835,6 +849,7 @@ export const useProformaInvoiceForm = (
         (_: any, i: number) => i !== index,
       ),
     }));
+        markDirty();
   };
 
   const addItem = () => {
@@ -853,6 +868,7 @@ export const useProformaInvoiceForm = (
       setPage(Math.floor((items.length - 1) / ITEMS_PER_PAGE));
       return { ...prev, items };
     });
+    markDirty();
   };
 
   const removeItem = (idx: number) => {
@@ -863,6 +879,7 @@ export const useProformaInvoiceForm = (
       setPage((p) => Math.min(p, maxPage));
       return { ...prev, items };
     });
+    markDirty();
   };
 
   const duplicateItem = (absoluteIndex: number) => {
@@ -875,6 +892,7 @@ export const useProformaInvoiceForm = (
       setPage(Math.floor((absoluteIndex + 1) / ITEMS_PER_PAGE));
       return { ...prev, items: newItems };
     });
+    markDirty();
   };
 
   const setFormDataFromInvoice = (invoice: any) => {
@@ -1019,11 +1037,13 @@ export const useProformaInvoiceForm = (
 
   const setTerms = (selling: TermSection) => {
     setFormData((prev) => ({ ...prev, terms: { selling } }));
+    markDirty();
   };
 
   const handleSameAsBillingChange = (checked: boolean) => {
     setSameAsBilling(checked);
     if (!checked) shippingEditedRef.current = false;
+     markDirty();
   };
 
   const handleReset = async () => {
@@ -1075,6 +1095,7 @@ export const useProformaInvoiceForm = (
     setSameAsBilling(true);
     setPage(0);
     setActiveTab("details");
+    resetDirty();
   };
 
   // ─── Submit ──────────────────────────────────────────────────────────────────
@@ -1210,8 +1231,11 @@ export const useProformaInvoiceForm = (
       addOtherCharge,
       handleOtherChargeChange,
       removeOtherCharge,
-      handleTemplateSelect,
+        handleTemplateSelect,
       handleTaxChange,
     },
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
   };
 };

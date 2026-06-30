@@ -5,7 +5,6 @@ import { useQuotationForm } from "../../hooks/useQuotationForm";
 import { ModalSelect } from "../ui/modal/modalComponent";
 import CustomerSelect from "../selects/CustomerSelect";
 import { MinimizableModal } from "../common/MinimizableModal";
-import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { User, Mail, Phone } from "lucide-react";
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import DatePickerInput from "../calendar/DatePickerInput";
@@ -59,7 +58,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
         : `quotation-create-${Date.now()}`),
   );
   const [submitting, setSubmitting] = useState(false);
-  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+ 
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
   const domain = useDefault("primary_business_domain");
     console.log("Domain ", domain);
@@ -83,6 +82,8 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     totals,
     ui,
     actions,
+    resetDirty,
+    handleCloseWithConfirm,
   } = useQuotationForm(
     isOpen,
     onClose,
@@ -210,7 +211,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       <form
         id="quotationForm"
         onSubmit={handleFormSubmit}
-        onChange={() => markDirty()}
         className="h-full flex flex-col"
         autoComplete="off"
       >

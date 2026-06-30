@@ -15,6 +15,7 @@ import {
   EMPTY_TERMS,
 } from "../constants/invoice.constants";
 import dayjs from "dayjs";
+import { useUnsavedChanges } from "./useUnsavedChanges";
 
 // ─── Constants
 
@@ -205,6 +206,7 @@ export const useInvoiceForm = (
   const invoiceDocstatusRef = useRef<number>(0);
   const enableExchange = mode === "invoice";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const getBaseCurrencyFromStorage = () => {
     try {
@@ -247,7 +249,7 @@ export const useInvoiceForm = (
         const raw = res?.message?.data ?? [];
         if (cancelled) return;
 
-         const stockMap = new Map<string, number>();
+        const stockMap = new Map<string, number>();
         const piecesPerBoxMap = new Map<string, number>();
         raw.forEach((stockItem: any) => {
           piecesPerBoxMap.set(
@@ -270,9 +272,9 @@ export const useInvoiceForm = (
         setFormData((prev) => ({
           ...prev,
           items: prev.items.map((item) => {
-            if (item._stockLoaded) return item; 
+            if (item._stockLoaded) return item;
             if (item.isServiceItem) return { ...item, _stockLoaded: true };
-            if (!item.itemCode) return item; 
+            if (!item.itemCode) return item;
             const key = `${item.itemCode}::${item.batchNo || ""}`;
             const liveQty = stockMap.get(key) ?? 0;
 
@@ -457,6 +459,7 @@ export const useInvoiceForm = (
         ...prev,
         updateStock: (e.target as HTMLInputElement).checked,
       }));
+      markDirty();
       return;
     }
 
@@ -481,6 +484,7 @@ export const useInvoiceForm = (
         setExchangeRateLoading(true);
         setExchangeRateError(null);
         setFormData((prev) => ({ ...prev, [name]: value }));
+        markDirty();
         return;
       }
       if (name === "lpoNumber") {
@@ -488,10 +492,12 @@ export const useInvoiceForm = (
           .replace(/\D/g, "")
           .slice(0, 10);
         setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
+        markDirty();
         return;
       }
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+    markDirty();
   };
 
   const getCountryCode = (
@@ -529,6 +535,7 @@ export const useInvoiceForm = (
       customerId: id,
       terms: { selling: EMPTY_TERMS.selling },
     }));
+    markDirty();
 
     try {
       const [customerRes, companyRes] = await Promise.all([
@@ -685,7 +692,7 @@ export const useInvoiceForm = (
         }
       }
 
-       if (name === "quantity") {
+      if (name === "quantity") {
         const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
 
         if (piecesPerBox > 0) {
@@ -724,6 +731,7 @@ export const useInvoiceForm = (
       }
       return { ...prev, items };
     });
+    markDirty();
   };
 
   // ─── Tax / charge template ───────────────────────────────────────────────────
@@ -756,6 +764,7 @@ export const useInvoiceForm = (
         salesTaxTemplate: templateName,
       };
     });
+    markDirty();
   };
 
   const handleTaxChange = (index: number, field: string, value: any) => {
@@ -764,6 +773,7 @@ export const useInvoiceForm = (
       updated[index] = { ...updated[index], [field]: value };
       return { ...prev, taxes: updated };
     });
+    markDirty();
   };
   const getItemMax = (idx: number): number | undefined => {
     const item = formData.items[idx];
@@ -797,13 +807,13 @@ export const useInvoiceForm = (
         const totalBoxes = Math.ceil(
           Number(updatedItem.quantity) / piecesPerBox,
         );
-        updatedItem.boxEnd =
-          Number(updatedItem.boxStart || 1) + totalBoxes - 1;
+        updatedItem.boxEnd = Number(updatedItem.boxStart || 1) + totalBoxes - 1;
       }
 
       items[index] = updatedItem;
       return { ...prev, items };
     });
+    markDirty();
   };
 
   const handleBulkItemChange = (field: keyof InvoiceItem, value: string) => {
@@ -813,6 +823,7 @@ export const useInvoiceForm = (
       warehouse: value,
       items: prev.items.map((item) => ({ ...item, warehouse: value })),
     }));
+    markDirty();
   };
 
   // ─── Other charges ───────────────────────────────────────────────────────────
@@ -825,6 +836,7 @@ export const useInvoiceForm = (
         { charge_type: "", amount: "" },
       ],
     }));
+    markDirty();
   };
 
   const handleOtherChargeChange = (
@@ -837,6 +849,7 @@ export const useInvoiceForm = (
       updated[index] = { ...updated[index], [field]: value };
       return { ...prev, invoiceCharges: updated };
     });
+    markDirty();
   };
 
   const removeOtherCharge = (index: number) => {
@@ -846,6 +859,7 @@ export const useInvoiceForm = (
         (_: any, i: number) => i !== index,
       ),
     }));
+    markDirty();
   };
 
   // ─── Item CRUD ───────────────────────────────────────────────────────────────
@@ -866,6 +880,7 @@ export const useInvoiceForm = (
       setPage(Math.floor((items.length - 1) / ITEMS_PER_PAGE));
       return { ...prev, items };
     });
+    markDirty();
   };
 
   const removeItem = (idx: number) => {
@@ -876,6 +891,7 @@ export const useInvoiceForm = (
       setPage((p) => Math.min(p, maxPage));
       return { ...prev, items };
     });
+    markDirty();
   };
 
   // FIX #1: duplicateItem was spreading the source row including originalQty
@@ -888,14 +904,15 @@ export const useInvoiceForm = (
       if (!source) return prev;
       const copy = {
         ...source,
-        originalQty: 0,   // new row — never submitted, no Frappe allocation
-        _skipCap: false,  // enforce stock cap from the first keystroke
+        originalQty: 0, // new row — never submitted, no Frappe allocation
+        _skipCap: false, // enforce stock cap from the first keystroke
       };
       const newItems = [...prev.items];
       newItems.splice(absoluteIndex + 1, 0, copy);
       setPage(Math.floor((absoluteIndex + 1) / ITEMS_PER_PAGE));
       return { ...prev, items: newItems };
     });
+    markDirty();
   };
 
   // ─── Load invoice for edit ───────────────────────────────────────────────────
@@ -1038,11 +1055,13 @@ export const useInvoiceForm = (
 
   const setTerms = (selling: TermSection) => {
     setFormData((prev) => ({ ...prev, terms: { selling } }));
+    markDirty();
   };
 
   const handleSameAsBillingChange = (checked: boolean) => {
     setSameAsBilling(checked);
     if (!checked) shippingEditedRef.current = false;
+    markDirty();
   };
 
   const handleReset = async () => {
@@ -1092,6 +1111,7 @@ export const useInvoiceForm = (
     setSameAsBilling(true);
     setPage(0);
     setActiveTab("details");
+    resetDirty();
   };
 
   // ─── Submit ──────────────────────────────────────────────────────────────────
@@ -1114,39 +1134,45 @@ export const useInvoiceForm = (
 
   // ─── Computed totals ─────────────────────────────────────────────────────────
 
- const { subTotal, totalTax, grandTotal, totalQuantity, totalAmount, totalDiscount } =
-  useMemo(() => {
-    let qty_sum   = 0;   // totalQuantity
-    let gross     = 0;   // totalAmount  (qty × rate, no deductions)
-    let disc_sum  = 0;   // totalDiscount (absolute £ discount)
-    let sub       = 0;   // subTotal     (after discount, before tax)
-    let tax       = 0;   // totalTax
+  const {
+    subTotal,
+    totalTax,
+    grandTotal,
+    totalQuantity,
+    totalAmount,
+    totalDiscount,
+  } = useMemo(() => {
+    let qty_sum = 0; // totalQuantity
+    let gross = 0; // totalAmount  (qty × rate, no deductions)
+    let disc_sum = 0; // totalDiscount (absolute £ discount)
+    let sub = 0; // subTotal     (after discount, before tax)
+    let tax = 0; // totalTax
 
     formData.items.forEach((item) => {
-      const qty        = Number(item.quantity || 0);
-      const price      = Number(item.price    || 0);
-      const discount   = Number(item.discount || 0);
-      const vatRate    = Number(item.vatRate  || 0);
+      const qty = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      const discount = Number(item.discount || 0);
+      const vatRate = Number(item.vatRate || 0);
 
-      const lineGross      = qty * price;
-      const lineDiscount   = lineGross * (discount / 100);
-      const lineNet        = lineGross - lineDiscount;
-      const lineTax        = lineNet   * (vatRate  / 100);
+      const lineGross = qty * price;
+      const lineDiscount = lineGross * (discount / 100);
+      const lineNet = lineGross - lineDiscount;
+      const lineTax = lineNet * (vatRate / 100);
 
-      qty_sum  += qty;
-      gross    += lineGross;
+      qty_sum += qty;
+      gross += lineGross;
       disc_sum += lineDiscount;
-      sub      += lineNet;
-      tax      += lineTax;
+      sub += lineNet;
+      tax += lineTax;
     });
 
     return {
       totalQuantity: qty_sum,
-      totalAmount:   gross,
+      totalAmount: gross,
       totalDiscount: disc_sum,
-      subTotal:      sub,
-      totalTax:      tax,
-      grandTotal:    sub + tax,
+      subTotal: sub,
+      totalTax: tax,
+      grandTotal: sub + tax,
     };
   }, [formData.items]);
 
@@ -1166,7 +1192,14 @@ export const useInvoiceForm = (
     customerNameDisplay,
     paginatedItems,
     paginatedCharges,
-    totals: { totalQuantity, totalAmount, totalDiscount, subTotal, totalTax, grandTotal },
+    totals: {
+      totalQuantity,
+      totalAmount,
+      totalDiscount,
+      subTotal,
+      totalTax,
+      grandTotal,
+    },
     ui: {
       page,
       setPage,
@@ -1213,8 +1246,11 @@ export const useInvoiceForm = (
       handleOtherChargeChange,
       removeOtherCharge,
       handleTemplateSelect,
-      getItemMax, 
+      getItemMax,
       handleTaxChange,
     },
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
   };
 };
