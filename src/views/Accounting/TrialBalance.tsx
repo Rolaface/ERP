@@ -12,7 +12,7 @@ import {
   type TrialBalanceFilters,
 } from "../../api/Accounting/AccountApi";
 import { getCompanyCurrentFiscalYear } from "../../api/utils/frappeUtilsApi";
-import { getCurrencySymbol } from "../../utils/currency";
+import { getCompanyById } from "../../api/companySetupApi";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
   AlertCircle,
@@ -21,9 +21,13 @@ import {
   Folder,
   FolderOpen,
   BookOpen,
-  Layers,
+
   ChevronRight,
 } from "lucide-react";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesTree } from "../../utils/Extractcurrencycodes";
+
+const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 /* ───────────────── TYPES ───────────────── */
 
@@ -71,17 +75,6 @@ type TBResponse = {
 
 /* ───────────────── HELPERS ───────────────── */
 
-const nf = (value: number) => {
-  if (!value) return "—";
-
-  const formatted = new Intl.NumberFormat("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-
-  return `${getCurrencySymbol()} ${formatted}`.trim();
-};
-
 /* builds the {rowId: true} map needed to expand the tree to N levels by default */
 const buildExpandedToDepth = (
   nodes: TBAccount[],
@@ -104,8 +97,7 @@ function FilterBar({
   setFilters,
   onRefresh,
   loading,
-  allExpanded,
-  onToggleExpand,
+
 }: {
   filters: TrialBalanceFilters;
   setFilters: React.Dispatch<React.SetStateAction<TrialBalanceFilters>>;
@@ -241,11 +233,34 @@ const TrialBalance: React.FC = () => {
   const [fiscalYearEndDate, setFiscalYearEndDate] = useState<string>("");
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
+  const [company, setCompany] = useState<any>(null);
 
   const tableData: TBAccount[] = useMemo(() => {
     if (!data) return [];
     return data.accounts;
   }, [data]);
+
+  // ── Currency symbols + per-currency number formatting for the currencies
+  // present in the currently loaded trial balance tree (falls back to the
+  // company's base currency for rows/totals that don't carry their own
+  // `currency` field).
+  const currencyCodes = useMemo(
+    () => extractCurrencyCodesTree(tableData, "currency"),
+    [tableData],
+  );
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+
+  const baseCurrency = company?.default_currency || company?.currency;
+
+  const nf = useCallback(
+    (value: number, currency?: string) => {
+      if (!value) return "—";
+      return formatAmount(currency || baseCurrency, value, {
+        withSymbol: true,
+      });
+    },
+    [formatAmount, baseCurrency],
+  );
 
   const handleToggleExpand = useCallback(() => {
     if (allExpanded) {
@@ -256,6 +271,15 @@ const TrialBalance: React.FC = () => {
       setAllExpanded(true);
     }
   }, [allExpanded]);
+
+  /* ── Company bootstrap (for base currency fallback) ── */
+  useEffect(() => {
+    getCompanyById(COMPANY_ID)
+      .then((res) => {
+        if (res?.status_code === 200) setCompany(res.data);
+      })
+      .catch(() => console.error("Failed to load company data"));
+  }, []);
 
   /* ── Fiscal year bootstrap ── */
   useEffect(() => {
@@ -395,7 +419,7 @@ const TrialBalance: React.FC = () => {
         meta: { align: "right" },
         cell: ({ row }) => (
           <span className="text-xs tabular-nums text-main">
-            {nf(row.original.opening_debit)}
+            {nf(row.original.opening_debit, row.original.currency)}
           </span>
         ),
       },
@@ -406,7 +430,7 @@ const TrialBalance: React.FC = () => {
         meta: { align: "right" },
         cell: ({ row }) => (
           <span className="text-xs tabular-nums text-main">
-            {nf(row.original.opening_credit)}
+            {nf(row.original.opening_credit, row.original.currency)}
           </span>
         ),
       },
@@ -417,7 +441,7 @@ const TrialBalance: React.FC = () => {
         meta: { align: "right" },
         cell: ({ row }) => (
           <span className="text-xs tabular-nums text-blue-500 font-medium">
-            {nf(row.original.debit)}
+            {nf(row.original.debit, row.original.currency)}
           </span>
         ),
       },
@@ -428,7 +452,7 @@ const TrialBalance: React.FC = () => {
         meta: { align: "right" },
         cell: ({ row }) => (
           <span className="text-xs tabular-nums text-orange-500 font-medium">
-            {nf(row.original.credit)}
+            {nf(row.original.credit, row.original.currency)}
           </span>
         ),
       },
@@ -439,7 +463,7 @@ const TrialBalance: React.FC = () => {
         meta: { align: "right" },
         cell: ({ row }) => (
           <span className="text-xs tabular-nums text-main font-semibold">
-            {nf(row.original.closing_debit)}
+            {nf(row.original.closing_debit, row.original.currency)}
           </span>
         ),
       },
@@ -450,12 +474,12 @@ const TrialBalance: React.FC = () => {
         meta: { align: "right" },
         cell: ({ row }) => (
           <span className="text-xs tabular-nums text-main font-semibold">
-            {nf(row.original.closing_credit)}
+            {nf(row.original.closing_credit, row.original.currency)}
           </span>
         ),
       },
     ],
-    [],
+    [nf],
   );
 
   const table = useReactTable({

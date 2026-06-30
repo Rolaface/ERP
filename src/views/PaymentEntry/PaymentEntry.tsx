@@ -18,6 +18,8 @@ import PaymentEntryDetailModal from "./PaymetnEntryDetailModal";
 import ActionButton from "../../components/ui/Table/ActionButton";
 import type { PaymentEntryDetail } from "./PaymetnEntryDetailModal";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 interface PaymentAPI {
   paymentId: string;
   paymentDate: string;
@@ -28,6 +30,7 @@ interface PaymentAPI {
   referenceNumber?: string;
   amount: number;
   status: string;
+  currency?: string;
 }
 
 type PaymentRow = {
@@ -39,6 +42,7 @@ type PaymentRow = {
   amount?: number;
   status: string;
   partyType?: string;
+  currency?: string;
 };
 
 const PAYMENT_ENTRY_MODULE = "Payment Entry";
@@ -57,11 +61,6 @@ const formatDate = (date: string | Date): string => {
     return `${String(day).padStart(2, "0")}-${MONTHS[month - 1]}-${year}`;
   }
   return `${String(date.getDate()).padStart(2, "0")}-${MONTHS[date.getMonth()]}-${date.getFullYear()}`;
-};
-
-const formatAmount = (amount?: number): string => {
-  if (amount === undefined || amount === null) return " 0";
-  return ` ${amount.toLocaleString("en-IN")}`;
 };
 
 interface PaymentEntryProps {
@@ -101,6 +100,12 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   const [sortBy, setSortBy] = useState("paymentDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  // ── Currency symbols + per-currency number formatting for the currencies
+  // present in the currently loaded page of payments (same pattern as
+  // InvoiceTable / CreditNotesTable).
+  const currencyCodes = useMemo(() => extractCurrencyCodesFlat(data), [data]);
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+
   // ── Reset page on search change
   useEffect(() => { setPage(1); }, [searchTerm]);
 
@@ -129,6 +134,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
         mode: p.paymentMode || "—",
         amount: Number(p.amount) || 0,
         paymentDate: p.paymentDate || undefined,
+        currency: p.currency,
       }));
 
       setData(mapped);
@@ -172,100 +178,110 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
     setPage(1);
   };
 
-  const columns: Column<PaymentRow>[] = [
-    {
-      key: "id",
-      header: "P Id",
-      render: (row) => row.id || "-",
-    },
-    {
-      key: "paymentDate",
-      header: "Payment Date",
-      render: (row) => row.paymentDate ? formatDate(row.paymentDate) : "-",
-    },
-    {
-      key: "partyType",
-      header: "party Type",
-      render: (row) => row.partyType || "—",
-    },
-    {
-      key: "partyName",
-      header: "Party",
-      render: (row) => row.partyName || "—",
-    },
-    {
-      key: "mode",
-      header: "Mode Of Payment",
-      render: (row) => row.mode || "—",
-    },
-    {
-      key: "amount",
-      header: "Amount",
-      render: (row) => ` ${row.amount?.toLocaleString("en-IN") || 0}`,
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (row: PaymentRow) => <StatusBadge status={row.status} />,
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (row: PaymentRow) => (
-        <div className="flex items-center justify-center gap-2">
-          <ActionButton
-            type="view"
-            iconOnly
-            onClick={async () => {
-              setDrawerOpen(true);
-              setDrawerLoading(true);
-              setDrawerData(null);
+  const columns: Column<PaymentRow>[] = useMemo(
+    () => [
+      {
+        key: "id",
+        header: "P Id",
+        render: (row) => row.id || "-",
+      },
+      {
+        key: "paymentDate",
+        header: "Payment Date",
+        render: (row) => row.paymentDate ? formatDate(row.paymentDate) : "-",
+      },
+      {
+        key: "partyType",
+        header: "party Type",
+        render: (row) => row.partyType || "—",
+      },
+      {
+        key: "partyName",
+        header: "Party",
+        render: (row) => row.partyName || "—",
+      },
+      {
+        key: "mode",
+        header: "Mode Of Payment",
+        render: (row) => row.mode || "—",
+      },
+      {
+        key: "amount",
+        header: "Amount",
+        align: "right",
+        render: (row) => (
+          <span className="whitespace-nowrap">
+            {formatAmount(row.currency, row.amount ?? 0, { withSymbol: true })}
+          </span>
+        ),
+        tooltip: (row) =>
+          `Amount: ${formatAmount(row.currency, row.amount ?? 0, { withSymbol: true })}`,
+      },
+      {
+        key: "status",
+        header: "Status",
+        render: (row: PaymentRow) => <StatusBadge status={row.status} />,
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        align: "center",
+        render: (row: PaymentRow) => (
+          <div className="flex items-center justify-center gap-2">
+            <ActionButton
+              type="view"
+              iconOnly
+              onClick={async () => {
+                setDrawerOpen(true);
+                setDrawerLoading(true);
+                setDrawerData(null);
 
-              try {
-                const res = await getPaymentEntryById(row.id);
+                try {
+                  const res = await getPaymentEntryById(row.id);
 
-                if (res?.message?.status_code === 200) {
-                  setDrawerData(res.message.data as PaymentEntryDetail);
-                }
-              } finally {
-                setDrawerLoading(false);
-              }
-            }}
-          />
-
-          <ActionMenu
-            customActions={[
-              {
-                label: "Compose Email", icon: ACTION_ICONS.EMAIL,
-                onClick: async () => {
-                  setEmailPayment(row);
-                  setEmailContactEmail(null);
-                  setEmailAttachments([]);
-                  setEmailModalOpen(true);
-
-                  try {
-                    const res = await getPaymentEntryById(row.id);
-
-                    if (res?.message?.status_code === 200) {
-                      setEmailContactEmail(
-                        res.message.data?.contact_email ?? null
-                      );
-                      setEmailAttachments(
-                        res.message.data?.attachments ?? []
-                      );
-                    }
-                  } catch {
-                    // non-critical: modal opens with empty To/attachments
+                  if (res?.message?.status_code === 200) {
+                    setDrawerData(res.message.data as PaymentEntryDetail);
                   }
+                } finally {
+                  setDrawerLoading(false);
+                }
+              }}
+            />
+
+            <ActionMenu
+              customActions={[
+                {
+                  label: "Compose Email", icon: ACTION_ICONS.EMAIL,
+                  onClick: async () => {
+                    setEmailPayment(row);
+                    setEmailContactEmail(null);
+                    setEmailAttachments([]);
+                    setEmailModalOpen(true);
+
+                    try {
+                      const res = await getPaymentEntryById(row.id);
+
+                      if (res?.message?.status_code === 200) {
+                        setEmailContactEmail(
+                          res.message.data?.contact_email ?? null
+                        );
+                        setEmailAttachments(
+                          res.message.data?.attachments ?? []
+                        );
+                      }
+                    } catch {
+                      // non-critical: modal opens with empty To/attachments
+                    }
+                  },
                 },
-              },
-            ]}
-          />
-        </div>
-      ),
-    }
-  ];
+              ]}
+            />
+          </div>
+        ),
+      }
+    ],
+    [formatAmount],
+  );
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (

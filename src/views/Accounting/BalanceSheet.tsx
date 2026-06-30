@@ -13,6 +13,10 @@ import {
   type BalanceSheetFilters,
 } from "../../api/Accounting/AccountApi";
 import { getCompanyCurrentFiscalYear } from "../../api/utils/frappeUtilsApi";
+import { getCompanyById } from "../../api/companySetupApi";
+import { useCompanyStore } from "../../store/companyStore";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesTree } from "../../utils/Extractcurrencycodes";
 
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import {
@@ -25,6 +29,8 @@ import {
   ChevronRight,
   Layers,
 } from "lucide-react";
+
+const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -96,6 +102,9 @@ function mapBSNode(node: Partial<BSNode> & Record<string, any>): BSNode {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Legacy fallback formatter — used only as a last resort if no currency code
+// can be resolved through the currency store at all (see `displayAmount`
+// inside the main component below, which is what's actually used in render).
 const nf = (value: number | undefined | null): string => {
   if (value === null || value === undefined) return "—";
 
@@ -177,9 +186,11 @@ interface BSFilters {
 function KpiStrip({
   summary,
   loading,
+  displayAmount,
 }: {
   summary: BSSummaryItem[];
   loading: boolean;
+  displayAmount: (amount: number, currency?: string) => string;
 }) {
   const items = summary.filter(Boolean);
 
@@ -211,7 +222,7 @@ function KpiStrip({
               <span
                 className={`text-sm font-extrabold tabular-nums ${colorFor(item)}`}
               >
-                {nf(item.value)}
+                {displayAmount(item.value, item.currency)}
               </span>
             )}
           </div>
@@ -528,6 +539,7 @@ const BalanceSheet: React.FC = () => {
   const [data, setData] = useState<BSData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [company, setCompany] = useState<any | null>(null);
 
   const [expandedAssets, setExpandedAssets] = useState<ExpandedState>({});
   const [expandedLiabilities, setExpandedLiabilities] = useState<ExpandedState>(
@@ -535,6 +547,47 @@ const BalanceSheet: React.FC = () => {
   );
   const [expandedEquity, setExpandedEquity] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
+
+  // ── Currency symbol resolution (same pattern as AccountsPayable/Receivable/
+  // ProfitLoss). Balance Sheet accounts can each carry their own `currency`
+  // (BSNode.currency / BSSummaryItem.currency), so the fallback chain is:
+  // row's own currency → company's base currency → store's `sym` value
+  // (which on some setups itself holds a currency *code* like "GHS" rather
+  // than an actual symbol, so it's resolved through the store too instead
+  // of being printed raw).
+  const { currencySymbol } = useCompanyStore();
+  const sym = currencySymbol || "–";
+  const baseCurrency = company?.default_currency || company?.currency;
+
+  const currencyCodes = useMemo(() => {
+    const codes = new Set<string>();
+    if (data?.assets) extractCurrencyCodesTree(data.assets, "currency" as any).forEach((c) => codes.add(c));
+    if (data?.liabilities) extractCurrencyCodesTree(data.liabilities, "currency" as any).forEach((c) => codes.add(c));
+    if (data?.equity) extractCurrencyCodesTree(data.equity, "currency" as any).forEach((c) => codes.add(c));
+    if (baseCurrency) codes.add(baseCurrency);
+    if (sym && sym !== "–") codes.add(sym);
+    return [...codes];
+  }, [data, baseCurrency, sym]);
+
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+
+  const displayAmount = useCallback(
+    (amount: number, currency?: string) => {
+      const candidates = [currency, baseCurrency, sym].filter(Boolean) as string[];
+      for (const code of candidates) {
+        const formatted = formatAmount(code, amount, { withSymbol: true });
+        if (formatted) return formatted;
+      }
+      return nf(amount);
+    },
+    [formatAmount, baseCurrency, sym],
+  );
+
+  useEffect(() => {
+    getCompanyById(COMPANY_ID).then((res) => {
+      if (res?.status_code === 200) setCompany(res.data);
+    });
+  }, []);
 
   const handleToggleExpand = useCallback(() => {
     if (allExpanded) {
@@ -679,12 +732,15 @@ const BalanceSheet: React.FC = () => {
           meta: { align: "right" },
           cell: ({ row }) => (
             <span className="text-xs tabular-nums text-main">
-              {nf(row.original.periods?.[col.fieldname] ?? 0)}
+              {displayAmount(
+                row.original.periods?.[col.fieldname] ?? 0,
+                row.original.currency,
+              )}
             </span>
           ),
         };
       });
-  }, [data]);
+  }, [data, displayAmount]);
 
   if (error && !data) {
     return (
@@ -704,7 +760,11 @@ const BalanceSheet: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-3">
-      <KpiStrip summary={data?.summary ?? []} loading={loading && !data} />
+      <KpiStrip
+        summary={data?.summary ?? []}
+        loading={loading && !data}
+        displayAmount={displayAmount}
+      />
 
       <FilterBar
         filters={filters}
