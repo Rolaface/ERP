@@ -30,6 +30,7 @@ import type { Terms } from "../../types/termsAndCondition";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 import { updateCompanyById } from "../../api/companySetupApi";
+import { read } from "xlsx";
 
 // ─── Date Helpers ─────────────────────────────────────────────────────────────
 
@@ -216,6 +217,7 @@ interface InputFieldProps {
   colSpan?: number;
   value: string;
   options?: { label: string; value: string }[];
+  readOnly?: boolean;
   onChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
@@ -231,6 +233,7 @@ const InputField: React.FC<InputFieldProps> = ({
   colSpan = 1,
   value,
   options,
+  readOnly = false,
   onChange,
 }) => {
   const colClass = colSpan >= 2 ? "md:col-span-2" : "";
@@ -294,7 +297,10 @@ const InputField: React.FC<InputFieldProps> = ({
             onChange={onChange}
             placeholder={placeholder}
             required={required}
+            disabled={readOnly}
+            style={readOnly ? { cursor: "not-allowed" } : undefined}
             className={`w-full border border-theme rounded-lg ${Icon ? "pl-10" : "pl-3.5"} pr-3.5 py-2.5 text-sm focus:outline-none bg-card text-main`}
+            
           />
         )}
       </div>
@@ -535,6 +541,7 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({
               {renderField("Company Name", "companyName", "registration", {
                 icon: FaBuilding,
                 required: true,
+                 readOnly: true,
               })}
               {renderField(
                 "Date of Incorporation",

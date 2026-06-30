@@ -17,10 +17,7 @@ import {
   createProformaInvoice,
   editProformaInvoice,
 } from "../../api/proformaInvoiceApi";
-// import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import { useProformaInvoiceForm } from "../../hooks/useProformaInvoiceForm";
-
-import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import DatePickerInput from "../calendar/DatePickerInput";
 import ItemTable from "../common/ItemTable";
 import { paymentMethodOptions } from "../../constants/invoice.constants";
@@ -66,8 +63,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         : `proforma-create-${Date.now()}`),
   );
   const [submitting, setSubmitting] = useState(false);
-
-  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
     "Product",
   );
@@ -94,6 +89,8 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     totals,
     ui,
     actions,
+    resetDirty,
+    handleCloseWithConfirm,
   } = useProformaInvoiceForm(
     isOpen,
     onClose,
@@ -269,7 +266,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       <form
         id="proforma-form"
         onSubmit={handleFormSubmit}
-        onChange={() => markDirty()}
         className="h-full flex flex-col"
       >
         {/* Tabs */}

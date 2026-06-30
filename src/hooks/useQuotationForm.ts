@@ -5,6 +5,7 @@ import type { TermSection } from "../types/termsAndCondition";
 // import type { ProformaInvoice, InvoiceItem } from "../types/invoice";
 import { ProformaInvoice, InvoiceItem } from "../types/proformaInvoice";
 import { getRolaCountryList } from "../api/lookupApi";
+import { useUnsavedChanges } from "./useUnsavedChanges";
 
 import { getExchangeRate } from "../api/currencyExchangeApi";
 
@@ -189,6 +190,7 @@ export const useQuotationForm = (
   const customerTaxCategoryRef = useRef<string>("");
   const enableExchange = mode === "invoice";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
+    const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const getBaseCurrencyFromStorage = () => {
     try {
@@ -361,6 +363,7 @@ export const useQuotationForm = (
         ...prev,
         updateStock: (e.target as HTMLInputElement).checked,
       }));
+           markDirty();
       return;
     }
 
@@ -385,6 +388,7 @@ export const useQuotationForm = (
         setExchangeRateLoading(true);
         setExchangeRateError(null);
         setFormData((prev) => ({ ...prev, [name]: value }));
+        markDirty();
         return;
       }
       if (name === "lpoNumber") {
@@ -392,10 +396,12 @@ export const useQuotationForm = (
           .replace(/\D/g, "")
           .slice(0, 10);
         setFormData((prev) => ({ ...prev, [name]: digitsOnly }));
+        markDirty();
         return;
       }
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+        markDirty();
   };
 
   const getCountryCode = (
@@ -425,6 +431,7 @@ export const useQuotationForm = (
   }) => {
     setCustomerNameDisplay(name);
     setFormData((p) => ({ ...p, customerId: id }));
+       markDirty();
 
     try {
       const [customerRes, companyRes] = await Promise.all([
@@ -652,6 +659,7 @@ export const useQuotationForm = (
       }
       return { ...prev, items };
     });
+    markDirty();
   };
   //charge temeplete--------------------
   const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
@@ -960,11 +968,13 @@ export const useQuotationForm = (
 
   const setTerms = (selling: TermSection) => {
     setFormData((prev) => ({ ...prev, terms: { selling } }));
+    markDirty();
   };
 
   const handleSameAsBillingChange = (checked: boolean) => {
     setSameAsBilling(checked);
     if (!checked) shippingEditedRef.current = false;
+    markDirty();
   };
 
   const handleReset = async () => {
@@ -1016,6 +1026,7 @@ export const useQuotationForm = (
     setSameAsBilling(true);
     setPage(0);
     setActiveTab("details");
+    resetDirty();
   };
 
   // ─── Submit ──────────────────────────────────────────────────────────────────
@@ -1152,8 +1163,11 @@ export const useQuotationForm = (
       addOtherCharge,
       handleOtherChargeChange,
       removeOtherCharge,
-      handleTemplateSelect,
+handleTemplateSelect,
       handleTaxChange,
     },
+    markDirty,
+    resetDirty,
+    handleCloseWithConfirm,
   };
 };

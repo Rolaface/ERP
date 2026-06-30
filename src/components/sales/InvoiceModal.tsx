@@ -12,7 +12,6 @@ import { MinimizableModal } from "../../components/common/MinimizableModal";
 import ModalFooter from "../common/ModalFooter";
 import { ModalInput, ToggleSwitch } from "../ui/modal/modalComponent";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
-import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
@@ -53,7 +52,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
       : `invoice-create-${Date.now()}`);
 
-  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [submitting, setSubmitting] = useState(false);
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
     "Product",
@@ -72,7 +70,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     }
   }, [initialData, mode, isOpen, domain]);
 
-  const {
+const {
     formData,
     customerDetails,
     customerNameDisplay,
@@ -80,6 +78,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     totals,
     ui,
     actions,
+    resetDirty,
+    handleCloseWithConfirm,
   } = useInvoiceForm(
     isOpen,
     onClose,
@@ -207,7 +207,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
         id="invoiceForm"
         className="h-full flex flex-col"
         autoComplete="off"
-        onChange={() => markDirty()}
       >
         {/* ── Tabs ── */}
         <div className="bg-app border-b border-theme px-4 sm:px-8 shrink-0">
