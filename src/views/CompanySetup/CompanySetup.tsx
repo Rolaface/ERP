@@ -41,6 +41,7 @@ import type {
 } from "../../types/company";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { Terms } from "../../types/termsAndCondition";
+import { showConfirm } from "../../utils/alert";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID as string;
 const BASE = "/companySetup";
@@ -72,7 +73,8 @@ const CompanySetup: React.FC = () => {
   });
 
   const isBasicTab = activeTab === DEFAULT_TAB;
-
+  // const [isDirty, setIsDirty] = useState(false);
+  const [unsavedFields, setUnsavedFields] = useState<string[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [financialConfig, setFinancialConfig] = useState<FinancialConfig>();
 
@@ -115,6 +117,49 @@ const CompanySetup: React.FC = () => {
       timeZone: "",
     },
   });
+
+  // const handleTabClick = async (newTabId: string) => {
+  //   if (newTabId === activeTab) return;
+
+  //   if (isDirty) {
+  //     const isConfirmed = await showConfirm(
+  //       "You have unsaved changes left. Do you want to discard them and switch tabs?",
+  //       {
+  //         title: "Warning",
+  //         confirmButtonText: "Discard & Leave",
+  //         confirmButtonColor: "#ef4444",
+  //         cancelButtonText: "Stay",
+  //       }
+  //     );
+      
+  //     if (!isConfirmed) return;  
+  //     setIsDirty(false); 
+  //   }
+    
+  //   handleTabChange(newTabId);
+  // };
+  const handleTabClick = async (newTabId: string) => {
+    if (newTabId === activeTab) return;
+
+    if (unsavedFields.length > 0) {
+      const fieldNames = unsavedFields.join(", ");  
+      
+      const isConfirmed = await showConfirm(
+        `You have unsaved changes on: ${fieldNames}. Do you want to discard them and switch tabs?`,
+        {
+          title: "Warning",
+          confirmButtonText: "Discard & Leave",
+          confirmButtonColor: "#ef4444",
+          cancelButtonText: "Stay",
+        }
+      );
+      
+      if (!isConfirmed) return; 
+      setUnsavedFields([]); // Reset since they are leaving
+    }
+    
+    handleTabChange(newTabId);
+  };
 
   const fetchCompanyDetail = useCallback(async () => {
     try {
@@ -185,8 +230,13 @@ const CompanySetup: React.FC = () => {
       basic: (
         <BasicDetails
           basic={basicDetail}
-          onSaveSuccess={fetchCompanyDetail}
+          // onSaveSuccess={
+          onSaveSuccess={() => {
+            setUnsavedFields([]);
+            fetchCompanyDetail
+          }}
           terms={terms}
+          setUnsavedFields={setUnsavedFields}
         />
       ),
       bank: (
@@ -203,8 +253,18 @@ const CompanySetup: React.FC = () => {
           terms={terms}
         />
       ),
+      // buyingSelling: (
+      //   <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
+      // ),
       buyingSelling: (
-        <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
+        <BuyingSelling 
+          terms={terms} 
+          onSaveSuccess={() => {
+            setUnsavedFields([]);  
+            fetchCompanyDetail();
+          }} 
+          setUnsavedFields={setUnsavedFields}  
+        />
       ),
       naming: <NamingSeries onSaveSuccess={fetchCompanyDetail} />,
       defaults: (
@@ -236,7 +296,8 @@ const CompanySetup: React.FC = () => {
   return (
     <AppPage viewportLocked={isBasicTab}>
       <AppPageHeader title="Company Setup" icon={<Building2 />} />
-      <AppTabs tabs={navTabs} activeTab={activeTab} onChange={handleTabChange} />
+      {/* <AppTabs tabs={navTabs} activeTab={activeTab} onChange={handleTabChange} /> */}
+      <AppTabs tabs={navTabs} activeTab={activeTab} onChange={handleTabClick} />
       <AppPageBody>{currentTabComponent}</AppPageBody>
     </AppPage>
   );

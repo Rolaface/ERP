@@ -4,6 +4,7 @@ import { getPurchaseInvoices, getPurchaseInvoiceById } from "../api/procurement/
 import { createDebitNote, updateDebitNote } from "../api/DebitNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
 import { useUnsavedChanges } from "./useUnsavedChanges";
+import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,24 +62,57 @@ export function useDebitNoteForm(
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
+// useEffect(() => {
+//     if (!initialData) return;
+//     setForm({
+//       return_against: initialData.return_against || "",
+//       supplier: {
+//         id: initialData.supplier || "",
+//         name: initialData.supplier || "",
+//       },
+//       update_stock: !!initialData.update_stock,
+//       items: (initialData.items || []).map((it: any) => ({
+//         item_code: it.item_code,
+//         item_name: it.item_name,
+//         qty: Number(it.qty),
+//         rate: Number(it.rate),
+//         batch_no: it.batch_no || "",
+//         warehouse: it.warehouse || "",
+//       })),
+//       exchange_rate: Number(initialData.exchange_rate) || 1,  
+//     });
+//   }, [initialData]);
 useEffect(() => {
     if (!initialData) return;
+    
     setForm({
-      return_against: initialData.return_against || "",
+      // Maps piId or return_against
+      return_against: initialData.return_against || initialData.piId || "",
+      
+      // Maps supplierId/supplierName
       supplier: {
-        id: initialData.supplier || "",
-        name: initialData.supplier || "",
+        id: initialData.supplierId || initialData.supplier || "",
+        name: initialData.supplierName || initialData.supplier_name || initialData.supplier || "",
       },
-      update_stock: !!initialData.update_stock,
+      
+      // Maps updateStock (handles 1/0 or true/false)
+      update_stock: initialData.updateStock !== undefined 
+        ? !!initialData.updateStock 
+        : !!initialData.update_stock,
+        
+      // Maps item array with camelCase fallbacks
       items: (initialData.items || []).map((it: any) => ({
-        item_code: it.item_code,
-        item_name: it.item_name,
-        qty: Number(it.qty),
-        rate: Number(it.rate),
-        batch_no: it.batch_no || "",
+        item_code: it.itemCode || it.item_code || "",
+        item_name: it.itemName || it.item_name || "",
+        // Keeps the quantity negative if it comes as negative from the API
+        qty: Number(it.quantity ?? it.qty ?? 0), 
+        rate: Number(it.rate ?? 0),
+        batch_no: it.batchNo || it.batch_no || "",
         warehouse: it.warehouse || "",
       })),
-      exchange_rate: Number(initialData.exchange_rate) || 1,  
+      
+      // Maps exchangeRate
+      exchange_rate: Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,  
     });
   }, [initialData]);
 
@@ -249,14 +283,17 @@ const payload = {
         })),
       };
 
-      setSaving(true);
+     setSaving(true);
       try {
-        const res = isEdit && initialData?.name
-          ? await updateDebitNote(initialData.name, payload)
+        // Fallback through the possible ID keys (name, piId, or id)
+        const docId = initialData?.name || initialData?.piId || initialData?.id;
+
+        const res = isEdit && docId
+          ? await updateDebitNote(docId, payload)
           : await createDebitNote(payload);
 
         if (!res || ![200, 201].includes(res.status_code)) {
-          showApiError(res?.message ?? "Debit note creation failed");
+          showApiError(res?.message ?? "Debit note operation failed");
           return;
         }
 
@@ -277,9 +314,10 @@ const payload = {
         }
 
         showSuccess(res.message);
-        resetDirty(); // clear dirty flag on successful save
+        resetDirty(); 
         onSuccess?.(res.data);
         onClose?.();
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.DEBIT_NOTE_LIST);
       } catch (err: any) {
         console.error("Debit note operation failed", err);
         showApiError(err?.message ?? err);
