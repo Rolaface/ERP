@@ -486,7 +486,7 @@ export async function getSalarySlipPdf(
         name,
         no_letterhead: 0,
         _lang: "en",
-        pdf_generator: "wkhtmltopdf",
+        pdf_generator: "chrome",
       },
       responseType: "blob",
     },
