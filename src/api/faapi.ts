@@ -120,6 +120,13 @@ export async function createAssetCategory(
   return resp.data;
 }
 
+export async function deleteAssetCategory(id: string): Promise<any> {
+  const resp: AxiosResponse = await api.delete(
+    `${API.AssetsTypes.getall}/${encodeURIComponent(id)}`
+  );
+
+  return resp.data;
+}
 
 
 export type GetAssetCategoryParams = {
