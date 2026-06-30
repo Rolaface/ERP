@@ -3,7 +3,7 @@ export function getGLNameWithoutAbbreviation(glName: string | null | undefined):
     return glName || "";
   }
 
-  const hyphenIndex = glName.indexOf("-");
+  const hyphenIndex = glName.lastIndexOf("-");
 
   if (hyphenIndex === -1) {
     return glName.trim();
