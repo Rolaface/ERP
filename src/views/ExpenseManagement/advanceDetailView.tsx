@@ -50,6 +50,14 @@ export interface EmployeeAdvanceDetail {
   status: string;
   amended_from: string | null;
   expense_claims?: ExpenseClaimEntry[];
+  pagination?: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
 }
 
 interface Props {
@@ -58,6 +66,10 @@ interface Props {
   onBack: () => void;
   dateRange: { from_date?: string; to_date?: string };
   onDateRangeChange: (range: { from_date?: string; to_date?: string }) => void;
+  claimsPage: number;
+  claimsPageSize: number;
+  onClaimsPageChange: (page: number) => void;
+  onClaimsPageSizeChange: (size: number) => void;
 }
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
@@ -450,6 +462,10 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
   onBack,
   dateRange,
   onDateRangeChange,
+  claimsPage,
+  claimsPageSize,
+  onClaimsPageChange,
+  onClaimsPageSizeChange,
 }) => {
   const statusKey = data?.status?.toLowerCase() ?? "draft";
   const statusStyle = STATUS_COLORS[statusKey] ?? STATUS_COLORS.draft;
@@ -698,15 +714,20 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
 
             {/* Table */}
              <div className="flex-1 min-h-0 overflow-auto">
-              <ModalTable<ExpenseClaimEntry>
-                columns={claimColumns}
-                data={claims}
-                rowKey={(ec) => ec.name}
-                emptyMessage="No expense claims yet"
-                totalItems={claims.length}
-                pageSize={claims.length || 10}
-                showToolbar={false}
-              />
+          <ModalTable<ExpenseClaimEntry>
+  columns={claimColumns}
+  data={claims}
+  rowKey={(ec) => ec.name}
+  emptyMessage="No expense claims yet"
+  totalItems={data.pagination?.total ?? claims.length}
+  currentPage={data.pagination?.page ?? claimsPage}
+  totalPages={data.pagination?.total_pages ?? 1}
+  pageSize={data.pagination?.page_size ?? claimsPageSize}
+ pageSizeOptions={[7, 10, 20, 50]}
+  onPageChange={onClaimsPageChange}
+  onPageSizeChange={onClaimsPageSizeChange}
+  showToolbar={false}
+/>
             </div>
           </>
         )}
