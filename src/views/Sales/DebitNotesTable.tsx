@@ -32,6 +32,7 @@ import { DebitNote } from "../../types/sales/Debitnotes";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -49,6 +50,7 @@ const DEBIT_NOTE_MODULE = "Purchase Invoice Return";
 
 const DebitNotesTable: React.FC = () => {
   const [data, setData] = useState<DebitNote[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const { can } = usePermission();
@@ -80,6 +82,16 @@ const DebitNotesTable: React.FC = () => {
         if (res?.status_code === 200) setCompany(res.data);
       })
       .catch((err) => showApiError(err));
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = useDataRefreshStore
+      .getState()
+      .subscribeToRefresh(REFRESH_KEYS.DEBIT_NOTE_LIST, () => {
+        fetchDebitNotes(); 
+      });
+      
+    return unsubscribe;
   }, []);
 
   const fetchDebitNotes = async () => {
@@ -204,6 +216,7 @@ const DebitNotesTable: React.FC = () => {
       await deleteDebitNote(noteNo);
       closeSwal();
       setData((prev) => prev.filter((item) => item.noteNo !== noteNo));
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.DEBIT_NOTE_LIST);
       showSuccess("Debit note deleted successfully");
     } catch (error) {
       closeSwal();

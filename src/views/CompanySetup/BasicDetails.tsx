@@ -216,6 +216,7 @@ interface InputFieldProps {
   placeholder?: string;
   colSpan?: number;
   value: string;
+  disabled?: boolean;
   options?: { label: string; value: string }[];
   readOnly?: boolean;
   onChange: (
@@ -232,6 +233,7 @@ const InputField: React.FC<InputFieldProps> = ({
   placeholder = "",
   colSpan = 1,
   value,
+  disabled = false,
   options,
   readOnly = false,
   onChange,
@@ -349,16 +351,27 @@ const ModeOfPaymentSelect: React.FC<{
 interface BasicDetailsProps {
   basic?: BasicDetailsForm | null;
   terms?: Terms | null;
+  setUnsavedFields: (fields: string[]) => void;
   onSaveSuccess: () => void;
 }
+const FIELD_LABELS: Record<string, string> = {
+  registerNo: "Registration No", tpin: "Tax Id / TPIN", companyName: "Company Name",
+  dateOfIncorporation: "Date of Incorporation", companyType: "Company Type",
+  industryType: "Industry Type", domain: "Primary Business Domain", defaultModeOfPayment: "Default Mode of Payment",
+  companyEmail: "Company Email", companyPhone: "Company Phone", alternatePhone: "Alternate Phone",
+  website: "Website", contactPerson: "Contact Person", contactEmail: "Contact Email", contactPhone: "Contact Phone",
+  addressLine1: "Address Line 1", addressLine2: "Address Line 2", city: "City", district: "District",
+  province: "Province", postalCode: "Postal Code", country: "Country", timeZone: "Time Zone",
+};
 
 const BasicDetails: React.FC<BasicDetailsProps> = ({
   basic,
   terms,
+  setUnsavedFields,
   onSaveSuccess,
 }) => {
   const [activeTab, setActiveTab] = useState("registration");
-
+const [initialForm, setInitialForm] = useState<BasicDetailsForm>(defaultForm);
   const [form, setForm] = useState<BasicDetailsForm>(() => {
     const b = basic as any;
     return {
@@ -376,27 +389,63 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({
     };
   });
 
+  // useEffect(() => {
+  //   if (basic) {
+  //     const b = basic as any;
+  //     setForm((prev) => ({
+  //       registration: {
+  //         ...prev.registration,
+  //         ...(basic.registration || {}),
+  //         domain:
+  //           b.primaryBusinessDomain ??
+  //           basic.registration?.domain ??
+  //           prev.registration.domain,
+  //         defaultModeOfPayment:
+  //           b.defaultPaymentMode ??
+  //           basic.registration?.defaultModeOfPayment ??
+  //           prev.registration.defaultModeOfPayment,
+  //       },
+  //       contact: { ...prev.contact, ...(basic.contact || {}) },
+  //       address: { ...prev.address, ...(basic.address || {}) },
+  //     }));
+  //   }
+  // }, [basic]);
   useEffect(() => {
     if (basic) {
       const b = basic as any;
-      setForm((prev) => ({
+      const loadedData = {
         registration: {
-          ...prev.registration,
+          ...defaultForm.registration,
           ...(basic.registration || {}),
-          domain:
-            b.primaryBusinessDomain ??
-            basic.registration?.domain ??
-            prev.registration.domain,
-          defaultModeOfPayment:
-            b.defaultPaymentMode ??
-            basic.registration?.defaultModeOfPayment ??
-            prev.registration.defaultModeOfPayment,
+          domain: b.primaryBusinessDomain ?? basic.registration?.domain ?? defaultForm.registration.domain,
+          defaultModeOfPayment: b.defaultPaymentMode ?? basic.registration?.defaultModeOfPayment ?? defaultForm.registration.defaultModeOfPayment,
         },
-        contact: { ...prev.contact, ...(basic.contact || {}) },
-        address: { ...prev.address, ...(basic.address || {}) },
-      }));
+        contact: { ...defaultForm.contact, ...(basic.contact || {}) },
+        address: { ...defaultForm.address, ...(basic.address || {}) },
+      };
+      
+      setForm(loadedData);
+      setInitialForm(loadedData); // Save the baseline for comparison
     }
   }, [basic]);
+  useEffect(() => {
+    const changedFields: string[] = [];
+    const sections: (keyof BasicDetailsForm)[] = ["registration", "contact", "address"];
+
+    sections.forEach((section) => {
+      Object.keys(form[section]).forEach((key) => {
+        const currentValue = (form[section] as any)[key] || "";
+        const initialValue = (initialForm[section] as any)[key] || "";
+
+        // If the value is different from what was initially loaded, add it to the list
+        if (currentValue !== initialValue) {
+          changedFields.push(FIELD_LABELS[key] || key);
+        }
+      });
+    });
+
+    setUnsavedFields(changedFields);
+  }, [form, initialForm, setUnsavedFields]);
 
   const handleChange = (
     section: keyof BasicDetailsForm,
@@ -540,6 +589,7 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({
               })}
               {renderField("Company Name", "companyName", "registration", {
                 icon: FaBuilding,
+                disabled: !!basic?.registration?.companyName,
                 required: true,
                  readOnly: true,
               })}

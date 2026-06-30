@@ -17,6 +17,7 @@ const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 interface BuyingSellingProps {
   terms?: Terms | null;
   onSaveSuccess?: () => void;
+  setUnsavedFields: (fields: string[]) => void;
 }
 
 const normalizeSection = (section?: TermSection): TermSection => ({
@@ -57,11 +58,33 @@ const getCssVar = (varName: string, fallback: string) =>
 const BuyingSelling: React.FC<BuyingSellingProps> = ({
   terms,
   onSaveSuccess,
+  setUnsavedFields,
 }) => {
   const [formData, setFormData] = useState({
     buying: emptySection(),
     selling: emptySection(),
   });
+
+  // Add this new useEffect
+  useEffect(() => {
+    if (!terms) return;
+
+    const changedFields: string[] = [];
+
+    const originalBuying = JSON.stringify(normalizeSection(terms.buying));
+    const currentBuying = JSON.stringify(formData.buying);
+    if (originalBuying !== currentBuying) {
+      changedFields.push("Buying Terms");
+    }
+
+    const originalSelling = JSON.stringify(normalizeSection(terms.selling));
+    const currentSelling = JSON.stringify(formData.selling);
+    if (originalSelling !== currentSelling) {
+      changedFields.push("Selling Terms");
+    }
+
+    setUnsavedFields(changedFields);
+  }, [formData, terms, setUnsavedFields]);
 
   const hasChanges = React.useMemo(() => {
     if (!terms) return false;
