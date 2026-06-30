@@ -22,6 +22,7 @@ import {
 import { usePermission } from "../../hooks/permission/usePermission";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 import { fireManagedSwal } from "../../utils/swalManager";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 const MODE_OF_PAYMENT_MODULE = "Mode Of Payment";
 
 const ModeOfPaymentSetup: React.FC = () => {
@@ -106,7 +107,8 @@ const handleToggle = async (row: any) => {
     {
       key: "defaultAccount",
       header: "GL Account",
-      render: (row: any) => row.accountName || "—",
+      render: (row: any) => getGLNameWithoutAbbreviation(row.accountName) || "—",
+
     },
     {
       key: "enabled",

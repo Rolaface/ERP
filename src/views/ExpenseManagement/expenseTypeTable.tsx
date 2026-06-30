@@ -16,6 +16,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { openExpenseTypeModal } from "../../store/modalStore";
 import { getExpenseClaimTypes,getExpenseClaimTypeById,deleteExpenseClaimType } from "../../api/expenseClaimApi";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 const EXPENSE_TYPE_MODULE = "Expense Claim Type";
 
 interface ExpenseType {
@@ -134,7 +135,7 @@ const handleExportExcel = async () => {
     const worksheet = XLSX.utils.json_to_sheet(
       expenseTypes.map((et) => ({
         "Expense Type": et.expense_type,
-        "GL Account":      et.account,
+        "GL Account":      getGLNameWithoutAbbreviation(et.account),
       }))
     );
     const workbook = XLSX.utils.book_new();
@@ -171,15 +172,15 @@ const handleExportExcel = async () => {
         tooltip: (et) => `Expense Type: ${et.expense_type}`,
       },
       {
-        key:      "account",
-        header:   "GL Account",
-        align:    "left",
-        render:   (et) => (
+        key: "account",
+        header: "GL Account",
+        align: "left",
+        render: (et) => (
           <div className="py-1.5">
-            <span className="block">{et.account}</span>
+            <span className="block">{getGLNameWithoutAbbreviation(et.account)}</span>
           </div>
         ),
-        tooltip: (et) => `Account: ${et.account}`,
+        tooltip: (et) => `Account: ${getGLNameWithoutAbbreviation(et.account)}`,
       },
       {
         key:    "actions",
