@@ -4,10 +4,12 @@ import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { getContactList } from "../../api/Email/EmailApi";
 import { useSendEmail } from "../../hooks/useSendEmail";
 import type { AttachmentItem, UploadingAttachment, ReadyAttachment, InvoiceAttachment } from "../../hooks/useSendEmail";
-import { ChevronDown, ChevronUp, Loader2, Paperclip, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Paperclip, AlertTriangle, Mail } from "lucide-react";
+import { MinimizableModal } from "../../components/common/MinimizableModal";
 
 
 interface Props {
+  modalId: string;
   open: boolean;
   docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Proforma Invoice" | "Quotation" | "Customer";
   isProforma?: boolean;
@@ -124,6 +126,7 @@ function ToInput({ emails, onChange }: ToInputProps) {
 }
 
 const SendEmailModal: React.FC<Props> = ({
+  modalId,
   open,
   invoiceNumber,
   contactEmail,
@@ -152,7 +155,6 @@ const SendEmailModal: React.FC<Props> = ({
   } = useSendEmail({ open, docType, invoiceNumber, contactEmail, customerName, supplierName, invoiceAttachments, onClose ,periodText, });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
 
   // CC / BCC visibility toggle — closed by default
   const [showCcBcc, setShowCcBcc] = useState(false);
@@ -169,9 +171,6 @@ const SendEmailModal: React.FC<Props> = ({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === backdropRef.current) onClose();
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -264,20 +263,28 @@ const SendEmailModal: React.FC<Props> = ({
     },
   };
 
+const footerContent = (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "10px", width: "100%" }}>
+      <button type="button" style={s.btnDiscard} onClick={onClose} disabled={sending}>Discard</button>
+      <button type="button" style={s.btnSend} onClick={handleSend} disabled={sending}>
+        {sending ? "Sending…" : "Send"}
+      </button>
+    </div>
+  );
+
   return (
-    <div ref={backdropRef} style={s.backdrop} onClick={handleBackdropClick}>
-      <div style={s.modal} role="dialog" aria-modal aria-label="Send Email">
-
-        {/* ── Header ── */}
-        <div style={s.header}>
-          <span style={s.title}>
-            {docType}: {invoiceNumber ?? "—"}
-          </span>
-          <button type="button" style={s.iconBtn} title="Close" onClick={onClose}>✕</button>
-        </div>
-
-        {/* ── Body ── */}
-        <div style={s.body}>
+    <MinimizableModal
+      modalId={modalId}
+      isOpen={open}
+      onClose={onClose}
+      title={docType}
+      subtitle={invoiceNumber ?? undefined}
+      icon={Mail}
+      footer={footerContent}
+      maxWidth="2xl"
+      height="640px"
+    >
+      <div style={s.body}>
 
           {/* To + CC/BCC toggle */}
           <div>
@@ -445,17 +452,7 @@ const SendEmailModal: React.FC<Props> = ({
             </div>
           </div>
         </div>
-
-        {/* ── Footer ── */}
-        <div style={s.footer}>
-          <button type="button" style={s.btnDiscard} onClick={onClose} disabled={sending}>Discard</button>
-          <button type="button" style={s.btnSend} onClick={handleSend} disabled={sending}>
-            {sending ? "Sending…" : "Send"}
-          </button>
-        </div>
-
-      </div>
-    </div>
+    </MinimizableModal>
   );
 };
 
