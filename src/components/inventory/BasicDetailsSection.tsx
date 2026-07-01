@@ -1,20 +1,17 @@
 import React, { useState, useCallback, useRef } from "react";
 import { ScanSearch } from "lucide-react";
-import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
+import { ModalInput } from "../ui/modal/modalComponent";
 import type {
   ItemFieldSetter,
   ItemFormChangeHandler,
   ItemFormData,
-  ItemGroupOption,
 } from "./itemModalTypes";
-import { getBrands } from "../../api/itemApi";
+import { getBrands, getItemGroups } from "../../api/itemApi";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import HsnSearchPopover from "./Hsnsearchmodal";
 
 interface BasicDetailsSectionProps {
   form: ItemFormData;
-  itemGroups: ItemGroupOption[];
-  loadingItemGroups: boolean;
   isServiceItem: boolean;
   onFormChange: ItemFormChangeHandler;
   errors?: Partial<Record<keyof ItemFormData, string>>;
@@ -22,7 +19,7 @@ interface BasicDetailsSectionProps {
 }
 
 const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
-  ({ form, itemGroups, loadingItemGroups, onFormChange, errors, setField, isServiceItem }) => {
+  ({ form, onFormChange, errors, setField, isServiceItem }) => {
     const [hsnPopoverOpen, setHsnPopoverOpen] = useState(false);
     // Popover anchors to this button, not to the screen center.
     const hsnTriggerRef = useRef<HTMLButtonElement>(null);
@@ -39,18 +36,6 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
     return (
       <>
         <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-6">
-          {/* Item Type */}
-          <ModalSelect
-            label="Item Type"
-            name="itemTypeCode"
-            value={form.itemTypeCode}
-            onChange={onFormChange}
-            placeholder="Select..."
-          >
-            <option value="1">Raw Material</option>
-            <option value="2">Finished Product</option>
-            <option value="3">Service</option>
-          </ModalSelect>
 
           {/* Brand */}
           <SearchSelect2
@@ -64,21 +49,22 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           />
 
           {/* Item Category */}
-          <ModalSelect
+          <SearchSelect2
             label="Item Category"
-            name="itemGroup"
-            value={form.itemGroup}
-            onChange={onFormChange}
+            value={form.itemGroup ?? ""}
+            fetchOptions={async (q) => {
+              const list = await getItemGroups(q || undefined);
+              return list.map((g) => ({
+                label: g.label,
+                value: g.value,
+                subLabel: g.description !== g.label ? g.description : undefined,
+              }));
+            }}
+            onChange={(value) => setField("itemGroup", value)}
+            placeholder="Search category..."
             required
             error={errors?.itemGroup}
-            placeholder={loadingItemGroups ? "Loading..." : "Select Category"}
-          >
-            {itemGroups.map((group) => (
-              <option key={group.id} value={group.groupName}>
-                {group.groupName}
-              </option>
-            ))}
-          </ModalSelect>
+          />
 
           {/* Item Name */}
           <ModalInput

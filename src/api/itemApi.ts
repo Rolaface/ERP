@@ -107,3 +107,36 @@ export async function getBrands(
     return [];
   }
 }
+
+
+export interface ItemGroupSearchOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+interface ItemGroupSearchResponse {
+  status_code: number;
+  status: "success" | "fail";
+  message: string;
+  data: ItemGroupSearchOption[];
+  pagination?: {
+    page: number;
+    page_size: number;
+    items_in_page: number;
+    total_items: number;
+    total_pages: number;
+    has_next: boolean;
+    has_previous: boolean;
+  };
+}
+
+export async function getItemGroups(
+  search?: string,
+): Promise<ItemGroupSearchOption[]> {
+  const resp: AxiosResponse<ItemGroupSearchResponse> = await api.get(
+    API.item.getAllItemGroup,
+    { params: search ? { search } : {} },
+  );
+  return resp.data?.data ?? [];
+}
