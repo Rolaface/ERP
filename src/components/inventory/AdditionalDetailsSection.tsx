@@ -24,7 +24,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
         {/* Packing Unit: N x N */}
         <div className="flex flex-col gap-0.5 min-w-0">
           <span className="block text-[10px] font-medium text-main mb-1">
-            Packing Unit
+            Packing Size
           </span>
           <div className="flex items-center gap-1 h-[28px]">
             <NumericInput
@@ -44,6 +44,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
             />
           </div>
         </div>
+        
 
         {/* UOM */}
         <div className="w-[140px] min-w-0">

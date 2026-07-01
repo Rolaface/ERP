@@ -35,7 +35,7 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
 
     return (
       <>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-6">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-5">
 
           {/* Brand */}
           <SearchSelect2
