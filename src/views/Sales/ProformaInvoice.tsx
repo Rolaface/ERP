@@ -44,7 +44,7 @@ import {
   ACTION_ICONS,
   getStatusActionIcon,
 } from "../../components/UI_Utils/statusActionIcons";
-import SendEmailModal from "../../components/common/SendEmailModal";
+import { openSendEmailModal } from "../../store/modalStore";
 
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
@@ -127,16 +127,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   const [previewPdfBlob, setPreviewPdfBlob] = useState<Blob | null>(null);
   const [previewPdfId, setPreviewPdfId] = useState<string | null>(null);
-  //email
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailProforma, setEmailProforma] =
-    useState<ProformaInvoiceSummary | null>(null);
-  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(
-    null,
-  );
-  const [emailProformaAttachments, setEmailProformaAttachments] = useState<
-    { name: string; file_name: string }[]
-  >([]);
+
 
   // ── Currency symbols + per-currency number formatting for the currencies
   // present in the currently loaded page of invoices.
@@ -708,27 +699,27 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
                       label: "Compose Email",
                       icon: ACTION_ICONS.EMAIL,
                       onClick: async () => {
-                        setEmailProforma(inv);
-                        setEmailContactEmail(null);
-                        setEmailProformaAttachments([]); // clear stale attachments
-                        setEmailModalOpen(true);
+                        let contactEmail: string | null = null;
+                        let invoiceAttachments: { name: string; file_name: string }[] = [];
                         try {
-                          const res = await getProformaInvoiceById(
-                            inv.proformaId,
-                          );
-
-                          // Handle both wrapped and unwrapped backend responses safely
-                          const statusCode =
-                            res?.message?.status_code || res?.status_code;
+                          const res = await getProformaInvoiceById(inv.proformaId);
+                          const statusCode = res?.message?.status_code || res?.status_code;
                           const data = res?.message?.data || res?.data;
-
                           if (statusCode === 200 && data) {
-                            setEmailContactEmail(data.contact_email ?? null);
-                            setEmailProformaAttachments(data.attachments ?? []);
+                            contactEmail = data.contact_email ?? null;
+                            invoiceAttachments = data.attachments ?? [];
                           }
                         } catch {
                           // non-critical: modal opens with empty To/attachments if fetch fails
                         }
+                        openSendEmailModal({
+                          docType: "Quotation",
+                          isProforma: true,
+                          invoiceNumber: inv.proformaId,
+                          customerName: inv.customerName,
+                          contactEmail,
+                          invoiceAttachments,
+                        });
                       },
                     },
                   ]
@@ -838,21 +829,6 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
           setPdfOpen(false);
         }}
         onDownload={handlePreviewDownload}
-      />
-      <SendEmailModal
-        open={emailModalOpen}
-        docType="Quotation"
-        isProforma={true}
-        invoiceNumber={emailProforma?.proformaId}
-        contactEmail={emailContactEmail}
-        customerName={emailProforma?.customerName}
-        invoiceAttachments={emailProformaAttachments}
-        onClose={() => {
-          setEmailModalOpen(false);
-          setEmailProforma(null);
-          setEmailContactEmail(null);
-          setEmailProformaAttachments([]);
-        }}
       />
     </div>
   );
