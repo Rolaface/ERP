@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import type { Column } from "../../components/ui/Table/type";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
-import { Wallet, CheckSquare, Clock } from "lucide-react";
 import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 import {
   Wallet,
@@ -647,10 +646,9 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
             <DetailCell label="Currency" value={data?.currency} />
             <DetailCell label="Mode of Payment" value={data?.mode_of_payment} />
             <DetailCell label="Purpose" value={data?.purpose} />
-            <DetailCell label="Advance Account" value={getGLNameWithoutAbbreviation(data?.advance_account)} mono />          </div>
             <DetailCell
               label="Advance Account"
-              value={data?.advance_account}
+              value={getGLNameWithoutAbbreviation(data?.advance_account)}
               mono
             />
           </div>
