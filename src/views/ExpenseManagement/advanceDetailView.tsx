@@ -53,11 +53,11 @@ export interface EmployeeAdvanceDetail {
   pagination?: {
     page: number;
     page_size: number;
-    total_count: number;    
+    total_count: number;
     total_pages: number;
     has_next: boolean;
     has_prev: boolean;
-};
+  };
 }
 
 interface Props {
@@ -76,10 +76,10 @@ interface Props {
 const fmtDate = (d?: string) =>
   d
     ? new Date(d).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "—";
 
 const fmt = (n?: number, currency = "INR") => {
@@ -136,9 +136,8 @@ const StatCell: React.FC<StatCellProps> = ({
   highlight = false,
 }) => (
   <div
-    className={`flex flex-col justify-center gap-1.5 px-4 sm:px-6 py-4 min-w-[120px] sm:min-w-[148px] flex-shrink-0 ${
-      highlight ? "bg-danger/5" : ""
-    }`}
+    className={`flex flex-col justify-center gap-1.5 px-4 sm:px-6 py-4 min-w-[120px] sm:min-w-[148px] flex-shrink-0 ${highlight ? "bg-danger/5" : ""
+      }`}
   >
     <div className="flex items-center gap-1.5">
       {icon}
@@ -167,9 +166,8 @@ const DetailCell: React.FC<DetailCellProps> = ({ label, value, mono }) => (
       {label}
     </span>
     <span
-      className={`text-[11px] font-medium text-main text-center leading-snug break-all ${
-        mono ? "font-mono" : ""
-      }`}
+      className={`text-[11px] font-medium text-main text-center leading-snug break-all ${mono ? "font-mono" : ""
+        }`}
     >
       {value || "—"}
     </span>
@@ -277,6 +275,8 @@ interface AdvancePdfButtonProps {
   advanceName: string;
   fromDate?: string;
   toDate?: string;
+  page: number;
+  pageSize: number;
 }
 
 const AdvancePdfButton: React.FC<AdvancePdfButtonProps> = ({
@@ -284,6 +284,8 @@ const AdvancePdfButton: React.FC<AdvancePdfButtonProps> = ({
   advanceName,
   fromDate,
   toDate,
+  page,
+  pageSize,
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -301,7 +303,7 @@ const AdvancePdfButton: React.FC<AdvancePdfButtonProps> = ({
   // Invalidate cached blob whenever filters or id change
   useEffect(() => {
     cachedRef.current = null;
-  }, [advanceId, fromDate, toDate]);
+  }, [advanceId, fromDate, toDate, page, pageSize]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -326,6 +328,8 @@ const AdvancePdfButton: React.FC<AdvancePdfButtonProps> = ({
       const blob = await getAdvanceStatementPdf(advanceId, {
         from_date: fromDate,
         to_date: toDate,
+        page,
+        page_size: pageSize,
       });
       cachedRef.current = blob;
       return blob;
@@ -361,19 +365,19 @@ const AdvancePdfButton: React.FC<AdvancePdfButtonProps> = ({
     label: string;
     sub: string;
   }[] = [
-    {
-      action: "preview",
-      icon: <Eye className="w-3.5 h-3.5" />,
-      label: "Preview",
-      sub: "View in-app",
-    },
-    {
-      action: "download",
-      icon: <Download className="w-3.5 h-3.5" />,
-      label: "Download",
-      sub: "Save as PDF",
-    },
-  ];
+      {
+        action: "preview",
+        icon: <Eye className="w-3.5 h-3.5" />,
+        label: "Preview",
+        sub: "View in-app",
+      },
+      {
+        action: "download",
+        icon: <Download className="w-3.5 h-3.5" />,
+        label: "Download",
+        sub: "Save as PDF",
+      },
+    ];
 
   return (
     <>
@@ -390,9 +394,8 @@ const AdvancePdfButton: React.FC<AdvancePdfButtonProps> = ({
           )}
           <span>{loading ? "Generating…" : "PDF"}</span>
           <ChevronDown
-            className={`w-3 h-3 text-muted transition-transform duration-150 ${
-              open ? "rotate-180" : ""
-            }`}
+            className={`w-3 h-3 text-muted transition-transform duration-150 ${open ? "rotate-180" : ""
+              }`}
           />
         </button>
 
@@ -405,9 +408,8 @@ const AdvancePdfButton: React.FC<AdvancePdfButtonProps> = ({
               <button
                 key={action}
                 onClick={() => handleSelect(action)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-row-hover transition-colors group ${
-                  idx < items.length - 1 ? "border-b border-theme/50" : ""
-                }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-row-hover transition-colors group ${idx < items.length - 1 ? "border-b border-theme/50" : ""
+                  }`}
               >
                 <span className="text-muted group-hover:text-primary transition-colors">
                   {icon}
@@ -708,26 +710,28 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
                   advanceName={data.name}
                   fromDate={dateRange.from_date}
                   toDate={dateRange.to_date}
+                  page={data.pagination?.page ?? claimsPage}
+                  pageSize={data.pagination?.page_size ?? claimsPageSize}
                 />
               </div>
             </div>
 
             {/* Table */}
-             <div className="flex-1 min-h-0 overflow-auto">
-         <ModalTable<ExpenseClaimEntry>
-  columns={claimColumns}
-  data={claims}
-  rowKey={(ec) => ec.name}
-  emptyMessage="No expense claims yet"
-  totalItems={data.pagination?.total_count ?? claims.length}   
-  currentPage={data.pagination?.page ?? claimsPage}
-  totalPages={data.pagination?.total_pages ?? 1}
-  pageSize={data.pagination?.page_size ?? claimsPageSize}
-  pageSizeOptions={[7, 10, 20, 50]}
-  onPageChange={onClaimsPageChange}
-  onPageSizeChange={onClaimsPageSizeChange}
-  showToolbar={false}
-/>
+            <div className="flex-1 min-h-0 overflow-auto">
+              <ModalTable<ExpenseClaimEntry>
+                columns={claimColumns}
+                data={claims}
+                rowKey={(ec) => ec.name}
+                emptyMessage="No expense claims yet"
+                totalItems={data.pagination?.total_count ?? claims.length}
+                currentPage={data.pagination?.page ?? claimsPage}
+                totalPages={data.pagination?.total_pages ?? 1}
+                pageSize={data.pagination?.page_size ?? claimsPageSize}
+                pageSizeOptions={[7, 10, 20, 50]}
+                onPageChange={onClaimsPageChange}
+                onPageSizeChange={onClaimsPageSizeChange}
+                showToolbar={false}
+              />
             </div>
           </>
         )}
