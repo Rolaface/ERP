@@ -12,6 +12,7 @@ import {
 } from "../../api/expenseClaimApi";
 import { showApiError } from "../../utils/alert";
 import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
+import { cleanGLNameList } from "../../api/utils/glAccountUtils";
 const getCompanyFromStorage = (): string => {
   try {
     const raw = localStorage.getItem("company-info");
@@ -85,7 +86,7 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
 
   const fetchGLAccounts = useCallback(async (search: string) => {
     const results = await getExpenseGLAccounts(getCompanyFromStorage(), search);
-    return results;
+    return cleanGLNameList(results, "label");
   }, []);
 
   const validate = () => {
