@@ -17,7 +17,7 @@ import {
   type CreateEmployeeAdvancePayload,
 } from "../../api/expenseClaimApi";
 
-import { cleanGLNameList } from "../../api/utils/glAccountUtils";
+import { cleanGLNameList ,getGLNameWithoutAbbreviation} from "../../api/utils/glAccountUtils";
 export interface EmployeeAdvanceFormData {
   id?: string;
   posting_date: string;
@@ -67,20 +67,24 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [employeeDisplayName, setEmployeeDisplayName] = useState("");
-
+  const [advanceAccountDisplay, setAdvanceAccountDisplay] = useState("");
   useEffect(() => {
     if (isOpen) {
       const data = modal?.initialData as EmployeeAdvanceFormData | undefined;
       setForm(data ?? defaultForm);
       setErrors({});
       setEmployeeDisplayName(data?.employee_name ?? data?.employee ?? "");
+      setAdvanceAccountDisplay(getGLNameWithoutAbbreviation(data?.advance_account ?? ""));  // add this
+
     }
+
   }, [isOpen]);
 
   const reset = () => {
     setForm(defaultForm);
     setErrors({});
     setEmployeeDisplayName("");
+    setAdvanceAccountDisplay("")
     resetDirty();
   };
 
@@ -247,15 +251,10 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
                 required
                 value={employeeDisplayName}
                 onChange={(val, option) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    employee: val || "",
-                    employee_name: option?.label || "",
-                  }));
+                  setForm((prev) => ({ ...prev, employee: val || "", employee_name: option?.label || "" }));
                   setEmployeeDisplayName(option?.label || "");
                   markDirty();
-                  if (errors.employee)
-                    setErrors((prev) => ({ ...prev, employee: "" }));
+                  if (errors.employee) setErrors((prev) => ({ ...prev, employee: "" }));
                 }}
                 fetchOptions={fetchEmployees}
                 placeholder="Select the employee"
@@ -294,11 +293,11 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
               <SearchSelect2
                 label="Advance Account"
                 required
-                value={form.advance_account}
-                onChange={(val) => {
+                value={advanceAccountDisplay}
+                onChange={(val, option) => {
                   setForm((prev) => ({ ...prev, advance_account: val || "" }));
-                  if (errors.advance_account)
-                    setErrors((prev) => ({ ...prev, advance_account: "" }));
+                  setAdvanceAccountDisplay(getGLNameWithoutAbbreviation(option?.label || val || ""));
+                  if (errors.advance_account) setErrors((prev) => ({ ...prev, advance_account: "" }));
                   markDirty();
                 }}
                 fetchOptions={fetchAdvanceAccounts}
