@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { useEditor, EditorContent, Node, mergeAttributes } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
 
@@ -293,7 +292,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder }),
       VariableNode,
@@ -301,6 +299,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     ],
     content: parseStoredHTML(value),
     onUpdate({ editor }) {
+      if (editor.isDestroyed) return;
       const rawHTML = serializeToStorageHTML(editor.getHTML());
       onChange(rawHTML);
     },
@@ -308,14 +307,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // Notify parent once editor is ready so it can hold the instance ref.
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     onEditorReady?.(editor);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
 
   // Sync external value reset (e.g. when modal reopens with DEFAULT_FORM).
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     const currentRaw = serializeToStorageHTML(editor.getHTML());
     if (currentRaw !== value) {
       editor.commands.setContent(parseStoredHTML(value), false);
@@ -323,7 +322,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }, [value, editor]);
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     editor.setEditable(editable);
   }, [editable, editor]);
 
