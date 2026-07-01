@@ -14,12 +14,12 @@ initTheme();
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <BrowserRouter>
+      {/* <BrowserRouter> */}
 
         <App />
         <Toaster position="top-right" richColors />
 
-      </BrowserRouter>
+      {/* </BrowserRouter> */}
     </LocalizationProvider>
   </StrictMode>,
 );
