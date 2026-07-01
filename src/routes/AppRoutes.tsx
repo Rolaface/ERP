@@ -5,7 +5,8 @@ import {
   createBrowserRouter, 
   createRoutesFromElements, 
   RouterProvider,
-  Outlet
+  Outlet,
+  useRouteError
 } from "react-router-dom";
 
 // ── Context & Bootstraps ──
@@ -74,105 +75,105 @@ const DashboardRedirect: React.FC = () => {
   return <Dashboard />;
 };
 
+ const RELOAD_FLAG = "chunk-reload-attempted";
+
+const GlobalErrorBoundary: React.FC = () => {
+  const error = useRouteError() as Error;
+  
+  const isChunkLoadError =
+    error?.message?.includes("Failed to fetch dynamically imported module") ||
+    error?.message?.includes("Importing a module script failed") ||
+    error?.message?.includes("error loading dynamically imported module");
+
+  if (isChunkLoadError) {
+    const alreadyTried = sessionStorage.getItem(RELOAD_FLAG);
+    
+    if (!alreadyTried) {
+      sessionStorage.setItem(RELOAD_FLAG, "1");
+      window.location.reload();
+      return (
+        <div className="flex h-screen w-full items-center justify-center bg-background text-main">
+          <p>Updating application to the latest version...</p>
+        </div>
+      );
+    }
+    
+     sessionStorage.removeItem(RELOAD_FLAG);
+    return (
+      <div className="flex flex-col h-screen w-full items-center justify-center bg-background p-4 text-center">
+        <h1 className="text-2xl font-bold text-main mb-2">Update in progress</h1>
+        <p className="text-muted max-w-md mb-6">
+          We're deploying a new version. Please try again in a moment.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-5 py-2.5 rounded-lg bg-primary text-white"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+   return (
+    <div className="flex flex-col h-screen w-full items-center justify-center bg-background p-4 text-center">
+      <h1 className="text-2xl font-bold text-main mb-2">Oops! Something went wrong.</h1>
+      <p className="text-muted max-w-md mb-6">We encountered an unexpected error.</p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-5 py-2.5 rounded-lg bg-primary text-white"
+      >
+        Refresh Page
+      </button>
+    </div>
+  );
+};
+
+// ── Root Layout ──
 const RootLayout = () => {
   return (
     <AuthProvider>
       <PermissionBootstrap />
       <CompanyDefaultsBootstrap />
       <CurrencyBootstrap />
-      <Outlet /> 
+      <Outlet />
     </AuthProvider>
   );
 };
 
-// ── Router Configuration ──
-const router = createBrowserRouter(
+ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route element={<RootLayout />}>
-      {/* ── Public Routes ── */}
-      <Route
-        path="/"
-        element={isMasterSite() ? <LandingPage /> : <Navigate to="/login" replace />}
-      />
-      <Route
-        path="/signup"
-        element={isMasterSite() ? <SignupPage /> : <Navigate to="/" replace />}
-      />
-      <Route path="/login" element={<Login />} />
-      <Route path="/update-password" element={<ResetPassword />} />
+       <Route errorElement={<GlobalErrorBoundary />}>
+        {/* ── Public Routes ── */}
+        <Route path="/" element={isMasterSite() ? <LandingPage /> : <Navigate to="/login" replace />} />
+        <Route path="/signup" element={isMasterSite() ? <SignupPage /> : <Navigate to="/" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/update-password" element={<ResetPassword />} />
 
-      {/* ── Protected Routes ── */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<DashboardRedirect />} />
-
-          <Route path="/sales" element={
-            <PermissionRoute modules={["Sales Invoice"]}><SalesModule /></PermissionRoute>
-          } />
-
-          <Route path="/crm" element={
-            <PermissionRoute modules={["Customer", "Payment Entry", "Customer Group"]}><CrmModule /></PermissionRoute>
-          } />
-
-          <Route path="/procurement" element={
-            <PermissionRoute modules={["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice", "Payment Entry"]}><ProcurementModule /></PermissionRoute>
-          } />
-
-          <Route path="/inventory/*" element={
-            <PermissionRoute modules={["Item", "Item Group", "Warehouse", "Stock Entry"]}><InventoryModule /></PermissionRoute>
-          } />
-
-          <Route path="/accounting" element={
-            <PermissionRoute modules={["GL Entry", "Journal Entry"]}><AccountingModule /></PermissionRoute>
-          } />
-
-          <Route path="/fasset" element={
-            <PermissionRoute modules={["Asset Category", "Asset", "Asset Movement"]}><FixedAssets /></PermissionRoute>
-          } />
-
-          <Route path="/hr/*" element={
-            <PermissionRoute modules={["Employee", "Payroll Entry"]}><HrPayrollModule /></PermissionRoute>
-          } />
-
-          <Route path="/ledger" element={
-            <PermissionRoute modules={["GL Entry", "Journal Entry"]}><GLView /></PermissionRoute>
-          } />
-
-          <Route path="/settings" element={<Settings />} />
-
-          <Route path="/companySetup/*" element={
-            <PermissionRoute modules={["Company"]}><CompanySetup /></PermissionRoute>
-          } />
-
-          <Route path="/userManagement" element={
-            <PermissionRoute modules={["User"]}><UserManagement /></PermissionRoute>
-          } />
-
-          <Route path="/bank-management" element={
-            <PermissionRoute modules={["Bank", "Bank Account", "Mode of Payment", "Currency Exchange"]}><BankModule /></PermissionRoute>
-          } />
-
-          <Route path="/Tax-Maintenance" element={
-            <PermissionRoute modules={["Item Tax Template", "Tax Category", "Sales Taxes and Charges Template"]}><TaxMaintenance /></PermissionRoute>
-          } />
-          
-          <Route path="/Expense-Management" element={
-            <PermissionRoute modules={["Expense Claim", "Expense Claim Type", "Employee Advance"]}><ExpenseManagement /></PermissionRoute>
-          } />
-          
-          <Route path="/Email-Template" element={
-            <PermissionRoute modules={["Email Template"]}><EmailTemplate /></PermissionRoute>
-          } />
-          
-          <Route path="/performance" element={
-            <PermissionRoute modules={["Appraisal"]}><Performance /></PermissionRoute>
-          } />
-          
-          <Route path="/scheduler" element={
-            <PermissionRoute modules={["Scheduler"]}><Scheduler/></PermissionRoute>
-          } />
-
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* ── Protected Routes ── */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardRedirect />} />
+            <Route path="/sales" element={<PermissionRoute modules={["Sales Invoice"]}><SalesModule /></PermissionRoute>} />
+            <Route path="/crm" element={<PermissionRoute modules={["Customer", "Payment Entry", "Customer Group"]}><CrmModule /></PermissionRoute>} />
+            <Route path="/procurement" element={<PermissionRoute modules={["Supplier", "Request For Quotation", "Purchase Order", "Purchase Invoice", "Payment Entry"]}><ProcurementModule /></PermissionRoute>} />
+            <Route path="/inventory/*" element={<PermissionRoute modules={["Item", "Item Group", "Warehouse", "Stock Entry"]}><InventoryModule /></PermissionRoute>} />
+            <Route path="/accounting" element={<PermissionRoute modules={["GL Entry", "Journal Entry"]}><AccountingModule /></PermissionRoute>} />
+            <Route path="/fasset" element={<PermissionRoute modules={["Asset Category", "Asset", "Asset Movement"]}><FixedAssets /></PermissionRoute>} />
+            <Route path="/hr/*" element={<PermissionRoute modules={["Employee", "Payroll Entry"]}><HrPayrollModule /></PermissionRoute>} />
+            <Route path="/ledger" element={<PermissionRoute modules={["GL Entry", "Journal Entry"]}><GLView /></PermissionRoute>} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/companySetup/*" element={<PermissionRoute modules={["Company"]}><CompanySetup /></PermissionRoute>} />
+            <Route path="/userManagement" element={<PermissionRoute modules={["User"]}><UserManagement /></PermissionRoute>} />
+            <Route path="/bank-management" element={<PermissionRoute modules={["Bank", "Bank Account", "Mode of Payment", "Currency Exchange"]}><BankModule /></PermissionRoute>} />
+            <Route path="/Tax-Maintenance" element={<PermissionRoute modules={["Item Tax Template", "Tax Category", "Sales Taxes and Charges Template"]}><TaxMaintenance /></PermissionRoute>} />
+            <Route path="/Expense-Management" element={<PermissionRoute modules={["Expense Claim", "Expense Claim Type", "Employee Advance"]}><ExpenseManagement /></PermissionRoute>} />
+            <Route path="/Email-Template" element={<PermissionRoute modules={["Email Template"]}><EmailTemplate /></PermissionRoute>} />
+            <Route path="/performance" element={<PermissionRoute modules={["Appraisal"]}><Performance /></PermissionRoute>} />
+            <Route path="/scheduler" element={<PermissionRoute modules={["Scheduler"]}><Scheduler/></PermissionRoute>} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Route>
         </Route>
       </Route>
     </Route>
@@ -181,6 +182,9 @@ const router = createBrowserRouter(
 
 // ── Main Render ──
 const AppRoutes: React.FC = () => {
+  React.useEffect(() => {
+    sessionStorage.removeItem(RELOAD_FLAG);
+  }, []);
   return (
     <>
       <Toaster position="top-right" />
