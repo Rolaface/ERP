@@ -12,20 +12,15 @@ import PaymentInfoBlock from "./PaymentInfoBlock";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { getAllCustomers } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";
+import ModeOfPaymentSelect from "../selects/defaults/Modeofpaymentselect";
 import {
   createProformaInvoice,
   editProformaInvoice,
 } from "../../api/proformaInvoiceApi";
-// import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import { useProformaInvoiceForm } from "../../hooks/useProformaInvoiceForm";
-
-import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import DatePickerInput from "../calendar/DatePickerInput";
 import ItemTable from "../common/ItemTable";
-import {
-  invoiceStatusOptions,
-  paymentMethodOptions,
-} from "../../constants/invoice.constants";
+import { paymentMethodOptions } from "../../constants/invoice.constants";
 import type { ModalSubmitHandler } from "../../types/modal";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
@@ -34,8 +29,8 @@ import {
   useDataRefreshStore,
   REFRESH_KEYS,
 } from "../../store/dataRefreshStore";
-import SearchSelect2 from "../ui/modal/SearchSelect2";
-import { getAllModeOfPayment } from "../../api/BankAccountApi";
+
+import { useDefault } from "../../hooks/usedefaultdata";
 interface ProformaInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -68,8 +63,24 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
         : `proforma-create-${Date.now()}`),
   );
   const [submitting, setSubmitting] = useState(false);
+  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
+    "Product",
+  );
 
-  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+  const domain = useDefault("primary_business_domain");
+  console.log("Domain ", domain);
+
+  useEffect(() => {
+    if (mode === "edit" && initialData?.items?.length > 0) {
+      // Check if the first item (or any item) is a service
+      const isService = initialData.items[0]?.isServiceItem;
+      setInvoiceType(isService ? "Service" : "Product");
+    } else if (mode === "create") {
+      // Default to company domain for new invoices (fallback to Product)
+      setInvoiceType(domain === "Service" ? "Service" : "Product");
+    }
+  }, [initialData, mode, isOpen, domain]);
+
   const {
     formData,
     customerDetails,
@@ -78,6 +89,8 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     totals,
     ui,
     actions,
+    resetDirty,
+    handleCloseWithConfirm,
   } = useProformaInvoiceForm(
     isOpen,
     onClose,
@@ -121,20 +134,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     }
   };
 
-  const handleModeFetchOptions = async (q: string) => {
-    const res = await getAllModeOfPayment(1, 10, q || "", 1);
-    return res.data.map((item: any) => ({
-      label: item.name,
-      value: item.name,
-      meta: item,
-    }));
-  };
 
-  const handleModeChange = (_: string, option: any) => {
-    actions.handleInputChange({
-      target: { name: "payment_mode", value: option?.value || "" },
-    } as any);
-  };
 
   const handleSave = async () => {
     if (!validateDetailsOrFocus()) return;
@@ -266,7 +266,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       <form
         id="proforma-form"
         onSubmit={handleFormSubmit}
-        onChange={() => markDirty()}
         className="h-full flex flex-col"
       >
         {/* Tabs */}
@@ -362,28 +361,90 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   </div>
                 )}
                 <div className="w-full sm:w-[200px]">
-                  <SearchSelect2
-                    label="Mode of Payment"
+                  <ModeOfPaymentSelect
                     value={formData.payment_mode ?? ""}
-                    onChange={handleModeChange}
-                    fetchOptions={handleModeFetchOptions}
-                    placeholder="search mode of payment"
-                    // required
+                    onChange={(val) =>
+                      actions.handleInputChange({
+                        target: { name: "payment_mode", value: val },
+                      } as any)
+                    }
                   />
                 </div>
 
-                {ui.isLocal && (
-                  <ModalInput
-                    label="LPO Number"
-                    name="lpoNumber"
-                    value={formData.lpoNumber}
-                    onChange={actions.handleInputChange}
-                    inputMode="numeric"
-                    pattern="\d{10}"
-                    placeholder="Enter 10 digits"
-                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                )}
+                {/* Invoice Type */}
+                {/* <div className="w-full sm:w-auto flex flex-col justify-end">
+                 <label className="text-[11px] text-muted mb-1">Invoice Type</label>
+                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[27px]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Product"
+                      checked={invoiceType === "Product"}
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Product</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Service"
+                      checked={invoiceType === "Service"}
+                      onChange={(e: any) => setInvoiceType(e.target.value)}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Service</span>
+                  </label>
+                </div>
+              </div> */}
+                {/* Invoice Type */}
+                <div className="w-full sm:w-auto flex flex-col justify-end">
+                  <label className="text-[11px] text-muted mb-1">
+                    Invoice Type
+                  </label>
+                  <div className="flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max">
+                    <label
+                      className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
+                        invoiceType === "Product"
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-muted hover:text-main bg-transparent"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="invoiceType"
+                        value="Product"
+                        checked={invoiceType === "Product"}
+                        // Keep whatever onChange logic you had here (including the updateStock logic from earlier if you used it)
+                        onChange={(e: any) => setInvoiceType(e.target.value)}
+                        className="hidden"
+                      />
+                      Product
+                    </label>
+
+                    <label
+                      className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
+                        invoiceType === "Service"
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-muted hover:text-main bg-transparent"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="invoiceType"
+                        value="Service"
+                        checked={invoiceType === "Service"}
+                        // Keep whatever onChange logic you had here
+                        onChange={(e: any) => setInvoiceType(e.target.value)}
+                        className="hidden"
+                      />
+                      Service
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* ITEMS + SUMMARY */}
@@ -397,6 +458,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                     formData={formData}
                     symbol={symbol}
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
+                    invoiceType={invoiceType}
                     isSalesInvoice={false}
                     taxCategory={
                       formData.taxCategory ||

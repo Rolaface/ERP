@@ -7,8 +7,11 @@ import {
   Repeat,
   Layers,
   FileText,
-  UploadCloud, Hash
+  UploadCloud,
+  Hash,
+  Sliders
 } from "lucide-react";
+import { useCompanyStore } from "../../store/companyStore";
 import {
   AppPage,
   AppPageBody,
@@ -23,6 +26,7 @@ import SubscribedModules from "./subscribedmodule";
 import BankDetails from "./BankDetails";
 import Upload from "./upload";
 import NamingSeries from "./NamingSeries";
+import CompanyDefaults from "./CompanyDefaults";
 import Templates from "./Templates";
 import type {
   CompanyDocuments,
@@ -37,6 +41,7 @@ import type {
 } from "../../types/company";
 import { getCompanyById } from "../../api/companySetupApi";
 import type { Terms } from "../../types/termsAndCondition";
+import { showConfirm } from "../../utils/alert";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID as string;
 const BASE = "/companySetup";
@@ -48,47 +53,15 @@ const iconProps = {
 };
 
 const navTabs = [
-  {
-    id: "basic",
-    label: "Basic Details",
-    icon: <IdCard {...iconProps} />,
-  },
-  {
-    id: "bank",
-    label: "Bank Details",
-    icon: <Landmark {...iconProps} />,
-  },
-  {
-    id: "accounting",
-    label: "Accounting Details",
-    icon: <Wallet {...iconProps} />,
-  },
-  {
-    id: "buyingSelling",
-    label: "Buying & Selling",
-    icon: <Repeat {...iconProps} />,
-  },
-  {
-    id: "subscribed",
-    label: "Subscription",
-    icon: <Layers {...iconProps} />,
-  },
-  {
-    id: "Templates",
-    label: "Templates",
-    icon: <FileText {...iconProps} />,
-  },
-  {
-    id: "logo",
-    label: "Logo & Signature",
-    icon: <UploadCloud {...iconProps} />,
-  },
-  {
-    id: "naming",
-    label: "Naming Series",
-    icon: <Hash {...iconProps} />,
-  },
-
+  { id: "basic", label: "Basic Details", icon: <IdCard {...iconProps} /> },
+  { id: "bank", label: "Bank Details", icon: <Landmark {...iconProps} /> },
+  { id: "accounting", label: "Accounting Details", icon: <Wallet {...iconProps} /> },
+  { id: "buyingSelling", label: "Buying & Selling", icon: <Repeat {...iconProps} /> },
+  { id: "subscribed", label: "Subscription", icon: <Layers {...iconProps} /> },
+  { id: "Templates", label: "Templates", icon: <FileText {...iconProps} /> },
+  { id: "logo", label: "Logo & Signature", icon: <UploadCloud {...iconProps} /> },
+  { id: "naming", label: "Naming Series", icon: <Hash {...iconProps} /> },
+  { id: "defaults", label: "Company Defaults", icon: <Sliders {...iconProps} /> },
 ];
 
 const CompanySetup: React.FC = () => {
@@ -100,17 +73,18 @@ const CompanySetup: React.FC = () => {
   });
 
   const isBasicTab = activeTab === DEFAULT_TAB;
-
-  // ── Data state (unchanged from original)
+  // const [isDirty, setIsDirty] = useState(false);
+  const [unsavedFields, setUnsavedFields] = useState<string[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [financialConfig, setFinancialConfig] = useState<FinancialConfig>();
+
   const [terms, setTerms] = useState<Terms>();
-  const [companyDetail, setCompanyDetail] = useState<Company | null>(null);
-  const [modules, setModules] = useState<ModuleSubscriptions | null>(null);
+  const [, setCompanyDetail] = useState<Company | null>(null);
+  const [, setModules] = useState<ModuleSubscriptions | null>(null);
   const [accountingSetup, setAccountingSetup] = useState<AccountingSetup | null>(null);
   const [companytemplates, setCompanyTemplates] = useState<CompanyTemplates | null>(null);
-  const [companyDocuments, setCompanyDocuments] = useState<CompanyDocuments | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setCompanyDocuments] = useState<CompanyDocuments | null>(null);
+  const [, setLoading] = useState(true);
   const [basicDetail, setBasicDetail] = useState<BasicDetailsForm>({
     registration: {
       registerNo: "",
@@ -120,6 +94,8 @@ const CompanySetup: React.FC = () => {
       companyType: "",
       companyStatus: "",
       industryType: "",
+      domain: "",
+      defaultModeOfPayment: "",
     },
     contact: {
       companyEmail: "",
@@ -142,6 +118,49 @@ const CompanySetup: React.FC = () => {
     },
   });
 
+  // const handleTabClick = async (newTabId: string) => {
+  //   if (newTabId === activeTab) return;
+
+  //   if (isDirty) {
+  //     const isConfirmed = await showConfirm(
+  //       "You have unsaved changes left. Do you want to discard them and switch tabs?",
+  //       {
+  //         title: "Warning",
+  //         confirmButtonText: "Discard & Leave",
+  //         confirmButtonColor: "#ef4444",
+  //         cancelButtonText: "Stay",
+  //       }
+  //     );
+      
+  //     if (!isConfirmed) return;  
+  //     setIsDirty(false); 
+  //   }
+    
+  //   handleTabChange(newTabId);
+  // };
+  const handleTabClick = async (newTabId: string) => {
+    if (newTabId === activeTab) return;
+
+    if (unsavedFields.length > 0) {
+      const fieldNames = unsavedFields.join(", ");  
+      
+      const isConfirmed = await showConfirm(
+        `You have unsaved changes on: ${fieldNames}. Do you want to discard them and switch tabs?`,
+        {
+          title: "Warning",
+          confirmButtonText: "Discard & Leave",
+          confirmButtonColor: "#ef4444",
+          cancelButtonText: "Stay",
+        }
+      );
+      
+      if (!isConfirmed) return; 
+      setUnsavedFields([]); // Reset since they are leaving
+    }
+    
+    handleTabChange(newTabId);
+  };
+
   const fetchCompanyDetail = useCallback(async () => {
     try {
       setLoading(true);
@@ -156,6 +175,8 @@ const CompanySetup: React.FC = () => {
         companyType: response.data.companyType ?? "",
         companyStatus: response.data.companyStatus ?? "",
         industryType: response.data.industryType ?? "",
+        domain: response.data.primaryBusinessDomain ?? "",
+        defaultModeOfPayment: response.data.defaultPaymentMode ?? "",
       };
 
       setAccountingSetup(
@@ -168,13 +189,23 @@ const CompanySetup: React.FC = () => {
           roundOffCostCenter: "CC-001-MAIN",
           depreciationAccount: "5100-DEPRECIATION",
           appreciationAccount: "5200-ASSET-APPRECIATION",
-        }
+        },
       );
 
       setBasicDetail({
         registration: registrationDetails,
         contact: response.data.contactInfo,
         address: response.data.address,
+      });
+
+  
+      useCompanyStore.getState().setCompanyInfo({
+        companyName: response.data.companyName ?? "",
+        baseCurrency: response.data.baseCurrency ?? "",
+        domain: response.data.primaryBusinessDomain ?? "",
+        industryType: response.data.industryType ?? "",
+        currencySymbol: response.data.currencySymbol ?? response.data.baseCurrency ?? "",
+        companyAddress: response.data.address ?? {},
       });
 
       setBankAccounts(response.data.bankAccounts ?? []);
@@ -188,58 +219,75 @@ const CompanySetup: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // ✅ dependency array bhi clean — setCompanyInfo nahi hai ab
 
   useEffect(() => {
     fetchCompanyDetail();
   }, [fetchCompanyDetail]);
 
-  // ── Stable tab components — no remount on tab switch (same pattern as Inventory)
-  const tabComponents = useMemo(() => ({
-    basic: (
-      <BasicDetails
-        basic={basicDetail}
-        onSaveSuccess={fetchCompanyDetail}
-        terms={terms}
-      />
-    ),
-    bank: (
-      <BankDetails
-        bankAccounts={bankAccounts}
-        setBankAccounts={setBankAccounts}
-        terms={terms}
-      />
-    ),
-    accounting: (
-      <AccountingDetails
-        financialConfig={financialConfig}
-        accountingSetup={accountingSetup}
-        terms={terms}
-      />
-    ),
-    buyingSelling: (
-      <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
-    ),
-    naming: (
-      <NamingSeries onSaveSuccess={fetchCompanyDetail} />
-    ),
-    subscribed: <SubscribedModules />,
-    Templates: <Templates templates={companytemplates} />,
-    logo: (
-      <Upload
-        COMPANY_ID={COMPANY_ID}
-        onUploadSuccess={fetchCompanyDetail}
-      />
-    ),
-  }), [
-    basicDetail,
-    bankAccounts,
-    financialConfig,
-    accountingSetup,
-    companytemplates,
-    terms,
-    fetchCompanyDetail,
-  ]);
+  const tabComponents = useMemo(
+    () => ({
+      basic: (
+        <BasicDetails
+          basic={basicDetail}
+          // onSaveSuccess={
+          onSaveSuccess={() => {
+            setUnsavedFields([]);
+            fetchCompanyDetail
+          }}
+          terms={terms}
+          setUnsavedFields={setUnsavedFields}
+        />
+      ),
+      bank: (
+        <BankDetails
+          bankAccounts={bankAccounts}
+          setBankAccounts={setBankAccounts}
+          terms={terms}
+        />
+      ),
+      accounting: (
+        <AccountingDetails
+          financialConfig={financialConfig}
+          accountingSetup={accountingSetup}
+          terms={terms}
+        />
+      ),
+      // buyingSelling: (
+      //   <BuyingSelling terms={terms} onSaveSuccess={fetchCompanyDetail} />
+      // ),
+      buyingSelling: (
+        <BuyingSelling 
+          terms={terms} 
+          onSaveSuccess={() => {
+            setUnsavedFields([]);  
+            fetchCompanyDetail();
+          }} 
+          setUnsavedFields={setUnsavedFields}  
+        />
+      ),
+      naming: <NamingSeries onSaveSuccess={fetchCompanyDetail} />,
+      defaults: (
+        <CompanyDefaults
+          onSaveSuccess={fetchCompanyDetail}
+        />
+      ),
+      subscribed: <SubscribedModules />,
+      Templates: <Templates templates={companytemplates} />,
+      logo: (
+        <Upload COMPANY_ID={COMPANY_ID} onUploadSuccess={fetchCompanyDetail} />
+      ),
+    }),
+    [
+      basicDetail,
+      bankAccounts,
+      financialConfig,
+      accountingSetup,
+      companytemplates,
+      terms,
+      fetchCompanyDetail,
+    ],
+  );
 
   const currentTabComponent =
     tabComponents[activeTab as keyof typeof tabComponents] ??
@@ -247,18 +295,10 @@ const CompanySetup: React.FC = () => {
 
   return (
     <AppPage viewportLocked={isBasicTab}>
-      <AppPageHeader
-        title="Company Setup"
-        icon={<Building2 />}
-      />
-      <AppTabs
-        tabs={navTabs}
-        activeTab={activeTab}
-        onChange={handleTabChange}
-      />
-      <AppPageBody viewportLocked={isBasicTab}>
-        {currentTabComponent}
-      </AppPageBody>
+      <AppPageHeader title="Company Setup" icon={<Building2 />} />
+      {/* <AppTabs tabs={navTabs} activeTab={activeTab} onChange={handleTabChange} /> */}
+      <AppTabs tabs={navTabs} activeTab={activeTab} onChange={handleTabClick} />
+      <AppPageBody>{currentTabComponent}</AppPageBody>
     </AppPage>
   );
 };

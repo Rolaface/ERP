@@ -107,7 +107,8 @@ export const REFRESH_KEYS = {
   APPRAISAL_CYCLE_LIST: "appraisal_cycle_list",
   APPRAISAL_LIST: "appraisal_list",
   FEEDBACK_LIST:  "feedback_list",
-  NAMING_SERIES: "naming_series"
+  NAMING_SERIES: "naming_series",
+  COMPANY_DEFAULTS: "company_defaults",
 
 } as const;
 

@@ -1,13 +1,19 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+
+  useMemo,
+} from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   showApiError,
   showSuccess,
   showLoading,
   closeSwal,
-  showConfirm
+  showConfirm,
 } from "../../utils/alert";
 import { getCompanyById } from "../../api/companySetupApi";
+import { openSendEmailModal } from "../../store/modalStore";
 import type { QuotationSummary } from "../../types/quotation";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -17,22 +23,27 @@ import ActionButton, {
 import type { Column } from "../../components/ui/Table/type";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { generateQuotationPDF } from "../../components/template/quotation/QuotationTemplate1";
+
 import PdfPreviewModal from "./PdfPreviewModal";
-import { deleteQuotationById } from "../../api/quotationApi";
+
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import QuotationDetailModal, { QuotationDetail } from "./Quotationdetailmodal";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-import { deleteProformaInvoiceById, getAllQuotation, getProformaInvoiceById, updateProformaInvoiceStatus } from "../../api/proformaInvoiceApi";
-import { ProformaInvoice, ProformaInvoiceStatus, ProformaInvoiceSummary } from "../../types/proformaInvoice";
+import {
+  deleteProformaInvoiceById,
+  getAllQuotation,
+  getProformaInvoiceById,
+  updateProformaInvoiceStatus,
+} from "../../api/proformaInvoiceApi";
+
 import { getPdf } from "../../api/PDF/pdfUtilApi";
 import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
-import SendEmailModal from "../../components/common/SendEmailModal";
 import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/statusActionIcons";
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
-import { getCurrencySymbol } from "../../utils/currency";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
@@ -52,10 +63,9 @@ const SORT_FIELD_MAP: Record<string, string> = {
 interface QuotationTableProps {
   onAddQuotation?: () => void;
   onExportQuotation?: () => void;
-   refreshKey: number;
+  refreshKey: number;
 }
- const QUOTATION_MODULE = "Quotation";
- 
+const QUOTATION_MODULE = "Quotation";
 
 type QuotationStatus = "Draft" | "Paid" | "Cancelled" | "Approved" | "Open";
 
@@ -68,30 +78,35 @@ const STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
   Approved: ["Cancelled"],
 };
 
-const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refreshKey }) => {
+const QuotationsTable: React.FC<QuotationTableProps> = ({
+  onAddQuotation,
+  refreshKey,
+}) => {
   const { openQuotationEdit } = useOutletContext<OutletContextType>();
 
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
-  const [company, setCompany] = useState<any>(null);
+  const [isFetching] = useState(false);
+  const [ ,setCompany] = useState<any>(null);
   const { can } = usePermission();
 
-  // ── Pagination state (server) 
+  // ── Pagination state (server)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // ── Search state (server) 
+  // ── Search state (server)
   const [searchTerm, setSearchTerm] = useState("");
 
   const [sortBy, setSortBy] = useState("quotationNumber");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // ── Reset page when search changes 
-  useEffect(() => { setPage(1); }, [searchTerm]);
+  // ── Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
   //_____quotation details modal state _____
-  const [selectedQuotation, setSelectedQuotation] = useState<any>(null);
+  const [ ,setSelectedQuotation] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
 
@@ -105,21 +120,19 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
   const [previewPdfBlob, setPreviewPdfBlob] = useState<Blob | null>(null);
   const [previewPdfId, setPreviewPdfId] = useState<string | null>(null);
 
-    const [loading, setLoading] = useState(true);
-    const [initialLoad, setInitialLoad] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
 
-  //email
-     const [emailModalOpen, setEmailModalOpen] = useState(false);
-      // const [emailQuotation, setEmailQuotation] = useState<ProformaInvoiceSummary | null>(null);
-      const [emailQuotation, setEmailQuotation] = useState<QuotationSummary | null>(null);
-      const [emailContactEmail, setEmailContactEmail] = useState<string | null>(
-        null,
-      );
-      const [emailQuotationAttachments, setEmailQuotationAttachments] = useState<
-        { name: string; file_name: string }[]
-      >([]);
 
-  // ── Fetch company once 
+  // ── Currency symbols + per-currency number formatting for the currencies
+  // present in the currently loaded page of quotations.
+  const currencyCodes = useMemo(
+    () => extractCurrencyCodesFlat(quotations),
+    [quotations],
+  );
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+
+  // ── Fetch company once
   useEffect(() => {
     getCompanyById(COMPANY_ID)
       .then((res) => {
@@ -128,8 +141,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
       .catch(() => console.error("Failed to load company data"));
   }, []);
 
-
- // ── Fetch Quotations ────────────────────────────────────────────────────────
+  // ── Fetch Quotations ────────────────────────────────────────────────────────
   const fetchQuotations = async () => {
     try {
       setLoading(true);
@@ -137,9 +149,9 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
       const res = await getAllQuotation(
         page,
         pageSize,
-        SORT_FIELD_MAP[sortBy] || sortBy, 
+        SORT_FIELD_MAP[sortBy] || sortBy,
         sortOrder,
-        searchTerm, 
+        searchTerm,
       );
 
       if (!res || res.status_code !== 200) return;
@@ -168,7 +180,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
     fetchQuotations();
   }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm]);
 
-// Auto-refresh when a quotation is created or edited
+  // Auto-refresh when a quotation is created or edited
   useEffect(() => {
     const unsubscribe = useDataRefreshStore
       .getState()
@@ -176,7 +188,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
         fetchQuotations();
       });
     return unsubscribe;
-  }, []); 
+  }, []);
 
   // ── Sort handler — store column key in state, map to backend at call site ─
   const handleSortChange = ({
@@ -186,16 +198,27 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
     sortBy: string;
     sortOrder: "asc" | "desc";
   }) => {
-    setSortBy(colKey);   // ← always the column key e.g. "quotationNumber"
+    setSortBy(colKey); // ← always the column key e.g. "quotationNumber"
     setSortOrder(order);
     setPage(1);
   };
-  
+
   const formatDate = (date: string | Date) => {
     if (!date) return "";
 
     const months = [
-      "JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC",
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
     ];
 
     if (typeof date === "string") {
@@ -209,19 +232,19 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
 
   const handleRowStatusChange = async (
     quotationNumber: string,
-    newStatus: QuotationStatus
+    newStatus: QuotationStatus,
   ) => {
-    if(newStatus === "Cancelled") {
-    const isConfirmed = await showConfirm(
-          `Are you sure you want to cancel entry ${quotationNumber}?`,
-          {
-            title: "Cancel Entry",
-            confirmButtonText: "Yes, Cancel",
-            confirmButtonColor: "#ef4444",
-            cancelButtonText: "No, Keep",
-          }
-        );
-        if (!isConfirmed) return;
+    if (newStatus === "Cancelled") {
+      const isConfirmed = await showConfirm(
+        `Are you sure you want to cancel entry ${quotationNumber}?`,
+        {
+          title: "Cancel Entry",
+          confirmButtonText: "Yes, Cancel",
+          confirmButtonColor: "#ef4444",
+          cancelButtonText: "No, Keep",
+        },
+      );
+      if (!isConfirmed) return;
     }
 
     try {
@@ -235,7 +258,9 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
       if (statusCode !== 200) {
         closeSwal();
         // FIX: Safely extract the message text
-        showApiError(res?.message?.message || res?.message || "Failed to update status");
+        showApiError(
+          res?.message?.message || res?.message || "Failed to update status",
+        );
         return;
       }
 
@@ -245,8 +270,8 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
         prev.map((q: any) =>
           q.quotationNumber === quotationNumber
             ? { ...q, status: newStatus }
-            : q
-        )
+            : q,
+        ),
       );
 
       showSuccess(`Quotation marked as ${newStatus}`);
@@ -255,98 +280,100 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({ onAddQuotation, refres
       showApiError(err);
     }
   };
-// Don't remove this
- const handleLost = async (quotationId: string, e?: React.MouseEvent) => {
-  e?.stopPropagation();
+  // Don't remove this
+  const handleLost = async (quotationId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
 
-  try {
-    showLoading("Loading quotation...");
+    try {
+      showLoading("Loading quotation...");
 
-    const res = await getProformaInvoiceById(quotationId); 
-    const statusCode = res?.message?.status_code || res?.status_code;
-    const data = res?.message?.data || res?.data;
+      const res = await getProformaInvoiceById(quotationId);
+      const statusCode = res?.message?.status_code || res?.status_code;
+      const data = res?.message?.data || res?.data;
 
-    if (statusCode !== 200 || !data) {
+      if (statusCode !== 200 || !data) {
+        closeSwal();
+        showApiError("Failed to load quotation");
+        return;
+      }
+
       closeSwal();
-      showApiError("Failed to load quotation");
-      return;
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
     }
-
-    closeSwal();
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+  };
   const handleEdit = async (quotationId: string, e?: React.MouseEvent) => {
-      e?.stopPropagation();
-  
-      try {
-        showLoading("Loading proforma invoice...");
-  
-        const res = await getProformaInvoiceById(quotationId);
-        console.log("Proforma invoice details response:", res);
-        console.log("Proforma Id", quotationId);
-        const statusCode = res?.message?.status_code || res?.status_code;
-        const data = res?.message?.data || res?.data;
-  
-        if (statusCode !== 200 || !data) {
-          closeSwal();
-          showApiError("Failed to load proforma invoice");
-          return;
-        }
-  
-        closeSwal();
-        openQuotationEdit(quotationId, data);
-  
-      } catch (err) {
-        closeSwal();
-        showApiError(err);
-      }
-    };
+    e?.stopPropagation();
 
-const handleDrawerPdf = async (quotationId: string) => {
-      setDrawerPdfLoading(true);
-      setDrawerPdfUrl(null);
-  
-      try {
-        const blob = await getPdf(quotationId, "Quotation");
-        console.log("PDF blob response for drawer:", blob);
-        console.log("Proforma Id", quotationId);
-        setDrawerPdfBlob(blob);
-        const blobUrl = URL.createObjectURL(blob);
-        setDrawerPdfUrl(blobUrl);
-      } catch (err) {
-        showApiError(err);
-      } finally {
-        setDrawerPdfLoading(false);
-      }
-    };
-  
-    // ── PDF preview modal (table row action — kept, do not remove)
-const handlePreviewQuotationPDF = async (
-  quotationId: string,
-  e?: React.MouseEvent,
-) => {
-  e?.stopPropagation();
-  try {
-    showLoading("Preparing preview...");
-    const blob = await getPdf(quotationId, "Quotation");
+    try {
+      showLoading("Loading proforma invoice...");
 
-        const blobUrl = URL.createObjectURL(blob);
+      const res = await getProformaInvoiceById(quotationId);
+      console.log("Proforma invoice details response:", res);
+      console.log("Proforma Id", quotationId);
+      const statusCode = res?.message?.status_code || res?.status_code;
+      const data = res?.message?.data || res?.data;
+
+      if (statusCode !== 200 || !data) {
         closeSwal();
-        setPdfUrl(blobUrl);
-        setPreviewPdfBlob(blob);         
+        showApiError("Failed to load proforma invoice");
+        return;
+      }
+
+      closeSwal();
+      openQuotationEdit(quotationId, data);
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
+
+  const handleDrawerPdf = async (quotationId: string) => {
+    setDrawerPdfLoading(true);
+    setDrawerPdfUrl(null);
+
+    try {
+      const blob = await getPdf(quotationId, "Quotation");
+      console.log("PDF blob response for drawer:", blob);
+      console.log("Proforma Id", quotationId);
+      setDrawerPdfBlob(blob);
+      const blobUrl = URL.createObjectURL(blob);
+      setDrawerPdfUrl(blobUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerPdfLoading(false);
+    }
+  };
+
+  // ── PDF preview modal (table row action — kept, do not remove)
+  const handlePreviewQuotationPDF = async (
+    quotationId: string,
+    e?: React.MouseEvent,
+  ) => {
+    e?.stopPropagation();
+    try {
+      showLoading("Preparing preview...");
+      const blob = await getPdf(quotationId, "Quotation");
+
+      const blobUrl = URL.createObjectURL(blob);
+      closeSwal();
+      setPdfUrl(blobUrl);
+      setPreviewPdfBlob(blob);
       setPreviewPdfId(quotationId);
-        setSelectedQuotation(null); 
-        setPdfOpen(true);
-      } catch (err: any) {
-        closeSwal();
-        showApiError(err);
-      }
-    };
+      setSelectedQuotation(null);
+      setPdfOpen(true);
+    } catch (err: any) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
-  const handleDelete = async (quotationNumber: string, e?: React.MouseEvent) => {
+  const handleDelete = async (
+    quotationNumber: string,
+    e?: React.MouseEvent,
+  ) => {
     e?.stopPropagation();
 
     const result = await fireManagedSwal({
@@ -373,18 +400,22 @@ const handlePreviewQuotationPDF = async (
       if (statusCode !== 200) {
         closeSwal();
         // FIX: Safely extract the message text. Removed the uncalled parseFrappeError function.
-        showApiError(parseFrappeError || res?.message?.message || res?.message || "Failed to delete quotation");
+        showApiError(
+          parseFrappeError ||
+            res?.message?.message ||
+            res?.message ||
+            "Failed to delete quotation",
+        );
         return;
       }
 
       closeSwal();
 
       setQuotations((prev) =>
-        prev.filter((q) => q.quotationNumber !== quotationNumber)
+        prev.filter((q) => q.quotationNumber !== quotationNumber),
       );
 
       showSuccess("Quotation deleted successfully");
-
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -397,11 +428,12 @@ const handlePreviewQuotationPDF = async (
     let total = 1;
 
     do {
-      const res = await getAllQuotation(  current,
-          100,
-          SORT_FIELD_MAP[sortBy] || sortBy, // ← same mapping for export
-          sortOrder,
-          searchTerm,
+      const res = await getAllQuotation(
+        current,
+        100,
+        SORT_FIELD_MAP[sortBy] || sortBy, // ← same mapping for export
+        sortOrder,
+        searchTerm,
       );
 
       if (res?.status_code === 200) {
@@ -445,18 +477,17 @@ const handlePreviewQuotationPDF = async (
           "Valid Till": q.validTill,
           Amount: q.grandTotal,
           Currency: q.currency,
-        }))
+        })),
       );
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Quotations");
 
       saveAs(
-        new Blob(
-          [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
-          { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-        ),
-        "All_Quotations.xlsx"
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "All_Quotations.xlsx",
       );
 
       closeSwal();
@@ -467,7 +498,7 @@ const handlePreviewQuotationPDF = async (
     }
   };
 
- const handleView = async (quotationId: string, e?: React.MouseEvent) => {
+  const handleView = async (quotationId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setDetailDrawerOpen(true);
     setDetailLoading(true);
@@ -476,10 +507,10 @@ const handlePreviewQuotationPDF = async (
       const res = await getProformaInvoiceById(quotationId);
       console.log("Proforma invoice details response for drawer view:", res);
       console.log("Quotation Id ", quotationId);
-      
+
       const statusCode = res?.message?.status_code || res?.status_code;
       const data = res?.message?.data || res?.data;
-      
+
       if (statusCode === 200 && data) {
         // FIX: Update setDetailData instead of setDetailDrawerOpen
         setDetailData(data);
@@ -489,7 +520,7 @@ const handlePreviewQuotationPDF = async (
     }
   };
 
-   const handleDrawerDownload = () => {
+  const handleDrawerDownload = () => {
     if (!drawerPdfBlob || !detailData) return;
 
     const url = URL.createObjectURL(drawerPdfBlob);
@@ -504,7 +535,7 @@ const handlePreviewQuotationPDF = async (
     URL.revokeObjectURL(url);
   };
 
-   const handlePreviewDownload = () => {
+  const handlePreviewDownload = () => {
     if (!previewPdfBlob || !previewPdfId) return;
 
     const url = URL.createObjectURL(previewPdfBlob);
@@ -519,26 +550,39 @@ const handlePreviewQuotationPDF = async (
     URL.revokeObjectURL(url);
   };
 
-
   const columns: Column<QuotationSummary>[] = [
     {
       key: "quotationNumber",
       header: "Quotation No",
       align: "left",
       sortable: true,
-      render: (q) => <span className="font-semibold text-main">{q.quotationNumber}</span>,
+      render: (q) => (
+        <span className="font-semibold text-main">{q.quotationNumber}</span>
+      ),
     },
     { key: "customerName", header: "Customer", align: "left", sortable: true },
-    { key: "transactionDate", header: "Date", align: "left", sortable: true, render: (inv: any) => (
+    {
+      key: "transactionDate",
+      header: "Date",
+      align: "left",
+      sortable: true,
+      render: (inv: any) => (
         <span className="text-xs text-muted">
           {inv.transactionDate ? formatDate(inv.transactionDate) : "-"}
         </span>
-      ), },
-    { key: "validTill", header: "Valid Till", align: "left", sortable: true,  render: (inv) => (
+      ),
+    },
+    {
+      key: "validTill",
+      header: "Valid Till",
+      align: "left",
+      sortable: true,
+      render: (inv) => (
         <span className="text-xs text-muted">
           {inv.validTill ? formatDate(inv.validTill) : "-"}
         </span>
-      ), },
+      ),
+    },
     {
       key: "total",
       header: "Amount",
@@ -546,19 +590,20 @@ const handlePreviewQuotationPDF = async (
       sortable: true,
       render: (q) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {q.currency} {q.grandTotal.toLocaleString()}
+          {formatAmount(q.currency, q.grandTotal, { withSymbol: true })}
         </code>
       ),
     },
-   {
-  key: "status",
-  header: "Status",
-  align: "left",
-  render: (q: any) => {
-    const displayStatus = q.status === "Open" ? "Approved" : (q.status || "Draft") ;
-    return <StatusBadge status={displayStatus} />;
-  },
-},
+    {
+      key: "status",
+      header: "Status",
+      align: "left",
+      render: (q: any) => {
+        const displayStatus =
+          q.status === "Open" ? "Approved" : q.status || "Draft";
+        return <StatusBadge status={displayStatus} />;
+      },
+    },
     {
       key: "actions",
       header: "Actions",
@@ -589,26 +634,29 @@ const handlePreviewQuotationPDF = async (
           {
             label: "Compose Email",
             icon: ACTION_ICONS.EMAIL,
-            onClick: () => {
-              setEmailQuotation(q);
-              setEmailContactEmail(null);
-              setEmailQuotationAttachments([]); // clear stale attachments
-              setEmailModalOpen(true);
-              
-              // We wrap the async call inside the void function to keep TS happy
-              getProformaInvoiceById(q.quotationNumber).then((res) => {
+            onClick: async () => {
+              let contactEmail: string | null = null;
+              let invoiceAttachments: { name: string; file_name: string }[] = [];
+              try {
+                const res = await getProformaInvoiceById(q.quotationNumber);
                 const statusCode = res?.message?.status_code || res?.status_code;
                 const data = res?.message?.data || res?.data;
-
                 if (statusCode === 200 && data) {
-                  setEmailContactEmail(data.contact_email ?? null);
-                  setEmailQuotationAttachments(data.attachments ?? []);
+                  contactEmail = data.contact_email ?? null;
+                  invoiceAttachments = data.attachments ?? [];
                 }
-              }).catch(() => {
+              } catch {
                 // non-critical: modal opens with empty To/attachments if fetch fails
+              }
+              openSendEmailModal({
+                docType: "Quotation",
+                invoiceNumber: q.quotationNumber,
+                customerName: q.customerName,
+                contactEmail,
+                invoiceAttachments,
               });
             },
-          },
+            },
         ]
       : []),
     // Only show "Mark as Lost" if the status is NOT Cancelled
@@ -642,11 +690,10 @@ const handlePreviewQuotationPDF = async (
     },
   ];
 
-
   return (
     <div className="h-full min-h-0">
       <Table
-      loading={loading || initialLoad}
+        loading={loading || initialLoad}
         columns={columns}
         data={quotations}
         tableId="sales-quotations"
@@ -655,26 +702,31 @@ const handlePreviewQuotationPDF = async (
         defaultVisibleCount={7}
         showToolbar
         searchValue={searchTerm}
-        onSearch={(q) => { setSearchTerm(q); setPage(1); }}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
         enableColumnSelector
-       enableAdd={can(QUOTATION_MODULE, "create")}
+        enableAdd={can(QUOTATION_MODULE, "create")}
         addLabel="Add Quotation"
         onAdd={onAddQuotation}
-         enableExport={can(QUOTATION_MODULE, "export")}
+        enableExport={can(QUOTATION_MODULE, "export")}
         onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-        pageSizeOptions={[20, 35, 45,55, 100]}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        pageSizeOptions={[20, 35, 45, 55, 100]}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
         onPageChange={setPage}
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
         onRowDoubleClick={(q) => handleView(q.quotationNumber)}
       />
-
 
       <PdfPreviewModal
         open={pdfOpen}
@@ -683,8 +735,8 @@ const handlePreviewQuotationPDF = async (
         onClose={() => {
           if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
           setPdfUrl(null);
-          setPreviewPdfBlob(null); 
-          setPreviewPdfId(null);   
+          setPreviewPdfBlob(null);
+          setPreviewPdfId(null);
           setSelectedQuotation(null);
           setPdfOpen(false);
         }}
@@ -694,7 +746,7 @@ const handlePreviewQuotationPDF = async (
         // }
         onDownload={handlePreviewDownload}
       />
-     <QuotationDetailModal
+      <QuotationDetailModal
         open={detailDrawerOpen}
         data={detailData}
         loading={detailLoading}
@@ -717,20 +769,6 @@ const handlePreviewQuotationPDF = async (
             URL.revokeObjectURL(drawerPdfUrl);
           }
           setDrawerPdfUrl(null);
-        }}
-      />
-       <SendEmailModal
-        open={emailModalOpen}
-        docType="Quotation"
-        invoiceNumber={emailQuotation?.quotationNumber}
-        contactEmail={emailContactEmail}
-        customerName={emailQuotation?.customerName}
-        invoiceAttachments={emailQuotationAttachments}
-        onClose={() => {
-          setEmailModalOpen(false);
-          setEmailQuotation(null);
-          setEmailContactEmail(null);
-          setEmailQuotationAttachments([]);
         }}
       />
     </div>

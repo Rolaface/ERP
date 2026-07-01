@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   getAllProformaInvoices,
@@ -10,7 +10,10 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { getCompanyById } from "../../api/companySetupApi";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
-import type { ProformaInvoiceSummary, ProformaInvoice} from "../../types/proformaInvoice";
+import type {
+  ProformaInvoiceSummary,
+  ProformaInvoice,
+} from "../../types/proformaInvoice";
 import { getPdf } from "../../api/PDF/pdfUtilApi";
 import Table from "../../components/ui/Table/Table";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
@@ -19,33 +22,49 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import type { Column } from "../../components/ui/Table/type";
-import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
+import {
+  REFRESH_KEYS,
+  useDataRefreshStore,
+} from "../../store/dataRefreshStore";
 import {
   showApiError,
   showSuccess,
   showLoading,
   closeSwal,
-  showConfirm
+  showConfirm,
 } from "../../utils/alert";
-import Swal from "sweetalert2";
-import { generateProformaInvoicePDF } from "../../components/template/proformatemplete/ProformaInvoiceTemplate";
-import { closeManagedSwal, fireManagedSwal } from "../../utils/swalManager";
+
+
+import {  fireManagedSwal } from "../../utils/swalManager";
 import PdfPreviewModal from "./PdfPreviewModal";
 import ProformaDetailModal, {
   type ProformaDetail,
 } from "./Proformadetailmodal";
-import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/statusActionIcons";
-import SendEmailModal from "../../components/common/SendEmailModal";
-import { getCurrencySymbol } from "../../utils/currency";
+import {
+  ACTION_ICONS,
+  getStatusActionIcon,
+} from "../../components/UI_Utils/statusActionIcons";
+import { openSendEmailModal } from "../../store/modalStore";
+
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 
 type OutletContextType = {
   openProformaCreate: () => void;
   openProformaEdit: (proformaId: string, data: any) => void;
 };
 
-type ProformaInvoiceStatus = "Draft" | "Paid" | "Cancelled" | "Approved" | "Open";
+type ProformaInvoiceStatus =
+  | "Draft"
+  | "Paid"
+  | "Cancelled"
+  | "Approved"
+  | "Open";
 
-const STATUS_TRANSITIONS: Record<ProformaInvoiceStatus, ProformaInvoiceStatus[]> = {
+const STATUS_TRANSITIONS: Record<
+  ProformaInvoiceStatus,
+  ProformaInvoiceStatus[]
+> = {
   Draft: ["Approved"],
   Open: ["Cancelled"],
   Paid: [],
@@ -84,8 +103,8 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [invoices, setInvoices] = useState<ProformaInvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [company, setCompany] = useState<any>(null);
-   const [detailData, setDetailData] = useState<ProformaDetail | null>(null);
+  const [, setCompany] = useState<any>(null);
+
 
   // ── Pagination (server)
   const [page, setPage] = useState(1);
@@ -98,32 +117,31 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
 
   const [sortBy, setSortBy] = useState("proformaId");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-   const [selectedProformaInvoice, setSelectedProformaInvoice] = useState<ProformaInvoice | null>(null);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<ProformaDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   // const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
-    const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
-    const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
+  const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
+  const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   const [previewPdfBlob, setPreviewPdfBlob] = useState<Blob | null>(null);
-    const [previewPdfId, setPreviewPdfId] = useState<string | null>(null);
-//email
-   const [emailModalOpen, setEmailModalOpen] = useState(false);
-    const [emailProforma, setEmailProforma] = useState<ProformaInvoiceSummary | null>(null);
-    const [emailContactEmail, setEmailContactEmail] = useState<string | null>(
-      null,
-    );
-    const [emailProformaAttachments, setEmailProformaAttachments] = useState<
-      { name: string; file_name: string }[]
-    >([]);
-  
+  const [previewPdfId, setPreviewPdfId] = useState<string | null>(null);
+
+
+  // ── Currency symbols + per-currency number formatting for the currencies
+  // present in the currently loaded page of invoices.
+  const currencyCodes = useMemo(
+    () => extractCurrencyCodesFlat(invoices),
+    [invoices],
+  );
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
 
   // ── Reset page when search changes
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
-  const [selectedProforma, setSelectedProforma] = useState<any>(null);
+
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   // ── Fetch company once
@@ -149,17 +167,17 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
       );
 
       if (!res || res.status_code !== 200) return;
-const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
-  proformaId: inv.name || inv.proformaId || inv.id,
-  customerName: inv.customerName,
-  currency: inv.currency,
-  exchangeRate: inv.exchangeRate || 1,
-  validTill: inv.validTill,
-  totalAmount: Number(inv.total || 0),
-  status: inv.status as ProformaInvoiceStatus,
-  proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, 
-  createdAt: inv.postingDate ? new Date(inv.postingDate) : new Date(),
-}));
+      const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
+        proformaId: inv.name || inv.proformaId || inv.id,
+        customerName: inv.customerName,
+        currency: inv.currency,
+        exchangeRate: inv.exchangeRate || 1,
+        validTill: inv.validTill,
+        totalAmount: Number(inv.total || 0),
+        status: inv.status as ProformaInvoiceStatus,
+        proformaInvoiceStatus: inv.status as ProformaInvoiceStatus,
+        createdAt: inv.postingDate ? new Date(inv.postingDate) : new Date(),
+      }));
 
       setInvoices(mapped);
       setTotalPages(res.pagination?.total_pages || 1);
@@ -172,20 +190,20 @@ const mapped: ProformaInvoiceSummary[] = res.data.map((inv: any) => ({
 
   useEffect(() => {
     fetchInvoices();
-  }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm]); 
+  }, [page, pageSize, refreshKey, sortBy, sortOrder, searchTerm]);
 
   useEffect(() => {
     const unsubscribe = useDataRefreshStore
       .getState()
       .subscribeToRefresh(REFRESH_KEYS.PROFORMA_LIST, () => {
         // Replace this with the actual function you use to fetch your table data
-        fetchInvoices(); 
+        fetchInvoices();
       });
-      
+
     return unsubscribe;
   }, []);
 
-const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
+  const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
 
     try {
@@ -205,7 +223,6 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
 
       closeSwal();
       openProformaEdit(proformaId, data);
-
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -221,7 +238,7 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
       const res = await getProformaInvoiceById(proformaId);
       const statusCode = res?.message?.status_code || res?.status_code;
       const data = res?.message?.data || res?.data;
-      
+
       if (statusCode === 200 && data) {
         setDrawerData(data);
       }
@@ -231,42 +248,42 @@ const handleEdit = async (proformaId: string, e?: React.MouseEvent) => {
   };
 
   const handleDrawerPdf = async (proformId: string) => {
-      setDrawerPdfLoading(true);
-      setDrawerPdfUrl(null);
-  
-      try {
-        // const blob = await getPdf(proformId, "Proforma Invoice");
-        const blob = await getPdf(proformId, "Quotation");
-        console.log("PDF blob response for drawer:", blob);
-        console.log("Proforma Id", proformId);
-        setDrawerPdfBlob(blob);
-        const blobUrl = URL.createObjectURL(blob);
-        setDrawerPdfUrl(blobUrl);
-      } catch (err) {
-        showApiError(err);
-      } finally {
-        setDrawerPdfLoading(false);
-      }
-    };
-  
-const handlePreviewPDF = async (
+    setDrawerPdfLoading(true);
+    setDrawerPdfUrl(null);
+
+    try {
+      // const blob = await getPdf(proformId, "Proforma Invoice");
+      const blob = await getPdf(proformId, "Quotation");
+      console.log("PDF blob response for drawer:", blob);
+      console.log("Proforma Id", proformId);
+      setDrawerPdfBlob(blob);
+      const blobUrl = URL.createObjectURL(blob);
+      setDrawerPdfUrl(blobUrl);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setDrawerPdfLoading(false);
+    }
+  };
+
+  const handlePreviewPDF = async (
     inv: ProformaInvoiceSummary,
     e?: React.MouseEvent,
   ) => {
     e?.stopPropagation();
     try {
       showLoading("Preparing invoice preview...");
-      
+
       // Make sure this is fetching the PDF correctly
-      const blob = await getPdf(inv.proformaId, "Quotation"); 
+      const blob = await getPdf(inv.proformaId, "Quotation");
       const blobUrl = URL.createObjectURL(blob);
-      
+
       closeSwal();
-      
+
       setPdfUrl(blobUrl);
       setPreviewPdfBlob(blob);
       setPreviewPdfId(inv.proformaId);
-      
+
       setPdfOpen(true);
     } catch (err: any) {
       closeSwal();
@@ -285,7 +302,7 @@ const handlePreviewPDF = async (
     setSortOrder(order);
     setPage(1);
   };
- 
+
   // ── Export all pages ──────────────────────────────────────────────────────
   const fetchAllInvoicesForExport = async (): Promise<
     ProformaInvoiceSummary[]
@@ -306,16 +323,16 @@ const handlePreviewPDF = async (
 
         if (res?.status_code === 200) {
           const mapped = res.data.map((inv: any) => ({
-  proformaId: inv.name || inv.proformaId || inv.id,
-  customerName: inv.customerName,
-  currency: inv.currency,
-  exchangeRate: inv.exchangeRate,
-  dueDate: inv.dueDate,
-  totalAmount: Number(inv.totalAmount),
-  status: inv.status as ProformaInvoiceStatus,
-  proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, // <-- Added here too
-  createdAt: new Date(inv.createdAt.replace(" ", "T")),
-}));
+            proformaId: inv.name || inv.proformaId || inv.id,
+            customerName: inv.customerName,
+            currency: inv.currency,
+            exchangeRate: inv.exchangeRate,
+            dueDate: inv.dueDate,
+            totalAmount: Number(inv.totalAmount),
+            status: inv.status as ProformaInvoiceStatus,
+            proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, // <-- Added here too
+            createdAt: new Date(inv.createdAt.replace(" ", "T")),
+          }));
           allData = [...allData, ...mapped];
           total = res.pagination?.total_pages || 1;
         }
@@ -374,7 +391,7 @@ const handlePreviewPDF = async (
     }
   };
 
-   const formatDate = (date: string | Date) => {
+  const formatDate = (date: string | Date) => {
     if (!date) return "";
 
     const months = [
@@ -405,18 +422,18 @@ const handlePreviewPDF = async (
     invoiceNumber: string,
     status: ProformaInvoiceStatus,
   ) => {
-     if(status === "Cancelled") {
-        const isConfirmed = await showConfirm(
-              `Are you sure you want to cancel entry ${invoiceNumber}?`,
-              {
-                title: "Cancel Entry",
-                confirmButtonText: "Yes, Cancel",
-                confirmButtonColor: "#ef4444",
-                cancelButtonText: "No, Keep",
-              }
-            );
-            if (!isConfirmed) return;
-        }
+    if (status === "Cancelled") {
+      const isConfirmed = await showConfirm(
+        `Are you sure you want to cancel entry ${invoiceNumber}?`,
+        {
+          title: "Cancel Entry",
+          confirmButtonText: "Yes, Cancel",
+          confirmButtonColor: "#ef4444",
+          cancelButtonText: "No, Keep",
+        },
+      );
+      if (!isConfirmed) return;
+    }
     if (CRITICAL_STATUSES.includes(status)) {
       const result = await fireManagedSwal({
         icon: "warning",
@@ -442,18 +459,25 @@ const handlePreviewPDF = async (
 
       if (statusCode !== 200) {
         closeSwal();
-        showApiError(res?.message?.message || res?.message || "Failed to update proforma invoice status");
+        showApiError(
+          res?.message?.message ||
+            res?.message ||
+            "Failed to update proforma invoice status",
+        );
         return;
       }
 
       closeSwal();
 
       // Safely get the updated status from backend, fallback to optimistic status
-      const updatedStatus = res?.message?.data?.status || res?.data?.status || status;
+      const updatedStatus =
+        res?.message?.data?.status || res?.data?.status || status;
 
       setInvoices((prev) =>
         prev.map((inv) =>
-          inv.proformaId === invoiceNumber ? { ...inv, status: updatedStatus } : inv,
+          inv.proformaId === invoiceNumber
+            ? { ...inv, status: updatedStatus }
+            : inv,
         ),
       );
       showSuccess(`Invoice marked as ${status}`);
@@ -484,7 +508,7 @@ const handlePreviewPDF = async (
       showLoading("Deleting invoice...");
 
       const res = await deleteProformaInvoiceById(proformaId);
-      
+
       // Handle both wrapped and unwrapped backend responses safely
       const statusCode = res?.message?.status_code || res?.status_code;
 
@@ -495,7 +519,7 @@ const handlePreviewPDF = async (
       }
 
       closeSwal();
-      
+
       // Optimistic remove from table
       setInvoices((prev) =>
         prev.filter((inv) => inv.proformaId !== proformaId),
@@ -518,9 +542,10 @@ const handlePreviewPDF = async (
       const url = URL.createObjectURL(drawerPdfBlob);
       const a = document.createElement("a");
       a.href = url;
-      
+
       // FIX: Dynamically grab the correct ID for the filename
-      const fileNameId = drawerData.proformaId || drawerData.id || "Proforma_Invoice";
+      const fileNameId =
+        drawerData.proformaId || drawerData.id || "Proforma_Invoice";
       a.download = `${fileNameId}.pdf`;
 
       document.body.appendChild(a);
@@ -532,8 +557,8 @@ const handlePreviewPDF = async (
       showApiError("Something went wrong while downloading the PDF.");
     }
   };
-const handlePreviewDownload = () => {
-     if (!previewPdfBlob) {
+  const handlePreviewDownload = () => {
+    if (!previewPdfBlob) {
       // showApiError("The PDF file is not ready for download.");
       return;
     }
@@ -609,19 +634,20 @@ const handlePreviewDownload = () => {
       sortable: true,
       render: (inv) => (
         <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {inv.currency} {inv.totalAmount.toLocaleString()}
+          {formatAmount(inv.currency, inv.totalAmount, { withSymbol: true })}
         </code>
       ),
     },
-     {
-  key: "status",
-  header: "Status",
-  align: "left",
-  render: (q: any) => {
-    const displayStatus = q.status === "Open" ? "Approved" : (q.status || "Draft");
-    return <StatusBadge status={displayStatus} />;
-  },
-},
+    {
+      key: "status",
+      header: "Status",
+      align: "left",
+      render: (q: any) => {
+        const displayStatus =
+          q.status === "Open" ? "Approved" : q.status || "Draft";
+        return <StatusBadge status={displayStatus} />;
+      },
+    },
     {
       key: "actions",
       header: "Actions",
@@ -633,17 +659,17 @@ const handlePreviewDownload = () => {
             onClick={(e) => handleView(inv.proformaId, e)}
             iconOnly
           />
-           <ActionButton
-    type="edit"
-    onClick={(e) => handleEdit(inv.proformaId, e)}
-    iconOnly
-    disabled={inv.status !== "Draft"}
-    title={
-      inv.status !== "Draft"
-        ? "Only Draft proforma invoices can be edited"
-        : "Edit Proforma Invoice"
-    }
-  />
+          <ActionButton
+            type="edit"
+            onClick={(e) => handleEdit(inv.proformaId, e)}
+            iconOnly
+            disabled={inv.status !== "Draft"}
+            title={
+              inv.status !== "Draft"
+                ? "Only Draft proforma invoices can be edited"
+                : "Edit Proforma Invoice"
+            }
+          />
           {/* <ActionMenu
             showDownload
             onDownload={() => handleDrawerPdf(inv.proformaId)}
@@ -663,32 +689,37 @@ const handlePreviewDownload = () => {
             ]}
           /> */}
           <ActionMenu
-            {...(inv.status === "Cancelled" || inv.status === "Draft" ? { onDelete: (e) => handleDelete(inv.proformaId, e) } : {})}
-            customActions={[    
+            {...(inv.status === "Cancelled" || inv.status === "Draft"
+              ? { onDelete: (e) => handleDelete(inv.proformaId, e) }
+              : {})}
+            customActions={[
               ...(inv.status !== "Draft"
                 ? [
                     {
                       label: "Compose Email",
                       icon: ACTION_ICONS.EMAIL,
                       onClick: async () => {
-                        setEmailProforma(inv);
-                        setEmailContactEmail(null);
-                        setEmailProformaAttachments([]); // clear stale attachments
-                        setEmailModalOpen(true);
+                        let contactEmail: string | null = null;
+                        let invoiceAttachments: { name: string; file_name: string }[] = [];
                         try {
                           const res = await getProformaInvoiceById(inv.proformaId);
-                          
-                          // Handle both wrapped and unwrapped backend responses safely
                           const statusCode = res?.message?.status_code || res?.status_code;
                           const data = res?.message?.data || res?.data;
-
                           if (statusCode === 200 && data) {
-                            setEmailContactEmail(data.contact_email ?? null);
-                            setEmailProformaAttachments(data.attachments ?? []);
+                            contactEmail = data.contact_email ?? null;
+                            invoiceAttachments = data.attachments ?? [];
                           }
                         } catch {
                           // non-critical: modal opens with empty To/attachments if fetch fails
                         }
+                        openSendEmailModal({
+                          docType: "Quotation",
+                          isProforma: true,
+                          invoiceNumber: inv.proformaId,
+                          customerName: inv.customerName,
+                          contactEmail,
+                          invoiceAttachments,
+                        });
                       },
                     },
                   ]
@@ -698,14 +729,23 @@ const handlePreviewDownload = () => {
                 icon: ACTION_ICONS.PDF,
                 onClick: () => handlePreviewPDF(inv),
               },
-            ...(STATUS_TRANSITIONS[inv.status as keyof typeof STATUS_TRANSITIONS] ?? [])
-                  .filter((status) => status !== "Draft") 
-                  .map((status) => ({
-                    label: status === "Cancelled" ? "Cancel" : ` ${status}` || status === "Approved" ? "Approve" : status,
-                    icon: getStatusActionIcon(status),
-                    danger: status === "Cancelled",
-                    onClick: () => handleRowStatusChange(inv.proformaId, status),
-                  })),
+              ...(
+                STATUS_TRANSITIONS[
+                  inv.status as keyof typeof STATUS_TRANSITIONS
+                ] ?? []
+              )
+                .filter((status) => status !== "Draft")
+                .map((status) => ({
+                  label:
+                    status === "Cancelled"
+                      ? "Cancel"
+                      : ` ${status}` || status === "Approved"
+                        ? "Approve"
+                        : status,
+                  icon: getStatusActionIcon(status),
+                  danger: status === "Cancelled",
+                  onClick: () => handleRowStatusChange(inv.proformaId, status),
+                })),
             ]}
           />
         </ActionGroup>
@@ -720,7 +760,7 @@ const handlePreviewDownload = () => {
       <Table
         loading={loading || initialLoad}
         columns={columns}
-        data={invoices} 
+        data={invoices}
         tableId="sales-proformainvoices"
         rowKey={(row) => row.proformaId}
         showToolbar
@@ -740,7 +780,7 @@ const handlePreviewDownload = () => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-        pageSizeOptions={[20, 35, 45,55, 100]}
+        pageSizeOptions={[20, 35, 45, 55, 100]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
@@ -783,27 +823,12 @@ const handlePreviewDownload = () => {
         pdfUrl={pdfUrl}
         onClose={() => {
           if (pdfUrl?.startsWith("blob:")) URL.revokeObjectURL(pdfUrl);
-           setPdfUrl(null);
+          setPdfUrl(null);
           setPreviewPdfBlob(null);
           setPreviewPdfId(null);
           setPdfOpen(false);
         }}
         onDownload={handlePreviewDownload}
-      />
-      <SendEmailModal
-        open={emailModalOpen}
-        docType="Quotation"
-        isProforma={true}
-        invoiceNumber={emailProforma?.proformaId}
-        contactEmail={emailContactEmail}
-        customerName={emailProforma?.customerName}
-        invoiceAttachments={emailProformaAttachments}
-        onClose={() => {
-          setEmailModalOpen(false);
-          setEmailProforma(null);
-          setEmailContactEmail(null);
-          setEmailProformaAttachments([]);
-        }}
       />
     </div>
   );

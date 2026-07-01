@@ -116,7 +116,7 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
       icon={FileMinus}
       footer={footer}
       maxWidth="full"
-      height="700px"
+      height="600px"
     >
       <form
         id={FORM_ID}

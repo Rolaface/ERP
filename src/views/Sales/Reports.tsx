@@ -16,6 +16,8 @@ import {
   showApiError,
 } from "../../utils/alert";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 /*  TYPES  */
 
 type ReportType =
@@ -297,6 +299,18 @@ export default function ReportTable() {
     return filteredData.slice(start, start + pageSize);
   }, [filteredData, page, totalPages, pageSize]);
 
+  /* ── Currency symbols + per-currency number formatting. Derived from the
+     currently *visible* page of rows (same pattern as InvoiceTable /
+     CreditNotesTable) — codes are fetched once and cached globally, so
+     paging through different currencies never re-fetches what's already
+     loaded. ── */
+
+  const currencyCodes = useMemo(
+    () => extractCurrencyCodesFlat(paginatedData),
+    [paginatedData],
+  );
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+
   /* ── Export ── */
 
   const handleExportExcel = async () => {
@@ -319,6 +333,8 @@ export default function ReportTable() {
           "Receipt No": row.receiptNo ?? "",
           Status: row.status ?? "",
           Currency: row.currency ?? "",
+          // Raw numeric value — kept as a real number in Excel (not a
+          // pre-formatted string) so the cell stays sortable/summable.
           Amount: row.amount ?? 0,
         })),
       );
@@ -343,102 +359,106 @@ export default function ReportTable() {
 
   /* ── Columns ── */
 
-  const columns: Column<ReportRow>[] = [
-    {
-      key: "type",
-      header: "Type",
-      align: "left",
-      render: (row) => (
-        <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-          {row.type}
-        </code>
-      ),
-    },
-    {
-      key: "documentNo",
-      header: "Document No",
-      align: "left",
-      render: (row) => (
-        <span className="font-semibold text-main">{row.documentNo || "—"}</span>
-      ),
-      tooltip: (row) => `Document No: ${row.documentNo}`,
-    },
-    {
-      key: "customerName",
-      header: "Customer",
-      align: "left",
-      render: (row) => (
-        <span
-          className="text-sm text-main truncate max-w-[220px] block"
-          title={row.customerName}
-        >
-          {row.customerName || "—"}
-        </span>
-      ),
-      tooltip: (row) => `Customer: ${row.customerName}`,
-    },
-    {
-      key: "date",
-      header: "Date",
-      align: "left",
-      render: (row) => (
-        <span className="text-xs text-muted">{formatDate(row.date)}</span>
-      ),
-    },
-    {
-      key: "dueDate",
-      header: "Due Date",
-      align: "left",
-      render: (row) => (
-        <span className="text-xs text-muted">
-          {row.dueDate ? formatDate(row.dueDate) : "—"}
-        </span>
-      ),
-    },
-    {
-      key: "receiptNo",
-      header: "Receipt No",
-      align: "left",
-      render: (row) => (
-        <span className="text-sm text-main">{row.receiptNo || "—"}</span>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      align: "left",
-      render: (row) =>
-        row.status ? (
-          <StatusBadge status={row.status} />
-        ) : (
-          <span className="text-muted">—</span>
-        ),
-    },
-    {
-      key: "currency",
-      header: "Currency",
-      align: "left",
-      render: (row) => (
-        <span className="text-sm text-main">{row.currency || "—"}</span>
-      ),
-    },
-    {
-      key: "amount",
-      header: "Amount",
-      align: "right",
-      render: (row) =>
-        row.amount !== undefined && row.amount !== null ? (
-          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
-            {row.currency ? `${row.currency} ` : ""}
-            {Number(row.amount).toLocaleString()}
+  const columns: Column<ReportRow>[] = useMemo(
+    () => [
+      {
+        key: "type",
+        header: "Type",
+        align: "left",
+        render: (row) => (
+          <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
+            {row.type}
           </code>
-        ) : (
-          <span className="text-muted">—</span>
         ),
-      tooltip: (row) =>
-        `Amount: ${row.currency ?? ""} ${Number(row.amount ?? 0).toLocaleString()}`,
-    },
-  ];
+      },
+      {
+        key: "documentNo",
+        header: "Document No",
+        align: "left",
+        render: (row) => (
+          <span className="font-semibold text-main">
+            {row.documentNo || "—"}
+          </span>
+        ),
+        tooltip: (row) => `Document No: ${row.documentNo}`,
+      },
+      {
+        key: "customerName",
+        header: "Customer",
+        align: "left",
+        render: (row) => (
+          <span
+            className="text-sm text-main truncate max-w-[220px] block"
+            title={row.customerName}
+          >
+            {row.customerName || "—"}
+          </span>
+        ),
+        tooltip: (row) => `Customer: ${row.customerName}`,
+      },
+      {
+        key: "date",
+        header: "Date",
+        align: "left",
+        render: (row) => (
+          <span className="text-xs text-muted">{formatDate(row.date)}</span>
+        ),
+      },
+      {
+        key: "dueDate",
+        header: "Due Date",
+        align: "left",
+        render: (row) => (
+          <span className="text-xs text-muted">
+            {row.dueDate ? formatDate(row.dueDate) : "—"}
+          </span>
+        ),
+      },
+      {
+        key: "receiptNo",
+        header: "Receipt No",
+        align: "left",
+        render: (row) => (
+          <span className="text-sm text-main">{row.receiptNo || "—"}</span>
+        ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        align: "left",
+        render: (row) =>
+          row.status ? (
+            <StatusBadge status={row.status} />
+          ) : (
+            <span className="text-muted">—</span>
+          ),
+      },
+      {
+        key: "currency",
+        header: "Currency",
+        align: "left",
+        render: (row) => (
+          <span className="text-sm text-main">{row.currency || "—"}</span>
+        ),
+      },
+      {
+        key: "amount",
+        header: "Amount",
+        align: "right",
+        render: (row) =>
+          row.amount !== undefined && row.amount !== null ? (
+            <code className="text-xs px-2 py-1 rounded bg-row-hover text-main font-semibold whitespace-nowrap">
+              {formatAmount(row.currency, row.amount, { withSymbol: true })}
+            </code>
+          ) : (
+            <span className="text-muted">—</span>
+          ),
+        tooltip: (row) =>
+          `Amount: ${formatAmount(row.currency, row.amount ?? 0, { withSymbol: true })}`,
+      },
+    ],
+    [formatAmount],
+  );
 
   /* ── Extra toolbar filters (type, date range, status) rendered above Table ── */
 

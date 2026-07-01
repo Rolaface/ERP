@@ -10,18 +10,19 @@ import { createSalesInvoice, editSalesInvoice } from "../../api/salesApi";
 import CustomerSelect from "../selects/CustomerSelect";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import ModalFooter from "../common/ModalFooter";
-import { ModalInput, ModalSelect } from "../ui/modal/modalComponent";
+import { ModalInput, ToggleSwitch } from "../ui/modal/modalComponent";
 import { useInvoiceForm } from "../../hooks/useInvoiceForm";
-import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
 import { getAllModeOfPayment } from "../../api/BankAccountApi";
-import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
+
 import { paymentMethodOptions } from "../../constants/invoice.constants";
 import PaymentInfoBlock from "./PaymentInfoBlock";
 import ItemTable from "../common/ItemTable";
 import type { ModalSubmitHandler } from "../../types/modal";
+import { useDefault } from "../../hooks/usedefaultdata";
+import ModeOfPaymentSelect from "../selects/defaults/Modeofpaymentselect";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,22 +52,25 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
       : `invoice-create-${Date.now()}`);
 
-  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const [submitting, setSubmitting] = useState(false);
-  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
+  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
+    "Product",
+  );
+  const domain = useDefault("primary_business_domain");
+  console.log("Domain ", domain);
 
-   useEffect(() => {
+  useEffect(() => {
     if (mode === "edit" && initialData?.items?.length > 0) {
       // Check if the first item (or any item) is a service
       const isService = initialData.items[0]?.isServiceItem;
       setInvoiceType(isService ? "Service" : "Product");
     } else if (mode === "create") {
-      // Default to Product for new invoices
-      setInvoiceType("Product");
+      // Default to company domain for new invoices (fallback to Product)
+      setInvoiceType(domain === "Service" ? "Service" : "Product");
     }
-  }, [initialData, mode, isOpen]);
+  }, [initialData, mode, isOpen, domain]);
 
-  const {
+const {
     formData,
     customerDetails,
     customerNameDisplay,
@@ -74,6 +78,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     totals,
     ui,
     actions,
+    resetDirty,
+    handleCloseWithConfirm,
   } = useInvoiceForm(
     isOpen,
     onClose,
@@ -104,20 +110,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
 
-  const handleModeFetchOptions = async (q: string) => {
-    const res = await getAllModeOfPayment(1, 10, q || "", 1);
-    return res.data.map((item: any) => ({
-      label: item.name,
-      value: item.name,
-      meta: item,
-    }));
-  };
 
-  const handleModeChange = (_: string, option: any) => {
-    actions.handleInputChange({
-      target: { name: "mode", value: option?.value || "" },
-    } as any);
-  };
 
   const handleSubmitForm = async () => {
     if (submitting) return;
@@ -208,14 +201,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       icon={Receipt}
       footer={footerContent}
       maxWidth="full"
-      // maxWidth={invoiceType === "Service" ? "10xl" : "full"}
       height="700px"
     >
       <form
         id="invoiceForm"
         className="h-full flex flex-col"
         autoComplete="off"
-        onChange={() => markDirty()}
       >
         {/* ── Tabs ── */}
         <div className="bg-app border-b border-theme px-4 sm:px-8 shrink-0">
@@ -249,9 +240,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
-
-              {/* Invoice Type  */}  
-              {/* <div className="w-full sm:w-[130px]">
+                {/* Invoice Type  */}
+                {/* <div className="w-full sm:w-[130px]">
                   <ModalSelect
                     label="Invoice Type"
                     name="invoiceType"
@@ -264,36 +254,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     className="w-full border border-theme rounded text-[11px] text-main bg-card"
                   />
                 </div> */}
-                {/* Invoice Type */}
-              <div className="w-full sm:w-auto flex flex-col justify-end">
-                {/* Optional visible label to align with other inputs; use text-transparent if you only want the box */}
-                <label className="text-[11px] text-muted mb-1">Invoice Type</label>
-                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[30px]">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Product"
-                      checked={invoiceType === "Product"}
-                      onChange={(e: any) => setInvoiceType(e.target.value)}
-                      className="w-4 h-4 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[12px] text-main whitespace-nowrap">Product</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Service"
-                      checked={invoiceType === "Service"}
-                      onChange={(e: any) => setInvoiceType(e.target.value)}
-                      className="w-4 h-4 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[12px] text-main whitespace-nowrap">Service</span>
-                  </label>
-                </div>
-              </div>
 
                 {/* Customer — full width on mobile, fixed on sm+ */}
                 <div className="w-full sm:w-[280px]">
@@ -335,28 +295,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   />
                 </div>
 
-                {/* Currency */}
-                {/* <div className="w-full sm:w-[100px]">
-                  <ModalSelect
-                    label="Currency"
-                    name="currencyCode"
-                    value={formData.currencyCode}
-                    onChange={actions.handleInputChange}
-                    options={
-                      formData.currencyCode
-                        ? [
-                            {
-                              value: formData.currencyCode,
-                              label: formData.currencyCode,
-                            },
-                          ]
-                        : []
-                    }
-                    disabled
-                    className="w-full border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                </div> */}
-
                 {/* Exchange Rate — only when foreign currency selected */}
                 {showExchangeRate && (
                   <div className="w-full sm:w-[110px] relative">
@@ -383,36 +321,16 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 )}
                 {/* Mode of Payment */}
                 <div className="w-full sm:w-[200px]">
-                  <SearchSelect2
-                    label="Mode of Payment"
+                  <ModeOfPaymentSelect
                     value={formData.mode ?? ""}
-                    onChange={handleModeChange}
-                    fetchOptions={handleModeFetchOptions}
-                    placeholder="search mode of payment"
+                    onChange={(val) =>
+                      actions.handleInputChange({
+                        target: { name: "mode", value: val },
+                      } as any)
+                    }
                     required
                   />
                 </div>
-
-                {/* Update Stock */}
-                {invoiceType === "Product" && (
-                <div className="w-full sm:w-auto flex flex-col justify-end">
-                  <label className="text-[11px] text-transparent select-none">
-                    ‎
-                  </label>
-                  <label className="flex items-center gap-2 h-[30px]">
-                    <input
-                      type="checkbox"
-                      name="updateStock"
-                      checked={formData.updateStock ?? true}
-                      onChange={actions.handleInputChange}
-                      className="w-3.5 h-3.5 accent-primary"
-                    />
-                    <span className="text-xs text-main whitespace-nowrap">
-                      Update Stock
-                    </span>
-                  </label>
-                </div>
-                )}
 
                 {/* LPO Number — only when LPO tax category */}
                 {ui.isLocal && (
@@ -427,6 +345,87 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       placeholder="Enter 10 digits"
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
+                  </div>
+                )}
+
+                {/* Invoice Type */}
+                {/* <div className="w-full sm:w-auto flex flex-col justify-end">
+                 <label className="text-[11px] text-muted mb-1">Invoice Type</label>
+                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[27px]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Product"
+                      checked={invoiceType === "Product"}
+                      onChange={(e: any) => {
+                        setInvoiceType(e.target.value);
+                        actions.handleInputChange({
+                          target: { name: "updateStock", type: "checkbox", checked: true }
+                        } as any);
+                      }}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Product</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="invoiceType"
+                      value="Service"
+                      checked={invoiceType === "Service"}
+                      onChange={(e: any) => {
+                        setInvoiceType(e.target.value);
+                        actions.handleInputChange({
+                          target: { name: "updateStock", type: "checkbox", checked: false }
+                        } as any);
+                      }}
+                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
+                    />
+                    <span className="text-[10px] text-main whitespace-nowrap">Service</span>
+                  </label>
+                </div>
+              </div> */}
+                {/* Invoice Type */}
+                <ToggleSwitch
+                  name="invoiceType"
+                  label="Invoice Type"
+                  checked={invoiceType === "Service"}
+                  onLabel="Service"
+                  offLabel="Product"
+                  onChange={(e) => {
+                    const isService = e.target.checked;
+                    setInvoiceType(isService ? "Service" : "Product");
+                    // Service select hote hi updateStock false karo
+                    actions.handleInputChange({
+                      target: {
+                        name: "updateStock",
+                        type: "checkbox",
+                        checked: !isService,
+                      },
+                    } as any);
+                  }}
+                />
+
+                {/* Update Stock */}
+                {invoiceType === "Product" && (
+                  <div className="w-full sm:w-auto flex flex-col justify-end">
+                    <label className="text-[11px] text-transparent select-none">
+                      ‎
+                    </label>
+                    <label className="flex items-center gap-2 h-[30px]">
+                      <input
+                        type="checkbox"
+                        name="updateStock"
+                        checked={formData.updateStock ?? true}
+                        onChange={actions.handleInputChange}
+                        className="w-3.5 h-3.5 accent-primary"
+                      />
+                      <span className="text-xs text-main whitespace-nowrap">
+                        Update Stock
+                      </span>
+                    </label>
                   </div>
                 )}
               </div>
@@ -446,7 +445,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     formData={formData}
                     symbol=""
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
-                   invoiceType={invoiceType}
+                    invoiceType={invoiceType}
                     isSalesInvoice={true}
                     taxCategory={
                       formData.taxCategory ||

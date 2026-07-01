@@ -42,14 +42,17 @@ import {
   Layers,
   ChevronRight,
   Search,
+  Download,
 } from "lucide-react";
 import { openCoaGLAccountModal } from "../../store/modalStore";
 import type { COAAccount, COAResponse, COAResponseData } from "../../types/coa";
 import ViewAccountModal from "../../components/Coa/ViewAccountModal";
-import { getCurrencySymbol } from "../../utils/currency";
+
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesTree } from "../../utils/Extractcurrencycodes";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { Download } from "lucide-react";
+
 export interface COATabProps {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -75,25 +78,18 @@ function matchCOANode(node: COAAccount, term: string): boolean {
   );
 }
 
-/* filters the tree to nodes that match the term OR have a descendant that matches,
-   preserving ancestry chains so the result is still a valid tree */
 function filterTree(nodes: COAAccount[], term: string): COAAccount[] {
   if (!term.trim()) return nodes;
-
   const walk = (list: COAAccount[]): COAAccount[] =>
     list.reduce<COAAccount[]>((acc, node) => {
       const children = Array.isArray(node.children) ? walk(node.children) : [];
       const selfMatch = matchCOANode(node, term);
-      if (selfMatch || children.length) {
-        acc.push({ ...node, children });
-      }
+      if (selfMatch || children.length) acc.push({ ...node, children });
       return acc;
     }, []);
-
   return walk(nodes);
 }
 
-/* builds the {rowId: true} map needed to expand the tree to N levels by default */
 const buildExpandedToDepth = (
   nodes: COAAccount[],
   depth: number,
@@ -110,7 +106,6 @@ const buildExpandedToDepth = (
   return state;
 };
 
-/* expand every ancestor chain so search results are visible */
 const buildExpandedForSearch = (
   nodes: COAAccount[],
   path = "",
@@ -160,10 +155,11 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => (
               e.stopPropagation();
               action.onClick();
             }}
-            className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${action.danger
-              ? "text-danger hover:bg-danger/10"
-              : "text-main hover:bg-row-hover"
-              }`}
+            className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition ${
+              action.danger
+                ? "text-danger hover:bg-danger/10"
+                : "text-main hover:bg-row-hover"
+            }`}
           >
             <span className={action.danger ? "text-danger" : "text-muted"}>
               {action.icon}
@@ -176,7 +172,7 @@ const RowActionMenu: React.FC<{ actions: MenuAction[] }> = ({ actions }) => (
   </div>
 );
 
-/* ───────────────── FILTER BAR (AccountsPayable / TrialBalance style) ───────────────── */
+/* ───────────────── FILTER BAR ───────────────── */
 
 function FilterBar({
   searchTerm,
@@ -265,6 +261,18 @@ const COATab: React.FC<COATabProps> = ({
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
 
+  // Extract unique currency codes from the COA tree
+  // e.g. coaData has GHS + USD accounts → currencyCodes = ["GHS", "USD"]
+  const currencyCodes = useMemo(
+    () => extractCurrencyCodesTree(coaData?.accounts, "account_currency"),
+    [coaData],
+  );
+
+  // Hook fetches symbols + number formats only for those codes, in parallel
+  // getSymbol("USD") → "$" | getSymbol("GHS") → "₵" | unknown → code itself
+  // formatAmount("ARS", 1234567.5, { withSymbol: true }) → "$ 1.234.567,50"
+  const { getSymbol, formatAmount } = useCurrencySymbols(currencyCodes);
+
   const handleToggleExpand = useCallback(() => {
     if (allExpanded) {
       setExpanded({});
@@ -303,63 +311,73 @@ const COATab: React.FC<COATabProps> = ({
     fetchCOA();
   }, [fetchCOA]);
 
-  // tree data: filtered by search term, same matching logic as before (matchCOANode)
   const tableData: COAAccount[] = useMemo(() => {
     const accounts = coaData?.accounts ?? [];
     return filterTree(accounts, searchTerm);
   }, [coaData, searchTerm]);
 
-const handleExport = useCallback(() => {
-  if (!coaData?.accounts) return;
+  // Export to Excel — balances are kept as RAW NUMBERS (not formatted strings)
+  // so Excel treats them as real numeric cells (right-aligned, summable,
+  // chart-friendly). Only the "Currency" column uses the display symbol.
+  const handleExport = useCallback(() => {
+    if (!coaData?.accounts) return;
 
-  const rows: any[] = [];
+    const rows: any[] = [];
 
-  const flattenAccounts = (accounts: COAAccount[], depth = 0) => {
-    accounts.forEach((acc) => {
-      const indent = "    ".repeat(depth);
-      const prefix = acc.is_group
-        ? depth === 0 ? "▶ " : "▸ "
-        : "• ";
+    const flattenAccounts = (accounts: COAAccount[], depth = 0) => {
+      accounts.forEach((acc) => {
+        const indent = "    ".repeat(depth);
+        const prefix = acc.is_group ? (depth === 0 ? "▶ " : "▸ ") : "• ";
+        const symbol = getSymbol(acc.account_currency);
+        const baseSymbol = getSymbol(coaData.base_currency);
 
-      rows.push({
-        "Account Name": indent + prefix + acc.account_name,
-        "Account Type": acc.account_type || "—",
-        "Root Type": acc.root_type || "—",
-        "Category": acc.is_group ? "── GROUP ──" : "Account",
-        "Balance": acc.is_group ? "—" : (acc.balance_in_account_currency ?? ""),
-        "Balance (C)": acc.balance ?? "",  
+        rows.push({
+          "Account Name": indent + prefix + acc.account_name,
+          "Account Type": acc.account_type || "—",
+          "Root Type": acc.root_type || "—",
+          Category: acc.is_group ? "── GROUP ──" : "Account",
+          // e.g. "₵ (GHS)" or "$ (USD)"
+          Currency: acc.account_currency
+            ? `${symbol} (${acc.account_currency})`
+            : "—",
+          // balance in account's own currency — raw number for Excel
+          "Balance (Account CCY)": acc.is_group
+            ? "—"
+            : (acc.balance_in_account_currency ?? "—"),
+          // balance converted to base currency — raw number for Excel
+          [`Balance (${baseSymbol} ${coaData.base_currency})`]: acc.is_group
+            ? "—"
+            : (acc.balance ?? "—"),
+        });
+
+        if (acc.children?.length) flattenAccounts(acc.children, depth + 1);
       });
+    };
 
-      if (acc.children?.length) flattenAccounts(acc.children, depth + 1);
-    });
-  };
+    flattenAccounts(tableData);
 
-  flattenAccounts(tableData);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = [
+      { wch: 50 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 22 },
+    ];
 
-  const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Chart of Accounts");
 
-  ws["!cols"] = [
-    { wch: 50 },
-    { wch: 18 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 18 },
-    { wch: 18 },
-  ];
+    saveAs(
+      new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      "chart_of_accounts.xlsx",
+    );
+  }, [coaData, tableData, getSymbol]);
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Chart of Accounts");
-
-  saveAs(
-    new Blob(
-      [XLSX.write(wb, { bookType: "xlsx", type: "array" })],
-      { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-    ),
-    "chart_of_accounts.xlsx"
-  );
-}, [coaData, tableData]);
-
-  // default-collapsed (depth 0), matching original defaultExpandDepth={0}
   const isFirstLoad = useRef(true);
 
   useEffect(() => {
@@ -368,25 +386,19 @@ const handleExport = useCallback(() => {
       setExpanded(buildExpandedForSearch(tableData));
       return;
     }
-    // only reset expand state on first load, not on every refresh
     if (isFirstLoad.current) {
       setExpanded(buildExpandedToDepth(tableData, 0));
       isFirstLoad.current = false;
     }
   }, [coaData, searchTerm, tableData]);
 
-const handleAddChild = (row: COAAccount) => {
-  openCoaGLAccountModal(
-    { parentAccount: row },
-    false,
-    {
+  const handleAddChild = (row: COAAccount) => {
+    openCoaGLAccountModal({ parentAccount: row }, false, {
       onSuccess: async () => {
         await fetchCOA();
       },
-    },
-  );
-};
-
+    });
+  };
 
   const handleDeleteAccount = async (row: COAAccount) => {
     const confirmed = await showConfirm(
@@ -406,31 +418,29 @@ const handleAddChild = (row: COAAccount) => {
     }
   };
 
-
-const handleEditAccount = async (row: COAAccount) => {
-  try {
-    showLoading("Loading account details...");
-    const data = await getCOAById(row.name);
-    closeSwal();
-    if (!data) {
-      showApiError("Failed to load account details.");
-      return;
-    }
-    openCoaGLAccountModal(
-      { editAccount: { ...row, ...data } },
-      true,
-      {
+  const handleEditAccount = async (row: COAAccount) => {
+    try {
+      showLoading("Loading account details...");
+      const data = await getCOAById(row.name);
+      closeSwal();
+      if (!data) {
+        showApiError("Failed to load account details.");
+        return;
+      }
+      openCoaGLAccountModal({ editAccount: { ...row, ...data } }, true, {
         onSuccess: async () => {
           await fetchCOA();
         },
-      },
-    );
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
-};
+      });
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
+  // formatAmount used in both balance columns — applies each currency's own
+  // number_format pattern (group/decimal separators, decimal places) plus
+  // its symbol, instead of rendering the raw number.
   const columns = useMemo<ColumnDef<COAAccount>[]>(
     () => [
       {
@@ -440,7 +450,6 @@ const handleEditAccount = async (row: COAAccount) => {
         cell: ({ row }) => {
           const node = row.original;
           const canExpand = row.getCanExpand();
-
           return (
             <div
               className="flex items-center gap-1.5"
@@ -454,8 +463,9 @@ const handleEditAccount = async (row: COAAccount) => {
                 >
                   <ChevronRight
                     size={12}
-                    className={`transition-transform duration-150 ${row.getIsExpanded() ? "rotate-90" : ""
-                      }`}
+                    className={`transition-transform duration-150 ${
+                      row.getIsExpanded() ? "rotate-90" : ""
+                    }`}
                   />
                   {row.getIsExpanded() ? (
                     <FolderOpen size={13} />
@@ -470,7 +480,11 @@ const handleEditAccount = async (row: COAAccount) => {
                 />
               )}
               <span
-                className={`text-xs truncate ${node.is_group ? "font-semibold text-main" : "font-normal text-main"}`}
+                className={`text-xs truncate ${
+                  node.is_group
+                    ? "font-semibold text-main"
+                    : "font-normal text-main"
+                }`}
               >
                 {node.account_name}
               </span>
@@ -520,6 +534,9 @@ const handleEditAccount = async (row: COAAccount) => {
       },
       {
         id: "balance",
+        // Balance in the account's OWN currency, formatted per that
+        // currency's number_format pattern.
+        // Debtors (GHS) → "₵ 6,891.00"  |  Debtor-USD → "$ 574,350.00"
         header: "Balance",
         size: 150,
         meta: { align: "right" },
@@ -529,24 +546,33 @@ const handleEditAccount = async (row: COAAccount) => {
             return <span className="text-muted text-xs">—</span>;
           return (
             <code className="text-xs px-2 py-1 rounded bg-row-hover text-success">
-              {getCurrencySymbol()}{" "}
-              {node.balance_in_account_currency ?? node.balance}
+              {formatAmount(
+                node.account_currency,
+                node.balance_in_account_currency ?? node.balance,
+                { withSymbol: true },
+              )}
             </code>
           );
         },
       },
       {
-        id: "balance_in_account_currency",
-        header: `Balance (${getCurrencySymbol()})`,
-        size: 150,
+        id: "balance_base",
+        // Balance converted to base currency (from API: base_currency = "GHS")
+        // Header: "Balance (₵ GHS)" | Cell: "₵ 3,688,944,999.00"
+        header: `Balance (${getSymbol(coaData?.base_currency)} ${coaData?.base_currency ?? ""})`,
+        size: 160,
         meta: { align: "right" },
         cell: ({ row }) => {
           const node = row.original;
+          if (node.is_group)
+            return <span className="text-muted text-xs">—</span>;
           if (node.balance === null || node.balance === undefined)
             return <span className="text-muted text-xs">—</span>;
           return (
             <code className="text-xs px-2 py-1 rounded bg-row-hover text-main">
-              {node.balance}
+              {formatAmount(coaData?.base_currency, node.balance, {
+                withSymbol: true,
+              })}
             </code>
           );
         },
@@ -571,19 +597,19 @@ const handleEditAccount = async (row: COAAccount) => {
             },
             ...(node.is_group === 1
               ? [
-                {
-                  label: "Add Child",
-                  icon: <GitBranch size={12} />,
-                  onClick: () => handleAddChild(node),
-                },
-              ]
+                  {
+                    label: "Add Child",
+                    icon: <GitBranch size={12} />,
+                    onClick: () => handleAddChild(node),
+                  },
+                ]
               : [
-                {
-                  label: "View Ledger",
-                  icon: <BookMarked size={12} />,
-                  onClick: () => onViewLedger?.(node.name),
-                },
-              ]),
+                  {
+                    label: "View Ledger",
+                    icon: <BookMarked size={12} />,
+                    onClick: () => onViewLedger?.(node.name),
+                  },
+                ]),
             {
               label: "Delete",
               icon: <Trash2 size={12} />,
@@ -596,7 +622,7 @@ const handleEditAccount = async (row: COAAccount) => {
         },
       },
     ],
-    [onViewLedger],
+    [onViewLedger, getSymbol, formatAmount, coaData?.base_currency],
   );
 
   const table = useReactTable({
@@ -647,8 +673,7 @@ const handleEditAccount = async (row: COAAccount) => {
           loading={loading}
           allExpanded={allExpanded}
           onToggleExpand={handleToggleExpand}
-          onExport={handleExport} 
-
+          onExport={handleExport}
         />
 
         <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
@@ -719,7 +744,8 @@ const handleEditAccount = async (row: COAAccount) => {
                         borderBottom: "1px solid rgba(128,128,128,0.12)",
                       }}
                       onDoubleClick={() => {
-                        if (!row.original.is_group) onViewLedger?.(row.original.name);
+                        if (!row.original.is_group)
+                          onViewLedger?.(row.original.name);
                       }}
                     >
                       {row.getVisibleCells().map((cell) => {

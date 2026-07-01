@@ -4,10 +4,7 @@ import {
   getAllModeOfPayment,
   updateModeOfPaymentStatus,
 } from "../../api/BankAccountApi";
-import {
-  showApiError,
-  showSuccess,
-} from "../../utils/alert";
+import { showApiError, showSuccess } from "../../utils/alert";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -35,7 +32,6 @@ const ModeOfPaymentSetup: React.FC = () => {
   const [search, setSearch] = useState("");
   const { can } = usePermission();
 
-
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -60,46 +56,48 @@ const ModeOfPaymentSetup: React.FC = () => {
     });
   };
 
-const handleView = (name:string, e?: React.MouseEvent) => {
-  e?.stopPropagation();
+  const handleView = (name: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
 
-  openModeOfPaymentModal({ name }, true, {
-    onSuccess: () => fetchData(),
-    isViewMode:true
-  });
-};
-
-const handleToggle = async (row: any) => {
-  const isDisabling = row.enabled;
-
-  const result = await fireManagedSwal({
-    icon: "warning",
-    title: isDisabling ? "Disable Mode of Payment?" : "Enable Mode of Payment?",
-    text: isDisabling
-      ? `Are you sure you want to disable "${row.name}"?`
-      : `Are you sure you want to enable "${row.name}"?`,
-    showCancelButton: true,
-    confirmButtonColor: isDisabling ? "#ef4444" : "#22c55e",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: isDisabling ? "Yes, Disable" : "Yes, Enable",
-    cancelButtonText: "No",
-  });
-  if (!result.isConfirmed) return;
-
-  try {
-    setActionLoadingId(String(row.id));
-    await updateModeOfPaymentStatus({
-      name: row.id,
-      enabled: row.enabled ? 0 : 1,
+    openModeOfPaymentModal({ name }, true, {
+      onSuccess: () => fetchData(),
+      isViewMode: true,
     });
-    await fetchData();
-    showSuccess("Status updated successfully");
-  } catch (err: any) {
-    showApiError(err);
-  } finally {
-    setActionLoadingId(null);
-  }
-};
+  };
+
+  const handleToggle = async (row: any) => {
+    const isDisabling = row.enabled;
+
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: isDisabling
+        ? "Disable Mode of Payment?"
+        : "Enable Mode of Payment?",
+      text: isDisabling
+        ? `Are you sure you want to disable "${row.name}"?`
+        : `Are you sure you want to enable "${row.name}"?`,
+      showCancelButton: true,
+      confirmButtonColor: isDisabling ? "#ef4444" : "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: isDisabling ? "Yes, Disable" : "Yes, Enable",
+      cancelButtonText: "No",
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      setActionLoadingId(String(row.id));
+      await updateModeOfPaymentStatus({
+        name: row.id,
+        enabled: row.enabled ? 0 : 1,
+      });
+      await fetchData();
+      showSuccess("Status updated successfully");
+    } catch (err: any) {
+      showApiError(err);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
   const columns: Column<any>[] = [
     { key: "name", header: "Mode" },
     { key: "type", header: "Type" },
@@ -124,13 +122,11 @@ const handleToggle = async (row: any) => {
       align: "center",
       render: (row: any) => (
         <div className="flex items-center justify-center gap-2">
-           
-           
-  <ActionButton
-  type="view"
-  iconOnly
-  onClick={(e) => handleView(row.id, e)}   
-/>
+          <ActionButton
+            type="view"
+            iconOnly
+            onClick={(e) => handleView(row.id, e)}
+          />
           <ActionButton
             type="edit"
             onClick={(e) => handleEdit(row.id, e)}
@@ -174,7 +170,7 @@ const handleToggle = async (row: any) => {
           totalItems={totalItems}
           enableColumnSelector
           tableId="modeOfPayment"
-           pageSizeOptions={[20, 50, 100,200]}
+          pageSizeOptions={[20, 50, 100, 200]}
           onPageChange={setPage}
           searchValue={search}
           onSearch={(value) => {

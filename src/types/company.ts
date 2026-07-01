@@ -8,6 +8,8 @@ export interface RegistrationDetails {
   companyType: string;
   companyStatus: string;
   industryType: string;
+  defaultModeOfPayment: string;
+  domain: string;
 }
 
 export interface ContactInfo {

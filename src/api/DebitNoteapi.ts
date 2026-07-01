@@ -81,6 +81,7 @@ export async function getAllDebitNotes(
       filters: JSON.stringify([["is_return", "=", 1]]),
       fields: JSON.stringify(["name","supplier_name","currency","grand_total","status","posting_date","return_against"]),
       with_pagination: 1,
+      order_by: "posting_date desc",
       limit_start,
       limit_page_length: page_size,
       ...(search && { search }),

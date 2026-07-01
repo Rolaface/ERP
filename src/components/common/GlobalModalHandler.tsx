@@ -217,6 +217,7 @@ const PayrollPeriodModal = lazy(
 const EmailTemplateModal = lazy(
   () => import("../../components/Email/EmailTemplatemodal"),
 );
+const SendEmailModal = lazy(() => import("./SendEmailModal"));
 const ScanPIModal = lazy(
   () => import("../../views/Procurement/ScanPurchaseInvoiceModal"),
 );
@@ -1022,6 +1023,26 @@ const GlobalModalHandler: React.FC = () => {
             }}
           />,
         );
+
+      case "sendEmail": {
+        const d = isRecord(modal.initialData) ? modal.initialData : {};
+        return wrappedModal(
+          <SendEmailModal
+            key={modal.id}
+            modalId={modal.id}
+            open={true}
+            onClose={handleClose}
+            docType={d.docType as any}
+            isProforma={d.isProforma as boolean | undefined}
+            invoiceNumber={d.invoiceNumber as string | undefined}
+            contactEmail={d.contactEmail as string | null | undefined}
+            customerName={d.customerName as string | null | undefined}
+            supplierName={d.supplierName as string | null | undefined}
+            invoiceAttachments={d.invoiceAttachments as any}
+            periodText={d.periodText as string | undefined}
+          />,
+        );
+      }
 
       case "emailTemplate":
         return wrappedModal(

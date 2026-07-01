@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
@@ -29,6 +29,8 @@ import { CreditNote } from "../../types/sales/Creditnotes";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 
 const CREDIT_NOTE_MODULE = "Sales Invoice";
 
@@ -54,6 +56,11 @@ const CreditNotesTable: React.FC = () => {
   const [drawerPdfUrl, setDrawerPdfUrl] = useState<string | null>(null);
   const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
+
+  // ── Currency symbols + per-currency number formatting for the currencies
+  // present in the currently loaded page of credit notes.
+  const currencyCodes = useMemo(() => extractCurrencyCodesFlat(data), [data]);
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
 
   useEffect(() => {
     setPage(1);
@@ -281,6 +288,8 @@ const CreditNotesTable: React.FC = () => {
           "Receipt No": r.invoiceNo,
           Customer: r.customer,
           Date: r.date,
+          // Raw numeric value — kept as a real number in Excel (not a
+          // pre-formatted string) so the cell stays sortable/summable.
           Amount: r.amount,
           Status: r.status,
           Currency: r.currency,
@@ -325,125 +334,130 @@ const CreditNotesTable: React.FC = () => {
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
   };
 
-  const columns: Column<CreditNote>[] = [
-    {
-      key: "noteNo",
-      header: "Credit Invoice No",
-      render: (o) => (
-        <div className="py-1.5">
-          <span className="block">{o.noteNo || "—"}</span>
-        </div>
-      ),
-    },
-    {
-      key: "invoiceNo",
-      header: "Receipt No",
-      render: (o) => (
-        <div className="py-1.5">
-          <span className="block">{o.invoiceNo || "—"}</span>
-        </div>
-      ),
-    },
-    {
-      key: "customer",
-      header: "Customer",
-      align: "center",
-      render: (o) => (
-        <div className="py-1.5">
-          <span className="block">{o.customer || "—"}</span>
-        </div>
-      ),
-    },
-    {
-      key: "amount",
-      header: "Amount",
-      align: "right",
-      render: (r) => (
-        <div className="py-1.5">
-          <code className="block whitespace-nowrap">
-            {r.amount.toLocaleString()} {r.currency}
-          </code>
-        </div>
-      ),
-    },
-    {
-      key: "date",
-      header: "Date",
-      render: (o) => (
-        <div className="py-1.5">
-          <span className="block">{formatDate(o.date) || "—"}</span>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (r) => (
-        <div className="py-1.5">
-          <StatusBadge status={r.status} />
-        </div>
-      ),
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (r) => (
-        <ActionGroup>
-          <ActionButton
-            type="view"
-            iconOnly
-            onClick={(e) => handleView(r.noteNo, e)}
-          />
-          <PermissionGate module={CREDIT_NOTE_MODULE} action="write">
+  const columns: Column<CreditNote>[] = useMemo(
+    () => [
+      {
+        key: "noteNo",
+        header: "Credit Invoice No",
+        render: (o) => (
+          <div className="py-1.5">
+            <span className="block">{o.noteNo || "—"}</span>
+          </div>
+        ),
+      },
+      {
+        key: "invoiceNo",
+        header: "Receipt No",
+        render: (o) => (
+          <div className="py-1.5">
+            <span className="block">{o.invoiceNo || "—"}</span>
+          </div>
+        ),
+      },
+      {
+        key: "customer",
+        header: "Customer",
+        align: "center",
+        render: (o) => (
+          <div className="py-1.5">
+            <span className="block">{o.customer || "—"}</span>
+          </div>
+        ),
+      },
+      {
+        key: "amount",
+        header: "Amount",
+        align: "right",
+        render: (r) => (
+          <div className="py-1.5">
+            <code className="block whitespace-nowrap">
+              {formatAmount(r.currency, r.amount, { withSymbol: true })}
+            </code>
+          </div>
+        ),
+        tooltip: (r) =>
+          `Amount: ${formatAmount(r.currency, r.amount, { withSymbol: true })}`,
+      },
+      {
+        key: "date",
+        header: "Date",
+        render: (o) => (
+          <div className="py-1.5">
+            <span className="block">{formatDate(o.date) || "—"}</span>
+          </div>
+        ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        render: (r) => (
+          <div className="py-1.5">
+            <StatusBadge status={r.status} />
+          </div>
+        ),
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        align: "center",
+        render: (r) => (
+          <ActionGroup>
             <ActionButton
-              type="edit"
-              onClick={(e) => handleEdit(r, e)}
+              type="view"
               iconOnly
-              disabled={r.status !== "Draft"}
-              title={
-                r.status !== "Draft"
-                  ? "Only Draft invoices can be edited"
-                  : "Edit Credit Note"
-              }
+              onClick={(e) => handleView(r.noteNo, e)}
             />
-          </PermissionGate>
-          <ActionMenu
-            {...(can(CREDIT_NOTE_MODULE, "delete")
-              ? {
-                  onDelete: (e) => {
-                    e?.stopPropagation();
-                    handleDelete(r.noteNo);
-                  },
+            <PermissionGate module={CREDIT_NOTE_MODULE} action="write">
+              <ActionButton
+                type="edit"
+                onClick={(e) => handleEdit(r, e)}
+                iconOnly
+                disabled={r.status !== "Draft"}
+                title={
+                  r.status !== "Draft"
+                    ? "Only Draft invoices can be edited"
+                    : "Edit Credit Note"
                 }
-              : {})}
-            customActions={[
-              ...(r.status === "Draft" && can(CREDIT_NOTE_MODULE, "write")
-                ? [
-                    {
-                      label: "Approve",
-                      icon: ACTION_ICONS.APPROVE,
-                      onClick: () => handleSubmit(r.noteNo),
+              />
+            </PermissionGate>
+            <ActionMenu
+              {...(can(CREDIT_NOTE_MODULE, "delete")
+                ? {
+                    onDelete: (e) => {
+                      e?.stopPropagation();
+                      handleDelete(r.noteNo);
                     },
-                  ]
-                : []),
-              ...(!["Draft", "Cancelled"].includes(r.status) &&
-              can(CREDIT_NOTE_MODULE, "write")
-                ? [
-                    {
-                      label: "Cancel",
-                      icon: ACTION_ICONS.CANCEL,
-                      onClick: () => handleCancel(r.noteNo),
-                      danger: true,
-                    },
-                  ]
-                : []),
-            ]}
-          />
-        </ActionGroup>
-      ),
-    },
-  ];
+                  }
+                : {})}
+              customActions={[
+                ...(r.status === "Draft" && can(CREDIT_NOTE_MODULE, "write")
+                  ? [
+                      {
+                        label: "Approve",
+                        icon: ACTION_ICONS.APPROVE,
+                        onClick: () => handleSubmit(r.noteNo),
+                      },
+                    ]
+                  : []),
+                ...(!["Draft", "Cancelled"].includes(r.status) &&
+                can(CREDIT_NOTE_MODULE, "write")
+                  ? [
+                      {
+                        label: "Cancel",
+                        icon: ACTION_ICONS.CANCEL,
+                        onClick: () => handleCancel(r.noteNo),
+                        danger: true,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          </ActionGroup>
+        ),
+      },
+    ],
+    [can, formatAmount, handleView, handleEdit, handleDelete, handleSubmit, handleCancel],
+  );
 
   return (
     <div className="h-full min-h-0">
@@ -470,7 +484,7 @@ const CreditNotesTable: React.FC = () => {
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-         pageSizeOptions={[20, 50, 100,200]}
+        pageSizeOptions={[20, 50, 100, 200]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);

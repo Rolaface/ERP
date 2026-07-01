@@ -513,3 +513,52 @@ export const NumberInput: React.FC<NumberInputProps> = ({ value, className = "",
     {...props}
   />
 );
+
+// ─── ToggleSwitch ─────────────────────────────────────────────────────────────
+
+interface ToggleSwitchProps {
+  name: string;
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  required?: boolean;
+  onLabel?: string;
+  offLabel?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
+  name, label, checked, disabled, required,
+  onLabel = "Yes", offLabel = "No", onChange,
+}) => (
+  <div className="flex flex-col min-w-0">
+    <span className="block text-[10px] font-medium text-main mb-1">
+      {label}
+      {required && <span className="text-danger">*</span>}
+    </span>
+    <div className={`flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
+      <label className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${!checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}>
+        <input
+          type="radio"
+          name={name}
+          checked={!checked}
+          disabled={disabled}
+          onChange={() => onChange({ target: { name, type: "checkbox", checked: false } } as any)}
+          className="hidden"
+        />
+        {offLabel}
+      </label>
+      <label className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}>
+        <input
+          type="radio"
+          name={name}
+          checked={checked}
+          disabled={disabled}
+          onChange={() => onChange({ target: { name, type: "checkbox", checked: true } } as any)}
+          className="hidden"
+        />
+        {onLabel}
+      </label>
+    </div>
+  </div>
+);

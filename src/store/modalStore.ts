@@ -62,6 +62,8 @@ export type ModalType =
   | "scheduler"
   | "scheduler"
   | "coaGLAccount"
+  | "sendEmail"
+  
   
   
 
@@ -960,3 +962,11 @@ export const openCoaGLAccountModal = (
   useModalStore
     .getState()
     .openModal("coaGLAccount", initialData, isEdit, context, meta);
+export const openSendEmailModal = (
+  initialData?: unknown,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("sendEmail", initialData, false, context, meta);

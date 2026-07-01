@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { getLedgerDetails } from "../../api/Accounting/AccountApi";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useCompanyStore } from "../../store/companyStore";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 
 interface LedgerRow {
   gl_entry: string;
@@ -73,6 +75,9 @@ export interface GLViewProps {
   onBack?: () => void;
 }
 
+// Legacy fallback formatter — used only as a last resort if no currency code
+// can be resolved through the currency store at all (see `displayAmount`
+// inside the main component below, which is what's actually used in render).
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
@@ -83,7 +88,10 @@ const today = () => new Date().toISOString().split("T")[0];
 const startOfYear = () => `${new Date().getFullYear()}-01-01`;
 
 // ── Compact KPI strip ────────────────────────────────────────────────────────
-const KpiStrip: React.FC<{ summary: Summary }> = ({ summary }) => {
+const KpiStrip: React.FC<{
+  summary: Summary;
+  displayAmount: (amount: number) => string;
+}> = ({ summary, displayAmount }) => {
   const kpis = [
     {
       label: "Opening — Debit",
@@ -183,7 +191,7 @@ const KpiStrip: React.FC<{ summary: Summary }> = ({ summary }) => {
                     kpi.bold ? "font-extrabold" : ""
                   }`}
                 >
-                  {fmt(kpi.value)}
+                  {displayAmount(kpi.value)}
                 </span>
               </div>
             ))}
@@ -217,6 +225,44 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+
+  // ── Currency symbol resolution (same pattern as the other Accounting
+  // views). GLView's API response already tells us the exact currency to
+  // use — `presentation_currency` (what the ledger figures are shown in)
+  // falling back to `account_currency` — so we don't need a separate
+  // company fetch here. The store's `sym` value is kept as a final
+  // fallback in case neither currency comes back from the API, since on
+  // some setups `sym` itself holds a currency *code* (e.g. "GHS") rather
+  // than an actual symbol and needs to be resolved through the store too.
+  const { currencySymbol } = useCompanyStore();
+  const sym = currencySymbol || "–";
+  const reportCurrency = glData?.presentation_currency || glData?.account_currency;
+
+  const currencyCodes = useMemo(() => {
+    const codes = new Set<string>();
+    if (glData?.presentation_currency) codes.add(glData.presentation_currency);
+    if (glData?.account_currency) codes.add(glData.account_currency);
+    if (sym && sym !== "–") codes.add(sym);
+    return [...codes];
+  }, [glData?.presentation_currency, glData?.account_currency, sym]);
+
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+
+  const displayAmount = useCallback(
+    (amount: number) => {
+      const candidates = [
+        glData?.presentation_currency,
+        glData?.account_currency,
+        sym,
+      ].filter(Boolean) as string[];
+      for (const code of candidates) {
+        const formatted = formatAmount(code, amount, { withSymbol: true });
+        if (formatted) return formatted;
+      }
+      return fmt(amount);
+    },
+    [formatAmount, glData?.presentation_currency, glData?.account_currency, sym],
+  );
 
   const fetchGL = useCallback(
     async (filters: typeof appliedFilters, pg: number) => {
@@ -307,7 +353,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
                         : "text-amber-500"
                   }`}
                 >
-                  {fmt(n)}
+                  {displayAmount(n)}
                 </span>
               );
             }
@@ -340,7 +386,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
           },
         };
       });
-  }, [glData?.columns]);
+  }, [glData?.columns, displayAmount]);
 
   const table = useReactTable({
     data: glData?.ledger ?? [],
@@ -449,7 +495,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
       )}
 
       {/* ── Compact KPI Strip ── */}
-      {summary && <KpiStrip summary={summary} />}
+      {summary && <KpiStrip summary={summary} displayAmount={displayAmount} />}
 
       {/* ── Table ── */}
       {columns.length > 0 && (

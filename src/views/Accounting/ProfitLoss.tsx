@@ -23,7 +23,7 @@ import {
   PLResponse,
   mapNode,
   nf,
-  formatPeriod,
+ 
 } from "../../types/Accounting/ProfitLoss";
 import {
   getProfitAndLoss,
@@ -31,6 +31,11 @@ import {
 } from "../../api/Accounting/AccountApi";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 import { getCompanyCurrentFiscalYear } from "../../api/utils/frappeUtilsApi";
+import { getCompanyById } from "../../api/companySetupApi";
+import { useCompanyStore } from "../../store/companyStore";
+import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+
+const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 const toInputDate = (apiDate: string): string => {
   if (!apiDate || !apiDate.includes("-")) return "";
@@ -48,8 +53,7 @@ const toApiDate = (inputDate: string): string => {
 
 const res = await getCompanyCurrentFiscalYear();
 const fiscalYear = res.data?.fiscal_year;
-const fiscalYearStartDate = res?.data?.start_date;
-const fiscalYearEndDate = res?.data?.end_date;
+
 
 const currentMonthStart = (): string => {
   const d = new Date();
@@ -83,9 +87,11 @@ const buildExpandedToDepth = (
 function KpiStrip({
   data,
   loading,
+  displayAmount,
 }: {
   data: PLData | null;
   loading: boolean;
+  displayAmount: (amount: number) => string;
 }) {
   const items = data?.summary.filter((i) => !i.type) ?? [];
 
@@ -114,7 +120,7 @@ function KpiStrip({
               <span
                 className={`text-sm font-extrabold tabular-nums ${colorFor(item.label, item.indicator)}`}
               >
-                {nf(item.value)}
+                {displayAmount(item.value)}
               </span>
             )}
           </div>
@@ -292,6 +298,43 @@ const ProfitLoss: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [allExpanded, setAllExpanded] = useState(false);
+  const [company, setCompany] = useState<any | null>(null);
+
+  // ── Currency symbol resolution (same pattern as AccountsPayable/Receivable).
+  // P&L has one currency for the whole report (the company's base currency),
+  // so we just resolve that single code through the shared currency store —
+  // including the store's `sym` value too, since on some setups that itself
+  // holds a currency *code* (e.g. "GHS") rather than an actual symbol.
+  const { currencySymbol } = useCompanyStore();
+  const sym = currencySymbol || "–";
+  const baseCurrency = company?.default_currency || company?.currency;
+
+  const currencyCodes = useMemo(() => {
+    const codes: string[] = [];
+    if (baseCurrency) codes.push(baseCurrency);
+    if (sym && sym !== "–" && !codes.includes(sym)) codes.push(sym);
+    return codes;
+  }, [baseCurrency, sym]);
+
+  const { formatAmount } = useCurrencySymbols(currencyCodes);
+
+  const displayAmount = useCallback(
+    (amount: number) => {
+      const candidates = [baseCurrency, sym].filter(Boolean) as string[];
+      for (const code of candidates) {
+        const formatted = formatAmount(code, amount, { withSymbol: true });
+        if (formatted) return formatted;
+      }
+      return nf(amount);
+    },
+    [formatAmount, baseCurrency, sym],
+  );
+
+  useEffect(() => {
+    getCompanyById(COMPANY_ID).then((res) => {
+      if (res?.status_code === 200) setCompany(res.data);
+    });
+  }, []);
 
   const tableData = useMemo<PLNode[]>(() => {
     if (!data) return [];
@@ -433,12 +476,12 @@ useEffect(() => {
           meta: { align: "right" },
           cell: ({ row }) => (
             <span className="text-xs tabular-nums text-main">
-              {nf(row.original.periods?.[col.fieldname] ?? 0)}
+              {displayAmount(row.original.periods?.[col.fieldname] ?? 0)}
             </span>
           ),
         };
       });
-  }, [data]);
+  }, [data, displayAmount]);
 
   const table = useReactTable({
     data: tableData,
@@ -471,7 +514,7 @@ useEffect(() => {
 
   return (
     <div className="flex flex-col gap-3">
-      <KpiStrip data={data} loading={loading && !data} />
+      <KpiStrip data={data} loading={loading && !data} displayAmount={displayAmount} />
 
       <FilterBar
         filters={filters}

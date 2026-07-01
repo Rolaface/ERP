@@ -28,7 +28,7 @@ const DOC_TYPE_OPTIONS = [
     { label: "Purchase Order", value: "Purchase Order" },
     { label: "Payment Entry", value: "Payment Entry" },
     { label: "Expense Claim", value: "Expense Claim" },
-    // { label: "Proforma Invoice", value: "Proforma Invoice" },
+    { label: "Proforma Invoice", value: "Proforma Invoice" },
     { label: "Quotation", value: "Quotation" },
     { label: "Customer Statement", value: "Customer Statement" },
     { label: "Payment Reminder", value: "Payment Reminder" },
@@ -82,6 +82,14 @@ function getVariableChips(docType: string): {
             return [
                 { label: "{{ name }}", value: " {{ name }} " },
                 { label: "{{ quotation_to }}", value: " {{ quotation_to }} " },
+                { label: "{{ customer_name }}", value: " {{ customer_name }} " },
+                { label: "{{ transaction_date }}", value: " {{ transaction_date }} " },
+                { label: "{{ company }}", value: " {{ company }} " },
+            ];
+        case "Proforma Invoice":
+            return [
+                { label: "{{ name }}", value: " {{ name }} " },
+                { label: "{{ proforma_to }}", value: " {{ proforma_to }} ", payloadValue: ' {{ quotation_to }} ' },
                 { label: "{{ customer_name }}", value: " {{ customer_name }} " },
                 { label: "{{ transaction_date }}", value: " {{ transaction_date }} " },
                 { label: "{{ company }}", value: " {{ company }} " },
@@ -397,8 +405,8 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                 isViewMode
                     ? "View Email Template"
                     : templateId
-                    ? "Edit Email Template"
-                    : "Add Email Template"
+                        ? "Edit Email Template"
+                        : "Add Email Template"
             }
             subtitle={
                 isViewMode
@@ -578,7 +586,7 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
                                                     >
                                                         {chip.label}
                                                     </button>
-                                                  
+
                                                 </div>
                                             );
                                         })}
