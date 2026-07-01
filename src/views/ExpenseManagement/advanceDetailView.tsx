@@ -53,11 +53,11 @@ export interface EmployeeAdvanceDetail {
   pagination?: {
     page: number;
     page_size: number;
-    total: number;
+    total_count: number;    
     total_pages: number;
     has_next: boolean;
     has_prev: boolean;
-  };
+};
 }
 
 interface Props {
@@ -714,16 +714,16 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
 
             {/* Table */}
              <div className="flex-1 min-h-0 overflow-auto">
-          <ModalTable<ExpenseClaimEntry>
+         <ModalTable<ExpenseClaimEntry>
   columns={claimColumns}
   data={claims}
   rowKey={(ec) => ec.name}
   emptyMessage="No expense claims yet"
-  totalItems={data.pagination?.total ?? claims.length}
+  totalItems={data.pagination?.total_count ?? claims.length}   
   currentPage={data.pagination?.page ?? claimsPage}
   totalPages={data.pagination?.total_pages ?? 1}
   pageSize={data.pagination?.page_size ?? claimsPageSize}
- pageSizeOptions={[7, 10, 20, 50]}
+  pageSizeOptions={[7, 10, 20, 50]}
   onPageChange={onClaimsPageChange}
   onPageSizeChange={onClaimsPageSizeChange}
   showToolbar={false}
