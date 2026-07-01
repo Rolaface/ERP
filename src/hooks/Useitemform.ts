@@ -1,7 +1,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createItem, updateItemByItemCode } from "../api/itemApi";
-import { getItemGroupTree } from "../api/itemGroupApi";
 import {
   closeSwal,
   showApiError,
@@ -10,7 +9,6 @@ import {
 } from "../utils/alert";
 import type {
   ItemFormData,
-  ItemGroupOption,
   ItemModalTab,
   ItemTaxRow,
   SupplierOption,
@@ -19,8 +17,7 @@ import type { ModalSubmitHandler, ModalValidationError } from "../types/modal";
 import { getSupplierList } from "../api/lookupApi";
 import { showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
-import { all } from "axios";
-import { fi } from "date-fns/locale";
+
 
 interface ItemNestedInitialData extends Partial<ItemFormData> {
   vendorInfo?: Partial<
@@ -59,19 +56,6 @@ interface UseItemFormProps {
   onClose: () => void;
 }
 
-interface ItemGroupTreeNode {
-  name: string;
-  item_group_name: string;
-  children?: ItemGroupTreeNode[];
-}
-
-interface ItemGroupTreeResponse {
-  message?: {
-    data?: {
-      item_groups?: ItemGroupTreeNode[];
-    };
-  };
-}
 
 // interface SupplierApiItem {
 //   supplierName: string;
@@ -301,11 +285,7 @@ dimensionUnit: item.dimensionUOM || "cm",
   };
 };
 
-const flattenItemGroups = (nodes: ItemGroupTreeNode[]): ItemGroupOption[] =>
-  nodes.flatMap((node) => [
-    { id: node.name, groupName: node.item_group_name },
-    ...flattenItemGroups(node.children ?? []),
-  ]);
+
 
 export const useItemForm = ({
   isOpen,
@@ -317,27 +297,12 @@ export const useItemForm = ({
   const [form, setForm] = useState<ItemFormData>(emptyForm);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<ItemModalTab>("details");
-  const [itemGroups, setItemGroups] = useState<ItemGroupOption[]>([]);
-  const [loadingItemGroups, setLoadingItemGroups] = useState(false);
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([]);
 
   const isServiceItem = Number(form.itemTypeCode) === 3;
 
-  const fetchItemGroups = useCallback(async () => {
-    try {
-      setLoadingItemGroups(true);
-
-      const response = (await getItemGroupTree()) as ItemGroupTreeResponse;
-      const treeData = response.message?.data?.item_groups;
-      setItemGroups(Array.isArray(treeData) ? flattenItemGroups(treeData) : []);
-    } catch (err) {
-      showApiError(err);
-    } finally {
-      setLoadingItemGroups(false);
-    }
-  }, []);
 
   const fetchSuppliers = useCallback(async () => {
     try {
@@ -367,11 +332,7 @@ export const useItemForm = ({
     }
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
 
-    void fetchItemGroups();
-  }, [fetchItemGroups, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -547,8 +508,6 @@ return {
   getValidationErrorForTab,
   taxRows,
   setTaxRows,
-  itemGroups,
-  loadingItemGroups,
   suppliers,
   loadingSuppliers,
 };

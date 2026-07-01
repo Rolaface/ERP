@@ -31,6 +31,7 @@ export interface AuthUser {
   roles?: string[];
   permissions?: RawPermissionEntry[];  // ← stored from get_login_user
   employeeId?: string;
+  isZraEnabled?: boolean;
 }
 
 // ─── Login ────────────────────────────────────────────────────────────────────
@@ -98,6 +99,7 @@ interface GetLoginUserResponse {
       roles: string[];
       permission: RawPermissionEntry[];   
        employeeId?: string;
+       is_zra_enabled?: boolean;
     };
   };
 }
@@ -122,7 +124,8 @@ export const fetchLoginUser = async (): Promise<AuthUser> => {
     gender:      d.gender,
     roles:       d.roles ?? [],
     permissions: d.permission ?? [],
-     employeeId:  d.employeeId,  
+     employeeId:  d.employeeId,
+     isZraEnabled: d.is_zra_enabled ,  
   };
 
   // Update localStorage with fresh data
