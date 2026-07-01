@@ -7,7 +7,7 @@ const RESERVED_WORDS = new Set([
 
 export function extractFormulaAbbreviations(formula: string): string[] {
   if (!formula) return [];
-  const cleaned = formula.replace(/(["'`]).*?\1/g, " "); // strip string literals
+  const cleaned = formula.replace(/(["'`]).*?\1/g, " "); 
   const tokens = cleaned.match(/[A-Za-z_][A-Za-z0-9_]*/g) || [];
   const seen = new Set<string>();
   const result: string[] = [];
