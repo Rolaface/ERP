@@ -17,6 +17,7 @@ import {
   type CreateEmployeeAdvancePayload,
 } from "../../api/expenseClaimApi";
 
+import { cleanGLNameList } from "../../api/utils/glAccountUtils";
 export interface EmployeeAdvanceFormData {
   id?: string;
   posting_date: string;
@@ -124,10 +125,13 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
   const fetchAdvanceAccounts = useCallback(async (search: string) => {
     try {
       const res = await getAdvanceGLAccounts(search || undefined);
-      return res.map((acc) => ({
+
+      return cleanGLNameList(res.map((acc) => ({
         value: acc.value,
         label: acc.label,
-      }));
+      })),
+        "label"
+      );
     } catch (err) {
       showApiError(err);
       return [];
