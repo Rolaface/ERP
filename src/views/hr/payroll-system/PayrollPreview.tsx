@@ -134,10 +134,12 @@ function buildEmployees(raw: PayrollVerificationData): MappedEmployee[] {
       absentDays: slip.absent_days ?? 0,
       gross: slip.base_gross_pay ?? slip.gross_pay ?? 0,
       totalDeductions: slip.base_total_deduction ?? slip.total_deduction ?? 0,
-      netPay: slip.base_rounded_total ?? slip.net_payable ?? 0,
+      netPay: slip.net_pay ?? slip.net_payable ?? 0,
       ctc: slip.ctc ?? 0,
       annualTaxable: slip.annual_taxable_amount ?? 0,
       currentMonthTax: slip.current_month_income_tax ?? 0,
+      yearToDate: slip.year_to_date ?? 0,
+      incomeTaxDeductedTillDate: slip.income_tax_deducted_till_date ?? 0,
       totalInWords: slip.total_in_words ?? "",
       components,
       earnings: slip.earnings ?? [],
@@ -680,7 +682,6 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
   );
 
   const exportExcel = useCallback(() => {
-    console.log("🚀 ~ PayrollPreviewModal ~ rawData:", rawData)
     if (!rawData) return;
 
     const earningAbbrSet = new Map<string, string>();
@@ -697,18 +698,26 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
     const deductionCols = [...deductionAbbrSet.entries()];
 
     const payrollMonth = new Date(rawData.start_date).toLocaleString("default", {
-    month: "long",
-    year: "numeric",
-  });
+      month: "long",
+      year: "numeric",
+    });
 
-    const header = [
-      "ID",
+    const baseHeadersLength = 7;
+    const earningLength = earningCols.length;
+    const deductionLength = deductionCols.length;
+
+    const row1 = Array(baseHeadersLength).fill("");
+    row1.push("Earning", ...Array(Math.max(0, earningLength - 1)).fill(""));
+    row1.push("");
+    row1.push("Deductions", ...Array(Math.max(0, deductionLength - 1)).fill(""));
+    row1.push("Summary", "", "", "");
+
+    const row2 = Array(row1.length).fill("");
+
+    const row3 = [
+      "Emp ID",
       "Name",
-      "Sex",
       "Department",
-      "Designation",
-      "Cost Center",
-      "Project",
       "Work Days",
       "Paid Days",
       "Leave Without Pay",
@@ -718,29 +727,29 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
       ...deductionCols.map(([, label]) => label),
       "Total Deductions",
       "Net Pay",
+      "Total Earning Till Date",
+      "Tax Till Date",
     ];
 
-    const rows = employees.map((e) => {
-      console.log("🚀 ~ PayrollPreviewModal ~ e:", e)
-      return [
+    // Map Employee Data
+    const rows = employees.map((e) => [
       e.id,
       e.name,
-      e.gender ?? "",
       e.department,
-      e.designation,
-      rawData.cost_center ?? "",
-      rawData.project ?? "",
       e.totalWorkingDays,
       e.paymentDays,
       e.leaveWithoutPay,
+      e.absentDays ?? 0,
       ...earningCols.map(([abbr]) => e.components[abbr] ?? 0),
       e.gross,
       ...deductionCols.map(([abbr]) => e.components[abbr] ?? 0),
       e.totalDeductions,
       e.netPay,
-    ];
-    });
+      e.yearToDate ?? 0,
+      e.incomeTaxDeductedTillDate ?? 0,
+    ]);
 
+    // Totals Row
     const totalRow = [
       "",
       "TOTALS",
@@ -750,23 +759,49 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
       "",
       "",
       ...earningCols.map(([abbr]) =>
-        employees.reduce((s, e) => s + (e.components[abbr] ?? 0), 0),
+        employees.reduce((s, e) => s + (e.components[abbr] ?? 0), 0)
       ),
       rawData.financial_summary?.total_gross_payable ?? 0,
       ...deductionCols.map(([abbr]) =>
-        employees.reduce((s, e) => s + (e.components[abbr] ?? 0), 0),
+        employees.reduce((s, e) => s + (e.components[abbr] ?? 0), 0)
       ),
       rawData.financial_summary?.total_deduction ?? 0,
       rawData.financial_summary?.total_net_payable ?? 0,
       "",
+      "",
     ];
 
-    const ws = XLSX.utils.aoa_to_sheet([header, ...rows, [], totalRow]);
+    const wsData = [row1, row2, row3, ...rows, [], totalRow];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    const merges = [];
+
+    if (earningLength > 1) {
+      merges.push({
+        s: { r: 0, c: baseHeadersLength },
+        e: { r: 0, c: baseHeadersLength + earningLength - 1 },
+      });
+    }
+
+    const deductionStartCol = baseHeadersLength + earningLength + 1;
+    if (deductionLength > 1) {
+      merges.push({
+        s: { r: 0, c: deductionStartCol },
+        e: { r: 0, c: deductionStartCol + deductionLength - 1 },
+      });
+    }
+
+    const summaryStartCol = deductionStartCol + deductionLength;
+    merges.push({
+      s: { r: 0, c: summaryStartCol },
+      e: { r: 0, c: summaryStartCol + 3 },
+    });
+
+    ws["!merges"] = merges;
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, monthLabel.slice(0, 31));
     XLSX.writeFile(wb, `payroll_${payrollMonth}.xlsx`);
-    // XLSX.writeFile(wb, `payroll_${rawData.start_date}_${rawData.end_date}.xlsx`);
-    // XLSX.writeFile(wb, `payroll_${rawData.start_date ?? "export"}.xlsx`);
   }, [rawData, employees, monthLabel]);
 
   if (!isOpen) return null;
