@@ -42,33 +42,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // ── Login — call loginApi then fetchLoginUser for permissions ────────────
-  const login = useCallback(async (email: string, password: string) => {
-    // Step 1: authenticate, get sid + basic user info
-    const basicUser = await loginApi(email, password);
-    setUser(basicUser);
+const login = useCallback(async (email: string, password: string) => {
+  const basicUser = await loginApi(email, password);
+  setUser(basicUser);
 
-    // Step 2: fetch full user with permissions
-    try {
-      const fullUser = await fetchLoginUser();
-      setUser(fullUser);
-    } catch (err) {
-      // permissions fetch failed — user is still logged in
-      // PermissionBootstrap will show error state
-      console.error("[AuthContext] fetchLoginUser failed after login:", err);
-    }
-  }, []);
+  try {
+    const fullUser = await fetchLoginUser();
+    setUser(fullUser);
+    useCompanyStore.getState().setZraEnabled(fullUser.isZraEnabled ?? false); 
+  } catch (err) {
+    console.error("[AuthContext] fetchLoginUser failed after login:", err);
+  }
+}, []);
 
-  // ── Refresh permissions — call on role/user update ───────────────────────
-  const refreshPermissions = useCallback(async () => {
-    if (!localStorage.getItem(SID_KEY)) return;  // not logged in
+const refreshPermissions = useCallback(async () => {
+  if (!localStorage.getItem(SID_KEY)) return;
 
-    try {
-      const freshUser = await fetchLoginUser();
-      setUser(freshUser);
-    } catch (err) {
-      console.error("[AuthContext] refreshPermissions failed:", err);
-    }
-  }, []);
+  try {
+    const freshUser = await fetchLoginUser();
+    setUser(freshUser);
+    useCompanyStore.getState().setZraEnabled(freshUser.isZraEnabled ?? false);
+  } catch (err) {
+    console.error("[AuthContext] refreshPermissions failed:", err);
+  }
+}, []);
 
   // ── Logout ───────────────────────────────────────────────────────────────
 const logout = useCallback(async () => {

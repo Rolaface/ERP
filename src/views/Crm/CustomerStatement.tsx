@@ -24,7 +24,7 @@ import {
 import { showApiError } from "../../utils/alert";
 import { DateRangeFilter } from "../../components/ui/modal/DateRangeFilter";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
-import SendEmailModal from "../../components/common/SendEmailModal";
+import { openSendEmailModal } from "../../store/modalStore";
 import { uploadFile } from "../../api/Email/EmailApi";
 import type {
   LedgerEntry,
@@ -317,11 +317,7 @@ const PdfButton = ({
   const [viewer, setViewer] = useState<{ blobUrl: string; blob: Blob } | null>(
     null,
   );
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailAttachments, setEmailAttachments] = useState<
-    { name: string; file_name: string }[]
-  >([]);
-  const [emailUploading, setEmailUploading] = useState(false);
+const [emailUploading, setEmailUploading] = useState(false);
   const cachedRef = useRef<Blob | null>(null);
   const dateRange = fmtDateRange(fromDate, toDate);
   const filename = `Statement_${customerName.replace(/\s+/g, "_")}_${dateRange.replace(/[\s–]/g, "")}.pdf`;
@@ -359,15 +355,19 @@ const PdfButton = ({
     if (action === "download") {
       triggerDownload(blob, filename);
     }
-    if (action === "share") {
+   if (action === "share") {
       try {
         setEmailUploading(true);
         const file = new File([blob], filename, { type: "application/pdf" });
         const uploaded = await uploadFile(file, customerId, "Customer");
-        setEmailAttachments([
-          { name: uploaded.name, file_name: uploaded.file_name },
-        ]);
-        setEmailModalOpen(true);
+        openSendEmailModal({
+          docType: "Customer",
+          invoiceNumber: customerId,
+          contactEmail: defaultEmail,
+          customerName,
+          invoiceAttachments: [{ name: uploaded.name, file_name: uploaded.file_name }],
+          periodText,
+        });
       } catch (err) {
         setError("Failed to attach PDF. Please try again.");
       } finally {
@@ -433,21 +433,7 @@ const PdfButton = ({
         />
       )}
 
-      {emailModalOpen && (
-        <SendEmailModal
-          open={emailModalOpen}
-          docType="Customer"
-          invoiceNumber={customerId}
-          contactEmail={defaultEmail}
-          customerName={customerName}
-          invoiceAttachments={emailAttachments}
-          periodText={periodText}
-          onClose={() => {
-            setEmailModalOpen(false);
-            setEmailAttachments([]);
-          }}
-        />
-      )}
+      
     </>
   );
 };
