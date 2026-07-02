@@ -693,4 +693,4 @@ export const SalaryComponentModal: React.FC<Props> = ({
       </div>
     </MinimizableModal>
   );
-};s
+};
