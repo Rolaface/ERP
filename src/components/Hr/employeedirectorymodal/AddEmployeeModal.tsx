@@ -503,8 +503,11 @@ const AddEmployeeModal: React.FC<Props> = ({
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       formContainerRef={containerRef}
       title={editData ? "Edit Employee" : "Add Employee"}
-      subtitle="Employee Management"
-      customWidth="90vw"
+      subtitle={
+        editData
+          ? "Edit and manage employee details"
+          : "Add and manage employees"
+      } customWidth="90vw"
       height="95vh"
       footer={footer}
     >

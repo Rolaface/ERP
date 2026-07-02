@@ -640,9 +640,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Expense Claim" : " Add Expense Claim"}
-      subtitle={
-        isEditMode ? "Update expense claim" : "Submit a new expense claim"
-      }
+     subtitle={
+       isEditMode
+         ? "Edit and manage expense claim details"
+         : "Add and manage expense claims"
+     }
       icon={ClipboardCheck }
       footer={footer}
       customWidth="46vw"

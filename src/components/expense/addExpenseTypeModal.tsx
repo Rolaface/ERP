@@ -147,8 +147,11 @@ export const ExpenseTypeModal: React.FC<ExpenseTypeModalProps> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Expense Type" : "Add Expense Type"}
-      subtitle={isEditMode ? "Update expense type" : "Add a new expense type"}
-      icon={FileText}
+      subtitle={
+        isEditMode
+          ? "Edit and manage expense type details"
+          : "Add and manage expense types"
+      } icon={FileText}
       footer={footer}
       customWidth="38vw"
       height="auto"

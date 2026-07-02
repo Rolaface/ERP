@@ -197,8 +197,11 @@ const {
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Invoice" : "Add Invoice"}
-      subtitle="Add and manage invoice details"
-      icon={Receipt}
+      subtitle={
+        mode === "edit"
+          ? "Edit and manage invoice details"
+          : "Add and manage invoices"
+      } icon={Receipt}
       footer={footerContent}
       maxWidth="full"
       height="700px"

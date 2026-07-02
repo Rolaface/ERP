@@ -424,8 +424,11 @@ const ItemModal: React.FC<ItemModalProps> = ({
       isOpen={isOpen}
       onClose={handleCloseRequest}
       title={isEditMode ? "Edit Item" : "Add Item"}
-      subtitle="Add and manage item details"
-      icon={Package}
+      subtitle={
+        isEditMode
+          ? "Edit and manage item details"
+          : "Add and manage items"
+      } icon={Package}
       footer={footer}
       customWidth="min(92vw, 1280px)"
       height="60vh"

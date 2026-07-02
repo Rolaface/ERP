@@ -109,8 +109,11 @@ export const EmployeeTypeModal: React.FC<Props> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEdit ? "Edit Employee Type" : "Add Employee Type"}
-      subtitle="Configure employment categories"
-      icon={UserRoundCog}
+      subtitle={
+        isEdit
+          ? "Edit and manage employment categories"
+          : "Add and manage employment categories"
+      } icon={UserRoundCog}
       maxWidth="xl"
       height="auto"
       footer={footer}
