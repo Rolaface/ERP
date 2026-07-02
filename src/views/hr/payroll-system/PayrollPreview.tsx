@@ -95,7 +95,6 @@ function employeeMatchesQuery(emp: MappedEmployee, tokens: string[]): boolean {
   return tokens.every((token) => haystack.includes(token));
 }
 
-
 function buildEmployees(raw: PayrollVerificationData): MappedEmployee[] {
   return (raw.employees ?? []).map((entry) => {
     const slip = entry.salary_slip_details ?? {
@@ -132,6 +131,7 @@ function buildEmployees(raw: PayrollVerificationData): MappedEmployee[] {
       paymentDays: slip.payment_days ?? 0,
       leaveWithoutPay: slip.leave_without_pay ?? 0,
       absentDays: slip.absent_days ?? 0,
+      leavesTakenThisMonth: slip.leaves_taken_in_payroll_period ?? 0,
       gross: slip.base_gross_pay ?? slip.gross_pay ?? 0,
       totalDeductions: slip.base_total_deduction ?? slip.total_deduction ?? 0,
       netPay: slip.net_pay ?? slip.net_payable ?? 0,
@@ -697,10 +697,13 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
     const earningCols = [...earningAbbrSet.entries()];
     const deductionCols = [...deductionAbbrSet.entries()];
 
-    const payrollMonth = new Date(rawData.start_date).toLocaleString("default", {
-      month: "long",
-      year: "numeric",
-    });
+    const payrollMonth = new Date(rawData.start_date).toLocaleString(
+      "default",
+      {
+        month: "long",
+        year: "numeric",
+      },
+    );
 
     const baseHeadersLength = 7;
     const earningLength = earningCols.length;
@@ -709,7 +712,10 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
     const row1 = Array(baseHeadersLength).fill("");
     row1.push("Earning", ...Array(Math.max(0, earningLength - 1)).fill(""));
     row1.push("");
-    row1.push("Deductions", ...Array(Math.max(0, deductionLength - 1)).fill(""));
+    row1.push(
+      "Deductions",
+      ...Array(Math.max(0, deductionLength - 1)).fill(""),
+    );
     row1.push("Summary", "", "", "");
 
     const row2 = Array(row1.length).fill("");
@@ -731,7 +737,6 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
       "Tax Till Date",
     ];
 
-    // Map Employee Data
     const rows = employees.map((e) => [
       e.id,
       e.name,
@@ -739,7 +744,7 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
       e.totalWorkingDays,
       e.paymentDays,
       e.leaveWithoutPay,
-      e.absentDays ?? 0,
+      e.leavesTakenThisMonth ?? 0,
       ...earningCols.map(([abbr]) => e.components[abbr] ?? 0),
       e.gross,
       ...deductionCols.map(([abbr]) => e.components[abbr] ?? 0),
@@ -749,7 +754,6 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
       e.incomeTaxDeductedTillDate ?? 0,
     ]);
 
-    // Totals Row
     const totalRow = [
       "",
       "TOTALS",
@@ -759,11 +763,11 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
       "",
       "",
       ...earningCols.map(([abbr]) =>
-        employees.reduce((s, e) => s + (e.components[abbr] ?? 0), 0)
+        employees.reduce((s, e) => s + (e.components[abbr] ?? 0), 0),
       ),
       rawData.financial_summary?.total_gross_payable ?? 0,
       ...deductionCols.map(([abbr]) =>
-        employees.reduce((s, e) => s + (e.components[abbr] ?? 0), 0)
+        employees.reduce((s, e) => s + (e.components[abbr] ?? 0), 0),
       ),
       rawData.financial_summary?.total_deduction ?? 0,
       rawData.financial_summary?.total_net_payable ?? 0,

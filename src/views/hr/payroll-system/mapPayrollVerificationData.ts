@@ -12,6 +12,9 @@ import type {
 // ─── Output types (consumed by PayrollPreviewModal) ───────────────────────────
 
 export interface MappedEmployee {
+  leavesTakenThisMonth: number;
+  yearToDate: number;
+  incomeTaxDeductedTillDate: number;
   id:               string;
   name:             string;
   designation:      string;

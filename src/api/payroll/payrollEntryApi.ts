@@ -111,7 +111,7 @@ export interface VerificationSalarySlipDetails {
   name?: string | null;
   employee: string;
   employee_name: string;
-  /** "Preview" for normal employees, "Error" when calculation failed */
+
   status: "Preview" | "Error" | "Draft" | "Submitted" | string;
   error_message?: string | null;
 
@@ -120,13 +120,13 @@ export interface VerificationSalarySlipDetails {
   department?: string;
   designation?: string;
   branch?: string | null;
+  gender?: string;
   salary_structure?: string;
   payroll_entry?: string;
 
   // Payment
   mode_of_payment?: string;
   bank_name?: string | null;
-  /** null → bank not configured; any string → verified */
   bank_account_no?: string | null;
 
   // Period
@@ -142,21 +142,29 @@ export interface VerificationSalarySlipDetails {
   leave_without_pay?: number;
   absent_days?: number;
   unmarked_days?: number;
+  leaves_taken_in_payroll_period?: number;
 
   // Financials
   gross_pay?: number;
   base_gross_pay?: number;
+
   total_deduction?: number;
+  base_total_deduction?: number;
+
   net_pay?: number;
-  rounded_total?: number;
   net_payable?: number;
+  rounded_total?: number;
+
   ctc?: number;
+
   annual_taxable_amount?: number;
   current_month_income_tax?: number;
+  income_tax_deducted_till_date?: number;
+  year_to_date?: number;
   total_income_tax?: number;
+
   total_in_words?: string;
 
-  // Dynamic arrays — columns built from these at render time
   earnings?: VerificationSalaryComponent[];
   deductions?: VerificationSalaryComponent[];
 
@@ -165,6 +173,7 @@ export interface VerificationSalarySlipDetails {
 
 /** One employee entry in the verification response */
 export interface VerificationEmployeeEntry {
+  gender?: string;
   employee: string;
   employee_name: string;
   department: string;
