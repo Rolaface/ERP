@@ -188,6 +188,11 @@ const ModalShell: React.FC<ModalShellProps> = ({
           justifyContent: "center",
           padding: "8px",
           pointerEvents: "none",
+          // If the panel's minWidth ever exceeds the real viewport (very
+          // small windows / extreme zoom), this lets the layer itself
+          // scroll so the panel is still reachable instead of being
+          // clipped off-screen with no way to get to it.
+          overflow: "auto",
         }}
       >
         <motion.div
@@ -206,6 +211,20 @@ const ModalShell: React.FC<ModalShellProps> = ({
             pointerEvents: "auto",
             height,
             width: customWidth || undefined,
+            // Without a floor, customWidth ("90vw" etc.) keeps shrinking as
+            // the effective viewport shrinks (browser/OS zoom, smaller
+            // windows), while fixed-width children inside the panel
+            // (sidebars, table columns) don't shrink with it. That fight
+            // is exactly what produces "compact but not actually
+            // responsive" — content overlapping, columns collapsing into
+            // each other instead of reflowing cleanly. A minWidth means
+            // the panel holds a sane working size; if the real viewport
+            // is smaller than that, the backdrop layer's own overflow
+            // (see above) handles it instead of the panel's internal
+            // layout breaking.
+            minWidth: customWidth
+              ? "min(960px, calc(100vw - 16px))"
+              : undefined,
             maxWidth: customWidth ? "calc(100vw - 16px)" : undefined,
             maxHeight: "calc(100dvh - 16px)",
             boxShadow:

@@ -532,8 +532,11 @@ const AddEmployeeModal: React.FC<Props> = ({
             })}
           </div>
 
-          {/* Tab content */}
-          <div className="flex-1 overflow-y-auto bg-app p-3">
+           {/* Tab content — Compensation manages its own internal scroll
+            region so only the Earnings/Deductions lists scroll, not the
+              whole tab; every other tab keeps normal page scroll. */}
+    
+         <div className="flex-1 bg-app p-3 min-h-0 overflow-y-auto">
             {activeTab === "Personal" && (
               <PersonalInfoTab
                 formData={formData}
@@ -588,7 +591,7 @@ const AddEmployeeModal: React.FC<Props> = ({
         </div>
 
         {/* RIGHT: Summary panel */}
-        <div className="w-[260px] flex-shrink-0 border-l border-theme bg-app">
+        <div className="w-[200px] flex-shrink-0 border-l border-theme bg-app">
           <div className="h-full">
             <EmployeeSummaryPanel
               formData={formData}
