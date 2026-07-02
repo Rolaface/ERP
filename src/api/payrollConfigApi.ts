@@ -218,6 +218,7 @@ export interface SalaryComponentAbbrCheck {
   salary_component: string;
   salary_component_abbr: string;
   depends_on_payment_days: 0 | 1;
+    formula?: string | null;
 }
 
 export async function getSalaryComponentsByAbbrs(
@@ -236,7 +237,7 @@ export async function getSalaryComponentsByAbbrs(
         "name",
         "salary_component",
         "salary_component_abbr",
-        "depends_on_payment_days",
+        "depends_on_payment_days","formula",
       ]),
     );
     params.append("limit_page_length", "0");

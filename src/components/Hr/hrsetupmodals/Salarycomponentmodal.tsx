@@ -13,6 +13,7 @@ import {
   getSalaryComponentsByAbbrs,
   type SalaryComponent,
   type SalaryComponentType,
+  SalaryComponentAbbrCheck,
 } from "../../../api/payrollConfigApi";
 import {
   ModalInput,
@@ -200,6 +201,47 @@ export const SalaryComponentModal: React.FC<Props> = ({
       return { ...prev, accounts };
     });
   };
+  
+  const findPaymentDayConflict = useCallback(
+  async (
+    abbrs: string[],
+    currentAbbr: string,
+    visited = new Set<string>(),
+  ): Promise<SalaryComponentAbbrCheck | null> => {
+    if (!abbrs.length) return null;
+
+    const rows = await getSalaryComponentsByAbbrs(abbrs);
+
+    for (const row of rows) {
+      const abbr = row.salary_component_abbr;
+
+      if (!abbr || abbr === currentAbbr || visited.has(abbr)) {
+        continue;
+      }
+
+      visited.add(abbr);
+
+      if (row.depends_on_payment_days) {
+        return row;
+      }
+
+      const childAbbrs = extractFormulaAbbreviations(row.formula ?? "");
+
+      const conflict = await findPaymentDayConflict(
+        childAbbrs,
+        currentAbbr,
+        visited,
+      );
+
+      if (conflict) {
+        return conflict;
+      }
+    }
+
+    return null;
+  },
+  [],
+);
 
   const checkFormulaConflict = useCallback(
     async (
@@ -219,23 +261,15 @@ export const SalaryComponentModal: React.FC<Props> = ({
       }
 
       try {
-        const rows = await getSalaryComponentsByAbbrs(abbrs);
-        const conflicting = rows.filter(
-          (r) =>
-            r.salary_component_abbr !== currentAbbr &&
-            Boolean(r.depends_on_payment_days),
-        );
+     const conflict = await findPaymentDayConflict(abbrs, currentAbbr);
 
-        if (conflicting.length > 0) {
-          const names = conflicting
-            .map((r) => `"${r.salary_component}" (${r.salary_component_abbr})`)
-            .join(", ");
-          setFormulaConflict(
-            `This formula references ${names}, which already depends on Payment Days. Disable "Depends on Payment Days" to avoid applying the payment-day calculation twice.`,
-          );
-        } else {
-          setFormulaConflict(null);
-        }
+if (conflict) {
+  setFormulaConflict(
+    `This formula references "${conflict.salary_component}" (${conflict.salary_component_abbr}), which already depends on Payment Days. Disable "Depends on Payment Days" to avoid applying the payment-day calculation twice.`,
+  );
+} else {
+  setFormulaConflict(null);
+}
       } catch (err) {
         console.error("Formula conflict check failed", err);
       }
