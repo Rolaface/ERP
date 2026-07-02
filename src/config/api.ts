@@ -283,7 +283,8 @@ export const API = {
     update: `${ERP_BASE}/api/method/custom_api.api.item.api.update`,
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
     brand: `${ERP_BASE}/api/method/frappe.desk.search.search_link`,
-    getAllItemGroup: `${ERP_BASE}/api/method/custom_api.api.search.get_item_groups`
+    getAllItemGroup: `${ERP_BASE}/api/method/custom_api.api.search.get_item_groups`,
+    packaging_uom: `${ERP_BASE}/api/resource/Packaging Unit Of Measure`
   },
   /* =========================
    * TAX

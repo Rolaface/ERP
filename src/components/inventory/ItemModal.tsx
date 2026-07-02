@@ -122,6 +122,9 @@ const ItemModal: React.FC<ItemModalProps> = ({
   const [taxPage, setTaxPage] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const templateTaxCacheRef = useRef<Map<string, TemplateTax[]>>(new Map());
+  const prevIsServiceRef = useRef(false);
+  const savedTrackInventoryRef = useRef(true);
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -143,6 +146,27 @@ const ItemModal: React.FC<ItemModalProps> = ({
       setActiveTab("taxDetails");
     }
   }, [form.trackInventory, activeTab, setActiveTab]);
+
+
+  useEffect(() => {
+    const isServiceCategory = ["service", "services"].includes(
+      (form.itemGroup ?? "").trim().toLowerCase(),
+    );
+
+    if (isServiceCategory && !prevIsServiceRef.current) {
+      // transitioning INTO Service — remember current value, then force off
+      savedTrackInventoryRef.current = form.trackInventory;
+      setForm((previous) => ({ ...previous, trackInventory: false }));
+    } else if (!isServiceCategory && prevIsServiceRef.current) {
+      // transitioning OUT of Service — restore what it was before
+      setForm((previous) => ({
+        ...previous,
+        trackInventory: savedTrackInventoryRef.current,
+      }));
+    }
+
+    prevIsServiceRef.current = isServiceCategory;
+  }, [form.itemGroup, setForm]);
 
 
   const fetchTaxTemplateOptions = useCallback(
@@ -488,7 +512,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
         {/* Tab content */}
         <div className="px-2 py-5">
           {activeTab === "details" && (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px]">
               <div className="space-y-4">
                 <BasicDetailsSection
                   form={form}

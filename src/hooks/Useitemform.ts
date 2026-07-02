@@ -107,6 +107,7 @@ const itemDetailFields: Array<{ field: keyof ItemFormData; label: string }> = [
   { field: "description", label: "Description" },
   { field: "itemClassCode", label: "HSN Code" },
   { field: "unitOfMeasureCd", label: "Unit of Measurement" },
+   { field: "packaging_uom", label: "Packaging Unit" }
 ];
 export const emptyForm: ItemFormData = {
   id: "",
@@ -124,6 +125,7 @@ export const emptyForm: ItemFormData = {
   sellingPrice: "",
   buyingPrice: "",
   unitOfMeasureCd: "",
+  packaging_uom:"",
   description: "",
   sku: "",
   taxPreference: "",
@@ -175,6 +177,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   sellingPrice: Number(form.sellingPrice),
   buyingPrice: Number(form.buyingPrice),
   unitOfMeasureCd: form.unitOfMeasureCd,
+  packaging_uom: form.packaging_uom,
   description: form.description,
   sku: form.sku,
   weight: form.weight,
@@ -235,7 +238,7 @@ const mapApiToForm = (item: any) => {
     itemClassCode: item.itemClassCode || "",
     description: item.description || "",
     unitOfMeasureCd: item.unitOfMeasureCd || "",
-
+    packaging_uom: item.packaging_uom || "",
     // PRICING
     buyingPrice: String(item.buyingPrice || ""),
     sellingPrice: String(item.sellingPrice || ""),

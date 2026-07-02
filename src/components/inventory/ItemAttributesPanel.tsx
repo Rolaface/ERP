@@ -6,47 +6,66 @@ interface AttributeCheckboxProps {
   description?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  disabled?: boolean;
 }
 
 const AttributeCheckbox: React.FC<AttributeCheckboxProps> = ({
   label,
   description,
   checked,
+  disabled,
   onChange,
 }) => (
   <label
-    className="flex items-start gap-3 cursor-pointer select-none py-2"
+    className={[
+      "group -mx-2 flex select-none gap-3 rounded-lg px-2 py-2.5 transition-colors",
+      description ? "items-start" : "items-center",
+      disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-app",
+    ].join(" ")}
     onClick={(e) => {
       e.preventDefault();
+      if (disabled) return;
       onChange(!checked);
     }}
   >
-    <div
+    <span
       className={[
-        "mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center border transition-all",
+        "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] transition-all duration-150",
+        description && "mt-0.5",
+        !disabled && "group-active:scale-90",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--input-border-focus)] focus-visible:ring-offset-1",
         checked
-          ? "bg-primary border-primary"
-          : "bg-card border-theme hover:border-primary/60",
-      ].join(" ")}
+          ? "border-primary bg-primary shadow-sm"
+          : ["border-theme bg-card", !disabled && "group-hover:border-primary/60"]
+              .filter(Boolean)
+              .join(" "),
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
-      {checked && (
-        <svg
-          className="w-3 h-3 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={3}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      )}
-    </div>
-    <div className="min-w-0">
-      <p className="text-[12px] font-semibold text-main leading-tight">{label}</p>
+      <svg
+        className={[
+          "h-3 w-3 text-white transition-all duration-150",
+          checked ? "scale-100 opacity-100" : "scale-50 opacity-0",
+        ].join(" ")}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={3}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </span>
+    <span className="min-w-0">
+      <p className="text-[12.5px] font-semibold leading-tight text-main">
+        {label}
+      </p>
       {description && (
-        <p className="text-[11px] text-muted leading-snug mt-0.5">{description}</p>
+        <p className="mt-0.5 text-[11px] leading-snug text-muted">
+          {description}
+        </p>
       )}
-    </div>
+    </span>
   </label>
 );
 
@@ -57,14 +76,20 @@ interface ItemAttributesPanelProps {
   isZraEnabled: boolean;
 }
 
+const SERVICE_CATEGORY_VALUES = ["service", "services"];
+
 const ItemAttributesPanel: React.FC<ItemAttributesPanelProps> = React.memo(
   ({ form, onToggleChange, setField, isZraEnabled }) => {
+    const isServiceCategory = SERVICE_CATEGORY_VALUES.includes(
+      (form.itemGroup ?? "").trim().toLowerCase(),
+    );
+
     return (
-      <div className="rounded-2xl border border-theme bg-card p-4 h-fit">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">
+      <div className="h-fit rounded-2xl border border-theme bg-card p-4">
+        <p className="mb-2 border-b border-theme pb-2 text-[10px] font-bold uppercase tracking-widest text-muted">
           Attributes
         </p>
-        <div className="divide-y divide-theme/60">
+        <div>
           {isZraEnabled && (
             <>
               <AttributeCheckbox
@@ -90,6 +115,7 @@ const ItemAttributesPanel: React.FC<ItemAttributesPanelProps> = React.memo(
           <AttributeCheckbox
             label="Track Inventory"
             checked={!!form.trackInventory}
+            disabled={isServiceCategory}
             onChange={(v) => setField("trackInventory", v)}
           />
           <AttributeCheckbox
@@ -107,6 +133,7 @@ const ItemAttributesPanel: React.FC<ItemAttributesPanelProps> = React.memo(
     );
   },
 );
+
 
 ItemAttributesPanel.displayName = "ItemAttributesPanel";
 
