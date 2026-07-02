@@ -211,7 +211,9 @@ export const EmployeeAdvanceModal: React.FC<EmployeeAdvanceModalProps> = ({
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEditMode ? "Edit Employee Advance" : " Add Employee Advance"}
       subtitle={
-        isEditMode ? "Update employee advance" : "Add a new employee advance"
+        isEditMode
+          ? "Edit and manage employee advance details"
+          : "Add and manage employee advances"
       }
       icon={Wallet}
       footer={footer}

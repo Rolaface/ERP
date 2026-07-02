@@ -105,8 +105,13 @@ Submit        </Button>
       isOpen={isOpen}
       onClose={handleCloseRequest}
       title={title}
-      subtitle="Manage customer group details"
-      footer={footer}
+      subtitle={
+        mode === "edit"
+          ? "Edit and manage customer group details"
+          : mode === "create"
+            ? "Add and manage customer groups"
+            : "View customer group details"
+      } footer={footer}
       icon={FolderTree}
       customWidth="50vw"
       height="82vh"

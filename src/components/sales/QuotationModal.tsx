@@ -189,7 +189,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Quotation" : "Add Quotation"}
-      subtitle="Add and manage quotation details"
+      subtitle={mode =="edit" ? "Edit and manage quotation details" : "Add and manage quotation details"}
       icon={FileSignature}
       footer={
         <ModalFooter

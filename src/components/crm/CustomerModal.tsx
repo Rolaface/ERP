@@ -107,7 +107,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       title={isEditMode ? "Edit Customer" : "Add Customer"}
       subtitle={
         isEditMode
-          ? "Update customer information"
+          ? "Edit and Manage customer information"
           : "Fill in the details to add a new customer"
       }
       icon={isEditMode ? Building2 : Users}

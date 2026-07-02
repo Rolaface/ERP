@@ -143,8 +143,11 @@ export const GradeModal: React.FC<Props> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       title={isEdit ? "Edit Grade" : "Add Grade"}
-      subtitle="Configure employee bands and default salary structure"
-      icon={Layers}
+      subtitle={
+        isEdit
+          ? "Edit and manage employee bands and default salary structure"
+          : "Add and manage employee bands and default salary structure"
+      } icon={Layers}
       customWidth="60vw"
       height="40vh"
       footer={footer}

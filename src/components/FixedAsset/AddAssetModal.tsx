@@ -285,8 +285,11 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
       title={mode === "edit" ? "Edit Asset" : "Add Asset"}
-      subtitle="Add and manage asset details"
-      icon={Package}
+      subtitle={
+        mode === "edit"
+          ? "Edit and manage asset details"
+          : "Add and manage assets"
+      } icon={Package}
       footer={footerContent}
       maxWidth="4xl"
       height="78vh"

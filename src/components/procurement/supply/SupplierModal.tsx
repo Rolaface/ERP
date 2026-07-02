@@ -132,7 +132,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
       title={isEditMode ? "Edit Supplier" : "Add Supplier"}
       subtitle={
         isEditMode
-          ? "Update supplier information"
+          ? "Edit and Manage supplier information"
           : "Fill in the details to add a new supplier"
       }
       icon={Users}
