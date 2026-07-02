@@ -1,12 +1,13 @@
 import React from "react";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { getRolaCountries, getRolaUOMs } from "../../api/itemZraApi";
-import { ModalInput , NumericInput } from "../ui/modal/modalComponent";
+import { ModalInput, NumericInput } from "../ui/modal/modalComponent";
 import type {
   ItemFieldSetter,
   ItemFormChangeHandler,
   ItemFormData,
 } from "./itemModalTypes";
+import { getPackagingUOM } from "../../api/itemApi";
 
 interface AdditionalDetailsSectionProps {
   form: ItemFormData;
@@ -44,7 +45,19 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
             />
           </div>
         </div>
-        
+
+
+        <div className="w-[140px] min-w-0">
+          <SearchSelect2
+            label="Packaging Unit"
+            value={form.packaging_uom ?? ""}
+            fetchOptions={async (q) => getPackagingUOM(q)}
+            onChange={(value) => setField("packaging_uom", value)}
+            placeholder="Search..."
+            required
+            error={errors?.packaging_uom}
+          />
+        </div>
 
         {/* UOM */}
         <div className="w-[140px] min-w-0">
@@ -83,29 +96,28 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
         </div>
 
         {/* Country of origin — only relevant when Allow Purchase is on */}
-        {form.allowPurchase && (
-          <div className="w-[160px] min-w-0">
-            <SearchSelect2
-              label="Country of origin"
-              value={form.originNationCode ?? ""}
-              fetchOptions={async (q) => {
-                const data = await fetchCountries();
-                const list = data?.data ?? [];
-                return list
-                  .filter((item: any) =>
-                    item.name.toLowerCase().includes(q.toLowerCase()),
-                  )
-                  .map((item: any) => ({
-                    label: item.name,
-                    value: item.name,
-                  }));
-              }}
-              onChange={(value) => setField("originNationCode", value)}
-              placeholder="Search..."
-              error={errors?.originNationCode}
-            />
-          </div>
-        )}
+        <div className="w-[160px] min-w-0">
+          <SearchSelect2
+            label="Country of origin"
+            value={form.originNationCode ?? ""}
+            fetchOptions={async (q) => {
+              const data = await fetchCountries();
+              const list = data?.data ?? [];
+              return list
+                .filter((item: any) =>
+                  item.name.toLowerCase().includes(q.toLowerCase()),
+                )
+                .map((item: any) => ({
+                  label: item.name,
+                  value: item.name,
+                }));
+            }}
+            onChange={(value) => setField("originNationCode", value)}
+            placeholder="Search..."
+            error={errors?.originNationCode}
+            disabled={!form.allowPurchase}
+          />
+        </div>
       </div>
     );
   });
