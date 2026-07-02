@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Receipt, User, Mail, Phone } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
-import { showApiError, showSuccess } from "../../utils/alert";
+import { showApiError, showSuccess, showValidationError } from "../../utils/alert";
 import {
   useDataRefreshStore,
   REFRESH_KEYS,
@@ -53,6 +53,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       : `invoice-create-${Date.now()}`);
 
   const [submitting, setSubmitting] = useState(false);
+    const [hasValidPaymentAccount, setHasValidPaymentAccount] = useState(true);
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
     "Product",
   );
@@ -113,6 +114,11 @@ const {
 
 
   const handleSubmitForm = async () => {
+     if (!hasValidPaymentAccount) {
+          console.log("Cannot save: Selected Mode of Payment has no default account.");
+        showValidationError("Cannot save: Selected Mode of Payment has no default account.");
+        return;
+      }
     if (submitting) return;
     setSubmitting(true);
     try {
@@ -324,7 +330,7 @@ const {
                 )}
                 {/* Mode of Payment */}
                 <div className="w-full sm:w-[200px]">
-                  <ModeOfPaymentSelect
+                  {/* <ModeOfPaymentSelect
                     value={formData.mode ?? ""}
                     onChange={(val) =>
                       actions.handleInputChange({
@@ -332,7 +338,18 @@ const {
                       } as any)
                     }
                     required
-                  />
+                  /> */}
+                   <ModeOfPaymentSelect
+  value={formData.mode ?? ""}
+  onChange={(val, hasDefaultAccount) => {
+    actions.handleInputChange({
+      target: { name: "mode", value: val },
+    } as any);
+    
+    setHasValidPaymentAccount(hasDefaultAccount);
+  }}
+  required
+/>
                 </div>
 
                 {/* LPO Number — only when LPO tax category */}

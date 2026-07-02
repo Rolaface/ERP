@@ -55,6 +55,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   //   (mode === "edit" && initialData?.proformaId
   //     ? `proforma-edit-${initialData.proformaId}-${Date.now()}`
   //     : `proforma-create-${Date.now()}`);
+  const [hasValidPaymentAccount, setHasValidPaymentAccount] = useState(true);
   const [resolvedModalId] = useState(
     () =>
       modalId ||
@@ -134,10 +135,13 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
     }
   };
 
-
-
   const handleSave = async () => {
     if (!validateDetailsOrFocus()) return;
+    if (!hasValidPaymentAccount) {
+      console.log("Cannot save: Selected Mode of Payment has no default account.");
+    showValidationError("Cannot save: Selected Mode of Payment has no default account.");
+    return;
+  }
     if (submitting) return;
 
     try {
@@ -364,14 +368,24 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   </div>
                 )}
                 <div className="w-full sm:w-[200px]">
-                  <ModeOfPaymentSelect
+                  {/* <ModeOfPaymentSelect
                     value={formData.payment_mode ?? ""}
                     onChange={(val) =>
                       actions.handleInputChange({
                         target: { name: "payment_mode", value: val },
                       } as any)
                     }
-                  />
+                  /> */}
+                  <ModeOfPaymentSelect
+  value={formData.payment_mode ?? ""}
+  onChange={(val, hasDefaultAccount) => {
+    actions.handleInputChange({
+      target: { name: "payment_mode", value: val },
+    } as any);
+    
+    setHasValidPaymentAccount(hasDefaultAccount);
+  }}
+/>
                 </div>
 
                 {/* Invoice Type */}

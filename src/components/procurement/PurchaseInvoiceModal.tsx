@@ -43,6 +43,7 @@ const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
     useUnsavedChanges();
 
   const [internalSaving, setInternalSaving] = useState(false);
+  const [hasValidPaymentAccount, setHasValidPaymentAccount] = useState(true);
 
   useEffect(() => {
     if (!isOpen) {
@@ -117,6 +118,10 @@ const handleItemChangeWithDirty = useCallback(
   // ────────────────────────────────────────────────────────────────
 
   const handleSubmitForm = useCallback(async () => {
+    if (!hasValidPaymentAccount) {
+      showValidationError("Cannot save: Selected Mode of Payment has no default account.");
+      return;
+    }
     if (internalSaving) return;
     setInternalSaving(true);
     try {
@@ -185,6 +190,7 @@ const handleItemChangeWithDirty = useCallback(
             usePO={usePO}
             onTogglePO={handleTogglePO}
             onBulkItemChange={handleBulkItemChange}
+            onPaymentAccountValidityChange={setHasValidPaymentAccount}
           />
         </div>
         <div style={{ display: activeTab === "attachments" ? "block" : "none" }}>
