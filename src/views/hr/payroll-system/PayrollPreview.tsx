@@ -14,6 +14,7 @@ import {
   ArrowDownRight,
   ReceiptText,
   Search,
+  Download,
 } from "lucide-react";
 
 import type { PayrollVerificationData } from "../../../api/payroll/payrollEntryApi";
@@ -23,8 +24,6 @@ import { Button } from "../../../components/ui/modal/formComponent";
 import ModalTable from "../../../components/ui/Table/ModalTableInside";
 import type { Column } from "../../../components/ui/Table/type";
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
 interface PayrollPreviewModalProps {
   modalId: string;
   isOpen: boolean;
@@ -32,8 +31,6 @@ interface PayrollPreviewModalProps {
   rawData: PayrollVerificationData | null;
   loading?: boolean;
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmtMoney = (value: number, currencyCode: string): string => {
   if (value === 0) return "—";
@@ -74,9 +71,6 @@ const avatarBg = (id: string) =>
     (id || "0").charCodeAt((id || "0").length - 1) % AVATAR_PALETTE.length
   ];
 
-// ─── Search token tokenizer ────────────────────────────────────────────────────
-// Splits a raw query into lowercase tokens for multi-word matching.
-// e.g. "john eng" → ["john", "eng"]
 const tokenize = (raw: string): string[] =>
   raw
     .toLowerCase()
@@ -84,13 +78,6 @@ const tokenize = (raw: string): string[] =>
     .map((t) => t.trim())
     .filter(Boolean);
 
-/**
- * Returns true if ALL tokens match at least one of the employee's searchable
- * fields (name, id, department, designation, branch, salaryStructure).
- *
- * This is a "line-by-line" (field-level) substring match — every token must
- * hit somewhere, but different tokens can hit different fields.
- */
 function employeeMatchesQuery(emp: MappedEmployee, tokens: string[]): boolean {
   if (tokens.length === 0) return true;
 
@@ -108,7 +95,6 @@ function employeeMatchesQuery(emp: MappedEmployee, tokens: string[]): boolean {
   return tokens.every((token) => haystack.includes(token));
 }
 
-// ─── Data builder ─────────────────────────────────────────────────────────────
 
 function buildEmployees(raw: PayrollVerificationData): MappedEmployee[] {
   return (raw.employees ?? []).map((entry) => {
@@ -136,6 +122,7 @@ function buildEmployees(raw: PayrollVerificationData): MappedEmployee[] {
       name: entry.employee_name || "Unknown",
       department: entry.department || slip.department || "—",
       designation: entry.designation || slip.designation || "—",
+      gender: entry.gender || slip.gender || "—",
       branch: slip.branch ?? null,
       salaryStructure: slip.salary_structure ?? "—",
       status: slip.status ?? "—",
@@ -159,8 +146,6 @@ function buildEmployees(raw: PayrollVerificationData): MappedEmployee[] {
   });
 }
 
-// ─── Stat chip ─────────────────────────────────────────────────────────────────
-
 const StatChip: React.FC<{
   icon: React.ReactNode;
   label: string;
@@ -176,17 +161,19 @@ const StatChip: React.FC<{
       <p className="text-[9px] font-extrabold uppercase tracking-wider text-muted leading-none">
         {label}
       </p>
-      <p className={`text-[12px] font-extrabold tabular-nums leading-tight truncate ${valueClass}`}>
+      <p
+        className={`text-[12px] font-extrabold tabular-nums leading-tight truncate ${valueClass}`}
+      >
         {value}
       </p>
       {sub && (
-        <p className="text-[9px] text-muted truncate leading-none mt-0.5">{sub}</p>
+        <p className="text-[9px] text-muted truncate leading-none mt-0.5">
+          {sub}
+        </p>
       )}
     </div>
   </div>
 );
-
-// ─── Search Bar ────────────────────────────────────────────────────────────────
 
 const SearchBar: React.FC<{
   value: string;
@@ -197,8 +184,8 @@ const SearchBar: React.FC<{
   const isFiltered = value.trim().length > 0;
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex-1 max-w-xs">
+    <div className="flex items-center gap-2 w-full max-w-sm">
+      <div className="relative flex-1">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
         <input
           type="text"
@@ -224,8 +211,6 @@ const SearchBar: React.FC<{
     </div>
   );
 };
-
-// ─── Salary Slip Drawer ────────────────────────────────────────────────────────
 
 const SlipDrawer: React.FC<{
   emp: MappedEmployee | null;
@@ -365,7 +350,9 @@ const SlipDrawer: React.FC<{
                     )}
                     {emp.annualTaxable > 0 && (
                       <div className="flex justify-between text-[12px]">
-                        <span className="text-muted">Annual taxable amount</span>
+                        <span className="text-muted">
+                          Annual taxable amount
+                        </span>
                         <span className="font-semibold text-main tabular-nums">
                           {fmtMoney(emp.annualTaxable, currency)}
                         </span>
@@ -373,7 +360,9 @@ const SlipDrawer: React.FC<{
                     )}
                     {emp.currentMonthTax > 0 && (
                       <div className="flex justify-between text-[12px]">
-                        <span className="text-muted">Income tax this month</span>
+                        <span className="text-muted">
+                          Income tax this month
+                        </span>
                         <span className="font-semibold text-danger tabular-nums">
                           {fmtMoney(emp.currentMonthTax, currency)}
                         </span>
@@ -420,7 +409,9 @@ const SlipDrawer: React.FC<{
                     </div>
                   ))}
                   <div className="flex justify-between items-center mt-2 pt-2 border-t-2 border-theme">
-                    <span className="text-[11px] font-extrabold text-main">Gross pay</span>
+                    <span className="text-[11px] font-extrabold text-main">
+                      Gross pay
+                    </span>
                     <span className="text-[13px] font-extrabold text-main tabular-nums">
                       {fmtMoney(emp.gross, currency)}
                     </span>
@@ -460,7 +451,9 @@ const SlipDrawer: React.FC<{
                     </div>
                   ))}
                   <div className="flex justify-between items-center mt-2 pt-2 border-t-2 border-theme">
-                    <span className="text-[11px] font-extrabold text-danger">Total deductions</span>
+                    <span className="text-[11px] font-extrabold text-danger">
+                      Total deductions
+                    </span>
                     <span className="text-[13px] font-extrabold text-danger tabular-nums">
                       −{fmtMoney(emp.totalDeductions, currency)}
                     </span>
@@ -493,8 +486,6 @@ const SlipDrawer: React.FC<{
   );
 };
 
-// ─── Main component ────────────────────────────────────────────────────────────
-
 export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
   modalId,
   isOpen,
@@ -521,10 +512,8 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
   const [sortBy, setSortBy] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // ── Search state ──────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Reset search when the modal closes or rawData changes
   useEffect(() => {
     if (!isOpen) setSearchQuery("");
   }, [isOpen]);
@@ -548,7 +537,6 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
     });
   }, [rawData]);
 
-  // ── Sort then filter — sort first so search result order is stable ────────
   const sortedEmployees = useMemo(() => {
     const list = [...employees];
     list.sort((a, b) => {
@@ -692,6 +680,7 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
   );
 
   const exportExcel = useCallback(() => {
+    console.log("🚀 ~ PayrollPreviewModal ~ rawData:", rawData)
     if (!rawData) return;
 
     const earningAbbrSet = new Map<string, string>();
@@ -707,25 +696,59 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
     const earningCols = [...earningAbbrSet.entries()];
     const deductionCols = [...deductionAbbrSet.entries()];
 
+    const payrollMonth = new Date(rawData.start_date).toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
+
     const header = [
-      "ID", "Name", "Department", "Designation", "Work Days", "Paid Days", "LWP",
+      "ID",
+      "Name",
+      "Sex",
+      "Department",
+      "Designation",
+      "Cost Center",
+      "Project",
+      "Work Days",
+      "Paid Days",
+      "Leave Without Pay",
+      "Leave Days",
       ...earningCols.map(([, label]) => label),
       "Gross Pay",
       ...deductionCols.map(([, label]) => label),
-      "Total Deductions", "Net Pay", "Salary Structure",
+      "Total Deductions",
+      "Net Pay",
     ];
 
-    const rows = employees.map((e) => [
-      e.id, e.name, e.department, e.designation,
-      e.totalWorkingDays, e.paymentDays, e.leaveWithoutPay,
+    const rows = employees.map((e) => {
+      console.log("🚀 ~ PayrollPreviewModal ~ e:", e)
+      return [
+      e.id,
+      e.name,
+      e.gender ?? "",
+      e.department,
+      e.designation,
+      rawData.cost_center ?? "",
+      rawData.project ?? "",
+      e.totalWorkingDays,
+      e.paymentDays,
+      e.leaveWithoutPay,
       ...earningCols.map(([abbr]) => e.components[abbr] ?? 0),
       e.gross,
       ...deductionCols.map(([abbr]) => e.components[abbr] ?? 0),
-      e.totalDeductions, e.netPay, e.salaryStructure,
-    ]);
+      e.totalDeductions,
+      e.netPay,
+    ];
+    });
 
     const totalRow = [
-      "", "TOTALS", "", "", "", "", "",
+      "",
+      "TOTALS",
+      "",
+      "",
+      "",
+      "",
+      "",
       ...earningCols.map(([abbr]) =>
         employees.reduce((s, e) => s + (e.components[abbr] ?? 0), 0),
       ),
@@ -741,7 +764,9 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
     const ws = XLSX.utils.aoa_to_sheet([header, ...rows, [], totalRow]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, monthLabel.slice(0, 31));
-    XLSX.writeFile(wb, `payroll_${rawData.name ?? "export"}.xlsx`);
+    XLSX.writeFile(wb, `payroll_${payrollMonth}.xlsx`);
+    // XLSX.writeFile(wb, `payroll_${rawData.start_date}_${rawData.end_date}.xlsx`);
+    // XLSX.writeFile(wb, `payroll_${rawData.start_date ?? "export"}.xlsx`);
   }, [rawData, employees, monthLabel]);
 
   if (!isOpen) return null;
@@ -774,19 +799,34 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
       ) : !rawData ? (
         <div className="flex h-48 flex-col items-center justify-center gap-2 text-center">
           <AlertCircle className="h-8 w-8 text-danger" />
-          <p className="text-sm font-semibold text-main">No payroll data available.</p>
+          <p className="text-sm font-semibold text-main">
+            No payroll data available.
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-2 pb-2 relative h-full min-h-0">
-
-          {/* ── Info bar ── */}
           <div className="bg-card border border-theme rounded-lg px-3 py-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 shrink-0">
             {[
-              rawData.posting_date      && { label: "Post date",   value: rawData.posting_date },
-              rawData.currency          && { label: "Currency",    value: rawData.currency },
-              rawData.bank_account      && { label: "Bank",        value: rawData.bank_account },
-              rawData.payroll_payable_account && { label: "Payable A/C", value: rawData.payroll_payable_account },
-              rawData.payroll_frequency && { label: "Frequency",   value: rawData.payroll_frequency },
+              rawData.posting_date && {
+                label: "Post date",
+                value: rawData.posting_date,
+              },
+              rawData.currency && {
+                label: "Currency",
+                value: rawData.currency,
+              },
+              rawData.bank_account && {
+                label: "Bank",
+                value: rawData.bank_account,
+              },
+              rawData.payroll_payable_account && {
+                label: "Payable A/C",
+                value: rawData.payroll_payable_account,
+              },
+              rawData.payroll_frequency && {
+                label: "Frequency",
+                value: rawData.payroll_frequency,
+              },
             ]
               .filter(Boolean)
               .map((item: any) => (
@@ -804,7 +844,6 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
             </span>
           </div>
 
-          {/* ── KPI chips ── */}
           <div className="grid grid-cols-4 gap-2 shrink-0">
             <StatChip
               icon={<Users className="w-4 h-4" />}
@@ -832,22 +871,32 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
             />
           </div>
 
-          {/* ── Search bar (owned by this component, not delegated to ModalTable) ── */}
-          <div className="shrink-0">
+          <div className="shrink-0 flex items-center justify-between gap-4 mt-1">
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
               resultCount={filteredEmployees.length}
               totalCount={employees.length}
             />
+
+            {employees.length > 0 && (
+              <button
+                type="button"
+                onClick={exportExcel}
+                className="h-9 px-3.5 rounded-xl border border-theme bg-card hover:bg-emerald-500/5 hover:border-emerald-500/40 text-xs font-bold text-main transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                title="Export list to Excel"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-600" />
+                Export Excel
+              </button>
+            )}
           </div>
 
-          {/* ── Table — receives already-filtered rows ── */}
           <div className="flex-1 min-h-0">
             <ModalTable<MappedEmployee>
               tableId="payroll-preview-table"
               columns={columns}
-              data={filteredEmployees}           // ← filtered list, not sortedEmployees
+              data={filteredEmployees}
               rowKey={(emp) => emp.id}
               loading={loading}
               emptyMessage={
@@ -856,7 +905,7 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
                   : "No employees found"
               }
               onRowClick={(emp) => setSelectedEmp(emp)}
-              showToolbar={false}                // ← toolbar disabled; search lives above
+              showToolbar={false}
               enableExport={employees.length > 0}
               exportLabel="Export Excel"
               onExport={exportExcel}
@@ -870,7 +919,6 @@ export const PayrollPreviewModal: React.FC<PayrollPreviewModalProps> = ({
         </div>
       )}
 
-      {/* Salary slip drawer */}
       <SlipDrawer
         emp={selectedEmp}
         currency={currency}

@@ -16,6 +16,7 @@ export interface MappedEmployee {
   name:             string;
   designation:      string;
   department:       string;
+  gender:           string;
   branch:           string | null;
   salaryStructure:  string;
   status:           string;
