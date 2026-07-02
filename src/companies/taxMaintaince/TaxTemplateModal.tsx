@@ -213,8 +213,13 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
             ? "Edit Tax Template"
             : "Add Tax Template"
       }
-      subtitle={isViewMode ? "Read-only view of this tax template" : "Add tax template"}
-      icon={ReceiptText}
+      subtitle={
+        isViewMode
+          ? "View tax template details"
+          : isEditMode
+            ? "Edit tax template details"
+            : "Configure tax template settings"
+      } icon={ReceiptText}
       footer={footer}
       customWidth="46vw"
       height="66vh"

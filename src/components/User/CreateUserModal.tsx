@@ -207,7 +207,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
       }
       subtitle={
         isEditMode
-          ? "Update user information"
+          ? "Edit and manage user information"
           : "Fill in the details to create a new user account"
       }
       icon={UserPlus}
