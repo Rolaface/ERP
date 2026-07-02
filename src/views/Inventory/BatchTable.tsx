@@ -154,16 +154,16 @@ const BatchMenu: React.FC<{
         setOpen(false);
       },
     },
-    onLedger && {
-      icon: BookOpen,
-      label: "View Ledger",
-      color: "#2563eb",
-      danger: false,
-      action: () => {
-        onLedger(batch);
-        setOpen(false);
-      },
-    },
+    // onLedger && {
+    //   icon: BookOpen,
+    //   label: "View Ledger",
+    //   color: "#2563eb",
+    //   danger: false,
+    //   action: () => {
+    //     onLedger(batch);
+    //     setOpen(false);
+    //   },
+    // },
     onDelete && {
       icon: Trash2,
       label: "Delete Batch",

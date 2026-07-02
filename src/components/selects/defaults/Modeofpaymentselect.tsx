@@ -61,7 +61,7 @@ const handleChange = async (_: string, option: any) => {
     //   if (!proceed) return; 
     // }
     if (!selectedDefaultAccount) {
-      showValidationError("There is no default account set for this mode of payment. Please set a default account for this mode of payment under the Bank Account settings before proceeding.");
+      showValidationError("No default account is set for this payment mode. Set a default account in Bank Management settings before proceeding.");
       // return; 
     }
     onChange(option?.value || "" , hasDefault);
