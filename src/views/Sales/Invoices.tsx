@@ -77,6 +77,15 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid", "Cancelled"];
 
+const SORT_FIELD_MAP: Record<string, string> = {
+  customerName: "customer_name",
+  invoiceNumber: "name",
+  dueDate: "due_date",
+  total: "grand_total",
+};
+
+const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
+
 const statusOptions = [
   { label: "Draft", value: "Draft" },
   { label: "Paid", value: "Paid" },
@@ -174,7 +183,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       const res = await getAllSalesInvoices(
         page,
         pageSize,
-        sortBy,
+        mapSortField(sortBy),
         sortOrder,
         searchTerm,
         undefined,
@@ -303,7 +312,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         const res = await getAllSalesInvoices(
           current,
           100,
-          sortBy,
+          mapSortField(sortBy),
           sortOrder,
           searchTerm,
         );
