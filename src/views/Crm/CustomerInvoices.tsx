@@ -39,7 +39,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
         const res = await getAllSalesInvoices(
           page,
           pageSize,
-          "id",
+          "name",
           "desc",
           "",
           customerName,
