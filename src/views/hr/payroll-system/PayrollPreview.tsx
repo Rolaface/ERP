@@ -240,18 +240,18 @@ const SlipDrawer: React.FC<{
         }`}
       />
       <div
-        className={`fixed top-0 right-0 bottom-0 z-50 w-[440px] max-w-full bg-card border-l border-theme flex flex-col shadow-2xl transition-transform duration-200 ease-out ${
+        className={`fixed top-0 right-0 bottom-0 z-50 w-[640px] max-w-full bg-card border-l border-theme flex flex-col shadow-2xl transition-transform duration-200 ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {!emp ? null : (
           <>
-            {/* Header */}
-            <div className="border-b border-theme px-5 py-4 flex-shrink-0">
+            {/* Compact Header */}
+            <div className="border-b border-theme px-4 py-3 flex-shrink-0">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-extrabold shrink-0 ${avatarBg(emp.id)}`}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-extrabold shrink-0 ${avatarBg(emp.id)}`}
                   >
                     {initials(emp.name)}
                   </div>
@@ -267,68 +267,58 @@ const SlipDrawer: React.FC<{
                     </p>
                   </div>
                 </div>
+
                 <button
                   onClick={onClose}
-                  className="shrink-0 w-8 h-8 rounded-lg border border-theme flex items-center justify-center text-muted hover:text-main hover:bg-app transition"
+                  className="shrink-0 w-7 h-7 rounded-lg border border-theme flex items-center justify-center text-muted hover:text-main hover:bg-app transition"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Meta pills */}
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {[
-                  {
-                    icon: <Calendar className="w-3 h-3" />,
-                    label: `${emp.paymentDays} pay days`,
-                  },
-                  emp.leaveWithoutPay > 0 && {
-                    icon: <AlertCircle className="w-3 h-3" />,
-                    label: `LWP: ${emp.leaveWithoutPay}`,
-                  },
-                  emp.absentDays > 0 && {
-                    icon: <AlertCircle className="w-3 h-3" />,
-                    label: `Absent: ${emp.absentDays}`,
-                  },
-                  emp.salaryStructure !== "—" && {
-                    icon: <ReceiptText className="w-3 h-3" />,
-                    label: emp.salaryStructure,
-                  },
-                  emp.branch && {
-                    icon: <Building2 className="w-3 h-3" />,
-                    label: emp.branch,
-                  },
-                ]
-                  .filter(Boolean)
-                  .map((item: any, i) => (
-                    <span
-                      key={i}
-                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted bg-app border border-theme rounded-full px-2 py-0.5"
-                    >
-                      {item.icon} {item.label}
-                    </span>
-                  ))}
-                <span
-                  className={`inline-flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5 ${
-                    emp.isError
-                      ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-                      : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
-                  }`}
-                >
-                  {emp.isError ? (
-                    <AlertCircle className="w-3 h-3" />
-                  ) : (
-                    <CheckCircle2 className="w-3 h-3" />
-                  )}
-                  {emp.status}
+              <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-main bg-app border border-theme rounded px-2 py-0.5">
+                  <Calendar className="w-3 h-3 text-muted shrink-0" />
+                  {emp.totalWorkingDays} work days
                 </span>
+
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-main bg-app border border-theme rounded px-2 py-0.5">
+                  <Calendar className="w-3 h-3 text-muted shrink-0" />
+                  {emp.paymentDays} paid days
+                </span>
+
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-main bg-app border border-theme rounded px-2 py-0.5">
+                  <Calendar className="w-3 h-3 text-muted shrink-0" />
+                  {emp.leavesTakenThisMonth} leave days
+                </span>
+
+                {emp.leaveWithoutPay > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded px-2 py-0.5">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    LWP: {emp.leaveWithoutPay}
+                  </span>
+                )}
+
+                {emp.absentDays > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded px-2 py-0.5">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    Absent: {emp.absentDays}
+                  </span>
+                )}
+
+                {emp.branch && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted bg-app border border-theme rounded px-2 py-0.5">
+                    <Building2 className="w-3 h-3 shrink-0" />
+                    {emp.branch}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Scrollable body */}
+            {/* Scrollable Body */}
             <div className="flex-1 overflow-y-auto">
               {emp.isError && emp.errorMessage && (
-                <div className="m-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-2 items-start">
+                <div className="m-3 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-2 items-start">
                   <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                   <p className="text-[11px] text-red-700 dark:text-red-400 leading-snug">
                     {emp.errorMessage}
@@ -336,37 +326,48 @@ const SlipDrawer: React.FC<{
                 </div>
               )}
 
-              {(emp.ctc > 0 || emp.annualTaxable > 0) && (
-                <div className="px-5 py-4 border-b border-theme">
-                  <p className="text-[9px] font-extrabold uppercase tracking-wider text-muted mb-3">
+              {(emp.ctc > 0 ||
+                emp.annualTaxable > 0 ||
+                emp.yearToDate > 0 ||
+                emp.incomeTaxDeductedTillDate > 0) && (
+                <div className="px-4 py-2.5 border-b border-theme bg-app/30">
+                  <p className="text-[9px] font-extrabold uppercase tracking-wider text-muted mb-1.5">
                     Annual overview
                   </p>
-                  <div className="space-y-2">
+
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[11px]">
                     {emp.ctc > 0 && (
-                      <div className="flex justify-between text-[12px]">
+                      <div className="flex justify-between">
                         <span className="text-muted">CTC</span>
-                        <span className="font-semibold text-main tabular-nums">
+                        <span className="font-semibold">
                           {fmtMoney(emp.ctc, currency)}
                         </span>
                       </div>
                     )}
+
                     {emp.annualTaxable > 0 && (
-                      <div className="flex justify-between text-[12px]">
-                        <span className="text-muted">
-                          Annual taxable amount
-                        </span>
-                        <span className="font-semibold text-main tabular-nums">
+                      <div className="flex justify-between">
+                        <span className="text-muted">Annual taxable</span>
+                        <span className="font-semibold">
                           {fmtMoney(emp.annualTaxable, currency)}
                         </span>
                       </div>
                     )}
-                    {emp.currentMonthTax > 0 && (
-                      <div className="flex justify-between text-[12px]">
-                        <span className="text-muted">
-                          Income tax this month
+
+                    {emp.yearToDate > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted">Earning till date</span>
+                        <span className="font-semibold">
+                          {fmtMoney(emp.yearToDate, currency)}
                         </span>
-                        <span className="font-semibold text-danger tabular-nums">
-                          {fmtMoney(emp.currentMonthTax, currency)}
+                      </div>
+                    )}
+
+                    {emp.incomeTaxDeductedTillDate > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted">Tax till date</span>
+                        <span className="font-semibold text-danger">
+                          {fmtMoney(emp.incomeTaxDeductedTillDate, currency)}
                         </span>
                       </div>
                     )}
@@ -374,111 +375,131 @@ const SlipDrawer: React.FC<{
                 </div>
               )}
 
-              {emp.earnings.length > 0 && (
-                <div className="px-5 py-4 border-b border-theme">
-                  <div className="flex items-center gap-1.5 mb-3">
-                    <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
-                    <p className="text-[9px] font-extrabold uppercase tracking-wider text-muted">
-                      Earnings
-                    </p>
-                  </div>
-                  {emp.earnings.map((e, i) => (
-                    <div
-                      key={e.abbr || i}
-                      className="flex justify-between items-center py-2 border-b border-theme last:border-0"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[9px] font-bold bg-app border border-theme rounded px-1.5 py-0.5 text-muted font-mono shrink-0">
-                          {e.abbr}
-                        </span>
-                        <span className="text-[12px] text-muted truncate">
-                          {e.salary_component}
-                        </span>
-                        {!!e.is_flexible_benefit && (
-                          <span className="text-[9px] font-semibold text-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded px-1">
-                            Flex
-                          </span>
-                        )}
-                        {!e.is_tax_applicable && (
-                          <span className="text-[9px] font-semibold text-muted bg-app border border-theme rounded px-1">
-                            Non-tax
-                          </span>
-                        )}
+              {(emp.earnings.length > 0 || emp.deductions.length > 0) && (
+                <div className="grid grid-cols-2 border-b border-theme divide-x border-theme">
+                  <div className="px-4 py-3 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <ArrowDownRight className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                        <p className="text-[9px] font-extrabold uppercase tracking-wider text-muted">
+                          Deductions
+                        </p>
                       </div>
-                      <span className="text-[12px] font-semibold text-main tabular-nums ml-4 shrink-0">
-                        {fmtMoney(e.amount ?? 0, currency)}
+                      {emp.deductions.length > 0 ? (
+                        emp.deductions.map((d, i) => (
+                          <div
+                            key={d.abbr || i}
+                            className="flex justify-between items-center py-1.5 border-b border-theme/60 last:border-0"
+                          >
+                            <div className="flex items-center gap-1 min-w-0 pr-1.5">
+                              <span
+                                className="text-[11px] text-main truncate"
+                                title={d.salary_component}
+                              >
+                                {d.salary_component}
+                              </span>
+                              {!!d.variable_based_on_taxable_salary && (
+                                <span className="text-[8px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/60 rounded px-1 py-0.5 shrink-0">
+                                  Var
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-semibold text-danger tabular-nums shrink-0 ml-1">
+                              −{fmtMoney(d.amount ?? 0, currency)}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-[11px] text-muted italic py-1.5">
+                          No deductions
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center mt-3 pt-2 border-t-2 border-theme">
+                      <span className="text-[11px] font-bold text-danger">
+                        Total deductions
+                      </span>
+                      <span className="text-[12px] font-extrabold text-danger tabular-nums">
+                        −{fmtMoney(emp.totalDeductions, currency)}
                       </span>
                     </div>
-                  ))}
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t-2 border-theme">
-                    <span className="text-[11px] font-extrabold text-main">
-                      Gross pay
-                    </span>
-                    <span className="text-[13px] font-extrabold text-main tabular-nums">
-                      {fmtMoney(emp.gross, currency)}
-                    </span>
+                  </div>
+
+                  {/* Earnings Column (Right) */}
+                  <div className="px-4 py-3 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <p className="text-[9px] font-extrabold uppercase tracking-wider text-muted">
+                          Earnings
+                        </p>
+                      </div>
+                      {emp.earnings.length > 0 ? (
+                        emp.earnings.map((e, i) => (
+                          <div
+                            key={e.abbr || i}
+                            className="flex justify-between items-center py-1.5 border-b border-theme/60 last:border-0"
+                          >
+                            <div className="flex items-center gap-1 min-w-0 pr-1.5">
+                              <span
+                                className="text-[11px] text-main truncate"
+                                title={e.salary_component}
+                              >
+                                {e.salary_component}
+                              </span>
+                              {!!e.is_flexible_benefit && (
+                                <span className="text-[8px] font-semibold text-blue-500 bg-blue-50 dark:bg-blue-900/20 border border-blue-200/60 dark:border-blue-800/60 rounded px-1 py-0.5 shrink-0">
+                                  Flex
+                                </span>
+                              )}
+                              {!e.is_tax_applicable && (
+                                <span className="text-[8px] font-semibold text-muted bg-app border border-theme rounded px-1 py-0.5 shrink-0">
+                                  Non-tax
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-semibold text-main tabular-nums shrink-0 ml-1">
+                              {fmtMoney(e.amount ?? 0, currency)}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-[11px] text-muted italic py-1.5">
+                          No earnings
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center mt-3 pt-2 border-t-2 border-theme">
+                      <span className="text-[11px] font-bold text-main">
+                        Gross pay
+                      </span>
+                      <span className="text-[12px] font-extrabold text-main tabular-nums">
+                        {fmtMoney(emp.gross, currency)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
+            </div>
 
-              {emp.deductions.length > 0 && (
-                <div className="px-5 py-4 border-b border-theme">
-                  <div className="flex items-center gap-1.5 mb-3">
-                    <ArrowDownRight className="w-3.5 h-3.5 text-red-500" />
-                    <p className="text-[9px] font-extrabold uppercase tracking-wider text-muted">
-                      Deductions
-                    </p>
-                  </div>
-                  {emp.deductions.map((d, i) => (
-                    <div
-                      key={d.abbr || i}
-                      className="flex justify-between items-center py-2 border-b border-theme last:border-0"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[9px] font-bold bg-app border border-theme rounded px-1.5 py-0.5 text-muted font-mono shrink-0">
-                          {d.abbr}
-                        </span>
-                        <span className="text-[12px] text-muted truncate">
-                          {d.salary_component}
-                        </span>
-                        {!!d.variable_based_on_taxable_salary && (
-                          <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded px-1">
-                            Variable
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[12px] font-semibold text-danger tabular-nums ml-4 shrink-0">
-                        −{fmtMoney(d.amount ?? 0, currency)}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t-2 border-theme">
-                    <span className="text-[11px] font-extrabold text-danger">
-                      Total deductions
-                    </span>
-                    <span className="text-[13px] font-extrabold text-danger tabular-nums">
-                      −{fmtMoney(emp.totalDeductions, currency)}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="px-5 py-4">
-                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-0.5">
-                      Net payable
-                    </p>
-                    {emp.totalInWords && (
-                      <p className="text-[10px] text-emerald-700/70 dark:text-emerald-400/70 leading-snug max-w-[220px]">
-                        {emp.totalInWords}
-                      </p>
-                    )}
-                  </div>
-                  <p className="text-xl font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums">
-                    {emp.isError ? "—" : fmtMoney(emp.netPay, currency)}
+            {/* Sticky Bottom Net Payable */}
+            <div className="flex-shrink-0 border-t border-theme bg-app px-4 py-3">
+              <div className="rounded-xl bg-card border border-theme px-4 py-3 flex items-center justify-between shadow-sm">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted mb-0.5">
+                    Net payable
                   </p>
+
+                  {emp.totalInWords && (
+                    <p className="text-[11px] text-muted font-medium leading-snug max-w-[260px]">
+                      {emp.totalInWords}
+                    </p>
+                  )}
                 </div>
+
+                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  {emp.isError ? "—" : fmtMoney(emp.netPay, currency)}
+                </p>
               </div>
             </div>
           </>
