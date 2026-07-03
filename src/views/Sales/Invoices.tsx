@@ -82,6 +82,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
   invoiceNumber: "name",
   dueDate: "due_date",
   total: "grand_total",
+  outstandingAmount: "outstanding_amount",
 };
 
 const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
