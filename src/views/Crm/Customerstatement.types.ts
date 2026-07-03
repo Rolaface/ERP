@@ -38,6 +38,8 @@ export interface StatementData {
   ledger: LedgerEntry[];
   pagination?: StatementPagination;
   customerName?:string,customerEmail:string
+  currency?: string;
+currency_symbol?: string;
   
 }
 

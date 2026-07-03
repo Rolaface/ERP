@@ -29,6 +29,7 @@ export interface InvoiceAttachment {
 interface UseSendEmailOptions {
     open: boolean;
     docType: "Sales Invoice" | "Purchase Order" | "Payment Entry" | "Customer" | "Quotation" | "Proforma Invoice";
+    isProforma?: boolean;
     invoiceNumber?: string;
     contactEmail?: string | null;
     customerName?: string | null;
@@ -65,6 +66,7 @@ export function useSendEmail({
     open,
     docType,
     invoiceNumber,
+    isProforma,
     contactEmail,
     invoiceAttachments,
     onClose,
@@ -114,7 +116,13 @@ export function useSendEmail({
 
         setTemplateLoading(true);
         makeEmailTemplate({
-            id: docType === "Customer" ? "Customer Statement" : docType,
+            // id: docType === "Customer" ? "Customer Statement" : docType,
+            id:
+        docType === "Customer"
+            ? "Customer Statement"
+            : isProforma
+                ? "Proforma Invoice"
+                : docType,
             doc_type: docType,
             doc_type_name: invoiceNumber,
         })
