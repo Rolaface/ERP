@@ -43,7 +43,17 @@ export const SalarySetupSection: React.FC<SalarySetupSectionProps> = ({
             label=""
             value={formData.salaryStructure}
             placeholder="Select structure…"
-            fetchOptions={getAllSalaryStructures}
+            fetchOptions={async (query: string) => {
+              const options = await getAllSalaryStructures(query);
+
+              return [
+                {
+                  label: "Custom",
+                  value: "Custom",
+                },
+                ...options.filter((option: any) => option.value !== "Custom"),
+              ];
+            }}
             onChange={handleSalaryStructureChange}
           />
         </Field>
