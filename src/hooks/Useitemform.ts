@@ -107,7 +107,6 @@ const itemDetailFields: Array<{ field: keyof ItemFormData; label: string }> = [
   { field: "description", label: "Description" },
   { field: "itemClassCode", label: "HSN Code" },
   { field: "unitOfMeasureCd", label: "Unit of Measurement" },
-   { field: "packaging_uom", label: "Packaging Unit" }
 ];
 export const emptyForm: ItemFormData = {
   id: "",

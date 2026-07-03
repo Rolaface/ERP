@@ -54,8 +54,6 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
             fetchOptions={async (q) => getPackagingUOM(q)}
             onChange={(value) => setField("packaging_uom", value)}
             placeholder="Search..."
-            required
-            error={errors?.packaging_uom}
           />
         </div>
 
