@@ -65,16 +65,20 @@ const AddBankAccountModal: React.FC<Props> = ({
     onClose();
   };
 
-  useEffect(() => {
-    if (!initialData && defaultAccountFor) {
-      setForm((prev) => ({ ...prev, accountFor: defaultAccountFor }));
-    }
-    if (currency) {
-      setForm((prev) => ({ ...prev, currency }));
-    }
-  }, [defaultAccountFor, initialData, currency]);
+   useEffect(() => {
+  if (!initialData && defaultAccountFor) {
+    handleAccountForChange(defaultAccountFor as AccountType);  
+  }
+}, [defaultAccountFor, initialData]);
+
+useEffect(() => {
+  if (currency) {
+    setForm((prev) => ({ ...prev, currency }));
+  }
+}, [currency]);
 
   // Effect 2 — set name/holder once entities are loaded
+
   useEffect(() => {
     if (!partyName || !defaultAccountFor || initialData) return;
 

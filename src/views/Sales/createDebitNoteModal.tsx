@@ -130,8 +130,11 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose} // ← guarded close
       title={isEdit ? "Edit Debit Note" : "Add Debit Note"}
-      subtitle="Add and manage debit notes"
-      icon={FileMinus}
+      subtitle={
+        isEdit
+          ? "Edit and manage debit note details"
+          : "Add and manage debit notes"
+      } icon={FileMinus}
       footer={footer}
       maxWidth="full"
       height="700px"

@@ -112,8 +112,7 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title={isEdit ? "Edit Credit Note" : "Add Credit Note"}
-      subtitle="Add and manage credit notes"
-      icon={FileMinus}
+      subtitle={isEdit ? "Edit and Manage Credit Note" : "Add and Manage Credit Note"}      icon={FileMinus}
       footer={footer}
       maxWidth="full"
       height="600px"

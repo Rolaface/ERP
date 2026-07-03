@@ -212,6 +212,44 @@ export async function deleteSalaryComponent(name: string): Promise<void> {
     throw error;
   }
 }
+// ──────────────────────validation for salary component abbrs────────────────────────────────────────────
+export interface SalaryComponentAbbrCheck {
+  name: string;
+  salary_component: string;
+  salary_component_abbr: string;
+  depends_on_payment_days: 0 | 1;
+    formula?: string | null;
+}
+
+export async function getSalaryComponentsByAbbrs(
+  abbrs: string[],
+): Promise<SalaryComponentAbbrCheck[]> {
+  if (!abbrs.length) return [];
+  try {
+    const params = new URLSearchParams();
+    params.append(
+      "filters",
+      JSON.stringify([["salary_component_abbr", "in", abbrs]]),
+    );
+    params.append(
+      "fields",
+      JSON.stringify([
+        "name",
+        "salary_component",
+        "salary_component_abbr",
+        "depends_on_payment_days","formula",
+      ]),
+    );
+    params.append("limit_page_length", "0");
+
+    const resp = await api.get(
+      `${Payroll.salaryComponent.getAll}?${params.toString()}`,
+    );
+    return resp.data?.data ?? [];
+  } catch (error) {
+    throw error;
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SALARY STRUCTURE

@@ -84,10 +84,22 @@ export function useCreditNoteForm(
 
   // ── Invoice search ───────────────────────────────────────────────────────
 
+  const RETURNABLE_INVOICE_STATUSES = "Partly Paid,Unpaid,Overdue";
+
+
   const fetchInvoiceOptions = useCallback(
     async (query: string): Promise<InvoiceOption[]> => {
       try {
-        const res = await getAllSalesInvoices(1, 50, "", "asc", query);
+        const res = await getAllSalesInvoices(
+          1,                              // page
+          50,                             // page_size
+          "",                             // sortBy
+          "asc",                          // sortOrder
+          query,                          // search
+          undefined,                      // customer
+          undefined,                      // minOutstanding
+          RETURNABLE_INVOICE_STATUSES,    // status
+        );
         return (res?.data ?? []).map((inv: any) => ({
           value: inv.id,
           label: inv.id,
@@ -147,23 +159,23 @@ export function useCreditNoteForm(
 
   // ── Item mutations ───────────────────────────────────────────────────────
 
-const handleItemChange = useCallback(
-  (
-    index: number,
-    field: keyof CreditNoteItem,
-    value: string | number | null,
-  ) => {
+  const handleItemChange = useCallback(
+    (
+      index: number,
+      field: keyof CreditNoteItem,
+      value: string | number | null,
+    ) => {
       setForm((prev) => {
         const items = [...prev.items];
- items[index] = {
-  ...items[index],
-  [field]:
-    value === null
-      ? null
-      : field === "qty" || field === "rate"
-        ? Number(value)
-        : value,
-};
+        items[index] = {
+          ...items[index],
+          [field]:
+            value === null
+              ? null
+              : field === "qty" || field === "rate"
+                ? Number(value)
+                : value,
+        };
         return { ...prev, items };
       });
       markDirty();
@@ -251,20 +263,20 @@ const handleItemChange = useCallback(
       try {
         const res = isEdit && initialData?.name
           ? await updateCreditNote(initialData.name, {
-              is_return: 1,
-              return_against: form.return_against,
-              customer: form.customer!.id,
-              company: companyName,
-              update_stock: form.update_stock ? 1 : 0,
-              update_outstanding_for_self: 1,
-              items: form.items.map((it) => ({
-                item_code: it.item_code,
-                qty: Number(it.qty),
-                rate: Number(it.rate),
-                ...(it.batch_no ? { batch_no: it.batch_no } : {}),
-                warehouse: it.warehouse,
-              })),
-            })
+            is_return: 1,
+            return_against: form.return_against,
+            customer: form.customer!.id,
+            company: companyName,
+            update_stock: form.update_stock ? 1 : 0,
+            update_outstanding_for_self: 1,
+            items: form.items.map((it) => ({
+              item_code: it.item_code,
+              qty: Number(it.qty),
+              rate: Number(it.rate),
+              ...(it.batch_no ? { batch_no: it.batch_no } : {}),
+              warehouse: it.warehouse,
+            })),
+          })
           : await createCreditNote(payload);
 
         if (!res || ![200, 201].includes(res.status_code)) {

@@ -8,7 +8,7 @@ import React, {
 import { useOutletContext } from "react-router-dom";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
-import { openPaymentEntryModal } from "../../store/modalStore";
+import { openPaymentEntryModal, openSendEmailModal } from "../../store/modalStore";
 import {
   getAllSalesInvoices,
   updateInvoiceStatus,
@@ -45,7 +45,6 @@ import { saveAs } from "file-saver";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
-import SendEmailModal from "../../components/common/SendEmailModal";
 import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
 import {
   ACTION_ICONS,
@@ -77,6 +76,15 @@ const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
 // };
 
 const CRITICAL_STATUSES: InvoiceStatus[] = ["Paid", "Cancelled"];
+
+const SORT_FIELD_MAP: Record<string, string> = {
+  customerName: "customer_name",
+  invoiceNumber: "name",
+  dueDate: "due_date",
+  total: "grand_total",
+};
+
+const mapSortField = (field: string) => SORT_FIELD_MAP[field] ?? field;
 
 const statusOptions = [
   { label: "Draft", value: "Draft" },
@@ -111,15 +119,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfInvoiceNumber, setPdfInvoiceNumber] = useState<string | null>(null);
 
-  //email
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailInvoice, setEmailInvoice] = useState<InvoiceSummary | null>(null);
-  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(
-    null,
-  );
-  const [emailInvoiceAttachments, setEmailInvoiceAttachments] = useState<
-    { name: string; file_name: string }[]
-  >([]);
+
 
   const { can } = usePermission();
   // ── Drawer (same pattern as ProformaInvoicesTable)
@@ -183,7 +183,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       const res = await getAllSalesInvoices(
         page,
         pageSize,
-        sortBy,
+        mapSortField(sortBy),
         sortOrder,
         searchTerm,
         undefined,
@@ -312,7 +312,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         const res = await getAllSalesInvoices(
           current,
           100,
-          sortBy,
+          mapSortField(sortBy),
           sortOrder,
           searchTerm,
         );
@@ -756,33 +756,30 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                     ]
                   : []),
 
-                ...(inv.invoiceStatus !== "Draft" && !isCancelled
-                  ? [
-                      {
-                        label: "Compose Email",
-                        icon: ACTION_ICONS.EMAIL,
-                        onClick: async () => {
-                          setEmailInvoice(inv);
-                          setEmailContactEmail(null);
-                          setEmailInvoiceAttachments([]);
-                          setEmailModalOpen(true);
-                          try {
-                            const res = await getSalesInvoiceById(
-                              inv.invoiceNumber,
-                            );
-                            if (res?.message?.status_code === 200) {
-                              setEmailContactEmail(
-                                res.message.data?.contact_email ?? null,
-                              );
-                              setEmailInvoiceAttachments(
-                                res.message.data?.attachments ?? [],
-                              );
-                            }
-                          } catch {}
-                        },
-                      },
-                    ]
-                  : []),
+    ...(inv.invoiceStatus !== "Draft" && !isCancelled
+      ? [{
+          label: "Compose Email",
+          icon: ACTION_ICONS.EMAIL,
+          onClick: async () => {
+            let contactEmail: string | null = null;
+            let invoiceAttachments: { name: string; file_name: string }[] = [];
+            try {
+              const res = await getSalesInvoiceById(inv.invoiceNumber);
+              if (res?.message?.status_code === 200) {
+                contactEmail = res.message.data?.contact_email ?? null;
+                invoiceAttachments = res.message.data?.attachments ?? [];
+              }
+            } catch {}
+            openSendEmailModal({
+              docType: "Sales Invoice",
+              invoiceNumber: inv.invoiceNumber,
+              customerName: inv.customerName,
+              contactEmail,
+              invoiceAttachments,
+            });
+          },
+        }]
+      : []),
 
                 ...(!isCancelled
                   ? [
@@ -935,20 +932,6 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-        }}
-      />
-      <SendEmailModal
-        open={emailModalOpen}
-        docType="Sales Invoice"
-        invoiceNumber={emailInvoice?.invoiceNumber}
-        contactEmail={emailContactEmail}
-        customerName={emailInvoice?.customerName}
-        invoiceAttachments={emailInvoiceAttachments}
-        onClose={() => {
-          setEmailModalOpen(false);
-          setEmailInvoice(null);
-          setEmailContactEmail(null);
-          setEmailInvoiceAttachments([]);
         }}
       />
     </div>

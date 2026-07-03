@@ -18,12 +18,15 @@ import InventorySection from "./InventorySection";
 import PricingSection from "./PricingSection";
 import TaxSection from "./TaxSection";
 import ItemSummaryBar from "./Itemsummarybar";
+import ItemAttributesPanel from "./ItemAttributesPanel";
 import type {
   ItemFormData,
   ItemModalTab,
   ItemTaxInfo,
   ItemTaxRow,
 } from "./itemModalTypes";
+import { useCompanyStore } from "../../store/companyStore";
+
 
 export interface ItemInitialData extends Partial<ItemFormData> {
   taxes?: ItemTaxRow[];
@@ -95,6 +98,9 @@ const ItemModal: React.FC<ItemModalProps> = ({
     [resolvedModalId],
   );
 
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+
+
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     form,
@@ -110,15 +116,15 @@ const ItemModal: React.FC<ItemModalProps> = ({
     handleNext,
     getFirstValidationError,
     getValidationErrorForTab,
-    itemGroups,
-    loadingItemGroups,
-   
   } = useItemForm({ isOpen, isEditMode, initialData, onSubmit, onClose });
 
   const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([EMPTY_TAX_ROW]);
   const [taxPage, setTaxPage] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const templateTaxCacheRef = useRef<Map<string, TemplateTax[]>>(new Map());
+  const prevIsServiceRef = useRef(false);
+  const savedTrackInventoryRef = useRef(true);
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -140,6 +146,27 @@ const ItemModal: React.FC<ItemModalProps> = ({
       setActiveTab("taxDetails");
     }
   }, [form.trackInventory, activeTab, setActiveTab]);
+
+
+  useEffect(() => {
+    const isServiceCategory = ["service", "services"].includes(
+      (form.itemGroup ?? "").trim().toLowerCase(),
+    );
+
+    if (isServiceCategory && !prevIsServiceRef.current) {
+      // transitioning INTO Service — remember current value, then force off
+      savedTrackInventoryRef.current = form.trackInventory;
+      setForm((previous) => ({ ...previous, trackInventory: false }));
+    } else if (!isServiceCategory && prevIsServiceRef.current) {
+      // transitioning OUT of Service — restore what it was before
+      setForm((previous) => ({
+        ...previous,
+        trackInventory: savedTrackInventoryRef.current,
+      }));
+    }
+
+    prevIsServiceRef.current = isServiceCategory;
+  }, [form.itemGroup, setForm]);
 
 
   const fetchTaxTemplateOptions = useCallback(
@@ -382,7 +409,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   if (!isOpen) return null;
 
- const shouldShowInventory = !isServiceItem && Boolean(form.trackInventory);
+  const shouldShowInventory = !isServiceItem && Boolean(form.trackInventory);
 
   const tabs: ItemModalTab[] = shouldShowInventory
     ? ["details", "taxDetails", "inventoryDetails"]
@@ -421,11 +448,14 @@ const ItemModal: React.FC<ItemModalProps> = ({
       isOpen={isOpen}
       onClose={handleCloseRequest}
       title={isEditMode ? "Edit Item" : "Add Item"}
-      subtitle="Add and manage item details"
-      icon={Package}
+      subtitle={
+        isEditMode
+          ? "Edit and manage item details"
+          : "Add and manage items"
+      } icon={Package}
       footer={footer}
       customWidth="min(92vw, 1280px)"
-      height="75vh"
+      height="60vh"
       summaryBar={<ItemSummaryBar form={form} taxRows={taxRows} />}
     >
 
@@ -465,7 +495,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
             >
               Tax Details
             </button>
-           {!isServiceItem && Boolean(form.trackInventory) && (
+            {!isServiceItem && Boolean(form.trackInventory) && (
               <button
                 type="button"
                 onClick={() => handleTabChange("inventoryDetails")}
@@ -485,33 +515,31 @@ const ItemModal: React.FC<ItemModalProps> = ({
         {/* Tab content */}
         <div className="px-2 py-5">
           {activeTab === "details" && (
-            <div className="space-y-4">
-              {/* Row 1: Item Type, Item Category, Item Name, Description, HSN Code */}
-              <BasicDetailsSection
-                form={form}
-                itemGroups={itemGroups}
-                loadingItemGroups={loadingItemGroups}
-                 isServiceItem={isServiceItem} 
-                onFormChange={handleFormChange}
-                setField={setField}
-                errors={fieldErrors}
-              />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_220px]">
+              <div className="space-y-4">
+                <BasicDetailsSection
+                  form={form}
+                  isServiceItem={isServiceItem}
+                  onFormChange={handleFormChange}
+                  setField={setField}
+                  errors={fieldErrors}
+                />
 
-              {/* Row 2: Packing Unit, UOM, SKU, Country, SVC Charge, Insurance, Taxable */}
-              <AdditionalDetailsSection
+                <AdditionalDetailsSection
+                  form={form}
+                  onFormChange={handleFormChange}
+                  setField={setField}
+                  errors={fieldErrors}
+                />
+
+                <PricingSection form={form} onFormChange={handleFormChange} />
+              </div>
+
+              <ItemAttributesPanel
                 form={form}
-                onFormChange={handleFormChange}
                 onToggleChange={handleToggleChange}
                 setField={setField}
-                errors={fieldErrors}
-              />
-
-              {/* Row 3: Sales & Purchase */}
-              <PricingSection
-                form={form}
-               
-                
-                onFormChange={handleFormChange}
+                isZraEnabled={isZraEnabled}
               />
             </div>
           )}

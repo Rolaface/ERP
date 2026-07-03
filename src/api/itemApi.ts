@@ -2,6 +2,7 @@ import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 
 import { API, ERP_BASE } from "../config/api";
+import { buildListParams } from "./utils/queryBuilder";
 const api = createAxiosInstance(ERP_BASE);
 export const ItemAPI = API.item;
 
@@ -102,6 +103,74 @@ export async function getBrands(
     return results.map((r) => ({
       label: r.label || r.value,
       value: r.value,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+
+export interface ItemGroupSearchOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+interface ItemGroupSearchResponse {
+  status_code: number;
+  status: "success" | "fail";
+  message: string;
+  data: ItemGroupSearchOption[];
+  pagination?: {
+    page: number;
+    page_size: number;
+    items_in_page: number;
+    total_items: number;
+    total_pages: number;
+    has_next: boolean;
+    has_previous: boolean;
+  };
+}
+
+export async function getItemGroups(
+  search?: string,
+): Promise<ItemGroupSearchOption[]> {
+  const resp: AxiosResponse<ItemGroupSearchResponse> = await api.get(
+    API.item.getAllItemGroup,
+    { params: search ? { search } : {} },
+  );
+  return resp.data?.data ?? [];
+}
+
+
+interface PackagingUOMItem {
+  name: string;
+}
+
+interface PackagingUOMApiResponse {
+  data?: PackagingUOMItem[];
+}
+
+export async function getPackagingUOM(
+  search = "",
+): Promise<Array<{ label: string; value: string }>> {
+  try {
+    const queryString = buildListParams({
+      fields: ["name"],
+      pageSize: 20,
+      search,
+      searchFields: ["name"],
+    });
+
+    const resp: AxiosResponse<PackagingUOMApiResponse> = await api.get(
+      `${ItemAPI.packaging_uom}?${queryString}`,
+    );
+
+    const results = resp.data?.data ?? [];
+
+    return results.map((r) => ({
+      label: r.name,
+      value: r.name,
     }));
   } catch {
     return [];

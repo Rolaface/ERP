@@ -43,6 +43,7 @@ packingSize: number | null;
   sellingPrice: string | number;
   buyingPrice: string | number;
   unitOfMeasureCd: string;
+  packaging_uom:string;
   description: string;
   sku: string;
   taxPreference: string;

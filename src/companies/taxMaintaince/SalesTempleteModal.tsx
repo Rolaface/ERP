@@ -228,11 +228,13 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
           ? "Edit Sales Tax Template"
           : "Add Sales Tax Template"
       }
-      subtitle={
-        isViewMode
-          ? "Read-only view of this sales tax template"
-          : "Configure charges and tax rates"
-      }
+     subtitle={
+       isViewMode
+         ? "View sales tax template details"
+         : isEditMode
+           ? "Edit sales tax template details"
+           : "Configure sales tax rates and charges"
+     }
       icon={FileSpreadsheet}
       footer={footer}
       customWidth="56vw"

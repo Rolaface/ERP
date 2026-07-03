@@ -85,7 +85,7 @@ export default function AddKRAModal({
         isViewMode
           ? "View Key Result Area details"
           : selectedKRA
-            ? "Update Key Result Area"
+            ? "Edit Key Result Area"
             : "Add a new Key Result Area"
       }
       icon={Target}

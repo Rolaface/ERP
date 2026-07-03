@@ -410,8 +410,10 @@ const EmailTemplateModal: React.FC<EmailTemplateModalProps> = ({
             }
             subtitle={
                 isViewMode
-                    ? "Read-only view of this email template"
-                    : "Add email templates"
+                    ? "View email template details"
+                    : templateId
+                        ? "Edit email template details"
+                        : "Create a new email template"
             }
             icon={Mail}
             customWidth="65vw"

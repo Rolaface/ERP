@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ModalSelect } from "../ui/modal/modalComponent";
 import { getAllWarehouses } from "../../api/WarehouseApi";
-
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 interface WarehouseSelectProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -32,7 +32,7 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
     const loadWarehouses = async () => {
       try {
         const data = await getAllWarehouses({ is_disabled: 0 });
-        const options = data.map((wh: string) => ({ value: wh, label: wh }));
+        const options = data.map((wh: string) => ({ value: wh, label: getGLNameWithoutAbbreviation(wh) }));
         setWarehouses(options);
         if (onDefaultLoad && !value && options.length > 0) {
           onDefaultLoad(options[0].value);

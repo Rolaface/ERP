@@ -9,11 +9,10 @@ import type { Column } from "../../components/ui/Table/type";
 import { getAllPayments } from "../../api/CustomerPayment";
 import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import { openPaymentEntryModal } from "../../store/modalStore";
+import { openPaymentEntryModal,openSendEmailModal } from "../../store/modalStore";
 import { usePermission } from "../../hooks/permission/usePermission";
 import { getPaymentEntryById } from "../../api/BankAccountApi";
 import { ActionMenu } from "../../components/ui/Table/ActionButton";
-import SendEmailModal from "../../components/common/SendEmailModal";
 import PaymentEntryDetailModal from "./PaymetnEntryDetailModal";
 import ActionButton from "../../components/ui/Table/ActionButton";
 import type { PaymentEntryDetail } from "./PaymetnEntryDetailModal";
@@ -87,11 +86,7 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerData, setDrawerData] = useState<PaymentEntryDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
-  // email
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailPayment, setEmailPayment] = useState<PaymentRow | null>(null);
-  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(null);
-  const [emailAttachments, setEmailAttachments] = useState<{ name: string; file_name: string }[]>([]);
+  
 
   // ── Search
   const [searchTerm, setSearchTerm] = useState("");
@@ -253,25 +248,23 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
                 {
                   label: "Compose Email", icon: ACTION_ICONS.EMAIL,
                   onClick: async () => {
-                    setEmailPayment(row);
-                    setEmailContactEmail(null);
-                    setEmailAttachments([]);
-                    setEmailModalOpen(true);
-
+                    let contactEmail: string | null = null;
+                    let invoiceAttachments: { name: string; file_name: string }[] = [];
                     try {
                       const res = await getPaymentEntryById(row.id);
-
                       if (res?.message?.status_code === 200) {
-                        setEmailContactEmail(
-                          res.message.data?.contact_email ?? null
-                        );
-                        setEmailAttachments(
-                          res.message.data?.attachments ?? []
-                        );
+                        contactEmail = res.message.data?.contact_email ?? null;
+                        invoiceAttachments = res.message.data?.attachments ?? [];
                       }
                     } catch {
                       // non-critical: modal opens with empty To/attachments
                     }
+                    openSendEmailModal({
+                      docType: "Payment Entry",
+                      invoiceNumber: row.id,
+                      contactEmail,
+                      invoiceAttachments,
+                    });
                   },
                 },
               ]}
@@ -343,21 +336,6 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
           }}
         />
       </div>
-
-      <SendEmailModal
-        open={emailModalOpen}
-        docType="Payment Entry"
-        invoiceNumber={emailPayment?.id}
-        contactEmail={emailContactEmail}
-        invoiceAttachments={emailAttachments}
-        onClose={() => {
-          setEmailModalOpen(false);
-          setEmailPayment(null);
-          setEmailContactEmail(null);
-          setEmailAttachments([]);
-        }}
-      />
-
       <PaymentEntryDetailModal
         open={drawerOpen}
         data={drawerData}

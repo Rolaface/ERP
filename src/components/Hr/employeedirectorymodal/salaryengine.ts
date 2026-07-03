@@ -86,22 +86,25 @@ export interface CompensationPayload {
 
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
-// Converts a component name to a valid JS identifier key.
-// Strips anything that isn't alphanumeric or underscore so keys like
-// "SSF Employee Contribution 5.5%" become "ssf_employee_contribution_5_5"
-// and can safely be used as new Function() parameter names.
 // Converts any component name into a valid JS identifier.
 // Keeps only [a-z0-9], collapses everything else into a single underscore.
 // "SSF Employee Contribution 5.5%" → "ssf_employee_contribution_5_5"
 // "HRA/Transport (Monthly)"        → "hra_transport_monthly"
-const toNameKey = (name: string): string =>
+//
+// Exported so every consumer (calculateSalary, CompensationTab's
+// override-lookup, etc.) hashes component names the exact same way. Two
+// independent copies of this regex previously existed and could silently
+// drift apart — always import this instead of re-implementing it.
+export const toNameKey = (name: string): string =>
   name
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")  // any non-alphanumeric run → single underscore
     .replace(/^_+|_+$/g, "");     // trim leading/trailing underscores
 
-const toAbbrKey = (abbr?: string | null): string | null =>
+// Exported for the same reason as toNameKey — single source of truth for
+// how an abbreviation is normalised into a lookup key.
+export const toAbbrKey = (abbr?: string | null): string | null =>
   abbr?.trim() ? abbr.trim().toLowerCase() : null;
 
 const resolveAbbr = (comp: SalaryComponentDef): string | null =>
@@ -182,11 +185,11 @@ function pythonToJS(formula: string): string {
     .replace(/\band\b/g,    "&&")
     .replace(/\bor\b/g,     "||")
     .replace(/\bnot\b/g,    "!")
-   
-   
+
+
     .replace(/\bmin\s*\(/g, "Math.min(")
     .replace(/\bmax\s*\(/g, "Math.max(")
-    .replace(/\bint\s*\(/g,   "Math.trunc(") 
+    .replace(/\bint\s*\(/g,   "Math.trunc(")
     .replace(/\babs\s*\(/g, "Math.abs(")
     .replace(/\bTrue\b/g,   "true")
     .replace(/\bFalse\b/g,  "false");

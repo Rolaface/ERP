@@ -1,16 +1,19 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Layers, Save, X } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
 import { useAccountSearch } from "../../../api/apiHooks";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";
 import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
+import { extractFormulaAbbreviations } from "../../../utils/formulaParser";
 import {
   createSalaryComponent,
   updateSalaryComponent,
   getSalaryComponent,
   syncSalaryComponentFormula,
+  getSalaryComponentsByAbbrs,
   type SalaryComponent,
   type SalaryComponentType,
+  SalaryComponentAbbrCheck,
 } from "../../../api/payrollConfigApi";
 import {
   ModalInput,
@@ -24,9 +27,6 @@ import {
 } from "../../../utils/alert";
 import { STYLES, AttrRow, BenefitCb } from "./Salarycomponentmodal.styles";
 
-/* ─────────────────────────────────────────────
-   CONSTANTS
-───────────────────────────────────────────── */
 const PAYOUT_METHODS = [
   {
     label: "Accrue and payout at end of payroll period",
@@ -64,9 +64,6 @@ const EMPTY: Omit<SalaryComponent, "name"> = {
   is_income_tax_component: 0,
 };
 
-/* ─────────────────────────────────────────────
-   PROPS
-───────────────────────────────────────────── */
 interface Props {
   modalId: string;
   isOpen: boolean;
@@ -76,9 +73,6 @@ interface Props {
   onSuccess?: () => void;
 }
 
-/* ─────────────────────────────────────────────
-   COMPONENT
-───────────────────────────────────────────── */
 export const SalaryComponentModal: React.FC<Props> = ({
   modalId,
   isOpen,
@@ -91,6 +85,8 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const [form, setForm] = useState<Omit<SalaryComponent, "name">>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [, setLoadingData] = useState(false);
+  const [formulaConflict, setFormulaConflict] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { fetchAccounts } = useAccountSearch();
   const {
     markDirty,
@@ -101,7 +97,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
     deactivate,
   } = useUnsavedChangesGuard();
 
-  /* inject styles once */
   useEffect(() => {
     const id = "sc-styles-v10";
     if (!document.getElementById(id)) {
@@ -112,7 +107,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
     }
   }, []);
 
-  /* reset / load on open */
   useEffect(() => {
     if (!isOpen) {
       deactivate();
@@ -121,7 +115,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
     }
     if (isEdit && initialData?.name) loadSalaryComponent(initialData.name);
     else setForm({ ...EMPTY, accounts: [{ account: "" }] });
-    // activate returns a cleanup (clears the 300ms timer)
+    setFormulaConflict(null);
     const cleanup = activate();
     return cleanup;
   }, [isOpen, isEdit, initialData?.name]);
@@ -207,6 +201,102 @@ export const SalaryComponentModal: React.FC<Props> = ({
       return { ...prev, accounts };
     });
   };
+  
+  const findPaymentDayConflict = useCallback(
+  async (
+    abbrs: string[],
+    currentAbbr: string,
+    visited = new Set<string>(),
+  ): Promise<SalaryComponentAbbrCheck | null> => {
+    if (!abbrs.length) return null;
+
+    const rows = await getSalaryComponentsByAbbrs(abbrs);
+
+    for (const row of rows) {
+      const abbr = row.salary_component_abbr;
+
+      if (!abbr || abbr === currentAbbr || visited.has(abbr)) {
+        continue;
+      }
+
+      visited.add(abbr);
+
+      if (row.depends_on_payment_days) {
+        return row;
+      }
+
+      const childAbbrs = extractFormulaAbbreviations(row.formula ?? "");
+
+      const conflict = await findPaymentDayConflict(
+        childAbbrs,
+        currentAbbr,
+        visited,
+      );
+
+      if (conflict) {
+        return conflict;
+      }
+    }
+
+    return null;
+  },
+  [],
+);
+
+  const checkFormulaConflict = useCallback(
+    async (
+      formula: string,
+      dependsOnPaymentDays: boolean,
+      currentAbbr: string,
+    ) => {
+      if (!formula?.trim() || !dependsOnPaymentDays) {
+        setFormulaConflict(null);
+        return;
+      }
+
+      const abbrs = extractFormulaAbbreviations(formula);
+      if (!abbrs.length) {
+        setFormulaConflict(null);
+        return;
+      }
+
+      try {
+     const conflict = await findPaymentDayConflict(abbrs, currentAbbr);
+
+if (conflict) {
+  setFormulaConflict(
+    `This formula references "${conflict.salary_component}" (${conflict.salary_component_abbr}), which already depends on Payment Days. Disable "Depends on Payment Days" to avoid applying the payment-day calculation twice.`,
+  );
+} else {
+  setFormulaConflict(null);
+}
+      } catch (err) {
+        console.error("Formula conflict check failed", err);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(() => {
+      checkFormulaConflict(
+        form.formula ?? "",
+        Boolean(form.depends_on_payment_days),
+        form.salary_component_abbr,
+      );
+    }, 500);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [
+    form.formula,
+    form.depends_on_payment_days,
+    form.salary_component_abbr,
+    checkFormulaConflict,
+  ]);
 
   const handleSave = async () => {
     if (!form.salary_component.trim())
@@ -217,6 +307,33 @@ export const SalaryComponentModal: React.FC<Props> = ({
       return showValidationError(
         "Formula is required when amount is formula-based",
       );
+
+    if (form.amount_based_on_formula && form.depends_on_payment_days) {
+      const abbrsToCheck = extractFormulaAbbreviations(form.formula ?? "");
+      if (abbrsToCheck.length) {
+        try {
+          const rows = await getSalaryComponentsByAbbrs(abbrsToCheck);
+          const conflicting = rows.filter(
+            (r) =>
+              r.salary_component_abbr !== form.salary_component_abbr &&
+              Boolean(r.depends_on_payment_days),
+          );
+          if (conflicting.length > 0) {
+            const names = conflicting
+              .map(
+                (r) => `"${r.salary_component}" (${r.salary_component_abbr})`,
+              )
+              .join(", ");
+            return showValidationError(
+              `Formula references ${names}, which already depends on Payment Days. Disable "Depends on Payment Days" here first.`,
+            );
+          }
+        } catch (err) {
+          console.error("Pre-save formula check failed", err);
+        }
+      }
+    }
+
     if (form.is_flexible_benefit && !form.payout_method)
       return showValidationError(
         "Payout method is required for flexible benefits",
@@ -287,7 +404,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
     }
   };
 
-  /* ── derived state ── */
   const isEarning = form.type === "Earning";
   const isDeduction = form.type === "Deduction";
   const isFlexible = Boolean(form.is_flexible_benefit);
@@ -296,14 +412,15 @@ export const SalaryComponentModal: React.FC<Props> = ({
   const showPayoutUnclaimed =
     payoutMethod === "Accrue per cycle, pay only on claim";
 
-  /* ── footer ── */
   const footer = isViewMode ? (
-  <button type="button" onClick={onClose}
-    className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]"
-  >
-    <X className="h-3.5 w-3.5" /> Close
-  </button>
-) : (
+    <button
+      type="button"
+      onClick={onClose}
+      className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-app px-4 py-2 text-sm font-medium text-main transition hover:bg-[var(--border)]"
+    >
+      <X className="h-3.5 w-3.5" /> Close
+    </button>
+  ) : (
     <div className="flex w-full items-center justify-end gap-3">
       <button
         type="button"
@@ -324,17 +441,18 @@ export const SalaryComponentModal: React.FC<Props> = ({
     </div>
   );
 
-  /* ─────────────────────────────────────────────
-     RENDER
-  ───────────────────────────────────────────── */
   return (
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
-      title={ isViewMode ? "View Salary Component" :
-  isEdit     ? "Edit Salary Component" :
-               "Add Salary Component"}
+      title={
+        isViewMode
+          ? "View Salary Component"
+          : isEdit
+            ? "Edit Salary Component"
+            : "Add Salary Component"
+      }
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
       height="70vh"
@@ -344,18 +462,15 @@ export const SalaryComponentModal: React.FC<Props> = ({
     >
       <div className="sc-body pb-2 px-1.5">
         <div className="sc-layout">
-          {/* ══ LEFT: fields + amount + ledger ══ */}
           <div className="sc-left">
-            {/* Row 1: Type | Name | Abbr | Description */}
             <div className="sc-row1">
               <ModalSelect
                 label="Type"
                 value={form.type}
                 disabled={isViewMode}
-                onChange={(e) => {
-                  console.log("SELECT CHANGED:", e.target.value);
-                  handleTypeChange(e.target.value as SalaryComponentType);
-                }}
+                onChange={(e) =>
+                  handleTypeChange(e.target.value as SalaryComponentType)
+                }
                 options={[
                   { label: "Earning", value: "Earning" },
                   { label: "Deduction", value: "Deduction" },
@@ -374,7 +489,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 placeholder="e.g. BS"
                 maxLength={8}
                 value={form.salary_component_abbr}
-                 disabled={isViewMode}
+                disabled={isViewMode}
                 required
                 onChange={(e) =>
                   set("salary_component_abbr", e.target.value.toUpperCase())
@@ -389,7 +504,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
               />
             </div>
 
-            {/* Amount Configuration */}
             <div className="sc-amount-section">
               <h3 className="sc-section-title">Amount Configuration</h3>
               <div className="sc-toggle-row">
@@ -421,18 +535,40 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 ) : (
                   <textarea
                     className="sc-toggle-input sc-formula-input"
-                    placeholder={`e.g.base_salary * 0.4`}
+                    placeholder="e.g. base_salary * 0.4"
                     value={form.formula ?? ""}
                     onChange={(e) => set("formula", e.target.value)}
                     disabled={isViewMode}
                     spellCheck={false}
                     rows={4}
+                    style={
+                      formulaConflict
+                        ? {
+                            borderColor: "#c62828",
+                            boxShadow: "0 0 0 1px rgba(198,40,40,0.15)",
+                          }
+                        : undefined
+                    }
                   />
                 )}
               </div>
+              {isFormulaBased && formulaConflict && (
+                <div
+                  style={{
+                    fontSize: 12.5,
+                    color: "#c62828",
+                    marginTop: 8,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 6,
+                  }}
+                >
+                  <span>⚠</span>
+                  <span>{formulaConflict}</span>
+                </div>
+              )}
             </div>
 
-            {/* Ledger Account */}
             <div className="sc-ledger-section">
               <div className="sc-sec-header">
                 <h3 className="sc-section-title" style={{ margin: 0 }}>
@@ -458,7 +594,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Flexible Benefit Configuration */}
             {isEarning && isFlexible && (
               <div className="sc-fadein sc-benefit-section">
                 <h3 className="sc-section-title">Benefit Configuration</h3>
@@ -502,9 +637,7 @@ export const SalaryComponentModal: React.FC<Props> = ({
                     id="ben-payout-unclaimed"
                     label="Payout Unclaimed Amount in Final Payroll Cycle"
                     checked={Boolean(form.pay_against_benefit_claim)}
-                    
                     onChange={tog("pay_against_benefit_claim")}
-                    
                   />
                 )}
                 <BenefitCb
@@ -526,14 +659,11 @@ export const SalaryComponentModal: React.FC<Props> = ({
               </div>
             )}
           </div>
-          {/* /sc-left */}
 
-          {/* ══ RIGHT: Attributes panel (sticky, never scrolls away) ══ */}
           <div className="sc-right">
             <div className="sc-attrs-section">
               <h3 className="sc-attrs-title">Attributes</h3>
 
-              {/* common — always shown */}
               <AttrRow
                 id="attr-pay-days"
                 label="Depends on Payment Days"
@@ -551,7 +681,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 disabled={isViewMode}
               />
 
-              {/* Earning-only */}
               {isEarning && (
                 <AttrRow
                   id="attr-tax"
@@ -563,7 +692,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
                 />
               )}
 
-              {/* Deduction-only */}
               {isDeduction && (
                 <>
                   <AttrRow
@@ -595,7 +723,6 @@ export const SalaryComponentModal: React.FC<Props> = ({
               )}
             </div>
           </div>
-          {/* /sc-right */}
         </div>
       </div>
     </MinimizableModal>

@@ -457,13 +457,26 @@ export const addComment = async (payload: {
 };
 
 
+export interface AdvancePagination {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
 export async function getAdvanceByIdForView(
   id: string,
+  page = 1,
+  page_size = 20,
   from_date?: string,
   to_date?: string,
 ): Promise<any> {
   const params = new URLSearchParams();
   params.append("id", encodeURIComponent(id));
+  params.append("page", String(page));
+  params.append("page_size", String(page_size));
   if (from_date) params.append("from_date", from_date);
   if (to_date) params.append("to_date", to_date);
 
@@ -475,7 +488,12 @@ export async function getAdvanceByIdForView(
 
 export async function getAdvanceStatementPdf(
   id: string,
-  filters: { from_date?: string; to_date?: string } = {},
+  filters: {
+    from_date?: string;
+    to_date?: string;
+    page?: number;
+    page_size?: number;
+  } = {},
 ): Promise<Blob> {
   const resp: AxiosResponse = await api.get(
     ExpenseClaimAPI.getPdf,

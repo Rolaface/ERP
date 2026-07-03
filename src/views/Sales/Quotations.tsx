@@ -13,6 +13,7 @@ import {
   showConfirm,
 } from "../../utils/alert";
 import { getCompanyById } from "../../api/companySetupApi";
+import { openSendEmailModal } from "../../store/modalStore";
 import type { QuotationSummary } from "../../types/quotation";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -39,16 +40,8 @@ import {
 
 import { getPdf } from "../../api/PDF/pdfUtilApi";
 import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
-import SendEmailModal from "../../components/common/SendEmailModal";
-import {
-  ACTION_ICONS,
-  getStatusActionIcon,
-} from "../../components/UI_Utils/statusActionIcons";
-import {
-  REFRESH_KEYS,
-  useDataRefreshStore,
-} from "../../store/dataRefreshStore";
-
+import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/statusActionIcons";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 
@@ -60,11 +53,11 @@ type OutletContextType = {
 };
 
 const SORT_FIELD_MAP: Record<string, string> = {
-  quotationNumber: "id",
-  customerName: "customerName",
-  transactionDate: "transactionDate",
-  validTill: "validTill",
-  grandTotal: "grandTotal",
+  quotationNumber: "name",
+  customerName: "customer_name",
+  transactionDate: "transaction_date",
+  validTill: "valid_till",
+  grandTotal: "grand_total",
 };
 
 interface QuotationTableProps {
@@ -93,7 +86,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
 
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
   const [isFetching] = useState(false);
-  const [ setCompany] = useState<any>(null);
+  const [ ,setCompany] = useState<any>(null);
   const { can } = usePermission();
 
   // ── Pagination state (server)
@@ -113,7 +106,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
     setPage(1);
   }, [searchTerm]);
   //_____quotation details modal state _____
-  const [ setSelectedQuotation] = useState<any>(null);
+  const [ ,setSelectedQuotation] = useState<any>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
 
@@ -130,18 +123,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
 
-  //email
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  // const [emailQuotation, setEmailQuotation] = useState<ProformaInvoiceSummary | null>(null);
-  const [emailQuotation, setEmailQuotation] = useState<QuotationSummary | null>(
-    null,
-  );
-  const [emailContactEmail, setEmailContactEmail] = useState<string | null>(
-    null,
-  );
-  const [emailQuotationAttachments, setEmailQuotationAttachments] = useState<
-    { name: string; file_name: string }[]
-  >([]);
 
   // ── Currency symbols + per-currency number formatting for the currencies
   // present in the currently loaded page of quotations.
@@ -645,79 +626,65 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
             />
           </PermissionGate>
 
-          <ActionMenu
-            {...(q.status === "Cancelled" || q.status === "Draft"
-              ? { onDelete: (e) => handleDelete(q.quotationNumber, e) }
-              : {})}
-            customActions={[
-              ...(q.status !== "Draft"
-                ? [
-                    {
-                      label: "Compose Email",
-                      icon: ACTION_ICONS.EMAIL,
-                      onClick: () => {
-                        setEmailQuotation(q);
-                        setEmailContactEmail(null);
-                        setEmailQuotationAttachments([]); // clear stale attachments
-                        setEmailModalOpen(true);
-
-                        // We wrap the async call inside the void function to keep TS happy
-                        getProformaInvoiceById(q.quotationNumber)
-                          .then((res) => {
-                            const statusCode =
-                              res?.message?.status_code || res?.status_code;
-                            const data = res?.message?.data || res?.data;
-
-                            if (statusCode === 200 && data) {
-                              setEmailContactEmail(data.contact_email ?? null);
-                              setEmailQuotationAttachments(
-                                data.attachments ?? [],
-                              );
-                            }
-                          })
-                          .catch(() => {
-                            // non-critical: modal opens with empty To/attachments if fetch fails
-                          });
-                      },
-                    },
-                  ]
-                : []),
-              // Only show "Mark as Lost" if the status is NOT Cancelled
-              // ...(q.status !== "Cancelled"
-              //   ? [
-              //       {
-              //         label: "Mark as Lost",
-              //         icon: ACTION_ICONS.CANCEL,
-              //         // FIXED: Removed the 'e' parameter to match () => void signature
-              //         onClick: () => handleLost(q.quotationNumber),
-              //       }
-              //     ]
-              //   : []),
-              {
-                label: "View PDF",
-                icon: ACTION_ICONS.PDF,
-                onClick: () => handlePreviewQuotationPDF(q.quotationNumber),
-              },
-              ...(
-                STATUS_TRANSITIONS[
-                  q.status as keyof typeof STATUS_TRANSITIONS
-                ] ?? []
-              )
-                .filter((status) => status !== "Draft")
-                .map((status) => ({
-                  label:
-                    status === "Cancelled"
-                      ? "Cancel"
-                      : ` ${status}` || status === "Approved"
-                        ? "Approve"
-                        : status,
-                  icon: getStatusActionIcon(status),
-                  danger: status === "Cancelled",
-                  onClick: () =>
-                    handleRowStatusChange(q.quotationNumber, status),
-                })),
-            ]}
-          />
+                    <ActionMenu
+  {...(q.status === "Cancelled" || q.status === "Draft" ? { onDelete: (e) => handleDelete(q.quotationNumber, e) } : {})}
+  customActions={[    
+    ...(q.status !== "Draft"
+      ? [
+          {
+            label: "Compose Email",
+            icon: ACTION_ICONS.EMAIL,
+            onClick: async () => {
+              let contactEmail: string | null = null;
+              let invoiceAttachments: { name: string; file_name: string }[] = [];
+              try {
+                const res = await getProformaInvoiceById(q.quotationNumber);
+                const statusCode = res?.message?.status_code || res?.status_code;
+                const data = res?.message?.data || res?.data;
+                if (statusCode === 200 && data) {
+                  contactEmail = data.contact_email ?? null;
+                  invoiceAttachments = data.attachments ?? [];
+                }
+              } catch {
+                // non-critical: modal opens with empty To/attachments if fetch fails
+              }
+              openSendEmailModal({
+                docType: "Quotation",
+                invoiceNumber: q.quotationNumber,
+                customerName: q.customerName,
+                contactEmail,
+                invoiceAttachments,
+              });
+            },
+            },
+        ]
+      : []),
+    // Only show "Mark as Lost" if the status is NOT Cancelled
+    // ...(q.status !== "Cancelled" 
+    //   ? [
+    //       {
+    //         label: "Mark as Lost",
+    //         icon: ACTION_ICONS.CANCEL, 
+    //         // FIXED: Removed the 'e' parameter to match () => void signature
+    //         onClick: () => handleLost(q.quotationNumber),
+    //       }
+    //     ] 
+    //   : []),
+    {
+      label: "View PDF",
+      icon: ACTION_ICONS.PDF,
+      onClick: () => handlePreviewQuotationPDF(q.quotationNumber),
+    },
+   ...(STATUS_TRANSITIONS[q.status as keyof typeof STATUS_TRANSITIONS] ?? [])
+      .filter((status) => status !== "Draft") 
+      .map((status) => ({
+        label: status === "Cancelled" ? "Cancel" : ` ${status}` || status === "Approved" ? "Approve" : status,
+        icon: getStatusActionIcon(status),
+        danger: status === "Cancelled",
+        onClick: () => handleRowStatusChange(q.quotationNumber, status),
+      })),
+  ]}
+/>
         </ActionGroup>
       ),
     },
@@ -802,20 +769,6 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
             URL.revokeObjectURL(drawerPdfUrl);
           }
           setDrawerPdfUrl(null);
-        }}
-      />
-      <SendEmailModal
-        open={emailModalOpen}
-        docType="Quotation"
-        invoiceNumber={emailQuotation?.quotationNumber}
-        contactEmail={emailContactEmail}
-        customerName={emailQuotation?.customerName}
-        invoiceAttachments={emailQuotationAttachments}
-        onClose={() => {
-          setEmailModalOpen(false);
-          setEmailQuotation(null);
-          setEmailContactEmail(null);
-          setEmailQuotationAttachments([]);
         }}
       />
     </div>
