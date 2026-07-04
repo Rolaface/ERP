@@ -44,8 +44,13 @@ const VOUCHER_OPTIONS = [
 ];
 
 // const fmt = (n: number) => (n || 0).toLocaleString("en-IN");
-const fmt = (n: number, symbol?: string) =>
-  `${symbol ? symbol + " " : ""}${(n || 0).toLocaleString("en-IN")}`;
+const fmt = (n: number, symbol?: string) => {
+  const value = n || 0;
+  const isNeg = value < 0;
+  const abs = Math.abs(value);
+  // return `${isNeg ? "-" : ""}${symbol ? symbol + " " : ""}${abs.toLocaleString("en-IN")}`;
+  return `${symbol ? symbol + " " : ""}${isNeg ? "-" : ""}${abs.toLocaleString("en-IN")}`;
+};
 
 const fmtDateRange = (from?: string, to?: string) => {
   if (!from && !to) return "";
@@ -569,8 +574,6 @@ const CustomerStatement = ({
           <span
             className={`text-sm font-black whitespace-nowrap tabular-nums ${row.balance === 0 ? "text-muted" : neg ? "text-danger" : "text-primary"}`}
           >
-            {neg ? "−" : ""}
-            {/* {fmt(row.balance)} */}
             {fmt(row.balance, data?.currency_symbol)}
           </span>
         );
