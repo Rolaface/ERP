@@ -1007,6 +1007,7 @@ export const useProformaInvoiceForm = (
           itemCode: it.itemCode,
           itemName: it.itemName ?? "",
           description: it.description ?? "",
+          isServiceItem: it.isServiceItem ?? false, 
           quantity,
           price,
           discount,
