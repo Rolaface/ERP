@@ -182,10 +182,6 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
             {/* Compact Top Bar: Title + Tiny Inline Base Salary Field on the exact same horizontal line */}
             <div className="flex items-center justify-between mb-3 shrink-0 gap-3">
               <div className="flex items-center gap-3 flex-wrap min-w-0">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted flex items-center gap-1.5 shrink-0">
-                  <FaCalculator className="text-primary w-3 h-3" />
-                  <span>Salary Components & Overrides</span>
-                </h3>
 
                 {/* Inline Base Salary Field using custom NumericInput */}
                 {onBaseSalaryChange !== undefined && (

@@ -6,6 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { FaSlidersH } from "react-icons/fa";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { getAllSalaryStructures } from "../../../api/utils/frappeUtilsApi";
 import { getCurrencyList } from "../../../api/lookupApi";
 import { useCompanyStore } from "../../../store/companyStore";
@@ -702,6 +703,18 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     excludedComponents,
   ]);
 
+  // Only the "live" (selected / resolved) rows are shown in the read-only summary.
+  // Pending rows (a component slot added but not yet picked) only matter inside
+  // the customize modal, so they're left out here.
+  const visibleEarningRows = useMemo(
+    () => earningRows.filter((r) => r.selected),
+    [earningRows],
+  );
+  const visibleDeductionRows = useMemo(
+    () => deductionRows.filter((r) => r.selected),
+    [deductionRows],
+  );
+
   const shownBase = activeField.current === "gross" ? computedBase : baseInput;
   const shownGross = activeField.current === "base" ? computedGross : grossInput;
 
@@ -737,30 +750,91 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         </div>
       )}
 
-      {/* Clean Trigger Card on the Compensation Tab (replaces inline ComponentsPanel) */}
+      {/* Salary components summary: Deductions / Earnings side-by-side, with the
+          Customize & Review action pinned to the top-right corner. */}
       {showComponentsPanel && (
-        <div className="bg-card rounded-xl border border-theme p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-          <div>
-            <h3 className="text-sm font-semibold text-main flex items-center gap-2">
-              <span>Salary Components & Structure</span>
+        <div className="bg-card rounded-xl border border-theme shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3">
+            <h3 className="text-sm font-semibold text-main flex items-center gap-2 min-w-0">
+              <span className="truncate">Salary Components</span>
               {hasCustomizations && (
-                <span className="text-[10px] bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full">
+                <span className="text-[10px] bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full shrink-0">
                   Customized
                 </span>
               )}
             </h3>
-            <p className="text-xs text-muted mt-0.5">
-              {effectiveComponentDefs.length} active components ({earningRows.length} Earnings, {deductionRows.length} Deductions).
-            </p>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg shadow hover:bg-primary/90 transition-all shrink-0"
+            >
+              <FaSlidersH className="w-3 h-3" />
+              <span>Customize</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-semibold rounded-lg shadow hover:bg-primary/90 transition-all"
-          >
-            <FaSlidersH className="w-3.5 h-3.5" />
-            <span>Customize & Review Components</span>
-          </button>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-theme border-t border-theme">
+            {/* Deductions */}
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <ArrowDownRight className="w-3.5 h-3.5 text-danger" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                  Deductions
+                </span>
+              </div>
+              {visibleDeductionRows.length > 0 ? (
+                visibleDeductionRows.map((row) => (
+                  <div
+                    key={row.editId}
+                    className="flex justify-between items-center py-2 border-b border-theme/60 last:border-0"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                      <span className="text-[13px] text-main truncate" title={row.name}>
+                        {row.name}
+                      </span>
+                      {/* {!!row.flags?.variable_based_on_taxable_salary && (
+                        <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 shrink-0">
+                          Var
+                        </span>
+                      )} */}
+                    </div>
+                    <span className="text-[13px] font-bold text-danger tabular-nums shrink-0">
+                      {currencyPrefix} {fmt(row.amount)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted italic py-2">No deductions</p>
+              )}
+            </div>
+
+            {/* Earnings */}
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <ArrowUpRight className="w-3.5 h-3.5 text-success" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                  Earnings
+                </span>
+              </div>
+              {visibleEarningRows.length > 0 ? (
+                visibleEarningRows.map((row) => (
+                  <div
+                    key={row.editId}
+                    className="flex justify-between items-center py-2 border-b border-theme/60 last:border-0"
+                  >
+                    <span className="text-[13px] text-main truncate pr-2" title={row.name}>
+                      {row.name}
+                    </span>
+                    <span className="text-[13px] font-bold text-success tabular-nums shrink-0">
+                      {currencyPrefix} {fmt(row.amount)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted italic py-2">No earnings</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

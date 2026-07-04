@@ -398,14 +398,14 @@ const SlipDrawer: React.FC<{
                               >
                                 {d.salary_component}
                               </span>
-                              {!!d.variable_based_on_taxable_salary && (
+                              {/* {!!d.variable_based_on_taxable_salary && (
                                 <span className="text-[8px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/60 rounded px-1 py-0.5 shrink-0">
-                                  Var
+                                  Income Tax
                                 </span>
-                              )}
+                              )} */}
                             </div>
                             <span className="text-[11px] font-semibold text-danger tabular-nums shrink-0 ml-1">
-                              −{fmtMoney(d.amount ?? 0, currency)}
+                              {fmtMoney(d.amount ?? 0, currency)}
                             </span>
                           </div>
                         ))
@@ -458,7 +458,7 @@ const SlipDrawer: React.FC<{
                                 </span>
                               )}
                             </div>
-                            <span className="text-[11px] font-semibold text-main tabular-nums shrink-0 ml-1">
+                            <span className="text-[11px] font-semibold text-success tabular-nums shrink-0 ml-1">
                               {fmtMoney(e.amount ?? 0, currency)}
                             </span>
                           </div>
