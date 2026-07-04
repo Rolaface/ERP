@@ -124,13 +124,14 @@ const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
 const ServiceInvoiceColGroup: React.FC = () => (
   <colgroup>
     <col style={{ width: "28px" }} /> {/* # */}
-    <col style={{ width: "22%" }} /> {/* Item */}
-    <col style={{ width: "10%" }} /> {/* Qty */}
-    <col style={{ width: "15%" }} /> {/* Price */}
-    <col style={{ width: "10%" }} /> {/* Tax% */}
-    <col style={{ width: "15%" }} /> {/* Tax Name */}
-    <col style={{ width: "15%" }} /> {/* Amount */}
-    <col style={{ width: "8%" }} /> {/* Amount */}
+    <col style={{ width: "20%" }} />  {/* Item */}
+    <col style={{ width: "25%" }} />  {/* Description */}
+    <col style={{ width: "7%" }} />   {/* Qty */}
+    <col style={{ width: "6%" }} />  {/* Price */}
+    <col style={{ width: "5%" }} />   {/* Discount */}
+    <col style={{ width: "5%" }} />   {/* Tax% */}
+    <col style={{ width: "12%" }} />  {/* Tax Name */}
+    <col style={{ width: "10%" }} />  {/* Amount */}
     <col style={{ width: "44px" }} /> {/* Actions */}
   </colgroup>
 );
@@ -162,6 +163,11 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
         Item
       </th>
+      {isService && (
+  <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+    Description
+  </th>
+)}
 
       {/* Hide Labels if Service */}
       {!isService && (
@@ -456,6 +462,19 @@ const ItemTable: React.FC<ItemTableProps> = ({
             />
           </td>
         )}
+        {/* Description — Service only */}
+{isService && (
+  <td className="px-0.5 py-1">
+    <input
+      type="text"
+      name="description"
+      value={it.description || ""}
+      placeholder="Enter description"
+      onChange={(e) => actions.handleItemChange(i, e)}
+      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+    />
+  </td>
+)}
 
         {/* Pkg (U×S) */}
         {!isService && (
