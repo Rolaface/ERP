@@ -31,6 +31,7 @@ import PermissionGate from "../PermissionGate";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 
 const CREDIT_NOTE_MODULE = "Sales Invoice";
 
@@ -65,6 +66,16 @@ const CreditNotesTable: React.FC = () => {
   useEffect(() => {
     setPage(1);
   }, [searchTerm]);
+
+    useEffect(() => {
+      const unsubscribe = useDataRefreshStore
+        .getState()
+        .subscribeToRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST, () => {
+          fetchCreditNotes(); 
+        });
+        
+      return unsubscribe;
+    }, []);
 
   const fetchCreditNotes = async () => {
     try {
@@ -204,6 +215,7 @@ const CreditNotesTable: React.FC = () => {
       await deleteCreditNote(noteNo);
       closeSwal();
       setData((prev) => prev.filter((item) => item.noteNo !== noteNo));
+      useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
       showSuccess("Credit note deleted successfully");
     } catch (error) {
       closeSwal();
@@ -420,7 +432,7 @@ const CreditNotesTable: React.FC = () => {
                 }
               />
             </PermissionGate>
-            <ActionMenu
+            {/* <ActionMenu
               {...(can(CREDIT_NOTE_MODULE, "delete")
                 ? {
                     onDelete: (e) => {
@@ -441,6 +453,37 @@ const CreditNotesTable: React.FC = () => {
                   : []),
                 ...(!["Draft", "Cancelled"].includes(r.status) &&
                 can(CREDIT_NOTE_MODULE, "write")
+                  ? [
+                      {
+                        label: "Cancel",
+                        icon: ACTION_ICONS.CANCEL,
+                        onClick: () => handleCancel(r.noteNo),
+                        danger: true,
+                      },
+                    ]
+                  : []),
+              ]}
+            /> */}
+          <ActionMenu
+              {...((r.status === "Cancelled" || r.status === "Draft") && can(CREDIT_NOTE_MODULE, "delete")
+                ? {
+                    onDelete: (e) => {
+                      e?.stopPropagation();
+                      handleDelete(r.noteNo);
+                    },
+                  }
+                : {})}
+              customActions={[
+                ...(r.status === "Draft" && can(CREDIT_NOTE_MODULE, "write")
+                  ? [
+                      {
+                        label: "Approve",
+                        icon: ACTION_ICONS.APPROVE,
+                        onClick: () => handleSubmit(r.noteNo),
+                      },
+                    ]
+                  : []),
+                ...(r.status === "Return" && can(CREDIT_NOTE_MODULE, "write")
                   ? [
                       {
                         label: "Cancel",

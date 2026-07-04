@@ -53,11 +53,11 @@ type OutletContextType = {
 };
 
 const SORT_FIELD_MAP: Record<string, string> = {
-  quotationNumber: "id",
-  customerName: "customerName",
-  transactionDate: "transactionDate",
-  validTill: "validTill",
-  grandTotal: "grandTotal",
+  quotationNumber: "name",
+  customerName: "customer_name",
+  transactionDate: "transaction_date",
+  validTill: "valid_till",
+  grandTotal: "grand_total",
 };
 
 interface QuotationTableProps {

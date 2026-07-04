@@ -75,11 +75,11 @@ const STATUS_TRANSITIONS: Record<
 const CRITICAL_STATUSES: ProformaInvoiceStatus[] = ["Paid"];
 
 const SORT_FIELD_MAP: Record<string, string> = {
-  proformaId: "proformaId",
-  customerName: "customerName",
-  createdAt: "createdAt",
-  dueDate: "dueDate",
-  totalAmount: "totalAmount",
+  proformaId: "name",
+  customerName: "customer_name",
+  createdAt: "transaction_date",
+  dueDate: "valid_till",
+  totalAmount: "grand_total",
   status: "status",
 };
 
@@ -587,7 +587,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
 
   const columns: Column<ProformaInvoiceSummary>[] = [
     {
-      key: "id",
+      key: "proformaId",
       header: "Proforma No",
       align: "left",
       sortable: true,
