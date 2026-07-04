@@ -377,54 +377,7 @@ const SlipDrawer: React.FC<{
 
               {(emp.earnings.length > 0 || emp.deductions.length > 0) && (
                 <div className="grid grid-cols-2 border-b border-theme divide-x border-theme">
-                  <div className="px-4 py-3 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <ArrowDownRight className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                        <p className="text-[9px] font-extrabold uppercase tracking-wider text-muted">
-                          Deductions
-                        </p>
-                      </div>
-                      {emp.deductions.length > 0 ? (
-                        emp.deductions.map((d, i) => (
-                          <div
-                            key={d.abbr || i}
-                            className="flex justify-between items-center py-1.5 border-b border-theme/60 last:border-0"
-                          >
-                            <div className="flex items-center gap-1 min-w-0 pr-1.5">
-                              <span
-                                className="text-[11px] text-main truncate"
-                                title={d.salary_component}
-                              >
-                                {d.salary_component}
-                              </span>
-                              {/* {!!d.variable_based_on_taxable_salary && (
-                                <span className="text-[8px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/60 rounded px-1 py-0.5 shrink-0">
-                                  Income Tax
-                                </span>
-                              )} */}
-                            </div>
-                            <span className="text-[11px] font-semibold text-danger tabular-nums shrink-0 ml-1">
-                              {fmtMoney(d.amount ?? 0, currency)}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-[11px] text-muted italic py-1.5">
-                          No deductions
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex justify-between items-center mt-3 pt-2 border-t-2 border-theme">
-                      <span className="text-[11px] font-bold text-danger">
-                        Total deductions
-                      </span>
-                      <span className="text-[12px] font-extrabold text-danger tabular-nums">
-                        −{fmtMoney(emp.totalDeductions, currency)}
-                      </span>
-                    </div>
-                  </div>
-
+                  
                   {/* Earnings Column (Right) */}
                   <div className="px-4 py-3 flex flex-col justify-between">
                     <div>
@@ -478,6 +431,54 @@ const SlipDrawer: React.FC<{
                       </span>
                     </div>
                   </div>
+                  <div className="px-4 py-3 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <ArrowDownRight className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                        <p className="text-[9px] font-extrabold uppercase tracking-wider text-muted">
+                          Deductions
+                        </p>
+                      </div>
+                      {emp.deductions.length > 0 ? (
+                        emp.deductions.map((d, i) => (
+                          <div
+                            key={d.abbr || i}
+                            className="flex justify-between items-center py-1.5 border-b border-theme/60 last:border-0"
+                          >
+                            <div className="flex items-center gap-1 min-w-0 pr-1.5">
+                              <span
+                                className="text-[11px] text-main truncate"
+                                title={d.salary_component}
+                              >
+                                {d.salary_component}
+                              </span>
+                              {/* {!!d.variable_based_on_taxable_salary && (
+                                <span className="text-[8px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/60 rounded px-1 py-0.5 shrink-0">
+                                  Income Tax
+                                </span>
+                              )} */}
+                            </div>
+                            <span className="text-[11px] font-semibold text-danger tabular-nums shrink-0 ml-1">
+                              {fmtMoney(d.amount ?? 0, currency)}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-[11px] text-muted italic py-1.5">
+                          No deductions
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center mt-3 pt-2 border-t-2 border-theme">
+                      <span className="text-[11px] font-bold text-danger">
+                        Total deductions
+                      </span>
+                      <span className="text-[12px] font-extrabold text-danger tabular-nums">
+                        −{fmtMoney(emp.totalDeductions, currency)}
+                      </span>
+                    </div>
+                  </div>
+
                 </div>
               )}
             </div>

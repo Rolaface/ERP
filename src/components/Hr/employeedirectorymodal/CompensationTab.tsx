@@ -751,7 +751,9 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
       )}
 
       {/* Salary components summary: Deductions / Earnings side-by-side, with the
-          Customize & Review action pinned to the top-right corner. */}
+          Customize & Review action pinned to the top-right corner. Monthly
+          salary inputs (Effective from / Base / Gross) now live inside this
+          same card as a compact row, instead of a separate card above. */}
       {showComponentsPanel && (
         <div className="bg-card rounded-xl border border-theme shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3">
@@ -773,7 +775,33 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-theme border-t border-theme">
+          <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-theme">
+            {/* Earnings */}
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <ArrowUpRight className="w-3.5 h-3.5 text-success" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                  Earnings
+                </span>
+              </div>
+              {visibleEarningRows.length > 0 ? (
+                visibleEarningRows.map((row) => (
+                  <div
+                    key={row.editId}
+                    className="flex justify-between items-center py-2 border-b border-theme/60 last:border-0"
+                  >
+                    <span className="text-[13px] text-main truncate pr-2" title={row.name}>
+                      {row.name}
+                    </span>
+                    <span className="text-[13px] font-bold text-success tabular-nums shrink-0">
+                      {currencyPrefix} {fmt(row.amount)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted italic py-2">No earnings</p>
+              )}
+            </div>
             {/* Deductions */}
             <div className="px-5 py-4">
               <div className="flex items-center gap-1.5 mb-1">
@@ -808,32 +836,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
               )}
             </div>
 
-            {/* Earnings */}
-            <div className="px-5 py-4">
-              <div className="flex items-center gap-1.5 mb-1">
-                <ArrowUpRight className="w-3.5 h-3.5 text-success" />
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
-                  Earnings
-                </span>
-              </div>
-              {visibleEarningRows.length > 0 ? (
-                visibleEarningRows.map((row) => (
-                  <div
-                    key={row.editId}
-                    className="flex justify-between items-center py-2 border-b border-theme/60 last:border-0"
-                  >
-                    <span className="text-[13px] text-main truncate pr-2" title={row.name}>
-                      {row.name}
-                    </span>
-                    <span className="text-[13px] font-bold text-success tabular-nums shrink-0">
-                      {currencyPrefix} {fmt(row.amount)}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-muted italic py-2">No earnings</p>
-              )}
-            </div>
+            
           </div>
         </div>
       )}
@@ -851,6 +854,11 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   onBaseSalaryChange={(val) => {
     setBaseInput(val);
     stableHandleInputChange("basicSalary", val ? String(val) : "");
+  }}
+        grossSalaryInput={toNum(grossInput)}
+  onGrossSalaryChange={(val) => {
+    setGrossInput(val);
+    stableHandleInputChange("grossSalary", val ? String(val) : "");
   }}
       >
         <ComponentsPanel

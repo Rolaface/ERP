@@ -1,16 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { 
-  FaTimes, 
-  FaMoneyBillWave, 
-  FaSlidersH, 
-  FaUndo, 
-  FaCheck, 
-  FaCalculator, 
+import React, { useEffect, useRef, useState } from "react";
+import { SlidersHorizontal } from "lucide-react";
+import {
+  FaUndo,
+  FaCheck,
+  FaMoneyBillWave,
   FaExclamationCircle,
-  FaMinus,
-  FaExpand
 } from "react-icons/fa";
-import { Minus, X } from "lucide-react";
+import { useModalStore } from "../../../../store/modalStore";
+import { MinimizableModal } from "../../../common/MinimizableModal";
 import { NumericInput } from "../../../ui/modal/modalComponent";
 import type { SalaryResult } from "../salaryengine";
 
@@ -26,19 +23,22 @@ export type CompensationReviewModalProps = {
   onSave?: () => void;
   baseSalaryInput?: number | null;
   onBaseSalaryChange?: (val: number | null) => void;
+  grossSalaryInput?: number | null;
+  onGrossSalaryChange?: (val: number | null) => void;
   children?: React.ReactNode;
 };
 
-const fmtNum = (n: number) => (n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+const fmtNum = (n: number) =>
+  (n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 const DrawerToggleIcon: React.FC<{ isOpen: boolean }> = ({ isOpen }) => (
-  <svg 
-    className="w-3.5 h-3.5 text-muted hover:text-main transition-colors shrink-0" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
+  <svg
+    className="w-3.5 h-3.5 text-muted hover:text-main transition-colors shrink-0"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
     strokeLinejoin="round"
   >
     <rect x="3" y="3" width="18" height="18" rx="3" ry="3" />
@@ -63,184 +63,215 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
   onSave,
   baseSalaryInput,
   onBaseSalaryChange,
+  grossSalaryInput,
+  onGrossSalaryChange,
   children,
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
-  const [isMinimized, setIsMinimized] = useState(false);
+
+  // Store-backed modal id. We own its lifecycle since this component
+  // isn't opened through GlobalModalHandler's openXModal() helpers —
+  // MinimizableModal needs a real store entry to read/set `minimized` on.
+  const modalIdRef = useRef<string | null>(null);
+  const [modalId, setModalId] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen && !isMinimized) onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose, isMinimized]);
+    if (isOpen && !modalIdRef.current) {
+      const id = useModalStore.getState().openModal(
+        "compensationReview",
+        null,
+        false,
+        undefined,
+        {
+          title: "Customize & Review Compensation",
+          subtitle: employeeName || "Employee",
+          icon: SlidersHorizontal,
+        },
+      );
+      modalIdRef.current = id;
+      setModalId(id);
+    }
 
-  if (!isOpen) return null;
+    if (!isOpen && modalIdRef.current) {
+      useModalStore.getState().closeModal(modalIdRef.current);
+      modalIdRef.current = null;
+      setModalId(null);
+    }
+  }, [isOpen, employeeName]);
+
+  // Cleanup on unmount, in case parent unmounts without flipping isOpen first.
+  useEffect(() => {
+    return () => {
+      if (modalIdRef.current) {
+        useModalStore.getState().closeModal(modalIdRef.current);
+      }
+    };
+  }, []);
+
+  if (!isOpen || !modalId) return null;
 
   const cur = (n: number) => `${currencyPrefix} ${fmtNum(n)}`.trim();
 
-  // Minimized Floating Bar State
-  if (isMinimized) {
-    return (
-      <div className="fixed bottom-4 right-6 z-50 bg-card border border-theme shadow-2xl rounded-xl px-4 py-2.5 flex items-center gap-4 animate-in slide-in-from-bottom duration-200">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-semibold text-main">Compensation Review: {employeeName}</span>
-        </div>
-        <div className="flex items-center gap-1.5 border-l border-theme/60 pl-3">
+  const summaryBar = (
+    <div className="flex items-center justify-between gap-3 text-white/90">
+      <p className="text-xs truncate">
+        {employeeName || "Employee"} •{" "}
+        <span className="font-medium text-white">
+          {salaryStructureName || "Custom Structure"}
+        </span>
+      </p>
+      <div className="flex items-center gap-2 shrink-0">
+        {hasCustomizations && (
+          <span className="text-[10px] font-medium bg-white/15 text-white border border-white/20 px-2 py-0.5 rounded-full">
+            Customized
+          </span>
+        )}
+        {hasCustomizations && onResetCustomizations && (
           <button
             type="button"
-            onClick={() => setIsMinimized(false)}
-            className="p-1.5 text-muted hover:text-primary rounded-lg hover:bg-app transition-colors"
-            title="Restore Window"
+            onClick={onResetCustomizations}
+            className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-white bg-white/10 hover:bg-white/20 rounded-md transition-colors border border-white/20"
+            title="Reset all overrides to structure defaults"
           >
-            <FaExpand className="w-3.5 h-3.5" />
+            <FaUndo className="w-2.5 h-2.5" />
+            <span className="hidden sm:inline">Reset Defaults</span>
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-muted hover:text-red-500 rounded-lg hover:bg-app transition-colors"
-            title="Close"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
+
+  const footer = (
+    <div className="flex items-center justify-end gap-2 w-full">
+      <button
+        type="button"
+        onClick={onClose}
+        className="px-3.5 py-1.5 text-xs font-medium text-muted hover:text-main bg-card hover:bg-app border border-theme rounded-md transition-all"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onSave?.();
+          onClose();
+        }}
+        className="flex items-center gap-1 px-4 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-md shadow-2xs transition-all active:scale-[0.98]"
+      >
+        <FaCheck className="w-2.5 h-2.5" />
+        <span>Apply & Close</span>
+      </button>
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-2 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-150">
-      
-      {/* Outer Modal Container */}
-      <div 
-        className="relative w-full w-[96vw] max-w-[1400px] h-[90vh] max-h-[850px] bg-card rounded-2xl shadow-2xl border border-theme flex flex-col overflow-hidden font-sans"
-        onClick={(e) => e.stopPropagation()}
-      >
-        
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-theme bg-app/50 shrink-0 z-10">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <FaSlidersH className="w-3.5 h-3.5" />
-            </div>
-            <div className="min-w-0 truncate">
-              <h2 className="text-sm font-semibold text-main leading-tight flex items-center gap-2 truncate">
-                <span>Customize & Review Compensation</span>
-                {hasCustomizations && (
-                  <span className="text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full shrink-0">
-                    Customized
+    <MinimizableModal
+      modalId={modalId}
+      isOpen={true}
+      onClose={onClose}
+      title="Customize & Review Compensation"
+      subtitle={employeeName || "Employee"}
+      icon={SlidersHorizontal}
+      summaryBar={summaryBar}
+      footer={footer}
+      customWidth="min(1400px, 96vw)"
+      height="min(850px, 90dvh)"
+    >
+      <div className="flex flex-col -mx-4 -my-3 min-h-0">
+        {/*
+          Shared top bar — Base Salary / Gross Salary fields + the "show
+          summary" toggle live here now, spanning the FULL width above
+          both columns. This is the fix for the misalignment: previously
+          this bar only sat above the left canvas, so EARNINGS/DEDUCTIONS
+          started lower than SUMMARY. Now every column's first heading
+          starts right after this same shared bar, at the same y-position.
+        */}
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-5 pt-3 pb-3 border-b border-theme/60 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            {onBaseSalaryChange !== undefined && (
+              <div className="flex items-center gap-1.5 bg-card border border-theme rounded-md px-2 py-0.5 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted shrink-0">
+                  Base Salary:
+                </span>
+                <div className="relative flex items-center">
+                  <span className="text-[10px] font-semibold text-muted mr-1 shrink-0">
+                    {currencyPrefix}
                   </span>
-                )}
-              </h2>
-              <p className="text-[11px] text-muted truncate">
-                {employeeName || "Employee"} • <span className="font-medium text-main">{salaryStructureName || "Custom Structure"}</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            {hasCustomizations && onResetCustomizations && (
-              <button
-                type="button"
-                onClick={onResetCustomizations}
-                className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 rounded-md transition-colors border border-red-500/20 shadow-2xs mr-1"
-                title="Reset all overrides to structure defaults"
-              >
-                <FaUndo className="w-2.5 h-2.5" />
-                <span className="hidden sm:inline">Reset to Structure Defaults</span>
-              </button>
+                  <NumericInput
+                    name="modal-base-salary"
+                    value={baseSalaryInput ?? null}
+                    onChange={(val) => onBaseSalaryChange(val ?? null)}
+                    placeholder="0.00"
+                    decimalScale={2}
+                    className="!w-20 sm:!w-24 !h-6 !text-[11px] !font-bold !tabular-nums !px-1.5 !bg-transparent !border-0 focus:!outline-none !shadow-none"
+                  />
+                </div>
+              </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => setIsMinimized(true)}
-              className="w-7 h-7 rounded-md flex items-center justify-center text-muted hover:text-main hover:bg-app transition-colors"
-              title="Minimize Window"
-            >
-              <Minus className="w-3 h-3" />
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-7 h-7 rounded-md flex items-center justify-center text-muted hover:text-main hover:bg-app transition-colors"
-              title="Close"
-            >
-              <FaTimes className="w-3.5 h-3.5" />
-            </button>
+            {onGrossSalaryChange !== undefined && (
+              <div className="flex items-center gap-1.5 bg-card border border-theme rounded-md px-2 py-0.5 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted shrink-0">
+                  Gross Salary:
+                </span>
+                <div className="relative flex items-center">
+                  <span className="text-[10px] font-semibold text-muted mr-1 shrink-0">
+                    {currencyPrefix}
+                  </span>
+                  <NumericInput
+                    name="modal-gross-salary"
+                    value={grossSalaryInput ?? null}
+                    onChange={(val) => onGrossSalaryChange(val ?? null)}
+                    placeholder="0.00"
+                    decimalScale={2}
+                    className="!w-20 sm:!w-24 !h-6 !text-[11px] !font-bold !tabular-nums !px-1.5 !bg-transparent !border-0 focus:!outline-none !shadow-none"
+                  />
+                </div>
+              </div>
+            )}
           </div>
+
+          {!isDrawerOpen && (
+            <button
+              type="button"
+              onClick={() => setIsDrawerOpen(true)}
+              className="p-1.5 bg-card border border-theme rounded-md shadow-2xs hover:bg-app transition-all flex items-center justify-center shrink-0"
+              title="Show Summary"
+            >
+              <DrawerToggleIcon isOpen={false} />
+            </button>
+          )}
         </div>
 
-        {/* Main Body */}
-        <div className="flex-1 overflow-y-auto flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-theme bg-app/30 dark:bg-app/10 relative min-h-0">
-          
+        {/* Columns row — both start immediately below the shared bar above,
+            so their header lines land on the same horizontal line. */}
+        <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-theme min-h-0">
           {/* Left Canvas Area */}
-          <div className={`h-auto overflow-visible p-4 sm:p-5 transition-all duration-300 flex flex-col justify-between ${isDrawerOpen ? "w-full lg:w-[80%]" : "w-full"}`}>
-            
-            {/* Compact Top Bar: Title + Tiny Inline Base Salary Field on the exact same horizontal line */}
-            <div className="flex items-center justify-between mb-3 shrink-0 gap-3">
-              <div className="flex items-center gap-3 flex-wrap min-w-0">
-
-                {/* Inline Base Salary Field using custom NumericInput */}
-                {onBaseSalaryChange !== undefined && (
-                  <div className="flex items-center gap-1.5 bg-card border border-theme rounded-md px-2 py-0.5 shadow-2xs">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted shrink-0">
-                      Base Salary:
-                    </span>
-                    <div className="relative flex items-center">
-                      <span className="text-[10px] font-semibold text-muted mr-1 shrink-0">
-                        {currencyPrefix}
-                      </span>
-                      <NumericInput
-                        name="modal-base-salary"
-                        value={baseSalaryInput ?? null}
-                        onChange={(val) => onBaseSalaryChange(val ?? null)}
-                        placeholder="0.00"
-                        decimalScale={2}
-                        className="!w-20 sm:!w-24 !h-6 !text-[11px] !font-bold !tabular-nums !px-1.5 !bg-transparent !border-0 focus:!outline-none !shadow-none"
-                      />
-                    </div>
-                  </div>
-                )}
+          <div
+            className={`h-auto overflow-visible p-4 sm:p-5 transition-all duration-300 ${
+              isDrawerOpen ? "w-full lg:w-[80%]" : "w-full"
+            }`}
+          >
+            {children || (
+              <div className="p-8 text-center border border-dashed border-theme rounded-xl text-muted text-xs bg-card">
+                No components loaded.
               </div>
-
-              {/* Floating Drawer Button anchored strictly to the far RIGHT side */}
-              {!isDrawerOpen && (
-                <button
-                  type="button"
-                  onClick={() => setIsDrawerOpen(true)}
-                  className="p-1.5 bg-card border border-theme rounded-md shadow-2xs hover:bg-app transition-all flex items-center justify-center shrink-0 ml-auto"
-                  title="Show Summary"
-                >
-                  <DrawerToggleIcon isOpen={false} />
-                </button>
-              )}
-            </div>
-
-            {/* Components Container */}
-            <div className="flex-1 h-auto overflow-visible">
-              {children || (
-                <div className="p-8 text-center border border-dashed border-theme rounded-xl text-muted text-xs bg-card">
-                  No components loaded.
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
-          {/* Right Summary Sidebar */}
+          {/* Right Summary Sidebar — top padding matches the left canvas's
+              (p-4 sm:p-5 vs pt-4 sm:pt-5 here) so the SUMMARY heading lines
+              up with EARNINGS / DEDUCTIONS exactly. */}
           {isDrawerOpen && (
-            <div className="w-full sm:w-[260px] lg:w-[20%] min-w-[240px] max-w-[280px] bg-card/90 dark:bg-card p-3.5 sm:p-4 flex flex-col justify-between shrink-0 animate-in slide-in-from-right duration-200 border-l border-theme h-auto">
+            <div className="w-full sm:w-[260px] lg:w-[20%] min-w-[240px] max-w-[280px] bg-card/90 dark:bg-card px-3.5 sm:px-4 pt-4 sm:pt-5 pb-3.5 sm:pb-4 flex flex-col justify-between shrink-0 h-auto">
               <div className="space-y-3 sticky top-3">
-                
                 <div className="flex items-center justify-between pb-1.5 border-b border-theme/60">
                   <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted flex items-center gap-1">
                     <FaMoneyBillWave className="text-emerald-500 w-3 h-3 shrink-0" />
                     <span>Summary</span>
                   </h3>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setIsDrawerOpen(false)}
                     className="p-1 rounded-md border border-theme hover:bg-app transition-all flex items-center justify-center"
                     title="Hide sidebar"
@@ -252,7 +283,7 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
                 {salaryResult ? (
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <div className="bg-card p-2.5 rounded-lg border border-theme shadow-2xs relative overflow-hidden border-l-4 border-l-emerald-500">
+                      <div className="bg-card p-2.5 rounded-lg border border-theme shadow-2xs border-l-4 border-l-emerald-500">
                         <span className="text-[9px] text-muted font-bold block uppercase tracking-wider">
                           Gross / Month
                         </span>
@@ -261,7 +292,7 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
                         </span>
                       </div>
 
-                      <div className="bg-card p-2.5 rounded-lg border border-theme shadow-2xs relative overflow-hidden border-l-4 border-l-primary">
+                      <div className="bg-card p-2.5 rounded-lg border border-theme shadow-2xs border-l-4 border-l-primary">
                         <span className="text-[9px] text-primary font-bold block uppercase tracking-wider">
                           Net / Month
                         </span>
@@ -274,25 +305,33 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
                     <div className="bg-app/50 dark:bg-app/20 rounded-lg border border-theme/80 p-2.5 space-y-1.5 text-[11px] shadow-inner">
                       <div className="flex justify-between items-center text-muted">
                         <span>Monthly Base</span>
-                        <span className="font-semibold text-main tabular-nums">{cur(salaryResult.resolvedBase)}</span>
+                        <span className="font-semibold text-main tabular-nums">
+                          {cur(salaryResult.resolvedBase)}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center text-muted">
                         <span>Gross (Annual)</span>
-                        <span className="font-semibold text-main tabular-nums">{cur(salaryResult.gross * 12)}</span>
+                        <span className="font-semibold text-main tabular-nums">
+                          {cur(salaryResult.gross * 12)}
+                        </span>
                       </div>
-                      
+
                       <hr className="border-theme/80 my-1" />
 
                       {salaryResult.monthlyTax > 0 && (
                         <div className="flex justify-between items-center text-red-500 dark:text-red-400 font-medium">
                           <span>Income Tax (Mo)</span>
-                          <span className="tabular-nums">− {cur(salaryResult.monthlyTax)}</span>
+                          <span className="tabular-nums">
+                            − {cur(salaryResult.monthlyTax)}
+                          </span>
                         </div>
                       )}
                       {salaryResult.deductionsTotal > 0 && (
                         <div className="flex justify-between items-center text-red-500 dark:text-red-400 font-medium">
-                          <span>Todat Deductions</span>
-                          <span className="tabular-nums">− {cur(salaryResult.deductionsTotal)}</span>
+                          <span>Total Deductions</span>
+                          <span className="tabular-nums">
+                            − {cur(salaryResult.deductionsTotal)}
+                          </span>
                         </div>
                       )}
 
@@ -300,11 +339,15 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
 
                       <div className="flex justify-between items-center font-bold text-main pt-0.5 text-xs">
                         <span>Net Pay (Mo)</span>
-                        <span className="text-primary tabular-nums">{cur(salaryResult.net)}</span>
+                        <span className="text-primary tabular-nums">
+                          {cur(salaryResult.net)}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] text-muted font-medium">
                         <span>Net Pay (Yr)</span>
-                        <span className="tabular-nums font-semibold text-main">{cur(salaryResult.net * 12)}</span>
+                        <span className="tabular-nums font-semibold text-main">
+                          {cur(salaryResult.net * 12)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -317,33 +360,9 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
               </div>
             </div>
           )}
-
         </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-2.5 border-t border-theme bg-app/50 shrink-0 z-10">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3.5 py-1.5 text-xs font-medium text-muted hover:text-main bg-card hover:bg-app border border-theme rounded-md transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onSave?.();
-              onClose();
-            }}
-            className="flex items-center gap-1 px-4 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-md shadow-2xs transition-all active:scale-[0.98]"
-          >
-            <FaCheck className="w-2.5 h-2.5" />
-            <span>Apply & Close</span>
-          </button>
-        </div>
-
       </div>
-    </div>
+    </MinimizableModal>
   );
 };
 

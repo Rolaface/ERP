@@ -32,6 +32,7 @@ export type ModalType =
   | "employee"
   | "payroll"
   | "salaryComponent"
+  |"compensationReview"
   | "salaryStructure"
   | "leaveApply"
   | "taxConfig"
