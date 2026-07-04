@@ -284,7 +284,7 @@ export function useCreditNoteForm(
         customer: form.customer!.id,
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
-        update_outstanding_for_self: 1 as const,
+        update_outstanding_for_self: 0 as const,
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
