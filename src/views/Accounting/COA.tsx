@@ -559,7 +559,8 @@ const COATab: React.FC<COATabProps> = ({
         id: "balance_base",
         // Balance converted to base currency (from API: base_currency = "GHS")
         // Header: "Balance (₵ GHS)" | Cell: "₵ 3,688,944,999.00"
-        header: `Balance (${getSymbol(coaData?.base_currency)} ${coaData?.base_currency ?? ""})`,
+        // header: `Balance (${getSymbol(coaData?.base_currency)} ${coaData?.base_currency ?? ""})`,
+        header: `Balance (${coaData?.base_currency ?? ""})`,
         size: 160,
         meta: { align: "right" },
         cell: ({ row }) => {
