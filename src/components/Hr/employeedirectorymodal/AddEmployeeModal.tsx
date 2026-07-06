@@ -11,7 +11,7 @@ import ContactInfoTab from "./ContactInfoTabs";
 import EmploymentTab from "./EmploymentTab";
 import CompensationTab from "./CompensationTab";
 import { LeaveSetupTab } from "./LeaveSetupTab";
-import WorkScheduleTab from "./WorkScheduletab";
+
 import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
 import { MinimizableModal } from "../../common/MinimizableModal";
 import { useUnsavedChangesGuard } from "../../../hooks/useUnsavedChangesGuard";
@@ -34,7 +34,6 @@ import {
   createEmployee,
   updateEmployeeById,
 } from "../../../api/employeeapi";
-import { useCompanySelection } from "../../../hooks/useCompanySelection";
 import { getEmployeeFeatures } from "../../../config/employeeFeatures";
 import {
   showApiError,
@@ -94,8 +93,8 @@ const AddEmployeeModal: React.FC<Props> = ({
   modalId,
   mode = "add",
 }) => {
-  const { companyCode } = useCompanySelection();
-  const features = getEmployeeFeatures(companyCode);
+  // No company-specific branching — same features for everyone
+  const features = getEmployeeFeatures();
   const departments = features.departments;
   const levelsFromSettings = getLevelsFromHrSettings();
 
@@ -151,9 +150,8 @@ const AddEmployeeModal: React.FC<Props> = ({
 
     setCurrentTabIndex(0);
     setEmployeeFile(null);
-    // reset dirty state whenever modal opens fresh
     resetDirty();
-  }, [isOpen, editData, features.requireIdentityVerification]);
+  }, [isOpen, editData]);
 
   // ── Body scroll lock ────────────────────────────────────────────────────
   useEffect(() => {
@@ -245,7 +243,6 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   // ── Helpers ─────────────────────────────────────────────────────────────
 
-  // central handler — marks dirty so unsaved-changes guard fires on close
   const handleInputChange = (field: string, value: any) => {
     markDirty();
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -267,7 +264,6 @@ const AddEmployeeModal: React.FC<Props> = ({
     },
   };
 
-  // validate current tab before advancing
   const handleNext = () => {
     const validator = TAB_REQUIRED_FIELDS[activeTab];
     if (validator) {
@@ -282,7 +278,6 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   const handlePrevious = () => setCurrentTabIndex((p) => p - 1);
 
-  // route close through the unsaved-changes guard
   const handleCloseRequest = () => {
     if (saving) return;
     handleCloseWithConfirm(onClose, modalId);
@@ -306,7 +301,6 @@ const AddEmployeeModal: React.FC<Props> = ({
     const payload = buildEmployeePayload(formData, mode === "edit" || !!editData);
     const isEdit = mode === "edit" || !!editData;
 
-    // ── EDIT MODE ────────────────────────────────────────────────────────────
     if (isEdit) {
       try {
         setSaving(true);
@@ -354,7 +348,6 @@ const AddEmployeeModal: React.FC<Props> = ({
       return;
     }
 
-    // ── ADD MODE ─────────────────────────────────────────────────────────────
     showStepLoader(
       "Creating Employee…",
       `<span style="font-size:13px;color:#64748b">Setting up the employee record, please wait.</span>`,
@@ -445,7 +438,7 @@ const AddEmployeeModal: React.FC<Props> = ({
   const handleVerified = (data: any) => {
     setFormData((prev) => ({
       ...prev,
-      nrcId: data.identityInfo?.nrc || "",
+      nrcId: data.identityInfo?.nationalId || "",
       firstName: data.personalInfo?.firstName || "",
       lastName: data.personalInfo?.lastName || "",
       gender: data.personalInfo?.gender || "",
@@ -465,21 +458,21 @@ const AddEmployeeModal: React.FC<Props> = ({
   // ── Guards ──────────────────────────────────────────────────────────────
   if (!isOpen) return null;
 
-  if (step === "verification" && features.requireIdentityVerification) {
-    return (
-      <IdentityVerificationModal
-        isOpen={isOpen}
-        onVerified={handleVerified}
-        onManualEntry={() => {
-          setIsPreFilled(false);
-          setVerifiedFields({});
-          setStep("form");
-        }}
-        onClose={onClose}
-      />
-    );
-  }
-
+if (step === "verification" && features.requireIdentityVerification) {
+  return (
+    <IdentityVerificationModal
+      modalId={`${modalId}-verification`}
+      isOpen={isOpen}
+      onVerified={handleVerified}
+      onManualEntry={() => {
+        setIsPreFilled(false);
+        setVerifiedFields({});
+        setStep("form");
+      }}
+      onClose={onClose}
+    />
+  );
+}
   const footer = (
     <ModalFooter
       onCancel={handleCloseRequest}
@@ -499,7 +492,7 @@ const AddEmployeeModal: React.FC<Props> = ({
     <MinimizableModal
       modalId={modalId}
       isOpen={isOpen}
-      icon={FaUserFriends}
+      icon={FaUserFriends as any}
       onClose={() => handleCloseWithConfirm(onClose, modalId)}
       formContainerRef={containerRef}
       title={editData ? "Edit Employee" : "Add Employee"}
@@ -511,11 +504,8 @@ const AddEmployeeModal: React.FC<Props> = ({
       height="95vh"
       footer={footer}
     >
-      {/* Split layout */}
       <div className="flex h-full overflow-hidden">
-        {/* LEFT: Tab bar + content */}
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-          {/* Tab bar — clicking any tab jumps directly to it */}
           <div className="flex border-b border-theme bg-card px-1.5 overflow-x-auto flex-shrink-0">
             {TAB_ORDER.map((tab, i) => {
               const active = i === currentTabIndex;
@@ -535,11 +525,7 @@ const AddEmployeeModal: React.FC<Props> = ({
             })}
           </div>
 
-           {/* Tab content — Compensation manages its own internal scroll
-            region so only the Earnings/Deductions lists scroll, not the
-              whole tab; every other tab keeps normal page scroll. */}
-    
-         <div className="flex-1 bg-app p-3 min-h-0 overflow-y-auto">
+          <div className="flex-1 bg-app p-3 min-h-0 overflow-y-auto">
             {activeTab === "Personal" && (
               <PersonalInfoTab
                 formData={formData}
@@ -576,12 +562,6 @@ const AddEmployeeModal: React.FC<Props> = ({
                 isEditMode={!!editData}
               />
             )}
-            {/* {activeTab === "Work Schedule" && (
-              <WorkScheduleTab
-                formData={formData}
-                handleInputChange={handleInputChange}
-              />
-            )} */}
             {activeTab === "Bank" && (
               <EmployeeBankTab
                 formData={formData}
@@ -593,7 +573,6 @@ const AddEmployeeModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* RIGHT: Summary panel */}
         <div className="w-[200px] flex-shrink-0 border-l border-theme bg-app">
           <div className="h-full">
             <EmployeeSummaryPanel
