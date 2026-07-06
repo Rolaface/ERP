@@ -106,7 +106,9 @@ const AgingCell = ({
   value,
   active = false,
   warn = false,
-}: AgingCellProps) => {
+  currencySymbol,
+// }: AgingCellProps) => {
+}: AgingCellProps & { currencySymbol?: string }) => {
   const isHot = warn && value > 0;
   return (
     <div
@@ -120,7 +122,8 @@ const AgingCell = ({
       <span
         className={`text-[12px] sm:text-[13px] font-black tabular-nums ${active ? "text-primary" : isHot ? "text-danger" : "text-main"}`}
       >
-        {fmt(value)}
+        {/* {fmt(value)} */}
+        {fmt(value, currencySymbol)}
       </span>
     </div>
   );
@@ -655,19 +658,22 @@ const CustomerStatement = ({
             </span>
           </div>
           <div className="flex flex-1 divide-x divide-theme">
-            <AgingCell label="Not Due Yet" value={data.aging.current} active />
-            <AgingCell label="1 - 30 Days Overdue" value={data.aging["1_30"]} />
+            <AgingCell label="Not Due Yet" value={data.aging.current} active  currencySymbol={data.currency_symbol} />
+            <AgingCell label="1 - 30 Days Overdue" value={data.aging["1_30"]}   currencySymbol={data.currency_symbol}/>
             <AgingCell
               label="31 - 60 Days Overdue"
               value={data.aging["31_60"]}
+               currencySymbol={data.currency_symbol}
             />
             <AgingCell
               label="61 - 90 Days Overdue"
               value={data.aging["61_90"]}
+               currencySymbol={data.currency_symbol}
             />
             <AgingCell
               label="90 + Days Overdue"
               value={data.aging["90_plus"]}
+               currencySymbol={data.currency_symbol}
               warn
             />
           </div>

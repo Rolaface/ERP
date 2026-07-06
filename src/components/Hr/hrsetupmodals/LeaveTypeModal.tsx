@@ -61,6 +61,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
               is_carry_forward: initialData.is_carry_forward ?? 0,
               allow_negative: initialData.allow_negative ?? 0,
               include_holiday: initialData.include_holiday ?? 0,
+              allow_encashment: initialData.allow_encashment ?? 0,
               fraction_of_daily_salary_per_leave:
                 initialData.fraction_of_daily_salary_per_leave ?? 1,
             }
@@ -248,6 +249,15 @@ export const LeaveTypeModal: React.FC<Props> = ({
               value={form.include_holiday ? "Y" : "N"}
               onChange={(name, value) =>
                 set("include_holiday", value === "Y" ? 1 : 0)
+              }
+              disabled={isView}
+            />
+            <YesNoCheckbox
+              name="allow_encashment"
+              label="Allow Encashment"
+              value={form.allow_encashment ? "Y" : "N"}
+              onChange={(name, value) =>
+                set("allow_encashment", value === "Y" ? 1 : 0)
               }
               disabled={isView}
             />

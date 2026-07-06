@@ -63,16 +63,15 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   const domain = useDefault("primary_business_domain");
     console.log("Domain ", domain);
   
-  useEffect(() => {
-      if (mode === "edit" && initialData?.items?.length > 0) {
-        // Check if the first item (or any item) is a service
-        const isService = initialData.items[0]?.isServiceItem;
-        setInvoiceType(isService ? "Service" : "Product");
-      } else if (mode === "create") {
-        // Default to company domain for new invoices (fallback to Product)
-        setInvoiceType(domain === "Service" ? "Service" : "Product");
-      }
-    }, [initialData, mode, isOpen, domain]);
+ useEffect(() => {
+  if (mode === "edit" && initialData?.items?.length > 0) {
+      const isService = initialData.items[0]?.is_stock_item === 0;
+    
+    setInvoiceType(isService ? "Service" : "Product");
+  } else if (mode === "create") {
+     setInvoiceType(domain === "Service" ? "Service" : "Product");
+  }
+}, [initialData, mode, isOpen, domain]);
 
   const {
     formData,
