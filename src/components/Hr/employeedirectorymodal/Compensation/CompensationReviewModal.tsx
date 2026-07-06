@@ -199,7 +199,7 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
             {onBaseSalaryChange !== undefined && (
               <div className="flex items-center gap-1.5 bg-card border border-theme rounded-md px-2 py-0.5 shadow-2xs">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted shrink-0">
-                  Base Salary:
+                  Base Salary / Month:
                 </span>
                 {/*
                   onFocus/onBlur live on this wrapper div, not on
@@ -234,7 +234,7 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
             {onGrossSalaryChange !== undefined && (
               <div className="flex items-center gap-1.5 bg-card border border-theme rounded-md px-2 py-0.5 shadow-2xs">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted shrink-0">
-                  Gross Salary:
+                  Gross Salary/Month:
                 </span>
                 <div
                   className="relative flex items-center"
