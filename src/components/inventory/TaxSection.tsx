@@ -74,16 +74,16 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
     return (
       <div className="rounded-lg bg-card p-2 shadow-sm">
         <div className="overflow-x-auto overflow-y-visible">
-          <table className="w-full table-fixed border-collapse text-[10px] leading-tight">
+          <table className="w-[800px] table-fixed border-collapse text-[10px] leading-tight">
             <thead>
               <tr className="border-b border-theme">
                 <th className="w-[44px] px-2 py-1 text-left text-[11px] font-medium text-muted">
                   #
                 </th>
-                <th className="min-w-[260px] px-2 py-1 text-left text-[11px] font-medium text-muted">
+                <th className="w-[130px] px-2 py-1 text-left text-[11px] font-medium text-muted">
                   Tax Category
                 </th>
-                <th className="min-w-[260px] px-2 py-1 text-left text-[11px] font-medium text-muted">
+                 <th className="w-[200px] pl-6 pr-2 py-1 text-left text-[11px] font-medium text-muted">
                   Tax Template
                 </th>
                 {/* Action column — only trash, no duplicate */}
@@ -118,7 +118,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                       {absoluteIndex + 1}
                     </td>
 
-                    <td className="min-w-[220px] px-1 py-1 align-middle">
+                    <td className="px-1 py-1 align-middle">
                       <div className="flex items-center min-h-[28px]">
                         <div
                           className={[
@@ -142,8 +142,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                       </div>
                     </td>
 
-                    <td className="min-w-[220px] px-1 py-1 align-middle">
-                      <div
+                     <td className="pl-6 pr-1 py-1 align-middle">                      <div
                         className={[
                           "flex items-center h-[28px] rounded",
                           errors?.[`taxRows.${absoluteIndex}.taxTemplate`]
@@ -165,7 +164,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                       </div>
                     </td>
                     {/* Actions: only Remove (no duplicate) */}
-                    <td className="px-0.5 py-1">
+                    <td className="px-8 py-1">
                       <Tooltip content="Remove row">
                         <button
                           type="button"

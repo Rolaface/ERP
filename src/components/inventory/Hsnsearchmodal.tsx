@@ -13,76 +13,8 @@ import {
   PopoverFooterHint,
 } from "../common/Popoverparts";
 
-function generateDummyTree(): HSNNode[] {
-  const categories = [
-    "Electronics",
-    "Furniture",
-    "Automobile",
-    "Medical",
-    "Food",
-    "Textile",
-    "Agriculture",
-    "Chemicals",
-    "Machinery",
-    "Stationery",
-  ];
+import rawItemsClassData from "./main_itemsclass_.json";
 
-  const tree: HSNNode[] = [];
-
-  categories.forEach((category, c) => {
-    const categoryNode: HSNNode = {
-      id: `cat-${c}`,
-      name: category,
-      children: [],
-    };
-
-    for (let i = 1; i <= 8; i++) {
-      const subCategory: HSNNode = {
-        id: `cat-${c}-sub-${i}`,
-        name: `Sub Category ${i}`,
-        children: [],
-      };
-
-      for (let j = 1; j <= 8; j++) {
-        const productType: HSNNode = {
-          id: `cat-${c}-sub-${i}-type-${j}`,
-          name: `Product Type ${j}`,
-          children: [],
-        };
-
-        for (let k = 1; k <= 8; k++) {
-          const family: HSNNode = {
-            id: `cat-${c}-sub-${i}-type-${j}-family-${k}`,
-            name: `Family ${k}`,
-            children: [],
-          };
-
-          for (let m = 1; m <= 8; m++) {
-            family.children!.push({
-              id: `hsn-${c}-${i}-${j}-${k}-${m}`,
-              name: `Product ${m}`,
-              code: `${c}${i}${j}${k}${m}`.padEnd(8, "0"),
-            });
-          }
-
-          productType.children!.push(family);
-        }
-
-        subCategory.children!.push(productType);
-      }
-
-      categoryNode.children!.push(subCategory);
-    }
-
-    tree.push(categoryNode);
-  });
-
-  return tree;
-}
-
-// ---------------------------------------------------------------------------
-// Types (unchanged from your original HSNSearchModal)
-// ---------------------------------------------------------------------------
 export interface HSNNode {
   id: string;
   name: string;
@@ -102,12 +34,70 @@ interface HsnSearchPopoverProps {
   open: boolean;
   onClose: () => void;
   onSelect: (code: string) => void;
-  /** Pass your real tree here; falls back to built-in dummy data */
   tree?: HSNNode[];
 }
 
-// Tree utilities (unchanged)
-// ---------------------------------------------------------------------------
+function buildTreeFromJson(data: any[]): HSNNode[] {
+  const sortedData = [...data].sort(
+    (a, b) => parseInt(a.itemClsLvl) - parseInt(b.itemClsLvl)
+  );
+
+  const tree: HSNNode[] = [];
+  const map = new Map<string, HSNNode>();
+
+  for (const item of sortedData) {
+    const level = parseInt(item.itemClsLvl);
+    const code = item.itemClsCd;
+    const name = item.itemClsNm;
+
+    const node: HSNNode = {
+      id: item.id.toString(),
+      name: name,
+      code: code,
+      children: [],
+    };
+
+    map.set(code, node);
+
+    if (level === 1) {
+      tree.push(node);
+    } else {
+      let parentCode = "";
+      if (level === 2) {
+        parentCode = code.substring(0, 2) + "000000";
+      } else if (level === 3) {
+        parentCode = code.substring(0, 4) + "0000";
+      } else if (level === 4) {
+        parentCode = code.substring(0, 6) + "00";
+      } else if (level === 5) {
+        parentCode = code.substring(0, 8);
+      }
+
+      const parent = map.get(parentCode);
+      if (parent) {
+        parent.children!.push(node);
+      } else {
+        tree.push(node);
+      }
+    }
+  }
+  function cleanup(nodes: HSNNode[]) {
+    for (const node of nodes) {
+      if (node.children && node.children.length === 0) {
+        delete node.children;
+      } else if (node.children && node.children.length > 0) {
+        delete node.code;
+        cleanup(node.children);
+      }
+    }
+  }
+  cleanup(tree);
+
+  return tree;
+}
+
+const JSON_HSN_TREE = buildTreeFromJson(rawItemsClassData);
+
 function getChildrenAtPath(tree: HSNNode[], path: string[]): HSNNode[] {
   let nodes = tree;
   for (const id of path) {
@@ -142,8 +132,6 @@ function flattenLeaves(nodes: HSNNode[], trail: string[] = []): HSNLeaf[] {
   return out;
 }
 
-const DUMMY_HSN_TREE = generateDummyTree();
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -154,7 +142,7 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
   onSelect,
   tree,
 }) => {
-  const activeTree = tree ?? DUMMY_HSN_TREE;
+  const activeTree = tree ?? JSON_HSN_TREE;
   const allLeaves = useMemo(() => flattenLeaves(activeTree), [activeTree]);
 
   const [path, setPath] = useState<string[]>([]);
@@ -166,7 +154,7 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
 
   const browseList = useMemo(
     () => getChildrenAtPath(activeTree, path),
-    [activeTree, path],
+    [activeTree, path]
   );
 
   const searchList = useMemo<HSNLeaf[]>(() => {
@@ -180,14 +168,13 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
   const list = mode === "search" ? searchList : browseList;
   const breadcrumb = useMemo(
     () => getBreadcrumbNames(activeTree, path),
-    [activeTree, path],
+    [activeTree, path]
   );
 
   useEffect(() => {
     setSelectedIndex(0);
   }, [path, query]);
 
-  // Reset state each time the popover opens (mirrors original modal behavior)
   useEffect(() => {
     if (open) {
       setPath([]);
@@ -204,7 +191,7 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
         onClose();
       }
     },
-    [mode, onSelect, onClose],
+    [mode, onSelect, onClose]
   );
 
   const handleInputKeyDown = useCallback(
@@ -223,7 +210,7 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
         setPath((p) => p.slice(0, -1));
       }
     },
-    [list, selectedIndex, query, path.length, handleRowActivate],
+    [list, selectedIndex, query, path.length, handleRowActivate]
   );
 
   return (
@@ -232,10 +219,8 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
       open={open}
       onClose={onClose}
       placement="bottom-end"
-      width={500}
+      width={1000}
       maxHeight={450}
-      // Dim the parent "Add Item" modal while picking — keeps the single-
-      // focus-layer feel without making this popover itself a modal.
       showScrim
     >
       <PopoverHeader title="HSN / product search" icon={<Tag size={13} />} />
@@ -249,7 +234,6 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
         inputRef={inputRef}
       />
 
-      {/* Breadcrumb (browse mode only) */}
       {mode === "browse" && path.length > 0 && (
         <div className="flex items-center gap-1 overflow-x-auto px-3 py-1.5 border-b border-theme text-[11px]">
           <button
@@ -282,7 +266,6 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
         </div>
       )}
 
-      {/* Row list */}
       <div role="listbox" className="flex-1 overflow-y-auto py-1">
         {list.length === 0 && query.trim() && (
           <div className="px-3 py-8 text-center text-[12px] text-muted">
@@ -311,9 +294,15 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
               }`}
             >
               {isLeaf ? (
-                <Tag size={12} className={isActive ? "text-primary" : "text-muted"} />
+                <Tag
+                  size={12}
+                  className={isActive ? "text-primary" : "text-muted"}
+                />
               ) : (
-                <Folder size={12} className={isActive ? "text-primary" : "text-muted"} />
+                <Folder
+                  size={12}
+                  className={isActive ? "text-primary" : "text-muted"}
+                />
               )}
               <div className="min-w-0 flex-1">
                 <div
@@ -338,7 +327,10 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
                   {(item as HSNLeaf).code}
                 </span>
               ) : (
-                <ChevronRight size={12} className={isActive ? "text-primary" : "text-muted"} />
+                <ChevronRight
+                  size={12}
+                  className={isActive ? "text-primary" : "text-muted"}
+                />
               )}
             </div>
           );

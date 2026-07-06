@@ -835,13 +835,20 @@ const fetchComponentOptions = useCallback(
                   that collapse. */}
               <div className="w-36 shrink-0">
                 <Field label="Effective from">
-                  <DatePickerInput
-                    name="effectiveFrom"
-                    value={formData.effectiveFrom || ""}
-                    required={salaryChanged}
-                    disabled={!isEditMode}
-                    onChange={(name, value) => stableHandleInputChange(name, value)}
-                  />
+                  <div
+                    className="
+        [&_.MuiOutlinedInput-root]:!h-9
+        [&_.MuiOutlinedInput-input]:!p-2.5
+      "
+                  >
+                    <DatePickerInput
+                      name="effectiveFrom"
+                      value={formData.effectiveFrom || ""}
+                      required={salaryChanged}
+                      disabled={!isEditMode}
+                      onChange={(name, value) => stableHandleInputChange(name, value)}
+                    />
+                  </div>
                 </Field>
               </div>
 

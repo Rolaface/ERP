@@ -8,7 +8,8 @@ import {
   FileMinus,
   BarChart3,
   TrendingUp,
-  ShoppingCart
+  ShoppingCart,
+  BadgePercent
 } from "lucide-react";
 import {
   AppPage,
@@ -57,7 +58,7 @@ const ALL_SALES_TAB = [
   {
     id: "salesOrder",
     label: "Sales Order",
-    icon: <FileSignature size={16} strokeWidth={1.75} />,
+    icon: <BadgePercent size={16} strokeWidth={1.75} />,
     module: "Sales Order",
     action: "read" as const,
   },
