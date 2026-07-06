@@ -53,6 +53,7 @@ const ExpenseModal = lazy(
 );
 
 const QuotationModal = lazy(() => import("../sales/QuotationModal"));
+const SalesOrderModal = lazy(() => import("../sales/SalesOrderModal"));
 const PurchaseOrderModal = lazy(
   () => import("../procurement/PurchaseOrderModal"),
 );
@@ -384,6 +385,19 @@ const GlobalModalHandler: React.FC = () => {
       case "quotation":
         return wrappedModal(
           <QuotationModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.initialData}
+            mode={modal.isEdit ? "edit" : "create"}
+          />,
+        );
+
+        case "salesOrder":
+        return wrappedModal(
+          <SalesOrderModal
             key={modal.id}
             modalId={modal.id}
             isOpen={true}

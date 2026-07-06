@@ -6,6 +6,7 @@ export type ModalType =
   | "invoice"
   | "proforma"
   | "quotation"
+  | "salesOrder"
   | "customer"
   | "supplier"
   | "purchaseOrder"
@@ -455,6 +456,16 @@ export const openQuotationModal = (
   useModalStore
     .getState()
     .openModal("quotation", initialData, isEdit, context, meta);
+
+  export const openSalesOrderModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("salesOrder", initialData, isEdit, context, meta);
 
 export const openItemModal = (
   initialData?: unknown,
