@@ -60,7 +60,7 @@ const footer = (
     <button
       onClick={onManualEntry}
       disabled={verifying}
-      className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-primary border border-primary/40 rounded-full hover:bg-primary/5 transition disabled:opacity-40 disabled:cursor-not-allowed"
+      className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-primary border border-primary/40 rounded-xl hover:bg-primary/5 transition disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <UserRoundPen className="w-3.5 h-3.5" />
       Add Manually
@@ -69,7 +69,7 @@ const footer = (
     <button
       onClick={handleVerify}
       disabled={verifying}
-      className="flex items-center gap-1.5 px-5 py-2 min-w-[100px] justify-center text-xs font-semibold bg-primary text-white rounded-full hover:opacity-90 transition disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+      className="flex items-center gap-1.5 px-5 py-2 min-w-[100px] justify-center text-xs font-semibold bg-primary text-white rounded-xl hover:opacity-90 transition disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
     >
       {verifying ? (
         <>
@@ -94,7 +94,7 @@ const footer = (
       title="Identity Verification"
       subtitle="Verify employee identity before proceeding"
       icon={IdCard}
-      maxWidth="sm"
+      maxWidth="lg"
       height="auto"
       hideMinimize
       footer={footer}
