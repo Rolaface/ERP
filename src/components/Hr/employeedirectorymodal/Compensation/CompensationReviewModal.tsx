@@ -23,8 +23,12 @@ export type CompensationReviewModalProps = {
   onSave?: () => void;
   baseSalaryInput?: number | null;
   onBaseSalaryChange?: (val: number | null) => void;
+  onBaseSalaryFocus?: () => void;
+  onBaseSalaryBlur?: () => void;
   grossSalaryInput?: number | null;
   onGrossSalaryChange?: (val: number | null) => void;
+  onGrossSalaryFocus?: () => void;
+  onGrossSalaryBlur?: () => void;
   children?: React.ReactNode;
 };
 
@@ -63,8 +67,12 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
   onSave,
   baseSalaryInput,
   onBaseSalaryChange,
+  onBaseSalaryFocus,
+  onBaseSalaryBlur,
   grossSalaryInput,
   onGrossSalaryChange,
+  onGrossSalaryFocus,
+  onGrossSalaryBlur,
   children,
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
@@ -193,7 +201,21 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted shrink-0">
                   Base Salary:
                 </span>
-                <div className="relative flex items-center">
+                {/*
+                  onFocus/onBlur live on this wrapper div, not on
+                  NumericInput itself. React's synthetic focus/blur events
+                  bubble (via focusin/focusout under the hood), so focusing
+                  the inner <input> inside NumericInput bubbles up and
+                  fires these handlers — same pattern the main
+                  CompensationTab panel already relies on. This lets us
+                  set activeField.current = "base" without touching the
+                  shared NumericInput component at all.
+                */}
+                <div
+                  className="relative flex items-center"
+                  onFocus={onBaseSalaryFocus}
+                  onBlur={onBaseSalaryBlur}
+                >
                   <span className="text-[10px] font-semibold text-muted mr-1 shrink-0">
                     {currencyPrefix}
                   </span>
@@ -214,7 +236,11 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted shrink-0">
                   Gross Salary:
                 </span>
-                <div className="relative flex items-center">
+                <div
+                  className="relative flex items-center"
+                  onFocus={onGrossSalaryFocus}
+                  onBlur={onGrossSalaryBlur}
+                >
                   <span className="text-[10px] font-semibold text-muted mr-1 shrink-0">
                     {currencyPrefix}
                   </span>
