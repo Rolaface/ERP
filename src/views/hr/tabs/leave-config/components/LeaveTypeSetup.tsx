@@ -128,6 +128,15 @@ export function LeaveTypeSetup() {
         ),
       },
       {
+        key: "is_earned_leave",
+        header: "Earned Leave",
+        render: (row) => (
+          <span className="text-sm text-sub">
+            {row.is_earned_leave ? "Yes" : "No"}
+          </span>
+        ),
+      },
+      {
         key: "actions",
         header: "Actions",
         align: "center",

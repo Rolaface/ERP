@@ -35,6 +35,10 @@ const EMPTY: Omit<LeaveType, "name"> = {
   allow_negative: 0,
   include_holiday: 0,
   fraction_of_daily_salary_per_leave: 1,
+  is_earned_leave: 0,
+  earned_leave_frequency: "",
+  allocate_on_day: "",
+  rounding: "",
 };
 
 export const LeaveTypeModal: React.FC<Props> = ({
@@ -64,6 +68,12 @@ export const LeaveTypeModal: React.FC<Props> = ({
               allow_encashment: initialData.allow_encashment ?? 0,
               fraction_of_daily_salary_per_leave:
                 initialData.fraction_of_daily_salary_per_leave ?? 1,
+              // is_earned_leave: initialData.is_earned_leave ?? 0,
+              // is_earned_leave: Number(initialData.is_earned_leave) || 0,
+              is_earned_leave: Number(initialData.is_earned_leave) === 1 ? 1 : 0,
+              earned_leave_frequency: initialData.earned_leave_frequency ?? "",
+              allocate_on_day: initialData.allocate_on_day ?? "",
+              rounding: initialData.rounding ?? "",
             }
           : { ...EMPTY },
       );
@@ -261,7 +271,64 @@ export const LeaveTypeModal: React.FC<Props> = ({
               }
               disabled={isView}
             />
+            <YesNoCheckbox
+  name="is_earned_leave"
+  label="Is Earned Leave"
+  value={form.is_earned_leave ? "Y" : "N"}
+  onChange={(name, value) => set("is_earned_leave", value === "Y" ? 1 : 0)}
+  disabled={isView}
+/>
           </div>
+          {form.is_earned_leave === 1 && (
+  <div className="mt-4 grid grid-cols-2 gap-2 border-t border-[var(--border)] pt-4">
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-main">Earned Leave Frequency</label>
+      <select
+        className="w-full rounded-md border border-[var(--border)] bg-transparent px-3 py-1 text-sm text-main focus:border-primary focus:outline-none disabled:opacity-60"
+        value={form.earned_leave_frequency}
+        onChange={(e) => set("earned_leave_frequency", e.target.value)}
+        disabled={isView}
+      >
+        <option value="" disabled>Select Frequency</option>
+        <option value="Monthly">Monthly</option>
+        <option value="Quarterly">Quarterly</option>
+        <option value="Half-Yearly">Half-Yearly</option>
+        <option value="Yearly">Yearly</option>
+      </select>
+    </div>
+
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-main">Allocate on Day</label>
+      <select
+        className="w-full rounded-md border border-[var(--border)] bg-transparent px-3 py-1 text-sm text-main focus:border-primary focus:outline-none disabled:opacity-60"
+        value={form.allocate_on_day}
+        onChange={(e) => set("allocate_on_day", e.target.value)}
+        disabled={isView}
+      >
+        <option value="" disabled>Select Day</option>
+        <option value="First Day">First Day</option>
+        <option value="Last Day">Last Day</option>
+        <option value="Date of Joining">Date of Joining</option>
+      </select>
+      <span className="text-[11px] text-sub">The day of the month when leaves should be allocated</span>
+    </div>
+
+    <div className="flex flex-col ">
+      <label className="text-sm font-medium text-main">Rounding</label>
+      <select
+        className="w-full rounded-md border border-[var(--border)] bg-transparent px-3 py-1 text-sm text-main focus:border-primary focus:outline-none disabled:opacity-60"
+        value={form.rounding}
+        onChange={(e) => set("rounding", e.target.value)}
+        disabled={isView}
+      >
+        <option value="" disabled>Select Rounding</option>
+        <option value="0.25">0.25</option>
+        <option value="0.5">0.5</option>
+        <option value="1.0">1.0</option>
+      </select>
+    </div>
+  </div>
+)}
         </div>
       </div>
     </MinimizableModal>
