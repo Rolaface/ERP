@@ -400,6 +400,18 @@ export const API = {
   },
 
   /* =========================
+   * Sales Order
+   * ========================= */
+  salesOrder: {
+    getAll: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.get_sales_orders`,
+    getById: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.get_sales_order_by_id`,
+    create: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.create_sales_order`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.update_sales_order_status`,
+    edit: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.update_sales_order`,
+    delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.delete_sales_order`,
+  },
+
+  /* =========================
    * QUOTATION
    * ========================= */
   quotation: {
