@@ -995,16 +995,22 @@ const fetchComponentOptions = useCallback(
         salaryStructureName={formData.salaryStructure}
         hasCustomizations={hasCustomizations}
         onResetCustomizations={handleResetAllCustomizations}
-        baseSalaryInput={toNum(baseInput)}
-  onBaseSalaryChange={(val) => {
-    setBaseInput(val);
-    stableHandleInputChange("basicSalary", val ? String(val) : "");
-  }}
-        grossSalaryInput={toNum(grossInput)}
-  onGrossSalaryChange={(val) => {
-    setGrossInput(val);
-    stableHandleInputChange("grossSalary", val ? String(val) : "");
-  }}
+        baseSalaryInput={shownBase}
+        onBaseSalaryFocus={() => {
+          activeField.current = "base";
+        }}
+        onBaseSalaryBlur={() => {
+          activeField.current = null;
+        }}
+        onBaseSalaryChange={(val) => setBaseInput(val)}
+        grossSalaryInput={shownGross}
+        onGrossSalaryFocus={() => {
+          activeField.current = "gross";
+        }}
+        onGrossSalaryBlur={() => {
+          activeField.current = null;
+        }}
+        onGrossSalaryChange={(val) => setGrossInput(val)}
       >
         <ComponentsPanel
           hasCustomizations={hasCustomizations}
