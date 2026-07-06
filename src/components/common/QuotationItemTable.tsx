@@ -301,6 +301,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
             <POItemSelect
               value={it.itemName}
               selectedId={it.itemCode}
+              invoiceType={invoiceType}
               onChange={(item: any) => {
                 onItemSelect?.(item, i);
                 const code = item?.id || "";

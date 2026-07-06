@@ -13,6 +13,7 @@ type Item = {
   vatRate?: number;
   vatCd?: string;
   taxCode?: string;
+  is_stock_item?: number;
 };
 
 interface POItemSelectProps {
@@ -20,6 +21,7 @@ interface POItemSelectProps {
   selectedId?: string;
   taxCategory?: string;
   className?: string;
+  invoiceType?: "Product" | "Service";
   onChange: (item: Item) => void;
 }
 
@@ -54,6 +56,7 @@ export default function POItemSelect({
   taxCategory,
   onChange,
   className = "",
+  invoiceType,
 }: POItemSelectProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,11 +84,17 @@ export default function POItemSelect({
           q || undefined,
         );
         if (id !== requestIdRef.current) return;
-        const rawList = Array.isArray(res?.data?.data)
+        // const rawList = Array.isArray(res?.data?.data)
+        let rawList = Array.isArray(res?.data?.data)
           ? res.data.data
           : Array.isArray(res?.data)
             ? res.data
             : [];
+        if (invoiceType === "Product") {
+          rawList = rawList.filter((item: any) => item.is_stock_item === 1);
+        } else if (invoiceType === "Service") {
+          rawList = rawList.filter((item: any) => item.is_stock_item === 0);
+        }
         setItems(rawList);
       } catch (err) {
         if (id !== requestIdRef.current) return;
@@ -95,7 +104,7 @@ export default function POItemSelect({
         if (id === requestIdRef.current) setLoading(false);
       }
     },
-    [taxCategory],
+    [taxCategory, invoiceType],
   );
 
   useEffect(() => {
@@ -122,7 +131,7 @@ export default function POItemSelect({
     setDisplayName(value || "");
     setOpen(false);
     loadedRef.current = false;
-  }, [taxCategory, value]);
+  }, [taxCategory, value, invoiceType]);
 
   useEffect(() => {
     if (!open) return;
