@@ -324,7 +324,7 @@ export const LeaveTypeModal: React.FC<Props> = ({
         <option value="" disabled>Select Rounding</option>
         <option value="0.25">0.25</option>
         <option value="0.5">0.5</option>
-        <option value="1">1</option>
+        <option value="1">1.0</option>
       </select>
     </div>
   </div>
