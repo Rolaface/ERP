@@ -38,28 +38,7 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
         <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-5">
 
          
-          {/* HSN Code — trailing icon button doubles as the popover anchor */}
-          <ModalInput
-            label="HSN Code"
-            name="itemClassCode"
-            value={form.itemClassCode ?? ""}
-            onChange={onFormChange}
-            placeholder="e.g. 84713010"
-            required
-            error={errors?.itemClassCode}
-            trailingIcon={
-              <button
-                ref={hsnTriggerRef}
-                type="button"
-                onClick={() => setHsnPopoverOpen((v) => !v)}
-                aria-label="Search HSN code"
-                tabIndex={-1}
-                className="rounded-md p-1 text-muted transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--input-border-focus)]"
-              >
-                <ScanSearch size={14} strokeWidth={2} />
-              </button>
-            }
-          />
+          
           {/* Item Category */}
           <SearchSelect2
             label="Item Category"
@@ -108,7 +87,30 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
             allowCustomInput
             disabled={isServiceItem}
           />
+          {/* HSN Code — trailing icon button doubles as the popover anchor */}
+          <ModalInput
+            label="HSN Code"
+            name="itemClassCode"
+            value={form.itemClassCode ?? ""}
+            onChange={onFormChange}
+            placeholder="e.g. 84713010"
+            required
+            error={errors?.itemClassCode}
+            trailingIcon={
+              <button
+                ref={hsnTriggerRef}
+                type="button"
+                onClick={() => setHsnPopoverOpen((v) => !v)}
+                aria-label="Search HSN code"
+                tabIndex={-1}
+                className="rounded-md p-1 text-muted transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--input-border-focus)]"
+              >
+                <ScanSearch size={14} strokeWidth={2} />
+              </button>
+            }
+          />
         </div>
+        
 
         {/* Anchored to the button above — opens beside the field, not as a
             second full-screen modal. */}
