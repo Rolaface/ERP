@@ -41,20 +41,13 @@ export type SalarySetupSectionProps = {
   formData: any;
   hasCustomizations: boolean;
   isLoadingTax: boolean;
-  salaryChanged: boolean;
-  shownBase: number | null;
-  shownGross: number | null;
-  isEditMode: boolean;
-  activeField: React.MutableRefObject<"base" | "gross" | null>;
   getAllSalaryStructures: (query: string) => Promise<any>;
   fetchCurrencyOptions: (query: string) => Promise<ComponentOption[]>;
   handleSalaryStructureChange: (val: any) => void;
   handleTaxSlabChange: (val: any) => void;
   stableHandleInputChange: (field: string, value: any) => void;
-  setBaseInput: (value: number | null) => void;
-  setGrossInput: (value: number | null) => void;
-};
 
+};
 // A per-employee override that flips a STRUCTURE component into formula
 // mode (or edits its formula), keyed by the same nameKey/editId space as
 // `overrides`. Custom components track their own amount_based_on_formula /

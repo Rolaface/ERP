@@ -6,10 +6,12 @@ import React, {
   useRef,
 } from "react";
 import { FaSlidersH } from "react-icons/fa";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react";
 import { getAllSalaryStructures } from "../../../api/utils/frappeUtilsApi";
 import { getCurrencyList } from "../../../api/lookupApi";
 import { useCompanyStore } from "../../../store/companyStore";
+import { useCustomCompensationPayload } from "../../../hooks/useCustomCompensationPayload";
+import { buildCustomCompensationPayload } from "../employeedirectorymodal/Compensation/customCompensationPayload";
 import {
   getSalaryStructure,
   getTaxConfig,
@@ -31,6 +33,10 @@ import {
 import { ComponentsPanel } from "./Compensation/ComponentsPanel";
 import { SalarySetupSection } from "./Compensation/SalarySetupSection";
 import { CompensationReviewModal } from "./Compensation/CompensationReviewModal";
+import { NumericInput } from "../../../components/ui/modal/modalComponent";
+import DatePickerInput from "../../../components/calendar/DatePickerInput";
+import { Field } from "./Compensation/Field";
+import { Badge } from "./Compensation/Badge";
 
 import {
   fmt,
@@ -44,6 +50,8 @@ import type {
   CustomComponent,
   DisplayRow,
 } from "./Compensation/types";
+
+
 
 export { buildCompensationPayload };
 
@@ -60,6 +68,8 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const [salaryResult, setSalaryResult] = useState<SalaryResult | null>(null);
   const [taxConfig, setTaxConfig] = useState<TaxConfig | null>(null);
   const { baseCurrency, currencySymbol } = useCompanyStore();
+
+  
 
   // State to open/close our interactive review modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -135,16 +145,38 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     () => [...componentDefsWithOverrides, ...customDefs],
     [componentDefsWithOverrides, customDefs],
   );
-  const hasComponents = effectiveComponentDefs.length > 0;
 
-  const hasPendingEarning = customComponents.some((c) => c.def.type === "Earning" && !c.selected);
-  const hasPendingDeduction = customComponents.some((c) => c.def.type === "Deduction" && !c.selected);
-
+  // NOTE: customizationCount / hasCustomizations must be declared here —
+  // *before* the useCustomCompensationPayload call below — since that hook
+  // receives hasCustomizations as an argument. Because these are `const`
+  // (not hoisted like function declarations), referencing them before this
+  // point throws "used before its declaration" (ts(2448) / ts(2454)).
   const customizationCount =
     Object.keys(overrides).length +
     Object.keys(formulaOverrides).length +
     selectedCustom.length;
   const hasCustomizations = customizationCount > 0;
+
+  useCustomCompensationPayload({
+    formData,
+    isCustomizing,
+    hasCustomizations,
+    effectiveComponentDefs,
+    excludedComponents,
+    overrides,
+    salaryResult,
+    stableHandleInputChange,
+    toNameKey,
+    buildCustomCompensationPayload,
+  });
+
+  const hasPendingEarning = customComponents.some((c) => c.def.type === "Earning" && !c.selected);
+  const hasPendingDeduction = customComponents.some((c) => c.def.type === "Deduction" && !c.selected);
+
+  // Whether there's anything at all to show in the Salary Configuration
+  // card / empty-state branches below (structure components + any custom
+  // components added, whether or not they're pending selection).
+  const hasComponents = effectiveComponentDefs.length > 0 || customComponents.length > 0;
 
   useEffect(() => {
     if (!formData.currency && baseCurrency) {
@@ -158,14 +190,21 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
+useEffect(() => {
+    const saved = savedCustomizationRef.current;
+    const hasSavedCustomization =
+      saved.isCustom ||
+      Object.keys(saved.overrides).length > 0 ||
+      Object.keys(saved.formulaOverrides).length > 0 ||
+      saved.customDefs.length > 0 ||
+      saved.excludedComponents.size > 0;
+
     if (formData.salaryStructure && !componentDefs.length) {
-      loadStructure(formData.salaryStructure, isEditMode);
+     
+      loadStructure(formData.salaryStructure, hasSavedCustomization);
     } else if (
-      isEditMode &&
       !formData.salaryStructure &&
-      (savedCustomizationRef.current.isCustom ||
-        savedCustomizationRef.current.customDefs.length > 0)
+      (saved.isCustom || saved.customDefs.length > 0)
     ) {
       applySavedCustomization();
     }
@@ -312,13 +351,20 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
       setIsLoadingStructure(false);
     }
   };
+const handleSalaryStructureChange = useCallback((val: any) => {
+  const value = typeof val === "string" ? val : val?.value;
+  if (!value) return;
 
-  const handleSalaryStructureChange = useCallback((val: any) => {
-    const value = typeof val === "string" ? val : val?.value;
-    if (!value) return;
-    stableHandleInputChange("salaryStructure", value);
-    loadStructure(value, false);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (value === "Custom") {
+    stableHandleInputChange("salaryStructure", "");
+    setComponentDefs([]);
+    setIsCustomizing(true);
+    return;
+  }
+
+  stableHandleInputChange("salaryStructure", value);
+  loadStructure(value, false);
+}, []); 
 
   const handleTaxSlabChange = useCallback((val: any) => {
     const value = typeof val === "string" ? val : val?.value || "";
@@ -338,23 +384,42 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     }));
   };
 
-  const fetchComponentOptions = useCallback(
+const fetchComponentOptions = useCallback(
     async (type: ComponentType, query: string): Promise<ComponentOption[]> => {
-      const res = await getAllSalaryComponents(0, 20, query, type);
-      const used = new Set(
-        [...componentDefs, ...selectedCustom.map((c) => c.def)].map((d) =>
-          d.salary_component.toLowerCase(),
-        ),
+      const res = await getAllSalaryComponents(0, 20, query);
+
+      const blocked = new Set(
+        [
+          ...componentDefs
+            .filter((d) => {
+              const nameKey = toNameKey(d.salary_component || "");
+              const abbrKey = toAbbrKey(d.abbr ?? d.salary_component_abbr);
+           
+              const isExcluded =
+                excludedComponents.has(nameKey) ||
+                (abbrKey !== null && excludedComponents.has(abbrKey));
+              return !isExcluded;
+            })
+            .map((d) => d.salary_component),
+          ...selectedCustom.map((c) => c.def.salary_component),
+        ]
+          .filter((n): n is string => !!n?.trim())
+          .map((n) => n.toLowerCase().trim()),
       );
+
       return (res?.data || [])
-        .filter((c: any) => c?.name && !used.has(String(c.name).toLowerCase()))
+        .filter((c: any) => c?.name && !blocked.has(String(c.name).toLowerCase().trim()))
+        .filter(
+          (c: any) => String(c?.type ?? "").toLowerCase() === type.toLowerCase(),
+        )
         .map((c: any) => {
           componentMetaRef.current[c.name] = c.abbr || c.name;
           return { label: c.name, value: c.name };
         });
     },
-    [componentDefs, selectedCustom],
+    [componentDefs, selectedCustom, excludedComponents],
   );
+
 
   const handleToggleCustomize = useCallback(() => {
     setIsCustomizing((prev) => !prev);
@@ -495,6 +560,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
                     is_income_tax_component: details.is_income_tax_component ?? 0,
                     variable_based_on_taxable_salary:
                       details.variable_based_on_taxable_salary ?? 0,
+                      statistical_component: details.statistical_component ?? 0, 
                   },
                 }
               : c,
@@ -643,10 +709,10 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         amount_based_on_formula: componentDefsWithOverrides[i]?.amount_based_on_formula,
         formula: componentDefsWithOverrides[i]?.formula ?? c.formula,
         flags: {
-          depends_on_payment_days: componentDefsWithOverrides[i]?.depends_on_payment_days,
-          is_tax_applicable: componentDefsWithOverrides[i]?.is_tax_applicable,
-          is_income_tax_component: componentDefsWithOverrides[i]?.is_income_tax_component,
-          variable_based_on_taxable_salary: componentDefsWithOverrides[i]?.variable_based_on_taxable_salary,
+          depends_on_payment_days: componentDefsWithOverrides[i]?.depends_on_payment_days as 0 | 1 | undefined,
+          is_tax_applicable: componentDefsWithOverrides[i]?.is_tax_applicable as 0 | 1 | undefined,
+          is_income_tax_component: componentDefsWithOverrides[i]?.is_income_tax_component as 0 | 1 | undefined,
+          variable_based_on_taxable_salary: componentDefsWithOverrides[i]?.variable_based_on_taxable_salary as 0 | 1 | undefined,
         },
       }));
 
@@ -663,10 +729,10 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           isCustom: true,
           selected: true,
           flags: {
-            depends_on_payment_days: cc?.def.depends_on_payment_days,
-            is_tax_applicable: cc?.def.is_tax_applicable,
-            is_income_tax_component: cc?.def.is_income_tax_component,
-            variable_based_on_taxable_salary: cc?.def.variable_based_on_taxable_salary,
+            depends_on_payment_days: cc?.def.depends_on_payment_days as 0 | 1 | undefined,
+            is_tax_applicable: cc?.def.is_tax_applicable as 0 | 1 | undefined,
+            is_income_tax_component: cc?.def.is_income_tax_component as 0 | 1 | undefined,
+            variable_based_on_taxable_salary: cc?.def.variable_based_on_taxable_salary as 0 | 1 | undefined,
           },
           amount_based_on_formula: cc?.def.amount_based_on_formula,
           detailsLoading: cc?.detailsLoading,
@@ -697,6 +763,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   }, [
     salaryResult,
     componentDefs,
+      hasCustomizations,   
     componentDefsWithOverrides,
     customComponents,
     selectedCustom,
@@ -722,23 +789,16 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const showComponentsPanel = !isLoading && (hasComponents || isCustomizing);
 
   return (
-    <div className="w-full h-full flex flex-col gap-4 min-w-0 min-h-0">
+    <div className="w-full flex flex-col gap-4 min-w-0">
       <SalarySetupSection
         formData={formData}
         hasCustomizations={hasCustomizations}
         isLoadingTax={isLoadingTax}
-        salaryChanged={salaryChanged}
-        shownBase={shownBase}
-        shownGross={shownGross}
-        isEditMode={isEditMode}
-        activeField={activeField}
         getAllSalaryStructures={getAllSalaryStructures}
         fetchCurrencyOptions={fetchCurrencyOptions}
         handleSalaryStructureChange={handleSalaryStructureChange}
         handleTaxSlabChange={handleTaxSlabChange}
         stableHandleInputChange={stableHandleInputChange}
-        setBaseInput={setBaseInput}
-        setGrossInput={setGrossInput}
       />
 
       {isLoading && (
@@ -750,93 +810,178 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         </div>
       )}
 
-      {/* Salary components summary: Deductions / Earnings side-by-side, with the
-          Customize & Review action pinned to the top-right corner. Monthly
-          salary inputs (Effective from / Base / Gross) now live inside this
-          same card as a compact row, instead of a separate card above. */}
+      {/* Salary Configuration card: title on the left, Effective from / Base /
+          Gross salary inputs plus the Customize button on the right — all in
+          one header row. Earnings / Deductions summary sits below, split
+          into two columns with a vertical divider. */}
       {showComponentsPanel && (
         <div className="bg-card rounded-xl border border-theme shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3">
-            <h3 className="text-sm font-semibold text-main flex items-center gap-2 min-w-0">
-              <span className="truncate">Salary Components</span>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-5 pt-5 pb-4">
+            <div className="flex items-center gap-2 min-w-0 shrink-0">
+              <h3 className="text-lg font-bold text-main truncate">
+                Salary Configuration
+              </h3>
               {hasCustomizations && (
-                <span className="text-[10px] bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full shrink-0">
-                  Customized
-                </span>
+                <Badge tone="primary">Customized</Badge>
               )}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg shadow hover:bg-primary/90 transition-all shrink-0"
-            >
-              <FaSlidersH className="w-3 h-3" />
-              <span>Customize</span>
-            </button>
+            </div>
+
+            <div className="flex flex-wrap items-end gap-3">
+              {/* Each Field is wrapped in a fixed-width, non-shrinking box.
+                  Field's inner input uses w-full internally, which — as a
+                  direct flex child with no width constraint — will otherwise
+                  try to claim the *entire* row width and force every field
+                  onto its own line. Giving it an explicit width here fixes
+                  that collapse. */}
+              <div className="w-36 shrink-0">
+                <Field label="Effective from">
+                  <DatePickerInput
+                    name="effectiveFrom"
+                    value={formData.effectiveFrom || ""}
+                    required={salaryChanged}
+                    disabled={!isEditMode}
+                    onChange={(name, value) => stableHandleInputChange(name, value)}
+                  />
+                </Field>
+              </div>
+
+              <div className="w-36 shrink-0">
+                <Field label="Base salary / month">
+                  <div
+                    onFocus={() => {
+                      activeField.current = "base";
+                    }}
+                    onBlur={() => {
+                      activeField.current = null;
+                    }}
+                  >
+                    <NumericInput
+                      name="basicSalary"
+                      value={shownBase}
+                      onChange={(val) => setBaseInput(val)}
+                      placeholder="e.g. 50,000"
+                      decimalScale={2}
+                      allowNegative={false}
+                      className="w-full h-9 !text-xs !px-2.5"
+                    />
+                  </div>
+                </Field>
+              </div>
+
+              <div className="w-36 shrink-0">
+                <Field label="Gross salary / month">
+                  <div
+                    onFocus={() => {
+                      activeField.current = "gross";
+                    }}
+                    onBlur={() => {
+                      activeField.current = null;
+                    }}
+                  >
+                    <NumericInput
+                      name="grossSalary"
+                      value={shownGross}
+                      onChange={(val) => setGrossInput(val)}
+                      placeholder="e.g. 77,500"
+                      decimalScale={2}
+                      allowNegative={false}
+                      className="w-full h-9 !text-xs !px-2.5"
+                    />
+                  </div>
+                </Field>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-primary text-white text-xs font-semibold rounded-lg shadow hover:bg-primary/90 transition-all shrink-0"
+              >
+                <FaSlidersH className="w-3 h-3" />
+                <span>Customize</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-theme">
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-theme border-t border-theme">
             {/* Earnings */}
-            <div className="px-5 py-4">
-              <div className="flex items-center gap-1.5 mb-1">
+            <div className="px-5 py-5 flex flex-col">
+              <div className="flex items-center gap-1.5 mb-2">
                 <ArrowUpRight className="w-3.5 h-3.5 text-success" />
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
                   Earnings
                 </span>
               </div>
               {visibleEarningRows.length > 0 ? (
-                visibleEarningRows.map((row) => (
-                  <div
-                    key={row.editId}
-                    className="flex justify-between items-center py-2 border-b border-theme/60 last:border-0"
-                  >
-                    <span className="text-[13px] text-main truncate pr-2" title={row.name}>
-                      {row.name}
+                <>
+                  {visibleEarningRows.map((row) => (
+                    <div
+                      key={row.editId}
+                      className="flex justify-between items-center py-2.5 border-b border-theme/60 last:border-0"
+                    >
+                      <span className="text-[13px] text-main truncate pr-2" title={row.name}>
+                        {row.name}
+                      </span>
+                      <span className="text-[13px] font-bold text-success tabular-nums shrink-0">
+                        {currencyPrefix} {fmt(row.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center pt-3 mt-auto border-t-2 border-success/30">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-success">
+                      Total Earning
                     </span>
-                    <span className="text-[13px] font-bold text-success tabular-nums shrink-0">
-                      {currencyPrefix} {fmt(row.amount)}
+                    <span className="text-sm font-extrabold text-success tabular-nums shrink-0">
+                      {currencyPrefix} {fmt(salaryResult?.gross ?? 0)}
                     </span>
                   </div>
-                ))
+                </>
               ) : (
                 <p className="text-xs text-muted italic py-2">No earnings</p>
               )}
             </div>
             {/* Deductions */}
-            <div className="px-5 py-4">
-              <div className="flex items-center gap-1.5 mb-1">
+            <div className="px-5 py-5 flex flex-col">
+              <div className="flex items-center gap-1.5 mb-2">
                 <ArrowDownRight className="w-3.5 h-3.5 text-danger" />
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
                   Deductions
                 </span>
               </div>
               {visibleDeductionRows.length > 0 ? (
-                visibleDeductionRows.map((row) => (
-                  <div
-                    key={row.editId}
-                    className="flex justify-between items-center py-2 border-b border-theme/60 last:border-0"
-                  >
-                    <div className="flex items-center gap-1.5 min-w-0 pr-2">
-                      <span className="text-[13px] text-main truncate" title={row.name}>
-                        {row.name}
-                      </span>
-                      {/* {!!row.flags?.variable_based_on_taxable_salary && (
-                        <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 shrink-0">
-                          Var
+                <>
+                  {visibleDeductionRows.map((row) => (
+                    <div
+                      key={row.editId}
+                      className="flex justify-between items-center py-2.5 border-b border-theme/60 last:border-0"
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                        <span className="text-[13px] text-main truncate" title={row.name}>
+                          {row.name}
                         </span>
-                      )} */}
+                        {/* {!!row.flags?.variable_based_on_taxable_salary && (
+                          <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 shrink-0">
+                            Var
+                          </span>
+                        )} */}
+                      </div>
+                      <span className="text-[13px] font-bold text-danger tabular-nums shrink-0">
+                        {currencyPrefix} {fmt(row.amount)}
+                      </span>
                     </div>
-                    <span className="text-[13px] font-bold text-danger tabular-nums shrink-0">
-                      {currencyPrefix} {fmt(row.amount)}
+                  ))}
+                  <div className="flex justify-between items-center pt-3 mt-auto border-t-2 border-danger/30">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-danger">
+                      Total Deduction
+                    </span>
+                    <span className="text-sm font-extrabold text-danger tabular-nums shrink-0">
+                      {currencyPrefix} {fmt(salaryResult?.deductionsTotal ?? 0)}
                     </span>
                   </div>
-                ))
+                </>
               ) : (
                 <p className="text-xs text-muted italic py-2">No deductions</p>
               )}
             </div>
-
-            
           </div>
         </div>
       )}

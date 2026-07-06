@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useCompanySelection } from "../../../hooks/useCompanySelection";
-import { getEmployeeFeatures } from "../../../config/employeeFeatures";
+
 import { ModalInput, ModalSelect } from "../../ui/modal/modalComponent";
 import DatePickerInput from "../../calendar/DatePickerInput";
 import { getAllGenders } from "../../../api/employeeapi";
@@ -37,8 +36,8 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
   verifiedFields,
 }) => {
   const [genderOptions, setGenderOptions] = useState<any[]>([]);
-  const { companyCode } = useCompanySelection();
-  const features = getEmployeeFeatures(companyCode);
+  
+
 
   const fetchGenderOptions = async () => {
     try {
@@ -63,57 +62,7 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
   return (
     <div className="w-full flex flex-col gap-2 min-w-0">
 
-      {/* Identity & Statutory — only shown when feature flag is on */}
-      {features.showStatutoryFields && (
-        <div className="bg-card p-3 rounded-lg border border-theme">
-          <h4 className="text-[10px] font-semibold text-main uppercase tracking-wider mb-2.5">
-            Identity & Statutory Information
-          </h4>
-          <div className="grid grid-cols-2 gap-2.5">
-            <div>
-              <ModalInput
-                label="NRC Number"
-                name="nrcId"
-                value={formData.nrcId}
-                disabled={isVerified("nrcId")}
-                onChange={(e) => handleInputChange("nrcId", e.target.value)}
-                required={features.statutoryFieldsRequired}
-                placeholder="123456/78/1"
-              />
-              {isVerified("nrcId") && (
-                <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">
-                  ✓ Verified from NAPSA
-                </p>
-              )}
-            </div>
-
-            <ModalInput
-              label="Social Security (NAPSA)"
-              name="socialSecurityNapsa"
-              value={formData.socialSecurityNapsa}
-              disabled={isVerified("socialSecurityNapsa")}
-              onChange={(e) => handleInputChange("socialSecurityNapsa", e.target.value)}
-              required={features.statutoryFieldsRequired}
-            />
-
-            <ModalInput
-              label="NHIMA Number"
-              name="nhimaHealthInsurance"
-              value={formData.nhimaHealthInsurance}
-              onChange={(e) => handleInputChange("nhimaHealthInsurance", e.target.value)}
-              placeholder="91897177171"
-            />
-
-            <ModalInput
-              label="TPIN"
-              name="tpinId"
-              value={formData.tpinId}
-              onChange={(e) => handleInputChange("tpinId", e.target.value)}
-              placeholder="10000000000"
-            />
-          </div>
-        </div>
-      )}
+   
 
       {/* Personal Information */}
       <div className="bg-card p-3 rounded-lg border border-theme">

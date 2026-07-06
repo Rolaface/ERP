@@ -1,32 +1,28 @@
 import React from "react";
 import { Sparkles } from "lucide-react";
-import { ModalSelect, NumericInput } from "../../../ui/modal/modalComponent";
+import { ModalSelect } from "../../../ui/modal/modalComponent";
 import SearchSelect2 from "../../../ui/modal/SearchSelect2";
-import DatePickerInput from "../../../calendar/DatePickerInput";
 import { getAllTaxConfigs } from "../../../../api/payrollConfigApi";
 import { Badge } from "./Badge";
 import { Field } from "./Field";
 import type { SalarySetupSectionProps } from "./types";
 
+// NOTE: This section now only renders the top-level structure/tax/currency/
+// payment fields, matching the target design. "Effective from", "Base
+// salary", and "Gross salary" have moved into the Salary Configuration card
+// header (see CompensationTab.tsx) alongside the title and Customize button.
 export const SalarySetupSection: React.FC<SalarySetupSectionProps> = ({
   formData,
   hasCustomizations,
   isLoadingTax,
-  salaryChanged,
-  shownBase,
-  shownGross,
-  isEditMode,
-  activeField,
   getAllSalaryStructures,
   fetchCurrencyOptions,
   handleSalaryStructureChange,
   handleTaxSlabChange,
   stableHandleInputChange,
-  setBaseInput,
-  setGrossInput,
 }) => (
-  <div className="bg-card rounded-lg border border-theme px-3 py-2.5">
-    <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 items-end">
+  <div className="bg-card rounded-lg border border-theme px-5 py-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-end">
       <Field
         label="Salary structure"
         badge={
@@ -108,58 +104,6 @@ export const SalarySetupSection: React.FC<SalarySetupSectionProps> = ({
             { label: "Check", value: "Check" },
           ]}
         />
-      </Field>
-
-      <Field label="Effective from">
-        <DatePickerInput
-          name="effectiveFrom"
-          value={formData.effectiveFrom || ""}
-          required={salaryChanged}
-          disabled={!isEditMode}
-          onChange={(name, value) => stableHandleInputChange(name, value)}
-        />
-      </Field>
-
-      <Field label="Base salary / month">
-        <div
-          onFocus={() => {
-            activeField.current = "base";
-          }}
-          onBlur={() => {
-            activeField.current = null;
-          }}
-        >
-          <NumericInput
-            name="basicSalary"
-            value={shownBase}
-            onChange={(val) => setBaseInput(val)}
-            placeholder="e.g. 50,000"
-            decimalScale={2}
-            allowNegative={false}
-            className="w-full h-8 !text-xs !px-2.5"
-          />
-        </div>
-      </Field>
-
-      <Field label="Gross salary / month">
-        <div
-          onFocus={() => {
-            activeField.current = "gross";
-          }}
-          onBlur={() => {
-            activeField.current = null;
-          }}
-        >
-          <NumericInput
-            name="grossSalary"
-            value={shownGross}
-            onChange={(val) => setGrossInput(val)}
-            placeholder="e.g. 77,500"
-            decimalScale={2}
-            allowNegative={false}
-            className="w-full h-8 !text-xs !px-2.5"
-          />
-        </div>
       </Field>
     </div>
   </div>
