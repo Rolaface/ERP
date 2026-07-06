@@ -152,7 +152,7 @@ const SendEmailModal: React.FC<Props> = ({
     templateLoading,
     handleSend,
     
-  } = useSendEmail({ open, docType, invoiceNumber, contactEmail, customerName, supplierName, invoiceAttachments, onClose ,periodText, });
+  } = useSendEmail({ open, docType, isProforma, invoiceNumber, contactEmail, customerName, supplierName, invoiceAttachments, onClose ,periodText, });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -277,7 +277,8 @@ const footerContent = (
       modalId={modalId}
       isOpen={open}
       onClose={onClose}
-      title={docType}
+      // title={docType}
+      title={isProforma ? "Proforma Invoice" : docType}
       subtitle={invoiceNumber ?? undefined}
       icon={Mail}
       footer={footerContent}

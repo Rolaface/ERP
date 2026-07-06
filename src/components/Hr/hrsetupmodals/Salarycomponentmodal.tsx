@@ -62,6 +62,8 @@ const EMPTY: Omit<SalaryComponent, "name"> = {
   payout_method: "",
   variable_based_on_taxable_salary: 0,
   is_income_tax_component: 0,
+  do_not_include_in_total: 0,
+  do_not_include_in_accounts: 0,
 };
 
 interface Props {
@@ -149,6 +151,8 @@ export const SalaryComponentModal: React.FC<Props> = ({
         variable_based_on_taxable_salary:
           data.variable_based_on_taxable_salary ?? 0,
         is_income_tax_component: data.is_income_tax_component ?? 0,
+         do_not_include_in_total: data.do_not_include_in_total ?? 0,
+        do_not_include_in_accounts: data.do_not_include_in_accounts ?? 0,
       });
     } catch (err) {
       showApiError(err);
@@ -360,6 +364,8 @@ if (conflict) {
         amount: form.amount_based_on_formula ? 0 : (form.amount ?? 0),
         description: form.description,
         accounts: form.accounts?.filter((a) => a.account.trim()) ?? [],
+         do_not_include_in_total: form.do_not_include_in_total,
+        do_not_include_in_accounts: form.do_not_include_in_accounts,
         ...(isEarning && {
           is_tax_applicable: form.is_tax_applicable,
           is_flexible_benefit: form.is_flexible_benefit,
@@ -455,7 +461,7 @@ if (conflict) {
       }
       subtitle="Define earnings or deductions for payroll"
       icon={Layers}
-      height="70vh"
+      height="80vh"
       customWidth="75vw"
       footer={footer}
       formContainerRef={containerRef}
@@ -680,7 +686,33 @@ if (conflict) {
                 onChange={tog("remove_if_zero_valued")}
                 disabled={isViewMode}
               />
-
+                <AttrRow
+                id="attr-no-total"
+                label="Do Not Include in Total"
+                description="Excludes this component's amount from the gross/net total on the salary slip."
+                checked={Boolean(form.do_not_include_in_total)}
+                disabled={isViewMode}
+                onChange={(checked) => {
+                  markDirty();
+                  setForm((prev) => ({
+                    ...prev,
+                    do_not_include_in_total: checked ? 1 : 0,
+                    do_not_include_in_accounts: checked
+                      ? prev.do_not_include_in_accounts
+                      : 0,
+                  }));
+                }}
+              />
+              {Boolean(form.do_not_include_in_total) && (
+                <AttrRow
+                  id="attr-no-accounting"
+                  label="Do Not Include in Accounting Entries"
+                  description="If enabled, the amount will be excluded from accounting entries during Journal Entry creation."
+                  checked={Boolean(form.do_not_include_in_accounts)}
+                  onChange={tog("do_not_include_in_accounts")}
+                  disabled={isViewMode}
+                />
+              )}
               {isEarning && (
                 <AttrRow
                   id="attr-tax"

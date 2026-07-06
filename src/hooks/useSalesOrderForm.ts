@@ -2,28 +2,96 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { getCustomerByCustomerCode } from "../api/customerApi";
 import { getCompanyById } from "../api/companySetupApi";
 import type { TermSection } from "../types/termsAndCondition";
-// import type { ProformaInvoice, InvoiceItem } from "../types/invoice";
-import { ProformaInvoice, InvoiceItem } from "../types/proformaInvoice";
-import { getStockReport } from "../api/stockApi";
+import type { InvoiceItem } from "../types/proformaInvoice";
 import { getRolaCountryList } from "../api/lookupApi";
+import { useUnsavedChanges } from "./useUnsavedChanges";
 
 import { getExchangeRate } from "../api/currencyExchangeApi";
 
 import { showApiError, showValidationError } from "../utils/alert";
 import {
-  DEFAULT_INVOICE_FORM,
   EMPTY_ITEM,
   EMPTY_TERMS,
 } from "../constants/profromaInvoiceConstants";
 import dayjs from "dayjs";
-import { useUnsavedChanges } from "./useUnsavedChanges";
 
-// ─── Constants
+// ─── Types ──────────────────────────────────────────────────────────────────
+// Sales Order form shape. Mirrors ProformaInvoice but swaps in Sales Order's
+// actual fields (customer, deliveryDate, customerPoNo/customerPoDate) to
+// match custom_api.api.selling.sales_order.{service,api,utils}.py
+
+export interface SalesOrderForm {
+  orderNumber?: string;
+  title?: string;
+  customerId: string;
+  currencyCode: string;
+  exchangeRt: string;
+  postingDate: string;
+  deliveryDate: string;
+  customerPoNo?: string;
+  customerPoDate?: string;
+  taxCategory?: string;
+  destnCountryCd?: string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  orderType?: string;
+  warehouse?: string;
+  mode?: string; // payment mode
+  status?: string;
+  docstatus?: number;
+  paymentInformation: {
+    paymentTerms?: string;
+    paymentMethod?: string;
+    bankName?: string;
+    accountNumber?: string;
+    routingNumber?: string;
+    swiftCode?: string;
+  };
+  items: InvoiceItem[];
+  invoiceCharges: any[];
+  addresses: Record<string, any>;
+  taxes: any[];
+  salesTaxTemplate?: string;
+  terms: { selling?: TermSection };
+}
+
+const DEFAULT_SALES_ORDER_FORM: SalesOrderForm = {
+  customerId: "",
+  currencyCode: "",
+  exchangeRt: "1",
+  postingDate: "",
+  deliveryDate: "",
+  customerPoNo: "",
+  customerPoDate: "",
+  taxCategory: "",
+  destnCountryCd: "",
+  billingAddress: "",
+  shippingAddress: "",
+  orderType: "Sales",
+  warehouse: "",
+  mode: "",
+  paymentInformation: {
+    paymentTerms: "",
+    paymentMethod: "01",
+    bankName: "",
+    accountNumber: "",
+    routingNumber: "",
+    swiftCode: "",
+  },
+  items: [{ ...EMPTY_ITEM }],
+  invoiceCharges: [],
+  addresses: {},
+  taxes: [],
+  salesTaxTemplate: "",
+  terms: { selling: { ...EMPTY_TERMS.selling } },
+};
+
+// ─── Constants ──────────────────────────────────────────────────────────────
 
 const ITEMS_PER_PAGE = 5;
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
-// ─── Helpers
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 const getDefaultBank = (accounts: any[] = []) =>
   accounts.find(
@@ -37,22 +105,13 @@ type NestedSection =
   | "shippingAddress"
   | "paymentInformation";
 
-const calculateDueDate = (invoiceDate: string, terms: string) => {
-  if (!invoiceDate) return "";
-
-  // Add this fallback for when terms are empty
-  if (!terms)
-    return dayjs(invoiceDate, ["DD-MMM-YYYY", "YYYY-MM-DD"]).format(
-      "YYYY-MM-DD",
-    );
-
-  const match = terms.match(/(\d+)/);
+const calculateDueDate = (orderDate: string, terms: string) => {
+  if (!orderDate) return "";
+  const match = terms?.match(/(\d+)/);
   const days = match ? Number(match[1]) : 0;
-
-  let date = dayjs(invoiceDate, "DD-MMM-YYYY", true);
-  if (!date.isValid()) date = dayjs(invoiceDate, "YYYY-MM-DD", true);
+  let date = dayjs(orderDate, "DD-MMM-YYYY", true);
+  if (!date.isValid()) date = dayjs(orderDate, "YYYY-MM-DD", true);
   if (!date.isValid()) return "";
-
   return date.add(days, "day").format("YYYY-MM-DD");
 };
 
@@ -63,32 +122,34 @@ const NUM_FIELDS = [
   "vatRate",
   "boxStart",
   "boxEnd",
+  "piecesPerBox",
 ];
 
 // ─── Payload Builder ──────────────────────────────────────────────────────────
-// Maps internal formData → new API payload shape
+// Maps internal formData → the payload shape expected by
+// custom_api.api.selling.sales_order.service.create_sales_order /
+// update_sales_order
 
-export function buildInvoicePayload(
-  formData: ProformaInvoice,
+export function buildSalesOrderPayload(
+  formData: SalesOrderForm,
   totals: { subTotal: number; totalTax: number; grandTotal: number },
 ) {
   const items = formData.items
-    .filter((it) => it.itemCode)
-    .map((item) => ({
+    .filter((it: any) => it.itemCode)
+    .map((item: any) => ({
       itemCode: item.itemCode,
       quantity: Number(item.quantity),
       rate: Number(item.price),
-      warehouse: item.warehouse ?? formData.warehouse ?? "",
-      batch_no: item.batchNo ?? "",
-      box_start: item.boxStart ?? "",
-      box_end: item.boxEnd ?? "",
-      ...(item.mfgDate ? { mfg_date: item.mfgDate } : {}),
-      ...(item.expDate ? { exp_date: item.expDate } : {}),
-      description: item.description ?? "",
+      uom: item.uom ?? item.unitOfMeasureCd ?? "",
       discount: Number(item.discount ?? 0),
-      vatRate: String(item.vatRate ?? 0),
-      vatCode: item.vatCode ?? "",
+      warehouse: item.warehouse ?? formData.warehouse ?? "",
+      deliveryDate: item.deliveryDate || formData.deliveryDate,
+      batchNo: item.batchNo ?? "",
+      boxStart: item.boxStart ?? "",
+      boxEnd: item.boxEnd ?? "",
+      description: item.description ?? "",
     }));
+
   const mappedTaxes = (formData.taxes || []).map((t: any) => ({
     chargeType: t.chargeType,
     accountHead: t.accountHead,
@@ -97,51 +158,50 @@ export function buildInvoicePayload(
       ? { amount: Number(t.amount) || 0 }
       : { rate: t.rate ?? 0 }),
   }));
+
   return {
     customerId: formData.customerId,
     currency: formData.currencyCode,
     exchangeRate: formData.exchangeRt ?? "1",
-    postingDate: formData.dateOfInvoice,
-    validTill: formData.validTill,
-    tax_category: formData.taxCategory,
-    updateStock: formData.updateStock ?? true,
-    paymentMode: formData.mode,
-    payment_mode: formData.payment_mode,
+    postingDate: formData.postingDate,
+    deliveryDate: formData.deliveryDate,
+    taxCategory: formData.taxCategory,
+    orderType: formData.orderType ?? "Sales",
+    payment_mode: formData.mode,
     warehouse: formData.warehouse ?? "",
     billingAddress: formData.billingAddress ?? "",
     shippingAddress: formData.shippingAddress ?? "",
     ...(formData.taxCategory === "Export"
       ? { destnCountryCd: formData.destnCountryCd ?? "" }
       : {}),
-    ...(formData.lpoNumber ? { lpoNumber: formData.lpoNumber } : {}),
+    ...(formData.customerPoNo ? { customerPoNo: formData.customerPoNo } : {}),
+    ...(formData.customerPoDate
+      ? { customerPoDate: formData.customerPoDate }
+      : {}),
     paymentInformation: formData.paymentInformation,
     items,
     terms: formData.terms,
-
-    ...(formData.invoiceNumber
-      ? { invoiceNumber: formData.invoiceNumber }
-      : {}),
-    // Computed totals
+    ...(formData.orderNumber ? { orderNumber: formData.orderNumber } : {}),
+    // Computed totals (informational — backend recalculates from items/taxes)
     subTotal: totals.subTotal,
     totalTax: totals.totalTax,
     grandTotal: totals.grandTotal,
-    // Pass through address objects for reference
     addresses: formData.addresses,
     taxes: mappedTaxes,
     salesTaxTemplate: formData.salesTaxTemplate ?? "",
   };
 }
 
-export const useProformaInvoiceForm = (
+export const useSalesOrderForm = (
   isOpen: boolean,
   _onClose: () => void,
   _onSubmit?: (data: any) => void,
-  mode?: "invoice" | "proforma" | "edit",
+  mode?: "create" | "edit",
   initialData?: any,
 ) => {
-  const [formData, setFormData] = useState<ProformaInvoice>({
-    ...DEFAULT_INVOICE_FORM,
-    terms: { ...EMPTY_TERMS },
+  const [formData, setFormData] = useState<SalesOrderForm>({
+    ...DEFAULT_SALES_ORDER_FORM,
+    terms: { selling: { ...EMPTY_TERMS.selling } },
     invoiceCharges: [],
     addresses: {},
     taxes: [],
@@ -154,64 +214,37 @@ export const useProformaInvoiceForm = (
     const today = new Date().toISOString().split("T")[0];
     setFormData((prev) => ({
       ...prev,
-      dateOfInvoice: prev.dateOfInvoice || today,
+      postingDate: prev.postingDate || today,
     }));
   }, [isOpen]);
 
-  // useEffect(() => {
-  //   const terms =
-  //     formData.terms?.selling?.payment?.dueDates ||
-  //     formData.paymentInformation?.paymentTerms;
-
-  //   if (!terms || !formData.dateOfInvoice) return;
-
-  //   const due = calculateDueDate(
-  //     formData.dateOfInvoice,
-  //     terms,
-  //   );
-
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     dueDate: due,
-  //   }));
-  // }, [
-  //   formData.dateOfInvoice,
-  //   formData.terms?.selling?.payment?.dueDates,
-  //   formData.paymentInformation?.paymentTerms,
-  // ]);
-  // Auto-calculate validTill date from payment terms
   useEffect(() => {
-    if (!formData.dateOfInvoice) return;
-
-    const dueDatesValue = formData.terms?.selling?.payment?.dueDates;
-
-    // If dueDates is explicitly set (even empty), use it
-    // If not set at all (null/undefined), fall back to paymentTerms
     const terms =
-      dueDatesValue != null
-        ? dueDatesValue
-        : (formData.paymentInformation?.paymentTerms ?? "");
+      formData.terms?.selling?.payment?.dueDates ||
+      formData.paymentInformation?.paymentTerms;
 
-    // calculateDueDate handles "" → returns invoiceDate (today)
-    const due = calculateDueDate(formData.dateOfInvoice, terms);
+    if (!terms || !formData.postingDate) return;
 
-    if (due) {
+    const due = calculateDueDate(formData.postingDate, terms);
+
+    if (!formData.deliveryDate) {
       setFormData((prev) => ({
         ...prev,
-        validTill: due, // Changed from dueDate to validTill
+        deliveryDate: due,
       }));
     }
   }, [
-    formData.dateOfInvoice,
+    formData.postingDate,
     formData.terms?.selling?.payment?.dueDates,
     formData.paymentInformation?.paymentTerms,
   ]);
+
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [customerNameDisplay, setCustomerNameDisplay] = useState("");
   const [page, setPage] = useState(0);
   const [chargePage, setChargePage] = useState(0);
   const [activeTab, setActiveTab] = useState<
-    "details" | "address" | "otherCharges" | "terms"
+    "details" | "address" | "otherCharges" | "terms" | "otherDetails"
   >("details");
 
   const [isShippingOpen, setIsShippingOpen] = useState(false);
@@ -226,7 +259,9 @@ export const useProformaInvoiceForm = (
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
-  const enableExchange = mode === "proforma";
+  // Unlike Quotation/Proforma, a Sales Order is a firm commitment, so we
+  // always auto-fetch the exchange rate rather than gating it behind a mode.
+  const enableExchange = true;
   const [baseCurrency, setBaseCurrency] = useState<string>("");
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
@@ -242,74 +277,18 @@ export const useProformaInvoiceForm = (
     }
   };
 
-  //   useEffect(() => {
-  //     if (!isOpen) return;
-  //     if (mode === "edit" && initialData?.id) {
-  //       setFormDataFromInvoice(initialData);
-  //     }
-  //   }, [isOpen, initialData, mode]);
-
+  // Load edit data
   useEffect(() => {
     if (!isOpen) return;
-    if (mode === "edit" && (initialData?.id || initialData?.proformaId)) {
-      setFormDataFromInvoice(initialData);
+    if (mode === "edit" && (initialData?.id || initialData?.orderNumber)) {
+      setFormDataFromOrder(initialData);
     }
   }, [isOpen, initialData, mode]);
-
-  useEffect(() => {
-    if (!isOpen || mode !== "edit") return;
-    if (!(initialData?.id || initialData?.proformaId)) return;
-    if (!formData.items.length) return;
-
-    let cancelled = false;
-    const taxCategoryForFetch =
-      initialData?.taxCategory ?? initialData?.tax_category ?? "";
-
-    (async () => {
-      try {
-        const res = await getStockReport(1, 1000, "", taxCategoryForFetch);
-        const raw = res?.message?.data ?? [];
-        if (cancelled) return;
-
-        const piecesPerBoxMap = new Map<string, number>();
-        raw.forEach((stockItem: any) => {
-          piecesPerBoxMap.set(
-            stockItem.item_code,
-            Number(stockItem.piecesPerBox ?? 0),
-          );
-        });
-
-        setFormData((prev) => ({
-          ...prev,
-          items: prev.items.map((item: any) => {
-            if (item._piecesPerBoxLoaded) return item;
-            if (!item.itemCode) return item;
-            if (item.piecesPerBox && item.piecesPerBox > 0) {
-              return { ...item, _piecesPerBoxLoaded: true };
-            }
-            return {
-              ...item,
-              piecesPerBox: piecesPerBoxMap.get(item.itemCode) ?? 0,
-              _piecesPerBoxLoaded: true,
-            };
-          }),
-        }));
-      } catch (err) {
-        if (!cancelled) showApiError(err);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, mode, initialData?.id, initialData?.proformaId]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const base = getBaseCurrencyFromStorage();
-
-    console.log("Base Currency:", base);
 
     setBaseCurrency(base);
     lastCurrencyRef.current = base;
@@ -320,7 +299,6 @@ export const useProformaInvoiceForm = (
     }));
   }, [isOpen]);
 
-  // Exchange rate auto-fetch
   useEffect(() => {
     if (!isOpen || !enableExchange) return;
     const code = String(formData.currencyCode ?? "")
@@ -350,7 +328,7 @@ export const useProformaInvoiceForm = (
     getExchangeRate({
       from_currency: code,
       to_currency: baseCurrency,
-      transaction_date: formData.dateOfInvoice,
+      transaction_date: formData.postingDate,
       args: "for_selling",
     })
       .then((res) => {
@@ -381,7 +359,7 @@ export const useProformaInvoiceForm = (
   }, [
     isOpen,
     formData.currencyCode,
-    formData.dateOfInvoice,
+    formData.postingDate,
     formData.customerId,
     enableExchange,
     baseCurrency,
@@ -399,18 +377,17 @@ export const useProformaInvoiceForm = (
   // ─── Validation ─────────────────────────────────────────────────────────────
 
   const validateForm = (): boolean => {
-    const invoiceType = String(formData.taxCategory ?? "")
-      .trim()
-      .toLowerCase();
-
     if (!formData.customerId) {
       throw new Error("Please select a customer");
     }
-    if (!formData.dateOfInvoice) {
-      throw new Error("Please select date of Proforma Invoice");
+    if (!formData.postingDate) {
+      throw new Error("Please select date of Sales Order");
     }
-    if (!formData.validTill) {
-      throw new Error("Please select due date");
+    if (!formData.deliveryDate) {
+      throw new Error("Please select a delivery date");
+    }
+    if (formData.deliveryDate < formData.postingDate) {
+      throw new Error("Delivery Date cannot be before Posting Date");
     }
     if (!formData.items.length) {
       throw new Error("Please add at least one item");
@@ -419,7 +396,7 @@ export const useProformaInvoiceForm = (
       throw new Error("Please select a payment method");
     }
 
-    formData.items.forEach((it, idx) => {
+    formData.items.forEach((it: any, idx) => {
       if (!it.itemCode) {
         setPage(Math.floor(idx / ITEMS_PER_PAGE));
         throw new Error(`Item ${idx + 1}: Please select item`);
@@ -447,15 +424,6 @@ export const useProformaInvoiceForm = (
   ) => {
     const { name, value } = e.target;
 
-    if (name === "updateStock") {
-      setFormData((prev) => ({
-        ...prev,
-        updateStock: (e.target as HTMLInputElement).checked,
-      }));
-      markDirty();
-      return;
-    }
-
     if (section) {
       setFormData((prev) => ({
         ...prev,
@@ -480,7 +448,7 @@ export const useProformaInvoiceForm = (
         markDirty();
         return;
       }
-      if (name === "lpoNumber") {
+      if (name === "customerPoNo") {
         const digitsOnly = String(value ?? "")
           .replace(/\D/g, "")
           .slice(0, 10);
@@ -617,59 +585,9 @@ export const useProformaInvoiceForm = (
               ? Number(value)
               : null;
       }
-      if (name === "quantity" && nextValue !== null) {
-        const item = items[idx];
-        if (!item._skipCap) {
-          if (!item.isServiceItem) {
-            const stockAvailable = item.availableQty ?? item.qty ?? 0;
-            const thisRowOriginal = Number(item.originalQty ?? 0);
 
-            // Total pool = actual stock remaining + what this invoice already reserved
-            const available = stockAvailable + thisRowOriginal;
+      const updatedItem: any = { ...items[idx], [name]: nextValue, _skipCap: false };
 
-            // How much other rows of same batch are using
-            const usedByOthers = items
-              .filter((x, xIdx) => x.batchNo === item.batchNo && xIdx !== idx)
-              .reduce((sum, x) => {
-                const qty = Number(x.quantity || 0);
-                const orig = Number(x.originalQty || 0);
-                // Net consumption = current qty - what was already allocated
-                // (original was already counted in stockAvailable pool)
-                return sum + Math.max(0, qty - orig);
-              }, 0);
-
-            const maxAllowed = Math.max(0, available - usedByOthers);
-            if (nextValue > maxAllowed) {
-              nextValue = maxAllowed;
-              showValidationError(
-                `Only ${maxAllowed} items remaining in batch ${item.batchNo}`,
-              );
-            }
-          }
-        }
-      }
-      // ─────────────────────────────────────────────────────
-
-      const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
-      if (name === "quantity") {
-        const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
-
-        if (piecesPerBox > 0) {
-          const totalBoxes = Math.ceil(
-            Number(updatedItem.quantity || 0) / piecesPerBox,
-          );
-
-          const boxStart =
-            Number(updatedItem.boxStart || 0) > 0
-              ? Number(updatedItem.boxStart)
-              : idx === 0
-                ? 1
-                : Number(items[idx - 1]?.boxEnd || 0) + 1;
-
-          updatedItem.boxStart = boxStart;
-          updatedItem.boxEnd = boxStart + totalBoxes - 1;
-        }
-      }
       if (
         (name === "boxStart" || name === "boxEnd") &&
         updatedItem.piecesPerBox
@@ -677,12 +595,28 @@ export const useProformaInvoiceForm = (
         const start = Number(updatedItem.boxStart || 0);
         const end = Number(updatedItem.boxEnd || 0);
         const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
-
         if (start > 0 && end >= start) {
-          const totalBoxes = end - start + 1;
-          updatedItem.quantity = totalBoxes * piecesPerBox;
+          updatedItem.quantity = (end - start + 1) * piecesPerBox;
         }
       }
+
+      if (name === "quantity") {
+        const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+        if (piecesPerBox > 0) {
+          const totalBoxes = Math.ceil(
+            Number(updatedItem.quantity || 0) / piecesPerBox,
+          );
+          const boxStart =
+            Number(updatedItem.boxStart || 0) > 0
+              ? Number(updatedItem.boxStart)
+              : idx === 0
+                ? 1
+                : Number(items[idx - 1]?.boxEnd || 0) + 1;
+          updatedItem.boxStart = boxStart;
+          updatedItem.boxEnd = boxStart + totalBoxes - 1;
+        }
+      }
+
       const start = Number(updatedItem.boxStart || 0);
       const end = Number(updatedItem.boxEnd || 0);
 
@@ -703,50 +637,14 @@ export const useProformaInvoiceForm = (
       }
       return { ...prev, items };
     });
-      markDirty();
+    markDirty();
   };
-  //charge temeplete--------------------
-  // const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
-  //   setFormData((prev) => {
-  //     // calculate subtotal first
-  //     const subTotal = prev.items.reduce((sum, item) => {
-  //       const qty = Number(item.quantity || 0);
-  //       const price = Number(item.price || 0);
-  //       const discount = Number(item.discount || 0);
-  //       const net = qty * price * (1 - discount / 100);
-  //       return sum + net;
-  //     }, 0);
 
-  //     const mappedTaxes = taxes.map((t: any) => {
-  //       const rate = Number(t.rate) || 0;
+  // ─── Tax / charge template handling ───────────────────────────────────────
 
-  //       const amount =
-  //         t.charge_type === "Actual"
-  //           ? Number(t.tax_amount) || 0
-  //           : (subTotal * rate) / 100;
-  //       const isActual = t.charge_type === "Actual";
-
-  //       return {
-  //         chargeType: t.charge_type,
-  //         accountHead: t.account_head,
-  //         description: t.description || "",
-  //         ...(isActual
-  //           ? { amount: Number(t.tax_amount) || 0 }
-  //           : { rate: Number(t.rate) || 0 }),
-  //       };
-  //     });
-
-  //     return {
-  //       ...prev,
-  //       taxes: mappedTaxes,
-  //       salesTaxTemplate: templateName,
-  //     };
-  //   });
-  // };
   const handleTemplateSelect = (templateName: string, taxes: any[] = []) => {
     setFormData((prev) => {
-      // calculate subtotal first
-      const subTotal = prev.items.reduce((sum, item) => {
+      const subTotal = prev.items.reduce((sum, item: any) => {
         const qty = Number(item.quantity || 0);
         const price = Number(item.price || 0);
         const discount = Number(item.discount || 0);
@@ -757,16 +655,14 @@ export const useProformaInvoiceForm = (
       const mappedTaxes = taxes.map((t: any) => {
         const rate = Number(t.rate) || 0;
         const isActual = t.charge_type === "Actual";
-        const amount = isActual
-          ? Number(t.tax_amount) || 0
-          : (subTotal * rate) / 100;
 
         return {
-          chargeType: t.charge_type || "",
-          accountHead: t.account_head || "",
+          chargeType: t.charge_type,
+          accountHead: t.account_head,
           description: t.description || "",
-          rate: isActual ? null : rate, // Explicitly provide rate (or null)
-          amount: amount, // Explicitly provide amount
+          ...(isActual
+            ? { amount: Number(t.tax_amount) || 0 }
+            : { rate: Number(t.rate) || 0 }),
         };
       });
 
@@ -776,8 +672,8 @@ export const useProformaInvoiceForm = (
         salesTaxTemplate: templateName,
       };
     });
-    markDirty();
   };
+
   const handleTaxChange = (index: number, field: string, value: any) => {
     setFormData((prev) => {
       const updated = [...(prev.taxes || [])];
@@ -791,21 +687,25 @@ export const useProformaInvoiceForm = (
         taxes: updated,
       };
     });
-        markDirty();
   };
 
   const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
       const items = [...prev.items];
-      const updatedItem = {
-        ...items[index],
-        ...updated,
-      };
+      const updatedItem: any = { ...items[index], ...updated };
+
+      const piecesPerBox = Number(updatedItem.piecesPerBox || 0);
+      if (piecesPerBox > 0 && Number(updatedItem.quantity || 0) > 0) {
+        const totalBoxes = Math.ceil(
+          Number(updatedItem.quantity) / piecesPerBox,
+        );
+        updatedItem.boxEnd =
+          Number(updatedItem.boxStart || 1) + totalBoxes - 1;
+      }
 
       items[index] = updatedItem;
       return { ...prev, items };
     });
-        markDirty();
   };
 
   const handleBulkItemChange = (field: keyof InvoiceItem, value: string) => {
@@ -813,9 +713,8 @@ export const useProformaInvoiceForm = (
     setFormData((prev) => ({
       ...prev,
       warehouse: value,
-      items: prev.items.map((item) => ({ ...item, warehouse: value })),
+      items: prev.items.map((item: any) => ({ ...item, warehouse: value })),
     }));
-        markDirty();
   };
 
   const addOtherCharge = () => {
@@ -826,7 +725,6 @@ export const useProformaInvoiceForm = (
         { charge_type: "", amount: "" },
       ],
     }));
-        markDirty();
   };
 
   const handleOtherChargeChange = (
@@ -839,7 +737,6 @@ export const useProformaInvoiceForm = (
       updated[index] = { ...updated[index], [field]: value };
       return { ...prev, invoiceCharges: updated };
     });
-        markDirty();
   };
 
   const removeOtherCharge = (index: number) => {
@@ -849,7 +746,6 @@ export const useProformaInvoiceForm = (
         (_: any, i: number) => i !== index,
       ),
     }));
-        markDirty();
   };
 
   const addItem = () => {
@@ -857,18 +753,17 @@ export const useProformaInvoiceForm = (
       const items = [...prev.items];
       let start = 1;
       if (items.length > 0) {
-        const lastEnd = Number(items[items.length - 1]?.boxEnd || 0);
+        const lastEnd = Number((items[items.length - 1] as any)?.boxEnd || 0);
         start = lastEnd ? lastEnd + 1 : 1;
       }
       items.push({
         ...EMPTY_ITEM,
         boxStart: start,
         warehouse: prev.warehouse || "",
-      });
+      } as any);
       setPage(Math.floor((items.length - 1) / ITEMS_PER_PAGE));
       return { ...prev, items };
     });
-    markDirty();
   };
 
   const removeItem = (idx: number) => {
@@ -879,7 +774,6 @@ export const useProformaInvoiceForm = (
       setPage((p) => Math.min(p, maxPage));
       return { ...prev, items };
     });
-    markDirty();
   };
 
   const duplicateItem = (absoluteIndex: number) => {
@@ -892,24 +786,22 @@ export const useProformaInvoiceForm = (
       setPage(Math.floor((absoluteIndex + 1) / ITEMS_PER_PAGE));
       return { ...prev, items: newItems };
     });
-    markDirty();
   };
 
-  const setFormDataFromInvoice = (invoice: any) => {
+  const setFormDataFromOrder = (order: any) => {
     isLoadingRef.current = true;
-    // charges[] from GET response map to taxes[] in formData
-    // (taxes[] in GET is always empty; actual applied charges are in charges[])
+
     const mappedTaxesFromCharges =
-      Array.isArray(invoice.charges) && invoice.charges.length > 0
-        ? invoice.charges.map((ch: any) => ({
+      Array.isArray(order.charges) && order.charges.length > 0
+        ? order.charges.map((ch: any) => ({
             chargeType: ch.chargeType ?? "Actual",
             accountHead: ch.accountHead ?? "",
             description: ch.description ?? "",
             rate: Number(ch.rate) || 0,
             amount: Number(ch.amount) || 0,
           }))
-        : Array.isArray(invoice.taxes) && invoice.taxes.length > 0
-          ? invoice.taxes.map((t: any) => ({
+        : Array.isArray(order.taxes) && order.taxes.length > 0
+          ? order.taxes.map((t: any) => ({
               chargeType: t.chargeType ?? "",
               accountHead: t.accountHead ?? "",
               description: t.description ?? "",
@@ -920,117 +812,98 @@ export const useProformaInvoiceForm = (
 
     setFormData((prev: any) => ({
       ...prev,
-      invoiceNumber: invoice.id ?? invoice.invoiceNumber,
-      customerId: invoice.customerId ?? prev.customerId,
-      invoiceType: invoice.invoiceType ?? "",
+      orderNumber: order.id ?? order.orderNumber,
+      customerId: order.customerId ?? prev.customerId,
 
-      // FIX 1: API returns `taxCategory` (camelCase), hook was checking `tax_category`
-      taxCategory:
-        invoice.taxCategory ?? invoice.tax_category ?? prev.taxCategory,
+      taxCategory: order.taxCategory ?? prev.taxCategory,
+      status: order.status ?? prev.status,
+      docstatus: order.docstatus ?? prev.docstatus,
+      deliveryDate: order.deliveryDate,
+      customerPoNo: order.customerPoNo ?? "",
+      customerPoDate: order.customerPoDate ?? "",
 
-      // FIX 2: Map API `status` to `invoiceStatus` used by modal
-      invoiceStatus: invoice.status ?? prev.invoiceStatus,
-
-      // FIX 3: Map API `validTill` used by modal
-      validTill: invoice.validTill,
-
-      mode: invoice.paymentMode ?? prev.mode ?? "",
-      payment_mode: invoice.payment_mode ?? prev.payment_mode ?? "",
-      currencyCode: invoice.currency,
-      dateOfInvoice: invoice.postingDate,
+      mode: order.payment_mode ?? prev.mode ?? "",
+      currencyCode: order.currency,
+      postingDate: order.postingDate,
       exchangeRt:
-        invoice.exchangeRate && Number(invoice.exchangeRate) > 0
-          ? String(invoice.exchangeRate)
+        order.exchangeRate && Number(order.exchangeRate) > 0
+          ? String(order.exchangeRate)
           : "1",
-      destnCountryCd: invoice.destnCountryCd ?? "",
-      updateStock: invoice.updateStock ?? true,
-      warehouse: invoice.warehouse ?? prev.warehouse ?? "",
-      // Use address IDs (not the HTML display strings) for the PUT payload
+      destnCountryCd: order.destnCountryCd ?? "",
+      warehouse: order.warehouse ?? prev.warehouse ?? "",
       billingAddress:
-        invoice.customerAddressId ??
-        invoice.billingAddress ??
-        prev.billingAddress,
+        order.customerAddressId ?? order.billingAddress ?? prev.billingAddress,
       shippingAddress:
-        invoice.shippingAddressId ??
-        invoice.shippingAddress ??
-        prev.shippingAddress,
-      paymentInformation: invoice.paymentInformation ?? prev.paymentInformation,
+        order.shippingAddressId ?? order.shippingAddress ?? prev.shippingAddress,
+      paymentInformation: order.paymentInformation ?? prev.paymentInformation,
       taxes: mappedTaxesFromCharges,
       invoiceCharges:
-        Array.isArray(invoice.invoiceCharges) &&
-        invoice.invoiceCharges.length > 0
-          ? invoice.invoiceCharges.map((ch: any) => ({
+        Array.isArray(order.invoiceCharges) && order.invoiceCharges.length > 0
+          ? order.invoiceCharges.map((ch: any) => ({
               charge_type: ch.charge_type ?? "",
               amount: String(ch.amount ?? ""),
             }))
           : [],
       terms: {
         selling: {
-          general: invoice.terms?.selling?.general || "",
-          delivery: invoice.terms?.selling?.delivery || "",
-          cancellation: invoice.terms?.selling?.cancellation || "",
-          warranty: invoice.terms?.selling?.warranty || "",
-          liability: invoice.terms?.selling?.liability || "",
+          general: order.terms?.selling?.general || "",
+          delivery: order.terms?.selling?.delivery || "",
+          cancellation: order.terms?.selling?.cancellation || "",
+          warranty: order.terms?.selling?.warranty || "",
+          liability: order.terms?.selling?.liability || "",
           payment: {
             phases:
-              invoice.terms?.selling?.payment?.phases?.map((p: any) => ({
+              order.terms?.selling?.payment?.phases?.map((p: any) => ({
                 id: p.id,
                 name: p.name,
                 percentage: String(p.percentage),
                 condition: p.condition,
                 credit_days: String(p.credit_days),
               })) || [],
-            dueDates: invoice.terms?.selling?.payment?.dueDates || "",
-            lateCharges: invoice.terms?.selling?.payment?.lateCharges || "",
-            taxes: invoice.terms?.selling?.payment?.taxes || "",
-            notes: invoice.terms?.selling?.payment?.notes || "",
+            dueDates: order.terms?.selling?.payment?.dueDates || "",
+            lateCharges: order.terms?.selling?.payment?.lateCharges || "",
+            taxes: order.terms?.selling?.payment?.taxes || "",
+            notes: order.terms?.selling?.payment?.notes || "",
           },
         },
       },
-      items: (invoice.items || []).map((it: any) => {
-        const quantity = Number(it.quantity);
-        const price = Number(it.rate);
-        const discount = Number(it.discount || 0);
-        const discountAmount = quantity * price * (discount / 100);
-        const totalInclusive = quantity * price - discountAmount;
-        const exclusiveBase = Number(it.vatTaxableAmount || 0);
-        const amount = totalInclusive - exclusiveBase;
-        const taxRate =
-          exclusiveBase > 0
-            ? Number(((amount / exclusiveBase) * 100).toFixed(2))
-            : 0;
-        const taxTypes = (it.taxInfo || [])
-          .flatMap((tax: any) => tax.taxRates || [])
-          .map((r: any) => r.tax_type)
-          .filter((t: string) => t && t.trim() !== "");
+      items: (order.items || []).map((it: any) => {
         return {
           itemCode: it.itemCode,
           itemName: it.itemName ?? "",
           description: it.description ?? "",
-          isServiceItem: it.isServiceItem ?? false, 
-          quantity,
-          price,
-          discount,
-          vatRate: it.taxInfo?.[0]?.totalTaxRate ?? taxRate,
-          vatCode: it.itemTaxTemplate ?? it.vatCode ?? "",
-          taxTypes: taxTypes,
+          isServiceItem: it.isServiceItem ?? false,
+          quantity: Number(it.quantity),
+          price: Number(it.rate),
+          discount: Number(it.discount || 0),
+          vatRate: it.taxInfo?.[0]?.totalTaxRate ?? 0,
+          vatCode:
+            it.itemTaxTemplate ?? it.vatCode ?? it.taxInfo?.[0]?.taxName ?? "",
+          uom: it.uom ?? "",
           packingUnit: it.packingUnit ?? "",
           packingSize: it.packingSize ?? "",
           batchNo: it.batchNo ?? "",
           boxStart: Number(it.boxStart) || "",
           boxEnd: Number(it.boxEnd) || "",
-          mfgDate: it.mfgDate ?? "",
-          expDate: it.expDate ?? "",
           warehouse: it.warehouse ?? "",
+          deliveryDate: it.deliveryDate ?? "",
           originalQty: Number(it.quantity),
-          piecesPerBox: Number(it.piecesPerBox) || 0,
+          piecesPerBox: (() => {
+            const stored = Number(it.piecesPerBox) || 0;
+            if (stored > 0) return stored;
+            const boxStart = Number(it.boxStart) || 0;
+            const boxEnd = Number(it.boxEnd) || 0;
+            const qty = Number(it.quantity) || 0;
+            const totalBoxes = boxEnd - boxStart + 1;
+            return totalBoxes > 0 ? Math.round(qty / totalBoxes) : 0;
+          })(),
           _skipCap: true,
         };
       }),
     }));
 
-    setCustomerDetails({ name: invoice.customerName, id: invoice.customerId });
-    setCustomerNameDisplay(invoice.customerName ?? "");
+    setCustomerDetails({ name: order.customerName, id: order.customerId });
+    setCustomerNameDisplay(order.customerName ?? "");
     setTimeout(() => {
       isLoadingRef.current = false;
     }, 0);
@@ -1044,32 +917,31 @@ export const useProformaInvoiceForm = (
   const handleSameAsBillingChange = (checked: boolean) => {
     setSameAsBilling(checked);
     if (!checked) shippingEditedRef.current = false;
-     markDirty();
+    markDirty();
   };
 
   const handleReset = async () => {
     if (initialData) {
-      setFormDataFromInvoice(initialData);
+      setFormDataFromOrder(initialData);
     } else {
       try {
         const companyRes = await getCompanyById(COMPANY_ID);
         const company = companyRes?.data;
         const today = new Date().toISOString().split("T")[0];
         const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
-        const validTill = calculateDueDate(today, paymentTerms);
+        const deliveryDate = calculateDueDate(today, paymentTerms);
 
         setFormData({
-          ...DEFAULT_INVOICE_FORM,
+          ...DEFAULT_SALES_ORDER_FORM,
           invoiceCharges: [],
           salesTaxTemplate: "",
-          dateOfInvoice: today,
-          validTill,
+          postingDate: today,
+          deliveryDate,
           exchangeRt: "1",
           warehouse: "",
-          updateStock: true,
           terms: { selling: company?.terms?.selling ?? EMPTY_TERMS.selling },
           paymentInformation: {
-            ...DEFAULT_INVOICE_FORM.paymentInformation,
+            ...DEFAULT_SALES_ORDER_FORM.paymentInformation,
             paymentTerms,
             bankName: getDefaultBank(company?.bankAccounts)?.bankName ?? "",
             accountNumber:
@@ -1078,12 +950,12 @@ export const useProformaInvoiceForm = (
               getDefaultBank(company?.bankAccounts)?.sortCode ?? "",
             swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
           },
-          shippingAddress: DEFAULT_INVOICE_FORM.billingAddress || "",
+          shippingAddress: DEFAULT_SALES_ORDER_FORM.billingAddress || "",
         });
       } catch (err) {
         console.error("Failed to re-load company defaults during reset", err);
         showApiError("Failed to reload company defaults");
-        setFormData({ ...DEFAULT_INVOICE_FORM });
+        setFormData({ ...DEFAULT_SALES_ORDER_FORM });
       }
     }
     shippingEditedRef.current = false;
@@ -1100,13 +972,12 @@ export const useProformaInvoiceForm = (
   };
 
   // ─── Submit ──────────────────────────────────────────────────────────────────
-  // Returns the mapped API payload or null if validation fails
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       validateForm();
-      const payload = buildInvoicePayload(formData, {
+      const payload = buildSalesOrderPayload(formData, {
         subTotal,
         totalTax,
         grandTotal,
@@ -1134,7 +1005,7 @@ export const useProformaInvoiceForm = (
     let sub = 0;
     let tax = 0;
 
-    formData.items.forEach((item) => {
+    formData.items.forEach((item: any) => {
       const qty = Number(item.quantity || 0);
       const price = Number(item.price || 0);
       const discount = Number(item.discount || 0);
@@ -1161,6 +1032,7 @@ export const useProformaInvoiceForm = (
       grandTotal: sub + tax,
     };
   }, [formData.items]);
+
   const paginatedItems = formData.items.slice(
     page * ITEMS_PER_PAGE,
     (page + 1) * ITEMS_PER_PAGE,
@@ -1232,7 +1104,7 @@ export const useProformaInvoiceForm = (
       addOtherCharge,
       handleOtherChargeChange,
       removeOtherCharge,
-        handleTemplateSelect,
+      handleTemplateSelect,
       handleTaxChange,
     },
     markDirty,

@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, camelcase */
 import React, {
   useState,
   useCallback,
@@ -6,9 +5,13 @@ import React, {
   useEffect,
   useRef,
 } from "react";
+import { FaSlidersH } from "react-icons/fa";
+import { ArrowUpRight, ArrowDownRight, Sparkles } from "lucide-react";
 import { getAllSalaryStructures } from "../../../api/utils/frappeUtilsApi";
 import { getCurrencyList } from "../../../api/lookupApi";
 import { useCompanyStore } from "../../../store/companyStore";
+import { useCustomCompensationPayload } from "../../../hooks/useCustomCompensationPayload";
+import { buildCustomCompensationPayload } from "../employeedirectorymodal/Compensation/customCompensationPayload";
 import {
   getSalaryStructure,
   getTaxConfig,
@@ -29,6 +32,11 @@ import {
 } from "./salaryengine";
 import { ComponentsPanel } from "./Compensation/ComponentsPanel";
 import { SalarySetupSection } from "./Compensation/SalarySetupSection";
+import { CompensationReviewModal } from "./Compensation/CompensationReviewModal";
+import { NumericInput } from "../../../components/ui/modal/modalComponent";
+import DatePickerInput from "../../../components/calendar/DatePickerInput";
+import { Field } from "./Compensation/Field";
+import { Badge } from "./Compensation/Badge";
 
 import {
   fmt,
@@ -43,12 +51,10 @@ import type {
   DisplayRow,
 } from "./Compensation/types";
 
+
+
 export { buildCompensationPayload };
 
-// A per-employee override that flips a *structure* component into formula
-// mode (or edits its formula), keyed the same way `overrides` is keyed —
-// by the component's nameKey (salaryengine's toNameKey(salary_component)),
-// which is what DisplayRow.editId equals for structure rows.
 type FormulaOverride = { amount_based_on_formula: 0 | 1; formula: string };
 
 export const CompensationTab: React.FC<CompensationTabProps> = ({
@@ -63,45 +69,33 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const [taxConfig, setTaxConfig] = useState<TaxConfig | null>(null);
   const { baseCurrency, currencySymbol } = useCompanyStore();
 
-  const [isCustomizing, setIsCustomizing] = useState(false);
+  
+
+  // State to open/close our interactive review modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [isCustomizing, setIsCustomizing] = useState(true);
   const [overrides, setOverrides] = useState<Record<string, number>>({});
-  // Per-employee formula overrides for STRUCTURE components (custom
-  // components track their own amount_based_on_formula/formula directly on
-  // customComponents, same as before).
   const [formulaOverrides, setFormulaOverrides] = useState<
     Record<string, FormulaOverride>
   >({});
-  const [customComponents, setCustomComponents] = useState<CustomComponent[]>(
-    [],
-  );
-  // Structure components removed for THIS employee only. The shared
-  // structure is untouched — an excluded row is zeroed out via `overrides`
-  // (so it contributes nothing to gross/net) and hidden from the list,
-  // with a "restore" chip surfaced so it isn't a dead end.
-  const [excludedComponents, setExcludedComponents] = useState<Set<string>>(
-    new Set(),
-  );
-  // Mobile-only: the sticky summary is always visible in condensed form;
-  // this controls whether the full breakdown underneath is expanded.
-  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [customComponents, setCustomComponents] = useState<CustomComponent[]>([]);
+  const [excludedComponents, setExcludedComponents] = useState<Set<string>>(new Set());
   const componentMetaRef = useRef<Record<string, string>>({});
 
-  // Snapshot of whatever customization was persisted for this employee,
-  // captured once on mount so later formData writes (which this component
-  // itself triggers) never re-trigger a restore loop.
+  // Listen for event triggered by EmployeeSummaryPanel's button
+  useEffect(() => {
+    const handleOpenModal = () => setIsModalOpen(true);
+    window.addEventListener("open-compensation-modal", handleOpenModal);
+    return () => window.removeEventListener("open-compensation-modal", handleOpenModal);
+  }, []);
+
   const savedCustomizationRef = useRef({
     isCustom: Boolean(formData._isCustomStructure),
-    overrides: { ...(formData._componentOverrides ?? {}) } as Record<
-      string,
-      number
-    >,
-    formulaOverrides: {
-      ...(formData._componentFormulaOverrides ?? {}),
-    } as Record<string, FormulaOverride>,
+    overrides: { ...(formData._componentOverrides ?? {}) } as Record<string, number>,
+    formulaOverrides: { ...(formData._componentFormulaOverrides ?? {}) } as Record<string, FormulaOverride>,
     customDefs: [...(formData._customComponents ?? [])] as SalaryComponentDef[],
-    excludedComponents: new Set<string>(
-      formData._excludedComponents ?? [],
-    ),
+    excludedComponents: new Set<string>(formData._excludedComponents ?? []),
   });
 
   const handleInputChangeRef = useRef(handleInputChange);
@@ -114,13 +108,8 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   );
 
   const activeField = useRef<"base" | "gross" | null>(null);
-
-  const [baseInput, setBaseInput] = useState<number | null>(
-    toNum(formData.basicSalary) || null,
-  );
-  const [grossInput, setGrossInput] = useState<number | null>(
-    toNum(formData.grossSalary) || null,
-  );
+  const [baseInput, setBaseInput] = useState<number | null>(toNum(formData.basicSalary) || null);
+  const [grossInput, setGrossInput] = useState<number | null>(toNum(formData.grossSalary) || null);
   const initialSalaryRef = useRef({
     base: toNum(formData.basicSalary),
     gross: toNum(formData.grossSalary),
@@ -133,28 +122,9 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const currency = formData.currency || baseCurrency || "";
   const currencyPrefix = currencySymbol || currency || "";
 
-  const selectedCustom = useMemo(
-    () => customComponents.filter((c) => c.selected),
-    [customComponents],
-  );
-  const customDefs = useMemo(
-    () => selectedCustom.map((c) => c.def),
-    [selectedCustom],
-  );
+  const selectedCustom = useMemo(() => customComponents.filter((c) => c.selected), [customComponents]);
+  const customDefs = useMemo(() => selectedCustom.map((c) => c.def), [selectedCustom]);
 
-  // Structure components merged with any per-employee formula overrides —
-  // this is what actually drives calculateSalary, so toggling a structure
-  // row to Formula mode (or editing its formula) changes gross/net, not
-  // just the display. Keyed by the same nameKey calculateSalary derives
-  // internally via toNameKey(salary_component) — imported from
-  // salaryengine so this can never drift out of sync with how
-  // calculateSalary itself hashes component names.
-  //
-  // NOTE: excluded rows stay IN this array (not filtered out) — their
-  // exclusion is expressed as a zeroed override instead. This keeps the
-  // array's length/order identical to componentDefs, which the
-  // earningRows/deductionRows builder below relies on for its positional
-  // (index-based) matching against salaryResult.components.
   const componentDefsWithOverrides = useMemo(
     () =>
       componentDefs.map((def) => {
@@ -175,26 +145,38 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     () => [...componentDefsWithOverrides, ...customDefs],
     [componentDefsWithOverrides, customDefs],
   );
-  const hasComponents = effectiveComponentDefs.length > 0;
-  const cur = (n: number) => `${currencyPrefix} ${fmt(n)}`.trim();
 
-  const hasPendingEarning = customComponents.some(
-    (c) => c.def.type === "Earning" && !c.selected,
-  );
-  const hasPendingDeduction = customComponents.some(
-    (c) => c.def.type === "Deduction" && !c.selected,
-  );
-
-  // Count of employee-specific changes: overridden structure amounts +
-  // structure formula overrides + custom components added just for this
-  // employee. Surfaced as a badge so it's obvious at a glance, both while
-  // editing and when the tab re-opens. Excluded structure rows are already
-  // reflected here — excluding one writes a 0 into `overrides`.
+  // NOTE: customizationCount / hasCustomizations must be declared here —
+  // *before* the useCustomCompensationPayload call below — since that hook
+  // receives hasCustomizations as an argument. Because these are `const`
+  // (not hoisted like function declarations), referencing them before this
+  // point throws "used before its declaration" (ts(2448) / ts(2454)).
   const customizationCount =
     Object.keys(overrides).length +
     Object.keys(formulaOverrides).length +
     selectedCustom.length;
   const hasCustomizations = customizationCount > 0;
+
+  useCustomCompensationPayload({
+    formData,
+    isCustomizing,
+    hasCustomizations,
+    effectiveComponentDefs,
+    excludedComponents,
+    overrides,
+    salaryResult,
+    stableHandleInputChange,
+    toNameKey,
+    buildCustomCompensationPayload,
+  });
+
+  const hasPendingEarning = customComponents.some((c) => c.def.type === "Earning" && !c.selected);
+  const hasPendingDeduction = customComponents.some((c) => c.def.type === "Deduction" && !c.selected);
+
+  // Whether there's anything at all to show in the Salary Configuration
+  // card / empty-state branches below (structure components + any custom
+  // components added, whether or not they're pending selection).
+  const hasComponents = effectiveComponentDefs.length > 0 || customComponents.length > 0;
 
   useEffect(() => {
     if (!formData.currency && baseCurrency) {
@@ -208,19 +190,22 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Restore saved customization on mount (edit mode) ───────────────────────
-  useEffect(() => {
+useEffect(() => {
+    const saved = savedCustomizationRef.current;
+    const hasSavedCustomization =
+      saved.isCustom ||
+      Object.keys(saved.overrides).length > 0 ||
+      Object.keys(saved.formulaOverrides).length > 0 ||
+      saved.customDefs.length > 0 ||
+      saved.excludedComponents.size > 0;
+
     if (formData.salaryStructure && !componentDefs.length) {
-      // When editing, restore employee-specific overrides/custom components
-      // once the structure's own components have loaded (see loadStructure).
-      loadStructure(formData.salaryStructure, isEditMode);
+     
+      loadStructure(formData.salaryStructure, hasSavedCustomization);
     } else if (
-      isEditMode &&
       !formData.salaryStructure &&
-      (savedCustomizationRef.current.isCustom ||
-        savedCustomizationRef.current.customDefs.length > 0)
+      (saved.isCustom || saved.customDefs.length > 0)
     ) {
-      // Fully custom structure with no base salary structure selected at all.
       applySavedCustomization();
     }
     if (formData.Taxslab && !taxConfig) {
@@ -232,12 +217,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     if (!effectiveComponentDefs.length) return;
     if (activeField.current === "gross") return;
     const base = toNum(baseInput);
-    const result = calculateSalary(
-      base,
-      effectiveComponentDefs,
-      overrides,
-      taxConfig,
-    );
+    const result = calculateSalary(base, effectiveComponentDefs, overrides, taxConfig);
     setSalaryResult(result);
     setComputedGross(result.gross);
     stableHandleInputChange("basicSalary", String(base));
@@ -249,19 +229,8 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     if (!effectiveComponentDefs.length) return;
     if (activeField.current === "base") return;
     const gross = toNum(grossInput);
-    const base = solveBaseFromGross(
-      gross,
-      effectiveComponentDefs,
-      0.01,
-      60,
-      taxConfig,
-    );
-    const result = calculateSalary(
-      base,
-      effectiveComponentDefs,
-      overrides,
-      taxConfig,
-    );
+    const base = solveBaseFromGross(gross, effectiveComponentDefs, 0.01, 60, taxConfig);
+    const result = calculateSalary(base, effectiveComponentDefs, overrides, taxConfig);
     setSalaryResult(result);
     setComputedBase(base);
     stableHandleInputChange("basicSalary", String(base));
@@ -273,12 +242,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     if (!effectiveComponentDefs.length) return;
     const base = toNum(baseInput);
     if (!base) return;
-    const result = calculateSalary(
-      base,
-      effectiveComponentDefs,
-      overrides,
-      taxConfig,
-    );
+    const result = calculateSalary(base, effectiveComponentDefs, overrides, taxConfig);
     setSalaryResult(result);
     setComputedGross(result.gross);
     setGrossInput(result.gross);
@@ -289,12 +253,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     if (!effectiveComponentDefs.length || taxConfig === undefined) return;
     const base = toNum(baseInput);
     if (!base) return;
-    const result = calculateSalary(
-      base,
-      effectiveComponentDefs,
-      overrides,
-      taxConfig,
-    );
+    const result = calculateSalary(base, effectiveComponentDefs, overrides, taxConfig);
     setSalaryResult(result);
     setComputedGross(result.gross);
     stableHandleInputChange("_salaryResult", result);
@@ -305,12 +264,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     if (!effectiveComponentDefs.length) return;
     const base = toNum(baseInput);
     if (!base) return;
-    const result = calculateSalary(
-      base,
-      effectiveComponentDefs,
-      overrides,
-      taxConfig,
-    );
+    const result = calculateSalary(base, effectiveComponentDefs, overrides, taxConfig);
     setSalaryResult(result);
     setComputedGross(result.gross);
     stableHandleInputChange("_salaryResult", result);
@@ -348,15 +302,11 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     }
   };
 
-  // Restores overrides/custom components saved for this employee. Only ever
-  // called once on mount - after that, the person's own edits are the source
-  // of truth and this ref is never consulted again.
   const applySavedCustomization = () => {
     const saved = savedCustomizationRef.current;
     if (saved.isCustom) setIsCustomizing(true);
     if (Object.keys(saved.overrides).length) setOverrides(saved.overrides);
-    if (Object.keys(saved.formulaOverrides).length)
-      setFormulaOverrides(saved.formulaOverrides);
+    if (Object.keys(saved.formulaOverrides).length) setFormulaOverrides(saved.formulaOverrides);
     if (saved.customDefs.length) {
       setCustomComponents(hydrateCustomComponents(saved.customDefs));
     }
@@ -401,32 +351,30 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
       setIsLoadingStructure(false);
     }
   };
+const handleSalaryStructureChange = useCallback((val: any) => {
+  const value = typeof val === "string" ? val : val?.value;
+  if (!value) return;
 
-  const handleSalaryStructureChange = useCallback(
-    (val: any) => {
-      const value = typeof val === "string" ? val : val?.value;
-      if (!value) return;
-      stableHandleInputChange("salaryStructure", value);
-      // A structure switch chosen by the person always starts clean - the
-      // employee-specific overrides only ever applied to the previous
-      // structure's components.
-      loadStructure(value, false);
-    },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  if (value === "Custom") {
+    stableHandleInputChange("salaryStructure", "");
+    setComponentDefs([]);
+    setIsCustomizing(true);
+    return;
+  }
 
-  const handleTaxSlabChange = useCallback(
-    (val: any) => {
-      const value = typeof val === "string" ? val : val?.value || "";
-      stableHandleInputChange("Taxslab", value);
-      if (value) {
-        loadTaxConfig(value);
-      } else {
-        setTaxConfig(null);
-      }
-    },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  stableHandleInputChange("salaryStructure", value);
+  loadStructure(value, false);
+}, []); 
+
+  const handleTaxSlabChange = useCallback((val: any) => {
+    const value = typeof val === "string" ? val : val?.value || "";
+    stableHandleInputChange("Taxslab", value);
+    if (value) {
+      loadTaxConfig(value);
+    } else {
+      setTaxConfig(null);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCurrencyOptions = async (q: string) => {
     const list = await getCurrencyList({ search: q, page: 1, page_size: 20 });
@@ -436,23 +384,42 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     }));
   };
 
-  const fetchComponentOptions = useCallback(
+const fetchComponentOptions = useCallback(
     async (type: ComponentType, query: string): Promise<ComponentOption[]> => {
-      const res = await getAllSalaryComponents(0, 20, query, type);
-      const used = new Set(
-        [...componentDefs, ...selectedCustom.map((c) => c.def)].map((d) =>
-          d.salary_component.toLowerCase(),
-        ),
+      const res = await getAllSalaryComponents(0, 20, query);
+
+      const blocked = new Set(
+        [
+          ...componentDefs
+            .filter((d) => {
+              const nameKey = toNameKey(d.salary_component || "");
+              const abbrKey = toAbbrKey(d.abbr ?? d.salary_component_abbr);
+           
+              const isExcluded =
+                excludedComponents.has(nameKey) ||
+                (abbrKey !== null && excludedComponents.has(abbrKey));
+              return !isExcluded;
+            })
+            .map((d) => d.salary_component),
+          ...selectedCustom.map((c) => c.def.salary_component),
+        ]
+          .filter((n): n is string => !!n?.trim())
+          .map((n) => n.toLowerCase().trim()),
       );
+
       return (res?.data || [])
-        .filter((c: any) => c?.name && !used.has(String(c.name).toLowerCase()))
+        .filter((c: any) => c?.name && !blocked.has(String(c.name).toLowerCase().trim()))
+        .filter(
+          (c: any) => String(c?.type ?? "").toLowerCase() === type.toLowerCase(),
+        )
         .map((c: any) => {
           componentMetaRef.current[c.name] = c.abbr || c.name;
           return { label: c.name, value: c.name };
         });
     },
-    [componentDefs, selectedCustom],
+    [componentDefs, selectedCustom, excludedComponents],
   );
+
 
   const handleToggleCustomize = useCallback(() => {
     setIsCustomizing((prev) => !prev);
@@ -490,11 +457,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     });
   }, []);
 
-  // Removes a STRUCTURE component for this employee only. The shared
-  // structure keeps the component — we zero its override (so it drops out
-  // of gross/net) and clear any formula override, then hide the row.
-  // Restorable via handleRestoreComponent, unlike a custom component
-  // removal, which is a genuine delete (handleRemoveCustomComponent).
   const handleExcludeComponent = useCallback((editId: string) => {
     setExcludedComponents((prev) => {
       if (prev.has(editId)) return prev;
@@ -524,9 +486,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     [handleResetOverride],
   );
 
-  // Bulk "start over" - clears every employee-specific override, excluded
-  // structure component, and custom component in one action, falling back
-  // to the plain structure values.
   const handleResetAllCustomizations = useCallback(() => {
     setOverrides({});
     setFormulaOverrides({});
@@ -557,12 +516,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     });
   }, []);
 
-  // Selecting a custom component now fetches its full master definition -
-  // formula, fixed/formula flag, and the informational tax/payment-day
-  // attributes - the same way the Salary Structure builder does via
-  // getSalaryComponent. This is what lets a formula-based component (e.g.
-  // "HRA = base * 0.4") actually behave as a formula once added here,
-  // instead of silently being treated as a zero fixed amount.
   const handleSelectCustomComponent = useCallback(
     async (id: string, option: ComponentOption) => {
       setCustomComponents((prev) =>
@@ -598,18 +551,16 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
                       details.amount_based_on_formula === 1
                         ? 0
                         : (details.amount ?? 0),
-                    amount_based_on_formula:
-                      details.amount_based_on_formula ?? 0,
+                    amount_based_on_formula: details.amount_based_on_formula ?? 0,
                     formula: details.formula ?? "",
                     abbr,
                     salary_component_abbr: abbr,
-                    depends_on_payment_days:
-                      details.depends_on_payment_days ?? 0,
+                    depends_on_payment_days: details.depends_on_payment_days ?? 0,
                     is_tax_applicable: details.is_tax_applicable ?? 0,
-                    is_income_tax_component:
-                      details.is_income_tax_component ?? 0,
+                    is_income_tax_component: details.is_income_tax_component ?? 0,
                     variable_based_on_taxable_salary:
                       details.variable_based_on_taxable_salary ?? 0,
+                      statistical_component: details.statistical_component ?? 0, 
                   },
                 }
               : c,
@@ -617,8 +568,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         );
       } catch (err) {
         console.error("Failed to load salary component details:", err);
-        // Fall back to a bare fixed-amount component so the person can
-        // still key in a value manually rather than getting stuck.
         const abbr = componentMetaRef.current[option.value] || id;
         setCustomComponents((prev) =>
           prev.map((c) =>
@@ -665,32 +614,9 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     setCustomComponents((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
-  // Flips ANY row — structure or custom — between fixed-amount and formula
-  // mode while customizing. Structure rows are tracked in formulaOverrides
-  // (this employee only, shared structure stays untouched); custom rows
-  // keep living inside customComponents, same as before.
-  //
-  // FIX: a structure row's *true* current mode is not simply "does an
-  // override exist" — a row with NO override yet is still displaying
-  // whatever amount_based_on_formula the master structure component
-  // defines (see CompRow's isFormulaMode fallback). The old version only
-  // ever checked `prev[id]`, so the very first click on a row whose master
-  // default was already formula-based re-wrote the override as formula
-  // again (a no-op click). It also deleted the override on "switch to
-  // fixed" instead of writing an explicit 0, which meant deleting fell
-  // straight back to a formula-based master default. Both are fixed below
-  // by resolving the row's real current state (override, else master
-  // default) and always writing an explicit 0/1.
   const handleToggleCustomFormulaMode = useCallback(
     (id: string, isCustomRow: boolean) => {
-      // The row's last computed amount — used to seed a sensible fixed
-      // value the moment we switch OUT of formula mode. A formula-based
-      // component's own `amount` field is normally 0/stale (it's meant to
-      // be derived, not stored), so without this the Fixed box would
-      // "switch" but display 0 — which looks exactly like it did nothing.
-      const computedAmount = salaryResult?.components.find(
-        (c) => c.key === id,
-      )?.amount;
+      const computedAmount = salaryResult?.components.find((c) => c.key === id)?.amount;
 
       if (isCustomRow) {
         setCustomComponents((prev) =>
@@ -712,10 +638,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         return;
       }
 
-      // Resolve the row's TRUE current mode BEFORE mutating anything: an
-      // override if one exists, otherwise the structure's own master
-      // default (matched the same way componentDefsWithOverrides matches
-      // it — nameKey, else abbrKey — via the shared salaryengine helpers).
       let currentlyFormula: boolean;
       if (id in formulaOverrides) {
         currentlyFormula = formulaOverrides[id].amount_based_on_formula === 1;
@@ -732,9 +654,6 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
       setFormulaOverrides((prev) => ({
         ...prev,
         [id]: {
-          // Switching to Fixed writes an EXPLICIT 0 — deleting the entry
-          // would fall back to the master definition, which for a
-          // formula-based component would silently undo this toggle.
           amount_based_on_formula: switchingToFixed ? 0 : 1,
           formula: prev[id]?.formula ?? "",
         },
@@ -742,12 +661,9 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
 
       setOverrides((prev) => {
         if (switchingToFixed) {
-          // Seed the fixed value with the last computed amount so the
-          // input shows a real number instead of resetting to 0.
           if (computedAmount === undefined) return prev;
           return { ...prev, [id]: computedAmount };
         }
-        // Switching TO formula — a fixed-amount override no longer applies.
         if (!(id in prev)) return prev;
         const next = { ...prev };
         delete next[id];
@@ -761,9 +677,7 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     (id: string, formula: string, isCustomRow: boolean) => {
       if (isCustomRow) {
         setCustomComponents((prev) =>
-          prev.map((c) =>
-            c.id === id ? { ...c, def: { ...c.def, formula } } : c,
-          ),
+          prev.map((c) => (c.id === id ? { ...c, def: { ...c.def, formula } } : c)),
         );
         return;
       }
@@ -792,29 +706,18 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         editId: c.key,
         isCustom: false,
         selected: true,
-        amount_based_on_formula:
-          componentDefsWithOverrides[i]?.amount_based_on_formula,
+        amount_based_on_formula: componentDefsWithOverrides[i]?.amount_based_on_formula,
         formula: componentDefsWithOverrides[i]?.formula ?? c.formula,
         flags: {
-          depends_on_payment_days:
-            componentDefsWithOverrides[i]?.depends_on_payment_days,
-          is_tax_applicable: componentDefsWithOverrides[i]?.is_tax_applicable,
-          is_income_tax_component:
-            componentDefsWithOverrides[i]?.is_income_tax_component,
-          variable_based_on_taxable_salary:
-            componentDefsWithOverrides[i]?.variable_based_on_taxable_salary,
+          depends_on_payment_days: componentDefsWithOverrides[i]?.depends_on_payment_days as 0 | 1 | undefined,
+          is_tax_applicable: componentDefsWithOverrides[i]?.is_tax_applicable as 0 | 1 | undefined,
+          is_income_tax_component: componentDefsWithOverrides[i]?.is_income_tax_component as 0 | 1 | undefined,
+          variable_based_on_taxable_salary: componentDefsWithOverrides[i]?.variable_based_on_taxable_salary as 0 | 1 | undefined,
         },
       }));
 
-    // Excluded structure rows are pulled out of the visible list here —
-    // they're still present (and zeroed) inside componentDefsWithOverrides
-    // for calculation purposes, this is purely a display-layer split.
-    const structureRows = structureRowsAll.filter(
-      (r) => !excludedComponents.has(r.editId),
-    );
-    const removedStructureRows = structureRowsAll.filter((r) =>
-      excludedComponents.has(r.editId),
-    );
+    const structureRows = structureRowsAll.filter((r) => !excludedComponents.has(r.editId));
+    const removedStructureRows = structureRowsAll.filter((r) => excludedComponents.has(r.editId));
 
     const customCalcRows: DisplayRow[] = components
       .slice(boundary)
@@ -826,11 +729,10 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
           isCustom: true,
           selected: true,
           flags: {
-            depends_on_payment_days: cc?.def.depends_on_payment_days,
-            is_tax_applicable: cc?.def.is_tax_applicable,
-            is_income_tax_component: cc?.def.is_income_tax_component,
-            variable_based_on_taxable_salary:
-              cc?.def.variable_based_on_taxable_salary,
+            depends_on_payment_days: cc?.def.depends_on_payment_days as 0 | 1 | undefined,
+            is_tax_applicable: cc?.def.is_tax_applicable as 0 | 1 | undefined,
+            is_income_tax_component: cc?.def.is_income_tax_component as 0 | 1 | undefined,
+            variable_based_on_taxable_salary: cc?.def.variable_based_on_taxable_salary as 0 | 1 | undefined,
           },
           amount_based_on_formula: cc?.def.amount_based_on_formula,
           detailsLoading: cc?.detailsLoading,
@@ -855,47 +757,48 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
     return {
       earningRows: all.filter((c) => c.type === "Earning"),
       deductionRows: all.filter((c) => c.type === "Deduction"),
-      removedEarningRows: removedStructureRows.filter(
-        (c) => c.type === "Earning",
-      ),
-      removedDeductionRows: removedStructureRows.filter(
-        (c) => c.type === "Deduction",
-      ),
+      removedEarningRows: removedStructureRows.filter((c) => c.type === "Earning"),
+      removedDeductionRows: removedStructureRows.filter((c) => c.type === "Deduction"),
     };
   }, [
     salaryResult,
     componentDefs,
+      hasCustomizations,   
     componentDefsWithOverrides,
     customComponents,
     selectedCustom,
     excludedComponents,
   ]);
 
+  // Only the "live" (selected / resolved) rows are shown in the read-only summary.
+  // Pending rows (a component slot added but not yet picked) only matter inside
+  // the customize modal, so they're left out here.
+  const visibleEarningRows = useMemo(
+    () => earningRows.filter((r) => r.selected),
+    [earningRows],
+  );
+  const visibleDeductionRows = useMemo(
+    () => deductionRows.filter((r) => r.selected),
+    [deductionRows],
+  );
+
   const shownBase = activeField.current === "gross" ? computedBase : baseInput;
-  const shownGross =
-    activeField.current === "base" ? computedGross : grossInput;
+  const shownGross = activeField.current === "base" ? computedGross : grossInput;
 
   const isLoading = isLoadingStructure || isLoadingTax;
   const showComponentsPanel = !isLoading && (hasComponents || isCustomizing);
 
   return (
-    <div className="w-full h-full flex flex-col gap-2 min-w-0 min-h-0">
+    <div className="w-full flex flex-col gap-4 min-w-0">
       <SalarySetupSection
         formData={formData}
         hasCustomizations={hasCustomizations}
         isLoadingTax={isLoadingTax}
-        salaryChanged={salaryChanged}
-        shownBase={shownBase}
-        shownGross={shownGross}
-        isEditMode={isEditMode}
-        activeField={activeField}
         getAllSalaryStructures={getAllSalaryStructures}
         fetchCurrencyOptions={fetchCurrencyOptions}
         handleSalaryStructureChange={handleSalaryStructureChange}
         handleTaxSlabChange={handleTaxSlabChange}
         stableHandleInputChange={stableHandleInputChange}
-        setBaseInput={setBaseInput}
-        setGrossInput={setGrossInput}
       />
 
       {isLoading && (
@@ -907,65 +810,258 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
         </div>
       )}
 
+      {/* Salary Configuration card: title on the left, Effective from / Base /
+          Gross salary inputs plus the Customize button on the right — all in
+          one header row. Earnings / Deductions summary sits below, split
+          into two columns with a vertical divider. */}
       {showComponentsPanel && (
-        <div className="flex flex-col">
-          <ComponentsPanel
-            hasCustomizations={hasCustomizations}
-            customizationCount={customizationCount}
-            isCustomizing={isCustomizing}
-            earningRows={earningRows}
-            deductionRows={deductionRows}
-            removedEarningRows={removedEarningRows}
-            removedDeductionRows={removedDeductionRows}
-            overrides={overrides}
-            formulaOverrides={formulaOverrides}
-            hasPendingEarning={hasPendingEarning}
-            hasPendingDeduction={hasPendingDeduction}
-            currencyPrefix={currencyPrefix}
-            fetchComponentOptions={fetchComponentOptions}
-            handleResetAllCustomizations={handleResetAllCustomizations}
-            handleToggleCustomize={handleToggleCustomize}
-            handleAddCustomComponent={handleAddCustomComponent}
-            handleAmountChange={handleAmountChange}
-            handleSelectCustomComponent={handleSelectCustomComponent}
-            handleReselectCustomComponent={handleReselectCustomComponent}
-            handleRemoveCustomComponent={handleRemoveCustomComponent}
-            handleExcludeComponent={handleExcludeComponent}
-            handleRestoreComponent={handleRestoreComponent}
-            handleResetOverride={handleResetOverride}
-            handleToggleCustomFormulaMode={handleToggleCustomFormulaMode}
-            handleCustomFormulaChange={handleCustomFormulaChange}
-          />
+        <div className="bg-card rounded-xl border border-theme shadow-sm overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-5 pt-5 pb-4">
+            <div className="flex items-center gap-2 min-w-0 shrink-0">
+              <h3 className="text-lg font-bold text-main truncate">
+                Salary Configuration
+              </h3>
+              {hasCustomizations && (
+                <Badge tone="primary">Customized</Badge>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-end gap-3">
+              {/* Each Field is wrapped in a fixed-width, non-shrinking box.
+                  Field's inner input uses w-full internally, which — as a
+                  direct flex child with no width constraint — will otherwise
+                  try to claim the *entire* row width and force every field
+                  onto its own line. Giving it an explicit width here fixes
+                  that collapse. */}
+              <div className="w-36 shrink-0">
+                <Field label="Effective from">
+                  <DatePickerInput
+                    name="effectiveFrom"
+                    value={formData.effectiveFrom || ""}
+                    required={salaryChanged}
+                    disabled={!isEditMode}
+                    onChange={(name, value) => stableHandleInputChange(name, value)}
+                  />
+                </Field>
+              </div>
+
+              <div className="w-36 shrink-0">
+                <Field label="Base salary / month">
+                  <div
+                    onFocus={() => {
+                      activeField.current = "base";
+                    }}
+                    onBlur={() => {
+                      activeField.current = null;
+                    }}
+                  >
+                    <NumericInput
+                      name="basicSalary"
+                      value={shownBase}
+                      onChange={(val) => setBaseInput(val)}
+                      placeholder="e.g. 50,000"
+                      decimalScale={2}
+                      allowNegative={false}
+                      className="w-full h-9 !text-xs !px-2.5"
+                    />
+                  </div>
+                </Field>
+              </div>
+
+              <div className="w-36 shrink-0">
+                <Field label="Gross salary / month">
+                  <div
+                    onFocus={() => {
+                      activeField.current = "gross";
+                    }}
+                    onBlur={() => {
+                      activeField.current = null;
+                    }}
+                  >
+                    <NumericInput
+                      name="grossSalary"
+                      value={shownGross}
+                      onChange={(val) => setGrossInput(val)}
+                      placeholder="e.g. 77,500"
+                      decimalScale={2}
+                      allowNegative={false}
+                      className="w-full h-9 !text-xs !px-2.5"
+                    />
+                  </div>
+                </Field>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-primary text-white text-xs font-semibold rounded-lg shadow hover:bg-primary/90 transition-all shrink-0"
+              >
+                <FaSlidersH className="w-3 h-3" />
+                <span>Customize</span>
+              </button>
+            </div>
+          </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-theme border-t border-theme">
+            {/* Earnings */}
+            <div className="px-5 py-5 flex flex-col">
+              <div className="flex items-center gap-1.5 mb-2">
+                <ArrowUpRight className="w-3.5 h-3.5 text-success" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                  Earnings
+                </span>
+              </div>
+              {visibleEarningRows.length > 0 ? (
+                <>
+                  {visibleEarningRows.map((row) => (
+                    <div
+                      key={row.editId}
+                      className="flex justify-between items-center py-2.5 border-b border-theme/60 last:border-0"
+                    >
+                      <span className="text-[13px] text-main truncate pr-2" title={row.name}>
+                        {row.name}
+                      </span>
+                      <span className="text-[13px] font-bold text-success tabular-nums shrink-0">
+                        {currencyPrefix} {fmt(row.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center pt-3 mt-auto border-t-2 border-success/30">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-success">
+                      Total Earning
+                    </span>
+                    <span className="text-sm font-extrabold text-success tabular-nums shrink-0">
+                      {currencyPrefix} {fmt(salaryResult?.gross ?? 0)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted italic py-2">No earnings</p>
+              )}
+            </div>
+            {/* Deductions */}
+            <div className="px-5 py-5 flex flex-col">
+              <div className="flex items-center gap-1.5 mb-2">
+                <ArrowDownRight className="w-3.5 h-3.5 text-danger" />
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted">
+                  Deductions
+                </span>
+              </div>
+              {visibleDeductionRows.length > 0 ? (
+                <>
+                  {visibleDeductionRows.map((row) => (
+                    <div
+                      key={row.editId}
+                      className="flex justify-between items-center py-2.5 border-b border-theme/60 last:border-0"
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                        <span className="text-[13px] text-main truncate" title={row.name}>
+                          {row.name}
+                        </span>
+                        {/* {!!row.flags?.variable_based_on_taxable_salary && (
+                          <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 shrink-0">
+                            Var
+                          </span>
+                        )} */}
+                      </div>
+                      <span className="text-[13px] font-bold text-danger tabular-nums shrink-0">
+                        {currencyPrefix} {fmt(row.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center pt-3 mt-auto border-t-2 border-danger/30">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-danger">
+                      Total Deduction
+                    </span>
+                    <span className="text-sm font-extrabold text-danger tabular-nums shrink-0">
+                      {currencyPrefix} {fmt(salaryResult?.deductionsTotal ?? 0)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted italic py-2">No deductions</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {!isLoading &&
-        !hasComponents &&
-        !isCustomizing &&
-        !formData.salaryStructure && (
-          <div className="bg-card rounded-lg border border-dashed border-theme p-6 text-center">
-            <p className="text-xs text-muted mb-2">
-              Select a salary structure above to view and configure components.
-            </p>
-            <button
-              type="button"
-              onClick={handleToggleCustomize}
-              className="text-xs text-primary hover:underline"
-            >
-              Or build a custom structure for this employee
-            </button>
-          </div>
-        )}
-      {!isLoading &&
-        !hasComponents &&
-        !isCustomizing &&
-        formData.salaryStructure && (
-          <div className="bg-card rounded-lg border border-theme p-5 text-center">
-            <p className="text-xs text-muted italic">
-              No components found in this structure.
-            </p>
-          </div>
-        )}
+      <CompensationReviewModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        employeeName={[formData.firstName, formData.lastName].filter(Boolean).join(" ")}
+        currencyPrefix={currencyPrefix}
+        salaryResult={salaryResult}
+        salaryStructureName={formData.salaryStructure}
+        hasCustomizations={hasCustomizations}
+        onResetCustomizations={handleResetAllCustomizations}
+        baseSalaryInput={shownBase}
+        onBaseSalaryFocus={() => {
+          activeField.current = "base";
+        }}
+        onBaseSalaryBlur={() => {
+          activeField.current = null;
+        }}
+        onBaseSalaryChange={(val) => setBaseInput(val)}
+        grossSalaryInput={shownGross}
+        onGrossSalaryFocus={() => {
+          activeField.current = "gross";
+        }}
+        onGrossSalaryBlur={() => {
+          activeField.current = null;
+        }}
+        onGrossSalaryChange={(val) => setGrossInput(val)}
+      >
+        <ComponentsPanel
+          hasCustomizations={hasCustomizations}
+          customizationCount={customizationCount}
+          isCustomizing={isCustomizing}
+          earningRows={earningRows}
+          deductionRows={deductionRows}
+          removedEarningRows={removedEarningRows}
+          removedDeductionRows={removedDeductionRows}
+          overrides={overrides}
+          formulaOverrides={formulaOverrides}
+          hasPendingEarning={hasPendingEarning}
+          hasPendingDeduction={hasPendingDeduction}
+          currencyPrefix={currencyPrefix}
+          fetchComponentOptions={fetchComponentOptions}
+          handleResetAllCustomizations={handleResetAllCustomizations}
+          handleToggleCustomize={handleToggleCustomize}
+          handleAddCustomComponent={handleAddCustomComponent}
+          handleAmountChange={handleAmountChange}
+          handleSelectCustomComponent={handleSelectCustomComponent}
+          handleReselectCustomComponent={handleReselectCustomComponent}
+          handleRemoveCustomComponent={handleRemoveCustomComponent}
+          handleExcludeComponent={handleExcludeComponent}
+          handleRestoreComponent={handleRestoreComponent}
+          handleResetOverride={handleResetOverride}
+          handleToggleCustomFormulaMode={handleToggleCustomFormulaMode}
+          handleCustomFormulaChange={handleCustomFormulaChange}
+        />
+      </CompensationReviewModal>
+
+      {!isLoading && !hasComponents && !isCustomizing && !formData.salaryStructure && (
+        <div className="bg-card rounded-lg border border-dashed border-theme p-6 text-center">
+          <p className="text-xs text-muted mb-2">
+            Select a salary structure above to view and configure components.
+          </p>
+          <button
+            type="button"
+            onClick={handleToggleCustomize}
+            className="text-xs text-primary hover:underline"
+          >
+            Or build a custom structure for this employee
+          </button>
+        </div>
+      )}
+      {!isLoading && !hasComponents && !isCustomizing && formData.salaryStructure && (
+        <div className="bg-card rounded-lg border border-theme p-5 text-center">
+          <p className="text-xs text-muted italic">
+            No components found in this structure.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

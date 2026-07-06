@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { API, ERP_BASE } from "../config/api";
+import { buildListParams } from "../api/utils/queryBuilder";
 
 const api = createAxiosInstance(ERP_BASE);
 export const CreditNoteAPI = API.CreditNote;
@@ -79,16 +80,19 @@ export async function getAllCreditNotes(
 ): Promise<any> {
   const limit_start = (page - 1) * page_size;
 
-  const resp: AxiosResponse = await api.get(CreditNoteAPI.Credit_note, { 
-    params: {
-      filters: JSON.stringify([["is_return", "=", 1]]),
-      fields: JSON.stringify(["name", "customer_name", "return_against", "grand_total", "status", "posting_date", "currency"]),
-      with_pagination: 1,
-      limit_start,
-      limit_page_length: page_size,
-      ...(search && { search }),
-    },
+  const query = buildListParams({
+    fields: ["name", "customer_name", "return_against", "grand_total", "status", "posting_date", "currency"],
+    start: limit_start,
+    pageSize: page_size,
+    search,
+    searchFields: ["name", "customer_name", "return_against","grand_total", "status", "posting_date", "currency"],
   });
+
+  const resp: AxiosResponse = await api.get(
+    `${CreditNoteAPI.Credit_note}?${query}&filters=${encodeURIComponent(
+      JSON.stringify([["is_return", "=", 1]]),
+    )}`,
+  );
 
   const raw = resp.data;
   const items = Array.isArray(raw?.data) ? raw.data

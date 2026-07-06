@@ -57,7 +57,7 @@ const totalAmount = Number(
 export const salesInvoiceAdapter: InvoiceAdapter = {
   async fetchPage({ page, pageSize, partyId }: FetchParams): Promise<NormalizedPage> {
    const res = await getAllSalesInvoices(
-      page, pageSize, "dueDate", "desc", undefined, partyId, 0.01,
+      page, pageSize, "due_date", "desc", undefined, partyId, 0.01,
       ["Partly Paid", "Unpaid", "Overdue"]
     );
     const raw: SalesInvoiceRaw[] = res?.data ?? [];

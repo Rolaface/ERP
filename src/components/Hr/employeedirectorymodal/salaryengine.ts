@@ -13,6 +13,7 @@ export interface SalaryComponentDef {
   is_tax_applicable?:                number;
   variable_based_on_taxable_salary?: 0 | 1;
   is_income_tax_component?:          0 | 1;
+   statistical_component?: 0 | 1; 
   [key: string]: unknown;
 }
 
@@ -84,7 +85,7 @@ export interface CompensationPayload {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const r2 = (n: number): number => Math.round(n * 100) / 100;
+export const r2 = (n: number): number => Math.round(n * 100) / 100;
 
 // Converts any component name into a valid JS identifier.
 // Keeps only [a-z0-9], collapses everything else into a single underscore.

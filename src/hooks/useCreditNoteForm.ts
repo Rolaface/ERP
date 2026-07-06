@@ -34,6 +34,7 @@ export interface CreditNoteFormState {
   customer: CustomerMeta | null;
   update_stock: boolean;
   items: CreditNoteItem[];
+  exchange_rate: number;
 }
 
 const EMPTY_FORM: CreditNoteFormState = {
@@ -41,6 +42,7 @@ const EMPTY_FORM: CreditNoteFormState = {
   customer: null,
   update_stock: true,
   items: [],
+  exchange_rate: 1, 
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -60,27 +62,60 @@ export function useCreditNoteForm(
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
-  useEffect(() => {
-    if (!initialData) return;
+  // useEffect(() => {
+  //   if (!initialData) return;
 
+  //   setForm({
+  //     return_against: initialData.return_against || "",
+  //     customer: {
+  //       id: initialData.customer || "",
+  //       name: initialData.customer || "",
+  //     },
+  //     update_stock: !!initialData.update_stock,
+  //     items: (initialData.items || []).map((it: any) => ({
+  //       item_code: it.item_code,
+  //       item_name: it.item_name,
+  //       qty: Number(it.qty),
+  //       rate: Number(it.rate),
+  //       batch_no: it.batch_no || "",
+  //       warehouse: it.warehouse || "",
+  //     })),
+  //   });
+  //  }, [initialData]);
+  
+   useEffect(() => {
+    if (!initialData) return;
+    
     setForm({
-      return_against: initialData.return_against || "",
+      // Maps the document ID to return_against
+      return_against: initialData.return_against || initialData.id || initialData.piId || "",
+      
+      // Changed back to customer for Sales Invoice/Credit Note
       customer: {
-        id: initialData.customer || "",
-        name: initialData.customer || "",
+        id: initialData.customerId || initialData.customer || "",
+        name: initialData.customerName || initialData.customer_name || initialData.customer || "",
       },
-      update_stock: !!initialData.update_stock,
+      
+      // Maps updateStock (handles boolean or 1/0)
+      update_stock: initialData.updateStock !== undefined 
+        ? !!initialData.updateStock 
+        : !!initialData.update_stock,
+        
+      // Maps item array with camelCase fallbacks
       items: (initialData.items || []).map((it: any) => ({
-        item_code: it.item_code,
-        item_name: it.item_name,
-        qty: Number(it.qty),
-        rate: Number(it.rate),
-        batch_no: it.batch_no || "",
+        item_code: it.itemCode || it.item_code || "",
+        item_name: it.itemName || it.item_name || "",
+        // NOTE: Used Math.abs() so the -500 from the API shows as 500 in your UI
+        qty: Math.abs(Number(it.quantity ?? it.qty ?? 0)), 
+        rate: Number(it.rate ?? 0),
+        batch_no: it.batchNo || it.batch_no || "",
         warehouse: it.warehouse || "",
       })),
+      
+      exchange_rate: Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,  
     });
-    // initialData population is not a user edit, so we do NOT markDirty here
   }, [initialData]);
+
 
   // ── Invoice search ───────────────────────────────────────────────────────
 
@@ -249,7 +284,7 @@ export function useCreditNoteForm(
         customer: form.customer!.id,
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
-        update_outstanding_for_self: 1 as const,
+        update_outstanding_for_self: 0 as const,
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
@@ -261,23 +296,28 @@ export function useCreditNoteForm(
 
       setSaving(true);
       try {
-        const res = isEdit && initialData?.name
-          ? await updateCreditNote(initialData.name, {
-            is_return: 1,
-            return_against: form.return_against,
-            customer: form.customer!.id,
-            company: companyName,
-            update_stock: form.update_stock ? 1 : 0,
-            update_outstanding_for_self: 1,
-            items: form.items.map((it) => ({
-              item_code: it.item_code,
-              qty: Number(it.qty),
-              rate: Number(it.rate),
-              ...(it.batch_no ? { batch_no: it.batch_no } : {}),
-              warehouse: it.warehouse,
-            })),
-          })
-          : await createCreditNote(payload);
+        // const res = isEdit && initialData?.name
+        //   ? await updateCreditNote(initialData.name, {
+        //     is_return: 1,
+        //     return_against: form.return_against,
+        //     customer: form.customer!.id,
+        //     company: companyName,
+        //     update_stock: form.update_stock ? 1 : 0,
+        //     update_outstanding_for_self: 1,
+        //     items: form.items.map((it) => ({
+        //       item_code: it.item_code,
+        //       qty: Number(it.qty),
+        //       rate: Number(it.rate),
+        //       ...(it.batch_no ? { batch_no: it.batch_no } : {}),
+        //       warehouse: it.warehouse,
+        //     })),
+        //   })
+        //   : await createCreditNote(payload);
+        const docId = initialData?.name || initialData?.piId || initialData?.id;
+        
+                const res = isEdit && docId
+                  ? await updateCreditNote(docId, payload)
+                  : await createCreditNote(payload);
 
         if (!res || ![200, 201].includes(res.status_code)) {
           const action = isEdit ? "update" : "creation";
@@ -302,12 +342,10 @@ export function useCreditNoteForm(
         }
 
         showSuccess(res.message);
-        resetDirty(); // clear dirty flag on successful save
+        resetDirty(); 
         onSuccess?.(res.data);
         onClose?.();
-        useDataRefreshStore
-          .getState()
-          .triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
       } catch (err: any) {
         console.error("Credit note save failed", err);
         showApiError(err);

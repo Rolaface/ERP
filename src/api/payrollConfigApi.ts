@@ -42,7 +42,10 @@ export interface SalaryComponent {
   create_separate_payment_entry_against_benefit_claim?: 0 | 1;
   // deduction-specific
   variable_based_on_taxable_salary?: 0 | 1;
+  statistical_component?: 0 | 1;
   is_income_tax_component?: 0 | 1;
+    do_not_include_in_total: 0| 1;
+  do_not_include_in_accounts: 0| 1;
 }
 
 export interface StructureComponentRow {
