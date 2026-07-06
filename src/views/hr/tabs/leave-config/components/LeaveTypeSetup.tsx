@@ -72,6 +72,15 @@ export function LeaveTypeSetup() {
           </span>
         ),
       },
+       {
+        key: "fraction_of_daily_salary_per_leave",
+        header: "Salary Fraction",
+        render: (row) => (
+          <code className="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700">
+            {row.fraction_of_daily_salary_per_leave ?? 1}
+          </code>
+        ),
+      },
       {
         key: "is_lwp",
         header: "LWP",
@@ -105,17 +114,17 @@ export function LeaveTypeSetup() {
         header: "Negative Balance",
         render: (row) => (
           <span className="text-sm text-sub">
-            {row.allow_negative ? "Allowed" : "Not Allowed"}
+            {row.allow_negative ? "Yes" : "No"}
           </span>
         ),
       },
       {
-        key: "fraction_of_daily_salary_per_leave",
-        header: "Salary Fraction",
+        key: "allow_encashment",
+        header: "Allow Encashment",
         render: (row) => (
-          <code className="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700">
-            {row.fraction_of_daily_salary_per_leave ?? 1}
-          </code>
+          <span className="text-sm text-sub">
+            {row.allow_encashment ? "Yes" : "No"}
+          </span>
         ),
       },
       {
