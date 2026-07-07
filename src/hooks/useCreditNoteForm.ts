@@ -37,6 +37,7 @@ export interface CreditNoteFormState {
   code: string;
   description: string;
   items: CreditNoteItem[];
+  exchange_rate: number;
 }
 
 const EMPTY_FORM: CreditNoteFormState = {
@@ -47,6 +48,7 @@ const EMPTY_FORM: CreditNoteFormState = {
   description: "",
   update_stock: true,
   items: [],
+  exchange_rate: 1, 
 };
 
 
@@ -94,38 +96,43 @@ export function useCreditNoteForm(
 
   useEffect(() => {
     if (!initialData) return;
+
     let parsedRemarks: { name?: string; reason?: string; code?: string; description?: string } = {};
-  if (typeof initialData.remarks === "string" && initialData.remarks.trim()) {
-    try {
-      parsedRemarks = JSON.parse(initialData.remarks);
-    } catch {
-      parsedRemarks = {};
+    if (typeof initialData.remarks === "string" && initialData.remarks.trim()) {
+      try {
+        parsedRemarks = JSON.parse(initialData.remarks);
+      } catch {
+        parsedRemarks = {};
+      }
+    } else if (initialData.remarks && typeof initialData.remarks === "object") {
+      parsedRemarks = initialData.remarks;
     }
-  } else if (initialData.remarks && typeof initialData.remarks === "object") {
-    parsedRemarks = initialData.remarks;
-  }
 
     setForm({
-      return_against: initialData.return_against || "",
+      return_against: initialData.return_against || initialData.id || initialData.piId || "",
       customer: {
-        id: initialData.customer || "",
-        name: initialData.customer || "",
+        id: initialData.customerId || initialData.customer || "",
+        name: initialData.customerName || initialData.customer_name || initialData.customer || "",
       },
-      update_stock: !!initialData.update_stock,
-      reason: initialData.reason || initialData.remarks?.reason || "",
-      code: initialData.code || initialData.remarks?.code || "",
-      description: initialData.description || "",
+      update_stock: initialData.updateStock !== undefined
+        ? !!initialData.updateStock
+        : !!initialData.update_stock,
+      reason: initialData.reason || parsedRemarks.reason || parsedRemarks.name || "",
+      code: initialData.code || parsedRemarks.code || "",
+      description: initialData.description || parsedRemarks.description || "",
       items: (initialData.items || []).map((it: any) => ({
-        item_code: it.item_code,
-        item_name: it.item_name,
-        qty: Number(it.qty),
-        rate: Number(it.rate),
-        batch_no: it.batch_no || "",
+        item_code: it.itemCode || it.item_code || "",
+        item_name: it.itemName || it.item_name || "",
+        qty: Math.abs(Number(it.quantity ?? it.qty ?? 0)),
+        rate: Number(it.rate ?? 0),
+        batch_no: it.batchNo || it.batch_no || "",
         warehouse: it.warehouse || "",
       })),
+
+      exchange_rate: Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,
     });
-    // initialData population is not a user edit, so we do NOT markDirty here
   }, [initialData]);
+
 
   // ── Invoice search ───────────────────────────────────────────────────────
 
@@ -315,7 +322,7 @@ export function useCreditNoteForm(
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
         update_outstanding_for_self: 1 as const,
-        remarks:JSON.stringify( {
+        remarks: JSON.stringify({
           name: form.reason,
           reason: form.reason,
           code: form.code,
@@ -332,28 +339,10 @@ export function useCreditNoteForm(
 
       setSaving(true);
       try {
-        const res = isEdit && initialData?.name
-          ? await updateCreditNote(initialData.name, {
-            is_return: 1,
-            return_against: form.return_against,
-            customer: form.customer!.id,
-            company: companyName,
-            update_stock: form.update_stock ? 1 : 0,
-            update_outstanding_for_self: 1,
-            remarks:JSON.stringify( {
-              name: form.reason,
-              reason: form.reason,
-              code: form.code,
-              description: form.description,
-            }),
-            items: form.items.map((it) => ({
-              item_code: it.item_code,
-              qty: Number(it.qty),
-              rate: Number(it.rate),
-              ...(it.batch_no ? { batch_no: it.batch_no } : {}),
-              warehouse: it.warehouse,
-            })),
-          })
+        const docId = initialData?.name || initialData?.piId || initialData?.id;
+
+        const res = isEdit && docId
+          ? await updateCreditNote(docId, payload)
           : await createCreditNote(payload);
 
         if (!res || ![200, 201].includes(res.status_code)) {
@@ -379,12 +368,10 @@ export function useCreditNoteForm(
         }
 
         showSuccess(res.message);
-        resetDirty(); // clear dirty flag on successful save
+        resetDirty(); 
         onSuccess?.(res.data);
         onClose?.();
-        useDataRefreshStore
-          .getState()
-          .triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
       } catch (err: any) {
         console.error("Credit note save failed", err);
         console.error("Backend response:", err?.response?.data);

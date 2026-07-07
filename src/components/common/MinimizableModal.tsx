@@ -42,6 +42,7 @@ export interface MinimizableModalProps {
   height?: string;
   customWidth?: string;
   formContainerRef?: React.RefObject<HTMLElement | null>;
+  hideMinimize?: boolean;
 }
 
 export const MinimizableModal: React.FC<MinimizableModalProps> = ({
@@ -58,6 +59,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
   customWidth,
   summaryBar,
   formContainerRef,
+  hideMinimize = false,
 }) => {
   const modalMeta = useModalStore((state) =>
     state.modals.find((m) => m.id === modalId)
@@ -118,6 +120,7 @@ export const MinimizableModal: React.FC<MinimizableModalProps> = ({
             onMinimize={() => minimizeModal(modalId)}
             summaryBar={summaryBar}
             formContainerRef={formContainerRef}
+            hideMinimize={hideMinimize}
           >
             {children}
           </ModalShell>
@@ -142,6 +145,7 @@ interface ModalShellProps {
   onMinimize: () => void;
   summaryBar?: React.ReactNode;
   formContainerRef?: React.RefObject<HTMLElement | null>;
+  hideMinimize?: boolean;
 }
 
 const ModalShell: React.FC<ModalShellProps> = ({
@@ -159,6 +163,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
   onMinimize,
   summaryBar,
   formContainerRef,
+  hideMinimize = false,
 }) => {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -188,10 +193,6 @@ const ModalShell: React.FC<ModalShellProps> = ({
           justifyContent: "center",
           padding: "8px",
           pointerEvents: "none",
-          // If the panel's minWidth ever exceeds the real viewport (very
-          // small windows / extreme zoom), this lets the layer itself
-          // scroll so the panel is still reachable instead of being
-          // clipped off-screen with no way to get to it.
           overflow: "auto",
         }}
       >
@@ -211,17 +212,6 @@ const ModalShell: React.FC<ModalShellProps> = ({
             pointerEvents: "auto",
             height,
             width: customWidth || undefined,
-            // Without a floor, customWidth ("90vw" etc.) keeps shrinking as
-            // the effective viewport shrinks (browser/OS zoom, smaller
-            // windows), while fixed-width children inside the panel
-            // (sidebars, table columns) don't shrink with it. That fight
-            // is exactly what produces "compact but not actually
-            // responsive" — content overlapping, columns collapsing into
-            // each other instead of reflowing cleanly. A minWidth means
-            // the panel holds a sane working size; if the real viewport
-            // is smaller than that, the backdrop layer's own overflow
-            // (see above) handles it instead of the panel's internal
-            // layout breaking.
             minWidth: customWidth
               ? "min(960px, calc(100vw - 16px))"
               : undefined,
@@ -250,17 +240,19 @@ const ModalShell: React.FC<ModalShellProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  aria-label="Minimize"
-                  className="group rounded-lg p-1.5 transition-all hover:bg-white/10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMinimize();
-                  }}
-                >
-                  <Minus className="h-4 w-4 text-white transition-transform group-hover:scale-110" />
-                </button>
+                {!hideMinimize && (
+                  <button
+                    type="button"
+                    aria-label="Minimize"
+                    className="group rounded-lg p-1.5 transition-all hover:bg-white/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMinimize();
+                    }}
+                  >
+                    <Minus className="h-4 w-4 text-white transition-transform group-hover:scale-110" />
+                  </button>
+                )}
                 <button
                   type="button"
                   aria-label="Close"

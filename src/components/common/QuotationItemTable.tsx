@@ -124,17 +124,17 @@ const ProductQuoteColGroup: React.FC<InvoiceHeadersProps> = () => (
 const ServiceQuoteColGroup: React.FC = () => (
   <colgroup>
     <col style={{ width: "24px" }} />   {/* # */}
-    <col style={{ width: "32%" }} />    {/* Item */}
-    <col style={{ width: "10%" }} />    {/* Qty */}
-    <col style={{ width: "10%" }} />    {/* Price */}
-    <col style={{ width: "8%" }} />     {/* Dis% */}
-    <col style={{ width: "8%" }} />     {/* Tax% */}
-    <col style={{ width: "15%" }} />    {/* Tax Name */}
-    <col style={{ width: "10%" }} />    {/* Amount */}
+    <col style={{ width: "22%" }} />    {/* Item */}
+    <col style={{ width: "30%" }} />    {/* Description */}
+    <col style={{ width: "8%" }} />     {/* Qty */}
+    <col style={{ width: "8%" }} />    {/* Price */}
+    <col style={{ width: "5%" }} />     {/* Dis% */}
+    <col style={{ width: "5%" }} />     {/* Tax% */}
+    <col style={{ width: "13%" }} />    {/* Tax Name */}
+    <col style={{ width: "11%" }} />    {/* Amount */}
     <col style={{ width: "44px" }} />   {/* Actions */}
   </colgroup>
 );
-
 const QuoteColGroup: React.FC<InvoiceHeadersProps> = (props) => {
   if (props.invoiceType === "Service") return <ServiceQuoteColGroup />;
   return <ProductQuoteColGroup {...props} />;
@@ -145,6 +145,9 @@ const QuoteHeaders: React.FC<InvoiceHeadersProps> = ({ invoiceType = "Product" }
     <tr className="border-b border-theme">
       <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">#</th>
       <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Item</th>
+      {isService && (
+  <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Description</th>
+)}
       {!isService && <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Pkg</th>}
       {!isService && <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Box</th>}
       <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Qty</th>
@@ -298,6 +301,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
             <POItemSelect
               value={it.itemName}
               selectedId={it.itemCode}
+              invoiceType={invoiceType}
               onChange={(item: any) => {
                 onItemSelect?.(item, i);
                 const code = item?.id || "";
@@ -329,6 +333,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
                 actions.updateItemDirectly?.(i, {
                   itemCode: code,
                   itemName: name,
+                  description: item?.description ?? "",
                   price: rate,
                   quantity: 1,
                   uom: unitOfMeasure,
@@ -342,6 +347,19 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
               }}
             />
           </td> 
+          {/* Description — Service only */}
+{isService && (
+  <td className="px-1 py-1">
+    <input
+      type="text"
+      name="description"
+      value={it.description || ""}
+      placeholder="Enter description"
+      onChange={(e) => actions.handleItemChange(i, e)}
+      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+    />
+  </td>
+)}
 
         {/* Pkg (U×S) — hidden < md */}
         {!isService && (

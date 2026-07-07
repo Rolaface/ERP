@@ -1,308 +1,188 @@
-import React, { useState, useEffect } from "react";
-import {
-  FaUser,
-  FaAddressBook,
-  FaBriefcase,
-  FaCalendarCheck,
-  FaMoneyBillWave,
-  FaCalendarAlt,
-  FaFolder,
-  FaArrowLeft,
-  FaArrowRight,
-  FaCheck,
-} from "react-icons/fa";
-
-import IdentityVerificationModal from "./IdentityVerificationModal";
-import PersonalInfoTab from "./PersonalInfoTab";
-import ContactInfoTab from "./ContactInfoTabs";
-import EmploymentTab from "./EmploymentTab";
-import CompensationTab from "./CompensationTab";
-import { LeaveSetupTab } from "./LeaveSetupTab";
-import WorkScheduleTab from "./WorkScheduletab";
-import DocumentsTab from "./DocumentsTab";
-import { EmployeeSummaryPanel } from "./EmployeeSummaryPanel";
+import React, { useState } from "react";
+import { IdCard, ArrowRight, UserRoundPen, Loader2, Grid3x3 } from "lucide-react";
 import { MinimizableModal } from "../../common/MinimizableModal";
-
-import { getLevelsFromHrSettings } from "../../../views/hr/tabs/salarystructure";
-import { EMPLOYEE_ROLE_CONFIG } from "../../../api/config/employeeRoleConfig";
-import { filterEmployeesByRole } from "../../../api/config/employeeRoleFilter";
-import { getAllEmployees } from "../../../api/employeeapi";
-import { useCompanySelection } from "../../../hooks/useCompanySelection";
-import { getEmployeeFeatures } from "../../../config/employeeFeatures";
-
-import {
-  TAB_ORDER,
-  type TabName,
-  DEFAULT_FORM,
-  mapEditDataToForm,
-} from "./Employeeformconfig";
-
-const TAB_ICONS: Record<TabName, React.ElementType> = {
-  "Personal":      FaUser,
-  "Contact":       FaAddressBook,
-  "Employment":    FaBriefcase,
-  "Leave Setup":   FaCalendarCheck,
-  "Compensation":  FaMoneyBillWave,
-  "Work Schedule": FaCalendarAlt,
-  "Documents":     FaFolder,
-};
-
-type DocumentUpload = { uploaded: boolean; fileName?: string; fileUrl?: string };
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (formData: any) => void;
-  onSuccess?: () => void;
-  editData?: any;
-  mode?: "add" | "edit";
+  modalId: string;
+  onVerified: (data: {
+    identityInfo?: { nationalId?: string; ssn?: string };
+    personalInfo?: {
+      firstName?: string;
+      lastName?: string;
+      gender?: string;
+      dateOfBirth?: string;
+    };
+  }) => void;
+  onManualEntry: () => void;
 };
 
-const AddEmployeeModal: React.FC<Props> = ({
+const IdentityVerificationModal: React.FC<Props> = ({
   isOpen,
   onClose,
-  onSubmit,
-  onSuccess,
-  editData,
-  mode = "add",
+  modalId,
+  onVerified,
+  onManualEntry,
 }) => {
-  const { companyCode } = useCompanySelection();
-  const features = getEmployeeFeatures(companyCode);
-  const departments = features.departments;
-  const levelsFromSettings = getLevelsFromHrSettings();
+  const [nationalId, setNationalId] = useState("");
+  const [ssn, setSsn] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [step, setStep] = useState<"verification" | "form">(
-    features.requireIdentityVerification ? "verification" : "form"
-  );
-
-  const [formData, setFormData] = useState<Record<string, any>>(DEFAULT_FORM);
-  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>({});
-  const [isPreFilled, setIsPreFilled] = useState(false);
-  const [currentTabIndex, setCurrentTabIndex] = useState(0);
-  const activeTab = TAB_ORDER[currentTabIndex] as TabName;
-  const isLastTab = currentTabIndex === TAB_ORDER.length - 1;
-
-  const [reportingManagers, setReportingManagers] = useState<any[]>([]);
-  const [hrManagers, setHrManagers] = useState<any[]>([]);
-
-  const [documents, setDocuments] = useState<Record<string, DocumentUpload>>({
-    "NRC Copy":            { uploaded: false },
-    "Offer Letter":        { uploaded: false },
-    "Employment Contract": { uploaded: false },
-    "NAPSA Certificate":   { uploaded: false },
-  });
-  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    if (editData) {
-      setStep("form");
-      setFormData(mapEditDataToForm(editData));
-      setIsPreFilled(true);
-    } else {
-      setStep(features.requireIdentityVerification ? "verification" : "form");
-      setFormData({ ...DEFAULT_FORM });
-      setVerifiedFields({});
-      setIsPreFilled(false);
+  const handleVerify = async () => {
+    if (!nationalId.trim() && !ssn.trim()) {
+      setError("Enter either an NRC or SSN to continue.");
+      return;
     }
-    setCurrentTabIndex(0);
-  }, [isOpen, editData, features.requireIdentityVerification]);
+    setError(null);
+    setVerifying(true);
 
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    (async () => {
-      try {
-        const res = await getAllEmployees(1, 200, "Active");
-        const emps = res?.data?.employees ?? [];
-        setReportingManagers(filterEmployeesByRole(emps, EMPLOYEE_ROLE_CONFIG.reportingManager));
-        setHrManagers(filterEmployeesByRole(emps, EMPLOYEE_ROLE_CONFIG.hrManager));
-      } catch { /* silent */ }
-    })();
-  }, [isOpen]);
-
-  const handleInputChange = (field: string, value: any) =>
-    setFormData((prev) => ({ ...prev, [field]: value }));
-
-  const handleNext = () => setCurrentTabIndex((p) => p + 1);
-  const handlePrevious = () => setCurrentTabIndex((p) => p - 1);
-
-  const handleSave = () => {
-    onSubmit?.(formData);
-    onSuccess?.();
-    onClose();
+    setTimeout(() => {
+      onVerified({
+        identityInfo: {
+          nationalId: nationalId.trim() || undefined,
+          ssn: ssn.trim() || undefined,
+        },
+        personalInfo: {
+          firstName: "",
+          lastName: "",
+          gender: "",
+          dateOfBirth: "",
+        },
+      });
+      setVerifying(false);
+    }, 600);
   };
 
-  const removeDocument = (key: string) =>
-    setDocuments((prev) => ({ ...prev, [key]: { uploaded: false } }));
+const footer = (
+  <div className="flex w-full items-center justify-between">
+    <button
+      onClick={onManualEntry}
+      disabled={verifying}
+      className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-primary border border-primary/40 rounded-xl hover:bg-primary/5 transition disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      <UserRoundPen className="w-3.5 h-3.5" />
+      Add Manually
+    </button>
 
-  const handleVerified = (data: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      nrcId:       data.identityInfo?.nrc || "",
-      firstName:   data.personalInfo?.firstName || "",
-      lastName:    data.personalInfo?.lastName || "",
-      gender:      data.personalInfo?.gender || "",
-      dateOfBirth: data.personalInfo?.dateOfBirth || "",
-    }));
-    setVerifiedFields({ nrcId: true, firstName: true, lastName: true, gender: true, dateOfBirth: true });
-    setIsPreFilled(true);
-    setStep("form");
-  };
-
-  if (!isOpen) return null;
-
-  if (step === "verification" && features.requireIdentityVerification) {
-    return (
-      <IdentityVerificationModal
-        isOpen={isOpen}
-        onVerified={handleVerified}
-        onManualEntry={() => { setIsPreFilled(false); setVerifiedFields({}); setStep("form"); }}
-        onClose={onClose}
-      />
-    );
-  }
+    <button
+      onClick={handleVerify}
+      disabled={verifying}
+      className="flex items-center gap-1.5 px-5 py-2 min-w-[100px] justify-center text-xs font-semibold bg-primary text-white rounded-xl hover:opacity-90 transition disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+    >
+      {verifying ? (
+        <>
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Verifying…
+        </>
+      ) : (
+        <>
+          Verify
+          <ArrowRight className="w-3.5 h-3.5" />
+        </>
+      )}
+    </button>
+  </div>
+);
 
   return (
     <MinimizableModal
-      modalId="add-employee"
+      modalId={modalId}
       isOpen={isOpen}
       onClose={onClose}
-      title={editData ? "Edit Employee" : "New Employee"}
-      subtitle="Employee Management"
-      customWidth="77vw"
-      height="90vh"
-      footer={
-        <div className="flex justify-between w-full items-center px-2">
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 text-xs text-muted hover:text-main hover:bg-app rounded-lg transition"
-          >
-            Cancel
-          </button>
-
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-muted">
-              {currentTabIndex + 1} / {TAB_ORDER.length}
-            </span>
-
-            {currentTabIndex > 0 && (
-              <button
-                onClick={handlePrevious}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs border border-theme rounded-lg hover:bg-app transition text-main"
-              >
-                <FaArrowLeft className="w-3 h-3" /> Previous
-              </button>
-            )}
-
-            {!isLastTab ? (
-              <button
-                onClick={handleNext}
-                className="flex items-center gap-1 px-4 py-1.5 text-xs bg-primary text-white rounded-lg hover:opacity-90 transition"
-              >
-                Next <FaArrowRight className="w-3 h-3" />
-              </button>
-            ) : (
-              <button
-                onClick={handleSave}
-                className="flex items-center gap-1 px-4 py-1.5 text-xs bg-primary text-white rounded-lg hover:opacity-90 transition font-semibold"
-              >
-                <FaCheck className="w-3 h-3" /> {editData ? "Update" : "Save"}
-              </button>
-            )}
-          </div>
-        </div>
-      }
+      title="Identity Verification"
+      subtitle="Verify employee identity before proceeding"
+      icon={IdCard}
+      maxWidth="lg"
+      height="auto"
+      hideMinimize
+      footer={footer}
     >
-      {/* Main split layout */}
-      <div className="flex h-full overflow-hidden">
-
-        {/* LEFT: Tabs + Form (flexible) */}
-        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-
-          {/* Tab Bar */}
-          <div className="flex border-b border-theme bg-card px-1 overflow-x-auto flex-shrink-0">
-            {TAB_ORDER.map((tab, i) => {
-              const done   = i < currentTabIndex;
-              const active = i === currentTabIndex;
-              const Icon   = TAB_ICONS[tab];
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setCurrentTabIndex(i)}
-                  className={`relative flex items-center gap-1 px-2.5 py-2 text-[10px] font-medium whitespace-nowrap transition flex-shrink-0 border-b-2 ${
-                    active
-                      ? "text-primary border-primary bg-primary/5"
-                      : done
-                      ? "text-emerald-600 border-transparent"
-                      : "text-muted border-transparent hover:text-main hover:bg-app"
-                  }`}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span>{tab}</span>
-                  {done && (
-                    <span className="ml-0.5 w-3.5 h-3.5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[7px]">
-                      ✓
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+      <div className="space-y-5 py-2">
+        {/* Icon + description block */}
+        <div className="flex items-start gap-3 rounded-xl bg-primary/5 border border-primary/10 p-3">
+          <div className="rounded-lg bg-primary/10 p-2 shrink-0">
+            <IdCard className="w-4 h-4 text-primary" />
           </div>
+          <p className="text-xs text-muted leading-relaxed pt-0.5">
+            Enter identification details to automatically fetch employee information.
+          </p>
+        </div>
 
-          {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto bg-app p-3">
-            {activeTab === "Personal" && (
-              <PersonalInfoTab
-                formData={formData}
-                handleInputChange={handleInputChange}
-                verifiedFields={verifiedFields}
-              />
-            )}
-            {activeTab === "Contact" && (
-              <ContactInfoTab formData={formData} handleInputChange={handleInputChange} />
-            )}
-            {activeTab === "Employment" && (
-              <EmploymentTab
-                formData={formData}
-                handleInputChange={handleInputChange}
-                departments={departments}
-                Level={levelsFromSettings}
-                managers={reportingManagers}
-                hrManagers={hrManagers}
-              />
-            )}
-            {activeTab === "Leave Setup" && (
-              <LeaveSetupTab formData={formData} handleInputChange={handleInputChange} />
-            )}
-            {activeTab === "Compensation" && (
-              <CompensationTab formData={formData} handleInputChange={handleInputChange} />
-            )}
-            {activeTab === "Work Schedule" && (
-              <WorkScheduleTab formData={formData} handleInputChange={handleInputChange} />
-            )}
-            {activeTab === "Documents" && (
-              <DocumentsTab
-                documents={documents}
-                setUploadingDoc={setUploadingDoc}
-                removeDocument={removeDocument}
-              />
-            )}
+        {/* NRC Input */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-main uppercase tracking-wide">
+            National Identification Number (NRC)
+          </label>
+          <div className="relative">
+            <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <input
+              type="text"
+              value={nationalId}
+              onChange={(e) => {
+                setNationalId(e.target.value);
+                if (error) setError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !verifying) handleVerify();
+              }}
+              placeholder="e.g. 123456/78/1"
+              autoFocus
+              disabled={verifying}
+              className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border bg-app text-main outline-none transition disabled:opacity-60 disabled:cursor-not-allowed ${
+                error
+                  ? "border-red-400 focus:ring-2 focus:ring-red-200"
+                  : "border-theme focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
+              }`}
+            />
           </div>
         </div>
 
-        {/* RIGHT: Summary Panel (fixed 260px) */}
-        <div className="w-[260px] flex-shrink-0 border-l border-theme bg-card overflow-hidden">
-          <EmployeeSummaryPanel formData={formData} />
+        {/* OR divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-theme" />
+          <span className="text-[11px] font-medium text-muted uppercase tracking-wide">
+            or
+          </span>
+          <div className="flex-1 h-px bg-theme" />
         </div>
 
+        {/* SSN Input */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-semibold text-main uppercase tracking-wide">
+            Social Security Number (SSN)
+          </label>
+          <div className="relative">
+            <Grid3x3 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <input
+              type="text"
+              value={ssn}
+              onChange={(e) => {
+                setSsn(e.target.value);
+                if (error) setError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !verifying) handleVerify();
+              }}
+              placeholder="e.g. 000-00-0000"
+              disabled={verifying}
+              className={`w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border bg-app text-main outline-none transition disabled:opacity-60 disabled:cursor-not-allowed ${
+                error
+                  ? "border-red-400 focus:ring-2 focus:ring-red-200"
+                  : "border-theme focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
+              }`}
+            />
+          </div>
+          {error && (
+            <p className="text-[11px] text-red-500 mt-1 flex items-center gap-1">
+              {error}
+            </p>
+          )}
+        </div>
       </div>
     </MinimizableModal>
   );
 };
 
-export default AddEmployeeModal;
+export default IdentityVerificationModal;

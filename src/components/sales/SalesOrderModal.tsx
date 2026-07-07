@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { FileSignature } from "lucide-react";
+import { FileText } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
-import { useQuotationForm } from "../../hooks/useQuotationForm";
-import { ModalSelect } from "../ui/modal/modalComponent";
+import { useSalesOrderForm } from "../../hooks/useSalesOrderForm";
 import CustomerSelect from "../selects/CustomerSelect";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { User, Mail, Phone } from "lucide-react";
@@ -25,15 +24,12 @@ import {
   useDataRefreshStore,
   REFRESH_KEYS,
 } from "../../store/dataRefreshStore";
-import {
-  createProformaInvoice,
-  editProformaInvoice,
-} from "../../api/proformaInvoiceApi";
+import { createSalesOrder, editSalesOrder } from "../../api/SalesOrder/salesOrderAPi";
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import QuotationItemTable from "../common/QuotationItemTable";
 import { useDefault } from "../../hooks/usedefaultdata";
 
-interface QuotationModalProps {
+interface SalesOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit?: ModalSubmitHandler;
@@ -42,7 +38,7 @@ interface QuotationModalProps {
   modalId?: string;
 }
 
-const QuotationModal: React.FC<QuotationModalProps> = ({
+const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
@@ -54,24 +50,22 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     () =>
       modalId ||
       (mode === "edit" && initialData?.id
-        ? `quotation-edit-${initialData.id}-${Date.now()}`
-        : `quotation-create-${Date.now()}`),
+        ? `sales-order-edit-${initialData.id}-${Date.now()}`
+        : `sales-order-create-${Date.now()}`),
   );
   const [submitting, setSubmitting] = useState(false);
- 
+
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
   const domain = useDefault("primary_business_domain");
-    console.log("Domain ", domain);
-  
- useEffect(() => {
-  if (mode === "edit" && initialData?.items?.length > 0) {
-      const isService = initialData.items[0]?.is_stock_item === 0;
-    
-    setInvoiceType(isService ? "Service" : "Product");
-  } else if (mode === "create") {
-     setInvoiceType(domain === "Service" ? "Service" : "Product");
-  }
-}, [initialData, mode, isOpen, domain]);
+
+  useEffect(() => {
+    if (mode === "edit" && initialData?.items?.length > 0) {
+      const isService = initialData.items[0]?.isServiceItem;
+      setInvoiceType(isService ? "Service" : "Product");
+    } else if (mode === "create") {
+      setInvoiceType(domain === "Service" ? "Service" : "Product");
+    }
+  }, [initialData, mode, isOpen, domain]);
 
   const {
     formData,
@@ -83,13 +77,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     actions,
     resetDirty,
     handleCloseWithConfirm,
-  } = useQuotationForm(
-    isOpen,
-    onClose,
-    onSubmit,
-    mode === "edit" ? "edit" : "proforma",
-    initialData,
-  );
+  } = useSalesOrderForm(isOpen, onClose, onSubmit, mode, initialData);
 
   const primaryContact =
     customerDetails?.contacts?.find((c: any) => c.isPrimary) || {};
@@ -132,36 +120,37 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     if (submitting) return;
 
     try {
+      setSubmitting(true);
       const payload = await actions.handleSubmit({
         preventDefault: () => {},
       } as React.FormEvent);
 
       if (!payload) return;
 
-      const finalPayload = { ...payload, documentType: "Quotation" };
+      const finalPayload = { ...payload, documentType: "Sales Order" };
 
       let response;
       if (mode === "edit") {
-        const quotationNumber =
-          formData.invoiceNumber ?? initialData?.id ?? initialData?.proformaId;
-        if (!quotationNumber) {
-          showValidationError("Invalid quotation reference");
+        const orderNumber =
+          formData.orderNumber ?? initialData?.id ?? initialData?.orderNumber;
+        if (!orderNumber) {
+          showValidationError("Invalid sales order reference");
           return;
         }
-        response = await editProformaInvoice(quotationNumber, finalPayload);
+        response = await editSalesOrder(orderNumber, finalPayload);
       } else {
-        response = await createProformaInvoice(finalPayload);
+        response = await createSalesOrder(finalPayload);
       }
 
       const res = response?.message || response;
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(
-          parseFrappeError || res?.message || res || "Failed to save Quotation",
+          parseFrappeError || res?.message || res || "Failed to save Sales Order",
         );
         return;
       }
 
-      showSuccess(res.message || "Quotation saved successfully");
+      showSuccess(res.message || "Sales Order saved successfully");
       const canClose = await onSubmit?.(res);
       if (canClose === false) return;
 
@@ -169,9 +158,11 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       onClose();
       useDataRefreshStore
         .getState()
-        .triggerRefresh(REFRESH_KEYS.QUOTATION_LIST);
+        .triggerRefresh(REFRESH_KEYS.SALES_ORDER_LIST);
     } catch (error: any) {
       showApiError(error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -187,9 +178,13 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={() => handleCloseWithConfirm(onClose, resolvedModalId)}
-      title={mode === "edit" ? "Edit Quotation" : "Add Quotation"}
-      subtitle={mode =="edit" ? "Edit and manage quotation details" : "Add and manage quotation details"}
-      icon={FileSignature}
+      title={mode === "edit" ? "Edit Sales Order" : "Add Sales Order"}
+      subtitle={
+        mode === "edit"
+          ? "Edit and manage sales order details"
+          : "Add and manage sales order details"
+      }
+      icon={FileText}
       footer={
         <ModalFooter
           onCancel={() => handleCloseWithConfirm(onClose, resolvedModalId)}
@@ -208,7 +203,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
       height="700px"
     >
       <form
-        id="quotationForm"
+        id="salesOrderForm"
         onSubmit={handleFormSubmit}
         className="h-full flex flex-col"
         autoComplete="off"
@@ -243,11 +238,9 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
           {/* ──────────── DETAILS ──────────── */}
           {ui.activeTab === "details" && (
             <div className="flex flex-col gap-4">
-              {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
-
                 {/* Customer */}
-            <div className="w-full sm:w-[280px]">
+                <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
                     onChange={actions.handleCustomerSelect}
@@ -256,12 +249,12 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   />
                 </div>
 
-                {/* Date of Quotation */}
+                {/* Date of Sales Order */}
                 <div className="w-full sm:w-[130px]">
                   <DatePickerInput
-                    label="Date of Quotation"
-                    name="dateOfInvoice"
-                    value={formData.dateOfInvoice}
+                    label="Order Date"
+                    name="postingDate"
+                    value={formData.postingDate}
                     required
                     onChange={(name, value) =>
                       actions.handleInputChange({
@@ -271,12 +264,12 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   />
                 </div>
 
-                {/* Valid Until */}
+                {/* Delivery Date */}
                 <div className="w-full sm:w-[130px]">
                   <DatePickerInput
-                    label="Valid Until"
-                    name="validTill"
-                    value={formData.validTill}
+                    label="Delivery Date"
+                    name="deliveryDate"
+                    value={formData.deliveryDate}
                     required
                     onChange={(name, value) =>
                       actions.handleInputChange({
@@ -286,92 +279,87 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   />
                 </div>
 
-                  {/* Invoice Type */}
-              {/* <div className="w-full sm:w-auto flex flex-col justify-end">
-                 <label className="text-[11px] text-muted mb-1">Quotation Type</label>
-                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[27px]">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Product"
-                      checked={invoiceType === "Product"}
-                      onChange={(e: any) => setInvoiceType(e.target.value)}
-                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[10px] text-main whitespace-nowrap">Product</span>
+                {/* Customer PO No */}
+                <div className="w-full sm:w-[150px]">
+                  <label className="text-[11px] text-muted mb-1 block">
+                    Customer PO No.
                   </label>
-                  
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Service"
-                      checked={invoiceType === "Service"}
-                      onChange={(e: any) => setInvoiceType(e.target.value)}
-                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[10px] text-main whitespace-nowrap">Service</span>
-                  </label>
+                  <input
+                    type="text"
+                    name="customerPoNo"
+                    value={formData.customerPoNo ?? ""}
+                    onChange={(e) => actions.handleInputChange(e as any)}
+                    className="w-full h-[27px] text-[11px] px-2 border border-theme rounded-md bg-card"
+                    placeholder="PO Number"
+                  />
                 </div>
-              </div> */}
-                {/* Invoice Type */}
-              <div className="w-full sm:w-auto flex flex-col justify-end">
-                <label className="text-[11px] text-muted mb-1">Quotation Type</label>
-                <div className="flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max">
-                  
-                  <label 
-                    className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
-                      invoiceType === "Product" 
-                        ? "bg-primary text-white shadow-sm" 
-                        : "text-muted hover:text-main bg-transparent"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Product"
-                      checked={invoiceType === "Product"}
-                      // Keep whatever onChange logic you had here (including the updateStock logic from earlier if you used it)
-                      onChange={(e: any) => setInvoiceType(e.target.value)}
-                      className="hidden"
-                    />
-                    Product
-                  </label>
-                  
-                  <label 
-                    className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
-                      invoiceType === "Service" 
-                        ? "bg-primary text-white shadow-sm" 
-                        : "text-muted hover:text-main bg-transparent"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Service"
-                      checked={invoiceType === "Service"}
-                      // Keep whatever onChange logic you had here
-                      onChange={(e: any) => setInvoiceType(e.target.value)}
-                      className="hidden"
-                    />
-                    Service
-                  </label>
-                  
-                </div>
-              </div>
 
+                {/* Customer PO Date */}
+                <div className="w-full sm:w-[130px]">
+                  <DatePickerInput
+                    label="Customer PO Date"
+                    name="customerPoDate"
+                    value={formData.customerPoDate ?? ""}
+                    onChange={(name, value) =>
+                      actions.handleInputChange({
+                        target: { name, value },
+                      } as any)
+                    }
+                  />
+                </div>
+
+                {/* Order Type */}
+                <div className="w-full sm:w-auto flex flex-col justify-end">
+                  <label className="text-[11px] text-muted mb-1">Order Type</label>
+                  <div className="flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max">
+                    <label
+                      className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
+                        invoiceType === "Product"
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-muted hover:text-main bg-transparent"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="invoiceType"
+                        value="Product"
+                        checked={invoiceType === "Product"}
+                        onChange={(e: any) => setInvoiceType(e.target.value)}
+                        className="hidden"
+                      />
+                      Product
+                    </label>
+
+                    <label
+                      className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
+                        invoiceType === "Service"
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-muted hover:text-main bg-transparent"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="invoiceType"
+                        value="Service"
+                        checked={invoiceType === "Service"}
+                        onChange={(e: any) => setInvoiceType(e.target.value)}
+                        className="hidden"
+                      />
+                      Service
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_220px] gap-4 items-start">
-                {/* Table column — min-w-0 so it can shrink below natural content width */}
+                {/* Table column */}
                 <div className="min-w-0">
                   <QuotationItemTable
                     paginatedItems={paginatedItems}
                     ui={ui}
                     actions={actions}
                     formData={formData}
-                    isQuotation={true}
+                    isQuotation={false}
                     symbol={symbol}
                     ITEMS_PER_PAGE={ITEMS_PER_PAGE}
                     invoiceType={invoiceType}
@@ -383,7 +371,7 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                   />
                 </div>
 
-                {/* Sidebar — full width on mobile, 220px column on xl+ */}
+                {/* Sidebar */}
                 <div className="flex flex-row xl:flex-col gap-4 xl:sticky xl:top-0 h-fit">
                   {/* Customer Details card */}
                   <div className="bg-card rounded-lg p-2 flex-1 xl:flex-none w-full">
@@ -393,9 +381,9 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
                     <div className="flex flex-col gap-2 text-xs">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-muted shrink-0" />
-                      <span className="break-words">
-  {customerDetails?.name ?? "Customer Name"}
-</span>
+                        <span className="break-words">
+                          {customerDetails?.name ?? "Customer Name"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted">
                         <Mail size={12} className="shrink-0" />
@@ -553,4 +541,4 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
   );
 };
 
-export default QuotationModal;
+export default SalesOrderModal;

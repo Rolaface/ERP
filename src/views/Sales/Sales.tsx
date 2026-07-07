@@ -8,7 +8,8 @@ import {
   FileMinus,
   BarChart3,
   TrendingUp,
-  ShoppingCart
+  ShoppingCart,
+  BadgePercent
 } from "lucide-react";
 import {
   AppPage,
@@ -20,6 +21,7 @@ import AppSkeleton from "../../components/ui/AppSkeleton";
 import { usePermission } from "../../hooks/permission/usePermission";
 import { useUrlTab } from "../../hooks/useUrlTab";
 
+const SalesOrderTable = lazy(() => import("./SalesOrder"));
 const QuotationsTable = lazy(() => import("./Quotations"));
 const InvoiceTable = lazy(() => import("./Invoices"));
 const ReportTable = lazy(() => import("./Reports"));
@@ -30,6 +32,8 @@ const CreditNotesTable = lazy(() => import("./CreditNotesTable"));
 const SalesAnalytics = lazy(() => import("./SalesAnalytics"));
 
 type OutletContextType = {
+  openSalesOrderCreate: () => void;
+  openSalesOrderEdit: (salesOrderNumber: string, data: any) => void;
   openInvoiceCreate: () => void;
   openInvoiceEdit: (invoiceNumber: string, data: any) => void;
   openProformaCreate: () => void;
@@ -50,6 +54,13 @@ const ALL_SALES_TAB = [
     label: "Dashboard",
     icon: <LayoutDashboard size={16} strokeWidth={1.75} />,
     module: null,
+  },
+  {
+    id: "salesOrder",
+    label: "Sales Order",
+    icon: <BadgePercent size={16} strokeWidth={1.75} />,
+    module: "Sales Order",
+    action: "read" as const,
   },
   {
     id: "quotations",
@@ -105,7 +116,7 @@ const SalesModule: React.FC = () => {
     [can]
   );
 
-  const { openInvoiceCreate, openProformaCreate, openQuotationCreate } =
+  const { openInvoiceCreate, openProformaCreate, openQuotationCreate, openSalesOrderCreate } =
     useOutletContext<OutletContextType>();
 
   const fallbackTab = salesTabs[0]?.id ?? DEFAULT_TAB;
@@ -124,6 +135,15 @@ const SalesModule: React.FC = () => {
     switch (resolvedTab) {
       case "salesdashboard":
         return <SalesDashboard />;
+      
+      case "salesOrder":
+        return (
+          <SalesOrderTable
+            key={activeTab}
+            onAddSalesOrder={() => openSalesOrderCreate?.()}
+            onExportSalesOrder={() => console.log("Export sales orders")}
+          />
+        );
       case "quotations":
         return (
           <QuotationsTable

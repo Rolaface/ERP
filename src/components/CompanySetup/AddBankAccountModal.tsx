@@ -6,10 +6,10 @@ import { Landmark } from "lucide-react";
 import { useBankAccLogic } from "./Usebankacclogic";
 import DatePickerInput from "../calendar/DatePickerInput";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
-import { Option } from "../ui/modal/SearchSelect2"
+import { Option } from "../ui/modal/SearchSelect2";
 import { BankAccount } from "../../types/BankAccount/bank";
 import { fetchCurrencyOptions } from "../../utils/currencyOptions";
-import { getBankAccountById ,getBankAccounts } from "../../api/BankAccountApi";
+import { getBankAccountById, getBankAccounts } from "../../api/BankAccountApi";
 import { showApiError } from "../../utils/alert";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 
@@ -25,9 +25,7 @@ interface Props {
   customerId?: string;
   partyId?: string;
   isViewMode?: boolean;
-
 }
-
 
 type AccountType = "Supplier" | "Customer" | "Company" | "Bank" | "Employee";
 
@@ -42,7 +40,6 @@ const AddBankAccountModal: React.FC<Props> = ({
   modalId,
   partyId,
   isViewMode = false,
-
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { markDirty, resetDirty, handleCloseWithConfirm, containerRef } =
@@ -65,17 +62,17 @@ const AddBankAccountModal: React.FC<Props> = ({
     onClose();
   };
 
-   useEffect(() => {
-  if (!initialData && defaultAccountFor) {
-    handleAccountForChange(defaultAccountFor as AccountType);  
-  }
-}, [defaultAccountFor, initialData]);
+  useEffect(() => {
+    if (!initialData && defaultAccountFor) {
+      handleAccountForChange(defaultAccountFor as AccountType);
+    }
+  }, [defaultAccountFor, initialData]);
 
-useEffect(() => {
-  if (currency) {
-    setForm((prev) => ({ ...prev, currency }));
-  }
-}, [currency]);
+  useEffect(() => {
+    if (currency) {
+      setForm((prev) => ({ ...prev, currency }));
+    }
+  }, [currency]);
 
   // Effect 2 — set name/holder once entities are loaded
 
@@ -121,13 +118,21 @@ useEffect(() => {
         const data = await getBankAccountById(String(initialData.id));
         if (!data) return;
 
+        const isCompanyAccount = Number(data.is_company_account) === 1;
+        const party = isCompanyAccount ? data.company : data.partyName;
+
         setForm((prev) => ({
           ...prev,
           dateAdded: data.dateAdded || prev.dateAdded,
-          accountFor: data.accountFor || prev.accountFor,
-          name: data.partyName || "",
-          partyId: data.partyName || "",
-          displayName: data.partyName || "",
+
+          accountFor: isCompanyAccount
+            ? "Company"
+            : data.accountFor || prev.accountFor,
+
+          name: party || "",
+          partyId: party || "",
+          displayName: party || "",
+
           bank: data.bank || "",
           swiftCode: data.swiftNumber || "",
           currency: data.currency || "",
@@ -135,8 +140,10 @@ useEffect(() => {
           accountHolder: data.accountHolderName || "",
           sortCode: data.branch_code || "",
           iban: data.iban || "",
+
           isDefault: Number(data.is_default) === 1,
           isDisabled: Number(data.disabled) === 1,
+
           reportingAccount: data.ledgerAccount || "",
         }));
       } catch (err) {
@@ -215,7 +222,9 @@ useEffect(() => {
       modalId={modalId}
       isOpen={isOpen}
       onClose={() =>
-        isViewMode ? handleClose() : handleCloseWithConfirm(handleClose, modalId)
+        isViewMode
+          ? handleClose()
+          : handleCloseWithConfirm(handleClose, modalId)
       }
       title="Add Bank Account"
       subtitle="Configure bank account for Companies or parties"
@@ -238,17 +247,13 @@ useEffect(() => {
                 label="Date of Addition"
                 name="dateAdded"
                 disabled={isViewMode}
-
                 value={form.dateAdded}
                 onChange={(name, value) => {
                   markDirty();
                   setForm((prev) => ({ ...prev, [name]: value }));
-                }
-                }
+                }}
               />
             </div>
-
-
 
             {/* Account For */}
             <div className="flex flex-col text-sm min-w-0">
@@ -268,21 +273,26 @@ useEffect(() => {
                   handleAccountForChange(value as AccountType);
                   clearError("accountFor");
                 }}
-                className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0 ${errors.accountFor
-                  ? "border-danger"
-                  : isViewMode || !!defaultAccountFor
-                    ? "bg-app cursor-not-allowed opacity-60 border-theme"
-                    : "border-[var(--border)] hover:border-primary/40"
-                  }`}
+                className={`py-1 px-2 border rounded text-[11px] text-main bg-card transition-all w-auto min-w-0 ${
+                  errors.accountFor
+                    ? "border-danger"
+                    : isViewMode || !!defaultAccountFor
+                      ? "bg-app cursor-not-allowed opacity-60 border-theme"
+                      : "border-[var(--border)] hover:border-primary/40"
+                }`}
               >
-                <option value="" disabled>Select</option>
+                <option value="" disabled>
+                  Select
+                </option>
                 <option value="Supplier">Supplier</option>
                 <option value="Customer">Customer</option>
                 <option value="Company">Company</option>
                 <option value="Employee">Employee</option>
               </select>
               {errors.accountFor && (
-                <span className="text-danger text-[10px] mt-1">{errors.accountFor}</span>
+                <span className="text-danger text-[10px] mt-1">
+                  {errors.accountFor}
+                </span>
               )}
             </div>
 
@@ -332,7 +342,6 @@ useEffect(() => {
                 label="Bank"
                 value={form.bank}
                 disabled={isViewMode}
-
                 onChange={(_: string, option: Option) => {
                   markDirty();
                   setForm((prev) => ({
@@ -370,7 +379,6 @@ useEffect(() => {
                 label="Currency"
                 value={form.currency}
                 disabled={isViewMode || !!defaultAccountFor}
-
                 onChange={(_: string, option: Option) => {
                   markDirty();
                   setForm((prev) => ({
@@ -464,7 +472,7 @@ useEffect(() => {
                   const list = Array.isArray(data) ? data : [];
                   if (!q) return list;
                   return list.filter((acc) =>
-                    acc.label.toLowerCase().includes(q.toLowerCase())
+                    acc.label.toLowerCase().includes(q.toLowerCase()),
                   );
                 }}
               />
@@ -478,8 +486,7 @@ useEffect(() => {
                 onChange={(e) => {
                   markDirty();
                   setForm((p) => ({ ...p, isDefault: e.target.checked }));
-                }
-                }
+                }}
                 className="w-4 h-4 accent-primary"
               />
               <span className="text-sm text-main">Default Bank Account</span>

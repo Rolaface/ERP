@@ -1,5 +1,3 @@
-// CompRow.tsx
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import React from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import SearchSelect2 from "../../../ui/modal/SearchSelect2";
@@ -35,7 +33,7 @@ const FlagBadges: React.FC<{ flags?: RowFlags }> = ({ flags }) => {
   const active = FLAG_META.filter((f) => flags[f.key] === 1);
   if (!active.length) return null;
   return (
-    <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+    <div className="flex items-center gap-1 flex-wrap shrink-0">
       {active.map((f) => (
         <span
           key={f.key}
@@ -87,7 +85,7 @@ const ModeToggle: React.FC<{
   onToggle?: () => void;
 }> = ({ isFormulaMode, disabled, onToggle }) => (
   <div
-    className={`shrink-0 inline-flex items-center rounded-full border border-theme bg-app p-0.5 h-7 ${
+    className={`shrink-0 inline-flex items-center rounded-lg border border-theme bg-app p-0.5 h-7 ${
       disabled ? "opacity-50 cursor-not-allowed" : ""
     }`}
   >
@@ -98,7 +96,7 @@ const ModeToggle: React.FC<{
       disabled={disabled}
       onClick={disabled || !isFormulaMode ? undefined : onToggle}
       title={disabled ? undefined : "Fixed amount"}
-      className={`px-1.5 py-1 rounded-full text-[8px] font-semibold leading-none whitespace-nowrap transition-colors ${
+      className={`px-1.5 py-1 rounded-md text-[8px] font-semibold leading-none whitespace-nowrap transition-colors ${
         !isFormulaMode
           ? "bg-primary text-white shadow-sm"
           : "text-muted hover:text-primary"
@@ -111,7 +109,7 @@ const ModeToggle: React.FC<{
       disabled={disabled}
       onClick={disabled || isFormulaMode ? undefined : onToggle}
       title={disabled ? undefined : "Formula"}
-      className={`px-1.5 py-1 rounded-full text-[8px] font-semibold leading-none whitespace-nowrap transition-colors ${
+      className={`px-1.5 py-1 rounded-md text-[8px] font-semibold leading-none whitespace-nowrap transition-colors ${
         isFormulaMode
           ? "bg-primary text-white shadow-sm"
           : "text-muted hover:text-primary"
@@ -202,7 +200,8 @@ export const CompRow: React.FC<{
               />
             )
           ) : editable && row.isCustom ? (
-            <>
+            /* Aligned horizontally on one line for custom editable components */
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
               {isLoadingDetails ? (
                 <div className="flex items-center gap-1.5 text-[11px] text-muted py-1">
                   <Loader2 size={12} className="animate-spin text-primary" />
@@ -213,16 +212,17 @@ export const CompRow: React.FC<{
                   type="button"
                   onClick={() => onReselectComponent?.(row.editId)}
                   title="Click to change component"
-                  className="text-left text-[11.5px] font-medium text-main leading-tight truncate hover:text-primary max-w-full"
+                  className="text-left text-[11.5px] font-medium text-main leading-tight truncate hover:text-primary max-w-full shrink-0"
                 >
                   {row.name}
                 </button>
               )}
               <FlagBadges flags={row.flags} />
-            </>
+            </div>
           ) : (
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0">
+            /* Aligned horizontally on one line for standard structure components */
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+              <div className="flex items-center gap-1.5 min-w-0 shrink-0">
                 <p
                   className="text-[11.5px] font-medium text-main leading-tight truncate"
                   title={row.name}
@@ -250,14 +250,12 @@ export const CompRow: React.FC<{
             <button
               type="button"
               onClick={() => onResetOverride?.(row.editId)}
-              className="text-[9px] text-primary/70 hover:text-primary mt-0.5 leading-none focus:outline-none"
+              className="text-[9px] text-primary/70 hover:text-primary mt-0.5 leading-none focus:outline-none block"
             >
               reset to structure value
             </button>
           )}
         </div>
-
-       
       </div>
 
       {/* ── Value row: [toggle] [input] [computed chip] — toggle sits right
@@ -287,74 +285,74 @@ export const CompRow: React.FC<{
                 currencyPrefix={currencyPrefix}
                 fmt={fmt}
               />
-                {canDelete && (
-    <button
-      type="button"
-      onClick={() => {
-        if (row.isCustom) {
-          onRemove?.(row.editId);
-        } else {
-          onExclude?.(row.editId);
-        }
-      }}
-      className="shrink-0 h-7 w-7 flex items-center justify-center rounded-md border border-theme text-muted hover:text-red-500 hover:border-red-300"
-    >
-      <Trash2 size={11} />
-    </button>
-  )}
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (row.isCustom) {
+                      onRemove?.(row.editId);
+                    } else {
+                      onExclude?.(row.editId);
+                    }
+                  }}
+                  className="shrink-0 h-7 w-7 flex items-center justify-center rounded-md border border-theme text-muted hover:text-red-500 hover:border-red-300"
+                >
+                  <Trash2 size={11} />
+                </button>
+              )}
             </>
           ) : isFormulaMode ? (
-          <>
-  <FormulaBox formula={row.formula || ""} />
-  <ComputedChip
-    amount={computedAmount}
-    currencyPrefix={currencyPrefix}
-    fmt={fmt}
-  />
+            <>
+              <FormulaBox formula={row.formula || ""} />
+              <ComputedChip
+                amount={computedAmount}
+                currencyPrefix={currencyPrefix}
+                fmt={fmt}
+              />
 
-  {canDelete && (
-    <button
-      type="button"
-      onClick={() => {
-        if (row.isCustom) {
-          onRemove?.(row.editId);
-        } else {
-          onExclude?.(row.editId);
-        }
-      }}
-      className="shrink-0 h-7 w-7 flex items-center justify-center rounded-md border border-theme text-muted hover:text-red-500 hover:border-red-300"
-    >
-      <Trash2 size={11} />
-    </button>
-  )}
-</>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (row.isCustom) {
+                      onRemove?.(row.editId);
+                    } else {
+                      onExclude?.(row.editId);
+                    }
+                  }}
+                  className="shrink-0 h-7 w-7 flex items-center justify-center rounded-md border border-theme text-muted hover:text-red-500 hover:border-red-300"
+                >
+                  <Trash2 size={11} />
+                </button>
+              )}
+            </>
           ) : (
-           <>
-  <NumericInput
-    name={row.editId}
-    value={row.amount}
-    onChange={(val) => editable && onAmountChange?.(row.editId, val)}
-    disabled={!editable || isPendingCustom || isLoadingDetails}
-    decimalScale={2}
-    className="w-full !h-7 !text-[11px] !px-2"
-  />
+            <>
+              <NumericInput
+                name={row.editId}
+                value={row.amount}
+                onChange={(val) => editable && onAmountChange?.(row.editId, val)}
+                disabled={!editable || isPendingCustom || isLoadingDetails}
+                decimalScale={2}
+                className="w-full !h-7 !text-[11px] !px-2"
+              />
 
-  {canDelete && (
-    <button
-      type="button"
-      onClick={() => {
-        if (row.isCustom) {
-          onRemove?.(row.editId);
-        } else {
-          onExclude?.(row.editId);
-        }
-      }}
-      className="shrink-0 h-7 w-7 flex items-center justify-center rounded-md border border-theme text-muted hover:text-red-500 hover:border-red-300"
-    >
-      <Trash2 size={11} />
-    </button>
-  )}
-</>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (row.isCustom) {
+                      onRemove?.(row.editId);
+                    } else {
+                      onExclude?.(row.editId);
+                    }
+                  }}
+                  className="shrink-0 h-7 w-7 flex items-center justify-center rounded-md border border-theme text-muted hover:text-red-500 hover:border-red-300"
+                >
+                  <Trash2 size={11} />
+                </button>
+              )}
+            </>
           )}
         </div>
       )}

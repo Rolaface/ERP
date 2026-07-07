@@ -335,6 +335,7 @@ export function buildEmployeePayload(
 
   // Computed salary result stashed by CompensationTab
   const salaryResult: SalaryResult | null = formData._salaryResult ?? null;
+const customCompensationPayload = formData._customCompensationPayload ?? null;
 
   return {
     // ── Personal ──────────────────────────────────────────────
@@ -397,6 +398,12 @@ export function buildEmployeePayload(
     ctc: (salaryResult?.gross ?? Number(formData.grossSalary) ?? 0) * 12,
     salary_mode: mapSalaryMode(formData.paymentMethod || ""),
     salary_currency: formData.currency || null,
+     ...(customCompensationPayload && {                                    
+      is_custom_salary:         true,
+      custom_salary_components: customCompensationPayload.custom_salary_components,
+      base_salary:              customCompensationPayload.base_salary,
+      income_tax_slab:          customCompensationPayload.income_tax_slab,
+    }),
     ...(isEditMode &&
       formData._salaryChanged &&
       formData.effectiveFrom && {

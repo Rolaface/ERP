@@ -17,7 +17,8 @@ import {
   Play,
   RotateCcw,
   Trash2,
-  XCircle
+  XCircle,
+  Receipt
   
 } from "lucide-react";
 
@@ -41,6 +42,7 @@ export const ACTION_ICONS = {
   PAYROLL_PREVIEW: <Eye size={16} />,
 PAYROLL_RUN: <Play size={16} />,
 PAYROLL_REVERT: <RotateCcw size={16} />,
+SALES_INVOICE: <Receipt size={16} />,
 } as const;
 
 export const getStatusActionIcon = (status: string): ReactNode | undefined => {
