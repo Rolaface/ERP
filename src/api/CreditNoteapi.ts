@@ -29,6 +29,22 @@ remarks?:string
   }[];
 }
  
+export interface CreditNoteReasonOption {
+  code: string;
+  reason: string;
+}
+
+export async function getCreditNoteReasons(): Promise<CreditNoteReasonOption[]> {
+  const resp: AxiosResponse = await api.get(
+    `/resource/Custom Sales Invoice Credit Note Reason`,
+    { params: { fields: JSON.stringify(["*"]) } },
+  );
+  const json = resp.data ?? {};
+  return (json.data || []).map((d: any) => ({
+    code: d.name,
+    reason: d.reason ?? d.credit_note_reason ?? d.name,
+  }));
+}
  
 export interface CreditNoteResponse {
   status_code: number;
