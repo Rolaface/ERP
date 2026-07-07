@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
-import { createCreditNote, updateCreditNote } from "../api/CreditNoteapi";
+import { createCreditNote, getCreditNoteReasons, updateCreditNote } from "../api/CreditNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 import { useUnsavedChanges } from "./useUnsavedChanges";
@@ -67,29 +67,20 @@ export function useCreditNoteForm(
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [reasonOptions, setReasonOptions] = useState<{ code: string; reason: string }[]>([]); const [reasonsLoading, setReasonsLoading] = useState(false);
   // ── Fetch credit note reasons ────────────────────────────────────────────
-  useEffect(() => {
-    const fetchReasons = async () => {
-      setReasonsLoading(true);
-      try {
-        const res = await fetch(
-          `/api/resource/Custom Sales Invoice Credit Note Reason?fields=["*"]`,
-          { credentials: "include" },
-        );
-        const json = await res.json();
-        const values = (json.data || []).map((d: any) => ({
-          code: d.name,
-          reason: d.reason ?? d.credit_note_reason ?? d.name,
-        }));
-
-        setReasonOptions(values);
-      } catch (err) {
-        console.error("Failed to fetch credit note reasons", err);
-      } finally {
-        setReasonsLoading(false);
-      }
-    };
-    fetchReasons();
-  }, []);
+ useEffect(() => {
+  const fetchReasons = async () => {
+    setReasonsLoading(true);
+    try {
+      const values = await getCreditNoteReasons();
+      setReasonOptions(values);
+    } catch (err) {
+      console.error("Failed to fetch credit note reasons", err);
+    } finally {
+      setReasonsLoading(false);
+    }
+  };
+  fetchReasons();
+}, []);
 
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
