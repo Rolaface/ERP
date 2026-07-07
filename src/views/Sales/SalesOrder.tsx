@@ -32,6 +32,7 @@ import {
   getSalesOrderById,
   updateSalesOrderStatus,
   deleteSalesOrderById,
+  createSalesSiFromSo,
 } from "../../api/SalesOrder/salesOrderAPi";
 
 import { getPdf } from "../../api/PDF/pdfUtilApi";
@@ -377,6 +378,47 @@ const SalesOrdersTable: React.FC<SalesOrderTableProps> = ({
     }
   };
 
+  const handleCreateInvoice = async (
+  orderNumber: string,
+  e?: React.MouseEvent,
+) => {
+  e?.stopPropagation();
+
+  const result = await fireManagedSwal({
+    icon: "question",
+    title: "Create Sales Invoice?",
+    text: `Create a Sales Invoice from ${orderNumber}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#22c55e",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, create",
+    reverseButtons: true,
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    showLoading("Creating Sales Invoice...");
+
+    const res = await createSalesSiFromSo(orderNumber);
+    const statusCode = res?.message?.status_code || res?.status_code;
+
+    if (statusCode !== 201 && statusCode !== 200) {
+      closeSwal();
+      showApiError(
+        res?.message?.message || res?.message || "Failed to create Sales Invoice",
+      );
+      return;
+    }
+
+    closeSwal();
+    showSuccess(res?.message?.message || res?.message || "Sales Invoice created successfully");
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+
   const fetchAllForExport = async (): Promise<SalesOrderSummary[]> => {
     let allData: SalesOrderSummary[] = [];
     let current = 1;
@@ -614,6 +656,15 @@ const SalesOrdersTable: React.FC<SalesOrderTableProps> = ({
                 icon: ACTION_ICONS.PDF,
                 onClick: () => handlePreviewSalesOrderPDF(so.orderNumber),
               },
+              ...(so.status !== "Draft" && so.status !== "Cancelled"
+  ? [
+      {
+        label: "Create Sales Invoice",
+        icon: ACTION_ICONS.SALES_INVOICE, 
+        onClick: () => handleCreateInvoice(so.orderNumber),
+      },
+    ]
+  : []),
               ...(STATUS_ACTIONS[so.status as string] ?? []).map((entry) => ({
                 label: entry.label,
                 // icon: getStatusActionIcon(entry.action),

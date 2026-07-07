@@ -76,3 +76,10 @@ export async function editSalesOrder(
   );
   return resp.data;
 }
+
+export async function createSalesSiFromSo(soId: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    `${SalesOrderAPI.createSiFromSo}?so_id=${encodeURIComponent(soId)}`,
+  );
+  return resp.data;
+}
