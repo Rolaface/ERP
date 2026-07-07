@@ -51,6 +51,10 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
     reset,
     handleSubmit,
     handleCloseWithConfirm,
+    reasonOptions,
+    reasonsLoading,     
+    setReason,
+    setDescription
   } = useCreditNoteForm(onSubmit, onClose, initialData, isEdit);
 
   const handleClose = () => handleCloseWithConfirm(onClose, resolvedModalId);
@@ -91,6 +95,11 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
         onWarehouseDefault={handleWarehouseDefault}
         onRemoveItem={removeItem}
         onToggleUpdateStock={toggleUpdateStock}
+        reasonOptions={reasonOptions}      
+        reasonsLoading={reasonsLoading}     
+        onReasonChange={setReason} 
+        onDescriptionChange={setDescription} 
+
       />
     ),
     [
@@ -103,6 +112,10 @@ const CreateCreditNoteModal: React.FC<CreateCreditNoteModalProps> = ({
       handleWarehouseDefault,
       removeItem,
       toggleUpdateStock,
+      reasonOptions,
+      reasonsLoading,
+      setReason,
+      setDescription
     ],
   );
 

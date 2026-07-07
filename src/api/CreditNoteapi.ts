@@ -13,6 +13,13 @@ export interface CreditNotePayload {
   company: string;
   update_stock: 0 | 1;
   update_outstanding_for_self: 0 | 1;
+  //   remarks?: {             
+  //   name: string;
+  //   reason: string;
+  //   code:string;
+  //   description: string;
+  // };
+remarks?:string
   items: {
     item_code: string;
     qty: number;          // negative number
@@ -22,6 +29,22 @@ export interface CreditNotePayload {
   }[];
 }
  
+export interface CreditNoteReasonOption {
+  code: string;
+  reason: string;
+}
+
+export async function getCreditNoteReasons(): Promise<CreditNoteReasonOption[]> {
+  const resp: AxiosResponse = await api.get(
+    `/resource/Custom Sales Invoice Credit Note Reason`,
+    { params: { fields: JSON.stringify(["*"]) } },
+  );
+  const json = resp.data ?? {};
+  return (json.data || []).map((d: any) => ({
+    code: d.name,
+    reason: d.reason ?? d.credit_note_reason ?? d.name,
+  }));
+}
  
 export interface CreditNoteResponse {
   status_code: number;

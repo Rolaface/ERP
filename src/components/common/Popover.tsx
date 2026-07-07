@@ -48,7 +48,7 @@ export function usePopoverContext() {
 
 interface PopoverProps {
   /** Element the popover is anchored to. */
-  triggerRef: React.RefObject<HTMLElement>;
+  triggerRef: React.RefObject<HTMLElement | null>;
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;

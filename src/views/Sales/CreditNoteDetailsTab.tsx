@@ -155,6 +155,11 @@ export interface CreditNoteDetailsTabProps {
   onWarehouseDefault: (index: number, warehouse: string) => void;
   onRemoveItem: (index: number) => void;
   onToggleUpdateStock: () => void;
+ reasonOptions: { code: string; reason: string }[];      
+ reasonsLoading: boolean;             
+onReasonChange: (reason: string, code: string) => void;  
+  onDescriptionChange: (description: string) => void;
+
 }
 
 // ─── Column headers ───────────────────────────────────────────────────────────
@@ -210,6 +215,10 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
   onWarehouseDefault,
   onRemoveItem,
   onToggleUpdateStock,
+  reasonOptions,     
+  reasonsLoading,
+  onReasonChange, 
+  onDescriptionChange
 }) => {
   const [page, setPage] = useState(0);
 
@@ -400,6 +409,45 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
       loading={invoiceLoading}  
     />
   </div>
+        <div className="flex flex-col gap-1 w-full sm:w-[220px]">
+          <label className="text-[11px] font-medium text-muted">
+            Credit Note Reason <span className="text-danger">*</span>
+          </label>
+         <select
+  name="reason"
+  value={form.reason || ""}
+  onChange={(e) => {
+    const selected = reasonOptions.find((r) => r.reason === e.target.value);
+    onReasonChange(e.target.value, selected?.code ?? "");
+  }}
+  disabled={reasonsLoading}
+  className="h-[30px] border border-theme rounded px-2 bg-card text-[11px] text-main outline-none focus:ring-1 focus:ring-primary"
+>
+  <option value="" disabled>
+    {reasonsLoading ? "Loading…" : "Select reason…"}
+  </option>
+  {reasonOptions.map((r) => (
+    <option key={r.code} value={r.reason}>
+      {r.reason}
+    </option>
+  ))}
+</select>
+        </div>
+        {form.reason === "Other (Provide other reason in brief)" && (
+          <div className="flex flex-col gap-1 w-full sm:w-[260px]">
+            <label className="text-[11px] font-medium text-muted">
+              Description <span className="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              name="description"
+              placeholder="Brief reason…"
+              value={form.description || ""}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              className="h-[30px] border border-theme rounded px-2 bg-card text-[11px] text-main outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        )}
 
   <div className="flex flex-col justify-end">
     <label className="text-[11px] text-transparent select-none">‎</label>

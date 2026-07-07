@@ -248,6 +248,8 @@ const CreditNotesTable: React.FC = () => {
     setDrawerData(null);
     try {
       const res = await getSalesInvoiceById(noteNo);
+          console.log("Full invoice detail response:", res?.message?.data); // 👈 yeh line add karo
+
       if (res?.message?.status_code === 200) {
         setDrawerData(res.message.data as InvoiceDetail);
       }

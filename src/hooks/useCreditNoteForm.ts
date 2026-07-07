@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
-import { createCreditNote, updateCreditNote } from "../api/CreditNoteapi";
+import { createCreditNote, getCreditNoteReasons, updateCreditNote } from "../api/CreditNoteapi";
 import { showApiError, showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 import { useUnsavedChanges } from "./useUnsavedChanges";
@@ -33,6 +33,9 @@ export interface CreditNoteFormState {
   return_against: string;
   customer: CustomerMeta | null;
   update_stock: boolean;
+  reason: string;
+  code: string;
+  description: string;
   items: CreditNoteItem[];
   exchange_rate: number;
 }
@@ -40,10 +43,14 @@ export interface CreditNoteFormState {
 const EMPTY_FORM: CreditNoteFormState = {
   return_against: "",
   customer: null,
+  reason: "",
+  code: "",
+  description: "",
   update_stock: true,
   items: [],
   exchange_rate: 1, 
 };
+
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -58,61 +65,62 @@ export function useCreditNoteForm(
   const [form, setForm] = useState<CreditNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [reasonOptions, setReasonOptions] = useState<{ code: string; reason: string }[]>([]); const [reasonsLoading, setReasonsLoading] = useState(false);
+  // ── Fetch credit note reasons ────────────────────────────────────────────
+ useEffect(() => {
+  const fetchReasons = async () => {
+    setReasonsLoading(true);
+    try {
+      const values = await getCreditNoteReasons();
+      setReasonOptions(values);
+    } catch (err) {
+      console.error("Failed to fetch credit note reasons", err);
+    } finally {
+      setReasonsLoading(false);
+    }
+  };
+  fetchReasons();
+}, []);
 
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
-  // useEffect(() => {
-  //   if (!initialData) return;
-
-  //   setForm({
-  //     return_against: initialData.return_against || "",
-  //     customer: {
-  //       id: initialData.customer || "",
-  //       name: initialData.customer || "",
-  //     },
-  //     update_stock: !!initialData.update_stock,
-  //     items: (initialData.items || []).map((it: any) => ({
-  //       item_code: it.item_code,
-  //       item_name: it.item_name,
-  //       qty: Number(it.qty),
-  //       rate: Number(it.rate),
-  //       batch_no: it.batch_no || "",
-  //       warehouse: it.warehouse || "",
-  //     })),
-  //   });
-  //  }, [initialData]);
-  
-   useEffect(() => {
+  useEffect(() => {
     if (!initialData) return;
-    
+
+    let parsedRemarks: { name?: string; reason?: string; code?: string; description?: string } = {};
+    if (typeof initialData.remarks === "string" && initialData.remarks.trim()) {
+      try {
+        parsedRemarks = JSON.parse(initialData.remarks);
+      } catch {
+        parsedRemarks = {};
+      }
+    } else if (initialData.remarks && typeof initialData.remarks === "object") {
+      parsedRemarks = initialData.remarks;
+    }
+
     setForm({
-      // Maps the document ID to return_against
       return_against: initialData.return_against || initialData.id || initialData.piId || "",
-      
-      // Changed back to customer for Sales Invoice/Credit Note
       customer: {
         id: initialData.customerId || initialData.customer || "",
         name: initialData.customerName || initialData.customer_name || initialData.customer || "",
       },
-      
-      // Maps updateStock (handles boolean or 1/0)
-      update_stock: initialData.updateStock !== undefined 
-        ? !!initialData.updateStock 
+      update_stock: initialData.updateStock !== undefined
+        ? !!initialData.updateStock
         : !!initialData.update_stock,
-        
-      // Maps item array with camelCase fallbacks
+      reason: initialData.reason || parsedRemarks.reason || parsedRemarks.name || "",
+      code: initialData.code || parsedRemarks.code || "",
+      description: initialData.description || parsedRemarks.description || "",
       items: (initialData.items || []).map((it: any) => ({
         item_code: it.itemCode || it.item_code || "",
         item_name: it.itemName || it.item_name || "",
-        // NOTE: Used Math.abs() so the -500 from the API shows as 500 in your UI
-        qty: Math.abs(Number(it.quantity ?? it.qty ?? 0)), 
+        qty: Math.abs(Number(it.quantity ?? it.qty ?? 0)),
         rate: Number(it.rate ?? 0),
         batch_no: it.batchNo || it.batch_no || "",
         warehouse: it.warehouse || "",
       })),
-      
-      exchange_rate: Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,  
+
+      exchange_rate: Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,
     });
   }, [initialData]);
 
@@ -244,6 +252,19 @@ export function useCreditNoteForm(
     markDirty();
   }, [markDirty]);
 
+  const setReason = useCallback((reason: string, code: string) => {
+    setForm((prev) => ({
+      ...prev,
+      reason,
+      code,
+      description: reason === "Other (Provide other reason in brief)" ? prev.description : "",
+    }));
+    markDirty();
+  }, [markDirty]);
+  const setDescription = useCallback((description: string) => {
+    setForm((prev) => ({ ...prev, description }));
+    markDirty();
+  }, [markDirty]);
   // ── Reset ────────────────────────────────────────────────────────────────
 
   const reset = useCallback(() => {
@@ -254,6 +275,13 @@ export function useCreditNoteForm(
   // ── Validation ───────────────────────────────────────────────────────────
 
   const validate = useCallback((): string | null => {
+    if (!form.reason) return "Please select a credit note reason";
+    if (
+      form.reason === "Other (Provide other reason in brief)" &&
+      !form.description.trim()
+    ) {
+      return "Please provide a brief description for the reason";
+    }
     if (!form.return_against) return "Please select an invoice";
     if (!form.customer?.id)
       return "Customer could not be resolved from the selected invoice";
@@ -284,7 +312,13 @@ export function useCreditNoteForm(
         customer: form.customer!.id,
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
-        update_outstanding_for_self: 0 as const,
+        update_outstanding_for_self: 1 as const,
+        remarks: JSON.stringify({
+          name: form.reason,
+          reason: form.reason,
+          code: form.code,
+          description: form.description,
+        }),
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
@@ -296,28 +330,11 @@ export function useCreditNoteForm(
 
       setSaving(true);
       try {
-        // const res = isEdit && initialData?.name
-        //   ? await updateCreditNote(initialData.name, {
-        //     is_return: 1,
-        //     return_against: form.return_against,
-        //     customer: form.customer!.id,
-        //     company: companyName,
-        //     update_stock: form.update_stock ? 1 : 0,
-        //     update_outstanding_for_self: 1,
-        //     items: form.items.map((it) => ({
-        //       item_code: it.item_code,
-        //       qty: Number(it.qty),
-        //       rate: Number(it.rate),
-        //       ...(it.batch_no ? { batch_no: it.batch_no } : {}),
-        //       warehouse: it.warehouse,
-        //     })),
-        //   })
-        //   : await createCreditNote(payload);
         const docId = initialData?.name || initialData?.piId || initialData?.id;
-        
-                const res = isEdit && docId
-                  ? await updateCreditNote(docId, payload)
-                  : await createCreditNote(payload);
+
+        const res = isEdit && docId
+          ? await updateCreditNote(docId, payload)
+          : await createCreditNote(payload);
 
         if (!res || ![200, 201].includes(res.status_code)) {
           const action = isEdit ? "update" : "creation";
@@ -348,6 +365,7 @@ export function useCreditNoteForm(
         useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
       } catch (err: any) {
         console.error("Credit note save failed", err);
+        console.error("Backend response:", err?.response?.data);
         showApiError(err);
       } finally {
         setSaving(false);
@@ -378,6 +396,10 @@ export function useCreditNoteForm(
     handleSubmit,
     validate,
     // expose guard helpers so the modal can wire up close protection
+    reasonOptions,
+    reasonsLoading,
+    setReason,
+    setDescription,
     markDirty,
     resetDirty,
     handleCloseWithConfirm,

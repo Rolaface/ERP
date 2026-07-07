@@ -286,6 +286,10 @@ export const API = {
     getAllItemGroup: `${ERP_BASE}/api/method/custom_api.api.search.get_item_groups`,
     packaging_uom: `${ERP_BASE}/api/resource/Packaging Unit Of Measure`
   },
+  itemClassification: {
+    getAll: `${ERP_BASE}/api/method/custom_api.api.item.item_classification.api.get_classifications`,
+    getByCode: `${ERP_BASE}/api/method/custom_api.api.item.item_classification.api.get_classification_by_code`,
+  },
   /* =========================
    * TAX
    * ========================= */

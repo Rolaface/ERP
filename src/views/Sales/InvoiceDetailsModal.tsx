@@ -27,6 +27,9 @@ export interface InvoiceDetail {
   destnCountryCd?: string;
   billingAddress?: string;
   shippingAddress?: string;
+  reason?: string;
+  remarks?: string,
+  description?: string;
   paymentInformation?: {
     paymentTerms?: string;
     paymentMethod?: string;
@@ -267,6 +270,21 @@ const InvoiceDetailModal: React.FC<Props> = ({
   const taxTotal = data?.total_tax ?? data?.taxTotal ?? 0;
   const grandTotal = data?.grand_total ?? 0;
   const currency = data?.currency ?? "USD";
+const parsedRemarks = (() => {
+  if (!data?.remarks) return null;
+  if (typeof data.remarks === "string") {
+    try {
+      return JSON.parse(data.remarks);
+    } catch {
+      return null;
+    }
+  }
+  return data.remarks;
+})();
+
+
+const displayReason = parsedRemarks?.reason ?? data?.reason;
+const displayDescription = parsedRemarks?.description ?? data?.description;
   const invoiceCharges =
     (data as any)?.invoiceCharges || (data as any)?.charges || [];
 
@@ -652,6 +670,27 @@ const InvoiceDetailModal: React.FC<Props> = ({
                 <F label="Customer" value={data.customerName} />
                 <F label="TPIN" value={data.customerTpin || null} mono />
               </div>
+              {(displayReason) && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: displayDescription ? "1fr 1fr" : "1fr",
+                    gap: 10,
+                    marginBottom: 7,
+                  }}
+                >
+                  <F
+                    label="Credit Note Reason"
+                    value={displayReason}
+                  />
+                  {displayDescription && (
+                    <F
+                      label="Description"
+                      value={displayDescription}
+                    />
+                  )}
+                </div>
+              )}
               <div
                 style={{
                   display: "grid",
