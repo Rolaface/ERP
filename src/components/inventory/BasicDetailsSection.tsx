@@ -8,7 +8,7 @@ import type {
 } from "./itemModalTypes";
 import { getBrands, getItemGroups } from "../../api/itemApi";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
-import HsnSearchPopover from "./Hsnsearchmodal";
+import HsnSearchPopover from "./Hsnsearchpopover";
 
 interface BasicDetailsSectionProps {
   form: ItemFormData;
@@ -118,6 +118,7 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           triggerRef={hsnTriggerRef}
           open={hsnPopoverOpen}
           onClose={() => setHsnPopoverOpen(false)}
+          value={form.itemClassCode}
           onSelect={handleHsnSelect}
         />
       </>
