@@ -156,6 +156,15 @@ export function useCreditNoteForm(
     [],
   );
 
+  const fetchReasonOptions = useCallback(async (query: string) => {
+  try {
+    const values = await getCreditNoteReasons(query);
+    return values;
+  } catch (err) {
+    console.error("Failed to fetch credit note reasons", err);
+    return [];
+  }
+}, []);
   // ── Invoice select → fetch full details & populate form ─────────────────
 
   const handleInvoiceSelect = useCallback(async (opt: InvoiceOption) => {
@@ -398,6 +407,7 @@ export function useCreditNoteForm(
     // expose guard helpers so the modal can wire up close protection
     reasonOptions,
     reasonsLoading,
+    fetchReasonOptions,
     setReason,
     setDescription,
     markDirty,
