@@ -82,6 +82,21 @@ export function useCreditNoteForm(
   fetchReasons();
 }, []);
 
+// ── Reason search ─────────────────────────────────────────────────────────
+
+const fetchReasonOptions = useCallback(
+  async (query: string): Promise<{ code: string; reason: string }[]> => {
+    try {
+      const values = await getCreditNoteReasons(query);
+      return values;
+    } catch (err) {
+      console.error("Failed to fetch credit note reasons", err);
+      return [];
+    }
+  },
+  [],
+);
+
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
@@ -403,5 +418,6 @@ export function useCreditNoteForm(
     markDirty,
     resetDirty,
     handleCloseWithConfirm,
+    fetchReasonOptions
   };
 }
