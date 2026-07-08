@@ -24,7 +24,10 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
     // Popover anchors to this button, not to the screen center.
     const hsnTriggerRef = useRef<HTMLButtonElement>(null);
 
-    const fetchBrandOptions = useCallback(async (q: string) => getBrands(q), []);
+    const fetchBrandOptions = useCallback(
+      async (q: string) => getBrands(q),
+      [],
+    );
 
     const handleHsnSelect = useCallback(
       (code: string) => {
@@ -36,9 +39,6 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
     return (
       <>
         <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-5">
-
-         
-          
           {/* Item Category */}
           <SearchSelect2
             label="Item Category"
@@ -88,29 +88,36 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
             disabled={isServiceItem}
           />
           {/* HSN Code — trailing icon button doubles as the popover anchor */}
-          <ModalInput
-            label="HSN Code"
-            name="itemClassCode"
-            value={form.itemClassCode ?? ""}
-            onChange={onFormChange}
-            placeholder="e.g. 84713010"
-            required
-            error={errors?.itemClassCode}
-            trailingIcon={
-              <button
-                ref={hsnTriggerRef}
-                type="button"
-                onClick={() => setHsnPopoverOpen((v) => !v)}
-                aria-label="Search HSN code"
-                tabIndex={-1}
-                className="rounded-md p-1 text-muted transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--input-border-focus)]"
-              >
-                <ScanSearch size={14} strokeWidth={2} />
-              </button>
-            }
-          />
+          {/* HSN Code — trailing button is a full-height attached action zone,
+    visually separated by a divider so it reads as "search this field",
+    not just a decorative icon. */}
+<ModalInput
+  label="HSN Code"
+  name="itemClassCode"
+  value={form.itemClassCode ?? ""}
+  onChange={onFormChange}
+  placeholder="Search or tpye..."
+  required
+  error={errors?.itemClassCode}
+  trailingIcon={
+    <button
+      ref={hsnTriggerRef}
+      type="button"
+      onClick={() => setHsnPopoverOpen((v) => !v)}
+      aria-label="Browse HSN codes"
+      title="Browse HSN codes"
+      tabIndex={-1}
+      className="group flex h-full w-7 shrink-0 cursor-pointer items-center justify-center rounded-r border-l border-theme bg-primary/5 text-primary transition-colors hover:bg-primary/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--input-border-focus)] focus-visible:ring-inset"
+    >
+      <ScanSearch
+        size={13}
+        strokeWidth={2}
+        className="transition-transform group-hover:scale-110 group-active:scale-95"
+      />
+    </button>
+  }
+/>
         </div>
-        
 
         {/* Anchored to the button above — opens beside the field, not as a
             second full-screen modal. */}

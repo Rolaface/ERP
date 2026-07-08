@@ -34,18 +34,7 @@ export interface CreditNoteReasonOption {
   reason: string;
 }
 
-export async function getCreditNoteReasons(): Promise<CreditNoteReasonOption[]> {
-  const resp: AxiosResponse = await api.get(
-    `/resource/Custom Sales Invoice Credit Note Reason`,
-    { params: { fields: JSON.stringify(["*"]) } },
-  );
-  const json = resp.data ?? {};
-  return (json.data || []).map((d: any) => ({
-    code: d.name,
-    reason: d.reason ?? d.credit_note_reason ?? d.name,
-  }));
-}
- 
+
 export interface CreditNoteResponse {
   status_code: number;
   data: Record<string, any> | null;
@@ -208,4 +197,30 @@ export async function getCreditNoteById(invoiceId: string): Promise<any> {
     `${CreditNoteAPI.Credit_note}/${encodeURIComponent(invoiceId)}`
   );
   return resp.data;
+}
+
+export async function getCreditNoteReasons(search: string = ""): Promise<CreditNoteReasonOption[]> {
+  const query = buildListParams({
+    fields: ["*"],
+    search,
+    searchFields: ["reason", "name"],
+  });
+
+  const resp: AxiosResponse = await api.get(
+    `/api/resource/Custom Sales Invoice Credit Note Reason?${query}`,
+  );
+  const json = resp.data ?? {};
+  const list = (json.data || []).map((d: any) => ({
+    code: d.code ?? d.name,
+    reason: d.reason ?? d.credit_note_reason ?? d.name,
+  }));
+
+  // Keep "Other" at the end of the list, rest alphabetically sorted
+  return list.sort((a: CreditNoteReasonOption, b: CreditNoteReasonOption) => {
+    const aIsOther = a.reason.startsWith("Other");
+    const bIsOther = b.reason.startsWith("Other");
+    if (aIsOther && !bIsOther) return 1;
+    if (!aIsOther && bIsOther) return -1;
+    return a.reason.localeCompare(b.reason);
+  });
 }

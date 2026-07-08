@@ -82,6 +82,21 @@ export function useCreditNoteForm(
   fetchReasons();
 }, []);
 
+// ── Reason search ─────────────────────────────────────────────────────────
+
+const fetchReasonOptions = useCallback(
+  async (query: string): Promise<{ code: string; reason: string }[]> => {
+    try {
+      const values = await getCreditNoteReasons(query);
+      return values;
+    } catch (err) {
+      console.error("Failed to fetch credit note reasons", err);
+      return [];
+    }
+  },
+  [],
+);
+
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
@@ -257,7 +272,7 @@ export function useCreditNoteForm(
       ...prev,
       reason,
       code,
-      description: reason === "Other (Provide other reason in brief)" ? prev.description : "",
+      description: code === "07" ? prev.description : "",
     }));
     markDirty();
   }, [markDirty]);
@@ -277,7 +292,7 @@ export function useCreditNoteForm(
   const validate = useCallback((): string | null => {
     if (!form.reason) return "Please select a credit note reason";
     if (
-      form.reason === "Other (Provide other reason in brief)" &&
+      form.code === "07" &&
       !form.description.trim()
     ) {
       return "Please provide a brief description for the reason";
@@ -403,5 +418,6 @@ export function useCreditNoteForm(
     markDirty,
     resetDirty,
     handleCloseWithConfirm,
+    fetchReasonOptions
   };
 }
