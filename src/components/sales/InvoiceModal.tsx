@@ -295,7 +295,7 @@ const {
                     name="dueDate"
                     value={formData.dueDate}
                     required
-                    disabled
+                    // disabled
                     onChange={(name, value) =>
                       actions.handleInputChange({
                         target: { name, value },
