@@ -22,6 +22,7 @@ export interface CreditNoteItem {
   rate: number;
   batch_no: string;
   warehouse: string;
+  conversion_factor: number;
 }
 
 export interface CustomerMeta {
@@ -196,6 +197,7 @@ const fetchReasonOptions = useCallback(
           rate: Number(it.rate) || 0,
           batch_no: it.batchNo ?? "",
           warehouse: it.warehouse ?? "",
+          conversion_factor: Number(it.conversion_factor) || 1,
         }),
       );
 
@@ -340,6 +342,7 @@ const fetchReasonOptions = useCallback(
           rate: Number(it.rate),
           ...(it.batch_no ? { batch_no: it.batch_no } : {}),
           warehouse: it.warehouse,
+          conversion_factor: it.conversion_factor, 
         })),
       };
 
