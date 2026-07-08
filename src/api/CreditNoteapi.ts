@@ -34,15 +34,10 @@ export interface CreditNoteReasonOption {
   reason: string;
 }
 
-export async function getCreditNoteReasons(search: string = ""): Promise<CreditNoteReasonOption[]> {
-  const query = buildListParams({
-    fields: ["*"],
-    search,
-    searchFields: ["reason", "name"],
-  });
-
+export async function getCreditNoteReasons(): Promise<CreditNoteReasonOption[]> {
   const resp: AxiosResponse = await api.get(
-    `/api/resource/Custom Sales Invoice Credit Note Reason?${query}`,
+    `/resource/Custom Sales Invoice Credit Note Reason`,
+    { params: { fields: JSON.stringify(["*"]) } },
   );
   const json = resp.data ?? {};
   return (json.data || []).map((d: any) => ({
@@ -50,6 +45,7 @@ export async function getCreditNoteReasons(search: string = ""): Promise<CreditN
     reason: d.reason ?? d.credit_note_reason ?? d.name,
   }));
 }
+ 
 export interface CreditNoteResponse {
   status_code: number;
   data: Record<string, any> | null;

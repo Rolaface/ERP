@@ -156,9 +156,7 @@ export interface CreditNoteDetailsTabProps {
   onRemoveItem: (index: number) => void;
   onToggleUpdateStock: () => void;
  reasonOptions: { code: string; reason: string }[];      
- reasonsLoading: boolean;     
-  fetchReasonOptions: (q: string) => Promise<{ code: string; reason: string }[]>; 
-        
+ reasonsLoading: boolean;             
 onReasonChange: (reason: string, code: string) => void;  
   onDescriptionChange: (description: string) => void;
 
@@ -220,7 +218,6 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
   reasonOptions,     
   reasonsLoading,
   onReasonChange, 
-  fetchReasonOptions,
   onDescriptionChange
 }) => {
   const [page, setPage] = useState(0);
@@ -392,6 +389,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
     <div className="flex flex-col gap-4 p-3">
 
       {/* ── Top controls ── */}
+     {/* ── Top controls ── */}
 <div className="flex flex-wrap gap-3 items-end">
   <div className="w-full sm:w-[280px]">
     <SearchSelect2
@@ -408,48 +406,49 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
       }}
       placeholder="Search invoice…"
       required
-      loading={invoiceLoading}
+      loading={invoiceLoading}  
     />
   </div>
-
-  <div className="flex flex-col gap-1 w-full sm:w-[220px]">
-    <SearchSelect2
-      label="Credit Note Reason"
-      value={form.reason}
-      onChange={(_: string, option: any) => {
-        const opt = option?.meta;
-        if (opt) onReasonChange(opt.reason, opt.code);
-      }}
-      fetchOptions={async (q) => {
-        const results = await fetchReasonOptions(q);
-        return results.map((r) => ({
-          label: r.reason,
-          value: r.reason,
-          meta: r,
-        }));
-      }}
-      placeholder="Search reason…"
-      required
-      loading={reasonsLoading}
-    />
-  </div>
-
-  {form.reason === "Other (Provide other reason in brief)" && (
-    <div className="flex flex-col gap-1 w-full sm:w-[260px]">
-      <label className="text-[11px] font-medium text-muted">
-        Description <span className="text-danger">*</span>
-      </label>
-      <input
-        type="text"
-        name="description"
-        placeholder="Brief reason…"
-        value={form.description || ""}
-        onChange={(e) => onDescriptionChange(e.target.value)}
-        className="h-[30px] border border-theme rounded px-2 bg-card text-[11px] text-main outline-none focus:ring-1 focus:ring-primary"
-      />
-    </div>
-  )}
-
+        <div className="flex flex-col gap-1 w-full sm:w-[220px]">
+          <label className="text-[11px] font-medium text-muted">
+            Credit Note Reason <span className="text-danger">*</span>
+          </label>
+         <select
+  name="reason"
+  value={form.reason || ""}
+  onChange={(e) => {
+    const selected = reasonOptions.find((r) => r.reason === e.target.value);
+    onReasonChange(e.target.value, selected?.code ?? "");
+  }}
+  disabled={reasonsLoading}
+  className="h-[30px] border border-theme rounded px-2 bg-card text-[11px] text-main outline-none focus:ring-1 focus:ring-primary"
+>
+  <option value="" disabled>
+    {reasonsLoading ? "Loading…" : "Select reason…"}
+  </option>
+  {reasonOptions.map((r) => (
+    <option key={r.code} value={r.reason}>
+      {r.reason}
+    </option>
+  ))}
+</select>
+        </div>
+        {form.reason === "Other (Provide other reason in brief)" && (
+          <div className="flex flex-col gap-1 w-full sm:w-[260px]">
+            <label className="text-[11px] font-medium text-muted">
+              Description <span className="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              name="description"
+              placeholder="Brief reason…"
+              value={form.description || ""}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              className="h-[30px] border border-theme rounded px-2 bg-card text-[11px] text-main outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        )}
+git 
   <div className="flex flex-col justify-end">
     <label className="text-[11px] text-transparent select-none">‎</label>
     <label className="flex items-center gap-2 h-[30px]">
