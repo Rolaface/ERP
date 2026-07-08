@@ -434,8 +434,8 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
     />
   </div>
 
-  {form.reason === "Other (Provide other reason in brief)" && (
-    <div className="flex flex-col gap-1 w-full sm:w-[260px]">
+    {form.code === "07" && (  
+      <div className="flex flex-col gap-1 w-full sm:w-[260px]">
       <label className="text-[11px] font-medium text-muted">
         Description <span className="text-danger">*</span>
       </label>

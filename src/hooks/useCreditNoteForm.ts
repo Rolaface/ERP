@@ -272,7 +272,7 @@ const fetchReasonOptions = useCallback(
       ...prev,
       reason,
       code,
-      description: reason === "Other (Provide other reason in brief)" ? prev.description : "",
+      description: code === "07" ? prev.description : "",
     }));
     markDirty();
   }, [markDirty]);
@@ -292,7 +292,7 @@ const fetchReasonOptions = useCallback(
   const validate = useCallback((): string | null => {
     if (!form.reason) return "Please select a credit note reason";
     if (
-      form.reason === "Other (Provide other reason in brief)" &&
+      form.code === "07" &&
       !form.description.trim()
     ) {
       return "Please provide a brief description for the reason";
