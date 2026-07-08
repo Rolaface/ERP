@@ -413,6 +413,7 @@ export const API = {
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.update_sales_order_status`,
     edit: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.update_sales_order`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.delete_sales_order`,
+    createSiFromSo: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.create_si_from_so`,
   },
 
   /* =========================
