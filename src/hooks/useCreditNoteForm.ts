@@ -329,6 +329,7 @@ const fetchReasonOptions = useCallback(
         customer: form.customer!.id,
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
+        conversion_rate: form.exchange_rate,
         update_outstanding_for_self: 1 as const,
         remarks: JSON.stringify({
           name: form.reason,
