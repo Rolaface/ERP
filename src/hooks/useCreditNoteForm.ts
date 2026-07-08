@@ -207,6 +207,7 @@ const fetchReasonOptions = useCallback(
           id: data.customerId ?? opt.customerId,
           name: data.customerName ?? opt.customerName,
         },
+        exchange_rate: Number(data.exchangeRate ?? data.conversionRate) || 1,
         items: mappedItems,
       }));
     } catch (err) {
