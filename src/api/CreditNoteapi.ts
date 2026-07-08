@@ -211,7 +211,7 @@ export async function getCreditNoteReasons(search: string = ""): Promise<CreditN
   );
   const json = resp.data ?? {};
   const list = (json.data || []).map((d: any) => ({
-    code: d.name,
+    code: d.code ?? d.name,
     reason: d.reason ?? d.credit_note_reason ?? d.name,
   }));
 
