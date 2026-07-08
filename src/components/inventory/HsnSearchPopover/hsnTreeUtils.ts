@@ -4,6 +4,8 @@ export interface HSNNode {
   id: string;
   name: string;
   code?: string;
+  /** Original code for group/parent nodes, retained only for search expansion lookups. */
+  groupCode?: string;
   children?: HSNNode[];
 }
 
@@ -50,6 +52,7 @@ export function buildTreeFromJson(data: any[]): HSNNode[] {
       if (node.children && node.children.length === 0) {
         delete node.children;
       } else if (node.children && node.children.length > 0) {
+        node.groupCode = node.code;
         delete node.code;
         cleanup(node.children);
       }
@@ -82,6 +85,46 @@ export function getBreadcrumbNames(tree: HSNNode[], path: string[]): string[] {
   return names;
 }
 
+/**
+ * Maps every code (leaf or group) to its resolved list of selectable leaves.
+ * - Leaf code -> a single-item array containing itself, with trail.
+ * - Group code -> all descendant leaves under it, with trail.
+ * Used to expand a backend search match into real, selectable HSN codes,
+ * whether the match landed on a leaf or an intermediate category.
+ */
+export function buildCodeExpansionMap(tree: HSNNode[]): Map<string, HSNLeaf[]> {
+  const map = new Map<string, HSNLeaf[]>();
+
+  function collectLeaves(nodes: HSNNode[], trail: string[]): HSNLeaf[] {
+    let leaves: HSNLeaf[] = [];
+    for (const node of nodes) {
+      if (node.code && !node.children) {
+        leaves.push({ id: node.id, name: node.name, code: node.code, trail });
+      } else if (node.children) {
+        leaves = leaves.concat(collectLeaves(node.children, [...trail, node.name]));
+      }
+    }
+    return leaves;
+  }
+
+  function walk(nodes: HSNNode[], trail: string[]) {
+    for (const node of nodes) {
+      if (node.code && !node.children) {
+        map.set(node.code, [{ id: node.id, name: node.name, code: node.code, trail }]);
+      } else if (node.children) {
+        const groupTrail = [...trail, node.name];
+        if (node.groupCode) {
+          map.set(node.groupCode, collectLeaves(node.children, groupTrail));
+        }
+        walk(node.children, groupTrail);
+      }
+    }
+  }
+
+  walk(tree, []);
+  return map;
+}
+
 export function toLegacyShape(items: ItemClassification[]) {
   return items
     .filter((i) => i.is_active)
@@ -100,6 +143,6 @@ export function toSearchLeaf(items: ItemClassification[]): HSNLeaf[] {
       id: i.id,
       name: i.class_name,
       code: i.class_code,
-      trail: [], // backend search is flat; no parent-chain available
+      trail: [],
     }));
 }
