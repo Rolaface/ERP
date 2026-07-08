@@ -448,7 +448,6 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
             />
           </div>
         )}
-git 
   <div className="flex flex-col justify-end">
     <label className="text-[11px] text-transparent select-none">‎</label>
     <label className="flex items-center gap-2 h-[30px]">
