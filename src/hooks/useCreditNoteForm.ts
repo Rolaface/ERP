@@ -304,10 +304,10 @@ const fetchReasonOptions = useCallback(
     if (!form.customer?.id)
       return "Customer could not be resolved from the selected invoice";
     if (form.items.length === 0) return "At least one item is required";
-    for (const it of form.items) {
-      if (!it.warehouse)
-        return `Warehouse is required for: ${it.item_name || it.item_code}`;
-    }
+    // for (const it of form.items) {
+    //   if (!it.warehouse)
+    //     return `Warehouse is required for: ${it.item_name || it.item_code}`;
+    // }
     return null;
   }, [form]);
 
