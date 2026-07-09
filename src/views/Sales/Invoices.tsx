@@ -61,7 +61,7 @@ type OutletContextType = {
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   Draft: ["Approved"],
-  Paid: [],
+  Paid: ["Cancelled"],
   Cancelled: [],
   Approved: ["Paid", "Cancelled"],
   Unpaid: ["Cancelled"],
