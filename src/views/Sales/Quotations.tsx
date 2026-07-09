@@ -45,7 +45,7 @@ import { ACTION_ICONS, getStatusActionIcon } from "../../components/UI_Utils/sta
 import { REFRESH_KEYS, useDataRefreshStore } from "../../store/dataRefreshStore";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
-
+import { useDocumentConversion } from "../../hooks/useDocumentConversion";
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
 
 type OutletContextType = {
@@ -89,7 +89,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
   const [isFetching] = useState(false);
   const [ ,setCompany] = useState<any>(null);
   const { can } = usePermission();
-
+const createInvoiceFromQuote = useDocumentConversion("quoteToSi");
   // ── Pagination state (server)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -423,51 +423,9 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
     }
   };
 
-  const handleCreateInvoice = async (
-  quotationNumber: string,
-  e?: React.MouseEvent,
-) => {
+const handleCreateInvoice = (quotationNumber: string, e?: React.MouseEvent) => {
   e?.stopPropagation();
-
-  const result = await fireManagedSwal({
-    icon: "question",
-    title: "Create Sales Invoice?",
-    text: `Create a Sales Invoice from ${quotationNumber}?`,
-    showCancelButton: true,
-    confirmButtonColor: "#22c55e",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, create",
-    reverseButtons: true,
-  });
-
-  if (!result.isConfirmed) return;
-
-  try {
-    showLoading("Creating Sales Invoice...");
-
-    const res = await createSiFromQuotation(quotationNumber);
-    const statusCode = res?.message?.status_code || res?.status_code;
-    const data = res?.message?.data || res?.data;
-
-    if (statusCode !== 201 && statusCode !== 200) {
-      closeSwal();
-      showApiError(
-        res?.message?.message || res?.message || "Failed to create Sales Invoice",
-      );
-      return;
-    }
-
-    closeSwal();
-    // showSuccess(res?.message?.message || res?.message || "Sales Invoice created successfully");
-     showSuccess(
-      data?.id
-        ? `Sales Invoice ${data.id} created successfully from Quotation ${quotationNumber}`
-        : res?.message?.message || res?.message || "Sales Invoice created successfully",
-    );
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
+  return createInvoiceFromQuote(quotationNumber);
 };
 
   const fetchAllForExport = async (): Promise<QuotationSummary[]> => {
