@@ -402,6 +402,7 @@ const SalesOrdersTable: React.FC<SalesOrderTableProps> = ({
 
     const res = await createSalesSiFromSo(orderNumber);
     const statusCode = res?.message?.status_code || res?.status_code;
+    const data = res?.message?.data || res?.data;
 
     if (statusCode !== 201 && statusCode !== 200) {
       closeSwal();
@@ -412,7 +413,12 @@ const SalesOrdersTable: React.FC<SalesOrderTableProps> = ({
     }
 
     closeSwal();
-    showSuccess(res?.message?.message || res?.message || "Sales Invoice created successfully");
+    // showSuccess(res?.message?.message || res?.message || "Sales Invoice created successfully");
+    showSuccess(
+          data?.id
+            ? `Sales Invoice ${data.id} created successfully from Sales Order ${orderNumber}`
+            : res?.message?.message || res?.message || "Sales Invoice created successfully",
+        );
   } catch (err) {
     closeSwal();
     showApiError(err);

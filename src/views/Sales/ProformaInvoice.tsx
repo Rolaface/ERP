@@ -339,11 +339,16 @@ const handleCreateInvoice = async (
     }
 
     closeSwal();
+    // showSuccess(
+    //   data?.id
+    //     ? `Sales Invoice ${data.id} created successfully`
+    //     : res?.message?.message || res?.message || "Sales Invoice created successfully",
+    // );
     showSuccess(
-      data?.id
-        ? `Sales Invoice ${data.id} created successfully`
-        : res?.message?.message || res?.message || "Sales Invoice created successfully",
-    );
+  data?.id
+    ? `Sales Invoice ${data.id} created successfully from Profroma Invoice ${proformaId}`
+    : res?.message?.message || res?.message || "Sales Invoice created successfully",
+);
   } catch (err) {
     closeSwal();
     showApiError(err);
