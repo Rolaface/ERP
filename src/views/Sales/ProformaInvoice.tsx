@@ -49,6 +49,7 @@ import { openSendEmailModal } from "../../store/modalStore";
 
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import { useDocumentConversion } from "../../hooks/useDocumentConversion";
 
 type OutletContextType = {
   openProformaCreate: () => void;
@@ -128,7 +129,7 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   const [previewPdfBlob, setPreviewPdfBlob] = useState<Blob | null>(null);
   const [previewPdfId, setPreviewPdfId] = useState<string | null>(null);
-
+const createInvoiceFromProforma = useDocumentConversion("proformaToSi");
 
   // ── Currency symbols + per-currency number formatting for the currencies
   // present in the currently loaded page of invoices.
@@ -299,55 +300,14 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
     sortBy: string;
     sortOrder: "asc" | "desc";
   }) => {
-    setSortBy(colKey); // ← store "proformaId", not "proformaId" (same here, but correct pattern)
+    setSortBy(colKey); 
     setSortOrder(order);
     setPage(1);
   };
 
-const handleCreateInvoice = async (
-  proformaId: string,
-  e?: React.MouseEvent,
-) => {
+const handleCreateInvoice = (proformaId: string, e?: React.MouseEvent) => {
   e?.stopPropagation();
-
-  const result = await fireManagedSwal({
-    icon: "question",
-    title: "Create Sales Invoice?",
-    text: `Create a Sales Invoice from ${proformaId}?`,
-    showCancelButton: true,
-    confirmButtonColor: "#22c55e",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, create",
-    reverseButtons: true,
-  });
-
-  if (!result.isConfirmed) return;
-
-  try {
-    showLoading("Creating Sales Invoice...");
-
-    const res = await createSiFromQuotation(proformaId);
-    const statusCode = res?.message?.status_code || res?.status_code;
-    const data = res?.message?.data || res?.data;
-
-    if (statusCode !== 201 && statusCode !== 200) {
-      closeSwal();
-      showApiError(
-        res?.message?.message || res?.message || "Failed to create Sales Invoice",
-      );
-      return;
-    }
-
-    closeSwal();
-    showSuccess(
-      data?.id
-        ? `Sales Invoice ${data.id} created successfully`
-        : res?.message?.message || res?.message || "Sales Invoice created successfully",
-    );
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
+  return createInvoiceFromProforma(proformaId);
 };
 
   const fetchAllInvoicesForExport = async (): Promise<
@@ -362,7 +322,7 @@ const handleCreateInvoice = async (
         const res = await getAllProformaInvoices(
           current,
           100,
-          SORT_FIELD_MAP[sortBy] || sortBy, // ← same mapping for export
+          SORT_FIELD_MAP[sortBy] || sortBy, 
           sortOrder,
           searchTerm,
         );
@@ -376,7 +336,7 @@ const handleCreateInvoice = async (
             dueDate: inv.dueDate,
             totalAmount: Number(inv.totalAmount),
             status: inv.status as ProformaInvoiceStatus,
-            proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, // <-- Added here too
+            proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, 
             createdAt: new Date(inv.createdAt.replace(" ", "T")),
           }));
           allData = [...allData, ...mapped];

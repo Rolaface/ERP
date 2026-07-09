@@ -52,11 +52,11 @@ export async function convertDocument({
     showLoading(loadingMessage);
 
     const createRes = await createFn();
-    // console.log("🔵 createRes:", JSON.stringify(createRes, null, 2));
+    console.log("🔵 createRes:", JSON.stringify(createRes, null, 2));
 
     const statusCode = extractStatusCode(createRes);
     const createdId = extractCreatedId(createRes);
-    // console.log("🔵 statusCode:", statusCode, "| createdId:", createdId);
+    console.log("🔵 statusCode:", statusCode, "| createdId:", createdId);
 
     if ((statusCode !== 200 && statusCode !== 201) || !createdId) {
       closeSwal();
@@ -72,7 +72,7 @@ export async function convertDocument({
     const detail = getByIdFn
       ? extractDetail(await getByIdFn(createdId))
       : undefined;
-    // console.log("🔵 detail:", JSON.stringify(detail, null, 2));
+    console.log("🔵 detail:", JSON.stringify(detail, null, 2));
 
     closeSwal();
     showSuccess(successMessage);
