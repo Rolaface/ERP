@@ -20,7 +20,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
 import PdfPreviewModal from "./PdfPreviewModal";
-
+import { useDocumentConversion } from "../../hooks/useDocumentConversion";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 
 import QuotationDetailModal, { QuotationDetail } from "./Quotationdetailmodal";
@@ -92,7 +92,7 @@ const SalesOrdersTable: React.FC<SalesOrderTableProps> = ({
   const [isFetching] = useState(false);
   const [, setCompany] = useState<any>(null);
   const { can } = usePermission();
-
+const createInvoiceFromSO = useDocumentConversion("soToSi");
   // ── Pagination state (server)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -378,51 +378,9 @@ const SalesOrdersTable: React.FC<SalesOrderTableProps> = ({
     }
   };
 
-  const handleCreateInvoice = async (
-  orderNumber: string,
-  e?: React.MouseEvent,
-) => {
+const handleCreateInvoice = (orderNumber: string, e?: React.MouseEvent) => {
   e?.stopPropagation();
-
-  const result = await fireManagedSwal({
-    icon: "question",
-    title: "Create Sales Invoice?",
-    text: `Create a Sales Invoice from ${orderNumber}?`,
-    showCancelButton: true,
-    confirmButtonColor: "#22c55e",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Yes, create",
-    reverseButtons: true,
-  });
-
-  if (!result.isConfirmed) return;
-
-  try {
-    showLoading("Creating Sales Invoice...");
-
-    const res = await createSalesSiFromSo(orderNumber);
-    const statusCode = res?.message?.status_code || res?.status_code;
-    const data = res?.message?.data || res?.data;
-
-    if (statusCode !== 201 && statusCode !== 200) {
-      closeSwal();
-      showApiError(
-        res?.message?.message || res?.message || "Failed to create Sales Invoice",
-      );
-      return;
-    }
-
-    closeSwal();
-    // showSuccess(res?.message?.message || res?.message || "Sales Invoice created successfully");
-    showSuccess(
-          data?.id
-            ? `Sales Invoice ${data.id} created successfully from Sales Order ${orderNumber}`
-            : res?.message?.message || res?.message || "Sales Invoice created successfully",
-        );
-  } catch (err) {
-    closeSwal();
-    showApiError(err);
-  }
+  return createInvoiceFromSO(orderNumber);
 };
 
   const fetchAllForExport = async (): Promise<SalesOrderSummary[]> => {
