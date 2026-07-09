@@ -39,7 +39,7 @@ interface DetailsTabProps {
   usePO: boolean;
   onTogglePO: (checked: boolean) => void;
   onBulkItemChange?: (field: keyof ItemRow, value: string) => void;
-  onPaymentAccountValidityChange: (isValid: boolean) => void;
+ 
 }
 
 const ITEMS_PER_PAGE = 5;
@@ -113,7 +113,7 @@ export const DetailsTab = ({
   onTogglePO,
   isEditMode,
   onBulkItemChange,
-  onPaymentAccountValidityChange,
+
 }: DetailsTabProps) => {
   const symbol = getCurrencySymbol();
   const [page, setPage] = useState(0);
@@ -436,12 +436,12 @@ export const DetailsTab = ({
 <div className="w-[110px]">
   <ModeOfPaymentSelect
     value={form.paymentType ?? ""}
-    onChange={(val, hasDefaultAccount) => {
+    onChange={(val) => {
       onFormChange({
         target: { name: "paymentType", value: val },
       } as any);
       
-      onPaymentAccountValidityChange(hasDefaultAccount);
+  
     }}
     required
   />

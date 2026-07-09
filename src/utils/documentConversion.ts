@@ -8,7 +8,9 @@ export interface ConvertDocumentOptions {
   confirmButtonText?: string;
   confirmButtonColor?: string;
   loadingMessage?: string;
-  successMessage?: string;
+  // successMessage?: string;
+  sourceId: string;
+  successMessage?: (sourceId: string, createdId: string) => string;
   createFn: () => Promise<any>;
   extractStatusCode: (res: any) => number | undefined;
   extractCreatedId: (res: any) => string | undefined;
@@ -25,7 +27,9 @@ export async function convertDocument({
   confirmButtonText = "Yes, create",
   confirmButtonColor = "#22c55e",
   loadingMessage = "Creating document...",
-  successMessage = "Document created successfully",
+  // successMessage = "Document created successfully",
+  successMessage = () => "Document created successfully",
+  sourceId,
   createFn,
   extractStatusCode,
   extractCreatedId,
@@ -52,11 +56,11 @@ export async function convertDocument({
     showLoading(loadingMessage);
 
     const createRes = await createFn();
-    // console.log("🔵 createRes:", JSON.stringify(createRes, null, 2));
+    console.log("🔵 createRes:", JSON.stringify(createRes, null, 2));
 
     const statusCode = extractStatusCode(createRes);
     const createdId = extractCreatedId(createRes);
-    // console.log("🔵 statusCode:", statusCode, "| createdId:", createdId);
+    console.log("🔵 statusCode:", statusCode, "| createdId:", createdId);
 
     if ((statusCode !== 200 && statusCode !== 201) || !createdId) {
       closeSwal();
@@ -72,10 +76,12 @@ export async function convertDocument({
     const detail = getByIdFn
       ? extractDetail(await getByIdFn(createdId))
       : undefined;
-    // console.log("🔵 detail:", JSON.stringify(detail, null, 2));
+    console.log("🔵 detail:", JSON.stringify(detail, null, 2));
 
     closeSwal();
-    showSuccess(successMessage);
+    // showSuccess(successMessage);
+    showSuccess(successMessage(sourceId, createdId));
+
 
     refreshKeys.forEach((key) =>
       useDataRefreshStore.getState().triggerRefresh(key),
