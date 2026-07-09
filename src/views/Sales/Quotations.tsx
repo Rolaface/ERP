@@ -447,6 +447,7 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
 
     const res = await createSiFromQuotation(quotationNumber);
     const statusCode = res?.message?.status_code || res?.status_code;
+    const data = res?.message?.data || res?.data;
 
     if (statusCode !== 201 && statusCode !== 200) {
       closeSwal();
@@ -457,7 +458,12 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
     }
 
     closeSwal();
-    showSuccess(res?.message?.message || res?.message || "Sales Invoice created successfully");
+    // showSuccess(res?.message?.message || res?.message || "Sales Invoice created successfully");
+     showSuccess(
+      data?.id
+        ? `Sales Invoice ${data.id} created successfully from Quotation ${quotationNumber}`
+        : res?.message?.message || res?.message || "Sales Invoice created successfully",
+    );
   } catch (err) {
     closeSwal();
     showApiError(err);
