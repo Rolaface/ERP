@@ -99,3 +99,10 @@ export async function editProformaInvoice(
   );
   return resp.data;
 }
+
+export async function createSiFromQuotation(quotationId: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    `${ProformaAPI.createSifromQuotation}?quotation_id=${encodeURIComponent(quotationId)}`,
+  );
+  return resp.data;
+}

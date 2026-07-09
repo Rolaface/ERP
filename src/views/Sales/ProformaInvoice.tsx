@@ -5,6 +5,7 @@ import {
   updateProformaInvoiceStatus,
   getProformaInvoiceById,
   deleteProformaInvoiceById,
+  createSiFromQuotation
 } from "../../api/proformaInvoiceApi";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -303,7 +304,57 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
     setPage(1);
   };
 
-  // ── Export all pages ──────────────────────────────────────────────────────
+const handleCreateInvoice = async (
+  proformaId: string,
+  e?: React.MouseEvent,
+) => {
+  e?.stopPropagation();
+
+  const result = await fireManagedSwal({
+    icon: "question",
+    title: "Create Sales Invoice?",
+    text: `Create a Sales Invoice from ${proformaId}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#22c55e",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, create",
+    reverseButtons: true,
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    showLoading("Creating Sales Invoice...");
+
+    const res = await createSiFromQuotation(proformaId);
+    const statusCode = res?.message?.status_code || res?.status_code;
+    const data = res?.message?.data || res?.data;
+
+    if (statusCode !== 201 && statusCode !== 200) {
+      closeSwal();
+      showApiError(
+        res?.message?.message || res?.message || "Failed to create Sales Invoice",
+      );
+      return;
+    }
+
+    closeSwal();
+    // showSuccess(
+    //   data?.id
+    //     ? `Sales Invoice ${data.id} created successfully`
+    //     : res?.message?.message || res?.message || "Sales Invoice created successfully",
+    // );
+    showSuccess(
+  data?.id
+    ? `Sales Invoice ${data.id} created successfully from Profroma Invoice ${proformaId}`
+    : res?.message?.message || res?.message || "Sales Invoice created successfully",
+);
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+
   const fetchAllInvoicesForExport = async (): Promise<
     ProformaInvoiceSummary[]
   > => {
@@ -729,6 +780,15 @@ const ProformaInvoicesTable: React.FC<ProformaInvoiceTableProps> = ({
                 icon: ACTION_ICONS.PDF,
                 onClick: () => handlePreviewPDF(inv),
               },
+                ...(inv.status !== "Draft" && inv.status !== "Cancelled"
+                ? [
+                    {
+                      label: "Create Sales Invoice",
+                      icon: ACTION_ICONS.SALES_INVOICE ,
+                      onClick: () => handleCreateInvoice(inv.proformaId),
+                    },
+                  ]
+                : []),
               ...(
                 STATUS_TRANSITIONS[
                   inv.status as keyof typeof STATUS_TRANSITIONS
