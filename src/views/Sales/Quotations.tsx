@@ -36,6 +36,7 @@ import {
   getAllQuotation,
   getProformaInvoiceById,
   updateProformaInvoiceStatus,
+  createSiFromQuotation,
 } from "../../api/proformaInvoiceApi";
 
 import { getPdf } from "../../api/PDF/pdfUtilApi";
@@ -422,6 +423,47 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
     }
   };
 
+  const handleCreateInvoice = async (
+  quotationNumber: string,
+  e?: React.MouseEvent,
+) => {
+  e?.stopPropagation();
+
+  const result = await fireManagedSwal({
+    icon: "question",
+    title: "Create Sales Invoice?",
+    text: `Create a Sales Invoice from ${quotationNumber}?`,
+    showCancelButton: true,
+    confirmButtonColor: "#22c55e",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Yes, create",
+    reverseButtons: true,
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    showLoading("Creating Sales Invoice...");
+
+    const res = await createSiFromQuotation(quotationNumber);
+    const statusCode = res?.message?.status_code || res?.status_code;
+
+    if (statusCode !== 201 && statusCode !== 200) {
+      closeSwal();
+      showApiError(
+        res?.message?.message || res?.message || "Failed to create Sales Invoice",
+      );
+      return;
+    }
+
+    closeSwal();
+    showSuccess(res?.message?.message || res?.message || "Sales Invoice created successfully");
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
+
   const fetchAllForExport = async (): Promise<QuotationSummary[]> => {
     let allData: QuotationSummary[] = [];
     let current = 1;
@@ -675,6 +717,15 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
       icon: ACTION_ICONS.PDF,
       onClick: () => handlePreviewQuotationPDF(q.quotationNumber),
     },
+    ...(q.status !== "Draft" && q.status !== "Cancelled"
+  ? [
+      {
+        label: "Create Sales Invoice",
+        icon: ACTION_ICONS.SALES_INVOICE ,
+        onClick: () => handleCreateInvoice(q.quotationNumber),
+      },
+    ]
+  : []),
    ...(STATUS_TRANSITIONS[q.status as keyof typeof STATUS_TRANSITIONS] ?? [])
       .filter((status) => status !== "Draft") 
       .map((status) => ({

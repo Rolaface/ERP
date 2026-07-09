@@ -401,6 +401,7 @@ export const API = {
     updateStatus: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation_status`,
     edit: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.delete_quotation`,
+    createSifromQuotation: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.create_si_from_quotation`,
   },
 
   /* =========================
