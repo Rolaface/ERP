@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import SearchSelect2 from "../../ui/modal/SearchSelect2";
 import { getAllModeOfPayment } from "../../../api/BankAccountApi";
 import { useDefault } from "../../../hooks/usedefaultdata";
-import { showConfirm, showValidationError } from "../../../utils/alert";
 
 interface ModeOfPaymentSelectProps {
   value: string;
@@ -41,30 +40,17 @@ const ModeOfPaymentSelect: React.FC<ModeOfPaymentSelectProps> = ({
     }));
   };
 
-  // const handleChange = (_: string, option: any) => {
-  //   onChange(option?.value || "");
-  // };
+  const handleChange = async (_: string, option: any) => {
+    const selectedDefaultAccount =
+      option?.meta?.defaultAccount ??
+      option?.meta?.default_account ??
+      option?.meta?.defaultBankAccount ??
+      option?.meta?.default_bank_account;
 
-const handleChange = async (_: string, option: any) => {
-    const selectedDefaultAccount = option?.meta?.defaultAccount;
     const hasDefault = !!selectedDefaultAccount;
-    // if (!selectedDefaultAccount) {
-    //   const proceed = await showConfirm(
-    //     `There is no default account set for this mode of payment. Please set a default account for this mode of payment under the Bank Account settings before proceeding.`,
-    //     {
-    //       title: "Warning",
-    //       confirmButtonText: "Okay",
-    //       showCancelButton: false,
-    //       confirmButtonColor: "#ff9966",
-    //     }
-    //   );
-    //   if (!proceed) return; 
-    // }
-    if (!selectedDefaultAccount) {
-      showValidationError("No default account is set for this payment mode. Set a default account in Bank Management settings before proceeding.");
-      // return; 
-    }
-    onChange(option?.value || "" , hasDefault);
+
+    // No error, no block — just pass the info along.
+    onChange(option?.value || "", hasDefault);
   };
 
   return (
