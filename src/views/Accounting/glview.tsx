@@ -75,9 +75,6 @@ export interface GLViewProps {
   onBack?: () => void;
 }
 
-// Legacy fallback formatter — used only as a last resort if no currency code
-// can be resolved through the currency store at all (see `displayAmount`
-// inside the main component below, which is what's actually used in render).
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
@@ -87,54 +84,29 @@ const fmt = (n: number) =>
 const today = () => new Date().toISOString().split("T")[0];
 const startOfYear = () => `${new Date().getFullYear()}-01-01`;
 
-// ── Compact KPI strip ────────────────────────────────────────────────────────
 const KpiStrip: React.FC<{
   summary: Summary;
   displayAmount: (amount: number) => string;
 }> = ({ summary, displayAmount }) => {
   const kpis = [
-    {
-      label: "Opening — Debit",
-      value: summary.opening.debit,
-      color: "text-blue-500",
-    },
-    {
-      label: "Opening — Credit",
-      value: summary.opening.credit,
-      color: "text-amber-500",
-    },
+    { label: "Opening — Debit", value: summary.opening.debit, color: "text-blue-500" },
+    { label: "Opening — Credit", value: summary.opening.credit, color: "text-amber-500" },
     {
       label: "Opening Balance",
       value: summary.opening.balance,
       color: summary.opening.balance >= 0 ? "text-emerald-600" : "text-red-500",
       bold: true,
     },
-    {
-      label: "Period Debit",
-      value: summary.total.debit,
-      color: "text-blue-500",
-    },
-    {
-      label: "Period Credit",
-      value: summary.total.credit,
-      color: "text-amber-500",
-    },
+    { label: "Period Debit", value: summary.total.debit, color: "text-blue-500" },
+    { label: "Period Credit", value: summary.total.credit, color: "text-amber-500" },
     {
       label: "Period Balance",
       value: summary.total.balance,
       color: summary.total.balance >= 0 ? "text-emerald-600" : "text-red-500",
       bold: true,
     },
-    {
-      label: "Closing Debit",
-      value: summary.closing.debit,
-      color: "text-blue-500",
-    },
-    {
-      label: "Closing Credit",
-      value: summary.closing.credit,
-      color: "text-amber-500",
-    },
+    { label: "Closing Debit", value: summary.closing.debit, color: "text-blue-500" },
+    { label: "Closing Credit", value: summary.closing.credit, color: "text-amber-500" },
     {
       label: "Closing Balance",
       value: summary.closing.balance,
@@ -143,23 +115,10 @@ const KpiStrip: React.FC<{
     },
   ];
 
-  // Group into 3 sections
   const sections = [
-    {
-      icon: <Scale size={11} className="text-blue-400" />,
-      label: "Opening",
-      items: kpis.slice(0, 3),
-    },
-    {
-      icon: <TrendingUp size={11} className="text-emerald-400" />,
-      label: "Period",
-      items: kpis.slice(3, 6),
-    },
-    {
-      icon: <TrendingDown size={11} className="text-amber-400" />,
-      label: "Closing",
-      items: kpis.slice(6, 9),
-    },
+    { icon: <Scale size={11} className="text-blue-400" />, label: "Opening", items: kpis.slice(0, 3) },
+    { icon: <TrendingUp size={11} className="text-emerald-400" />, label: "Period", items: kpis.slice(3, 6) },
+    { icon: <TrendingDown size={11} className="text-amber-400" />, label: "Closing", items: kpis.slice(6, 9) },
   ];
 
   return (
@@ -169,20 +128,15 @@ const KpiStrip: React.FC<{
           key={sec.label}
           className="bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 flex flex-col gap-2"
         >
-          {/* Section header */}
           <div className="flex items-center gap-1.5">
             {sec.icon}
             <span className="text-[10px] font-black uppercase tracking-widest text-muted">
               {sec.label}
             </span>
           </div>
-          {/* 3 values in a row */}
           <div className="grid grid-cols-3 gap-1 divide-x divide-[var(--border)]">
             {sec.items.map((kpi) => (
-              <div
-                key={kpi.label}
-                className="flex flex-col gap-0.5 px-1 first:pl-0 last:pr-0"
-              >
+              <div key={kpi.label} className="flex flex-col gap-0.5 px-1 first:pl-0 last:pr-0">
                 <span className="text-[9px] leading-tight text-muted truncate">
                   {kpi.label.split(" — ")[1] ?? kpi.label.split(" ")[1]}
                 </span>
@@ -202,7 +156,6 @@ const KpiStrip: React.FC<{
   );
 };
 
-// ── Main Component ────────────────────────────────────────────────────────────
 const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -213,7 +166,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
   const [account, setAccount] = useState(initialAccount);
   const [fromDate, setFromDate] = useState(startOfYear());
   const [toDate, setToDate] = useState(today());
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(20);
 
   const [appliedFilters, setAppliedFilters] = useState({
     account: initialAccount,
@@ -226,17 +179,8 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  // ── Currency symbol resolution (same pattern as the other Accounting
-  // views). GLView's API response already tells us the exact currency to
-  // use — `presentation_currency` (what the ledger figures are shown in)
-  // falling back to `account_currency` — so we don't need a separate
-  // company fetch here. The store's `sym` value is kept as a final
-  // fallback in case neither currency comes back from the API, since on
-  // some setups `sym` itself holds a currency *code* (e.g. "GHS") rather
-  // than an actual symbol and needs to be resolved through the store too.
   const { currencySymbol } = useCompanyStore();
   const sym = currencySymbol || "–";
-  const reportCurrency = glData?.presentation_currency || glData?.account_currency;
 
   const currencyCodes = useMemo(() => {
     const codes = new Set<string>();
@@ -289,7 +233,8 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
 
   useEffect(() => {
     fetchGL(appliedFilters, 1);
-  }, []); // eslint-disable-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (accountProp && accountProp !== appliedFilters.account) {
@@ -305,7 +250,8 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
       setPage(1);
       fetchGL(f, 1);
     }
-  }, [accountProp]); // eslint-disable-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountProp]);
 
   const handleBack = () => {
     if (onBack) onBack();
@@ -334,7 +280,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
           id: col.fieldname,
           accessorKey: col.fieldname,
           header: col.label,
-          size: col.width ?? (isAmount ? 120 : 150),
+          size: col.width ?? (isAmount ? 130 : 160),
           meta: { align: isAmount ? "right" : "left" },
           cell: ({ getValue }) => {
             const val = getValue();
@@ -369,19 +315,10 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
               );
             }
             if (col.fieldname === "voucher_no" && val)
-              return (
-                <span className="text-xs font-semibold text-primary">
-                  {String(val)}
-                </span>
-              );
+              return <span className="text-xs font-semibold text-primary">{String(val)}</span>;
             if (col.fieldname === "party" && val)
-              return (
-                <span className="text-xs font-medium text-main">
-                  {String(val)}
-                </span>
-              );
-            if (!val && val !== 0)
-              return <span className="text-muted text-xs">—</span>;
+              return <span className="text-xs font-medium text-main">{String(val)}</span>;
+            if (!val && val !== 0) return <span className="text-muted text-xs">—</span>;
             return <span className="text-xs text-main">{String(val)}</span>;
           },
         };
@@ -398,23 +335,17 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
 
   const pagination = glData?.pagination;
   const summary = glData?.summary;
+  const leafColumns = table.getAllLeafColumns();
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* ── Filter Bar (with Back + title inline) ── */}
-      <div
-        className="bg-card rounded-lg border border-[var(--border)] px-3 py-2.5
-                      flex flex-wrap items-end gap-2"
-      >
-        {/* Back button + page title — sits before Account, aligned to input bottom */}
+    <div className="flex flex-col gap-3 h-full min-h-0">
+      {/* ── Filter Bar ── */}
+      <div className="bg-card rounded-lg border border-[var(--border)] px-3 py-2.5 flex flex-wrap items-end gap-2">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-1.5 h-[13px]">
             <div
               className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-primary"
-              style={{
-                background:
-                  "color-mix(in srgb, var(--primary) 12%, transparent)",
-              }}
+              style={{ background: "color-mix(in srgb, var(--primary) 12%, transparent)" }}
             >
               <BookOpen size={10} />
             </div>
@@ -431,13 +362,10 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
           </button>
         </div>
 
-        {/* Subtle divider */}
         <div className="self-stretch w-px bg-[var(--border)] mx-0.5" />
 
         <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
-          <label className="text-[9px] font-black uppercase tracking-widest text-muted">
-            Account
-          </label>
+          <label className="text-[9px] font-black uppercase tracking-widest text-muted">Account</label>
           <input
             value={account}
             onChange={(e) => setAccount(e.target.value)}
@@ -448,9 +376,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[9px] font-black uppercase tracking-widest text-muted">
-            From
-          </label>
+          <label className="text-[9px] font-black uppercase tracking-widest text-muted">From</label>
           <input
             type="date"
             value={fromDate}
@@ -460,9 +386,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[9px] font-black uppercase tracking-widest text-muted">
-            To
-          </label>
+          <label className="text-[9px] font-black uppercase tracking-widest text-muted">To</label>
           <input
             type="date"
             value={toDate}
@@ -478,11 +402,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
                      rounded-md hover:bg-primary/90 transition-all disabled:opacity-50
                      disabled:cursor-not-allowed whitespace-nowrap"
         >
-          {loading ? (
-            <RefreshCw size={11} className="animate-spin" />
-          ) : (
-            <BookOpen size={11} />
-          )}
+          {loading ? <RefreshCw size={11} className="animate-spin" /> : <BookOpen size={11} />}
           Apply
         </button>
       </div>
@@ -494,15 +414,21 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
         </div>
       )}
 
-      {/* ── Compact KPI Strip ── */}
+      {/* ── KPI Strip ── */}
       {summary && <KpiStrip summary={summary} displayAmount={displayAmount} />}
 
       {/* ── Table ── */}
       {columns.length > 0 && (
-        <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
-          <div className="overflow-x-auto overflow-y-auto flex-1 relative">
-            <table className="w-full text-left border-collapse min-w-max">
-              <thead className="sticky top-0 z-10 border-b border-[var(--border)]">
+        <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0 relative custom-scrollbar">
+            <table className="w-full text-left border-collapse table-fixed">
+              <colgroup>
+                {leafColumns.map((col) => (
+                  <col key={col.id} style={{ width: col.getSize() }} />
+                ))}
+              </colgroup>
+
+              <thead className="sticky top-0 z-20">
                 {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
                     {hg.headers.map((header) => {
@@ -513,42 +439,30 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
                       return (
                         <th
                           key={header.id}
-                          style={{ width: header.getSize() }}
                           className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest
-                                      text-muted whitespace-nowrap bg-row-hover
+                                      text-muted whitespace-nowrap bg-card
                                       border-b border-[var(--border)] ${align}`}
                         >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          {flexRender(header.column.columnDef.header, header.getContext())}
                         </th>
                       );
                     })}
                   </tr>
                 ))}
               </thead>
+
               <tbody>
                 {loading && !glData?.ledger?.length ? (
                   <tr>
-                    <td
-                      colSpan={columns.length}
-                      style={{ height: `${Math.min(pageSize, 10) * 38}px` }}
-                    >
+                    <td colSpan={columns.length} style={{ height: `${Math.min(pageSize, 10) * 38}px` }}>
                       <div className="flex justify-center items-center h-full">
-                        <Loader2
-                          size={20}
-                          className="animate-spin text-muted"
-                        />
+                        <Loader2 size={20} className="animate-spin text-muted" />
                       </div>
                     </td>
                   </tr>
                 ) : table.getRowModel().rows.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={columns.length}
-                      className="py-14 text-center text-xs text-muted"
-                    >
+                    <td colSpan={columns.length} className="py-14 text-center text-xs text-muted">
                       No ledger entries found for the selected filters.
                     </td>
                   </tr>
@@ -557,9 +471,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
                     <tr
                       key={row.id}
                       className="hover:bg-row-hover transition-colors h-[36px]"
-                      style={{
-                        borderBottom: "1px solid rgba(128,128,128,0.12)",
-                      }}
+                      style={{ borderBottom: "1px solid rgba(128,128,128,0.12)" }}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const align =
@@ -569,12 +481,9 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
                         return (
                           <td
                             key={cell.id}
-                            className={`px-3 py-1 whitespace-nowrap ${align}`}
+                            className={`px-3 py-1 overflow-hidden text-ellipsis whitespace-nowrap ${align}`}
                           >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>
                         );
                       })}
@@ -584,7 +493,6 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
               </tbody>
             </table>
 
-            {/* Loading overlay when data already exists */}
             {loading && (glData?.ledger?.length ?? 0) > 0 && (
               <div className="absolute inset-0 bg-card/60 backdrop-blur-[1px] flex items-center justify-center z-20">
                 <Loader2 size={20} className="animate-spin text-primary" />
@@ -594,25 +502,16 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
 
           {/* ── Pagination ── */}
           {pagination && (
-            <div
-              className="border-t border-[var(--border)] bg-card px-3 py-2
-                            flex flex-wrap items-center justify-between gap-2 text-xs text-muted"
-            >
+            <div className="border-t border-[var(--border)] bg-card px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
               <span className="text-[11px]">
                 {pagination.total_entries > 0 ? (
                   <>
                     Showing{" "}
                     <span className="font-semibold text-main">
                       {(pagination.page - 1) * pagination.page_size + 1}–
-                      {Math.min(
-                        pagination.page * pagination.page_size,
-                        pagination.total_entries,
-                      )}
+                      {Math.min(pagination.page * pagination.page_size, pagination.total_entries)}
                     </span>{" "}
-                    of{" "}
-                    <span className="font-semibold text-main">
-                      {pagination.total_entries}
-                    </span>
+                    of <span className="font-semibold text-main">{pagination.total_entries}</span>
                   </>
                 ) : (
                   "No entries"
@@ -628,10 +527,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
                   >
                     <ChevronLeft size={13} />
                   </button>
-                  {Array.from(
-                    { length: pagination.total_pages },
-                    (_, i) => i + 1,
-                  )
+                  {Array.from({ length: pagination.total_pages }, (_, i) => i + 1)
                     .filter((p) => Math.abs(p - page) <= 2)
                     .map((p) => (
                       <button

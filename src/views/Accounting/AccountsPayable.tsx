@@ -399,7 +399,7 @@ const AccountsPayable = () => {
   const [isExporting, setIsExporting] = useState(false);
 
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -945,7 +945,7 @@ const AccountsPayable = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 h-full min-h-0">
       {/* KPI Strip */}
       {kpis ? (
     <KpiStrip
@@ -1209,13 +1209,13 @@ const AccountsPayable = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
-        <div className="overflow-y-auto flex-1 relative">
+      <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="overflow-y-auto flex-1 min-h-0 relative custom-scrollbar">
           <table
             className="text-left border-collapse w-full"
             style={{ tableLayout: "auto" }}
           >
-            <thead className="sticky top-0 z-10 border-b border-[var(--border)]">
+            <thead className="sticky top-0 z-10 border-b border-[var(--border)] bg-card">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => {
@@ -1226,7 +1226,7 @@ const AccountsPayable = () => {
                     return (
                       <th
                         key={header.id}
-                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-row-hover border-b border-[var(--border)] ${align}`}
+                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${align}`}
                       >
                         {flexRender(
                           header.column.columnDef.header,
