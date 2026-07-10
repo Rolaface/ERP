@@ -53,7 +53,7 @@ export function PayrollPeriodSetup() {
     totalPages,
     totalItems,
     fetchAll,
-    fetchDetail,
+    fetchDetail, sortBy, setSortBy, sortOrder, setSortOrder, 
   } = usePayrollPeriods();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
@@ -97,6 +97,7 @@ export function PayrollPeriodSetup() {
       {
         key: "name",
         header: "Name",
+        sortable: true,
         render: (row) => (
           <span className="font-medium text-main">{row.name || "—"}</span>
         ),
@@ -105,6 +106,7 @@ export function PayrollPeriodSetup() {
       {
         key: "company",
         header: "Company",
+        sortable: true,
         render: (row) => (
           <span className="text-sm text-main">{row.company || "—"}</span>
         ),
@@ -112,6 +114,7 @@ export function PayrollPeriodSetup() {
       {
         key: "start_date",
         header: "Start Date",
+        sortable: true,
         render: (row) => (
           <span className="text-sm text-main">
             {row.start_date ? formatDate(row.start_date) : "—"}
@@ -121,6 +124,7 @@ export function PayrollPeriodSetup() {
       {
         key: "end_date",
         header: "End Date",
+        sortable: true,
         render: (row) => (
           <span className="text-sm text-main">
             {row.end_date ? formatDate(row.end_date) : "—"}
@@ -162,6 +166,13 @@ export function PayrollPeriodSetup() {
         setSearch(v);
         setPage(1);
       }}
+       sortBy={sortBy}                                   
+  sortOrder={sortOrder}                              
+  onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setPage(1);
+  }}
       enableAdd
       addLabel="Add Period"
       onAdd={() =>

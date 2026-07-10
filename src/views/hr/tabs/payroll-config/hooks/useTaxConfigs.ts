@@ -16,11 +16,21 @@ export function useTaxConfigs() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  // ADD: sort state
+  const [sortBy, setSortBy] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
       const start = (page - 1) * pageSize;
-      const response = await getAllTaxConfigs(start, pageSize, search);
+      const response = await getAllTaxConfigs(
+        start,
+        pageSize,
+        search,
+        sortBy,       
+        sortOrder,    
+      );
 
       setRows(response.data);
       setTotalItems(response.pagination.total);
@@ -30,7 +40,7 @@ export function useTaxConfigs() {
     } finally {
       setLoading(false);
     }
-  }, [search, page, pageSize]);
+  }, [search, page, pageSize, sortBy, sortOrder]); 
 
   useEffect(() => {
     fetchAll();
@@ -58,5 +68,9 @@ export function useTaxConfigs() {
     totalItems,
     fetchAll,
     fetchDetail,
+    sortBy,      
+    setSortBy,     
+    sortOrder,      
+    setSortOrder, 
   };
 }
