@@ -38,6 +38,8 @@ export async function getAllEmployees(
   pageSize: number = 10,
   status?: string,
   search?: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<any> {
   const start = (page - 1) * pageSize;
 
@@ -47,9 +49,11 @@ export async function getAllEmployees(
     pageSize,
     search,
     searchFields: ["name", "employee_name", "designation", "department", "branch"],
+    sortBy,
+    sortOrder,
   });
 
-  let url = `/api/resource/Employee?${query}`;
+  let url = `${EmployeeAPI.getAll}?${query}`;
 
   if (status) {
     url += `&filters=${encodeURIComponent(JSON.stringify([["status", "=", status]]))}`;

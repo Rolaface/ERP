@@ -20,26 +20,28 @@ export function DepartmentSetup() {
   const [rows, setRows]                   = useState<Department[]>([]);
   const [loading, setLoading]             = useState(false);
   const [search, setSearch]               = useState("");
+  const [sortBy, setSortBy] = useState<string>("");
+const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [page, setPage]                   = useState(1);
   const [pageSize, setPageSize]           = useState(10);
   const [totalPages, setTotalPages]       = useState(1);
   const [totalItems, setTotalItems]       = useState(0);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const fetchAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      const start    = (page - 1) * pageSize;
-      const response = await getAllDepartments(start, pageSize, search);
-      setRows(response.data);
-      setTotalItems(response.pagination.total);
-      setTotalPages(response.pagination.total_pages);
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to load departments");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, pageSize, search]);
+const fetchAll = useCallback(async () => {
+  try {
+    setLoading(true);
+    const start    = (page - 1) * pageSize;
+    const response = await getAllDepartments(start, pageSize, search, sortBy, sortOrder);
+    setRows(response.data);
+    setTotalItems(response.pagination.total);
+    setTotalPages(response.pagination.total_pages);
+  } catch (err: any) {
+    showApiError(err?.message ?? "Failed to load departments");
+  } finally {
+    setLoading(false);
+  }
+}, [page, pageSize, search, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchAll();
@@ -82,6 +84,7 @@ export function DepartmentSetup() {
       {
         key: "department_name",
         header: "Department",
+        sortable: true,
         render: (row) => (
           <span className="font-medium text-main">
             {row.department_name || row.name || "-"}
@@ -92,6 +95,7 @@ export function DepartmentSetup() {
       {
         key: "parent_department",
         header: "Parent",
+        sortable: true,
         render: (row) => (
           <span className="text-sm text-sub">{row.parent_department || "-"}</span>
         ),
@@ -100,6 +104,7 @@ export function DepartmentSetup() {
       {
         key: "is_group",
         header: "Type",
+        sortable: true,
         render: (row) => (
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -145,6 +150,13 @@ export function DepartmentSetup() {
       showToolbar
       searchValue={search}
       onSearch={(v) => { setSearch(v); setPage(1); }}
+        sortBy={sortBy}                                    
+     sortOrder={sortOrder}                              
+     onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {   
+     setSortBy(newSortBy);
+     setSortOrder(newSortOrder);
+    setPage(1);
+  }}
       enableAdd
       addLabel="Add Department"
       onAdd={() =>
