@@ -122,7 +122,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfInvoiceNumber, setPdfInvoiceNumber] = useState<string | null>(null);
-const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCn");
+const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCreditNote");
 
 
 
@@ -309,7 +309,7 @@ const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCn");
 
   const handleCreateCreditNote = (siId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    return createCnFromSalesInvoice(siId);
+    return createCreditNoteFromSalesInvoice(siId);
   };
   
 
