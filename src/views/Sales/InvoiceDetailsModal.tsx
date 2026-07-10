@@ -1021,13 +1021,13 @@ const displayDescription = parsedRemarks?.description ?? data?.description;
                 >
                   {[
                     {
-                      label: "Subtotal",
+                      label: "Sub Total",
                       val: fmt(subtotal, currency),
                       big: false,
                       red: false,
                     },
                     {
-                      label: "Taxes",
+                      label: "Tax Total",
                       val: fmt(taxTotal, currency),
                       big: false,
                       red: false,
@@ -1042,7 +1042,7 @@ const displayDescription = parsedRemarks?.description ?? data?.description;
                     (data as any).roundingAdjustment !== 0
                       ? [
                           {
-                            label: "Round Off",
+                            label: "Rounding Adjustment",
                             val: fmt((data as any).roundingAdjustment, currency),
                             big: false,
                             red: false,
