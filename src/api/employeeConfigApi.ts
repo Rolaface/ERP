@@ -99,7 +99,9 @@ type EmployeeTypeResponse = {
 export async function getAllDepartments(
   start: number,
   pageSize: number,
-  search: string
+  search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<DepartmentResponse> {
   try {
     const query = buildListParams({
@@ -114,19 +116,17 @@ export async function getAllDepartments(
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
 
     const url = `${EmployeeConfig.department.getAll}?${query}`;
-
     const resp = await api.get(url);
-
     return resp.data;
-
   } catch (error) {
     throw error;
   }
 }
-
 
 export async function getDepartment(name: string): Promise<Department> {
   try {
@@ -179,7 +179,9 @@ export async function deleteDepartment(name: string): Promise<void> {
 export async function getAllDesignations(
   start: number,
   pageSize: number,
-  search: string
+  search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<DesignationResponse> {
   try {
     const query = buildListParams({
@@ -188,6 +190,8 @@ export async function getAllDesignations(
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
 
     const url = `${EmployeeConfig.designation.getAll}?${query}`;
@@ -247,7 +251,9 @@ export async function deleteDesignation(name: string): Promise<void> {
 export async function getAllEmployeeGrades(
   start: number,
   pageSize: number,
-  search: string
+  search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<EmployeeGradeResponse> {
   try {
     const query = buildListParams({
@@ -256,6 +262,8 @@ export async function getAllEmployeeGrades(
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
 
     const url = `${EmployeeConfig.grade.getAll}?${query}`;
@@ -315,7 +323,9 @@ export async function deleteEmployeeGrade(name: string): Promise<void> {
 export async function getAllEmployeeTypes(
   start: number,
   pageSize: number,
-  search: string
+  search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<EmployeeTypeResponse> {
   try {
     const query = buildListParams({
@@ -324,6 +334,8 @@ export async function getAllEmployeeTypes(
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
 
     const url = `${EmployeeConfig.employeeType.getAll}?${query}`;
