@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
- getSalaryComponentOptions,
+  getSalaryComponentOptions,
   getAllSalaryStructures,
   getSalaryStructure,
   type SalaryComponent,
@@ -18,6 +18,10 @@ export function useSalaryStructures() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [allComponents, setAllComponents] = useState<SalaryComponent[]>([]);
+
+ 
+  const [sortBy, setSortBy] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const earningComponents = useMemo(
     () =>
@@ -39,7 +43,7 @@ export function useSalaryStructures() {
       setLoading(true);
       const start = (page - 1) * pageSize;
       const [response, components] = await Promise.all([
-        getAllSalaryStructures(start, pageSize, search),
+        getAllSalaryStructures(start, pageSize, search, sortBy, sortOrder), 
         getSalaryComponentOptions(),
       ]);
       setAllComponents(components);
@@ -51,7 +55,7 @@ export function useSalaryStructures() {
     } finally {
       setLoading(false);
     }
-  }, [search, page, pageSize]);
+  }, [search, page, pageSize, sortBy, sortOrder]); 
 
   useEffect(() => {
     fetchAll();
@@ -81,5 +85,9 @@ export function useSalaryStructures() {
     deductionComponents,
     fetchAll,
     fetchDetail,
+    sortBy,      
+    setSortBy,     
+    sortOrder,      
+    setSortOrder,   
   };
 }

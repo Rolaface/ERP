@@ -134,6 +134,8 @@ export async function getAllSalaryComponents(
   start: number,
   pageSize: number,
   search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<PaginatedResponse<SalaryComponent>> {
   try {
     const query = buildListParams({
@@ -152,13 +154,14 @@ export async function getAllSalaryComponents(
         "max_benefit_amount",
         "payout_method",
         " variable_based_on_taxable_salary",
-
         "is_income_tax_component",
       ],
       start,
       pageSize,
       search,
       searchFields: ["salary_component", "salary_component_abbr"],
+      sortBy,
+      sortOrder,
     });
 
     const resp = await api.get(`${Payroll.salaryComponent.getAll}?${query}`);
@@ -262,14 +265,18 @@ export async function getAllSalaryStructures(
   start: number,
   pageSize: number,
   search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<PaginatedResponse<SalaryStructure>> {
   try {
     const query = buildListParams({
-      fields: ["name", "is_active", "docstatus","currency"],
+      fields: ["name", "is_active", "docstatus", "currency"],
       start,
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
 
     const resp: AxiosResponse<PaginatedResponse<SalaryStructure>> =
@@ -336,6 +343,8 @@ export async function getAllTaxConfigs(
   start: number,
   pageSize: number,
   search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<PaginatedResponse<TaxConfig>> {
   try {
     const query = buildListParams({
@@ -351,6 +360,8 @@ export async function getAllTaxConfigs(
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
     const resp: AxiosResponse<PaginatedResponse<TaxConfig>> = await api.get(
       `${Payroll.incomeTaxSlab.getAll}?${query}`,
@@ -456,6 +467,8 @@ export async function getAllPayrollPeriods(
   start: number,
   pageSize: number,
   search: string,
+  sortBy?: string,
+  sortOrder?: "asc" | "desc",
 ): Promise<PaginatedResponse<PayrollPeriod>> {
   try {
     const query = buildListParams({
@@ -464,6 +477,8 @@ export async function getAllPayrollPeriods(
       pageSize,
       search,
       searchFields: ["name"],
+      sortBy,
+      sortOrder,
     });
     const resp: AxiosResponse<PaginatedResponse<PayrollPeriod>> = await api.get(
       `${Payroll.payrollPeriod.getAll}?${query}`,
@@ -477,7 +492,6 @@ export async function getAllPayrollPeriods(
     );
   }
 }
-
 export async function getPayrollPeriod(name: string): Promise<PayrollPeriod> {
   try {
     const url = `${Payroll.payrollPeriod.getById}/${encodeURIComponent(name)}`;

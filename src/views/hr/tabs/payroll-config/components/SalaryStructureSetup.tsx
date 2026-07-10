@@ -30,7 +30,7 @@ export function SalaryStructureSetup() {
     totalPages,
     totalItems,
     fetchAll,
-    fetchDetail,
+    fetchDetail, sortBy, setSortBy, sortOrder, setSortOrder,
   } = useSalaryStructures();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
@@ -94,6 +94,7 @@ export function SalaryStructureSetup() {
         key: "name",
         header: "Structure Name",
         align: "center",
+        sortable: true,
         render: (row) => (
           <span className="font-medium text-main">{row.name || "—"}</span>
         ),
@@ -103,6 +104,7 @@ export function SalaryStructureSetup() {
         key: "Currency",
         header: "Currency",
         align: "center",
+        
         render: (row) => (
           <span className="font-medium text-main">{row.currency || "—"}</span>
         ),
@@ -112,6 +114,7 @@ export function SalaryStructureSetup() {
       {
         key: "is_active",
         header: "Status",
+        sortable: true,
         
         render: (row) => (
           <span
@@ -180,6 +183,13 @@ export function SalaryStructureSetup() {
         setSearch(v);
         setPage(1);
       }}
+       sortBy={sortBy}                                   
+  sortOrder={sortOrder}                             
+  onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {  
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setPage(1);
+  }}
       enableAdd
       addLabel="Add Structure"
       onAdd={() =>

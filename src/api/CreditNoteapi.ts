@@ -22,9 +22,9 @@ export interface CreditNotePayload {
 remarks?:string
   items: {
     item_code: string;
-    qty: number;          // negative number
+    qty: number;          
     rate: number;
-    batch_no?: string;    // omitted if empty
+    batch_no?: string;    
     warehouse: string;
   }[];
 }
@@ -89,6 +89,8 @@ export async function getAllCreditNotes(
   page: number = 1,
   page_size: number = 10,
   search: string = "",
+  sortBy: string = "",
+  sortOrder: "asc" | "desc" = "asc",
 ): Promise<any> {
   const limit_start = (page - 1) * page_size;
 
@@ -97,7 +99,9 @@ export async function getAllCreditNotes(
     start: limit_start,
     pageSize: page_size,
     search,
-    searchFields: ["name", "customer_name", "return_against","grand_total", "status", "posting_date", "currency"],
+    searchFields: ["name", "customer_name", "return_against", "grand_total", "status", "posting_date", "currency"],
+    sortBy,
+    sortOrder,
   });
 
   const resp: AxiosResponse = await api.get(
@@ -115,7 +119,7 @@ export async function getAllCreditNotes(
   const total = pagination.total ?? items.length;
 
   return {
-    data: items,   
+    data: items,
     pagination: {
       total,
       total_pages: (pagination.total_pages ?? Math.ceil(total / page_size)) || 1,
@@ -124,7 +128,6 @@ export async function getAllCreditNotes(
     },
   };
 }
-
 export async function updateCreditNote(
   invoiceId: string,
   payload: CreditNotePayload,
