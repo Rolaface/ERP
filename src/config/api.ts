@@ -402,6 +402,8 @@ export const API = {
     edit: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.update_quotation`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.delete_quotation`,
     createSifromQuotation: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.create_si_from_quotation`,
+    createSoFromQuotation: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.create_so_from_quotation`,
+    createPiFromQuotation: `${ERP_BASE}/api/method/custom_api.api.selling.quotation.api.create_proforma_from_quotation`,
   },
 
   /* =========================
@@ -415,6 +417,7 @@ export const API = {
     edit: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.update_sales_order`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.delete_sales_order`,
     createSiFromSo: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.create_si_from_so`,
+    createProformaFromSo: `${ERP_BASE}/api/method/custom_api.api.selling.sales_order.api.create_proforma_from_so`,
   },
 
   /* =========================

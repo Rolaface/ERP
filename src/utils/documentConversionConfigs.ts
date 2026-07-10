@@ -1,7 +1,7 @@
-import { createSalesSiFromSo } from "../api/SalesOrder/salesOrderAPi";
+import { createSalesSiFromSo, createPiFromSo, getSalesOrderById } from "../api/SalesOrder/salesOrderAPi";
 import { getSalesInvoiceById } from "../api/salesApi";
-import { createSiFromQuotation } from "../api/proformaInvoiceApi";
-import { openInvoiceModal } from "../store/modalStore";
+import { createSiFromQuotation, createSoFromQuotation, getProformaInvoiceById, createPiFromQuotation} from "../api/proformaInvoiceApi";
+import { openInvoiceModal, openSalesOrderModal, openProformaModal } from "../store/modalStore";
 import { REFRESH_KEYS } from "../store/dataRefreshStore";
 import type { ModalContext } from "../store/modalStore";
 
@@ -74,7 +74,49 @@ proformaToSi: {
 },
 
 
-//-other modules
+quoteToSo: {
+  confirmTitle: "Create Sales Order?",
+  confirmText: (quotationId) => `Create a Sales Order from ${quotationId}?`,
+  loadingMessage: "Creating Sales Order...",
+  successMessage: (quotationId, createdId) =>
+    `Sales Order ${createdId} created successfully from Quotation ${quotationId}`,
+  createFn: createSoFromQuotation,
+  extractStatusCode: (res) => res?.message?.status_code || res?.status_code,
+  extractCreatedId: (res) => res?.message?.data?.id || res?.data?.id,
+  getByIdFn: getSalesOrderById,
+  openModalFn: (detail, _id, context) =>
+    detail && openSalesOrderModal(detail, true, context),
+  refreshKeys: [REFRESH_KEYS.SALES_ORDER_LIST],
+},
+quoteToProforma: {
+  confirmTitle: "Create Proforma Invoice?",
+  confirmText: (quotationId) => `Create a Proforma Invoice from ${quotationId}?`,
+  loadingMessage: "Creating Proforma Invoice...",
+  successMessage: (quotationId, createdId) =>
+    `Proforma Invoice ${createdId} created successfully from Quotation ${quotationId}`,
+  createFn: createPiFromQuotation,
+  extractStatusCode: (res) => res?.message?.status_code || res?.status_code,
+  extractCreatedId: (res) => res?.message?.data?.id || res?.data?.id,
+  getByIdFn: getProformaInvoiceById,
+  openModalFn: (detail, _id, context) =>
+    detail && openProformaModal(detail, true, context),
+  refreshKeys: [REFRESH_KEYS.PROFORMA_LIST],
+},
+
+soToProforma: {
+  confirmTitle: "Create Proforma Invoice?",
+  confirmText: (soId) => `Create a Proforma Invoice from ${soId}?`,
+  loadingMessage: "Creating Proforma Invoice...",
+  successMessage: (soId, createdId) =>
+    `Proforma Invoice ${createdId} created successfully from Sales Order ${soId}`,
+  createFn: createPiFromSo,
+  extractStatusCode: (res) => res?.message?.status_code || res?.status_code,
+  extractCreatedId: (res) => res?.message?.data?.id || res?.data?.id,
+  getByIdFn: getProformaInvoiceById,
+  openModalFn: (detail, _id, context) =>
+    detail && openProformaModal(detail, true, context),
+  refreshKeys: [REFRESH_KEYS.PROFORMA_LIST],
+},
 };
 
 export type ConversionKey = keyof typeof DOCUMENT_CONVERSIONS;

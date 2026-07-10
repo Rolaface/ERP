@@ -83,3 +83,10 @@ export async function createSalesSiFromSo(soId: string): Promise<any> {
   );
   return resp.data;
 }
+
+export async function createPiFromSo(soId: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    `${SalesOrderAPI.createProformaFromSo}?so_id=${encodeURIComponent(soId)}`,
+  );
+  return resp.data;
+}
