@@ -30,6 +30,8 @@ import {
   X,
 } from "lucide-react";
 import { FaCheck, FaDownload } from "react-icons/fa";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import { useCompanyStore } from "../../store/companyStore";
 
 export type SalesNode = {
@@ -72,6 +74,7 @@ export type SalesData = {
   pagination: PaginationMeta;
 };
 
+// ── Formatters ────────────────────────────────────────────────────────────────
 const nf = (
   value: number | undefined | null,
   isCurrency = true,
@@ -89,24 +92,19 @@ const nf = (
 const currentYearStart = () => `${new Date().getFullYear()}-01-01`;
 const currentYearEnd = () => `${new Date().getFullYear()}-12-31`;
 
-
-
-
-// ── Compact KPI Strip ────────────────────────────────────────────────────────
+// ── Compact KPI Strip (mirrors AccountsReceivable style) ─────────────────────
 const KpiStrip: React.FC<{
   kpis: SalesKPIs | undefined;
   isQuantity: boolean;
   loading: boolean;
   sym: string;
 }> = ({ kpis, isQuantity, loading, sym }) => {
-  const fmtVal = (v: number) =>
-    isQuantity ? nf(v, false) : nf(v, true, sym);
-
-  const topThree = (kpis?.top_performers || []).slice(0, 3);
+  const fmtVal = (v: number) => (isQuantity ? nf(v, false) : nf(v, true, sym));
+  const topFive = (kpis?.top_performers || []).slice(0, 5);
 
   const sections = [
     {
-      icon: <TrendingUp size={11} className="text-emerald-400" />,
+      icon: <TrendingUp size={11} className="text-emerald-500" />,
       label: isQuantity ? "Sales Quantity" : "Sales Value",
       items: [
         {
@@ -123,9 +121,9 @@ const KpiStrip: React.FC<{
         },
         {
           label: "Entities",
-          value: nf(kpis?.total_entities_analyzed || 0, false),
+          value: String(kpis?.total_entities_analyzed || 0),
           color: "text-primary",
-          bold: false,
+          bold: true,
         },
       ],
     },
@@ -133,8 +131,8 @@ const KpiStrip: React.FC<{
       icon: <Award size={11} className="text-amber-400" />,
       label: "Top Performers",
       items:
-        topThree.length > 0
-          ? topThree.map((p, i) => ({
+        topFive.length > 0
+          ? topFive.map((p, i) => ({
               label: `#${i + 1} ${p.entity}`,
               value: fmtVal(p.total_value),
               color:
@@ -155,7 +153,7 @@ const KpiStrip: React.FC<{
         <div
           key={sec.label}
           className={`bg-card border border-[var(--border)] rounded-lg px-3 py-2.5 flex flex-col gap-2 min-w-0 ${
-            sec.label === "Top Performers" ? "flex-[2]" : "flex-1"
+            sec.items.length > 3 ? "flex-[2]" : "flex-1"
           }`}
         >
           <div className="flex items-center gap-1.5">
@@ -167,7 +165,10 @@ const KpiStrip: React.FC<{
           <div
             className="grid gap-1 divide-x divide-[var(--border)]"
             style={{
-              gridTemplateColumns: `repeat(${sec.items.length}, minmax(0, 1fr))`,
+              gridTemplateColumns:
+                sec.items.length > 3
+                  ? `repeat(${sec.items.length}, minmax(0, 1fr))`
+                  : "repeat(3, minmax(0, 1fr))",
             }}
           >
             {sec.items.map((item, i) => (
@@ -206,7 +207,7 @@ const KpiStrip: React.FC<{
   );
 };
 
-// ── Dropdown wrapper (mirrors AccountsReceivable) ────────────────────────────
+// ── Dropdown wrapper (identical to AccountsReceivable) ───────────────────────
 const FilterDropdown: React.FC<{
   label: string;
   active: boolean;
@@ -338,8 +339,10 @@ const SalesAnalytics: React.FC = () => {
     page_size: 20,
   });
 
+  const [searchTerm, setSearchTerm] = useState("");
   const [data, setData] = useState<SalesData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -390,7 +393,20 @@ const SalesAnalytics: React.FC = () => {
     return () => clearTimeout(timer);
   }, [filters, fetchAnalytics]);
 
-  const flatData = useMemo(() => data?.data ?? [], [data?.data]);
+  useEffect(() => {
+    setFilters((f) => ({ ...f, page: 1 }));
+  }, [searchTerm]);
+
+  const flatData = useMemo(() => {
+    const rows = data?.data ?? [];
+    if (!searchTerm.trim()) return rows;
+    const q = searchTerm.trim().toLowerCase();
+    return rows.filter(
+      (r) =>
+        r.entity?.toLowerCase().includes(q) ||
+        r.entity_name?.toLowerCase().includes(q),
+    );
+  }, [data?.data, searchTerm]);
 
   const isQuantity = filters.value_quantity === "Quantity";
 
@@ -399,6 +415,7 @@ const SalesAnalytics: React.FC = () => {
     return data.columns.map((col) => {
       const isNumeric =
         col.fieldtype === "Float" || col.fieldtype === "Currency";
+      const isTotal = col.fieldname === "total";
       return {
         accessorKey: col.fieldname,
         header: col.label,
@@ -425,9 +442,16 @@ const SalesAnalytics: React.FC = () => {
 
           if (isNumeric) {
             const num = val as number;
-            if (!num || num === 0) return <span className="text-xs text-muted tabular-nums">—</span>;
+            if (!num || num === 0)
+              return <span className="text-xs text-muted tabular-nums">—</span>;
             return (
-              <span className="text-xs tabular-nums text-gray-600 font-medium">
+              <span
+                className={`text-xs tabular-nums ${
+                  isTotal
+                    ? "text-emerald-600 font-bold"
+                    : "text-gray-600 font-medium"
+                }`}
+              >
                 {nf(num, !isQuantity, !isQuantity ? sym : "")}
               </span>
             );
@@ -451,8 +475,6 @@ const SalesAnalytics: React.FC = () => {
 
   const paginationMeta = data?.pagination;
   const currentRows = table.getRowModel().rows;
-  const emptyRowsCount = Math.max(0, (filters.page_size ?? 10) - currentRows.length);
-  const visibleColumnsCount = table.getVisibleLeafColumns().length;
 
   const treeTypeOptions: SalesAnalyticsFilters["tree_type"][] = [
     "Customer",
@@ -473,7 +495,8 @@ const SalesAnalytics: React.FC = () => {
     filters.range !== "Monthly" ||
     filters.value_quantity !== "Value" ||
     filters.from_date !== currentYearStart() ||
-    filters.to_date !== currentYearEnd();
+    filters.to_date !== currentYearEnd() ||
+    searchTerm !== "";
 
   const clearAll = () => {
     setFilters((f) => ({
@@ -485,7 +508,54 @@ const SalesAnalytics: React.FC = () => {
       to_date: currentYearEnd(),
       page: 1,
     }));
+    setSearchTerm("");
     setActiveDropdown(null);
+  };
+
+  const handleExportExcel = async () => {
+    if (!data) return;
+    try {
+      setIsExporting(true);
+      const res: any = await getSalesAnalytics({
+        ...filters,
+        page: 1,
+        page_size: 999999,
+      });
+      const payload = res?.message?.data || res?.data;
+      const rows: SalesNode[] = payload?.data || [];
+      const cols: SalesColumn[] = payload?.columns || data.columns;
+      if (!rows.length) {
+        alert("No data to export.");
+        return;
+      }
+      const exportData = rows.map((row) => {
+        const record: Record<string, any> = {};
+        cols.forEach((c) => {
+          const isNumeric = c.fieldtype === "Float" || c.fieldtype === "Currency";
+          record[c.label] = isNumeric
+            ? Number(row[c.fieldname] ?? 0)
+            : row[c.fieldname] ?? "";
+        });
+        return record;
+      });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(exportData),
+        "Sales Analytics",
+      );
+      saveAs(
+        new Blob([XLSX.write(wb, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        `Sales_Analytics_${new Date().toISOString().split("T")[0]}.xlsx`,
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Export failed.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (error && !data) {
@@ -506,7 +576,6 @@ const SalesAnalytics: React.FC = () => {
 
   return (
     <div className="h-full min-h-0 flex flex-col w-full p-2 gap-3">
-
       {/* ── KPI Strip ── */}
       {data?.kpis ? (
         <KpiStrip
@@ -615,31 +684,23 @@ const SalesAnalytics: React.FC = () => {
         {/* Date range */}
         <div className="flex items-center gap-1">
           <DatePickerInput
-  name="from_date"
-  value={filters.from_date}
-  onChange={(name, value) =>
-    setFilters((f) => ({
-      ...f,
-      [name]: value,
-      page: 1,
-    }))
-  }
-/>
+            name="from_date"
+            value={filters.from_date}
+            onChange={(name, value) =>
+              setFilters((f) => ({ ...f, [name]: value, page: 1 }))
+            }
+          />
           <span className="text-muted text-[10px]">–</span>
-         <DatePickerInput
-  name="to_date"
-  value={filters.to_date}
-  onChange={(name, value) =>
-    setFilters((f) => ({
-      ...f,
-      [name]: value,
-      page: 1,
-    }))
-  }
-/>
+          <DatePickerInput
+            name="to_date"
+            value={filters.to_date}
+            onChange={(name, value) =>
+              setFilters((f) => ({ ...f, [name]: value, page: 1 }))
+            }
+          />
         </div>
 
-        {/* Clear */}
+        {/* Clear All */}
         {hasActiveFilters && (
           <button
             onClick={clearAll}
@@ -649,9 +710,31 @@ const SalesAnalytics: React.FC = () => {
           </button>
         )}
 
-        {/* Right side: col toggle + refresh */}
+        {/* Search + Columns + Export + Refresh — pushed right */}
         <div className="ml-auto flex items-center gap-2">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search customer…"
+            className="h-7 px-2.5 text-[11px] border border-[var(--border)] bg-app rounded-md text-main
+                       focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-44"
+          />
           <ColVisMenu table={table} />
+          <button
+            onClick={handleExportExcel}
+            disabled={isExporting || flatData.length === 0}
+            className="h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)]
+                       bg-card text-muted hover:text-main hover:border-primary/40 rounded-md transition-all
+                       disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isExporting ? (
+              <RefreshCw size={10} className="animate-spin" />
+            ) : (
+              <FaDownload className="text-[9px]" />
+            )}
+            {isExporting ? "Exporting…" : "Export"}
+          </button>
           <button
             onClick={() => fetchAnalytics(filters)}
             disabled={loading}
@@ -665,9 +748,12 @@ const SalesAnalytics: React.FC = () => {
 
       {/* ── Table ── */}
       <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
-        <div className="overflow-auto flex-1 relative">
-          <table className="text-left border-collapse w-full" style={{ tableLayout: "auto" }}>
-            <thead className="sticky top-0 z-10 border-b border-[var(--border)]">
+        <div className="overflow-auto flex-1 min-h-0 relative">
+          <table
+            className="text-left border-separate border-spacing-0 w-full"
+            style={{ tableLayout: "auto" }}
+          >
+            <thead className="border-b border-[var(--border)]">
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => {
@@ -675,11 +761,15 @@ const SalesAnalytics: React.FC = () => {
                       (header.column.columnDef.meta as any)?.align === "right"
                         ? "text-right"
                         : "text-left";
+                    const isTotal = header.column.id === "total";
                     return (
                       <th
                         key={header.id}
                         style={{ width: header.getSize() }}
-                        className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-row-hover border-b border-[var(--border)] ${align}`}
+                        className={`sticky top-0 z-10 px-3 py-2 text-[9px] font-black uppercase tracking-widest
+                                    text-muted whitespace-nowrap border-b border-[var(--border)] ${align} ${
+                                      isTotal ? "bg-primary/10 text-primary" : "bg-row-hover"
+                                    }`}
                       >
                         {flexRender(
                           header.column.columnDef.header,
@@ -713,38 +803,34 @@ const SalesAnalytics: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                <>
-                  {currentRows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="hover:bg-row-hover transition-colors h-[38px]"
-                      style={{ borderBottom: "1px solid rgba(128,128,128,0.12)" }}
-                    >
-                      {row.getVisibleCells().map((cell) => {
-                        const align =
-                          (cell.column.columnDef.meta as any)?.align === "right"
-                            ? "text-right"
-                            : "text-left";
-                        return (
-                          <td
-                            key={cell.id}
-                            className={`px-3 py-1 whitespace-nowrap ${align}`}
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                  {Array.from({ length: emptyRowsCount }).map((_, i) => (
-                    <tr key={`empty-${i}`} className="h-[38px]">
-                      <td colSpan={visibleColumnsCount} className="px-3 py-1" />
-                    </tr>
-                  ))}
-                </>
+                currentRows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="hover:bg-row-hover transition-colors h-[38px]"
+                    style={{ borderBottom: "1px solid rgba(128,128,128,0.12)" }}
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      const align =
+                        (cell.column.columnDef.meta as any)?.align === "right"
+                          ? "text-right"
+                          : "text-left";
+                      const isTotal = cell.column.id === "total";
+                      return (
+                        <td
+                          key={cell.id}
+                          className={`px-3 py-1 whitespace-nowrap ${align} ${
+                            isTotal ? "bg-primary/5" : ""
+                          }`}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

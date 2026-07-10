@@ -61,7 +61,7 @@ export function TaxConfigurationSetup() {
     totalPages,
     totalItems,
     fetchAll,
-    fetchDetail,
+    fetchDetail, sortBy, setSortBy, sortOrder, setSortOrder,
   } = useTaxConfigs();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
@@ -141,8 +141,9 @@ export function TaxConfigurationSetup() {
     () => [
       {
         key: "effective_from",
-       align:"center",
+        align: "center",
         header: "Effictive From",
+        sortable: true,
         render: (row) => (
           <span className="text-sm text-main">
             {row.effective_from ? formatDate(row.effective_from) : "—"}
@@ -153,6 +154,7 @@ export function TaxConfigurationSetup() {
         key: "name",
         header: "Name",
         align:"center",
+        sortable: true,
         render: (row) => (
           <span className="font-medium text-main">{row.name || "—"}</span>
         ),
@@ -172,6 +174,7 @@ export function TaxConfigurationSetup() {
         key: "standard_tax_exemption_amount",
          align:"center",
         header: "Tax Exemption Amount",
+        sortable: true,
         render: (row) => (
           <span className="text-sm text-main">
             {row.standard_tax_exemption_amount != null
@@ -182,6 +185,7 @@ export function TaxConfigurationSetup() {
       },
       {
         key: "disabled",
+        sortable: true,
          align:"center",
         header: "Status",
         render: (row) => {
@@ -243,6 +247,13 @@ export function TaxConfigurationSetup() {
         setSearch(v);
         setPage(1);
       }}
+       sortBy={sortBy}                                    
+  sortOrder={sortOrder}                             
+  onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {  
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setPage(1);
+  }}
       enableAdd
       addLabel="Add Tax"
       onAdd={() =>

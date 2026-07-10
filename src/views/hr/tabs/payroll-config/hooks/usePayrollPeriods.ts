@@ -11,11 +11,20 @@ export function usePayrollPeriods() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  const [sortBy, setSortBy] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
       const start = (page - 1) * pageSize;
-      const response = await getAllPayrollPeriods(start, pageSize, search);
+      const response = await getAllPayrollPeriods(
+        start,
+        pageSize,
+        search,
+        sortBy,      
+        sortOrder,     
+      );
       setRows(response.data);
       setTotalItems(response.pagination.total);
       setTotalPages(response.pagination.total_pages);
@@ -24,7 +33,7 @@ export function usePayrollPeriods() {
     } finally {
       setLoading(false);
     }
-  }, [search, page, pageSize]);
+  }, [search, page, pageSize, sortBy, sortOrder]); 
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -41,5 +50,6 @@ export function usePayrollPeriods() {
     rows, loading, search, setSearch,
     page, setPage, pageSize, setPageSize,
     totalPages, totalItems, fetchAll, fetchDetail,
+    sortBy, setSortBy, sortOrder, setSortOrder,   
   };
 }
