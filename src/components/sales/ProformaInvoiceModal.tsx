@@ -605,14 +605,14 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
           {ui.activeTab === "address" && (
             <div className="space-y-6 overflow-hidden">
               {/* Payment Info */}
-              <PaymentInfoBlock
+              {/* <PaymentInfoBlock
                 data={formData.paymentInformation}
                 onChange={(e) =>
                   actions.handleInputChange(e, "paymentInformation")
                 }
                 paymentMethodOptions={paymentMethodOptions}
                 showPaymentMethod={false}
-              />
+              /> */}
 
               {/* Address boxes — incoterm/shipping stripped */}
               <InvoiceAddressTab
