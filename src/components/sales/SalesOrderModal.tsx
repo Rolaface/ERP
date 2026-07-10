@@ -490,14 +490,14 @@ const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
           {/* ──────────── ADDITIONAL DETAILS ──────────── */}
           {ui.activeTab === "address" && (
             <div className="space-y-6">
-              <PaymentInfoBlock
+              {/* <PaymentInfoBlock
                 data={formData.paymentInformation}
                 onChange={(e) =>
                   actions.handleInputChange(e, "paymentInformation")
                 }
                 paymentMethodOptions={paymentMethodOptions}
                 showPaymentMethod={false}
-              />
+              /> */}
               <InvoiceAddressTab
                 customerId={formData.customerId}
                 formData={formData}
