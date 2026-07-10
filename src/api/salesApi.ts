@@ -31,7 +31,7 @@ export async function getAllSalesInvoices(
   search?: string,
   customer?: string,
   minOutstanding?: number,
-  status?: string,
+  status?: string[],
   from_date?: string,
   to_date?: string,
 ): Promise<any> {
@@ -45,7 +45,10 @@ export async function getAllSalesInvoices(
   if (search) params.set("search", search);
   if (customer) params.set("customer", customer);
   if (minOutstanding != null) params.set("minOutstanding", String(minOutstanding));
-  if (status) params.set("status", status);       
+  if (status && status.length > 0) {
+    status.forEach((s) => params.append("status", s));
+  }
+
   if (from_date) params.set("from_date", from_date); 
   if (to_date) params.set("to_date", to_date);    
 
