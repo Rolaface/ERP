@@ -5,7 +5,10 @@ import ActionButton, {
   ActionMenu,
 } from "../../../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../../../components/ui/Table/type";
-import { useDataRefreshStore, REFRESH_KEYS } from "../../../../../store/dataRefreshStore";
+import {
+  useDataRefreshStore,
+  REFRESH_KEYS,
+} from "../../../../../store/dataRefreshStore";
 import {
   deleteSalaryComponent,
   type SalaryComponent,
@@ -27,16 +30,25 @@ export function SalaryComponentSetup() {
     totalPages,
     totalItems,
     fetchAll,
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
   } = useSalaryComponents();
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
-  const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
+  const subscribeToRefresh = useDataRefreshStore(
+    (state) => state.subscribeToRefresh,
+  );
 
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(REFRESH_KEYS.SALARY_COMPONENT_LIST, () => {
-      fetchAll();
-    });
+    const unsubscribe = subscribeToRefresh(
+      REFRESH_KEYS.SALARY_COMPONENT_LIST,
+      () => {
+        fetchAll();
+      },
+    );
     return () => unsubscribe();
   }, [subscribeToRefresh, fetchAll]);
 
@@ -60,18 +72,16 @@ export function SalaryComponentSetup() {
     },
     [triggerRefresh],
   );
-  const handleView = useCallback(
-  (row: SalaryComponent) => {
+  const handleView = useCallback((row: SalaryComponent) => {
     openSalaryComponentModal(row, false, { isViewMode: true });
-  },
-  [],
-);
+  }, []);
 
   const columns: Column<SalaryComponent>[] = useMemo(
     () => [
       {
         key: "salary_component_abbr",
         header: "Code",
+        sortable: true,
         render: (row) => (
           <span className="inline-block rounded bg-gray-100 px-2 py-0.5 font-mono text-xs font-semibold text-gray-700">
             {row.salary_component_abbr || "—"}
@@ -81,14 +91,18 @@ export function SalaryComponentSetup() {
       {
         key: "salary_component",
         header: "Component",
+        sortable: true,
         render: (row) => (
-          <span className="font-medium text-main">{row.salary_component || "—"}</span>
+          <span className="font-medium text-main">
+            {row.salary_component || "—"}
+          </span>
         ),
         tooltip: (row) => row.salary_component,
       },
       {
         key: "type",
         header: "Type",
+        sortable: true,
         render: (row) => (
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -104,6 +118,7 @@ export function SalaryComponentSetup() {
       {
         key: "amount_based_on_formula",
         header: "Basis",
+        sortable: true,
         render: (row) => (
           <span className="text-sm text-main">
             {row.amount_based_on_formula ? "Formula" : "Fixed"}
@@ -113,6 +128,7 @@ export function SalaryComponentSetup() {
       {
         key: "formula",
         header: "Formula",
+        sortable: true,
         render: (row) =>
           row.amount_based_on_formula ? (
             <code className="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700">
@@ -128,16 +144,16 @@ export function SalaryComponentSetup() {
       {
         key: "description",
         header: "Description",
+        sortable: true,
         render: (row) => (
-          <span className="text-sm text-main">
-            {row.description || "—"}
-          </span>
+          <span className="text-sm text-main">{row.description || "—"}</span>
         ),
       },
-      
+
       {
         key: "depends_on_payment_days",
         header: "Pay Days",
+        sortable: true,
         render: (row) => (
           <span
             className={`text-xs font-semibold ${
@@ -154,12 +170,12 @@ export function SalaryComponentSetup() {
         align: "center",
         render: (row) => (
           <ActionGroup>
-             <ActionButton
-    type="view"
-    iconOnly
-    onClick={() => handleView(row)}
-    disabled={actionLoadingId === row.name}
-  />
+            <ActionButton
+              type="view"
+              iconOnly
+              onClick={() => handleView(row)}
+              disabled={actionLoadingId === row.name}
+            />
             <ActionButton
               type="edit"
               iconOnly
@@ -172,9 +188,7 @@ export function SalaryComponentSetup() {
               }
               disabled={actionLoadingId === row.name}
             />
-           <ActionMenu
-  onDelete={() => handleDelete(row)}
-/>
+            <ActionMenu onDelete={() => handleDelete(row)} />
           </ActionGroup>
         ),
       },
@@ -183,42 +197,48 @@ export function SalaryComponentSetup() {
   );
 
   return (
-     <div className="h-[calc(100vh-220px)]"> 
-    <ModalTable
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(row) => row.name ?? row.salary_component}
-      showToolbar
-      searchValue={search}
-      onSearch={(v) => {
-        setSearch(v);
-        setPage(1);
-      }}
-      enableAdd
-      addLabel="Add Component"
-      onAdd={() =>
-        openSalaryComponentModal(undefined, false, {
-          onSuccess: () => {
-            triggerRefresh(REFRESH_KEYS.SALARY_COMPONENT_LIST);
-          },
-        })
-      }
-      currentPage={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      pageSize={pageSize}
-      pageSizeOptions={[20, 50, 100,200]}
-
-      onPageChange={setPage}
-      onPageSizeChange={(s) => {
-        setPageSize(s);
-        setPage(1);
-      }}
-      enableColumnSelector
-      tableId="salary-components"
-      onRowDoubleClick={(row) => handleView(row)}
-    />
+    <div className="h-[calc(100vh-220px)]">
+      <ModalTable
+        columns={columns}
+        data={rows}
+        loading={loading}
+        rowKey={(row) => row.name ?? row.salary_component}
+        showToolbar
+        searchValue={search}
+        onSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {
+          setSortBy(newSortBy);
+          setSortOrder(newSortOrder);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Component"
+        onAdd={() =>
+          openSalaryComponentModal(undefined, false, {
+            onSuccess: () => {
+              triggerRefresh(REFRESH_KEYS.SALARY_COMPONENT_LIST);
+            },
+          })
+        }
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[20, 50, 100, 200]}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        enableColumnSelector
+        tableId="salary-components"
+        onRowDoubleClick={(row) => handleView(row)}
+      />
     </div>
   );
 }

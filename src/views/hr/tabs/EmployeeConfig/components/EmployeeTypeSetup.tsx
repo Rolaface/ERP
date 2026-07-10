@@ -20,6 +20,8 @@ export function EmployeeTypeSetup() {
   const [rows, setRows] = useState<EmployeeType[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<string>("");
+const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
@@ -29,21 +31,25 @@ export function EmployeeTypeSetup() {
   const triggerRefresh = useDataRefreshStore((state) => state.triggerRefresh);
   const subscribeToRefresh = useDataRefreshStore((state) => state.subscribeToRefresh);
 
-  const fetchAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      const start = (page - 1) * pageSize;
-      const response = await getAllEmployeeTypes(start, pageSize, search);
-      setRows(response.data);
-      setTotalItems(response.pagination.total);
-      setTotalPages(response.pagination.total_pages);
-    } catch (err: any) {
-      showApiError(err?.message ?? "Failed to load employee types");
-    } finally {
-      setLoading(false);
-    }
-  }, [search, page, pageSize]);
+  const SORT_FIELD_MAP: Record<string, string> = {
+  employee_type: "employee_type_name",   // column key → actual backend field
+};
 
+const fetchAll = useCallback(async () => {
+  try {
+    setLoading(true);
+    const start = (page - 1) * pageSize;
+    const backendSortField = sortBy ? (SORT_FIELD_MAP[sortBy] || sortBy) : undefined;
+    const response = await getAllEmployeeTypes(start, pageSize, search, backendSortField, sortOrder);
+    setRows(response.data);
+    setTotalItems(response.pagination.total);
+    setTotalPages(response.pagination.total_pages);
+  } catch (err: any) {
+    showApiError(err?.message ?? "Failed to load employee types");
+  } finally {
+    setLoading(false);
+  }
+}, [search, page, pageSize, sortBy, sortOrder]);
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
@@ -103,6 +109,8 @@ export function EmployeeTypeSetup() {
       {
         key: "employee_type",
         header: "Employee Type",
+        align: "left",
+        sortable: true,
         render: (row) => (
           <span className="font-medium text-main">
             {row.employee_type_name || row.name || "-"}
@@ -145,6 +153,13 @@ export function EmployeeTypeSetup() {
         setSearch(v);
         setPage(1);
       }}
+      sortBy={sortBy}                                    
+  sortOrder={sortOrder}                          
+  onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {  
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setPage(1);
+  }}
       enableAdd
       addLabel="Add Employee Type"
       onAdd={() =>

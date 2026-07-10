@@ -19,6 +19,8 @@ export function DesignationSetup() {
   const [rows, setRows] = useState<Designation[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
@@ -29,7 +31,13 @@ export function DesignationSetup() {
     try {
       setLoading(true);
       const start = (page - 1) * pageSize;
-      const response = await getAllDesignations(start, pageSize, search);
+      const response = await getAllDesignations(
+        start,
+        pageSize,
+        search,
+        sortBy,
+        sortOrder,
+      );
       setRows(response.data);
       setTotalItems(response.pagination.total);
       setTotalPages(response.pagination.total_pages);
@@ -38,7 +46,7 @@ export function DesignationSetup() {
     } finally {
       setLoading(false);
     }
-  }, [search, page, pageSize]);
+  }, [search, page, pageSize, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchAll();
@@ -88,6 +96,7 @@ export function DesignationSetup() {
       {
         key: "designation_name",
         header: "Designation",
+        sortable: true,
         render: (row) => (
           <span className="font-medium text-main">
             {row.designation_name || row.name || "-"}
@@ -98,6 +107,7 @@ export function DesignationSetup() {
       {
         key: "description",
         header: "Description",
+        sortable: true,
         render: (row) => (
           <span className="text-sm text-sub line-clamp-1">
             {row.description || "-"}
@@ -117,9 +127,7 @@ export function DesignationSetup() {
               onClick={() => handleEdit(row)}
               disabled={actionLoadingId === row.name}
             />
-           <ActionMenu
-  onDelete={() => handleDelete(row)}
-/>
+            <ActionMenu onDelete={() => handleDelete(row)} />
           </ActionGroup>
         ),
       },
@@ -128,41 +136,48 @@ export function DesignationSetup() {
   );
 
   return (
-     <div className="h-[calc(100vh-220px)]"> 
-    <ModalTable
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(row) => row.name ?? row.designation_name}
-      showToolbar
-      searchValue={search}
-      onSearch={(v) => {
-        setSearch(v);
-        setPage(1);
-      }}
-      enableAdd
-      addLabel="Add Designation"
-      onAdd={() =>
-        openDesignationModal(
-          null,
-          false,
-          { onSuccess: fetchAll },
-          { title: "New Designation" },
-        )
-      }
-      currentPage={page}
-      totalPages={totalPages}
-      totalItems={totalItems}
-      pageSize={pageSize}
-      pageSizeOptions={[pageSize, 25, 50]}
-      onPageChange={setPage}
-      onPageSizeChange={(s) => {
-        setPageSize(s);
-        setPage(1);
-      }}
-      enableColumnSelector
-      tableId="employee-designations"
-    />
+    <div className="h-[calc(100vh-220px)]">
+      <ModalTable
+        columns={columns}
+        data={rows}
+        loading={loading}
+        rowKey={(row) => row.name ?? row.designation_name}
+        showToolbar
+        searchValue={search}
+        onSearch={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={({ sortBy: newSortBy, sortOrder: newSortOrder }) => {
+          setSortBy(newSortBy);
+          setSortOrder(newSortOrder);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Designation"
+        onAdd={() =>
+          openDesignationModal(
+            null,
+            false,
+            { onSuccess: fetchAll },
+            { title: "New Designation" },
+          )
+        }
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        pageSizeOptions={[pageSize, 25, 50]}
+        onPageChange={setPage}
+        onPageSizeChange={(s) => {
+          setPageSize(s);
+          setPage(1);
+        }}
+        enableColumnSelector
+        tableId="employee-designations"
+      />
     </div>
   );
 }
