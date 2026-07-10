@@ -15,6 +15,7 @@ import {
   getSalesInvoiceById,
   deleteSalesInvoiceById,
   editSalesInvoice,
+  createCnFromSalesInvoice,
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/invoiceTemplatRolaface";
@@ -53,6 +54,7 @@ import {
 
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import { useDocumentConversion } from "../../hooks/useDocumentConversion";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -120,6 +122,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfInvoiceNumber, setPdfInvoiceNumber] = useState<string | null>(null);
+const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCreditNote");
 
 
 
@@ -303,6 +306,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       },
     );
   };
+
+  const handleCreateCreditNote = (siId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    return createCreditNoteFromSalesInvoice(siId);
+  };
+  
 
   const fetchAllInvoicesForExport = async (): Promise<InvoiceSummary[]> => {
     try {
@@ -792,7 +801,15 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                       },
                     ]
                   : []),
-
+                    ...(inv.invoiceStatus !== "Draft" && inv.invoiceStatus !== "Cancelled"
+                                  ? [
+                                      {
+                                        label: "Create Credit Note",
+                                        icon: ACTION_ICONS.CREDIT_NOTE ,
+                                        onClick: () => handleCreateCreditNote(inv.invoiceNumber),
+                                      },
+                                    ]
+                                  : []),
                 ...(can(SALES_MODULE, "write")
                   ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
                       (status) => ({

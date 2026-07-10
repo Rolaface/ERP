@@ -77,3 +77,10 @@ export async function editSalesInvoice(
   );
   return resp.data;
 }
+
+export async function createCnFromSalesInvoice(siId: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    `${InvoiceAPI.createCnFromSi}?id=${encodeURIComponent(siId)}`,
+  );
+  return resp.data;
+}
