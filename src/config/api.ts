@@ -445,6 +445,7 @@ export const API = {
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.delete_sales_invoice`,
     editInvoice: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.update_sales_invoice`,
     getPdf: `${ERP_BASE}/api/method/frappe.utils.print_format.download_pdf`,
+    createCnFromSi: `${ERP_BASE}/api/method/custom_api.api.selling.sales_invoice.api.create_credit_note_from_si`,
   },
 
   CreditNote: {
