@@ -963,7 +963,7 @@ const ProformaDetailModal: React.FC<Props> = ({
                 >
                   {[
                     {
-                      label: "Subtotal",
+                      label: "Sub Total",
                       val: fmt(subtotal, currency),
                       big: false,
                       red: false,
@@ -981,7 +981,7 @@ const ProformaDetailModal: React.FC<Props> = ({
                     ...(taxTotal
                       ? [
                           {
-                            label: "Total Tax",
+                            label: "Tax Total",
                             val: fmt(taxTotal, currency),
                             big: false,
                             red: false,
@@ -997,7 +997,7 @@ const ProformaDetailModal: React.FC<Props> = ({
                     ...(data.roundingAdjustment
                       ? [
                           {
-                            label: "Round Off",
+                            label: "Rounding Adjustment",
                             val: fmt(data.roundingAdjustment, currency),
                             big: false,
                             red: false,

@@ -90,6 +90,9 @@ const QuotationsTable: React.FC<QuotationTableProps> = ({
   const [ ,setCompany] = useState<any>(null);
   const { can } = usePermission();
 const createInvoiceFromQuote = useDocumentConversion("quoteToSi");
+const createOrderFromQuote = useDocumentConversion("quoteToSo");
+const createProformaFromQuote = useDocumentConversion("quoteToProforma");
+
   // ── Pagination state (server)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -427,6 +430,14 @@ const handleCreateInvoice = (quotationNumber: string, e?: React.MouseEvent) => {
   e?.stopPropagation();
   return createInvoiceFromQuote(quotationNumber);
 };
+const handleCreateOrder = (quotationNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  return createOrderFromQuote(quotationNumber);
+};
+const handleCreateProforma = (quotationNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  return createProformaFromQuote(quotationNumber);
+};
 
   const fetchAllForExport = async (): Promise<QuotationSummary[]> => {
     let allData: QuotationSummary[] = [];
@@ -687,6 +698,24 @@ const handleCreateInvoice = (quotationNumber: string, e?: React.MouseEvent) => {
         label: "Create Sales Invoice",
         icon: ACTION_ICONS.SALES_INVOICE ,
         onClick: () => handleCreateInvoice(q.quotationNumber),
+      },
+    ]
+  : []),
+  ...(q.status !== "Draft" && q.status !== "Cancelled"
+  ? [
+      {
+        label: "Create Sales Order",
+        icon: ACTION_ICONS.SALES_ORDER,
+        onClick: () => handleCreateOrder(q.quotationNumber),
+      },
+    ]
+  : []),
+  ...(q.status !== "Draft" && q.status !== "Cancelled"
+  ? [
+      {
+        label: "Create Proforma Invoice",
+        icon: ACTION_ICONS.PROFORMA_INVOICE ,
+        onClick: () => handleCreateProforma(q.quotationNumber),
       },
     ]
   : []),

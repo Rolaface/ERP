@@ -93,6 +93,8 @@ const SalesOrdersTable: React.FC<SalesOrderTableProps> = ({
   const [, setCompany] = useState<any>(null);
   const { can } = usePermission();
 const createInvoiceFromSO = useDocumentConversion("soToSi");
+const createProformaFromSO = useDocumentConversion("soToProforma");
+
   // ── Pagination state (server)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -382,6 +384,10 @@ const handleCreateInvoice = (orderNumber: string, e?: React.MouseEvent) => {
   e?.stopPropagation();
   return createInvoiceFromSO(orderNumber);
 };
+const handleCreateProforma = (orderNumber: string, e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  return createProformaFromSO(orderNumber);
+};
 
   const fetchAllForExport = async (): Promise<SalesOrderSummary[]> => {
     let allData: SalesOrderSummary[] = [];
@@ -626,6 +632,15 @@ const handleCreateInvoice = (orderNumber: string, e?: React.MouseEvent) => {
         label: "Create Sales Invoice",
         icon: ACTION_ICONS.SALES_INVOICE, 
         onClick: () => handleCreateInvoice(so.orderNumber),
+      },
+    ]
+  : []),
+  ...(so.status !== "Draft" && so.status !== "Cancelled"
+  ? [
+      {
+        label: "Create Proforma Invoice",
+        icon: ACTION_ICONS.PROFORMA_INVOICE, 
+        onClick: () => handleCreateProforma(so.orderNumber),
       },
     ]
   : []),

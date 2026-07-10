@@ -106,3 +106,17 @@ export async function createSiFromQuotation(quotationId: string): Promise<any> {
   );
   return resp.data;
 }
+
+export async function createSoFromQuotation(quotationId: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    `${ProformaAPI.createSoFromQuotation}?quotation_id=${encodeURIComponent(quotationId)}`,
+  );
+  return resp.data;
+}
+
+export async function createPiFromQuotation(quotationId: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    `${ProformaAPI.createPiFromQuotation}?quotation_id=${encodeURIComponent(quotationId)}`,
+  );
+  return resp.data;
+}

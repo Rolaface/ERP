@@ -14,7 +14,7 @@ import { AuthProvider } from "../context/AuthContext";
 import { PermissionBootstrap } from "../views/PermissionBootstrap";
 import CompanyDefaultsBootstrap from "../views/CompanyDefaultsBootstrap";
 import CurrencyBootstrap from "../views/Currencybootstrap";
-
+import SessionExpiredModal from "../components/common/SessionExpiredModal";
 import ProtectedRoute from "../components/ProtectedRoutes";
 import LandingPage from "../views/LandingPage/LandingPage";
 import SignupPage from "../views/SignupPage/SignupPage";
@@ -136,6 +136,7 @@ const RootLayout = () => {
       <PermissionBootstrap />
       <CompanyDefaultsBootstrap />
       <CurrencyBootstrap />
+      <SessionExpiredModal />
       <Outlet />
     </AuthProvider>
   );
