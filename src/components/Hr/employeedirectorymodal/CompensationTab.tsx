@@ -12,6 +12,7 @@ import { getCurrencyList } from "../../../api/lookupApi";
 import { useCompanyStore } from "../../../store/companyStore";
 import { useCustomCompensationPayload } from "../../../hooks/useCustomCompensationPayload";
 import { buildCustomCompensationPayload } from "../employeedirectorymodal/Compensation/customCompensationPayload";
+import { useCurrencySymbols } from "../../../hooks/Usecurrencysymbols";
 import {
   getSalaryStructure,
   getTaxConfig,
@@ -20,16 +21,17 @@ import {
   type TaxConfig,
   getAllSalaryComponents,
 } from "../../../api/payrollConfigApi";
+
 import {
   calculateSalary,
   solveBaseFromGross,
   buildCompensationPayload,
   toNameKey,
-  toAbbrKey,
-  type SalaryComponentDef,
-  type SalaryResult,
-  type ComponentType,
-} from "../../../utils/employee_Utils/salaryengine";
+  toAbbrKey, r2, 
+} from "../../../utils/Salary_Employee/Index";
+
+import {SalaryComponentDef,SalaryResult,ComponentType} from "../../../types/Salary_Employee/salaryTypes";
+
 import { ComponentsPanel } from "./Compensation/ComponentsPanel";
 import { SalarySetupSection } from "./Compensation/SalarySetupSection";
 import { CompensationReviewModal } from "./Compensation/CompensationReviewModal";
@@ -121,6 +123,15 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
 
   const currency = formData.currency || baseCurrency || "";
   const currencyPrefix = currencySymbol || currency || "";
+
+  const { formatAmount } = useCurrencySymbols(
+  [currency, baseCurrency].filter(Boolean),
+);
+
+const money = useCallback(
+  (amount: number) => formatAmount(currency, amount, { withSymbol: true }),
+  [formatAmount, currency],
+);
 
   const selectedCustom = useMemo(() => customComponents.filter((c) => c.selected), [customComponents]);
   const customDefs = useMemo(() => selectedCustom.map((c) => c.def), [selectedCustom]);
@@ -225,18 +236,35 @@ useEffect(() => {
     stableHandleInputChange("_salaryResult", result);
   }, [baseInput, effectiveComponentDefs, overrides, taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (!effectiveComponentDefs.length) return;
-    if (activeField.current === "base") return;
-    const gross = toNum(grossInput);
-    const base = solveBaseFromGross(gross, effectiveComponentDefs, 0.01, 60, taxConfig);
-    const result = calculateSalary(base, effectiveComponentDefs, overrides, taxConfig);
-    setSalaryResult(result);
-    setComputedBase(base);
-    stableHandleInputChange("basicSalary", String(base));
-    stableHandleInputChange("grossSalary", String(gross));
-    stableHandleInputChange("_salaryResult", result);
-  }, [grossInput, effectiveComponentDefs, overrides, taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+useEffect(() => {
+  if (!effectiveComponentDefs.length) return;
+  if (activeField.current === "base") return;
+  const gross = toNum(grossInput);
+  const base = solveBaseFromGross(gross, effectiveComponentDefs, 0.001, 60, taxConfig);
+  const result = calculateSalary(base, effectiveComponentDefs, overrides, taxConfig);
+
+  const residual = r2(gross - result.gross);
+  if (residual !== 0) {
+    const basicIdx = result.components.findIndex(
+      (c) =>
+        c.type === "Earning" &&
+        (c.name?.toLowerCase().includes("basic") ||
+          Math.abs(c.amount - result.resolvedBase) < 0.02),
+    );
+    if (basicIdx !== -1) {
+      result.components = result.components.map((c, i) =>
+        i === basicIdx ? { ...c, amount: r2(c.amount + residual) } : c,
+      );
+      result.gross = r2(result.gross + residual);
+    }
+  }
+
+  setSalaryResult(result);
+  setComputedBase(base);
+  stableHandleInputChange("basicSalary", String(base));
+  stableHandleInputChange("grossSalary", String(result.gross));
+  stableHandleInputChange("_salaryResult", result);
+}, [grossInput, effectiveComponentDefs, overrides, taxConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!effectiveComponentDefs.length) return;
@@ -928,9 +956,9 @@ const fetchComponentOptions = useCallback(
                       <span className="text-[13px] text-main truncate pr-2" title={row.name}>
                         {row.name}
                       </span>
-                      <span className="text-[13px] font-bold text-success tabular-nums shrink-0">
-                        {currencyPrefix} {fmt(row.amount)}
-                      </span>
+                   <span className="text-[13px] font-bold text-success tabular-nums shrink-0">
+  {money(row.amount)}
+</span>
                     </div>
                   ))}
                   <div className="flex justify-between items-center pt-3 mt-auto border-t-2 border-success/30">
@@ -938,8 +966,8 @@ const fetchComponentOptions = useCallback(
                       Total Earning
                     </span>
                     <span className="text-sm font-extrabold text-success tabular-nums shrink-0">
-                      {currencyPrefix} {fmt(salaryResult?.gross ?? 0)}
-                    </span>
+  {money(salaryResult?.gross ?? 0)}
+</span>
                   </div>
                 </>
               ) : (
@@ -971,9 +999,9 @@ const fetchComponentOptions = useCallback(
                           </span>
                         )} */}
                       </div>
-                      <span className="text-[13px] font-bold text-danger tabular-nums shrink-0">
-                        {currencyPrefix} {fmt(row.amount)}
-                      </span>
+                     <span className="text-[13px] font-bold text-danger tabular-nums shrink-0">
+  {money(row.amount)}
+</span>
                     </div>
                   ))}
                   <div className="flex justify-between items-center pt-3 mt-auto border-t-2 border-danger/30">
@@ -981,8 +1009,8 @@ const fetchComponentOptions = useCallback(
                       Total Deduction
                     </span>
                     <span className="text-sm font-extrabold text-danger tabular-nums shrink-0">
-                      {currencyPrefix} {fmt(salaryResult?.deductionsTotal ?? 0)}
-                    </span>
+  {money(salaryResult?.deductionsTotal ?? 0)}
+</span>
                   </div>
                 </>
               ) : (

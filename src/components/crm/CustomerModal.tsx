@@ -250,11 +250,13 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   <TaxCategorySelect
                     label="Tax Category"
                     value={form.customerTaxCategory}
+                    required
                     onChange={(value) =>
                       handleChange({
                         target: { name: "customerTaxCategory", value },
                       } as React.ChangeEvent<HTMLSelectElement>)
                     }
+                      error={errors.customerTaxCategory}
                   />
                 </Tooltip>
                 <Tooltip content={form.tpin || "Tax identification"}>

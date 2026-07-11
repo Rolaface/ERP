@@ -562,6 +562,7 @@ export function useCustomerForm({
     if (!form.type) newErrors.type = "Type is required";
     if (!form.name?.trim()) newErrors.name = "Customer name is required";
     if (!form.currency) newErrors.currency = "Currency is required";
+    if (!form.customerTaxCategory) newErrors.customerTaxCategory = "Tax category is required";
     if (!pc?.firstName?.trim())
       newErrors.contactFirstName = "First name is required";
     if (!pc?.mobileCode || !pc?.mobileNumber)

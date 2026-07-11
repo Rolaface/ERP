@@ -9,13 +9,14 @@ import {
 import { useModalStore } from "../../../../store/modalStore";
 import { MinimizableModal } from "../../../common/MinimizableModal";
 import { NumericInput } from "../../../ui/modal/modalComponent";
-import type { SalaryResult } from "../../../../utils/employee_Utils/salaryengine";
+import type { SalaryResult } from "../../../../utils/Salary_Employee/salaryengine";
 
 export type CompensationReviewModalProps = {
   isOpen: boolean;
   onClose: () => void;
   employeeName: string;
   currencyPrefix: string;
+  
   salaryResult?: SalaryResult | null;
   salaryStructureName?: string;
   hasCustomizations?: boolean;

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import type { CustomComponent } from "./types";
-import type { SalaryComponentDef } from "../../../../utils/employee_Utils/salaryengine";
+import type { SalaryComponentDef } from "../../../../utils/Salary_Employee/salaryengine";
 
 export const fmt = (n: number) => n.toLocaleString();
 

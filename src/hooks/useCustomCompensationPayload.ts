@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import type { SalaryComponentDef, SalaryResult } from "../utils/employee_Utils/salaryengine"; 
+import type { SalaryComponentDef, SalaryResult } from "../utils/Salary_Employee/salaryengine"; 
 import type { CustomCompensationPayload } from "../components/Hr/employeedirectorymodal/Compensation/customCompensationPayload";
 
 interface UseCustomCompensationPayloadArgs {
