@@ -101,22 +101,22 @@ const fetchAll = useCallback(async () => {
         ),
         tooltip: (row) => row.parent_department ?? "",
       },
-      {
-        key: "is_group",
-        header: "Type",
-        sortable: true,
-        render: (row) => (
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              row.is_group
-                ? "bg-blue-100 text-blue-700"
-                : "bg-emerald-100 text-emerald-700"
-            }`}
-          >
-            {row.is_group ? "Group" : "Working"}
-          </span>
-        ),
-      },
+      // {
+      //   key: "is_group",
+      //   header: "Type",
+      //   sortable: true,
+      //   render: (row) => (
+      //     <span
+      //       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+      //         row.is_group
+      //           ? "bg-blue-100 text-blue-700"
+      //           : "bg-emerald-100 text-emerald-700"
+      //       }`}
+      //     >
+      //       {row.is_group ? "Group" : "Working"}
+      //     </span>
+      //   ),
+      // },
       {
         key: "actions",
         header: "Actions",

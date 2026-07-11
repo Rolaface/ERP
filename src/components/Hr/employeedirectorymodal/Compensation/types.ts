@@ -3,7 +3,7 @@ import type {
   ComponentType,
   SalaryComponentDef,
   SalaryResult,
-} from "../salaryengine";
+} from "../../../../utils/employee_Utils/salaryengine";
 import type { TaxConfig } from "../../../../api/payrollConfigApi";
 
 export type CompensationTabProps = {

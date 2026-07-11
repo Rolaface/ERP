@@ -1,8 +1,8 @@
 // TaxDeduction.tsx — Tax & statutory deductions summary for paid records
 import React from "react";
-import type { PayrollRecord } from "../../../types/payrolltypes";
-import { fmtINR } from "./utils";
-import { ESI_EMPLOYER_RATE, ESI_RATE, PROFESSIONAL_TAX } from "./constants";
+import type { PayrollRecord } from "../../../types/Payroll/payrolltypes";
+import { fmtINR } from "../../../utils/payroll_Utils/formatting";
+import { ESI_EMPLOYER_RATE, ESI_RATE, PROFESSIONAL_TAX } from "../../../utils/payroll_Utils/constants";
 
 interface Props { records: PayrollRecord[] }
 

@@ -1,7 +1,7 @@
 // EditEmployeePayrollModal.tsx — uses MinibleModal + Input primitives
 import React, { useState, useEffect } from "react";
 import { Save } from "lucide-react";
-import type { PayrollRecord } from "../../../types/payrolltypes";
+import type { PayrollRecord } from "../../../types/Payroll/payrolltypes";
 import { MinibleModal, Btn, Input } from "./Ui";
 
 interface Props {

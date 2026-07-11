@@ -4,9 +4,9 @@ import {
   ChevronLeft, Search, User, Mail, Briefcase, Calendar,
   Shield, Banknote, FileText, Download, CheckCircle, ArrowUpRight,
 } from "lucide-react";
-import type { PayrollRecord } from "../../../types/payrolltypes";
-import { fmtINR, calculateDeductions } from "./utils";
-
+import type { PayrollRecord } from "../../../types/Payroll/payrolltypes";
+import { fmtINR } from "../../../utils/payroll_Utils/formatting";
+import { calculateDeductions } from "../../../utils/payroll_Utils/payrollGenerator";
 interface EmployeeDetailPageProps {
   records: PayrollRecord[];
   initialRecord?: PayrollRecord;
