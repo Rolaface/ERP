@@ -215,11 +215,6 @@ const TableInner = <T extends Record<string, any>>({
             />
           </div>
 
-          {extraFilters && (
-            <div className="flex shrink-0 items-center gap-4">
-              {extraFilters}
-            </div>
-          )}
           {(multiSelectFilters?.length || extraFilters) && (
             <div className="flex shrink-0 items-center gap-4">
               {multiSelectFilters?.map((f) => (
