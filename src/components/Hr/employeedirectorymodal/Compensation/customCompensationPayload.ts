@@ -3,7 +3,7 @@ import {
   toAbbrKey,
   r2,
   type SalaryComponentDef,
-} from "../../../../utils/employee_Utils/salaryengine";
+} from "../../../../utils/Salary_Employee/salaryengine";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

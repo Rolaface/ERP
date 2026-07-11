@@ -299,6 +299,173 @@ export function calculateAnnualTax(
   return r2(Math.max(0, totalTax));
 }
 
+// ─── calculateSalary — internal passes ────────────────────────────────────────
+//
+// calculateSalary() used to be one long function with six numbered comment
+// blocks inline. It's now broken into small named passes, each one function,
+// called in order from calculateSalary() itself. The logic/order is the same
+// as before, with one addition: a "gross_pay" pass between resolving Earning
+// formulas and resolving Deduction formulas (see runGrossPayPass below), so
+// Deduction formulas can reference `gross_pay` — previously that identifier
+// never existed in ctx and any formula using it silently evaluated to 0.
+//
+// Each pass takes (components, keys, ctx, overrides) and mutates ctx in place.
+// "components" here is always the pre-normalised (amounts rounded) list, and
+// "keys" is the parallel array of { nameKey, abbrKey } computed once up front.
+
+interface CompKey {
+  nameKey: string;
+  abbrKey: string | null;
+}
+
+// Pass 1 — fixed-amount (non-formula) components, excluding tax components.
+// Tax components are handled later, once monthlyTax is known (see
+// runTaxVariablePass).
+function runFixedAmountPass(
+  components: SalaryComponentDef[],
+  keys:       CompKey[],
+  ctx:        CalcContext,
+  overrides:  Record<string, number>,
+): void {
+  for (let i = 0; i < components.length; i++) {
+    const comp = components[i];
+    if (comp.amount_based_on_formula === 1 || isTaxComponent(comp)) continue;
+
+    const { nameKey, abbrKey } = keys[i];
+    const override = overrides[nameKey] ?? (abbrKey ? overrides[abbrKey] : undefined);
+    writeCtx(ctx, nameKey, abbrKey, r2(override ?? comp.amount), comp.salary_component);
+  }
+}
+
+// Resolves formula-based, non-tax components of a single ComponentType,
+// re-evaluating up to 10 times so components can reference each other
+// (e.g. "HRA = BS*0.3" needs "basic" resolved first). Used for both the
+// Earnings pass and the Deductions pass below — same stabilising-loop logic,
+// just filtered to one type at a time.
+function runFormulaPassForType(
+  components: SalaryComponentDef[],
+  keys:       CompKey[],
+  ctx:        CalcContext,
+  overrides:  Record<string, number>,
+  type:       ComponentType,
+): void {
+  for (let pass = 0; pass < 10; pass++) {
+    let changed = false;
+    for (let i = 0; i < components.length; i++) {
+      const comp = components[i];
+      if (
+        comp.type !== type ||
+        comp.amount_based_on_formula !== 1 ||
+        isTaxComponent(comp)
+      ) continue;
+
+      const { nameKey, abbrKey } = keys[i];
+      const override = overrides[nameKey] ?? (abbrKey ? overrides[abbrKey] : undefined);
+      const next     = r2(
+        override !== undefined
+          ? override
+          : evaluateFormula(comp.formula ?? "", ctx),
+      );
+
+      if (next !== (ctx[nameKey] ?? 0)) {
+        changed = true;
+        writeCtx(ctx, nameKey, abbrKey, next, comp.salary_component);
+      }
+    }
+    if (!changed) break;
+  }
+}
+
+// Sums the resolved amount of every Earning component out of ctx.
+function sumEarnings(
+  components: SalaryComponentDef[],
+  keys:       CompKey[],
+  ctx:        CalcContext,
+): number {
+  let total = 0;
+  for (let i = 0; i < components.length; i++) {
+    if (components[i].type === "Earning") {
+      total += ctx[keys[i].nameKey] ?? 0;
+    }
+  }
+  return r2(total);
+}
+
+// Injects "gross_pay" into ctx as a generic, always-available variable —
+// same pattern as annual_tax / monthly_tax below. Not tied to any specific
+// component; any Deduction formula (NAPSA, SSF, or anything the API sends)
+// can reference it once this runs. Must run AFTER Earning formulas are
+// resolved (runFormulaPassForType(..., "Earning")) and BEFORE Deduction
+// formulas are resolved, since Deductions are the ones expected to read it.
+function runGrossPayPass(
+  components: SalaryComponentDef[],
+  keys:       CompKey[],
+  ctx:        CalcContext,
+): number {
+  const grossPay = sumEarnings(components, keys, ctx);
+  writeCtx(ctx, "gross_pay", null, grossPay, "gross_pay");
+  return grossPay;
+}
+
+// Pass 4 — income tax, from the resolved pre-tax gross.
+function runTaxCalculation(
+  preTaxGross: number,
+  taxConfig:   TaxConfig | null | undefined,
+): { annualTax: number; monthlyTax: number } {
+  if (!taxConfig) return { annualTax: 0, monthlyTax: 0 };
+  const annualTax  = calculateAnnualTax(preTaxGross * 12, taxConfig);
+  const monthlyTax = r2(annualTax / 12);
+  return { annualTax, monthlyTax };
+}
+
+// Pass 5 — tax-variable components (income tax lines etc.), resolved last
+// since they depend on annual_tax / monthly_tax being in ctx already.
+function runTaxVariablePass(
+  components: SalaryComponentDef[],
+  keys:       CompKey[],
+  ctx:        CalcContext,
+  monthlyTax: number,
+): void {
+  for (let i = 0; i < components.length; i++) {
+    const comp = components[i];
+    if (!isTaxComponent(comp)) continue;
+
+    const { nameKey, abbrKey } = keys[i];
+    const taxAmount = r2(
+      comp.amount_based_on_formula === 1 && comp.formula?.trim()
+        ? evaluateFormula(comp.formula, ctx)
+        : monthlyTax,
+    );
+    writeCtx(ctx, nameKey, abbrKey, taxAmount, comp.salary_component);
+  }
+}
+
+// Pass 6 — turns ctx into the final ComponentResult[] + breakdown map.
+function assembleResults(
+  components: SalaryComponentDef[],
+  keys:       CompKey[],
+  ctx:        CalcContext,
+): { resultComponents: ComponentResult[]; breakdown: Record<string, number> } {
+  const resultComponents: ComponentResult[] = components.map((comp, i) => ({
+    name:      comp.salary_component,
+    key:       keys[i].nameKey,
+    abbrKey:   keys[i].abbrKey,
+    amount:    r2(ctx[keys[i].nameKey] ?? 0),
+    formula:   comp.formula ?? "",
+    isFormula: comp.amount_based_on_formula === 1,
+    type:      comp.type,
+  }));
+
+  const breakdown: Record<string, number> = {};
+  for (const { key, abbrKey, amount, name } of resultComponents) {
+    writeCtx(breakdown, key, abbrKey, amount, name);
+  }
+
+  return { resultComponents, breakdown };
+}
+
+// ─── calculateSalary — orchestration ──────────────────────────────────────────
+
 export function calculateSalary(
   monthlyBase: number,
   components:  SalaryComponentDef[],
@@ -317,7 +484,7 @@ export function calculateSalary(
     amount: normaliseAmount(c.amount),
   }));
 
-  const keys = normalisedComponents.map((c) => ({
+  const keys: CompKey[] = normalisedComponents.map((c) => ({
     nameKey: toNameKey(c.salary_component),
     abbrKey: resolveAbbr(c),
   }));
@@ -325,84 +492,30 @@ export function calculateSalary(
   const ctx: CalcContext = {};
   writeCtx(ctx, "base", null, r2(monthlyBase), "base");
 
-  // Pass 1 — fixed-amount non-tax components
-  for (let i = 0; i < normalisedComponents.length; i++) {
-    const comp = normalisedComponents[i];
-    if (comp.amount_based_on_formula === 1 || isTaxComponent(comp)) continue;
+  // 1. Fixed-amount non-tax components (both Earnings and Deductions).
+  runFixedAmountPass(normalisedComponents, keys, ctx, overrides);
 
-    const { nameKey, abbrKey } = keys[i];
-    const override = overrides[nameKey] ?? (abbrKey ? overrides[abbrKey] : undefined);
-    writeCtx(ctx, nameKey, abbrKey, r2(override ?? comp.amount), comp.salary_component);
-  }
+  // 2. Formula-based Earning components — resolved first so their final
+  //    values are available for gross_pay below.
+  runFormulaPassForType(normalisedComponents, keys, ctx, overrides, "Earning");
 
-  // Pass 2 — formula-based non-tax components (re-evaluated until stable)
-  for (let pass = 0; pass < 10; pass++) {
-    let changed = false;
-    for (let i = 0; i < normalisedComponents.length; i++) {
-      const comp = normalisedComponents[i];
-      if (comp.amount_based_on_formula !== 1 || isTaxComponent(comp)) continue;
+  // 3. Compute gross_pay from resolved Earnings and inject it into ctx.
+  const preTaxGross = runGrossPayPass(normalisedComponents, keys, ctx);
 
-      const { nameKey, abbrKey } = keys[i];
-      const override = overrides[nameKey] ?? (abbrKey ? overrides[abbrKey] : undefined);
-      const next     = r2(
-        override !== undefined
-          ? override
-          : evaluateFormula(comp.formula ?? "", ctx),
-      );
+  // 4. Formula-based Deduction components — resolved after gross_pay exists,
+  //    so formulas like `(gross_pay * 0.05) if (...) else 1861.80` work.
+  runFormulaPassForType(normalisedComponents, keys, ctx, overrides, "Deduction");
 
-      if (next !== (ctx[nameKey] ?? 0)) {
-        changed = true;
-        writeCtx(ctx, nameKey, abbrKey, next, comp.salary_component);
-      }
-    }
-    if (!changed) break;
-  }
-
-  // Pass 3 — pre-tax gross (sum of all Earning components)
-  const preTaxGross = r2(
-    normalisedComponents
-      .filter((c) => c.type === "Earning")
-      .reduce((sum, c) => {
-        const idx = normalisedComponents.indexOf(c);
-        return sum + (ctx[keys[idx].nameKey] ?? 0);
-      }, 0),
-  );
-
-  // Pass 4 — income tax calculation
-  let annualTax  = 0;
-  let monthlyTax = 0;
-  if (taxConfig) {
-    annualTax  = calculateAnnualTax(preTaxGross * 12, taxConfig);
-    monthlyTax = r2(annualTax / 12);
-  }
-
+  // 5. Income tax, from the resolved pre-tax gross.
+  const { annualTax, monthlyTax } = runTaxCalculation(preTaxGross, taxConfig);
   writeCtx(ctx, "annual_tax",  null, annualTax,  "annual_tax");
   writeCtx(ctx, "monthly_tax", null, monthlyTax, "monthly_tax");
 
-  // Pass 5 — tax-variable components (depend on computed tax values above)
-  for (let i = 0; i < normalisedComponents.length; i++) {
-    const comp = normalisedComponents[i];
-    if (!isTaxComponent(comp)) continue;
+  // 6. Tax-variable components (depend on annual_tax / monthly_tax above).
+  runTaxVariablePass(normalisedComponents, keys, ctx, monthlyTax);
 
-    const { nameKey, abbrKey } = keys[i];
-    const taxAmount = r2(
-      comp.amount_based_on_formula === 1 && comp.formula?.trim()
-        ? evaluateFormula(comp.formula, ctx)
-        : monthlyTax,
-    );
-    writeCtx(ctx, nameKey, abbrKey, taxAmount, comp.salary_component);
-  }
-
-  // Pass 6 — assemble final result
-  const resultComponents: ComponentResult[] = normalisedComponents.map((comp, i) => ({
-    name:      comp.salary_component,
-    key:       keys[i].nameKey,
-    abbrKey:   keys[i].abbrKey,
-    amount:    r2(ctx[keys[i].nameKey] ?? 0),
-    formula:   comp.formula ?? "",
-    isFormula: comp.amount_based_on_formula === 1,
-    type:      comp.type,
-  }));
+  // 7. Assemble final result.
+  const { resultComponents, breakdown } = assembleResults(normalisedComponents, keys, ctx);
 
   const gross = r2(
     resultComponents.filter((c) => c.type === "Earning").reduce((s, c) => s + c.amount, 0),
@@ -410,11 +523,6 @@ export function calculateSalary(
   const deductionsTotal = r2(
     resultComponents.filter((c) => c.type === "Deduction").reduce((s, c) => s + c.amount, 0),
   );
-
-  const breakdown: Record<string, number> = {};
-  for (const { key, abbrKey, amount, name } of resultComponents) {
-    writeCtx(breakdown, key, abbrKey, amount, name);
-  }
 
   return {
     components: resultComponents,
