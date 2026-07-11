@@ -26,7 +26,7 @@ interface Props {
 type DepartmentForm = Omit<Department, "name">;
 
 const EMPTY: DepartmentForm = {
-  parent_department: "All Departments",
+  parent_department: "",
   department_name: "",
   is_group: 0,
   leave_block_list: "",
