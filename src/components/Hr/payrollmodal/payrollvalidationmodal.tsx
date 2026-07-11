@@ -8,7 +8,7 @@ import {
   ShieldCheck, Ban, ChevronDown, ChevronRight, RefreshCw,
   Banknote, Users, FileText, Shield, Calendar,
 } from "lucide-react";
-import type { ValidationResult, ValidationIssue, ValidationSeverity } from "../../../types/payrolltypes";
+import type { ValidationResult, ValidationIssue, ValidationSeverity } from "../../../types/Payroll/payrolltypes";
 
 interface PayrollValidationModalProps {
   show: boolean;

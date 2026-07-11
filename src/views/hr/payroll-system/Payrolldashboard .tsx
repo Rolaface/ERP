@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import type { PayrollRecord } from "../../../types/payrolltypes";
+import type { PayrollRecord } from "../../../types/Payroll/payrolltypes";
 
 import Table from "../../../components/ui/Table/Table";
 import type { Column } from "../../../components/ui/Table/type";

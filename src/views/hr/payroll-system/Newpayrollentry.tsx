@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FileText, Users } from "lucide-react";
 import { FaMoneyCheckAlt } from "react-icons/fa";
-import type { PayrollEntry } from "../../../types/payrolltypes";
+import type { PayrollEntry } from "../../../types/Payroll/payrolltypes";
 import {
   DEFAULT_COMPANY,
   DEFAULT_PAYROLL_PAYABLE_ACCOUNT,
@@ -9,7 +9,7 @@ import {
   DEFAULT_BANK_ACCOUNT,
   DEFAULT_CURRENCY,
   DEFAULT_EXCHANGE_RATE,
-} from "./constants";
+} from "../../../utils/payroll_Utils/constants";
 import { OverviewTab } from "./EntryFormTabs";
 import { EmployeesTab } from "./EmployeesTab";
 import { getAllEmployees } from "../../../api/employeeapi";

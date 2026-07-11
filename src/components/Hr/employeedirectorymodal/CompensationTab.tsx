@@ -29,7 +29,7 @@ import {
   type SalaryComponentDef,
   type SalaryResult,
   type ComponentType,
-} from "./salaryengine";
+} from "../../../utils/employee_Utils/salaryengine";
 import { ComponentsPanel } from "./Compensation/ComponentsPanel";
 import { SalarySetupSection } from "./Compensation/SalarySetupSection";
 import { CompensationReviewModal } from "./Compensation/CompensationReviewModal";

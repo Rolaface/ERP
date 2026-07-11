@@ -8,7 +8,7 @@ import {
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
-import type { PayrollRecord, Employee } from "../../../types/payrolltypes";
+import type { PayrollRecord, Employee } from "../../../types/Payroll/payrolltypes";
 
 interface EmployeeSelfServiceProps {
   employee: Employee;
