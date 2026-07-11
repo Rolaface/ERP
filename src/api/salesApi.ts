@@ -31,7 +31,7 @@ export async function getAllSalesInvoices(
   search?: string,
   customer?: string,
   minOutstanding?: number,
-  status?: string,
+  status?: string[],
   from_date?: string,
   to_date?: string,
 ): Promise<any> {
