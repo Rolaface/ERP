@@ -70,7 +70,7 @@ export type ComponentsPanelProps = {
   formulaOverrides: Record<string, FormulaOverride>;
   hasPendingEarning: boolean;
   hasPendingDeduction: boolean;
-  currencyPrefix?: string;
+ currency: string;
   
   fetchComponentOptions: (
     type: ComponentType,

@@ -1,7 +1,6 @@
 import React from "react";
 import { Plus } from "lucide-react";
 import { CompRow } from "./CompRow";
-import { fmt } from "./salaryHelpers";
 import type { ComponentsPanelProps } from "./types";
 
 const SectionCard: React.FC<{
@@ -67,7 +66,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
   formulaOverrides,
   hasPendingEarning,
   hasPendingDeduction,
-  currencyPrefix,
+  currency,
   fetchComponentOptions,
   handleAddCustomComponent,
   handleAmountChange,
@@ -101,7 +100,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
               !row.isCustom &&
               (row.editId in overrides || row.editId in formulaOverrides)
             }
-            currencyPrefix={currencyPrefix}
+            currency={currency}
             fetchComponentOptions={fetchComponentOptions}
             onAmountChange={(id, val) =>
               handleAmountChange(id, val, row.isCustom)
@@ -117,7 +116,6 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
             onFormulaChange={(id, formula) =>
               handleCustomFormulaChange(id, formula, row.isCustom)
             }
-            fmt={fmt}
           />
         ))}
       />
@@ -139,7 +137,7 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
               !row.isCustom &&
               (row.editId in overrides || row.editId in formulaOverrides)
             }
-            currencyPrefix={currencyPrefix}
+            currency={currency}
             fetchComponentOptions={fetchComponentOptions}
             onAmountChange={(id, val) =>
               handleAmountChange(id, val, row.isCustom)
@@ -155,7 +153,6 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({
             onFormulaChange={(id, formula) =>
               handleCustomFormulaChange(id, formula, row.isCustom)
             }
-            fmt={fmt}
           />
         ))}
       />

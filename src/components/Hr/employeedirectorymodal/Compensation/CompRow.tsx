@@ -4,6 +4,7 @@ import SearchSelect2 from "../../../ui/modal/SearchSelect2";
 import { NumericInput } from "../../../ui/modal/modalComponent";
 import type { ComponentType } from "../../../../utils/Salary_Employee/salaryengine";
 import type { ComponentOption, DisplayRow, RowFlags } from "./types";
+import { formatMoney } from "../../../../utils/money";
 
 const FLAG_META: Array<{
   key: keyof RowFlags;
@@ -62,16 +63,15 @@ const FormulaBox: React.FC<{ formula: string }> = ({ formula }) => (
 // Compact "= amount" chip, height-matched to the input beside it.
 const ComputedChip: React.FC<{
   amount: number;
-  currencyPrefix?: string;
-  fmt: (n: number) => string;
-}> = ({ amount, currencyPrefix, fmt }) => (
+  currency?: string;
+}> = ({ amount, currency }) => (
   <div
     title="Live computed amount"
     className="shrink-0 h-7 flex items-center gap-1 rounded-md bg-primary/8 border border-primary/25 px-2 whitespace-nowrap"
   >
     <span className="text-[8px] font-semibold text-primary/60">=</span>
     <span className="text-[10px] font-semibold text-primary">
-      {`${currencyPrefix ?? ""} ${fmt(amount)}`.trim()}
+      {formatMoney(currency, amount)}
     </span>
   </div>
 );
@@ -124,7 +124,7 @@ export const CompRow: React.FC<{
   row: DisplayRow;
   editable?: boolean;
   isOverridden?: boolean;
-  currencyPrefix?: string;
+  currency?: string;
   fetchComponentOptions?: (
     type: ComponentType,
     query: string,
@@ -137,12 +137,11 @@ export const CompRow: React.FC<{
   onResetOverride?: (editId: string) => void;
   onToggleFormulaMode?: (editId: string) => void;
   onFormulaChange?: (editId: string, formula: string) => void;
-  fmt: (n: number) => string;
 }> = ({
   row,
   editable,
   isOverridden,
-  currencyPrefix,
+  currency,
   fetchComponentOptions,
   onAmountChange,
   onSelectComponent,
@@ -152,7 +151,6 @@ export const CompRow: React.FC<{
   onResetOverride,
   onToggleFormulaMode,
   onFormulaChange,
-  fmt,
 }) => {
   const isPendingCustom = row.isCustom && !row.selected;
   const isLoadingDetails = Boolean(row.detailsLoading);
@@ -280,11 +278,7 @@ export const CompRow: React.FC<{
                 spellCheck={false}
                 className="flex-1 min-w-0 h-7 text-[10px] font-mono rounded-md border border-theme bg-app px-1.5 text-main focus:outline-none focus:ring-1 focus:ring-primary"
               />
-              <ComputedChip
-                amount={computedAmount}
-                currencyPrefix={currencyPrefix}
-                fmt={fmt}
-              />
+              <ComputedChip amount={computedAmount} currency={currency} />
               {canDelete && (
                 <button
                   type="button"
@@ -304,11 +298,7 @@ export const CompRow: React.FC<{
           ) : isFormulaMode ? (
             <>
               <FormulaBox formula={row.formula || ""} />
-              <ComputedChip
-                amount={computedAmount}
-                currencyPrefix={currencyPrefix}
-                fmt={fmt}
-              />
+              <ComputedChip amount={computedAmount} currency={currency} />
 
               {canDelete && (
                 <button

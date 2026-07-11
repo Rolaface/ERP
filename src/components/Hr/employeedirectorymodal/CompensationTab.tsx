@@ -52,7 +52,7 @@ import type {
   CustomComponent,
   DisplayRow,
 } from "./Compensation/types";
-
+import { formatMoney } from "../../../utils/money"; 
 
 
 export { buildCompensationPayload };
@@ -124,13 +124,11 @@ export const CompensationTab: React.FC<CompensationTabProps> = ({
   const currency = formData.currency || baseCurrency || "";
   const currencyPrefix = currencySymbol || currency || "";
 
-  const { formatAmount } = useCurrencySymbols(
-  [currency, baseCurrency].filter(Boolean),
-);
+useCurrencySymbols([currency, baseCurrency].filter(Boolean));
 
 const money = useCallback(
-  (amount: number) => formatAmount(currency, amount, { withSymbol: true }),
-  [formatAmount, currency],
+  (amount: number) => formatMoney(currency, amount),
+  [currency],
 );
 
   const selectedCustom = useMemo(() => customComponents.filter((c) => c.selected), [customComponents]);
@@ -1025,7 +1023,7 @@ const fetchComponentOptions = useCallback(
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         employeeName={[formData.firstName, formData.lastName].filter(Boolean).join(" ")}
-        currencyPrefix={currencyPrefix}
+        currency={currency}
         salaryResult={salaryResult}
         salaryStructureName={formData.salaryStructure}
         hasCustomizations={hasCustomizations}
@@ -1059,7 +1057,7 @@ const fetchComponentOptions = useCallback(
           formulaOverrides={formulaOverrides}
           hasPendingEarning={hasPendingEarning}
           hasPendingDeduction={hasPendingDeduction}
-          currencyPrefix={currencyPrefix}
+          currency={currency}
           fetchComponentOptions={fetchComponentOptions}
           handleResetAllCustomizations={handleResetAllCustomizations}
           handleToggleCustomize={handleToggleCustomize}
