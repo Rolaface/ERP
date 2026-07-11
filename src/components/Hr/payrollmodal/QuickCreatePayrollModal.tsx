@@ -1,7 +1,7 @@
 // QuickCreatePayrollModal.tsx
 import React from "react";
 import { X, CheckCircle } from "lucide-react";
-import type { Employee } from "../../../types/payrolltypes";
+import type { Employee } from "../../../types/Payroll/payrolltypes";
 
 interface QuickCreateModalProps {
   show: boolean;

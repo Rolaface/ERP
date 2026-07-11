@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import type { PayrollVerificationData } from "../../api/payroll/payrollEntryApi";
-import type { MappedEmployee } from "./mapPayrollVerificationData";
+import type { MappedEmployee } from "../../utils/payroll_Utils/mapPayrollVerificationData";
 
 const GREEN = "FF6AA84F";
 const RED = "FFCC0000";
@@ -84,7 +84,7 @@ export async function exportPayrollExcel(
     if (colNumber >= earnStart && colNumber <= grossCol) {
       cell.font = { bold: true, size: 10, color: { argb: GREEN } };
     }
-    if (colNumber === totalDedCol) {
+    if (colNumber >= dedStart && colNumber <= totalDedCol) {
       cell.font = { bold: true, size: 10, color: { argb: RED } };
     }
   });
@@ -111,7 +111,9 @@ export async function exportPayrollExcel(
     row.eachCell((cell, colNumber) => {
       cell.border = BORDER_ALL;
       if (colNumber >= earnStart) cell.numFmt = "#,##0.00";
-      if (colNumber === grossCol || colNumber === netPayCol) cell.font = { bold: true };
+      if (colNumber === grossCol) cell.font = { bold: true, color: { argb: GREEN } };
+      else if (colNumber === totalDedCol) cell.font = { bold: true, color: { argb: RED } };
+      else if (colNumber === netPayCol) cell.font = { bold: true };
     });
   });
 

@@ -1,8 +1,8 @@
 // ExpandedRowDetail.tsx
 import React from "react";
 import { ChevronUp, ArrowRight } from "lucide-react";
-import type { PayrollRecord } from "../../../types/payrolltypes";
-import { fmtINR } from "./utils";
+import type { PayrollRecord } from "../../../types/Payroll/payrolltypes";
+import { fmtINR } from "../../../utils/payroll_Utils/formatting";
 
 interface ExpandedRowDetailProps {
   record: PayrollRecord;

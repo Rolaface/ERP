@@ -16,7 +16,7 @@ import {
   Search,
   X,
 } from "lucide-react";
-import type { PayrollEntry, Employee } from "../../../types/payrolltypes";
+import type { PayrollEntry, Employee } from "../../../types/Payroll/payrolltypes";
 import { getPayrollEmployees } from "../../../api/utils/frappeUtilsApi";
 import { getEmployeeById } from "../../../api/employeeapi";
 import SearchSelect2 from "../../../components/ui/modal/SearchSelect2";

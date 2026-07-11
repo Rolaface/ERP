@@ -9,7 +9,7 @@ import {
 import { useModalStore } from "../../../../store/modalStore";
 import { MinimizableModal } from "../../../common/MinimizableModal";
 import { NumericInput } from "../../../ui/modal/modalComponent";
-import type { SalaryResult } from "../salaryengine";
+import type { SalaryResult } from "../../../../utils/employee_Utils/salaryengine";
 
 export type CompensationReviewModalProps = {
   isOpen: boolean;
