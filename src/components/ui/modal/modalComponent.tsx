@@ -445,7 +445,7 @@ export const NumericInput: React.FC<NumericInputProps> = ({
   value,
   onChange,
   placeholder = "0",
-  decimalScale = 4,
+  decimalScale = 6,
   allowNegative = false,
   disabled = false,
   className = "",
