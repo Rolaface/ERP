@@ -343,6 +343,35 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                   />
                 </Tooltip>
               </div>
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mt-4">
+               <Tooltip content={String(form.creditLimit ?? "") || "Enter credit limit"}>
+                 <ModalInput
+                   label="Credit Limit"
+                   name="creditLimit"
+                  type="number"
+                 value={form.creditLimit ?? ""}
+                 onChange={handleChange}
+                 placeholder="Enter credit limit"
+                  error={errors.creditLimit}
+                />
+              </Tooltip>
+              <div className="flex items-end pb-2">
+                <label className="flex items-center gap-2 text-[11px] font-medium text-main cursor-pointer">
+                  <input
+                    type="checkbox"
+                  name="bypassCreditLimit"
+                  checked={!!form.bypassCreditLimit}
+                  onChange={(e) =>
+                     setForm((prev) => ({
+                      ...prev,
+                       bypassCreditLimit: e.target.checked,
+                      }))
+                   }
+                />
+                  Bypass Credit Limit Check
+                </label>
+            </div>
+           </div>
             </Card>
           )}
 
