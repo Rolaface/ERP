@@ -101,10 +101,12 @@ export default function CustomerSelect({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const optionRefs = useRef<Array<HTMLLIElement | null>>([]);
 
   // ── Sync display value ────────────────────────────────────────────────────
   useEffect(() => {
@@ -188,10 +190,22 @@ export default function CustomerSelect({
     );
   }, [customers, search]);
 
+  // ── Reset highlight whenever the filtered list changes ────────────────────
+  useEffect(() => {
+    setHighlightedIndex(filtered.length > 0 ? 0 : -1);
+  }, [filtered]);
+
+  // ── Keep highlighted option in view ────────────────────────────────────────
+  useEffect(() => {
+    if (highlightedIndex < 0) return;
+    optionRefs.current[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex]);
+
   // ── Select ────────────────────────────────────────────────────────────────
   const handleSelect = (c: Customer) => {
     setSearch(c.name);
     setOpen(false);
+    setHighlightedIndex(-1);
     onChange({
       id: c.id,
       name: c.name,
@@ -201,6 +215,54 @@ export default function CustomerSelect({
       status: c.status,
       taxCategory: c.taxCategory,
     });
+  };
+
+  // ── Keyboard navigation inside the dropdown ─────────────────────────────────
+  // While the dropdown is open, arrow keys move the highlight instead of
+  // bubbling up to any outer grid/spreadsheet navigation handler.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open) {
+      // Let ArrowDown open the dropdown, like a native select.
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        handleOpen();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setHighlightedIndex((prev) =>
+          filtered.length === 0 ? -1 : (prev + 1) % filtered.length,
+        );
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setHighlightedIndex((prev) =>
+          filtered.length === 0
+            ? -1
+            : (prev - 1 + filtered.length) % filtered.length,
+        );
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
+          handleSelect(filtered[highlightedIndex]);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        setOpen(false);
+        setHighlightedIndex(-1);
+        if (!customers.find((c) => c.name === search)) setSearch(value);
+        break;
+      case "Tab":
+        // Let Tab move focus naturally; just close the dropdown.
+        setOpen(false);
+        setHighlightedIndex(-1);
+        break;
+    }
   };
 
   // ── Dropdown style ────────────────────────────────────────────────────────
@@ -219,7 +281,11 @@ export default function CustomerSelect({
         </span>
       )}
 
-      <div ref={containerRef} className="relative w-full">
+      <div
+        ref={containerRef}
+        className="relative w-full"
+        data-nav-ignore={open ? "true" : undefined}
+      >
         <input
           ref={inputRef}
           type="text"
@@ -246,6 +312,7 @@ export default function CustomerSelect({
             }
           }}
           onFocus={handleOpen}
+          onKeyDown={handleKeyDown}
         />
 
         {error && (
@@ -260,6 +327,7 @@ export default function CustomerSelect({
             ref={dropdownRef}
             style={dropStyle}
             className="bg-card border border-theme rounded-lg shadow-xl overflow-hidden"
+            data-nav-ignore="true"
           >
             <ul className="max-h-56 overflow-y-auto text-[11px]">
               {loading ? (
@@ -271,9 +339,13 @@ export default function CustomerSelect({
                   {search ? `No match for "${search}"` : "No customers found"}
                 </li>
               ) : (
-                filtered.map((c) => (
+                filtered.map((c, idx) => (
                   <li
                     key={c.id}
+                    ref={(el) => {
+                      optionRefs.current[idx] = el;
+                    }}
+                    onMouseEnter={() => setHighlightedIndex(idx)}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       handleSelect(c);
@@ -281,9 +353,11 @@ export default function CustomerSelect({
                     onClick={() => {}}
                     className={[
                       "px-3 py-1.5 cursor-pointer border-b border-theme last:border-none transition-colors",
-                      c.id === selectedId
+                      idx === highlightedIndex
                         ? "bg-primary/10 text-primary font-semibold"
-                        : "hover:bg-primary/5 text-main",
+                        : c.id === selectedId
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "hover:bg-primary/5 text-main",
                     ].join(" ")}
                   >
                     <div className="flex justify-between items-center gap-2">

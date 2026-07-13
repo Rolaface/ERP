@@ -4,6 +4,7 @@ import { HSNNode, HSNLeaf } from "./hsnTreeUtils";
 
 interface HsnResultRowProps {
   item: HSNNode | HSNLeaf;
+  index: number;
   mode: "browse" | "search";
   isActive: boolean;
   isCurrentSelection: boolean;
@@ -13,6 +14,7 @@ interface HsnResultRowProps {
 
 const HsnResultRow: React.FC<HsnResultRowProps> = ({
   item,
+  index,
   mode,
   isActive,
   isCurrentSelection,
@@ -24,12 +26,18 @@ const HsnResultRow: React.FC<HsnResultRowProps> = ({
   return (
     <div
       role="option"
+      data-index={index}
       aria-selected={isActive}
       onMouseEnter={onHover}
       onClick={onActivate}
-      className={`mx-1.5 my-0.5 flex items-center gap-2 rounded px-2 py-1.5 cursor-pointer row-hover ${
-        isActive ? "bg-row-hover" : ""
+      className={`row-hover mx-1.5 my-0.5 flex items-center gap-2 rounded border-l-2 border-transparent px-2 py-1.5 cursor-pointer transition-colors ${
+        isActive ? "" : ""
       }`}
+      style={
+        isActive
+          ? { borderLeftColor: "var(--primary)", background: "var(--row-hover)" }
+          : undefined
+      }
     >
       {isLeaf ? (
         <Tag size={12} className={isActive ? "text-primary" : "text-muted"} />

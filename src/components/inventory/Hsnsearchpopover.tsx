@@ -46,6 +46,9 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const lastValueRef = useRef<string | undefined>(undefined);
+  const listRef = useRef<HTMLDivElement>(null);
+  const isKeyboardNavRef = useRef(false);
 
   const mode = query.trim() ? "search" : "browse";
   const { searchResults, isSearching, searchError, setSearchResults } = useHsnSearch(query);
@@ -93,6 +96,8 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
 
     setPath([]);
     setSearchResults([]);
+    if (lastValueRef.current === value) return;
+    lastValueRef.current = value;
 
     if (!value) {
       setQuery("");
@@ -114,6 +119,13 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
     };
   }, [open, value, setSearchResults]);
 
+  // Keep the keyboard-selected row scrolled into view.
+  useEffect(() => {
+    if (!isKeyboardNavRef.current) return;
+    const el = listRef.current?.querySelector<HTMLElement>(`[data-index="${selectedIndex}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
+
   const handleRowActivate = useCallback(
     (item: HSNNode | HSNLeaf) => {
       if (mode === "browse" && (item as HSNNode).children) {
@@ -130,9 +142,11 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
+        isKeyboardNavRef.current = true;
         setSelectedIndex((i) => Math.min(i + 1, list.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
+        isKeyboardNavRef.current = true;
         setSelectedIndex((i) => Math.max(i - 1, 0));
       } else if (e.key === "Enter") {
         e.preventDefault();
@@ -178,7 +192,14 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
         />
       )}
 
-      <div role="listbox" className="flex-1 overflow-y-auto py-1">
+      <div
+        role="listbox"
+        ref={listRef}
+        className="flex-1 overflow-y-auto py-1"
+        onMouseMove={() => {
+          isKeyboardNavRef.current = false;
+        }}
+      >
         {isLoading && (
           <div className="px-3 py-8 text-center text-[12px] text-muted">
             {mode === "search" ? "Searching..." : "Loading HSN codes..."}
@@ -206,13 +227,17 @@ const HsnSearchPopover: React.FC<HsnSearchPopoverProps> = ({
             <HsnResultRow
               key={item.id}
               item={item}
+              index={i}
               mode={mode}
               isActive={i === selectedIndex}
               isCurrentSelection={
                 (mode === "search" || !!(item as HSNNode).code) &&
                 (item as HSNLeaf | HSNNode).code === value
               }
-              onHover={() => setSelectedIndex(i)}
+              onHover={() => {
+                if (isKeyboardNavRef.current) return;
+                setSelectedIndex(i);
+              }}
               onActivate={() => handleRowActivate(item)}
             />
           ))}
