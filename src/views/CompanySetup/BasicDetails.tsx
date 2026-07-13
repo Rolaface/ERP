@@ -183,6 +183,7 @@ const defaultForm: BasicDetailsForm = {
     industryType: "",
     defaultModeOfPayment: "",
     domain: "",
+    sdc_id: "",
   },
   contact: {
     companyEmail: "",
@@ -355,7 +356,7 @@ interface BasicDetailsProps {
   onSaveSuccess: () => void;
 }
 const FIELD_LABELS: Record<string, string> = {
-  registerNo: "Registration No", tpin: "Tax Id / TPIN", companyName: "Company Name",
+  registerNo: "Registration No", tpin: "Tax Id / TPIN", companyName: "Company Name", sdc_id:"Sdc Id",
   dateOfIncorporation: "Date of Incorporation", companyType: "Company Type",
   industryType: "Industry Type", domain: "Primary Business Domain", defaultModeOfPayment: "Default Mode of Payment",
   companyEmail: "Company Email", companyPhone: "Company Phone", alternatePhone: "Alternate Phone",
@@ -372,6 +373,7 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState("registration");
 const [initialForm, setInitialForm] = useState<BasicDetailsForm>(defaultForm);
+const isZraEnabled = useCompanyStore((state) => state.isZraEnabled);
   const [form, setForm] = useState<BasicDetailsForm>(() => {
     const b = basic as any;
     return {
@@ -466,6 +468,7 @@ const [initialForm, setInitialForm] = useState<BasicDetailsForm>(defaultForm);
   const mapFormToApiPayload = (form: BasicDetailsForm) => ({
     registrationNumber: form.registration.registerNo,
     tpin: form.registration.tpin,
+    sdc_id: form.registration.sdc_id,
     companyName: form.registration.companyName,
     companyType: form.registration.companyType,
     companyStatus: form.registration.companyStatus,
@@ -647,6 +650,11 @@ const [initialForm, setInitialForm] = useState<BasicDetailsForm>(defaultForm);
                   handleChange("registration", "defaultModeOfPayment", val)
                 }
               />
+
+              {isZraEnabled &&
+              renderField ("Sdc Id", "sdc_id", "registration", {
+                icon: FaIdCard,
+              })}
             </div>
           )}
 
