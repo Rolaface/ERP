@@ -249,6 +249,108 @@ export const TemplateField: React.FC<TemplateFieldProps> = ({
   );
 };
 
+const LATE_CHARGE_PERIODS = ["day", "week", "month", "year"] as const;
+type LateChargePeriod = (typeof LATE_CHARGE_PERIODS)[number];
+
+interface LateChargeFieldProps {
+  value: string;
+  onChange: (v: string) => void;
+  disabled: boolean;
+}
+
+const LATE_CHARGE_REGEX =
+  /^Late payment charges (\d+(?:\.\d+)?) % per (day|week|month|year)$/i;
+
+const parseLateCharge = (value: string): { num: string; period: LateChargePeriod } => {
+  const m = value.match(LATE_CHARGE_REGEX);
+  if (m) return { num: m[1], period: m[2].toLowerCase() as LateChargePeriod };
+  return { num: extractNumber(value), period: "year" };
+};
+
+export const LateChargeField: React.FC<LateChargeFieldProps> = ({ value, onChange, disabled }) => {
+  const [isCustom, setIsCustom] = useState(() => {
+    if (!value) return false;
+    return !LATE_CHARGE_REGEX.test(value.trim());
+  });
+  const initial = parseLateCharge(value);
+  const [numVal, setNumVal] = useState(initial.num);
+  const [period, setPeriod] = useState<LateChargePeriod>(initial.period);
+
+  const buildFull = (n: string, p: LateChargePeriod) =>
+    n ? `Late payment charges ${n} % per ${p}` : "";
+
+  const handleNumChange = (n: string) => {
+    setNumVal(n);
+    onChange(buildFull(n, period));
+  };
+
+  const handlePeriodChange = (p: LateChargePeriod) => {
+    setPeriod(p);
+    onChange(buildFull(numVal, p));
+  };
+
+  const toggle = () => {
+    if (isCustom) {
+      const { num, period: p } = parseLateCharge(value);
+      setNumVal(num);
+      setPeriod(p);
+      onChange(buildFull(num, p));
+      setIsCustom(false);
+    } else {
+      setIsCustom(true);
+    }
+  };
+
+  if (disabled) {
+    return <span className="text-muted text-sm">{value || "—"}</span>;
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+      {isCustom ? (
+        <input
+          className="flex-1 bg-transparent text-muted outline-none border-b border-theme focus:border-primary text-sm min-w-0"
+          value={value}
+          placeholder="Enter full text..."
+          onChange={(e) => onChange(e.target.value)}
+        />
+      ) : (
+        <div className="flex items-center gap-1.5 flex-1 flex-wrap min-w-0">
+          <span className="text-muted text-sm whitespace-nowrap">Late payment charges</span>
+          <NumericInput
+            name="lateChargeNumber"
+            value={numVal ? Number(numVal) : null}
+            placeholder="0"
+            onChange={(v) => handleNumChange(v == null ? "" : String(v))}
+            className="w-14"
+          />
+          <span className="text-muted text-sm whitespace-nowrap">% per</span>
+            <select
+              value={period}
+              onChange={(e) =>
+                handlePeriodChange(e.target.value as LateChargePeriod)
+              }
+              className="bg-card border border-theme rounded-md px-1.5 py-0.5 text-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary text-xs cursor-pointer"
+            >
+              {LATE_CHARGE_PERIODS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+        </div>
+      )}
+      <button
+        type="button"
+        title={isCustom ? "Switch to template" : "Switch to custom text"}
+        onClick={toggle}
+        className="flex-shrink-0 text-muted hover:text-primary transition-colors"
+      >
+        {isCustom ? <MdOutlineCalendarToday size={14} /> : <MdOutlineTextFields size={14} />}
+      </button>
+    </div>
+  );
+};
 // ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -505,9 +607,8 @@ const TermsAndCondition: React.FC<Props> = ({
             <button
               type="button"
               onClick={addPhase}
-              className={`bg-primary text-white rounded-lg flex items-center gap-1.5 ${
-                compact ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm"
-              }`}
+              className={`bg-primary text-white rounded-lg flex items-center gap-1.5 ${compact ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm"
+                }`}
             >
               <FaPlus size={compact ? 9 : 11} /> Add Phase
             </button>
@@ -534,12 +635,12 @@ const TermsAndCondition: React.FC<Props> = ({
               prefix="Payment due within"
               suffix="days"
               suffixKeyword="days"
-            value={
-  totalCreditDays > 0
-    ? `Payment due within ${totalCreditDays} days (Due on ${getDueDate(totalCreditDays)})`
-    : "Due today"
-}
-              onChange={() => {}}
+              value={
+                totalCreditDays > 0
+                  ? `Payment due within ${totalCreditDays} days (Due on ${getDueDate(totalCreditDays)})`
+                  : "Due today"
+              }
+              onChange={() => { }}
               disabled={true}
             />
           </div>
@@ -550,10 +651,7 @@ const TermsAndCondition: React.FC<Props> = ({
             >
               Late Payment Charges:
             </span>
-            <TemplateField
-              prefix="Late payment charges"
-              suffix="% per annum"
-              suffixKeyword="%"
+            <LateChargeField
               value={payment.lateCharges ?? ""}
               onChange={(v) => updatePayment({ lateCharges: v })}
               disabled={isViewMode}
@@ -585,9 +683,8 @@ const TermsAndCondition: React.FC<Props> = ({
       value={(currentTerms[key] as string) ?? ""}
       onChange={(e) => updateTopField(key, e.target.value)}
       placeholder={`Enter ${label.toLowerCase()}...`}
-      className={`w-full bg-card border border-theme rounded-lg px-4 py-3 text-sm text-main focus:ring-2 outline-none resize-none disabled:opacity-60 disabled:cursor-not-allowed ${
-        compact ? "h-32" : "h-48"
-      }`}
+      className={`w-full bg-card border border-theme rounded-lg px-4 py-3 text-sm text-main focus:ring-2 outline-none resize-none disabled:opacity-60 disabled:cursor-not-allowed ${compact ? "h-32" : "h-48"
+        }`}
     />
   );
 
