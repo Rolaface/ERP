@@ -47,6 +47,9 @@ export default function ItemSelect({
   const [search, setSearch] = useState("");
   const [rect, setRect] = useState<DOMRect | null>(null);
 
+  // NEW: tracks which row in the open list is keyboard-highlighted.
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -152,6 +155,11 @@ export default function ItemSelect({
     .filter((it) => !exclude.has(String(it.itemCode ?? "").trim()))
     .filter((it) => it.itemName.toLowerCase().includes(search.toLowerCase()));
 
+  // NEW: whenever the visible list changes, reset the keyboard highlight to the top.
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [filtered.length, search]);
+
   const openDropdown = () => {
     if (!inputRef.current || disabled) return;
 
@@ -159,8 +167,19 @@ export default function ItemSelect({
     setOpen(true);
   };
 
+  // NEW: selects whichever row is currently keyboard-highlighted.
+  const selectHighlighted = () => {
+    const it = filtered[highlightedIndex];
+    if (!it) return;
+    setSearch(it.itemName);
+    setOpen(false);
+    onChange(it);
+  };
+
 return (
-    <div className={`w-full ${className}`}>
+    // NEW: data-nav-ignore stops a parent spreadsheet grid's arrow-key
+    // handler from hijacking keys while this dropdown is open.
+    <div className={`w-full ${className}`} data-nav-ignore={open ? "true" : undefined}>
       <input
         ref={inputRef}
         className="w-full h-[26px] py-1 px-2 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
@@ -171,6 +190,37 @@ return (
           openDropdown();
         }}
         onFocus={openDropdown}
+        // NEW: keyboard navigation inside the open list.
+        onKeyDown={(e) => {
+          if (!open) {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              openDropdown();
+            }
+            return;
+          }
+          switch (e.key) {
+            case "ArrowDown":
+              e.preventDefault();
+              setHighlightedIndex((i) => Math.min(i + 1, filtered.length - 1));
+              break;
+            case "ArrowUp":
+              e.preventDefault();
+              setHighlightedIndex((i) => Math.max(i - 1, 0));
+              break;
+            case "Enter":
+              e.preventDefault();
+              selectHighlighted();
+              break;
+            case "Escape":
+              e.preventDefault();
+              setOpen(false);
+              break;
+            case "Tab":
+              setOpen(false);
+              break;
+          }
+        }}
         disabled={disabled}
       />
 
@@ -187,6 +237,9 @@ return (
             return (
               <div
                 ref={dropdownRef}
+                // NEW: portal content renders outside this DOM subtree, so it
+                // needs its own nav-ignore flag too.
+                data-nav-ignore="true"
                 style={{
                   position: "fixed",
                   top: rect.bottom + 4, // slight offset
@@ -202,15 +255,29 @@ return (
                       <InvoiceHeaders />
                     </thead>
                     <tbody>
-                      {filtered.map((it, idx) => (
+                      {filtered.map((it, idx) => {
+                        // NEW: is this the keyboard-highlighted row?
+                        const isHighlighted = idx === highlightedIndex;
+                        return (
                         <tr
                           key={it.id}
+                          // NEW: keep the highlighted row scrolled into view.
+                          ref={(el) => {
+                            if (isHighlighted) {
+                              el?.scrollIntoView({ block: "nearest" });
+                            }
+                          }}
+                          // NEW: hovering syncs mouse and keyboard highlight.
+                          onMouseEnter={() => setHighlightedIndex(idx)}
                           onClick={() => {
                             setSearch(it.itemName);
                             setOpen(false);
                             onChange(it);
                           }}
-                          className="cursor-pointer border-b border-theme hover:bg-row-hover bg-card transition-colors"
+                          className={[
+                            "border-b border-theme bg-card row-interactive",
+                            isHighlighted ? "row-highlighted" : "",
+                          ].join(" ")}
                         >
                           <td className="px-2 py-2 text-center">{idx + 1}</td>
                           
@@ -274,7 +341,8 @@ return (
                             Select
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                       
                       {/* Empty State / Add New */}
                       {filtered.length === 0 && (

@@ -164,16 +164,25 @@ export const DetailsTab = ({
     },
   ) => {
     const amount = (it.quantity ?? 0) * (it.rate ?? 0);
+
+    // Running column counter — same coordinate pattern used by ItemTable's
+    // own default row renderer, so the container's spreadsheet-nav hook
+    // (wired in ItemTable.tsx) can walk this custom row too.
+    let col = 0;
+    const c = () => col++;
+
     return (
       <tr
         key={i}
         className="border-b border-theme bg-card hover:bg-primary/5 transition-colors"
       >
         {/* # */}
-        <td className="px-1 py-1.5 text-[10px] text-muted">{i + 1}</td>
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 text-[10px] text-muted">
+          {i + 1}
+        </td>
 
         {/* Item Name */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <POItemSelect
             value={it.itemName}
             selectedId={it.itemCode}
@@ -182,7 +191,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Packing */}
-        <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
           <input
             type="text"
             value={
@@ -207,7 +216,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Required By */}
-        <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
           <DatePickerInput
             name="requiredBy"
             value={it.requiredBy || ""}
@@ -218,7 +227,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Warehouse */}
-        <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
           <WarehouseSelect
             compact
             value={it.warehouse || ""}
@@ -227,7 +236,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Qty */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <NumericInput
             name="quantity"
             placeholder="1"
@@ -240,7 +249,7 @@ export const DetailsTab = ({
         </td>
 
         {/* UOM */}
-        <td className="px-1 py-1.5 hidden lg:table-cell overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 hidden lg:table-cell overflow-hidden">
           <input
             name="uom"
             value={it.uom}
@@ -251,7 +260,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Rate */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <NumericInput
             name="rate"
             placeholder="0"
@@ -265,7 +274,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Tax% */}
-        <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
           <NumericInput
             name="vatRate"
             placeholder="0"
@@ -279,7 +288,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Tax — vatCd, same 12% width as Invoice Tax Name */}
-        <td className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 hidden md:table-cell overflow-hidden">
           <Tooltip content={it.vatCd || "No Tax"}>
             <input
               name="vatCd"

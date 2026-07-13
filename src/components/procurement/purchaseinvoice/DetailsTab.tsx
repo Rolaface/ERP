@@ -157,14 +157,20 @@ export const DetailsTab = ({
     const taxAmount = netAmount * (vatRate / 100);
     const amount = netAmount + taxAmount;
 
+    // Running column counter — same coordinate pattern used by ItemTable's
+    // own default row renderer, so the container's spreadsheet-nav hook
+    // (wired in ItemTable.tsx) can walk this custom row too.
+    let col = 0;
+    const c = () => col++;
+
     return (
       <tr key={i} className="border-b border-theme bg-card hover:bg-primary/5 transition-colors">
 
         {/* # */}
-        <td className="px-1 py-1.5 text-[10px] text-muted overflow-hidden">{i + 1}</td>
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 text-[10px] text-muted overflow-hidden">{i + 1}</td>
 
         {/* Item Name */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <POItemSelect
             value={it.itemName}
             selectedId={it.itemCode}
@@ -173,7 +179,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Packing */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <input
             type="text"
             name="packing"
@@ -184,7 +190,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Batch No */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <input
             name="batchNo"
             value={it.batchNo || ""}
@@ -195,7 +201,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Qty */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <NumericInput
             name="quantity"
             placeholder="1"
@@ -206,7 +212,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Mfg Date */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <div className="w-full">
             <DatePickerInput
               name="mfgDate"
@@ -217,7 +223,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Expiry Date */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <div className="w-full">
             <DatePickerInput
               name="expDate"
@@ -228,7 +234,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Rate */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <NumericInput
             name="rate"
             placeholder="0"
@@ -239,7 +245,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Warehouse */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <div className="w-full">
             <WarehouseSelect
               compact
@@ -253,7 +259,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Discount */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <NumericInput
             name="discount"
             placeholder="0"
@@ -264,7 +270,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Tax% */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <NumericInput
             name="vatRate"
             placeholder="0"
@@ -276,7 +282,7 @@ export const DetailsTab = ({
         </td>
 
         {/* Tax Name */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
           <input
             name="vatCd"
             value={it.vatCd || ""}
