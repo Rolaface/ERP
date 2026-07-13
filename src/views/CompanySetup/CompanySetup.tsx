@@ -148,6 +148,7 @@ const CompanySetup: React.FC = () => {
       industryType: "",
       domain: "",
       defaultModeOfPayment: "",
+      sdc_id: "",
     },
     contact: {
       companyEmail: "",
@@ -229,6 +230,7 @@ const CompanySetup: React.FC = () => {
         industryType: response.data.industryType ?? "",
         domain: response.data.primaryBusinessDomain ?? "",
         defaultModeOfPayment: response.data.defaultPaymentMode ?? "",
+        sdc_id: response.data.sdc_id ?? "",
       };
 
       setAccountingSetup(
