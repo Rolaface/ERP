@@ -5,12 +5,19 @@ import Pagination from "../../Pagination";
 import Tooltip from "../../Tooltip";
 import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { useColumnStore } from "../../../store/useColumnStore";
-
+import MultiSelectFilter, {type MultiSelectOption} from "../modal/MultiSelectFilter";
 interface SortState {
   sortBy: string;
   sortOrder: "asc" | "desc";
 }
 
+export interface MultiSelectFilterConfig {
+  key: string;
+  label: string;
+  options: MultiSelectOption[];
+  values: string[];
+  onChange: (values: string[]) => void;
+}
 interface TableProps<T> {
   columns: Column<T>[];
   data: T[];
@@ -23,6 +30,7 @@ interface TableProps<T> {
   onRowClick?: (item: T) => void;
   showToolbar?: boolean;
   extraFilters?: React.ReactNode;
+  multiSelectFilters?: MultiSelectFilterConfig[];
   toolbarPlaceholder?: string;
   searchValue?: string;
   onSearch?: (q: string) => void;
@@ -116,6 +124,7 @@ const TableInner = <T extends Record<string, any>>({
   onRowClick,
   showToolbar = false,
   extraFilters,
+  multiSelectFilters,
   toolbarPlaceholder = "Search...",
   searchValue = "",
   onSearch,
@@ -206,12 +215,21 @@ const TableInner = <T extends Record<string, any>>({
             />
           </div>
 
-          {extraFilters && (
+          {(multiSelectFilters?.length || extraFilters) && (
             <div className="flex shrink-0 items-center gap-4">
+              {multiSelectFilters?.map((f) => (
+                <MultiSelectFilter
+                  key={f.key}
+                  options={f.options}
+                  values={f.values}
+                  onChange={f.onChange}
+                  placeholder={f.label}
+                  panelTitle={`Filter by ${f.label}`}
+                />
+              ))}
               {extraFilters}
             </div>
           )}
-
           <div className="flex shrink-0 items-center gap-3">
             {enableColumnSelector && (
               <ColumnSelector
