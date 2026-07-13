@@ -96,6 +96,7 @@ const statusOptions = [
   { label: "Cancelled", value: "Cancelled" },
   { label: "Unpaid", value: "Unpaid" },
   { label: "Overdue", value: "Overdue" },
+  { label: "Partly Paid", value: "Partly Paid" },
   { label: "Returned", value: "Return" },
 ];
 
@@ -194,7 +195,8 @@ const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCreditNote")
         undefined,
         filters.status && filters.status.length > 0
           ? filters.status.join(",")
-          : undefined, filters.from_date,
+          : undefined,
+          filters.from_date,
         filters.to_date,
       );
 

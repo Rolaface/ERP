@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 
@@ -5,7 +6,6 @@ export interface MultiSelectOption {
   label: string;
   value: string;
 }
-
 interface MultiSelectFilterProps {
   options: MultiSelectOption[];
   values: string[];
@@ -106,143 +106,143 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
   const dropdown =
     open && dropdownPos
       ? createPortal(
+        <div
+          id="multi-select-portal"
+          style={{
+            position: "absolute",
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+            zIndex: 99999,
+            background: "var(--card)",
+            border: "1.5px solid var(--border)",
+            borderRadius: 14,
+            boxShadow: "var(--shadow-lg)",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Header */}
           <div
-            id="multi-select-portal"
             style={{
-              position: "absolute",
-              top: dropdownPos.top,
-              left: dropdownPos.left,
-              width: dropdownPos.width,
-              zIndex: 99999,
-              background: "var(--card)",
-              border: "1.5px solid var(--border)",
-              borderRadius: 14,
-              boxShadow: "var(--shadow-lg)",
-              overflow: "hidden",
               display: "flex",
-              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 14px",
+              borderBottom: "1.5px solid var(--border)",
+              background: "var(--bg)",
             }}
           >
-            {/* Header */}
-            <div
+            <p
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "10px 14px",
-                borderBottom: "1.5px solid var(--border)",
-                background: "var(--bg)",
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--muted)",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+                margin: 0,
               }}
             >
-              <p
+              {panelTitle}
+            </p>
+            {hasValue && (
+              <button
+                onClick={clearAll}
                 style={{
-                  fontSize: 10,
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--primary)",
+                  fontSize: 11,
                   fontWeight: 700,
-                  color: "var(--muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  margin: 0,
+                  cursor: "pointer",
+                  padding: 0,
                 }}
               >
-                {panelTitle}
-              </p>
-              {hasValue && (
-                <button
-                  onClick={clearAll}
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Options list */}
+          <div
+            style={{
+              maxHeight: 256,
+              overflowY: "auto",
+              padding: "6px 0",
+            }}
+          >
+            {options.map((opt) => {
+              const checked = values.includes(opt.value);
+              return (
+                <label
+                  key={opt.value}
                   style={{
-                    border: "none",
-                    background: "transparent",
-                    color: "var(--primary)",
-                    fontSize: 11,
-                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 14px",
+                    fontSize: 13,
                     cursor: "pointer",
-                    padding: 0,
+                    background: checked ? "var(--row-hover)" : "transparent",
+                    color: checked ? "var(--primary)" : "var(--text)",
+                    fontWeight: checked ? 600 : 500,
+                    transition: "background .12s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!checked)
+                      e.currentTarget.style.background = "var(--row-hover)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!checked) e.currentTarget.style.background = "transparent";
                   }}
                 >
-                  Clear
-                </button>
-              )}
-            </div>
-
-            {/* Options list */}
-            <div
-              style={{
-                maxHeight: 256,
-                overflowY: "auto",
-                padding: "6px 0",
-              }}
-            >
-              {options.map((opt) => {
-                const checked = values.includes(opt.value);
-                return (
-                  <label
-                    key={opt.value}
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleValue(opt.value)}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "8px 14px",
-                      fontSize: 13,
+                      width: 15,
+                      height: 15,
+                      borderRadius: 4,
+                      accentColor: "var(--primary)",
                       cursor: "pointer",
-                      background: checked ? "var(--row-hover)" : "transparent",
-                      color: checked ? "var(--primary)" : "var(--text)",
-                      fontWeight: checked ? 600 : 500,
-                      transition: "background .12s",
                     }}
-                    onMouseEnter={(e) => {
-                      if (!checked)
-                        e.currentTarget.style.background = "var(--row-hover)";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!checked) e.currentTarget.style.background = "transparent";
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleValue(opt.value)}
-                      style={{
-                        width: 15,
-                        height: 15,
-                        borderRadius: 4,
-                        accentColor: "var(--primary)",
-                        cursor: "pointer",
-                      }}
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                );
-              })}
-            </div>
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              );
+            })}
+          </div>
 
-            {/* Footer — just closes the panel, filter is already applied */}
-            <div
+          {/* Footer — just closes the panel, filter is already applied */}
+          <div
+            style={{
+              borderTop: "1.5px solid var(--border)",
+              padding: "10px 14px",
+            }}
+          >
+            <button
+              onClick={() => setOpen(false)}
               style={{
-                borderTop: "1.5px solid var(--border)",
-                padding: "10px 14px",
+                width: "100%",
+                padding: "7px 0",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 700,
+                border: "none",
+                cursor: "pointer",
+                background: "var(--primary)",
+                color: "#fff",
+                transition: "all .15s",
               }}
             >
-              <button
-                onClick={() => setOpen(false)}
-                style={{
-                  width: "100%",
-                  padding: "7px 0",
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  border: "none",
-                  cursor: "pointer",
-                  background: "var(--primary)",
-                  color: "#fff",
-                  transition: "all .15s",
-                }}
-              >
-                Done
-              </button>
-            </div>
-          </div>,
-          document.body,
-        )
+              Done
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )
       : null;
 
   return (
@@ -304,7 +304,10 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
             {values.length}
           </span>
         )}
-
+        <ChevronDown
+          size={14}
+          style={{ color: hasValue ? "var(--primary)" : "var(--muted)" }}
+        />
         {hasValue && (
           <span
             onClick={(e) => {
