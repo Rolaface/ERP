@@ -196,7 +196,7 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
         >
           <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
         </svg>
-        <span className="font-semibold">{placeholder}</span>
+        <span className="font-semibold cursor-pointer">{placeholder}</span>
         {hasValue && (
           <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
             {values.length}
