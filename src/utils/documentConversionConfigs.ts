@@ -1,7 +1,9 @@
 import { createSalesSiFromSo, createPiFromSo, getSalesOrderById } from "../api/SalesOrder/salesOrderAPi";
 import { getSalesInvoiceById } from "../api/salesApi";
 import { createSiFromQuotation, createSoFromQuotation, getProformaInvoiceById, createPiFromQuotation} from "../api/proformaInvoiceApi";
-import { openInvoiceModal, openSalesOrderModal, openProformaModal } from "../store/modalStore";
+import { openInvoiceModal, openSalesOrderModal, openProformaModal, openCreditNoteModal } from "../store/modalStore";
+import {getCreditNoteById} from "../api/CreditNoteapi";
+import { createCnFromSalesInvoice } from "../api/salesApi";
 import { REFRESH_KEYS } from "../store/dataRefreshStore";
 import type { ModalContext } from "../store/modalStore";
 
@@ -116,6 +118,21 @@ soToProforma: {
   openModalFn: (detail, _id, context) =>
     detail && openProformaModal(detail, true, context),
   refreshKeys: [REFRESH_KEYS.PROFORMA_LIST],
+},
+
+siToCreditNote: {
+  confirmTitle: "Create Credit Note?",
+  confirmText: (siId) => `Create a Credit Note from ${siId}?`,
+  loadingMessage: "Creating Credit Note...",
+  successMessage: (siId, createdId) =>
+    `Credit Note ${createdId} created successfully from Sales Invoice ${siId}`,
+  createFn: createCnFromSalesInvoice,
+  extractStatusCode: (res) => res?.message?.status_code || res?.status_code,
+  extractCreatedId: (res) => res?.message?.data?.id || res?.data?.id,
+  getByIdFn: getCreditNoteById,
+  openModalFn: (detail, _id, context) =>
+    detail && openCreditNoteModal(detail, true, context),
+  refreshKeys: [REFRESH_KEYS.CREDIT_NOTE_LIST],
 },
 };
 

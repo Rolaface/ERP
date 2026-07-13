@@ -5,6 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
+import { ChevronDown , Filter} from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
@@ -15,6 +16,7 @@ import {
   getSalesInvoiceById,
   deleteSalesInvoiceById,
   editSalesInvoice,
+  createCnFromSalesInvoice,
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
 import { generateInvoicePDF } from "../../components/template/invoice/invoiceTemplatRolaface";
@@ -53,6 +55,7 @@ import {
 
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import { useDocumentConversion } from "../../hooks/useDocumentConversion";
 
 type OutletContextType = {
   openInvoiceCreate: () => void;
@@ -101,7 +104,126 @@ interface InvoiceTableProps {
   onAddInvoice?: () => void;
   onExportInvoice?: () => void;
 }
+// ── Multi-select status dropdown (checkbox-in-dropdown) ──
+interface MultiSelectOption {
+  label: string;
+  value: string;
+}
 
+const StatusMultiSelect: React.FC<{
+  options: MultiSelectOption[];
+  values: string[];
+  onChange: (values: string[]) => void;
+  placeholder?: string;
+}> = ({ options, values, onChange, placeholder = "Status" }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleValue = (value: string) => {
+    if (values.includes(value)) {
+      onChange(values.filter((v) => v !== value));
+    } else {
+      onChange([...values, value]);
+    }
+  };
+
+  const hasSelection = values.length > 0;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          height: "32px",
+          minWidth: "107.81px",
+          padding: "0px 10px",
+          background: "#FFFFFF",
+          color: "#64748B",
+          fontSize: "12px",
+          fontWeight: "bold",   
+          fontFamily: "sans-serif",
+          border: "1px solid #E2E8F0",
+          borderRadius: "6px",
+        }}
+        className="flex items-center gap-1.5 font-medium whitespace-nowrap"
+      >
+        <Filter size={14} style={{ color: "#64748B" }} />
+        <span>{placeholder}</span>
+
+        {hasSelection && (
+          <span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-cyan-600 text-white text-[10px] font-semibold">
+            {values.length}
+          </span>
+        )}
+
+        <ChevronDown size={14} style={{ color: "#64748B" }} />
+      </button>
+
+      {open && (
+        <div className="absolute z-20 mt-2 w-60 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-gray-100">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Filter by status
+            </span>
+            {hasSelection && (
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="text-xs font-medium text-cyan-600 hover:text-cyan-700"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <div className="max-h-64 overflow-auto py-1">
+            {options.map((opt) => {
+              const checked = values.includes(opt.value);
+              return (
+                <label
+                  key={opt.value}
+                  className={`flex items-center gap-2.5 px-3.5 py-2 text-sm cursor-pointer transition-colors
+                    ${checked ? "bg-cyan-50" : "hover:bg-gray-50"}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleValue(opt.value)}
+                    className="w-4 h-4 rounded border-gray-300 accent-cyan-600 cursor-pointer"
+                  />
+                  <span className={checked ? "text-cyan-700 font-medium" : "text-gray-700"}>
+                    {opt.label}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          <div className="px-3.5 py-2 border-t border-gray-100 bg-gray-50">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="w-full text-center text-sm font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-md py-1.5 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 const SALES_MODULE = "Sales Invoice";
 const PAYMENT_MODULE = "Payment Entry";
 
@@ -120,6 +242,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfInvoiceNumber, setPdfInvoiceNumber] = useState<string | null>(null);
+const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCreditNote");
 
 
 
@@ -132,7 +255,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [drawerPdfBlob, setDrawerPdfBlob] = useState<Blob | null>(null);
   const [drawerPdfLoading, setDrawerPdfLoading] = useState(false);
   const [filters, setFilters] = useState<{
-    status?: string;
+    status?: string[];
     from_date?: string;
     to_date?: string;
   }>({});
@@ -190,7 +313,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         searchTerm,
         undefined,
         undefined,
-        filters.status,
+        filters.status && filters.status.length > 0 ? filters.status : undefined,
         filters.from_date,
         filters.to_date,
       );
@@ -303,6 +426,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       },
     );
   };
+
+  const handleCreateCreditNote = (siId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    return createCreditNoteFromSalesInvoice(siId);
+  };
+  
 
   const fetchAllInvoicesForExport = async (): Promise<InvoiceSummary[]> => {
     try {
@@ -792,7 +921,15 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                       },
                     ]
                   : []),
-
+                    ...(inv.invoiceStatus !== "Draft" && inv.invoiceStatus !== "Cancelled"
+                                  ? [
+                                      {
+                                        label: "Create Credit Note",
+                                        icon: ACTION_ICONS.CREDIT_NOTE ,
+                                        onClick: () => handleCreateCreditNote(inv.invoiceNumber),
+                                      },
+                                    ]
+                                  : []),
                 ...(can(SALES_MODULE, "write")
                   ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
                       (status) => ({
@@ -876,13 +1013,13 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
         onRowDoubleClick={(inv) => handleView(inv.invoiceNumber)}
         extraFilters={
           <>
-            <FilterSelect
-              value={filters.status ?? ""}
+            <StatusMultiSelect
               options={statusOptions}
-              onChange={(e) => {
+              values={filters.status ?? []}
+              onChange={(vals) => {
                 setFilters((prev) => ({
                   ...prev,
-                  status: e.target.value || undefined,
+                  status: vals.length > 0 ? vals : undefined,
                 }));
                 setPage(1);
               }}

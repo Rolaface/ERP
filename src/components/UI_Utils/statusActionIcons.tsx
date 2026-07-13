@@ -47,6 +47,7 @@ PAYROLL_REVERT: <RotateCcw size={16} />,
 SALES_INVOICE: <Receipt size={16} />,
 SALES_ORDER: <BadgePercent size={16} />,
 PROFORMA_INVOICE: <FileClock size={16} />,
+CREDIT_NOTE: <FileMinus size={16} />,
 } as const;
 
 export const getStatusActionIcon = (status: string): ReactNode | undefined => {

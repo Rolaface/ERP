@@ -55,7 +55,7 @@ export async function getAllSalesInvoices(
 }
 
 export async function getSalesInvoiceById(id: string): Promise<any | null> {
-  const url = `${InvoiceAPI.getById}?id=${encodeURIComponent(id)}`;
+  const url = `${InvoiceAPI.getById}?id=${encodeURIComponent(id)}&is_credit_note=true`;
   const resp: AxiosResponse = await api.get(url);
   return resp.data ?? null;
 }
@@ -74,6 +74,13 @@ export async function editSalesInvoice(
   const resp: AxiosResponse = await api.put(
     `${InvoiceAPI.editInvoice}?id=${encodeURIComponent(invoiceNumber)}`,
     payload,
+  );
+  return resp.data;
+}
+
+export async function createCnFromSalesInvoice(siId: string): Promise<any> {
+  const resp: AxiosResponse = await api.post(
+    `${InvoiceAPI.createCnFromSi}?id=${encodeURIComponent(siId)}`,
   );
   return resp.data;
 }
