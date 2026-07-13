@@ -7,7 +7,7 @@
 import type {
   PayrollVerificationData,
   VerificationEmployeeEntry,
-} from "../../../api/payroll/payrollEntryApi";
+} from "../../api/payroll/payrollEntryApi";
 
 // ─── Output types (consumed by PayrollPreviewModal) ───────────────────────────
 
@@ -41,8 +41,8 @@ export interface MappedEmployee {
   // keyed by salary component abbr — includes both earnings and deductions
   components:       Record<string, number>;
   // raw arrays preserved for drill-down drawer
-  earnings:         import("../../../api/payroll/payrollEntryApi").VerificationSalaryComponent[];
-  deductions:       import("../../../api/payroll/payrollEntryApi").VerificationSalaryComponent[];
+  earnings:         import("../../api/payroll/payrollEntryApi").VerificationSalaryComponent[];
+  deductions:       import("../../api/payroll/payrollEntryApi").VerificationSalaryComponent[];
 }
 
 export interface MappedPayrollHeader {

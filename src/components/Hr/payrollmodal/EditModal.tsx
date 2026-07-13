@@ -1,8 +1,8 @@
 // EditModal.tsx
 import React, { useState } from "react";
 import { X, Plus, Trash2, Save } from "lucide-react";
-import type { PayrollRecord, Bonus } from "../../../types/payrolltypes";
-import { BONUS_TYPES } from "../../../views/hr/payroll-system/constants";
+import type { PayrollRecord, Bonus } from "../../../types/Payroll/payrolltypes";
+import { BONUS_TYPES } from "../../../utils/payroll_Utils/constants";
 // import { BONUS_TYPES } from "../constants";
 
 interface EditModalProps {

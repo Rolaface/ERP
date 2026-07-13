@@ -55,7 +55,7 @@ export async function getAllSalesInvoices(
 }
 
 export async function getSalesInvoiceById(id: string): Promise<any | null> {
-  const url = `${InvoiceAPI.getById}?id=${encodeURIComponent(id)}`;
+  const url = `${InvoiceAPI.getById}?id=${encodeURIComponent(id)}&is_credit_note=true`;
   const resp: AxiosResponse = await api.get(url);
   return resp.data ?? null;
 }

@@ -201,6 +201,8 @@ const EMPTY_ITEM: CreditNoteItem = {
   rate: 0,
   batch_no: "",
   warehouse: "",
+   max_qty: 0, 
+    conversion_factor: 1, 
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -308,7 +310,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
         </td>
 
         {/* Qty */}
-        <td className="px-1 py-1.5 overflow-hidden">
+        {/* <td className="px-1 py-1.5 overflow-hidden">
           <NumericInput
             name="qty"
             value={it.qty == null ? null : Math.abs(it.qty)}
@@ -322,7 +324,23 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
               )
             }
           />
-        </td>
+        </td> */}
+         <td className="px-1 py-1.5 overflow-hidden">
+       <NumericInput
+  name="qty"
+  value={it.qty == null ? null : Math.abs(it.qty)}
+  disabled={isPlaceholder}
+  max={it.max_qty}                              // ADD THIS
+  className={isPulsing ? "animate-pulse opacity-60 w-full" : "w-full"}
+  onChange={(value) =>
+    onItemChange(
+      absoluteIndex,
+      "qty",
+      value === null ? null : value > 0 ? -value : value,
+    )
+  }
+/>
+</td>
 
         {/* Rate */}
         <td className="px-1 py-1.5 overflow-hidden">

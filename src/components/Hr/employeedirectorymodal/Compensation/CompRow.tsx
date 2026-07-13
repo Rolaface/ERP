@@ -2,7 +2,7 @@ import React from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import SearchSelect2 from "../../../ui/modal/SearchSelect2";
 import { NumericInput } from "../../../ui/modal/modalComponent";
-import type { ComponentType } from "../salaryengine";
+import type { ComponentType } from "../../../../utils/Salary_Employee/salaryengine";
 import type { ComponentOption, DisplayRow, RowFlags } from "./types";
 
 const FLAG_META: Array<{

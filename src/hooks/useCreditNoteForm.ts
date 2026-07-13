@@ -23,6 +23,7 @@ export interface CreditNoteItem {
   batch_no: string;
   warehouse: string;
   conversion_factor: number;
+  max_qty?: number;
 }
 
 export interface CustomerMeta {
@@ -198,6 +199,7 @@ const fetchReasonOptions = useCallback(
           batch_no: it.batchNo ?? "",
           warehouse: it.warehouse ?? "",
           conversion_factor: Number(it.conversion_factor) || 1,
+          max_qty: Math.abs(Number(it.quantity)) || 1, 
         }),
       );
 
@@ -217,8 +219,6 @@ const fetchReasonOptions = useCallback(
       setInvoiceLoading(false);
     }
   }, [markDirty]);
-
-  // ── Item mutations ───────────────────────────────────────────────────────
 
   const handleItemChange = useCallback(
     (

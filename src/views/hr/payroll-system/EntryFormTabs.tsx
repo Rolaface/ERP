@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from "react";
-import type { PayrollEntry } from "../../../types/payrolltypes";
+import type { PayrollEntry } from "../../../types/Payroll/payrolltypes";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import {
   ModalInput,
