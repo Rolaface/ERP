@@ -60,6 +60,8 @@ export interface CustomerFormState {
   accountNumber: string;
   status: "Active" | "Inactive";
   customerTaxCategory: string;
+  creditLimit?: number | string;
+  bypassCreditLimit?: boolean;
   contacts: ContactEntry[];
   addresses: AddressEntry[];
   sameAsBilling: boolean;
@@ -76,6 +78,7 @@ export interface CustomerFormErrors {
   displayName?: string;
   customerTaxCategory?: string;
   accountNumber?: string;
+  creditLimit?: string;
   contactEmail?: string;
   contactMobile?: string;
   contactFirstName?: string;
@@ -154,6 +157,8 @@ export const emptyForm: CustomerFormState = {
   accountNumber: "",
   status: "Active",
   customerTaxCategory: "",
+   creditLimit: "",
+ bypassCreditLimit: false,
   contacts: [{ ...defaultContact }],
   addresses: [{ ...defaultBillingAddress }, { ...defaultShippingAddress }],
   sameAsBilling: true,
@@ -291,6 +296,8 @@ export function mapApiResponseToFormState(
     accountNumber: data.accountNumber ?? "",
     status: (data.status as CustomerFormState["status"]) ?? "Active",
     customerTaxCategory: data.customerTaxCategory ?? "",
+    creditLimit: data.credit_limits?.[0]?.credit_limit ?? "",
+    bypassCreditLimit: !!data.credit_limits?.[0]?.bypass_credit_limit_check,
     contacts,
     addresses,
     sameAsBilling,
@@ -304,7 +311,7 @@ export function mapApiResponseToFormState(
  * Same payload shape for both POST (create) and PATCH (update).
  */
 export function buildPayload(form: CustomerFormState): Record<string, any> {
-  const { sameAsBilling, id, ...rest } = form;
+  const { sameAsBilling, id, creditLimit, bypassCreditLimit, ...rest } = form;
   const contacts = form.contacts.map(
     ({ mobileCode, mobileNumber, id, ...contact }) => ({
       ...(id ? { id } : {}),
@@ -343,8 +350,26 @@ export function buildPayload(form: CustomerFormState): Record<string, any> {
     );
   }
 
-  return { ...rest, contacts, addresses };
+   const credit_limits = [
+  ];
+ const hasCreditLimitInput =
+  creditLimit !== "" && creditLimit !== undefined && creditLimit !== null;
+
+ if (hasCreditLimitInput) {
+   credit_limits.push({
+    credit_limit: Number(creditLimit) || 0,
+    bypass_credit_limit_check: bypassCreditLimit ? 1 : 0,
+   });
+ }
+
+ return {
+   ...rest,
+   contacts,
+   addresses,
+   ...(hasCreditLimitInput ? { credit_limits } : {}),
+ };
 }
+
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -831,6 +856,8 @@ export function useCustomerForm({
         customerTaxCategory: base.customerTaxCategory,
         contacts: base.contacts,
         registration_no: base.registration_no ?? "",
+         creditLimit: base.creditLimit ?? "",
+     bypassCreditLimit: base.bypassCreditLimit ?? false,
       }));
       return;
     }
