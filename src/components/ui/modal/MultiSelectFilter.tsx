@@ -108,56 +108,22 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
       ? createPortal(
         <div
           id="multi-select-portal"
+          className="absolute z-[99999] flex flex-col overflow-hidden rounded-2xl border-[1.5px] border-[var(--border)] bg-card shadow-lg"
           style={{
-            position: "absolute",
             top: dropdownPos.top,
             left: dropdownPos.left,
             width: dropdownPos.width,
-            zIndex: 99999,
-            background: "var(--card)",
-            border: "1.5px solid var(--border)",
-            borderRadius: 14,
-            boxShadow: "var(--shadow-lg)",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
           }}
         >
           {/* Header */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "10px 14px",
-              borderBottom: "1.5px solid var(--border)",
-              background: "var(--bg)",
-            }}
-          >
-            <p
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--muted)",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                margin: 0,
-              }}
-            >
+          <div className="flex items-center justify-between border-b-[1.5px] border-[var(--border)] bg-[var(--bg)] px-3.5 py-2.5">
+            <p className="m-0 text-[10px] font-bold uppercase tracking-wide text-muted">
               {panelTitle}
             </p>
             {hasValue && (
               <button
                 onClick={clearAll}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  color: "var(--primary)",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  padding: 0,
-                }}
+                className="border-none bg-transparent p-0 text-[11px] font-bold text-primary cursor-pointer"
               >
                 Clear
               </button>
@@ -165,49 +131,25 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
           </div>
 
           {/* Options list */}
-          <div
-            style={{
-              maxHeight: 256,
-              overflowY: "auto",
-              padding: "6px 0",
-            }}
-          >
+          <div className="max-h-64 overflow-y-auto py-1.5">
             {options.map((opt) => {
               const checked = values.includes(opt.value);
               return (
                 <label
                   key={opt.value}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "8px 14px",
-                    fontSize: 13,
-                    cursor: "pointer",
-                    background: checked ? "var(--row-hover)" : "transparent",
-                    color: checked ? "var(--primary)" : "var(--text)",
-                    fontWeight: checked ? 600 : 500,
-                    transition: "background .12s",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!checked)
-                      e.currentTarget.style.background = "var(--row-hover)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!checked) e.currentTarget.style.background = "transparent";
-                  }}
+                  className={[
+                    "flex items-center gap-2.5 px-3.5 py-2 text-[13px] cursor-pointer transition-colors duration-150",
+                    checked
+                      ? "bg-row-hover text-primary font-semibold"
+                      : "text-main font-medium hover:bg-row-hover",
+                  ].join(" ")}
                 >
                   <input
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggleValue(opt.value)}
-                    style={{
-                      width: 15,
-                      height: 15,
-                      borderRadius: 4,
-                      accentColor: "var(--primary)",
-                      cursor: "pointer",
-                    }}
+                    className="h-[15px] w-[15px] cursor-pointer rounded"
+                    style={{ accentColor: "var(--primary)" }}
                   />
                   <span>{opt.label}</span>
                 </label>
@@ -216,26 +158,10 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
           </div>
 
           {/* Footer — just closes the panel, filter is already applied */}
-          <div
-            style={{
-              borderTop: "1.5px solid var(--border)",
-              padding: "10px 14px",
-            }}
-          >
+          <div className="border-t-[1.5px] border-[var(--border)] px-3.5 py-2.5">
             <button
               onClick={() => setOpen(false)}
-              style={{
-                width: "100%",
-                padding: "7px 0",
-                borderRadius: 8,
-                fontSize: 12,
-                fontWeight: 700,
-                border: "none",
-                cursor: "pointer",
-                background: "var(--primary)",
-                color: "#fff",
-                transition: "all .15s",
-              }}
+              className="w-full rounded-lg bg-primary py-[7px] text-center text-xs font-bold text-white transition-opacity hover:opacity-90"
             >
               Done
             </button>
@@ -246,30 +172,17 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
       : null;
 
   return (
-    <div
-      ref={triggerRef}
-      style={{ position: "relative", display: "inline-block" }}
-    >
+    <div ref={triggerRef} className="relative inline-block">
       {/* Trigger button */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        style={{
-          height: 32,
-          padding: "0 10px",
-          borderRadius: 8,
-          border: `1.5px solid ${hasValue ? "var(--primary)" : "var(--border)"}`,
-          background: hasValue ? "var(--row-hover)" : "var(--card)",
-          color: hasValue ? "var(--primary)" : "var(--muted)",
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          whiteSpace: "nowrap",
-          transition: "all .15s",
-        }}
+        className={[
+          "flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg border-[1.5px] px-2.5 text-xs font-semibold transition-all duration-150",
+          hasValue
+            ? "border-primary bg-row-hover text-primary"
+            : "border-[var(--border)] bg-card text-muted",
+        ].join(" ")}
       >
         <svg
           width="14"
@@ -283,44 +196,25 @@ export const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
         >
           <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
         </svg>
-        {placeholder}
-
+        <span className="font-semibold">{placeholder}</span>
         {hasValue && (
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: 16,
-              height: 16,
-              padding: "0 4px",
-              borderRadius: 999,
-              background: "var(--primary)",
-              color: "#fff",
-              fontSize: 10,
-              fontWeight: 700,
-            }}
-          >
+          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
             {values.length}
           </span>
         )}
+
         <ChevronDown
           size={14}
-          style={{ color: hasValue ? "var(--primary)" : "var(--muted)" }}
+          className={hasValue ? "text-primary" : "text-muted"}
         />
+
         {hasValue && (
           <span
             onClick={(e) => {
               e.stopPropagation();
               clearAll();
             }}
-            style={{
-              marginLeft: 2,
-              opacity: 0.6,
-              fontSize: 14,
-              lineHeight: 1,
-              cursor: "pointer",
-            }}
+            className="ml-0.5 cursor-pointer text-sm leading-none opacity-60"
           >
             ×
           </span>
