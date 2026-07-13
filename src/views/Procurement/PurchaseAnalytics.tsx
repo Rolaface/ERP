@@ -680,13 +680,17 @@ const PurchaseAnalytics: React.FC = () => {
                         : "text-left";
                     const isTotal = header.column.id === "total";
                     return (
-                      <th
-                        key={header.id}
-                        style={{ width: header.getSize() }}
-                        className={`sticky top-0 z-10 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap border-b border-[var(--border)] ${align} ${
-                          isTotal ? "bg-primary/10 text-primary" : "bg-row-hover"
-                        }`}
-                      >
+                   <th
+  key={header.id}
+  style={{
+    width: header.getSize(),
+    backgroundColor: "var(--card)", // fully opaque, no alpha
+  }}
+  className={`sticky top-0 z-10 px-3 py-2 text-[9px] font-black uppercase tracking-widest
+              text-muted whitespace-nowrap border-b border-[var(--border)] ${align} ${
+                isTotal ? "text-primary" : ""
+              }`}
+>
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext(),
