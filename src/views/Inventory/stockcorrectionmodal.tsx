@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { Plus, Trash2, Wrench, ArrowRightLeft, Info } from "lucide-react";
+import { Wrench, ArrowRightLeft, Info, Trash2 } from "lucide-react";
 
 import { MinimizableModal } from "../../components/common/MinimizableModal";
+import PaginatedRowsTable from "../../components/common/PaginatedRowsTable";
 import {
   ModalInput,
   ModalSelect,
@@ -15,6 +16,46 @@ import {
   closeSwal,
 } from "../../utils/alert";
 // ────────────────────────────────────────────────────────────────────────────
+
+// ─── Table styles (same pattern as SalaryStructureModal's ss- table) ───────
+const SCM_STYLES = `
+.scm-table-wrap {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.scm-table-wrap::-webkit-scrollbar { width: 3px; }
+.scm-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.scm-table-wrap::-webkit-scrollbar-thumb { background: var(--border, #e5e7eb); border-radius: 4px; }
+
+.scm-row {
+  display: grid;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid var(--border-subtle, rgba(0,0,0,0.05));
+  min-height: 36px;
+  transition: background 0.1s;
+}
+.scm-row:hover { background: var(--bg-hover, rgba(0,0,0,0.015)); }
+
+.scm-cell {
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-height: 36px;
+  min-width: 0;
+}
+.scm-cell-border { border-right: 1px solid var(--border-subtle, rgba(0,0,0,0.06)); }
+
+.scm-col-header {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-sub, #9ca3af);
+  white-space: nowrap;
+}
+`;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -134,6 +175,13 @@ const emptyMovementRow = (): MovementRow => ({
   qty: "",
 });
 
+// Column templates for the two table modes (kept in one place so header + rows always agree)
+const CORRECTION_COLS = "1.4fr 1fr 1fr 1fr 36px";
+const MOVEMENT_COLS = "1fr 1fr 1fr 36px";
+
+// Rows per page — matches the "Showing X to Y of Z items" pagination pattern.
+const ROWS_PAGE_SIZE = 5;
+
 /** Matches a warehouse label coming back from StockItemSelect to one of our branch option values. */
 const matchBranchValue = (warehouse: string | undefined, branches: Option[]) => {
   if (!warehouse) return "";
@@ -143,30 +191,49 @@ const matchBranchValue = (warehouse: string | undefined, branches: Option[]) => 
   return hit?.value ?? "";
 };
 
+/** Small reusable remove-row button — same look everywhere a row can be deleted. */
+const RemoveRowButton: React.FC<{ onClick: () => void; disabled?: boolean }> = ({
+  onClick,
+  disabled = false,
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 20,
+      height: 20,
+      borderRadius: 4,
+      border: "none",
+      background: "transparent",
+      cursor: disabled ? "not-allowed" : "pointer",
+      opacity: disabled ? 0.3 : 1,
+      color: "var(--text-sub)",
+      padding: 0,
+    }}
+    onMouseEnter={(e) => {
+      if (disabled) return;
+      (e.currentTarget as HTMLButtonElement).style.color = "#ef4444";
+      (e.currentTarget as HTMLButtonElement).style.background = "#fef2f2";
+    }}
+    onMouseLeave={(e) => {
+      (e.currentTarget as HTMLButtonElement).style.color = "var(--text-sub)";
+      (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+    }}
+  >
+    <Trash2 style={{ width: 11, height: 11 }} />
+  </button>
+);
+
 // ─── Small presentational bits ─────────────────────────────────────────────
 
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <span className="block text-[10px] font-bold uppercase tracking-widest text-muted">
     {children}
   </span>
-);
-
-const RemoveRowButton: React.FC<{ onClick: () => void; disabled?: boolean }> = ({
-  onClick,
-  disabled,
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={disabled}
-    className={[
-      "flex items-center justify-center w-9 h-9 rounded-md border border-theme text-muted transition-all shrink-0",
-      disabled ? "opacity-30 cursor-not-allowed" : "hover:text-danger hover:border-danger/40 hover:bg-danger/5",
-    ].join(" ")}
-    aria-label="Remove row"
-  >
-    <Trash2 size={15} />
-  </button>
 );
 
 /** Right-rail summary card — matches the reference screenshot's boxed-card look. */
@@ -234,6 +301,17 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
   const [correctionDate, setCorrectionDate] = useState(todayISO());
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Inject the table styles once (same approach SalaryStructureModal uses).
+  useEffect(() => {
+    const id = "scm-table-styles";
+    if (!document.getElementById(id)) {
+      const s = document.createElement("style");
+      s.id = id;
+      s.textContent = SCM_STYLES;
+      document.head.appendChild(s);
+    }
+  }, []);
 
   // ── Prefill from selectedBatch (e.g. opened from a batch row's "Correct" action)
   useEffect(() => {
@@ -522,16 +600,6 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                     onClear={handleItemClear}
                   />
                 </div>
-                {/* {selectedItem && (
-                  <button
-                    type="button"
-                    onClick={handleItemClear}
-                    className="flex items-center justify-center w-9 h-9 rounded-md border border-theme text-muted hover:text-danger hover:border-danger/40 transition-all shrink-0"
-                    aria-label="Clear item"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )} */}
               </div>
             </div>
 
@@ -613,137 +681,122 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
             </div>
           )}
 
-          {/* Dynamic rows — header with "Add More" at top-right, rows list below */}
-          {mode === "correction" ? (
-            <div>
-              <div className="flex items-center justify-between">
-                <SectionLabel>Stock Adjustment Details</SectionLabel>
-                <button
-                  type="button"
-                  onClick={addCorrectionRow}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-                >
-                  <Plus size={13} /> Add More
-                </button>
-              </div>
-              <div className="flex flex-col gap-2 mt-2">
-                {correctionRows.map((row) => (
-                  <div
-                    key={row.id}
-                    className="grid grid-cols-[1.3fr_1fr_1fr_1fr_auto] gap-2 items-end p-3 rounded-lg border border-theme bg-card"
-                  >
-                    <ModalSelect
-                      label="Warehouse"
-                      required
-                      options={branchOptions}
-                      value={row.branch}
-                      onChange={(e) =>
-                        updateCorrectionRow(row.id, "branch", e.target.value)
-                      }
-                    />
-                    <div className="flex flex-col text-sm min-w-0">
-                      <span className="block text-[10px] font-medium text-main mb-1">
-                        Corr. Qty<span className="text-danger">*</span>
-                      </span>
-                      <NumericInput
-                        value={row.qty === "" ? null : Number(row.qty)}
-                        allowNegative
-                        decimalScale={0}
-                        placeholder="0"
-                        onChange={(v) =>
-                          updateCorrectionRow(
-                            row.id,
-                            "qty",
-                            v === null ? "" : String(v),
-                          )
-                        }
-                      />
-                    </div>
-                    <ModalInput
-                      label="Batch No."
-                      placeholder="Enter Batch No."
-                      value={row.batchNo}
-                      onChange={(e) =>
-                        updateCorrectionRow(row.id, "batchNo", e.target.value)
-                      }
-                    />
-                    <ModalInput
-                      label="Expiry Date"
-                      type="date"
-                      value={row.expiryDate}
-                      onChange={(e) =>
-                        updateCorrectionRow(row.id, "expiryDate", e.target.value)
-                      }
-                    />
-                    <RemoveRowButton
-                      onClick={() => removeCorrectionRow(row.id)}
-                      disabled={correctionRows.length === 1}
-                    />
-                  </div>
-                ))}
-              </div>
+          {/* Dynamic rows — reusable PaginatedRowsTable (header + paged rows +
+              Add Row + "Showing X to Y of Z" pagination footer). Columns swap
+              with mode; the component itself is generic and reusable elsewhere. */}
+          <div>
+            <SectionLabel>
+              {mode === "correction" ? "Stock Adjustment Details" : "Movement Details"}
+            </SectionLabel>
+
+            <div className="mt-2">
+              {mode === "correction" ? (
+                <PaginatedRowsTable<CorrectionRow>
+                  columns={["Warehouse", "Corr. Qty", "Batch No.", "Expiry Date", ""]}
+                  gridTemplate={CORRECTION_COLS}
+                  rows={correctionRows}
+                  pageSize={ROWS_PAGE_SIZE}
+                  onAddRow={addCorrectionRow}
+                  addLabel="Add Row"
+                  renderRow={(row) => (
+                    <>
+                      <div className="scm-cell scm-cell-border" style={{ padding: "2px 6px" }}>
+                        <ModalSelect
+                          label=""
+                          options={branchOptions}
+                          value={row.branch}
+                          onChange={(e) => updateCorrectionRow(row.id, "branch", e.target.value)}
+                        />
+                      </div>
+                      <div className="scm-cell scm-cell-border">
+                        <NumericInput
+                          value={row.qty === "" ? null : Number(row.qty)}
+                          allowNegative
+                          decimalScale={0}
+                          placeholder="0"
+                          onChange={(v) =>
+                            updateCorrectionRow(row.id, "qty", v === null ? "" : String(v))
+                          }
+                          className="h-[24px] text-[11px] border-0 shadow-none px-0 bg-transparent"
+                        />
+                      </div>
+                      <div className="scm-cell scm-cell-border" style={{ padding: "2px 6px" }}>
+                        <ModalInput
+                          label=""
+                          placeholder="Enter Batch No."
+                          value={row.batchNo}
+                          onChange={(e) => updateCorrectionRow(row.id, "batchNo", e.target.value)}
+                          className="h-[24px] text-[11px] border-0 shadow-none px-0 bg-transparent"
+                        />
+                      </div>
+                      <div className="scm-cell scm-cell-border" style={{ padding: "2px 6px" }}>
+                        <ModalInput
+                          label=""
+                          type="date"
+                          value={row.expiryDate}
+                          onChange={(e) => updateCorrectionRow(row.id, "expiryDate", e.target.value)}
+                          className="h-[24px] text-[11px] border-0 shadow-none px-0 bg-transparent"
+                        />
+                      </div>
+                      <div className="scm-cell" style={{ justifyContent: "center", padding: "0 4px" }}>
+                        <RemoveRowButton
+                          onClick={() => removeCorrectionRow(row.id)}
+                          disabled={correctionRows.length === 1}
+                        />
+                      </div>
+                    </>
+                  )}
+                />
+              ) : (
+                <PaginatedRowsTable<MovementRow>
+                  columns={["From", "To", "Move Qty", ""]}
+                  gridTemplate={MOVEMENT_COLS}
+                  rows={movementRows}
+                  pageSize={ROWS_PAGE_SIZE}
+                  onAddRow={addMovementRow}
+                  addLabel="Add Row"
+                  renderRow={(row) => (
+                    <>
+                      <div className="scm-cell scm-cell-border" style={{ padding: "2px 6px" }}>
+                        <ModalSelect
+                          label=""
+                          options={branchOptions}
+                          value={row.from}
+                          onChange={(e) => updateMovementRow(row.id, "from", e.target.value)}
+                        />
+                      </div>
+                      <div className="scm-cell scm-cell-border" style={{ padding: "2px 6px" }}>
+                        <ModalSelect
+                          label=""
+                          options={branchOptions.filter((b) => b.value !== row.from)}
+                          value={row.to}
+                          onChange={(e) => updateMovementRow(row.id, "to", e.target.value)}
+                        />
+                      </div>
+                      <div className="scm-cell scm-cell-border">
+                        <NumericInput
+                          value={row.qty === "" ? null : Number(row.qty)}
+                          allowNegative={false}
+                          decimalScale={0}
+                          placeholder="0"
+                          onChange={(v) =>
+                            updateMovementRow(row.id, "qty", v === null ? "" : String(v))
+                          }
+                          className="h-[24px] text-[11px] border-0 shadow-none px-0 bg-transparent"
+                        />
+                      </div>
+                      <div className="scm-cell" style={{ justifyContent: "center", padding: "0 4px" }}>
+                        <RemoveRowButton
+                          onClick={() => removeMovementRow(row.id)}
+                          disabled={movementRows.length === 1}
+                        />
+                      </div>
+                    </>
+                  )}
+                />
+              )}
             </div>
-          ) : (
-            <div>
-              <div className="flex items-center justify-between">
-                <SectionLabel>Movement Details</SectionLabel>
-                <button
-                  type="button"
-                  onClick={addMovementRow}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-                >
-                  <Plus size={13} /> Add More
-                </button>
-              </div>
-              <div className="flex flex-col gap-2 mt-2">
-                {movementRows.map((row) => (
-                  <div
-                    key={row.id}
-                    className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end p-3 rounded-lg border border-theme bg-card"
-                  >
-                    <ModalSelect
-                      label="From"
-                      required
-                      options={branchOptions}
-                      value={row.from}
-                      onChange={(e) =>
-                        updateMovementRow(row.id, "from", e.target.value)
-                      }
-                    />
-                    <ModalSelect
-                      label="To"
-                      required
-                      options={branchOptions.filter((b) => b.value !== row.from)}
-                      value={row.to}
-                      onChange={(e) => updateMovementRow(row.id, "to", e.target.value)}
-                    />
-                    <div className="flex flex-col text-sm min-w-0">
-                      <span className="block text-[10px] font-medium text-main mb-1">
-                        Move Quantity<span className="text-danger">*</span>
-                      </span>
-                      <NumericInput
-                        value={row.qty === "" ? null : Number(row.qty)}
-                        allowNegative={false}
-                        decimalScale={0}
-                        placeholder="0"
-                        onChange={(v) =>
-                          updateMovementRow(
-                            row.id,
-                            "qty",
-                            v === null ? "" : String(v),
-                          )
-                        }
-                      />
-                    </div>
-                    <RemoveRowButton
-                      onClick={() => removeMovementRow(row.id)}
-                      disabled={movementRows.length === 1}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Posting Date + Reason */}
           <div className="grid grid-cols-2 gap-3">
