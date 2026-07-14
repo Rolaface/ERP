@@ -19,6 +19,7 @@ import { getLedgerDetails } from "../../api/Accounting/AccountApi";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCompanyStore } from "../../store/companyStore";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 interface LedgerRow {
   gl_entry: string;
@@ -367,7 +368,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
         <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
           <label className="text-[9px] font-black uppercase tracking-widest text-muted">Account</label>
           <input
-            value={account}
+            value={getGLNameWithoutAbbreviation(account)}
             onChange={(e) => setAccount(e.target.value)}
             placeholder="e.g. Debtors INR - RI"
             className="h-8 px-2.5 text-xs border border-[var(--border)] rounded-md bg-card text-main

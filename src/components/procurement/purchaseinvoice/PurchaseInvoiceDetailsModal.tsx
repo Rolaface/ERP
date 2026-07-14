@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ERP_BASE } from "../../../config/api";
+import { getGLNameWithoutAbbreviation } from "../../../api/utils/glAccountUtils";
 export interface PurchaseInvoiceDetail {
   piId: string;
   supplierName: string;
@@ -680,7 +681,7 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
               >
                 <F label="Reg. Type" value={data.registrationType} />
                 <F label="Project" value={data.project} />
-                <F label="Cost Center" value={data.costCenter} />
+                <F label="Cost Center" value={getGLNameWithoutAbbreviation(data.costCenter)} />
                 {data.lpoNumber && (
                   <F label="LPO Number" value={data.lpoNumber} mono />
                 )}

@@ -8,6 +8,7 @@ import {
     ArrowLeftRight
 } from "lucide-react";
 import React, { useState } from "react";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -207,7 +208,7 @@ function AllocationsTable({ allocations, paymentId }: { allocations: Allocation[
                                 </td>
 
                                 <td style={{ padding: "8px 12px", color: "var(--muted)", fontSize: "11px" }}>
-                                    {a.account}
+                                    {getGLNameWithoutAbbreviation(a.account)}
                                 </td>
                             </tr>
                         ))}
