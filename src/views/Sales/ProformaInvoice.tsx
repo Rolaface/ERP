@@ -332,12 +332,12 @@ const handleCreateInvoice = (proformaId: string, e?: React.MouseEvent) => {
             proformaId: inv.name || inv.proformaId || inv.id,
             customerName: inv.customerName,
             currency: inv.currency,
-            exchangeRate: inv.exchangeRate,
-            dueDate: inv.dueDate,
-            totalAmount: Number(inv.totalAmount),
+            exchangeRate: inv.exchangeRate || 1,
+            validTill: inv.validTill,
+            totalAmount: Number(inv.total || 0),
             status: inv.status as ProformaInvoiceStatus,
-            proformaInvoiceStatus: inv.status as ProformaInvoiceStatus, 
-            createdAt: new Date(inv.createdAt.replace(" ", "T")),
+            proformaInvoiceStatus: inv.status as ProformaInvoiceStatus,
+            createdAt: inv.postingDate ? new Date(inv.postingDate) : new Date(),
           }));
           allData = [...allData, ...mapped];
           total = res.pagination?.total_pages || 1;
