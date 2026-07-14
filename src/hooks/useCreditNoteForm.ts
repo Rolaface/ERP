@@ -106,7 +106,8 @@ const fetchReasonOptions = useCallback(
     if (!initialData) return;
 
     let parsedRemarks: { name?: string; reason?: string; code?: string; description?: string } = {};
-    if (typeof initialData.remarks === "string" && initialData.remarks.trim()) {
+    const rawRemarks = initialData.reason ?? initialData.remarks; 
+    if (typeof rawRemarks === "string" && rawRemarks.trim()) {
       try {
         parsedRemarks = JSON.parse(initialData.remarks);
       } catch {
@@ -115,7 +116,6 @@ const fetchReasonOptions = useCallback(
     } else if (initialData.remarks && typeof initialData.remarks === "object") {
       parsedRemarks = initialData.remarks;
     }
-
     setForm({
       return_against: initialData.return_against || initialData.id || initialData.piId || "",
       customer: {
@@ -332,7 +332,7 @@ const fetchReasonOptions = useCallback(
         update_stock: form.update_stock ? (1 as const) : (0 as const),
         conversion_rate: form.exchange_rate,
         update_outstanding_for_self: 1 as const,
-        remarks: JSON.stringify({
+        reason:JSON.stringify({
           name: form.reason,
           reason: form.reason,
           code: form.code,
