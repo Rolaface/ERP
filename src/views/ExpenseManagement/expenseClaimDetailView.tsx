@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ERP_BASE } from "../../config/api";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 interface ExpenseItem {
   name: string;
@@ -698,7 +699,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                               fontFamily: "monospace",
                             }}
                           >
-                            {item.default_account}
+                            {getGLNameWithoutAbbreviation(item.default_account)}
                           </span>
                         )}
                       </div>

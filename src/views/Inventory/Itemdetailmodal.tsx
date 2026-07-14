@@ -29,6 +29,7 @@ import {
 } from "../../components/ui/app-shell";
 import { formatDate } from "../../components/UI_Utils/Datedisplay";
 import type { Item, ItemSummary, TaxInfo } from "../../types/item";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 // ─── PUBLIC TYPES ─────────────────────────────────────────────────────────────
 
@@ -278,7 +279,7 @@ const TaxCard = ({ tax, index }: { tax: TaxInfo; index: number }) => {
           </div>
           <div className="text-left min-w-0">
             <p className="text-xs font-bold text-main truncate">
-              {tax.taxName || "—"}
+              {getGLNameWithoutAbbreviation(tax.taxName) || "—"}
             </p>
             <p className="text-[10px] text-muted truncate">
               {tax.taxCategory || "—"}

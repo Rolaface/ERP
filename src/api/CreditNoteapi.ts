@@ -13,13 +13,14 @@ export interface CreditNotePayload {
   company: string;
   update_stock: 0 | 1;
   update_outstanding_for_self: 0 | 1;
+  
   //   remarks?: {             
   //   name: string;
   //   reason: string;
   //   code:string;
   //   description: string;
   // };
-remarks?:string
+reason?:string
   items: {
     item_code: string;
     qty: number;          

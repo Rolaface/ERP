@@ -21,6 +21,7 @@ import {
   Plus,
   Boxes,
 } from "lucide-react";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 type OutletContextType = {
   openWarehouseCreate: (options?: {
@@ -288,7 +289,7 @@ const WarehouseView: React.FC<WarehouseViewProps> = ({
       align: "left",
       render: (row) => (
         <div className="py-1.5">
-          <span className="text-xs text-muted">{row.name}</span>
+          <span className="text-xs text-muted">{getGLNameWithoutAbbreviation(row.name)}</span>
         </div>
       ),
     },
