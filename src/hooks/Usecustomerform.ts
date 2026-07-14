@@ -62,6 +62,7 @@ export interface CustomerFormState {
   customerTaxCategory: string;
   creditLimit?: number | string;
   bypassCreditLimit?: boolean;
+  strictCreditLimit?: boolean;
   contacts: ContactEntry[];
   addresses: AddressEntry[];
   sameAsBilling: boolean;
@@ -157,8 +158,9 @@ export const emptyForm: CustomerFormState = {
   accountNumber: "",
   status: "Active",
   customerTaxCategory: "",
-   creditLimit: "",
+  creditLimit: "",
  bypassCreditLimit: false,
+ strictCreditLimit: false,
   contacts: [{ ...defaultContact }],
   addresses: [{ ...defaultBillingAddress }, { ...defaultShippingAddress }],
   sameAsBilling: true,
@@ -298,6 +300,7 @@ export function mapApiResponseToFormState(
     customerTaxCategory: data.customerTaxCategory ?? "",
     creditLimit: data.credit_limits?.[0]?.credit_limit ?? "",
     bypassCreditLimit: !!data.credit_limits?.[0]?.bypass_credit_limit_check,
+     strictCreditLimit: !!data.credit_limits?.[0]?.strict_credit_limit,
     contacts,
     addresses,
     sameAsBilling,
@@ -311,7 +314,7 @@ export function mapApiResponseToFormState(
  * Same payload shape for both POST (create) and PATCH (update).
  */
 export function buildPayload(form: CustomerFormState): Record<string, any> {
-  const { sameAsBilling, id, creditLimit, bypassCreditLimit, ...rest } = form;
+   const { sameAsBilling, id, creditLimit, bypassCreditLimit, strictCreditLimit, ...rest } = form;
   const contacts = form.contacts.map(
     ({ mobileCode, mobileNumber, id, ...contact }) => ({
       ...(id ? { id } : {}),
@@ -359,6 +362,7 @@ export function buildPayload(form: CustomerFormState): Record<string, any> {
    credit_limits.push({
     credit_limit: Number(creditLimit) || 0,
     bypass_credit_limit_check: bypassCreditLimit ? 1 : 0,
+    strict_credit_limit: strictCreditLimit ? 1 : 0,
    });
  }
 
@@ -858,6 +862,7 @@ export function useCustomerForm({
         registration_no: base.registration_no ?? "",
          creditLimit: base.creditLimit ?? "",
      bypassCreditLimit: base.bypassCreditLimit ?? false,
+     strictCreditLimit: base.strictCreditLimit ?? false,
       }));
       return;
     }

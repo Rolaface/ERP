@@ -90,10 +90,9 @@ export interface CustomerDetail extends CustomerSummary {
     selling?: SellingTerms;
   };
   credit_limits?: {
-    id?: string;
-    company?: string;
     credit_limit: number;
     bypass_credit_limit_check: number;
+    strict_credit_limit?: number;
   }[];
   billingAddressLine1?: string;
   billingAddressLine2?: string;
