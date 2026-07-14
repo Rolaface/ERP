@@ -14,7 +14,7 @@ import {
 import { fireManagedSwal } from "../../utils/swalManager";
 import { ChevronRight, ChevronDown, Upload } from "lucide-react";
 import XLSX from "xlsx-js-style";
-import StockCorrectionModal from "../../components/inventory/stock/Stockcorrectionmodal";
+import StockCorrectionModal from "./stockcorrectionmodal";
 import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
 import Table from "../../components/ui/Table/Table";
@@ -551,13 +551,14 @@ const Items: React.FC = () => {
         onClose={() => { setShowViewModal(false); setViewStockData(null); }}
         stockData={viewStockData}
       />
-
       <StockCorrectionModal
-        isOpen={showStockCorrection}
-        onClose={() => { setShowStockCorrection(false); setSelectedBatch(null); }}
-        onSuccess={() => { setShowStockCorrection(false); setSelectedBatch(null); fetchItems(); }}
-        batch={selectedBatch}
-      />
+  isOpen={showStockCorrection}
+  onClose={() => setShowStockCorrection(false)}
+  selectedBatch={selectedBatch}
+  onSubmit={async (payload) => { /* call your save API here, then fetchItems() */ }}
+/>
+
+     
 
       <BulkUploadModal
         isOpen={showBulkModal}

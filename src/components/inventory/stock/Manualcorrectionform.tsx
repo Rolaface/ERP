@@ -2,15 +2,19 @@
 // The "Manual Correction" tab body.
 // Receives all state from the parent hook via props — zero internal state.
 
-import React from "react";
+import React, { useMemo } from "react";
 import ItemSelect        from "../../../components/selects/ItemSelect";
 import ItemGenericSelect from "../../../components/selects/ItemGenericSelect";
 import { getUOMs }       from "../../../api/itemZraApi";
 import { Button }        from "../../../components/ui/modal/formComponent";
 
 import {
+  ModalInput,
+  ModalSelect,
+  NumericInput,
+} from "../../../components/ui/modal/modalComponent";
+import {
   FieldLabel,
-  CellInput,
   SectionCard,
   CorrectionTypeToggle,
   VarianceBadge,
@@ -44,7 +48,14 @@ export const ManualCorrectionForm: React.FC<Props> = ({
   adjQty, curQty, newQty, diff, hasItem, hasAdj, isValid,
   onSubmit, onClose,
 }) => {
-  const today = new Date().toISOString().split("T")[0];
+  // Memoized so the option array isn't rebuilt every keystroke elsewhere in the form.
+  const reasonOptions = useMemo(
+    () => REASON_CODES.map((r) => ({ label: r.label, value: r.id })),
+    [],
+  );
+
+  const adjustmentLabel =
+    form.correctionType === "set" ? "New (Physical) Quantity" : "Adjustment Quantity";
 
   return (
     <form onSubmit={onSubmit} className="flex-1 flex flex-col min-h-0">
@@ -76,7 +87,9 @@ export const ManualCorrectionForm: React.FC<Props> = ({
                   />
                 </div>
 
-                {/* Current stock — system value, read-only */}
+                {/* Current stock — system value, read-only display (not a generic
+                    atom: needs the "units" suffix + a loading state, so it stays
+                    bespoke rather than being forced into ModalInput). */}
                 <div className="flex flex-col gap-0.5">
                   <FieldLabel label="Current Stock (System)" />
                   <div className="flex items-center h-9 rounded-lg border border-theme bg-app/60 px-3 gap-2">
@@ -97,12 +110,10 @@ export const ManualCorrectionForm: React.FC<Props> = ({
 
                 {/* UOM */}
                 <div className="flex flex-col gap-0.5">
-                  <FieldLabel label="Unit of Measure"
- />
+                  <FieldLabel label="Unit of Measure" />
                   <UOMWrapper>
                     <ItemGenericSelect
-                      label= "Unit of Measure"
-
+                      label="Unit of Measure"
                       fetchData={getUOMs}
                       value={form.unitOfMeasureCd || ""}
                       onChange={({ id }) => setField("unitOfMeasureCd", id as any)}
@@ -124,7 +135,7 @@ export const ManualCorrectionForm: React.FC<Props> = ({
                   <FieldLabel label="Correction Type" required />
                   <CorrectionTypeToggle
                     value={form.correctionType}
-                    onChange={(v) => setField("correctionType", v)}
+                    onChange={(v: CorrectionType) => setField("correctionType", v)}
                   />
                   <p className="text-[11px] text-muted">
                     {CORRECTION_TYPE_META[form.correctionType].description}
@@ -134,17 +145,19 @@ export const ManualCorrectionForm: React.FC<Props> = ({
                 {/* Quantity + live variance row */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <FieldLabel
-                      label={form.correctionType === "set" ? "New (Physical) Quantity" : "Adjustment Quantity"}
-                      required
-                    />
-                    <CellInput
-                      type="number"
-                      min={0}
-                      step="1"
-                      value={form.adjustmentQty}
-                      onChange={(v) => setField("adjustmentQty", v as any)}
+                    <FieldLabel label={adjustmentLabel} required />
+                    <NumericInput
+                      name="adjustmentQty"
+                      value={
+                        form.adjustmentQty === "" || form.adjustmentQty == null
+                          ? null
+                          : Number(form.adjustmentQty)
+                      }
+                      onChange={(v) => setField("adjustmentQty", (v ?? "") as any)}
                       placeholder="0"
+                      decimalScale={0}
+                      allowNegative={false}
+                      className="w-full h-9"
                     />
                   </div>
 
@@ -164,34 +177,22 @@ export const ManualCorrectionForm: React.FC<Props> = ({
 
                 {/* Reason + Notes */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <FieldLabel label="Reason for Correction" required />
-                    <select
-                      value={form.reason}
-                      onChange={(e) => setField("reason", e.target.value as any)}
-                      className="w-full h-9 rounded-lg border border-theme bg-card text-main text-sm px-3
-                        focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
-                        appearance-none cursor-pointer"
-                    >
-                      <option value="">Select reason…</option>
-                      {REASON_CODES.map((r) => (
-                        <option key={r.id} value={r.id}>{r.label}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <ModalSelect
+                    label="Reason for Correction"
+                    required
+                    value={form.reason}
+                    options={reasonOptions}
+                    placeholder="Select reason…"
+                    onChange={(e) => setField("reason", e.target.value as any)}
+                  />
 
-                  <div className="flex flex-col gap-1.5">
-                    <FieldLabel label="Notes / Remarks" />
-                    <input
-                      type="text"
-                      value={form.notes}
-                      onChange={(e) => setField("notes", e.target.value as any)}
-                      placeholder="Optional — add any extra context…"
-                      className="w-full h-9 rounded-lg border border-theme bg-card text-main text-sm px-3
-                        placeholder:text-muted/40
-                        focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                    />
-                  </div>
+                  <ModalInput
+                    label="Notes / Remarks"
+                    type="text"
+                    value={form.notes}
+                    placeholder="Optional — add any extra context…"
+                    onChange={(e) => setField("notes", e.target.value as any)}
+                  />
                 </div>
               </div>
             </SectionCard>
