@@ -1394,6 +1394,7 @@
   .cursor-default-only {
     cursor: default;
   }
+  
 }
 
 /* =========================================
@@ -2023,4 +2024,44 @@ body.app-swal-open .erp-modal-layer {
 }
 .dark .scroll-thin::-webkit-scrollbar-thumb {
   background-color: rgba(100, 116, 139, 0.5);
+}
+
+
+/* =========================================
+   GLOBAL INTERACTIVE ROW SYSTEM
+   Use on any selectable row: dropdown lists,
+   table rows, comboboxes, custom selects, etc.
+========================================= */
+
+/* Base — put this on every selectable/clickable row */
+.row-interactive {
+  cursor: pointer;
+  transition: background-color var(--motion-fast, 120ms) var(--ease-standard, ease);
+}
+
+/* Mouse hover — works everywhere automatically */
+.row-interactive:hover {
+  background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+/* Keyboard / programmatic highlight — apply this class conditionally
+   (e.g. isHighlighted && "row-highlighted") for arrow-key navigation */
+.row-highlighted {
+  background-color: color-mix(in srgb, var(--primary) 14%, transparent) !important;
+}
+
+/* Disabled state — pairs with the above, kills hover/highlight/pointer */
+.row-interactive.row-disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Active cell in a grid (used by ItemTable / any spreadsheet-style table) */
+.spreadsheet-grid td:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  position: relative;
+  z-index: 2;
 }

@@ -10,13 +10,14 @@ import { useModalStore } from "../../../../store/modalStore";
 import { MinimizableModal } from "../../../common/MinimizableModal";
 import { NumericInput } from "../../../ui/modal/modalComponent";
 import type { SalaryResult } from "../../../../utils/Salary_Employee/salaryengine";
+import { formatMoney, currencySymbolFor } from "../../../../utils/money";
 
 export type CompensationReviewModalProps = {
   isOpen: boolean;
   onClose: () => void;
   employeeName: string;
-  currencyPrefix: string;
-  
+  currency: string;
+
   salaryResult?: SalaryResult | null;
   salaryStructureName?: string;
   hasCustomizations?: boolean;
@@ -32,9 +33,6 @@ export type CompensationReviewModalProps = {
   onGrossSalaryBlur?: () => void;
   children?: React.ReactNode;
 };
-
-const fmtNum = (n: number) =>
-  (n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 const DrawerToggleIcon: React.FC<{ isOpen: boolean }> = ({ isOpen }) => (
   <svg
@@ -60,7 +58,7 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
   isOpen,
   onClose,
   employeeName,
-  currencyPrefix,
+  currency,
   salaryResult,
   salaryStructureName,
   hasCustomizations = false,
@@ -119,7 +117,11 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
 
   if (!isOpen || !modalId) return null;
 
-  const cur = (n: number) => `${currencyPrefix} ${fmtNum(n)}`.trim();
+  // Every amount in this modal formats through the currency store's own
+  // number_format pattern for `currency` — no more manual string
+  // concatenation of a raw prefix + toLocaleString.
+  const cur = (n: number) => formatMoney(currency, n);
+  const symbol = currencySymbolFor(currency);
 
   const summaryBar = (
     <div className="flex items-center justify-between gap-3 text-white/90">
@@ -218,7 +220,7 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
                   onBlur={onBaseSalaryBlur}
                 >
                   <span className="text-[10px] font-semibold text-muted mr-1 shrink-0">
-                    {currencyPrefix}
+                    {symbol}
                   </span>
                   <NumericInput
                     name="modal-base-salary"
@@ -243,7 +245,7 @@ export const CompensationReviewModal: React.FC<CompensationReviewModalProps> = (
                   onBlur={onGrossSalaryBlur}
                 >
                   <span className="text-[10px] font-semibold text-muted mr-1 shrink-0">
-                    {currencyPrefix}
+                    {symbol}
                   </span>
                   <NumericInput
                     name="modal-gross-salary"

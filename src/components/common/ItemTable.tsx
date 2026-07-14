@@ -12,7 +12,7 @@ import { getItemDetailsByBarcodeId } from "../../api/procurement/PurchaseInvoice
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import { useBarcodeScanner } from "../../api/utils/BarCodeScanner";
 import { getStockReport } from "../../api/stockApi";
-import POItemSelect from "../selects/procurement/POItemSelect";
+import { useSpreadsheetNavigation } from "../../hooks/common/useSpreadsheetNavigation";
 
 export interface ItemTableActions {
   handleItemChange: (
@@ -294,6 +294,9 @@ const ItemTable: React.FC<ItemTableProps> = ({
   isSalesInvoice = false,
   isQuotation = false,
 }) => {
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const onGridKeyDown = useSpreadsheetNavigation(tableWrapperRef);
+
   useBarcodeScanner(async (barcode) => {
     try {
       const response = await getItemDetailsByBarcodeId(barcode);
@@ -401,17 +404,19 @@ const ItemTable: React.FC<ItemTableProps> = ({
     const discountAmount =
       it.quantity * it.price * (Number(it.discount || 0) / 100);
     const amount = it.quantity * it.price - discountAmount;
+    let col = 0;
+    const c = () => col++;
 
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
         {/* # */}
-        <td className="px-2 py-1 text-center text-[10px] text-muted">
+        <td data-row={i} data-col={c()} className="px-2 py-1 text-center text-[10px] text-muted">
           {i + 1}
         </td>
 
         {/* Item */}
         {!isQuotation && (
-          <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <StockItemSelect
               value={it.itemCode}
               batchNo={it.batchNo}
@@ -464,7 +469,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
         {/* Description — Service only */}
 {isService && (
-  <td className="px-0.5 py-1">
+ <td data-row={i} data-col={c()} className="px-0.5 py-1">
     <input
       type="text"
       name="description"
@@ -478,7 +483,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Pkg (U×S) */}
         {!isService && (
-          <td className="px-1 py-1">
+        <td data-row={i} data-col={c()} className="px-1 py-1">
             <Tooltip
               content={
                 it.packingUnit && it.packingSize
@@ -503,7 +508,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Box */}
         {!isService && (
-          <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <div className="flex items-center gap-0.5">
               <input
                 name="boxStart"
@@ -526,7 +531,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Batch No */}
         {isSalesInvoice && !isService && (
-          <td className="px-0.5 py-1">
+           <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={`Batch No: ${it.batchNo || "—"}`}>
               <input
                 type="text"
@@ -541,7 +546,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* UOM — quotation only */}
         {isQuotation && (
-          <td className="px-2 py-1">
+         <td data-row={i} data-col={c()} className="px-2 py-1">
             <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
               <input
                 type="text"
@@ -555,7 +560,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Qty */}
-        <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
           <NumericInput
             name="quantity"
             value={it.quantity ?? ""}
@@ -572,7 +577,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Mfg Date — full date visible, no truncation */}
         {!isService && (
-          <td className="px-0.5 py-1">
+            <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={it.mfgDate || "No Mfg Date"}>
               <DatePickerInput
                 label=""
@@ -591,7 +596,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Expiry Date — full date visible, no truncation */}
         {!isService && (
-          <td className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={it.expDate || "No Expiry Date"}>
               <DatePickerInput
                 label=""
@@ -610,7 +615,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Warehouse */}
         {!isService && (
-          <td className="px-0.5 py-1">
+         <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={it.warehouse || "No warehouse selected"}>
               <WarehouseSelect
                 compact
@@ -626,7 +631,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Unit Price */}
-        <td className="px-0.5 py-1">
+        <td data-row={i} data-col={c()} className="px-0.5 py-1">
           <NumericInput
             name="price"
             value={it.price ?? ""}
@@ -643,7 +648,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Dis(%) */}
         {!isQuotation && (
-          <td className="px-1 py-1">
+         <td data-row={i} data-col={c()} className="px-1 py-1">
             <NumericInput
               name="discount"
               value={it.discount ?? ""}
@@ -659,7 +664,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Tax(%) */}
-        <td className="px-1 py-1">
+        <td data-row={i} data-col={c()} className="px-1 py-1">
           <NumericInput
             name="vatRate"
             value={it.vatRate ?? ""}
@@ -675,7 +680,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         {/* Tax Name */}
-        <td className="px-1 py-1">
+       <td data-row={i} data-col={c()} className="px-1 py-1">
           <Tooltip
             content={
               it.taxTypes?.length
@@ -743,7 +748,11 @@ const ItemTable: React.FC<ItemTableProps> = ({
         <h3 className="text-sm font-semibold text-main mb-2">{title}</h3>
       )}
 
-      <div className="w-full overflow-x-auto scrollbar-thin">
+      <div
+        ref={tableWrapperRef}
+        onKeyDown={onGridKeyDown}
+        className="w-full overflow-x-auto scrollbar-thin"
+      >
         <table
           className="w-full border-collapse text-[10px] leading-tight"
           style={{

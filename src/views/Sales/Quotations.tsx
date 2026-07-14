@@ -454,7 +454,7 @@ const handleCreateProforma = (quotationNumber: string, e?: React.MouseEvent) => 
       );
 
       if (res?.status_code === 200) {
-        const raw = res.data?.quotations || [];
+        const raw = res.data || [];
         allData = [
           ...allData,
           ...raw.map((q: any) => ({
@@ -466,7 +466,7 @@ const handleCreateProforma = (quotationNumber: string, e?: React.MouseEvent) => 
             currency: q.currency,
           })),
         ];
-        total = res.data?.pagination?.totalPages || 1;
+        total = res.data?.pagination?.total_Pages || 1;
       }
 
       current++;

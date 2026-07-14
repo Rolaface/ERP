@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { FileSignature } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import { useQuotationForm } from "../../hooks/useQuotationForm";
-import { ModalSelect } from "../ui/modal/modalComponent";
+
 import CustomerSelect from "../selects/CustomerSelect";
 import { MinimizableModal } from "../common/MinimizableModal";
 import { User, Mail, Phone } from "lucide-react";
-import PaymentInfoBlock from "./PaymentInfoBlock";
+
 import DatePickerInput from "../calendar/DatePickerInput";
 import {
-  paymentMethodOptions,
+  
   ITEMS_PER_PAGE,
 } from "../../constants/invoice.constants";
 import ModalFooter from "../common/ModalFooter";

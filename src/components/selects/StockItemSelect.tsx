@@ -133,6 +133,9 @@ export default function StockItemSelect({
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
 
+  // Tracks which row in the open list is currently keyboard-highlighted.
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+
   const triggerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -267,6 +270,12 @@ export default function StockItemSelect({
       .sort((a, b) => Number(b.qty ?? 0) - Number(a.qty ?? 0));
   }, [flatRows, search, stockFilter]);
 
+  // Whenever the visible list changes (typing, filter pill, opening), jump
+  // the keyboard highlight back to the top row.
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [filtered]);
+
   const dropStyle = useMemo((): React.CSSProperties => {
     if (!dropRect) return {};
     const PADDING = 12,
@@ -296,10 +305,22 @@ export default function StockItemSelect({
     if (!flatRows.length) await load();
   };
 
+  // Selects whichever row is currently keyboard-highlighted, if it's usable.
+  const selectHighlighted = () => {
+    const row = filtered[highlightedIndex];
+    if (!row) return;
+    const isDisabled =
+      !isQuotation && Number(row.qty ?? 0) <= 0 && !row.isServiceItem;
+    if (isDisabled || loading) return;
+    handleSelect(row);
+  };
+
   const displayName = selected?.itemName || itemName;
 
   return (
-    <div className="w-full min-w-0">
+    // data-nav-ignore stops the parent spreadsheet grid's arrow-key handler
+    // from hijacking keys while this dropdown is open.
+    <div className="w-full min-w-0" data-nav-ignore={open ? "true" : undefined}>
       {/* TRIGGER — text wraps so full item name is always visible */}
       <div
         ref={triggerRef}
@@ -308,7 +329,11 @@ export default function StockItemSelect({
         aria-haspopup="listbox"
         tabIndex={disabled ? -1 : 0}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") handleOpen();
+          // ArrowDown also opens the dropdown, like a native <select>.
+          if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+            e.preventDefault();
+            handleOpen();
+          }
         }}
         onClick={handleOpen}
         className={[
@@ -316,13 +341,13 @@ export default function StockItemSelect({
           "bg-card text-main text-[11px] cursor-pointer select-none transition-colors duration-150 w-full",
           disabled
             ? "opacity-50 pointer-events-none"
-            : "hover:border-primary focus:outline-none focus:border-primary",
+            : "hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary",
         ].join(" ")}
       >
         {!displayName && (
           <Package className="w-3.5 h-3.5 text-muted shrink-0" />
         )}
-        {/* ── KEY FIX: break-words + no truncate so full name always shows ── */}
+        {/* break-words + no truncate so the full item name always shows */}
         <span
           className={`flex-1 min-w-0 break-words leading-snug ${displayName ? "text-main" : "text-muted"}`}
         >
@@ -342,6 +367,9 @@ export default function StockItemSelect({
         createPortal(
           <div
             ref={dropdownRef}
+            // Portal content renders outside this DOM subtree, so it needs
+            // its own nav-ignore flag too.
+            data-nav-ignore="true"
             role="listbox"
             className="bg-card border border-theme rounded-lg shadow-xl flex flex-col overflow-hidden"
             style={dropStyle}
@@ -375,9 +403,33 @@ export default function StockItemSelect({
                 ref={inputRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === "Escape" && (setOpen(false), setSearch(""))
-                }
+                // Full keyboard navigation inside the open list.
+                onKeyDown={(e) => {
+                  switch (e.key) {
+                    case "ArrowDown":
+                      e.preventDefault();
+                      setHighlightedIndex((i) =>
+                        Math.min(i + 1, filtered.length - 1),
+                      );
+                      break;
+                    case "ArrowUp":
+                      e.preventDefault();
+                      setHighlightedIndex((i) => Math.max(i - 1, 0));
+                      break;
+                    case "Enter":
+                      e.preventDefault();
+                      selectHighlighted();
+                      break;
+                    case "Escape":
+                      e.preventDefault();
+                      setOpen(false);
+                      setSearch("");
+                      break;
+                    case "Tab":
+                      setOpen(false);
+                      break;
+                  }
+                }}
                 placeholder="Search by name, code or batch…"
                 className="flex-1 min-w-0 bg-transparent text-main text-[11px] outline-none placeholder:text-muted"
               />
@@ -433,11 +485,12 @@ export default function StockItemSelect({
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((row) => {
+                    {filtered.map((row, index) => {
                       const qty = Number(row.qty ?? 0);
                       const isDisabled =
                         !isQuotation && qty <= 0 && !row.isServiceItem;
                       const exStatus = getExpiryStatus(row.expiryDate);
+                      const isHighlighted = index === highlightedIndex;
                       const accentCls =
                         exStatus === "expired"
                           ? "border-l-2 border-l-danger"
@@ -448,16 +501,24 @@ export default function StockItemSelect({
                         <tr
                           key={`${row.itemCode}-${row.batchNo || "no-batch"}`}
                           role="option"
-                          aria-selected={false}
+                          aria-selected={isHighlighted}
+                          // Keep the keyboard-highlighted row scrolled into view.
+                          ref={(el) => {
+                            if (isHighlighted) {
+                              el?.scrollIntoView({ block: "nearest" });
+                            }
+                          }}
+                          // Hovering syncs the mouse and keyboard highlight.
+                          onMouseEnter={() => setHighlightedIndex(index)}
                           onClick={() => {
                             if (!isDisabled && !loading) handleSelect(row);
                           }}
                           className={[
-                            "border-b border-theme last:border-none transition-colors duration-100",
+                            "border-b border-theme last:border-none",
+                            "row-interactive",
                             accentCls,
-                            isDisabled
-                              ? "opacity-40 cursor-not-allowed"
-                              : "cursor-pointer hover:bg-primary/5 active:bg-primary/10",
+                            isHighlighted ? "row-highlighted" : "",
+                            isDisabled ? "row-disabled" : "",
                           ].join(" ")}
                         >
                           <td className="px-3 py-2.5 align-middle">

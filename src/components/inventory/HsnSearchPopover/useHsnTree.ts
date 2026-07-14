@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getItemClassifications } from "../../../api/itemClassificationCodeApi";
 import { HSNNode, buildTreeFromJson, toLegacyShape } from "./hsnTreeUtils";
 
@@ -7,18 +7,23 @@ export function useHsnTree(open: boolean) {
   const [apiTree, setApiTree] = useState<HSNNode[]>([]);
   const [isTreeLoading, setIsTreeLoading] = useState(false);
   const [treeError, setTreeError] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (!open || apiTree.length > 0 || isTreeLoading) return;
+    if (!open || hasFetchedRef.current) return;
 
+    hasFetchedRef.current = true;
     setIsTreeLoading(true);
     setTreeError(null);
 
     getItemClassifications(1, 3000)
       .then((res) => setApiTree(buildTreeFromJson(toLegacyShape(res.data))))
-      .catch(() => setTreeError("Couldn't load HSN classifications."))
+      .catch(() => {
+        setTreeError("Couldn't load HSN classifications.");
+        hasFetchedRef.current = false; 
+      })
       .finally(() => setIsTreeLoading(false));
-  }, [open, apiTree.length, isTreeLoading]);
+  }, [open]);
 
   return { apiTree, isTreeLoading, treeError };
 }

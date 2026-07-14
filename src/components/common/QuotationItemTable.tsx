@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Plus, Trash2, Copy } from "lucide-react";
 import { showValidationError } from "../../utils/alert";
 import Tooltip from "../Tooltip";
@@ -8,6 +8,7 @@ import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFr
 import { useBarcodeScanner } from "../../api/utils/BarCodeScanner";
 import { getStockReport } from "../../api/stockApi";
 import POItemSelect from "../selects/procurement/POItemSelect";
+import { useSpreadsheetNavigation } from "../../hooks/common/useSpreadsheetNavigation";
 
 export interface ItemTableActions {
   handleItemChange: (
@@ -182,6 +183,11 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
   invoiceType = "Product",
 }) => {
   const isService = invoiceType === "Service";
+
+  // ── Row/column keyboard navigation — same wiring as ItemTable.tsx ──────
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const onGridKeyDown = useSpreadsheetNavigation(tableWrapperRef);
+
   useBarcodeScanner(async (barcode) => {
     try {
       const response = await getItemDetailsByBarcodeId(barcode);
@@ -289,15 +295,20 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
     const discountAmount =
       it.quantity * it.price * (Number(it.discount || 0) / 100);
     const amount = it.quantity * it.price - discountAmount;
+    // Running column counter — same pattern used in ItemTable.tsx. Resets
+    // per row; since every row in this table has the same isService branch,
+    // column numbers stay aligned across rows automatically.
+    let col = 0;
+    const c = () => col++;
 
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
         {/* # */}
-        <td className="px-2 py-1 text-center text-[10px] text-muted">
+        <td data-row={i} data-col={c()} className="px-2 py-1 text-center text-[10px] text-muted">
           {i + 1}
         </td>
  
-          <td className="px-1 py-1.5 overflow-hidden">
+          <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
             <POItemSelect
               value={it.itemName}
               selectedId={it.itemCode}
@@ -349,7 +360,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
           </td> 
           {/* Description — Service only */}
 {isService && (
-  <td className="px-1 py-1">
+  <td data-row={i} data-col={c()} className="px-1 py-1">
     <input
       type="text"
       name="description"
@@ -363,7 +374,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
 
         {/* Pkg (U×S) — hidden < md */}
         {!isService && (
-        <td className="px-1 py-1 md:table-cell">
+        <td data-row={i} data-col={c()} className="px-1 py-1 md:table-cell">
           <Tooltip
             content={
               it.packingUnit && it.packingSize
@@ -386,7 +397,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
         </td>
         )}
         {!isService && (
-        <td className="px-0.5 py-1">
+        <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <div className="flex items-center gap-0.5">
               <input
                 name="boxStart"
@@ -409,7 +420,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
 
 
         {/* Qty */}
-        <td className="px-0.5 py-1">
+        <td data-row={i} data-col={c()} className="px-0.5 py-1">
           <NumericInput
             name="quantity"
             value={it.quantity ?? ""}
@@ -426,7 +437,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
 
         {/* UOM — quotation only */}
         {!isService && (
-           <td className="px-2 py-1 md:table-cell">
+           <td data-row={i} data-col={c()} className="px-2 py-1 md:table-cell">
             <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
               <input
                 type="text"
@@ -440,7 +451,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
         )}
 
         {/* Unit Price */}
-        <td className="px-0.5 py-1">
+        <td data-row={i} data-col={c()} className="px-0.5 py-1">
           <NumericInput
             name="price"
             value={it.price ?? ""}
@@ -455,7 +466,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
           />
         </td>
 
-        <td className="px-1 py-1">
+        <td data-row={i} data-col={c()} className="px-1 py-1">
                     <NumericInput
                       name="discount"
                       value={it.discount ?? ""}
@@ -470,7 +481,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
                   </td>
 
         {/* Tax(%) — hidden < md */}
-        <td className="px-1 py-1 md:table-cell">
+        <td data-row={i} data-col={c()} className="px-1 py-1 md:table-cell">
           <NumericInput
             name="vatRate"
             value={it.vatRate ?? ""}
@@ -486,7 +497,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         {/* Tax Name — hidden < md */}
-        <td className="px-1 py-1 md:table-cell">
+        <td data-row={i} data-col={c()} className="px-1 py-1 md:table-cell">
           <Tooltip
             content={
               it.taxTypes?.length
@@ -560,8 +571,15 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
         table-layout:fixed + colgroup percentages = columns scale to container.
         minWidth:560px = absolute minimum before horizontal scroll kicks in.
         overflow-x-auto on the wrapper = last-resort escape hatch only.
+
+        ref + onKeyDown wire up row/column keyboard navigation — same hook
+        and wiring style used in ItemTable.tsx.
       */}
-      <div className="w-full overflow-x-auto scrollbar-thin">
+      <div
+        ref={tableWrapperRef}
+        onKeyDown={onGridKeyDown}
+        className="w-full overflow-x-auto scrollbar-thin"
+      >
         <table
           className="w-full border-collapse text-[10px] leading-tight"
           style={{ tableLayout: "fixed", minWidth: "700px" }}
