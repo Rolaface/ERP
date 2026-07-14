@@ -72,7 +72,7 @@ export const salesInvoiceAdapter: InvoiceAdapter = {
 
   async fetchAllForFifo(partyId): Promise<NormalizedInvoice[]> {
    const res = await getAllSalesInvoices(
-      1, 1000, "dueDate", "desc", undefined, partyId, 0.01,
+      1, 1000, "due_date", "desc", undefined, partyId, 0.01,
       ["Partly Paid", "Unpaid", "Overdue"]
     );
     console.log(res?.data?.[0]) 
