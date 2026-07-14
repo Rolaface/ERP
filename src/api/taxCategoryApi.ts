@@ -10,7 +10,7 @@ export async function getAllTaxCategories(
   page: number = 1,
   page_size: number = 10,
   search?: string,
-  disables?: 0 | 1,
+  disabled?: 0 | 1,
   order_by: string = "modified desc"
 ): Promise<any> {
   const resp: AxiosResponse = await api.get(
@@ -21,7 +21,7 @@ export async function getAllTaxCategories(
         page_size,
         order_by,
         ...(search ? { search } : {}),
-        ...(disables !== undefined ? { disables } : {}),
+        ...(disabled !== undefined ? { disabled } : {}),
       },
     }
   );
