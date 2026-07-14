@@ -6,6 +6,8 @@ import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import { getAllModeOfPayment, getAllBankAccounts } from "../../api/BankAccountApi";
 import { getCurrencyList } from "../../api/lookupApi";
 import { getPayrollPayableAccounts } from "../../api/faapi";
+import { getAllCreditLimit } from "../../api/companyDefaultApi";
+import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
 
 interface DefaultsField {
   key: string;
@@ -72,6 +74,11 @@ export const SECTIONS: DefaultsSection[] = [
       { key: "default_buying_terms",        label: "DEFAULT BUYING TERMS" },
       { key: "default_in_transit_warehouse", label: "DEFAULT IN-TRANSIT WAREHOUSE" },
     ],
+  },
+  {
+    id: "credit_limit",
+    title: "CREDIT LIMIT",
+    fields: [],
   },
   {
     id: "hr_leave",
@@ -147,8 +154,9 @@ const CompanyBankAccountSelect: React.FC<{
           .filter(Boolean)
           .join(" · "),
       }));
-    } catch {
-      return [];
+    } catch(error) {
+      parseFrappeError(error);
+      return [];      
     }
   };
 
@@ -206,6 +214,42 @@ const ModeOfPaymentSelect: React.FC<{
   );
 };
 
+const CreditControllerSelect: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ value, onChange }) => {
+  const fetchOptions = async (q: string) => {
+  try {
+    const roles = await getAllCreditLimit(q || undefined, 20);
+    console.log("credit controller roles:", roles);
+    return roles.map((role) => ({
+      label: role.name,
+      value: role.id,
+    }));
+  } catch (err) {
+    console.error("credit controller fetch failed:", err);
+    return [];
+  }
+};
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        DEFAULT CREDIT LIMIT
+      </span>
+      <div className="[&_input]:!py-1 [&_input]:!px-2 [&_input]:!text-[11px] [&_input]:!rounded [&_input]:!border-theme [&_input]:!h-auto">
+        <SearchSelect2
+          label=""
+          value={value}
+          onChange={(val) => onChange(val)}
+          fetchOptions={fetchOptions}
+          placeholder="Search role..."
+        />
+      </div>
+    </div>
+  );
+};
+
 // ─── Section renderer ─────────────────────────────────────────────────────────
 
 interface SectionProps {
@@ -224,23 +268,28 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-4">
-      {/* Default Bank Account — SearchSelect2, company's own bank accounts */}
-      {section.id === "accounts" && (
-        <CompanyBankAccountSelect
-          value={values["default_bank_account"] ?? ""}
-          onChange={(val) => onChange("default_bank_account", val)}
+     {section.id === "accounts" && (
+      <CompanyBankAccountSelect
+        value={values["default_bank_account"] ?? ""}
+        onChange={(val) => onChange("default_bank_account", val)}
+      /> 
+  )}
+  {section.id === "credit_limit" && (
+        <CreditControllerSelect
+          value={values["credit_controller"] ?? ""}
+          onChange={(val) => onChange("credit_controller", val)}
         />
       )}
 
-      {section.fields.map((field) => (
-        <ModalInput
-          key={field.key}
-          label={field.label}
-          name={field.key}
-          value={values[field.key] ?? ""}
-          onChange={(e) => onChange(field.key, e.target.value)}
-        />
-      ))}
+  {section.fields.map((field) => (
+    <ModalInput
+      key={field.key}
+      label={field.label}
+      name={field.key}
+      value={values[field.key] ?? ""}
+      onChange={(e) => onChange(field.key, e.target.value)}
+    />
+  ))}
 
       {/* Inject custom fields into the BASIC INFO section */}
       {section.id === "basic" && (
