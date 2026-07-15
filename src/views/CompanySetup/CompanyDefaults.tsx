@@ -162,7 +162,7 @@ const CostCenterSelect: React.FC<{
         value: c.id,
       }));
     } catch (err) {
-      console.error(`${label} fetch failed:`, err);
+      parseFrappeError(err || "Failed to fetch cost center accounts");
       return [];
     }
   };
