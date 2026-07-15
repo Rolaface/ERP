@@ -18,7 +18,7 @@ import { showSuccess } from "../../utils/alert";
 import { createShedular, editShedular } from "../../api/schedulerApi";
 const AddKRAModal = lazy(
   () => import("../../components/Hr/performance/section/AddKRAModal"),
-)
+);
 const SchedulerModal = lazy(
   () => import("../../components/Schduler/SchedulerModal"),
 );
@@ -28,8 +28,11 @@ const AddFeedbackModal = lazy(
 );
 
 import { createUser } from "../../api/RoleManagement/CreateUserApi";
-import type { SalaryComponent, PayrollPeriod, SalaryStructure } from "../../api/payrollConfigApi";
-
+import type {
+  SalaryComponent,
+  PayrollPeriod,
+  SalaryStructure,
+} from "../../api/payrollConfigApi";
 
 import {
   useDataRefreshStore,
@@ -39,9 +42,7 @@ import type { LeaveApplication } from "../../api/leaveApplicationApi";
 import type { LeaveType } from "../../api/leaveConfigApi";
 import { PayrollVerificationData } from "../../api/payroll/payrollEntryApi";
 
-
-
-import type { SchedulerRecord } from "../Schduler/SchedulerModal"
+import type { SchedulerRecord } from "../Schduler/SchedulerModal";
 const CustomerModal = lazy(() => import("../crm/CustomerModal"));
 const SupplierModal = lazy(() => import("../procurement/supply/SupplierModal"));
 const InvoiceModal = lazy(() => import("../sales/InvoiceModal"));
@@ -90,9 +91,9 @@ const CurrencyConversionModal = lazy(
   () => import("../currencyconversion/CurrencyConversionModal"),
 );
 
-const AddassetCategory =lazy(
-()=> import("../../components/FixedAsset/AssetCategoryModal")
-)
+const AddassetCategory = lazy(
+  () => import("../../components/FixedAsset/AssetCategoryModal"),
+);
 const AddAssetModal = lazy(
   () => import("../../components/FixedAsset/AddAssetModal"),
 );
@@ -120,100 +121,86 @@ const EmployeeModal = lazy(
 const NewPayrollEntry = lazy(
   () => import("../../views/hr/payroll-system/Newpayrollentry"),
 );
-const SalaryComponentModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/Salarycomponentmodal").then((m) => ({
-      default: m.SalaryComponentModal,
-    })),
+const SalaryComponentModal = lazy(() =>
+  import("../Hr/hrsetupmodals/Salarycomponentmodal").then((m) => ({
+    default: m.SalaryComponentModal,
+  })),
 );
-const SalaryStructureModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/Salarystructuremodal").then((m) => ({
-      default: m.SalaryStructureModal,
-    })),
+const SalaryStructureModal = lazy(() =>
+  import("../Hr/hrsetupmodals/Salarystructuremodal").then((m) => ({
+    default: m.SalaryStructureModal,
+  })),
 );
 const LeaveApplyModal = lazy(
-  () =>
-    import("../../components/Hr/hrsetupmodals/LeaveApplyModal"),
+  () => import("../../components/Hr/hrsetupmodals/LeaveApplyModal"),
 );
-const LeaveTypeModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/LeaveTypeModal").then((m) => ({
-      default: m.LeaveTypeModal,
-    })),
+const LeaveTypeModal = lazy(() =>
+  import("../Hr/hrsetupmodals/LeaveTypeModal").then((m) => ({
+    default: m.LeaveTypeModal,
+  })),
 );
-const LeavePeriodModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/LeavePeriodModal").then((m) => ({
-      default: m.LeavePeriodModal,
-    })),
+const LeavePeriodModal = lazy(() =>
+  import("../Hr/hrsetupmodals/LeavePeriodModal").then((m) => ({
+    default: m.LeavePeriodModal,
+  })),
 );
-const LeavePolicyModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/LeavePolicyModal").then((m) => ({
-      default: m.LeavePolicyModal,
-    })),
-); const LeavePolicyAssignmentModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/LeavePolicyAssignmentModal").then((m) => ({
-      default: m.LeavePolicyAssignmentModal,
-    })),
+const LeavePolicyModal = lazy(() =>
+  import("../Hr/hrsetupmodals/LeavePolicyModal").then((m) => ({
+    default: m.LeavePolicyModal,
+  })),
 );
-const HolidayListModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/HolidayListModal").then((m) => ({
-      default: m.HolidayListModal,
-    })),
+const LeavePolicyAssignmentModal = lazy(() =>
+  import("../Hr/hrsetupmodals/LeavePolicyAssignmentModal").then((m) => ({
+    default: m.LeavePolicyAssignmentModal,
+  })),
 );
-const ShiftTypeModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/ShiftTypeModal").then((m) => ({
-      default: m.ShiftTypeModal,
-    })),
+const HolidayListModal = lazy(() =>
+  import("../Hr/hrsetupmodals/HolidayListModal").then((m) => ({
+    default: m.HolidayListModal,
+  })),
 );
-const TaxConfigModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/TaxConfigModal").then((m) => ({
-      default: m.TaxConfigModal,
-    })),
+const ShiftTypeModal = lazy(() =>
+  import("../Hr/hrsetupmodals/ShiftTypeModal").then((m) => ({
+    default: m.ShiftTypeModal,
+  })),
 );
-const DepartmentModal = lazy(
-  () =>
-    import("../empployeesetupmodal/DepartmentModal").then((m) => ({
-      default: m.DepartmentModal,
-    })),
+const TaxConfigModal = lazy(() =>
+  import("../Hr/hrsetupmodals/TaxConfigModal").then((m) => ({
+    default: m.TaxConfigModal,
+  })),
+);
+const DepartmentModal = lazy(() =>
+  import("../empployeesetupmodal/DepartmentModal").then((m) => ({
+    default: m.DepartmentModal,
+  })),
 );
 const modalFallback = (
   <div className="flex items-center justify-center p-8">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
   </div>
 );
-const DesignationModal = lazy(
-  () =>
-    import("../empployeesetupmodal/DesignationModal").then((m) => ({
-      default: m.DesignationModal,
-    })),
+const DesignationModal = lazy(() =>
+  import("../empployeesetupmodal/DesignationModal").then((m) => ({
+    default: m.DesignationModal,
+  })),
 );
 const CoaGLAccountModal = lazy(
   () => import("../../components/Coa/NewAccountModal"),
 );
-const GradeModal = lazy(
-  () =>
-    import("../empployeesetupmodal/GradeModal").then((m) => ({
-      default: m.GradeModal,
-    })),
+const GradeModal = lazy(() =>
+  import("../empployeesetupmodal/GradeModal").then((m) => ({
+    default: m.GradeModal,
+  })),
 );
-const EmployeeTypeModal = lazy(
-  () =>
-    import("../empployeesetupmodal/EmployeeTypeModal").then((m) => ({
-      default: m.EmployeeTypeModal,
-    })),
+const EmployeeTypeModal = lazy(() =>
+  import("../empployeesetupmodal/EmployeeTypeModal").then((m) => ({
+    default: m.EmployeeTypeModal,
+  })),
 );
-const PayrollPeriodModal = lazy(
-  () =>
-    import("../Hr/hrsetupmodals/PayrollPeriodModal").then((m) => ({
-      default: m.PayrollPeriodModal,
-    })),
+const PayrollPeriodModal = lazy(() =>
+  import("../Hr/hrsetupmodals/PayrollPeriodModal").then((m) => ({
+    default: m.PayrollPeriodModal,
+  })),
 );
 const EmailTemplateModal = lazy(
   () => import("../../components/Email/EmailTemplatemodal"),
@@ -223,11 +210,15 @@ const ScanPIModal = lazy(
   () => import("../../views/Procurement/ScanPurchaseInvoiceModal"),
 );
 const NewCycleModal = lazy(
-  () => import("../../components/Hr/performance/Newcyclemodal")
-)
+  () => import("../../components/Hr/performance/Newcyclemodal"),
+);
 
-const AppraisalModal = lazy(() => import("../../components/Hr/performance/AppraisalFormModal"));
-const FeedbackModal = lazy(() => import("../../components/Hr/performance/FeedbackModal"));
+const AppraisalModal = lazy(
+  () => import("../../components/Hr/performance/AppraisalFormModal"),
+);
+const FeedbackModal = lazy(
+  () => import("../../components/Hr/performance/FeedbackModal"),
+);
 const PayrollPreviewModal = lazy(
   () => import("../../views/hr/payroll-system/PayrollPreview"),
 );
@@ -246,6 +237,10 @@ const ExpenseTypeModal = lazy(
 );
 const EmployeeAdvanceModal = lazy(
   () => import("../../components/expense/addEmployeeAdvance"),
+);
+
+const StockCorrectionModal = lazy(
+  () => import("../../components/inventory/stock/stockcorrectionmodal"),
 );
 
 const getModalSeedValue = (
@@ -395,7 +390,7 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-        case "salesOrder":
+      case "salesOrder":
         return wrappedModal(
           <SalesOrderModal
             key={modal.id}
@@ -537,9 +532,9 @@ const GlobalModalHandler: React.FC = () => {
             initialData={
               isRecord(modal.initialData)
                 ? {
-                  title: modal.initialData.title as string,
-                  disabled: modal.initialData.disabled as boolean,
-                }
+                    title: modal.initialData.title as string,
+                    disabled: modal.initialData.disabled as boolean,
+                  }
                 : null
             }
             onSubmit={async (data) => {
@@ -572,7 +567,6 @@ const GlobalModalHandler: React.FC = () => {
             modalId={modal.id}
             isOpen={true}
             onClose={handleClose}
-
             onSubmit={handleSubmit}
             initialData={
               modal.isEdit
@@ -596,7 +590,7 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
             initialData={getRecordInitialData(modal.initialData)}
             isEdit={modal.isEdit}
-            isViewMode={context?.isViewMode ?? false}  // ← read from context
+            isViewMode={context?.isViewMode ?? false} // ← read from context
           />,
         );
 
@@ -622,29 +616,27 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
             editData={getInitialData(modal.initialData) as any}
             actionLoading={false}
-            isViewMode={context?.isViewMode ?? false} 
-
-
+            isViewMode={context?.isViewMode ?? false}
           />,
         );
-        case "assetCategory":
-  return wrappedModal(
-    <AddassetCategory
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={async (data) => {
-        await handleSubmit(data);
-        useDataRefreshStore
-          .getState()
-          .triggerRefresh(REFRESH_KEYS.ASSET_CATEGORY_LIST);
-      }}
-      initialData={getRecordInitialData(modal.initialData)}
-      isEdit={modal.isEdit}
-      isViewMode={context?.isViewMode ?? false}
-    />,
-  );
+      case "assetCategory":
+        return wrappedModal(
+          <AddassetCategory
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={async (data) => {
+              await handleSubmit(data);
+              useDataRefreshStore
+                .getState()
+                .triggerRefresh(REFRESH_KEYS.ASSET_CATEGORY_LIST);
+            }}
+            initialData={getRecordInitialData(modal.initialData)}
+            isEdit={modal.isEdit}
+            isViewMode={context?.isViewMode ?? false}
+          />,
+        );
 
       case "fixedAsset":
         return wrappedModal(
@@ -760,7 +752,6 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
 
-
       case "User":
         return wrappedModal(
           <CreateUserModal
@@ -774,39 +765,39 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={
               modal.isEdit && context?.onSubmit
                 ? async (data: CreateUserFormData) => {
-                  await context.onSubmit!(data);
-                  showSuccess("User updated successfully");
-                  useDataRefreshStore
-                    .getState()
-                    .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
+                    await context.onSubmit!(data);
+                    showSuccess("User updated successfully");
+                    useDataRefreshStore
+                      .getState()
+                      .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
 
-                  if (context?.onSuccess) {
-                    await context.onSuccess(undefined);
+                    if (context?.onSuccess) {
+                      await context.onSuccess(undefined);
+                    }
+
+                    handleClose();
                   }
-
-                  handleClose();
-                }
                 : async (data: CreateUserFormData) => {
-                  const response = await createUser(data);
+                    const response = await createUser(data);
 
-                  if (response.message.status !== "success") {
-                    throw new Error(
-                      response.message.data || "User creation failed"
-                    );
+                    if (response.message.status !== "success") {
+                      throw new Error(
+                        response.message.data || "User creation failed",
+                      );
+                    }
+
+                    showSuccess("User created successfully");
+
+                    useDataRefreshStore
+                      .getState()
+                      .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
+
+                    if (context?.onSuccess) {
+                      await context.onSuccess(response.message.data);
+                    }
+
+                    handleClose();
                   }
-
-                  showSuccess("User created successfully");
-
-                  useDataRefreshStore
-                    .getState()
-                    .triggerRefresh(REFRESH_KEYS.CREATE_USER_LIST);
-
-                  if (context?.onSuccess) {
-                    await context.onSuccess(response.message.data);
-                  }
-
-                  handleClose();
-                }
             }
           />,
         );
@@ -823,8 +814,6 @@ const GlobalModalHandler: React.FC = () => {
             mode={modal.isEdit ? "edit" : "add"}
           />,
         );
-
-
 
       case "payroll":
         return wrappedModal(
@@ -856,7 +845,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             initialData={getInitialData<SalaryComponent>(modal.initialData)}
-              isViewMode={context?.isViewMode ?? false} 
+            isViewMode={context?.isViewMode ?? false}
             onSuccess={() => {
               if (context?.onSuccess) context.onSuccess(undefined);
               handleClose();
@@ -1068,14 +1057,12 @@ const GlobalModalHandler: React.FC = () => {
             onSubmit={handleSubmit}
             templateId={
               getModalSeedValue(modal.initialData, "templateId") as
-              | string
-              | undefined
+                | string
+                | undefined
             }
             isViewMode={context?.isViewMode ?? false}
           />,
         );
-
-
 
       case "holidayList":
         return wrappedModal(
@@ -1085,7 +1072,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             initialData={getInitialData(modal.initialData)}
-            isViewMode={context?.isViewMode ?? false}  // ← add this
+            isViewMode={context?.isViewMode ?? false} // ← add this
             onSuccess={() => {
               if (context?.onSuccess) context.onSuccess(undefined);
             }}
@@ -1100,7 +1087,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             initialData={getInitialData(modal.initialData)}
-            isViewMode={context?.isViewMode ?? false}  // ← add this
+            isViewMode={context?.isViewMode ?? false} // ← add this
             onSuccess={() => {
               if (context?.onSuccess) context.onSuccess(undefined);
             }}
@@ -1115,10 +1102,7 @@ const GlobalModalHandler: React.FC = () => {
             isOpen={true}
             onClose={handleClose}
             piId={
-              getModalSeedValue(
-                modal.initialData,
-                "pId",
-              ) as string | undefined
+              getModalSeedValue(modal.initialData, "pId") as string | undefined
             }
           />,
         );
@@ -1190,26 +1174,29 @@ const GlobalModalHandler: React.FC = () => {
             mode={modal.isEdit ? "edit" : "create"}
           />,
         );
-case "scheduler":
-  return wrappedModal(
-    <SchedulerModal
-      key={modal.id}
-      modalId={modal.id}
-      mode={modal.isEdit ? "edit" : context?.isViewMode ? "view" : "add"}
-      record={getInitialData<SchedulerRecord>(modal.initialData) as any}
-      onClose={handleClose}
-      onSubmit={async (values) => {
-  const record = getInitialData<SchedulerRecord>(modal.initialData) as any;
-  if (record?.id) {
-    await editShedular(record.id, values as any);
-  } else {
-    await createShedular(values as any);
-  }
-  if (context?.onSuccess) context.onSuccess(undefined);
-  handleClose();
-}}
-    />,
-  );  
+
+      case "scheduler":
+        return wrappedModal(
+          <SchedulerModal
+            key={modal.id}
+            modalId={modal.id}
+            mode={modal.isEdit ? "edit" : context?.isViewMode ? "view" : "add"}
+            record={getInitialData<SchedulerRecord>(modal.initialData) as any}
+            onClose={handleClose}
+            onSubmit={async (values) => {
+              const record = getInitialData<SchedulerRecord>(
+                modal.initialData,
+              ) as any;
+              if (record?.id) {
+                await editShedular(record.id, values as any);
+              } else {
+                await createShedular(values as any);
+              }
+              if (context?.onSuccess) context.onSuccess(undefined);
+              handleClose();
+            }}
+          />,
+        );
       //preview modal of payroll entry
       case "payrollPreview":
         return wrappedModal(
@@ -1223,23 +1210,38 @@ case "scheduler":
           />,
         );
 
-        case "coaGLAccount": {
+      case "coaGLAccount": {
+        const d = isRecord(modal.initialData) ? modal.initialData : {};
+        return wrappedModal(
+          <CoaGLAccountModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSuccess={() => {
+              if (context?.onSuccess) context.onSuccess(undefined);
+            }}
+            parentAccount={(d.parentAccount as COAAccount) ?? null}
+            editAccount={(d.editAccount as COAAccount) ?? null}
+          />,
+        );
+      }
+       case "stockCorrection": {
   const d = isRecord(modal.initialData) ? modal.initialData : {};
   return wrappedModal(
-    <CoaGLAccountModal
+    <StockCorrectionModal
       key={modal.id}
       modalId={modal.id}
       isOpen={true}
       onClose={handleClose}
-      onSuccess={() => {
-        if (context?.onSuccess) context.onSuccess(undefined);
+      onSubmit={async (payload) => {
+        await handleSubmit(payload);
       }}
-      parentAccount={(d.parentAccount as COAAccount) ?? null}
-      editAccount={(d.editAccount as COAAccount) ?? null}
+      selectedBatch={d.selectedBatch ?? null}
+      branchOptions={(d.branchOptions as any) ?? []}
     />,
   );
 }
-
     }
   };
 
