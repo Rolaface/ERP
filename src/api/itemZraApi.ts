@@ -32,9 +32,8 @@ export const getRolaUOMs = (category = "") => {
 
   const queryString = params.toString();
   const url = queryString
-    ? `${RolaLookupAPI.getUnitOfMeasure}?${queryString}`
+    ? `${RolaLookupAPI.getUnitOfMeasure}&${queryString}`
     : RolaLookupAPI.getUnitOfMeasure;
 
   return fetchList(url);
-  
 };export const getRolaItemClasses = () => fetchList(RolaLookupAPI.getItemClasses);
