@@ -5,18 +5,20 @@ import { API, ERP_BASE } from "../config/api";
 const api = createAxiosInstance(ERP_BASE);
 export const LeaveAPI = API.company;
 
-interface FrappeSearchLinkItem {
-  value: string;
-  description?: string;
+interface CreditLimitRoleItem {
+  Id: string;
+  roleName: string;
+  disabled: number;
 }
 
-interface FrappeSearchLinkResponse {
-  message: FrappeSearchLinkItem[];
+interface CreditLimitRoleResponse {
+  data: CreditLimitRoleItem[];
 }
 
 export interface RoleOption {
   id: string;
   name: string;
+  roleName?: string;
 }
 
 export async function getAllCreditLimit(
@@ -26,7 +28,7 @@ export async function getAllCreditLimit(
   
    const endpoint = LeaveAPI.getCreditLimitRole.split('?')[0];
 
-  const resp: AxiosResponse<FrappeSearchLinkResponse> = await api.get(
+ const resp: AxiosResponse<CreditLimitRoleResponse> = await api.get(
     endpoint,
     {
       params: {
@@ -37,14 +39,15 @@ export async function getAllCreditLimit(
     },
   );
 
-  const items = resp.data?.message ?? [];
+  const items = resp.data?.data ?? [];
 
   return items.map((item) => ({
-    id: item.value,
-    name: item.description ? `${item.value} (${item.description})` : item.value,
+    id: item.Id,
+    name: item.Id,
+    roleName: item.roleName,
   }));
 }
-
+ 
 export interface AccountItem {
   name: string;
   account_type?: string;
@@ -154,4 +157,34 @@ export async function getUnrealizedExchangeGainLossAccounts(): Promise<AccountOp
     ["is_group", "=", 0],
     ["root_type", "in", ["Expense", "Income", "Equity", "Liability"]],
   ]);
+}
+
+interface CostCenterItem {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+interface CostCenterResponse {
+  data: CostCenterItem[];
+}
+
+export interface CostCenterOption {
+  id: string;
+  name: string;
+}
+
+const costCenterEndpoint = LeaveAPI.getAllCostCenterAccount.split('?')[0];
+
+export async function getAllCostCenterAccounts(): Promise<CostCenterOption[]> {
+  const resp: AxiosResponse<CostCenterResponse> = await api.get(
+   costCenterEndpoint,
+  );
+
+  const items = resp.data?.data ?? [];
+
+  return items.map((item) => ({
+    id: item.value,
+    name: item.label,
+  }));
 }

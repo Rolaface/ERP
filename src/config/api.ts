@@ -152,8 +152,9 @@ export const API = {
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
     getCompanyDefaults: "/api/method/custom_api.api.organization.company.api.get_company_defaults",
     updateCompanyDefaults: "/api/method/custom_api.api.organization.company.api.update_company_defaults",
-    getCreditLimitRole: `${ERP_BASE}/api/method/frappe.desk.search.search_link?doctype=Role&txt=`,
+    getCreditLimitRole: `${ERP_BASE}/api/method/auth_api.role_management.api.role.get`,
     getAllDefaultAccounts: `${ERP_BASE}/api/resource/Account`,
+    getAllCostCenterAccount: `${ERP_BASE}/api/method/custom_api.api.search.get_cost_centers`,
   },
 
   RoleManagement: {
