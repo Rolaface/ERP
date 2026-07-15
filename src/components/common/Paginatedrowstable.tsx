@@ -22,8 +22,8 @@ export interface PaginatedRowsTableProps<T extends { id: string }> {
   addDisabled?: boolean;
   /** "bold" (dark, larger — default) or "subtle" (small gray uppercase, the original look). */
   headerVariant?: "bold" | "subtle";
-  /** "link" (full-width centered text — default) or "button" (small bordered button, the original look). */
-  addRowVariant?: "link" | "button";
+  /** "link" (full-width centered text), "button" (small bordered outline — the original look), or "solid" (filled primary pill, left-aligned — matches "+ Add Item" style). Defaults to "link". */
+  addRowVariant?: "link" | "button" | "solid";
   /** Always show the "Showing X to Y of Z" + Prev/Next footer, even for a single page. Defaults to false. */
   alwaysShowPagination?: boolean;
 }
@@ -62,6 +62,40 @@ function PaginatedRowsTable<T extends { id: string }>({
     const nextTotalPages = Math.max(1, Math.ceil((rows.length + 1) / pageSize));
     setPage(nextTotalPages);
   };
+
+  const paginationFooter = showPagination && (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        gap: 10,
+        flexWrap: "wrap",
+      }}
+    >
+      <span style={{ fontSize: 11, color: "var(--text-sub, #9ca3af)" }}>
+        Showing {startIdx + 1} to {endIdx} of {rows.length} items
+      </span>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          type="button"
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page <= 1}
+          style={paginationBtnStyle(page <= 1)}
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={page >= totalPages}
+          style={paginationBtnStyle(page >= totalPages)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -194,6 +228,45 @@ function PaginatedRowsTable<T extends { id: string }>({
               </div>
             </div>
           )}
+        </div>
+      ) : addRowVariant === "solid" ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            padding: "10px",
+            borderTop: "1px solid var(--border, #e5e7eb)",
+            background: "var(--bg-app, #fff)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleAddRow}
+            disabled={addDisabled}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              alignSelf: "flex-start",
+              border: "none",
+              borderRadius: 8,
+              background: "var(--primary,#1c3f6e)",
+              padding: "8px 16px",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#fff",
+              cursor: addDisabled ? "not-allowed" : "pointer",
+              opacity: addDisabled ? 0.5 : 1,
+              transition: "opacity 0.15s ease",
+            }}
+          >
+            <Plus style={{ width: 14, height: 14 }} />
+            {addLabel}
+          </button>
+
+          {paginationFooter}
         </div>
       ) : (
         <div

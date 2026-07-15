@@ -16,7 +16,10 @@ import type { StockCorrectionModalProps } from "../../hooks/stock correction-mov
 import { SectionLabel, StockSummaryTable, SummaryRail } from "../../components/Stock-correction-movement/Summaryui";
 import { CorrectionRowFields, ItemPicker, MovementRowFields, TransactionTypeToggle } from "../../components/Stock-correction-movement/Rowfields";
 
-export type { StockCorrectionModalProps, StockCorrectionSubmitPayload } from "../../hooks/stock correction-movement/Usestockcorrectionform";
+export type {
+  StockCorrectionModalProps,
+  StockCorrectionSubmitPayload,
+} from "../../hooks/stock correction-movement/Usestockcorrectionform";
 
 const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
   isOpen,
@@ -25,7 +28,13 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
   selectedBatch,
   branchOptions,
 }) => {
-  const f = useStockCorrectionForm({ isOpen, onClose, onSubmit, selectedBatch, branchOptions });
+  const f = useStockCorrectionForm({
+    isOpen,
+    onClose,
+    onSubmit,
+    selectedBatch,
+    branchOptions,
+  });
 
   return (
     <MinimizableModal
@@ -68,53 +77,66 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
         <div className="flex flex-col gap-5 min-w-0 overflow-y-auto pr-1">
           {/* Posting Date + Item + Transaction Type — one row */}
           <div className="flex flex-wrap items-end gap-3">
-  <div className="w-[150px] shrink-0">
-    <DatePickerInput
-      label="Posting Date"
-      name="postingDate"
-      required
-      value={f.correctionDate}
-      disableFuture
-      onChange={(_, value) => f.setCorrectionDate(value)}
-    />
-  </div>
+            <div className="w-[150px] shrink-0">
+              <DatePickerInput
+                label="Posting Date"
+                name="postingDate"
+                required
+                value={f.correctionDate}
+                disableFuture
+                onChange={(_, value) => f.setCorrectionDate(value)}
+              />
+            </div>
 
-  <div className="flex-1 min-w-[220px] max-w-[380px]">
-    <ItemPicker
-      itemSelectResetKey={f.itemSelectResetKey}
-      itemPrefillName={f.itemPrefillName}
-      onItemPicked={f.handleItemPicked}
-      onItemClear={f.handleItemClear}
-    />
-  </div>
+            <div className="flex-1 min-w-[220px] max-w-[380px]">
+              <ItemPicker
+                itemSelectResetKey={f.itemSelectResetKey}
+                itemPrefillName={f.itemPrefillName}
+                onItemPicked={f.handleItemPicked}
+                onItemClear={f.handleItemClear}
+              />
+            </div>
 
-  <div className="shrink-0">
-    <TransactionTypeToggle mode={f.mode} onModeChange={f.setMode} />
-  </div>
-</div>
+            <div className="shrink-0">
+              <TransactionTypeToggle mode={f.mode} onModeChange={f.setMode} />
+            </div>
+          </div>
 
           
 
           <StockSummaryTable rows={f.stockSummary} />
 
           <div>
-            <SectionLabel>{f.mode === "correction" ? "Stock Adjustment Details" : "Movement Details"}</SectionLabel>
+            <SectionLabel>
+              {f.mode === "correction"
+                ? "Stock Adjustment Details"
+                : "Movement Details"}
+            </SectionLabel>
 
             <div className="mt-2">
               {f.mode === "correction" ? (
                 <PaginatedRowsTable
-                  columns={["Warehouse", "Batch No.", "Expiry Date", "Available Stock", "Correction Qty", "Reason", ""]}
+                  columns={[
+                    "Warehouse",
+                    "Batch No.",
+                    "Expiry Date",
+                    "Available Stock",
+                    "Correction Qty",
+                    "",
+                  ]}
                   gridTemplate={CORRECTION_COLS}
                   rows={f.correctionRows}
                   pageSize={ROWS_PAGE_SIZE}
                   onAddRow={f.addCorrectionRow}
                   addLabel="Add Row"
+                  addRowVariant="solid"
                   renderRow={(row) => (
                     <CorrectionRowFields
                       row={row}
                       branchOptions={f.branchOptions}
-                      batchOptionsForRow={f.getBatchOptionsForBranch(row.branch)}
-                      reasonOptions={REASON_OPTIONS}
+                      batchOptionsForRow={f.getBatchOptionsForBranch(
+                        row.branch,
+                      )}
                       onChange={f.updateCorrectionRow}
                       onRemove={f.removeCorrectionRow}
                       removeDisabled={f.correctionRows.length === 1}
@@ -129,6 +151,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                   pageSize={ROWS_PAGE_SIZE}
                   onAddRow={f.addMovementRow}
                   addLabel="Add Row"
+                  addRowVariant="solid"
                   renderRow={(row) => (
                     <MovementRowFields
                       row={row}
@@ -145,7 +168,10 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
             {f.mode === "correction" ? (
               <div className="flex justify-end gap-2 mt-2 text-[12px]">
                 <span className="text-muted">Total Correction Qty</span>
-                <span className="font-bold" style={{ color: "var(--primary,#1c3f6e)" }}>
+                <span
+                  className="font-bold"
+                  style={{ color: "var(--primary,#1c3f6e)" }}
+                >
                   {f.netCorrectionQty > 0 ? "+" : ""}
                   {f.netCorrectionQty} {f.itemMeta.unit || "PCS"}
                 </span>
@@ -153,7 +179,10 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
             ) : (
               <div className="flex justify-end gap-2 mt-2 text-[12px]">
                 <span className="text-muted">Total Moved Qty</span>
-                <span className="font-bold" style={{ color: "var(--primary,#1c3f6e)" }}>
+                <span
+                  className="font-bold"
+                  style={{ color: "var(--primary,#1c3f6e)" }}
+                >
                   {f.totalMovedQty} {f.itemMeta.unit || "PCS"}
                 </span>
               </div>
@@ -178,7 +207,11 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
           mode={f.mode}
           selectedItem={f.selectedItem}
           unit={f.itemMeta.unit}
-          rowCount={f.mode === "correction" ? f.correctionRows.length : f.movementRows.length}
+          rowCount={
+            f.mode === "correction"
+              ? f.correctionRows.length
+              : f.movementRows.length
+          }
           currentTotalQty={f.currentTotalQty}
           netCorrectionQty={f.netCorrectionQty}
           totalMovedQty={f.totalMovedQty}
