@@ -72,19 +72,6 @@ export const TransactionTypeToggle: React.FC<{ mode: Mode; onModeChange: (mode: 
   />
 );
 
-// ─── Correction row fields ──────────────────────────────────────────────────
-// NOTE:
-// - Per-row "Reason" column removed — the modal already has a single
-//   "Reason / Remarks" textarea covering the whole transaction, so a per-row
-//   reason dropdown was redundant.
-// - Batch No. is now READ-ONLY (a disabled ModalInput), not a select. The
-//   batch is expected to be auto-resolved from the selected Warehouse
-//   upstream (in your form hook), not picked by the user in this cell.
-//   `batchOptionsForRow` is no longer used by this component — you can drop
-//   that prop from the <CorrectionRowFields /> call in
-//   StockCorrectionModal.tsx. It's kept (unused) in the props interface here
-//   only so you don't get a type error at the call site if you haven't
-//   removed it there yet — feel free to delete it once you do.
 
 interface CorrectionRowFieldsProps {
   row: CorrectionRow;

@@ -15,7 +15,6 @@ import {
 import type { StockCorrectionModalProps } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import {
   SectionLabel,
-  StockSummaryTable,
   SummaryRail,
 } from "../../components/Stock-correction-movement/Summaryui";
 import {
@@ -57,8 +56,8 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
           : "Adjust inventory levels or transfer items between warehouses with full traceability and batch control."
       }
       icon={f.mode === "correction" ? Wrench : ArrowRightLeft}
-      maxWidth="6xl"
-      height="720px"
+      maxWidth="5xl"
+      height="650px"
       footer={
         <>
           <button
@@ -86,6 +85,12 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
         <div className="flex flex-col gap-5 min-w-0 overflow-y-auto pr-1">
           {/* Posting Date + Item + Transaction Type — one row */}
           <div className="flex flex-wrap items-end gap-3">
+
+            <div className="shrink-0">
+              <TransactionTypeToggle mode={f.mode} onModeChange={f.setMode} />
+            </div>
+
+
             <div className="w-[100px] shrink-0">
               <DatePickerInput
                 label="Posting Date"
@@ -97,23 +102,19 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
               />
             </div>
 
-           
-              <div className="flex-1 w-[150px] max-w-[250px]">
-                <ItemPicker
-                  mode={f.mode}
-                  selectedItem={f.selectedItem}
-                  onItemPicked={f.handleItemPicked}
-                  onItemClear={f.handleItemClear}
-                />
-              </div>
-          
 
-            <div className="shrink-0">
-              <TransactionTypeToggle mode={f.mode} onModeChange={f.setMode} />
+            <div className="flex-1 ">
+              <ItemPicker
+                mode={f.mode}
+                selectedItem={f.selectedItem}
+                onItemPicked={f.handleItemPicked}
+                onItemClear={f.handleItemClear}
+              />
             </div>
-          </div>
 
-          <StockSummaryTable rows={f.stockSummary} />
+
+
+          </div>
 
           <div>
             <SectionLabel>
@@ -124,29 +125,29 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
 
             <div className="mt-2">
               {f.mode === "correction" ? (
-               <PaginatedRowsTable
-  columns={[
-    "Warehouse",
-    "Batch No.",
-    "Expiry Date",
-    "Available Stock",
-    "Correction Qty",
-    "",
-  ]}
-  gridTemplate={CORRECTION_COLS}
-  rows={f.correctionRows}
-  pageSize={ROWS_PAGE_SIZE}
-  renderRow={(row) => (
-    <CorrectionRowFields
-      row={row}
-      branchOptions={f.branchOptions}
-      batchOptionsForRow={f.getBatchOptionsForBranch(row.branch)}
-      onChange={f.updateCorrectionRow}
-      onRemove={f.removeCorrectionRow}
-      removeDisabled
-    />
-  )}
-/>
+                <PaginatedRowsTable
+                  columns={[
+                    "Warehouse",
+                    "Batch No.",
+                    "Expiry Date",
+                    "Available Stock",
+                    "Correction Qty",
+                    "",
+                  ]}
+                  gridTemplate={CORRECTION_COLS}
+                  rows={f.correctionRows}
+                  pageSize={ROWS_PAGE_SIZE}
+                  renderRow={(row) => (
+                    <CorrectionRowFields
+                      row={row}
+                      branchOptions={f.branchOptions}
+                      batchOptionsForRow={f.getBatchOptionsForBranch(row.branch)}
+                      onChange={f.updateCorrectionRow}
+                      onRemove={f.removeCorrectionRow}
+                      removeDisabled
+                    />
+                  )}
+                />
               ) : (
                 <PaginatedRowsTable
                   columns={["From", "To", "Move Qty", ""]}
@@ -167,29 +168,6 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                 />
               )}
             </div>
-
-            {f.mode === "correction" ? (
-              <div className="flex justify-end gap-2 mt-2 text-[12px]">
-                <span className="text-muted">Total Correction Qty</span>
-                <span
-                  className="font-bold"
-                  style={{ color: "var(--primary,#1c3f6e)" }}
-                >
-                  {f.netCorrectionQty > 0 ? "+" : ""}
-                  {f.netCorrectionQty} {f.itemMeta.unit || "PCS"}
-                </span>
-              </div>
-            ) : (
-              <div className="flex justify-end gap-2 mt-2 text-[12px]">
-                <span className="text-muted">Total Moved Qty</span>
-                <span
-                  className="font-bold"
-                  style={{ color: "var(--primary,#1c3f6e)" }}
-                >
-                  {f.totalMovedQty} {f.itemMeta.unit || "PCS"}
-                </span>
-              </div>
-            )}
           </div>
 
           <div>
