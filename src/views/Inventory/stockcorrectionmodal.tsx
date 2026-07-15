@@ -13,8 +13,17 @@ import {
   REASON_OPTIONS,
 } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import type { StockCorrectionModalProps } from "../../hooks/stock correction-movement/Usestockcorrectionform";
-import { SectionLabel, StockSummaryTable, SummaryRail } from "../../components/Stock-correction-movement/Summaryui";
-import { CorrectionRowFields, ItemPicker, MovementRowFields, TransactionTypeToggle } from "../../components/Stock-correction-movement/Rowfields";
+import {
+  SectionLabel,
+  StockSummaryTable,
+  SummaryRail,
+} from "../../components/Stock-correction-movement/Summaryui";
+import {
+  CorrectionRowFields,
+  ItemPicker,
+  MovementRowFields,
+  TransactionTypeToggle,
+} from "../../components/Stock-correction-movement/Rowfields";
 
 export type {
   StockCorrectionModalProps,
@@ -89,20 +98,20 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
             </div>
 
             <div className="flex-1 min-w-[220px] max-w-[380px]">
-              <ItemPicker
-                itemSelectResetKey={f.itemSelectResetKey}
-                itemPrefillName={f.itemPrefillName}
-                onItemPicked={f.handleItemPicked}
-                onItemClear={f.handleItemClear}
-              />
+              <div className="flex-1 min-w-[220px] max-w-[380px]">
+                <ItemPicker
+                  mode={f.mode}
+                  selectedItem={f.selectedItem}
+                  onItemPicked={f.handleItemPicked}
+                  onItemClear={f.handleItemClear}
+                />
+              </div>
             </div>
 
             <div className="shrink-0">
               <TransactionTypeToggle mode={f.mode} onModeChange={f.setMode} />
             </div>
           </div>
-
-
 
           <StockSummaryTable rows={f.stockSummary} />
 
@@ -155,7 +164,6 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                   renderRow={(row) => (
                     <MovementRowFields
                       row={row}
-                      branchOptions={f.branchOptions}
                       onChange={f.updateMovementRow}
                       onRemove={f.removeMovementRow}
                       removeDisabled={f.movementRows.length === 1}
@@ -215,12 +223,12 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
           heroIsNegative={f.heroIsNegative}
           movementExceedsStock={f.movementExceedsStock}
           fromLabel={
-            f.branchOptions.find((b) => b.value === f.movementRows[0]?.from)?.label ??
-            f.movementRows[0]?.from
+            f.branchOptions.find((b) => b.value === f.movementRows[0]?.from)
+              ?.label ?? f.movementRows[0]?.from
           }
           toLabel={
-            f.branchOptions.find((b) => b.value === f.movementRows[0]?.to)?.label ??
-            f.movementRows[0]?.to
+            f.branchOptions.find((b) => b.value === f.movementRows[0]?.to)
+              ?.label ?? f.movementRows[0]?.to
           }
           warehouseLabel={f.stockSummary[0]?.branchLabel}
           batchNo={f.stockSummary[0]?.batchNo}

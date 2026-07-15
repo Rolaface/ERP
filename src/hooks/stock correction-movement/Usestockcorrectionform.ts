@@ -10,7 +10,7 @@ import type {
   StockItemSelectPayload,
   SelectedBatch,
   StockCorrectionModalProps,
-  StockCorrectionSubmitPayload,
+  StockCorrectionSubmitPayload,SingleBatchItemPickedPayload
 } from "../../types/Stock/stockcorrectionform.types";
 
 // Re-exported so existing imports elsewhere in the codebase
@@ -26,7 +26,7 @@ export type {
   StockItemSelectPayload,
   SelectedBatch,
   StockCorrectionModalProps,
-  StockCorrectionSubmitPayload,
+  StockCorrectionSubmitPayload,SingleBatchItemPickedPayload
 } from "../../types/Stock/stockcorrectionform.types";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -240,66 +240,44 @@ export function useStockCorrectionForm({
   }, [isOpen, selectedBatch]);
 
   // ── Item picked via StockItemSelect ─────────────────────────────────────
-  const handleItemPicked = (payload: StockItemSelectPayload) => {
+// ── Item picked via StockItemSelect (single item, single batch) ─────────
+  const handleItemPicked = (payload: SingleBatchItemPickedPayload) => {
     const item: Option = { label: payload.itemName, value: payload.itemCode };
     setSelectedItem(item);
     setItemPrefillName(payload.itemName);
     setItemMeta({
-      sku: payload.sku || payload.itemCode || "",
-      category: payload.category || "—",
+      sku: payload.itemCode || "",
+      category: "—",
       unit: payload.packingUnit || "PCS",
     });
 
     const unit = payload.packingUnit || "PCS";
+    const warehouseName = payload.warehouse || "—";
 
-    // Warehouse names now come straight from the API — no matching against
-    // a hardcoded branch list, no silent fallback to branchOptions[0].
-    const rows: StockSummaryRow[] =
-      payload.batches && payload.batches.length > 0
-        ? payload.batches.map((b) => {
-            const warehouseName = b.warehouse || "—";
-            return {
-              id: genId(),
-              branchValue: warehouseName,
-              branchLabel: warehouseName,
-              batchNo: b.batchNo,
-              availableQty: Number(b.qty ?? 0),
-              unit,
-              expiryDate: b.expiryDate ? b.expiryDate.slice(0, 10) : "",
-            };
-          })
-        : [
-            {
-              id: genId(),
-              branchValue: payload.warehouse || "—",
-              branchLabel: payload.warehouse || "—",
-              batchNo: payload.batchNo || "-",
-              availableQty: Number(payload.qty ?? 0),
-              unit,
-              expiryDate: payload.expiryDate ? payload.expiryDate.slice(0, 10) : "",
-            },
-          ];
+    const row: StockSummaryRow = {
+      id: genId(),
+      branchValue: warehouseName,
+      branchLabel: warehouseName,
+      batchNo: payload.batchNo || "-",
+      availableQty: Number(payload.qty ?? 0),
+      unit,
+      expiryDate: payload.expiryDate ? payload.expiryDate.slice(0, 10) : "",
+    };
 
-    setStockSummary(rows);
+    setStockSummary([row]);
 
-    // Convenience: seed the first (still-empty) correction row with this
-    // item's first batch so the user doesn't retype it.
-    setCorrectionRows((prev) => {
-      if (prev.length !== 1) return prev;
-      const only = prev[0];
-      if (only.branch || only.batchNo || only.qty) return prev;
-      const first = rows[0];
-      if (!first) return prev;
-      return [
-        {
-          ...only,
-          branch: first.branchValue,
-          batchNo: first.batchNo,
-          expiryDate: first.expiryDate,
-          availableQty: first.availableQty,
-        },
-      ];
-    });
+    // single-batch flow: lock the one correction row to this batch/warehouse
+    setCorrectionRows([
+      {
+        id: genId(),
+        branch: row.branchValue,
+        batchNo: row.batchNo,
+        expiryDate: row.expiryDate,
+        availableQty: row.availableQty,
+        qty: "",
+        reasonCode: "",
+      },
+    ]);
   };
 
   const handleItemClear = () => {

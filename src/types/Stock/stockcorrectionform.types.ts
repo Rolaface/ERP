@@ -86,6 +86,17 @@ export interface SelectedBatch {
   warehouse?: string;
 }
 
+export interface SingleBatchItemPickedPayload {
+  itemCode: string;
+  itemName: string;
+  batchNo?: string;
+  expiryDate?: string;
+  qty?: number;
+  packingUnit?: string;
+  warehouse?: string;
+  isServiceItem?: number;
+}
+
 export interface StockCorrectionModalProps {
   isOpen: boolean;
   onClose: () => void;

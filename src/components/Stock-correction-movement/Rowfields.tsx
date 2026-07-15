@@ -1,8 +1,11 @@
 import React from "react";
-import StockItemNameCodeSelect from "../../components/selects/StockCorrectionItemSelect";
+// import StockItemNameCodeSelect from "../../components/selects/StockCorrectionItemSelect";
 import { ModalInput, ModalSelect, NumericInput, ToggleSwitch } from "../../components/ui/modal/modalComponent";
 import type { CorrectionRow, Mode, MovementRow, Option, StockItemSelectPayload } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import { RemoveRowButton, SectionLabel } from "../../components/Stock-correction-movement/Summaryui";
+import StockItemSelect from "../../components/selects/StockItemSelect";
+import type { SingleBatchItemPickedPayload } from "../../hooks/stock correction-movement/Usestockcorrectionform";
+import WarehouseSelect from "../selects/WarehouseSelect";
 
 // ─── Item picker + Correction/Movement toggle ──────────────────────────────
 
@@ -34,19 +37,22 @@ interface ItemAndModeHeaderProps {
 }
 
 export const ItemPicker: React.FC<{
-  itemSelectResetKey: number;
-  itemPrefillName: string;
-  onItemPicked: (payload: StockItemSelectPayload) => void;
+  mode: Mode;
+  selectedItem: Option | null;
+  onItemPicked: (payload: SingleBatchItemPickedPayload) => void;
   onItemClear: () => void;
-}> = ({ itemSelectResetKey, itemPrefillName, onItemPicked, onItemClear }) => (
+}> = ({ mode, selectedItem, onItemPicked, onItemClear }) => (
   <div>
     <SectionLabel>Item</SectionLabel>
     <div className="mt-2">
-      <StockItemNameCodeSelect
-        key={itemSelectResetKey}
-        itemPrefillName={itemPrefillName}
-        onItemPicked={onItemPicked}
-        onItemClear={onItemClear}
+      <StockItemSelect
+        itemName={selectedItem?.label}
+        onChange={onItemPicked}
+        onClear={onItemClear}
+        invoiceType="Product"
+        // correction ke liye 0-stock items bhi pick karne dena hai (loss/damage likhne ke liye),
+        // movement ke liye sirf stock wale items — isQuotation=true disable check ko bypass kar deta hai
+        isQuotation={mode === "correction"}
       />
     </div>
   </div>
@@ -136,25 +142,34 @@ export const CorrectionRowFields: React.FC<CorrectionRowFieldsProps> = ({
 
 interface MovementRowFieldsProps {
   row: MovementRow;
-  branchOptions: Option[];
-  onChange: (id: string, field: keyof Omit<MovementRow, "id">, value: string) => void;
+  onChange: (
+    id: string,
+    field: keyof Omit<MovementRow, "id">,
+    value: string
+  ) => void;
   onRemove: (id: string) => void;
   removeDisabled: boolean;
 }
-
 export const MovementRowFields: React.FC<MovementRowFieldsProps> = ({
   row,
-  branchOptions,
   onChange,
   onRemove,
   removeDisabled,
 }) => (
   <>
     <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-      <ModalSelect label="" options={branchOptions} value={row.from} onChange={(e) => onChange(row.id, "from", e.target.value)} />
+     <WarehouseSelect
+  value={row.from}
+  compact
+  onChange={(e) => onChange(row.id, "from", e.target.value)}
+/>
     </div>
     <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-      <ModalSelect label="" options={branchOptions.filter((b) => b.value !== row.from)} value={row.to} onChange={(e) => onChange(row.id, "to", e.target.value)} />
+    <WarehouseSelect
+  value={row.to}
+  compact
+  onChange={(e) => onChange(row.id, "to", e.target.value)}
+/>
     </div>
     <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
       <NumericInput
