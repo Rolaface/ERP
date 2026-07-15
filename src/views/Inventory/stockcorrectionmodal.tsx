@@ -14,7 +14,7 @@ import {
 } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import type { StockCorrectionModalProps } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import { SectionLabel, StockSummaryTable, SummaryRail } from "../../components/Stock-correction-movement/Summaryui";
-import { CorrectionRowFields, ItemMetaLine, ItemPicker, MovementRowFields, TransactionTypeToggle } from "../../components/Stock-correction-movement/Rowfields";
+import { CorrectionRowFields, ItemPicker, MovementRowFields, TransactionTypeToggle } from "../../components/Stock-correction-movement/Rowfields";
 
 export type { StockCorrectionModalProps, StockCorrectionSubmitPayload } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 
@@ -93,7 +93,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
   </div>
 </div>
 
-          <ItemMetaLine visible={Boolean(f.selectedItem)} itemMeta={f.itemMeta} />
+          
 
           <StockSummaryTable rows={f.stockSummary} />
 

@@ -1,6 +1,6 @@
 import React from "react";
-import StockItemSelect from "../../components/selects/StockItemSelect";
-import { ModalSelect, NumericInput,ToggleSwitch } from "../../components/ui/modal/modalComponent";
+import StockItemNameCodeSelect from "../../components/selects/StockCorrectionItemSelect";
+import { ModalSelect, NumericInput, ToggleSwitch } from "../../components/ui/modal/modalComponent";
 import type { CorrectionRow, Mode, MovementRow, Option, StockItemSelectPayload } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import { RemoveRowButton, SectionLabel } from "../../components/Stock-correction-movement/Summaryui";
 
@@ -42,15 +42,11 @@ export const ItemPicker: React.FC<{
   <div>
     <SectionLabel>Item</SectionLabel>
     <div className="mt-2">
-      <StockItemSelect
+      <StockItemNameCodeSelect
         key={itemSelectResetKey}
-        itemName={itemPrefillName}
-        invoiceType="Product"
-        // Bypasses the "out of stock" disable-state — corrections often
-        // need to select an item that currently has zero stock.
-        isQuotation
-        onChange={onItemPicked}
-        onClear={onItemClear}
+        itemPrefillName={itemPrefillName}
+        onItemPicked={onItemPicked}
+        onItemClear={onItemClear}
       />
     </div>
   </div>
@@ -70,25 +66,7 @@ export const TransactionTypeToggle: React.FC<{ mode: Mode; onModeChange: (mode: 
   />
 );
 
-export const ItemMetaLine: React.FC<{
-  visible: boolean;
-  itemMeta: { sku: string; category: string; unit: string };
-}> = ({ visible, itemMeta }) => {
-  if (!visible) return null;
-  return (
-    <div className="flex items-center gap-4 text-[11px] text-muted">
-      <span>
-        <strong className="text-main font-semibold">SKU:</strong> {itemMeta.sku || "—"}
-      </span>
-      <span>
-        <strong className="text-main font-semibold">Category:</strong> {itemMeta.category || "—"}
-      </span>
-      <span>
-        <strong className="text-main font-semibold">Unit:</strong> {itemMeta.unit}
-      </span>
-    </div>
-  );
-};
+
 
 // ─── Correction row fields ──────────────────────────────────────────────────
 
