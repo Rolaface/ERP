@@ -1,110 +1,37 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import type {
+  Mode,
+  Option,
+  StockSummaryRow,
+  CorrectionRow,
+  MovementRow,
+  StockItemBatch,
+  StockItemSelectPayload,
+  SelectedBatch,
+  StockCorrectionModalProps,
+  StockCorrectionSubmitPayload,
+} from "../../types/Stock/stockcorrectionform.types";
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// Re-exported so existing imports elsewhere in the codebase
+// (e.g. Summaryui.tsx, StockCorrectionModal.tsx) keep working
+// unchanged even though the types now live in their own file.
+export type {
+  Mode,
+  Option,
+  StockSummaryRow,
+  CorrectionRow,
+  MovementRow,
+  StockItemBatch,
+  StockItemSelectPayload,
+  SelectedBatch,
+  StockCorrectionModalProps,
+  StockCorrectionSubmitPayload,
+} from "../../types/Stock/stockcorrectionform.types";
 
-export type Mode = "correction" | "movement";
-
-export interface Option {
-  label: string;
-  value: string;
-}
-
-/** One batch of stock for the selected item, as shown in "Available Stock For This Item". */
-export interface StockSummaryRow {
-  id: string;
-  branchValue: string;
-  branchLabel: string;
-  batchNo: string;
-  availableQty: number;
-  unit: string;
-  expiryDate: string;
-}
-
-export interface CorrectionRow {
-  id: string;
-  branch: string; // branchOptions value
-  batchNo: string; // must match a batchNo available for `branch`
-  expiryDate: string; // derived (read-only) from the matched batch
-  availableQty: number | null; // derived (read-only) from the matched batch
-  qty: string; // string so user can type "-15" / "10" naturally
-  reasonCode: string;
-}
-
-export interface MovementRow {
-  id: string;
-  from: string;
-  to: string;
-  qty: string;
-}
-
-/** Optional per-batch breakdown a real API can attach to the item payload. */
-export interface StockItemBatch {
-  batchNo: string;
-  qty: number;
-  expiryDate?: string;
-  warehouse?: string;
-}
-
-/** Shape StockItemSelect's onChange fires — matches its internal handleSelect() payload. */
-export interface StockItemSelectPayload {
-  itemCode: string;
-  itemName: string;
-  description?: string;
-  batchNo?: string;
-  expiryDate?: string;
-  mfgDate?: string;
-  qty?: number;
-  price_list?: number;
-  price?: number;
-  packingSize?: string;
-  packingUnit?: string;
-  piecesPerBox?: string | number;
-  valuation_rate?: number;
-  sellingPrice?: number;
-  purchasePrice?: number;
-  warehouse?: string;
-  vatRate?: number;
-  vatCode?: string;
-  taxInfo?: any[];
-  isServiceItem?: number;
-  sku?: string;
-  category?: string;
-  /** Optional: full batch breakdown for this item, if the backend provides it. */
-  batches?: StockItemBatch[];
-}
-
-export interface SelectedBatch {
-  item_code?: string;
-  item_name?: string;
-  batch_no?: string;
-  expiry_date?: string;
-  bal_qty?: number;
-}
-
-export interface StockCorrectionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit?: (payload: StockCorrectionSubmitPayload) => void | Promise<void>;
-  selectedBatch?: SelectedBatch | null;
-  branchOptions?: Option[];
-}
-
-export interface StockCorrectionSubmitPayload {
-  mode: Mode;
-  item: Option | null;
-  date: string;
-  reason: string;
-  correctionRows?: Array<{
-    branch: string;
-    batchNo: string;
-    qty: number;
-    reasonCode: string;
-  }>;
-  movementRows?: Array<{ from: string; to: string; qty: number }>;
-}
-
-// ─── Constants ──────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────
 
 export const SCM_STYLES = `
 .scm-table-wrap { overflow-y: auto; overflow-x: hidden; }
@@ -144,6 +71,13 @@ export const SCM_STYLES = `
 
 const SCM_STYLE_TAG_ID = "scm-table-styles";
 
+/**
+ * Default warehouse list ONLY used for the Movement tab's From/To selects
+ * when the parent doesn't pass its own `branchOptions` prop. NOT used
+ * anywhere for Correction rows anymore — those now come directly from the
+ * item's real API `batches[].warehouse` data (see `itemBranchOptions`).
+ * Replace with a real "list all warehouses" API call when you have one.
+ */
 export const FALLBACK_BRANCHES: Option[] = [
   { label: "Stores - YC", value: "stores-yc" },
   { label: "Regional Hub A", value: "regional-hub-a" },
@@ -157,11 +91,14 @@ export const REASON_OPTIONS: Option[] = [
   { label: "Other", value: "other" },
 ];
 
-export const CORRECTION_COLS = "0.9fr 0.9fr 0.9fr 0.9fr 1fr 1fr 36px";
-export const MOVEMENT_COLS = "1fr 1fr 1fr 36px";
+export const CORRECTION_COLS = "1fr 1fr 0.9fr 0.9fr 1fr 36px";
+// "From" given more breathing room than "To" / "Move Qty" for better readability.
+export const MOVEMENT_COLS = "1.4fr 1fr 0.9fr 36px";
 export const ROWS_PAGE_SIZE = 5;
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -187,16 +124,11 @@ const emptyMovementRow = (): MovementRow => ({
   qty: "",
 });
 
-/** Matches a warehouse label coming back from StockItemSelect to one of our branch option values. */
-const matchBranchValue = (warehouse: string | undefined, branches: Option[]) => {
-  if (!warehouse) return "";
-  const hit = branches.find((b) => b.label.toLowerCase() === warehouse.toLowerCase());
-  return hit?.value ?? "";
-};
-
 const reasonLabel = (code: string) => REASON_OPTIONS.find((r) => r.value === code)?.label ?? code;
 
-// ─── Hook ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
+// Hook
+// ─────────────────────────────────────────────────────────────────────────
 
 type UseStockCorrectionFormArgs = Pick<
   StockCorrectionModalProps,
@@ -261,13 +193,18 @@ export function useStockCorrectionForm({
   // ── Prefill from selectedBatch (e.g. opened from a batch row's "Correct" action)
   useEffect(() => {
     if (!isOpen) return;
+
     if (selectedBatch) {
       const item: Option = {
         label: selectedBatch.item_name || selectedBatch.item_code || "",
         value: selectedBatch.item_code || "",
       };
-      const branchValue = branchOptions[0]?.value ?? "";
-      const branchLabel = branchOptions[0]?.label ?? "—";
+      // Use the real warehouse if the caller passed one; otherwise we have
+      // no warehouse info at all here, so fall back to the first Movement
+      // branch option purely as a last-resort label (SelectedBatch doesn't
+      // carry warehouse from every call site yet — add it there if you can).
+      const branchValue = selectedBatch.warehouse || branchOptions[0]?.value || "";
+      const branchLabel = selectedBatch.warehouse || branchOptions[0]?.label || "—";
       const availableQty = Number(selectedBatch.bal_qty ?? 0);
       const expiryDate = selectedBatch.expiry_date ? selectedBatch.expiry_date.slice(0, 10) : "";
 
@@ -315,18 +252,16 @@ export function useStockCorrectionForm({
 
     const unit = payload.packingUnit || "PCS";
 
-    // Prefer a full per-batch breakdown from the backend; fall back to the
-    // single warehouse/batch the item picker itself returned.
+    // Warehouse names now come straight from the API — no matching against
+    // a hardcoded branch list, no silent fallback to branchOptions[0].
     const rows: StockSummaryRow[] =
       payload.batches && payload.batches.length > 0
         ? payload.batches.map((b) => {
-            const branchValue = matchBranchValue(b.warehouse, branchOptions) || branchOptions[0]?.value || "";
-            const branchLabel =
-              branchOptions.find((o) => o.value === branchValue)?.label || b.warehouse || "—";
+            const warehouseName = b.warehouse || "—";
             return {
               id: genId(),
-              branchValue,
-              branchLabel,
+              branchValue: warehouseName,
+              branchLabel: warehouseName,
               batchNo: b.batchNo,
               availableQty: Number(b.qty ?? 0),
               unit,
@@ -336,8 +271,8 @@ export function useStockCorrectionForm({
         : [
             {
               id: genId(),
-              branchValue: matchBranchValue(payload.warehouse, branchOptions) || branchOptions[0]?.value || "",
-              branchLabel: payload.warehouse || branchOptions[0]?.label || "—",
+              branchValue: payload.warehouse || "—",
+              branchLabel: payload.warehouse || "—",
               batchNo: payload.batchNo || "-",
               availableQty: Number(payload.qty ?? 0),
               unit,
@@ -375,9 +310,16 @@ export function useStockCorrectionForm({
     setItemSelectResetKey((k) => k + 1);
   };
 
-  // ── Correction row handlers ─────────────────────────────────────────────
+  // ── Correction row helpers ───────────────────────────────────────────────
 
-  /** Batches available for a given warehouse value, for the row-level Batch No. dropdown. */
+  /** Real warehouses this item has stock in, derived straight from the API response (stockSummary). */
+  const itemBranchOptions = useMemo<Option[]>(() => {
+    const seen = new Set<string>();
+    stockSummary.forEach((s) => seen.add(s.branchValue));
+    return Array.from(seen).map((v) => ({ value: v, label: v }));
+  }, [stockSummary]);
+
+  /** Batches available for a given warehouse value, for the row-level Batch No. dropdown (kept for back-compat). */
   const getBatchOptionsForBranch = (branchValue: string): Option[] =>
     stockSummary
       .filter((s) => s.branchValue === branchValue)
@@ -393,11 +335,24 @@ export function useStockCorrectionForm({
         if (r.id !== id) return r;
 
         if (field === "branch") {
-          // Warehouse changed → batch list changes, so clear the derived fields.
-          return { ...r, branch: value, batchNo: "", expiryDate: "", availableQty: null };
+          // Warehouse changed → auto-resolve its batch from stockSummary.
+          // NOTE: if an item has multiple batches in the same warehouse
+          // (real data can look like this), this picks the first match.
+          // Switch Batch No. back to a row-level select scoped by
+          // getBatchOptionsForBranch(value) if that's not good enough.
+          const match = stockSummary.find((s) => s.branchValue === value);
+          return {
+            ...r,
+            branch: value,
+            batchNo: match?.batchNo ?? "",
+            expiryDate: match?.expiryDate ?? "",
+            availableQty: match?.availableQty ?? null,
+          };
         }
 
         if (field === "batchNo") {
+          // No longer triggered from the UI (Batch No. is read-only), kept
+          // in case you wire a select back in later.
           const match = stockSummary.find((s) => s.branchValue === r.branch && s.batchNo === value);
           return {
             ...r,
@@ -413,18 +368,39 @@ export function useStockCorrectionForm({
   };
 
   const addCorrectionRow = () => setCorrectionRows((prev) => [...prev, emptyCorrectionRow()]);
+
   const removeCorrectionRow = (id: string) =>
     setCorrectionRows((prev) => (prev.length === 1 ? prev : prev.filter((r) => r.id !== id)));
 
-  // ── Movement row handlers ───────────────────────────────────────────────
+  // ── Movement row helpers ────────────────────────────────────────────────
+
   const updateMovementRow = (id: string, field: keyof Omit<MovementRow, "id">, value: string) => {
     setMovementRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   };
+
   const addMovementRow = () => setMovementRows((prev) => [...prev, emptyMovementRow()]);
+
   const removeMovementRow = (id: string) =>
     setMovementRows((prev) => (prev.length === 1 ? prev : prev.filter((r) => r.id !== id)));
 
+  // ── Filtered "Available Stock" view ─────────────────────────────────────
+  // Once every correction row agrees on the same warehouse, narrow the
+  // summary table to just that warehouse's batches. If rows disagree (or
+  // none picked yet), show every warehouse the item has stock in.
+  const selectedBranchForFilter = useMemo(() => {
+    const picked = correctionRows.map((r) => r.branch).filter(Boolean);
+    if (picked.length === 0) return "";
+    const unique = new Set(picked);
+    return unique.size === 1 ? picked[0] : "";
+  }, [correctionRows]);
+
+  const visibleStockSummary = useMemo(() => {
+    if (mode !== "correction" || !selectedBranchForFilter) return stockSummary;
+    return stockSummary.filter((s) => s.branchValue === selectedBranchForFilter);
+  }, [stockSummary, mode, selectedBranchForFilter]);
+
   // ── Derived summary numbers ─────────────────────────────────────────────
+
   const currentTotalQty = useMemo(
     () => stockSummary.reduce((sum, r) => sum + (Number(r.availableQty) || 0), 0),
     [stockSummary],
@@ -466,19 +442,21 @@ export function useStockCorrectionForm({
   const heroIsNegative = heroValue < 0 || movementExceedsStock;
 
   // ── Validation ───────────────────────────────────────────────────────────
+
   const isValid = useMemo(() => {
     if (!selectedItem || !correctionDate) return false;
+
     if (mode === "correction") {
       return correctionRows.some(
         (r) => r.branch && r.batchNo && r.qty.trim() && !isNaN(Number(r.qty)) && Number(r.qty) !== 0,
       );
     }
-    return movementRows.some(
-      (r) => r.from && r.to && r.from !== r.to && r.qty.trim() && Number(r.qty) > 0,
-    );
+
+    return movementRows.some((r) => r.from && r.to && r.from !== r.to && r.qty.trim() && Number(r.qty) > 0);
   }, [mode, selectedItem, correctionDate, correctionRows, movementRows]);
 
   // ── Save ─────────────────────────────────────────────────────────────────
+
   const handleSave = async () => {
     if (!isValid) {
       showApiError("Please fill all required fields before saving");
@@ -524,6 +502,7 @@ export function useStockCorrectionForm({
   return {
     modalId: modalIdRef.current,
     branchOptions,
+    itemBranchOptions,
     mode,
     setMode,
     selectedItem,
@@ -533,6 +512,7 @@ export function useStockCorrectionForm({
     handleItemPicked,
     handleItemClear,
     stockSummary,
+    visibleStockSummary,
     correctionRows,
     updateCorrectionRow,
     addCorrectionRow,

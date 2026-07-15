@@ -178,7 +178,6 @@ interface SummaryRailProps {
   movementExceedsStock: boolean;
   reasonSummary: Array<{ label: string; qty: number }>;
 }
-
 export const SummaryRail: React.FC<SummaryRailProps> = ({
   mode,
   selectedItem,
@@ -196,19 +195,19 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
   const netIsNegative = mode === "correction" ? netCorrectionQty < 0 : movementExceedsStock;
 
   return (
-    <aside className="flex flex-col gap-4 h-full min-h-0 overflow-y-auto">
-      <SummaryCard>
-        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-2">
+    <aside className="flex flex-col gap-2.5 h-full min-h-0 overflow-y-auto">
+      <SummaryCard className="p-3">
+        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">
           {mode === "correction" ? "Projected Stock" : "Remaining After Move"}
         </span>
         <div
-          className={["text-4xl font-black leading-none", heroIsNegative ? "text-danger" : "text-primary"].join(" ")}
+          className={["text-3xl font-black leading-none", heroIsNegative ? "text-danger" : "text-primary"].join(" ")}
           style={!heroIsNegative ? { color: "var(--primary,#1c3f6e)" } : undefined}
         >
           {heroValue.toLocaleString()}{" "}
           <span className="text-sm font-bold text-muted align-middle">{unit || "PCS"}</span>
         </div>
-        <div className="flex items-center gap-1 mt-2 text-[11px] text-muted">
+        <div className="flex items-center gap-1 mt-1.5 text-[11px] text-muted">
           <Info size={12} />
           <span>
             {mode === "correction"
@@ -218,8 +217,8 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
         </div>
       </SummaryCard>
 
-      <SummaryCard>
-        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1">
+      <SummaryCard className="p-3">
+        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">
           Transaction Overview
         </span>
         <div className="divide-y divide-theme">
@@ -237,16 +236,16 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
         </div>
       </SummaryCard>
 
-      <SummaryCard>
-        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-2">
+      <SummaryCard className="p-3">
+        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">
           {mode === "correction" ? "Net Inventory Change" : "Total Moved"}
         </span>
         <div
-          className="rounded-lg py-3 px-3 text-center"
+          className="rounded-lg py-2 px-3 text-center"
           style={{ background: netIsNegative ? "rgba(239,68,68,0.08)" : "rgba(28,63,110,0.06)" }}
         >
           <div
-            className={["text-2xl font-black leading-none", netIsNegative ? "text-danger" : ""].join(" ")}
+            className={["text-xl font-black leading-none", netIsNegative ? "text-danger" : ""].join(" ")}
             style={!netIsNegative ? { color: "var(--primary,#1c3f6e)" } : undefined}
           >
             {mode === "correction" ? `${netCorrectionQty > 0 ? "+" : ""}${netCorrectionQty}` : totalMovedQty}{" "}
@@ -254,21 +253,21 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
           </div>
         </div>
         {mode === "correction" && projectedTotal < 0 && (
-          <p className="text-[10px] text-danger leading-snug mt-2">Correction would push stock below zero.</p>
+          <p className="text-[10px] text-danger leading-snug mt-1.5">Correction would push stock below zero.</p>
         )}
         {mode === "movement" && movementExceedsStock && (
-          <p className="text-[10px] text-danger leading-snug mt-2">Move quantity exceeds available stock.</p>
+          <p className="text-[10px] text-danger leading-snug mt-1.5">Move quantity exceeds available stock.</p>
         )}
       </SummaryCard>
 
       {mode === "correction" && reasonSummary.length > 0 && (
-        <SummaryCard>
-          <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1">
+        <SummaryCard className="p-3">
+          <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">
             Reason Summary
           </span>
           <div className="divide-y divide-theme">
             {reasonSummary.map((r) => (
-              <div key={r.label} className="flex items-center justify-between gap-3 py-1.5 text-[12px]">
+              <div key={r.label} className="flex items-center justify-between gap-3 py-1 text-[12px]">
                 <span className="text-muted">{r.label}</span>
                 <span className={["font-semibold", r.qty < 0 ? "text-danger" : "text-main"].join(" ")}>
                   {r.qty > 0 ? "+" : ""}
