@@ -5,9 +5,12 @@ import { useCompanyDefaults } from "../../hooks/useCompanyDefaults";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import { getAllModeOfPayment, getAllBankAccounts } from "../../api/BankAccountApi";
 import { getCurrencyList } from "../../api/lookupApi";
-import { getPayrollPayableAccounts } from "../../api/faapi";
-import { getAllCreditLimit } from "../../api/companyDefaultApi";
+// import { getAllCreditLimit, AccountOption } from "../../api/companyDefaultApi";
+import { getAllCreditLimit, getExpenseAccounts, getCashAccounts, getIncomeAccounts, getReceivableAccounts, 
+  getPayableAccounts, AccountOption, getPayrollPayableAccounts, getEmployeeAdvanceAccounts,
+  getExchangeGainLossAccounts, getUnrealizedExchangeGainLossAccounts } from "../../api/companyDefaultApi";
 import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 interface DefaultsField {
   key: string;
@@ -34,17 +37,17 @@ export const SECTIONS: DefaultsSection[] = [
     id: "accounts",
     title: "ACCOUNTS",
     fields: [
-      { key: "default_cash_account",                    label: "DEFAULT CASH ACCOUNT" },
-      { key: "default_receivable_account",              label: "DEFAULT RECEIVABLE ACCOUNT" },
-      { key: "default_payable_account",                 label: "DEFAULT PAYABLE ACCOUNT" },
-      { key: "default_income_account",                  label: "DEFAULT INCOME ACCOUNT" },
-      { key: "default_expense_account",                 label: "DEFAULT EXPENSE ACCOUNT" },
+      // { key: "default_cash_account",                    label: "DEFAULT CASH ACCOUNT" },
+      // { key: "default_receivable_account",              label: "DEFAULT RECEIVABLE ACCOUNT" },
+      // { key: "default_payable_account",                 label: "DEFAULT PAYABLE ACCOUNT" },
+      // { key: "default_income_account",                  label: "DEFAULT INCOME ACCOUNT" },
+      // { key: "default_expense_account",                 label: "DEFAULT EXPENSE ACCOUNT" },
       { key: "round_off_account",                       label: "ROUND OFF ACCOUNT" },
-      { key: "write_off_account",                       label: "WRITE OFF ACCOUNT" },
-      { key: "exchange_gain_loss_account",              label: "EXCHANGE GAIN/LOSS ACCOUNT" },
-      { key: "unrealized_exchange_gain_loss_account",   label: "UNREALIZED EXCHANGE GAIN/LOSS ACCOUNT" },
-      { key: "default_deferred_revenue_account",        label: "DEFAULT DEFERRED REVENUE ACCOUNT" },
-      { key: "default_deferred_expense_account",        label: "DEFAULT DEFERRED EXPENSE ACCOUNT" },
+      // { key: "write_off_account",                       label: "WRITE OFF ACCOUNT" },
+      // { key: "exchange_gain_loss_account",              label: "EXCHANGE GAIN/LOSS ACCOUNT" },
+      // { key: "unrealized_exchange_gain_loss_account",   label: "UNREALIZED EXCHANGE GAIN/LOSS ACCOUNT" },
+      // { key: "default_deferred_revenue_account",        label: "DEFAULT DEFERRED REVENUE ACCOUNT" },
+      // { key: "default_deferred_expense_account",        label: "DEFAULT DEFERRED EXPENSE ACCOUNT" },
       { key: "default_advance_received_account",        label: "DEFAULT ADVANCE RECEIVED ACCOUNT" },
       { key: "default_advance_paid_account",            label: "DEFAULT ADVANCE PAID ACCOUNT" },
     ],
@@ -53,8 +56,8 @@ export const SECTIONS: DefaultsSection[] = [
     id: "payroll",
     title: "PAYROLL",
     fields: [
-      { key: "default_payroll_payable_account",  label: "DEFAULT PAYROLL PAYABLE ACCOUNT" },
-      { key: "default_employee_advance_account", label: "DEFAULT EMPLOYEE ADVANCE ACCOUNT" },
+      // { key: "default_payroll_payable_account",  label: "DEFAULT PAYROLL PAYABLE ACCOUNT" },
+      // { key: "default_employee_advance_account", label: "DEFAULT EMPLOYEE ADVANCE ACCOUNT" },
     ],
   },
   {
@@ -66,15 +69,15 @@ export const SECTIONS: DefaultsSection[] = [
       { key: "default_finance_book",  label: "DEFAULT FINANCE BOOK" },
     ],
   },
-  {
-    id: "selling_buying",
-    title: "SELLING / BUYING",
-    fields: [
-      { key: "default_selling_terms",       label: "DEFAULT SELLING TERMS" },
-      { key: "default_buying_terms",        label: "DEFAULT BUYING TERMS" },
-      { key: "default_in_transit_warehouse", label: "DEFAULT IN-TRANSIT WAREHOUSE" },
-    ],
-  },
+  // {
+  //   id: "selling_buying",
+  //   title: "SELLING / BUYING",
+  //   fields: [
+  //     { key: "default_selling_terms",       label: "DEFAULT SELLING TERMS" },
+  //     { key: "default_buying_terms",        label: "DEFAULT BUYING TERMS" },
+  //     { key: "default_in_transit_warehouse", label: "DEFAULT IN-TRANSIT WAREHOUSE" },
+  //   ],
+  // },
   {
     id: "credit_limit",
     title: "CREDIT LIMIT",
@@ -89,7 +92,57 @@ export const SECTIONS: DefaultsSection[] = [
   },
 ];
 
-// ─── CurrencySelect ───────────────────────────────────────────────────────────
+const AccountSelect: React.FC<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  fetcher: () => Promise<AccountOption[] | { id: string; name: string }[]>;
+  placeholder: string;
+}> = ({ label, value, onChange, fetcher, placeholder }) => {
+  const fetchOptions = async (q: string) => {
+    try {
+      const accounts = await fetcher();
+      const filtered = q
+        ? accounts.filter((a) => a.name.toLowerCase().includes(q.toLowerCase()))
+        : accounts;
+      // return filtered.map((a) => ({
+      //   label: a.name,
+      //   value: a.id,
+      //   subLabel: (a as AccountOption).accountType
+      //     ? `${(a as AccountOption).accountType}`
+      //     : undefined,
+      // }));
+      return filtered.map((a) => ({
+        label: getGLNameWithoutAbbreviation(a.name),
+        value: a.id,
+        subLabel: (a as AccountOption).accountType
+          ? `${(a as AccountOption).accountType}`
+          : undefined,
+      }));
+    }
+    catch (err) {
+      console.error(`${label} fetch failed:`, err);
+      return [];
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        {label}
+      </span>
+      <div className="[&_input]:!py-1 [&_input]:!px-2 [&_input]:!text-[11px] [&_input]:!rounded [&_input]:!border-theme [&_input]:!h-auto">
+        <SearchSelect2
+          label=""
+          value={getGLNameWithoutAbbreviation(value)}
+          onChange={(val) => onChange(val)}
+          fetchOptions={fetchOptions}
+          placeholder={placeholder}
+        />
+      </div>
+    </div>
+  );
+};
 
 const CurrencySelect: React.FC<{
   value: string;
@@ -269,11 +322,88 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
 
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-4">
      {section.id === "accounts" && (
+      <>
       <CompanyBankAccountSelect
         value={values["default_bank_account"] ?? ""}
         onChange={(val) => onChange("default_bank_account", val)}
       /> 
+      <AccountSelect
+        label="DEFAULT CASH ACCOUNT"
+        value={values["default_cash_account"] ?? ""}
+        onChange={(val) => onChange("default_cash_account", val)}
+        fetcher={getCashAccounts}
+        placeholder="Search cash account..."
+      />
+      <AccountSelect
+        label="DEFAULT RECEIVABLE ACCOUNT"
+        value={values["default_receivable_account"] ?? ""}
+        onChange={(val) => onChange("default_receivable_account", val)}
+        fetcher={getReceivableAccounts}
+        placeholder="Search receivable account..."
+      />
+      <AccountSelect
+        label="DEFAULT PAYABLE ACCOUNT"
+        value={values["default_payable_account"] ?? ""}
+        onChange={(val) => onChange("default_payable_account", val)}
+        fetcher={getPayableAccounts}
+        placeholder="Search payable account..."
+      />
+      <AccountSelect
+        label="DEFAULT INCOME ACCOUNT"
+        value={values["default_income_account"] ?? ""}
+        onChange={(val) => onChange("default_income_account", val)}
+        fetcher={getIncomeAccounts}
+        placeholder="Search income account..."
+      />
+      <AccountSelect
+        label="DEFAULT EXPENSE ACCOUNT"
+        value={values["default_expense_account"] ?? ""}
+        onChange={(val) => onChange("default_expense_account", val)}
+        fetcher={getExpenseAccounts}
+        placeholder="Search expense account..."
+      />
+       <AccountSelect
+        label="DEFAULT WRITE OFF ACCOUNT"
+        value={values["default_expense_account"] ?? ""}
+        onChange={(val) => onChange("default_expense_account", val)}
+        fetcher={getExpenseAccounts}
+        placeholder="Search expense account..."
+      />
+      <AccountSelect
+        label="EXCHANGE GAIN/LOSS ACCOUNT"
+        value={values["exchange_gain_loss_account"] ?? ""}
+        onChange={(val) => onChange("exchange_gain_loss_account", val)}
+        fetcher={getExchangeGainLossAccounts}
+        placeholder="Search exchange gain/loss account..."
+      />
+      <AccountSelect
+        label="UNREALIZED EXCHANGE GAIN/LOSS ACCOUNT"
+        value={values["unrealized_exchange_gain_loss_account"] ?? ""}
+        onChange={(val) => onChange("unrealized_exchange_gain_loss_account", val)}
+        fetcher={getUnrealizedExchangeGainLossAccounts}
+        placeholder="Search unrealized exchange gain/loss account..."
+      />
+      </>
   )}
+  {section.id === "payroll" && (
+    <>
+      <AccountSelect
+        label="DEFAULT PAYROLL PAYABLE ACCOUNT"
+        value={values["default_payroll_payable_account"] ?? ""}
+        onChange={(val) => onChange("default_payroll_payable_account", val)}
+        fetcher={getPayrollPayableAccounts}
+        placeholder="Search payroll payable account..."
+      />
+      <AccountSelect
+        label="DEFAULT EMPLOYEE ADVANCE ACCOUNT"
+        value={values["default_employee_advance_account"] ?? ""}
+        onChange={(val) => onChange("default_employee_advance_account", val)}
+        fetcher={getEmployeeAdvanceAccounts}
+        placeholder="Search employee advance account..."
+      />
+    </>
+  )}
+
   {section.id === "credit_limit" && (
         <CreditControllerSelect
           value={values["credit_controller"] ?? ""}
@@ -290,6 +420,7 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
       onChange={(e) => onChange(field.key, e.target.value)}
     />
   ))}
+ 
 
       {/* Inject custom fields into the BASIC INFO section */}
       {section.id === "basic" && (
