@@ -6,9 +6,7 @@ import type {
   StockSummaryRow,
   CorrectionRow,
   MovementRow,
-  StockItemBatch,
-  StockItemSelectPayload,
-  SelectedBatch,
+ 
   StockCorrectionModalProps,
   StockCorrectionSubmitPayload,SingleBatchItemPickedPayload
 } from "../../types/Stock/stockcorrectionform.types";

@@ -11,7 +11,7 @@ export interface PaginatedRowsTableProps<T extends { id: string }> {
   /** Renders the cells for a single row (no wrapping div needed — the row div is provided). */
   renderRow: (row: T, absoluteIndex: number) => React.ReactNode;
   /** Called when "Add Row" is clicked. */
-  onAddRow: () => void;
+  onAddRow?: () => void;
   /** Label for the add button. Defaults to "Add Row". */
   addLabel?: string;
   /** Rows per page. Defaults to 5. */
@@ -56,13 +56,17 @@ function PaginatedRowsTable<T extends { id: string }>({
   const visibleRows = rows.slice(startIdx, endIdx);
   const showPagination = rows.length > 0 && (alwaysShowPagination || totalPages > 1);
 
-  const handleAddRow = () => {
-    onAddRow();
-    // Jump to the last page so the newly-added row is visible.
-    const nextTotalPages = Math.max(1, Math.ceil((rows.length + 1) / pageSize));
-    setPage(nextTotalPages);
-  };
+ const handleAddRow = () => {
+  if (!onAddRow) return;
 
+  onAddRow();
+
+  const nextTotalPages = Math.max(
+    1,
+    Math.ceil((rows.length + 1) / pageSize)
+  );
+  setPage(nextTotalPages);
+};
   const paginationFooter = showPagination && (
     <div
       style={{
@@ -158,8 +162,8 @@ function PaginatedRowsTable<T extends { id: string }>({
         )}
       </div>
 
-      {/* Footer — Add Row + (optional) pagination */}
-      {addRowVariant === "link" ? (
+      {/* Footer */}
+{onAddRow && addRowVariant === "button" ? (
         <div style={{ borderTop: "1px solid var(--border, #e5e7eb)" }}>
           <button
             type="button"
@@ -229,7 +233,7 @@ function PaginatedRowsTable<T extends { id: string }>({
             </div>
           )}
         </div>
-      ) : addRowVariant === "solid" ? (
+      ) : onAddRow && addRowVariant === "solid" ? (
         <div
           style={{
             display: "flex",
@@ -268,7 +272,7 @@ function PaginatedRowsTable<T extends { id: string }>({
 
           {paginationFooter}
         </div>
-      ) : (
+      ) : onAddRow ? (
         <div
           style={{
             display: "flex",
@@ -331,7 +335,19 @@ function PaginatedRowsTable<T extends { id: string }>({
             </div>
           )}
         </div>
-      )}
+      ) : showPagination ? (
+        <div
+          style={{
+            padding: "6px 10px",
+            borderTop: "1px solid var(--border, #e5e7eb)",
+            background: "var(--bg-app, #fff)",
+          }}
+        >
+          {paginationFooter}
+        </div>
+      ) : null}
+
+    
     </div>
   );
 }

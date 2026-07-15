@@ -86,7 +86,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
         <div className="flex flex-col gap-5 min-w-0 overflow-y-auto pr-1">
           {/* Posting Date + Item + Transaction Type — one row */}
           <div className="flex flex-wrap items-end gap-3">
-            <div className="w-[150px] shrink-0">
+            <div className="w-[100px] shrink-0">
               <DatePickerInput
                 label="Posting Date"
                 name="postingDate"
@@ -97,8 +97,8 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
               />
             </div>
 
-            <div className="flex-1 min-w-[220px] max-w-[380px]">
-              <div className="flex-1 min-w-[220px] max-w-[380px]">
+           
+              <div className="flex-1 w-[150px] max-w-[250px]">
                 <ItemPicker
                   mode={f.mode}
                   selectedItem={f.selectedItem}
@@ -106,7 +106,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                   onItemClear={f.handleItemClear}
                 />
               </div>
-            </div>
+          
 
             <div className="shrink-0">
               <TransactionTypeToggle mode={f.mode} onModeChange={f.setMode} />
@@ -124,34 +124,29 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
 
             <div className="mt-2">
               {f.mode === "correction" ? (
-                <PaginatedRowsTable
-                  columns={[
-                    "Warehouse",
-                    "Batch No.",
-                    "Expiry Date",
-                    "Available Stock",
-                    "Correction Qty",
-                    "",
-                  ]}
-                  gridTemplate={CORRECTION_COLS}
-                  rows={f.correctionRows}
-                  pageSize={ROWS_PAGE_SIZE}
-                  onAddRow={f.addCorrectionRow}
-                  addLabel="Add Row"
-                  addRowVariant="solid"
-                  renderRow={(row) => (
-                    <CorrectionRowFields
-                      row={row}
-                      branchOptions={f.branchOptions}
-                      batchOptionsForRow={f.getBatchOptionsForBranch(
-                        row.branch,
-                      )}
-                      onChange={f.updateCorrectionRow}
-                      onRemove={f.removeCorrectionRow}
-                      removeDisabled={f.correctionRows.length === 1}
-                    />
-                  )}
-                />
+               <PaginatedRowsTable
+  columns={[
+    "Warehouse",
+    "Batch No.",
+    "Expiry Date",
+    "Available Stock",
+    "Correction Qty",
+    "",
+  ]}
+  gridTemplate={CORRECTION_COLS}
+  rows={f.correctionRows}
+  pageSize={ROWS_PAGE_SIZE}
+  renderRow={(row) => (
+    <CorrectionRowFields
+      row={row}
+      branchOptions={f.branchOptions}
+      batchOptionsForRow={f.getBatchOptionsForBranch(row.branch)}
+      onChange={f.updateCorrectionRow}
+      onRemove={f.removeCorrectionRow}
+      removeDisabled
+    />
+  )}
+/>
               ) : (
                 <PaginatedRowsTable
                   columns={["From", "To", "Move Qty", ""]}
