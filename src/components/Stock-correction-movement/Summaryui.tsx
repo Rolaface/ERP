@@ -1,5 +1,5 @@
-import React from "react";
-import { Info, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Info, Trash2 } from "lucide-react";
 import type { Mode, Option, StockSummaryRow } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 
 // ─── Tiny atoms ─────────────────────────────────────────────────────────────
@@ -62,8 +62,30 @@ export const RemoveRowButton: React.FC<{ onClick: () => void; disabled?: boolean
 
 // ─── Available stock batches table ─────────────────────────────────────────
 
+const STOCK_SUMMARY_PAGE_SIZE = 5;
+
 export const StockSummaryTable: React.FC<{ rows: StockSummaryRow[] }> = ({ rows }) => {
+  const [page, setPage] = useState(1);
+
+  // Reset to page 1 whenever a new item is selected (rows array identity
+  // changes in handleItemPicked / handleItemClear) or cleared.
+  useEffect(() => {
+    setPage(1);
+  }, [rows]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / STOCK_SUMMARY_PAGE_SIZE));
+  // Guard against a stale page number if rows shrink (e.g. fewer batches on a re-pick).
+  const safePage = Math.min(page, totalPages);
+
+  const pageRows = useMemo(() => {
+    const start = (safePage - 1) * STOCK_SUMMARY_PAGE_SIZE;
+    return rows.slice(start, start + STOCK_SUMMARY_PAGE_SIZE);
+  }, [rows, safePage]);
+
   if (rows.length === 0) return null;
+
+  const start = (safePage - 1) * STOCK_SUMMARY_PAGE_SIZE + 1;
+  const end = Math.min(safePage * STOCK_SUMMARY_PAGE_SIZE, rows.length);
 
   return (
     <div>
@@ -79,7 +101,7 @@ export const StockSummaryTable: React.FC<{ rows: StockSummaryRow[] }> = ({ rows 
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {pageRows.map((row) => (
               <tr key={row.id} className="border-t border-theme">
                 <td className="px-3 py-2.5 text-main">{row.branchLabel}</td>
                 <td className="px-3 py-2.5 text-main">{row.batchNo}</td>
@@ -91,8 +113,49 @@ export const StockSummaryTable: React.FC<{ rows: StockSummaryRow[] }> = ({ rows 
             ))}
           </tbody>
         </table>
-        <div className="px-3 py-2 text-[11px] text-muted border-t border-theme">
-          Showing 1 to {rows.length} of {rows.length} batches
+        <div className="flex items-center justify-between px-3 py-2 text-[11px] text-muted border-t border-theme">
+          <span>
+            Showing {start} to {end} of {rows.length} batches
+          </span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="flex items-center justify-center rounded-md border border-theme"
+                style={{
+                  width: 22,
+                  height: 22,
+                  background: "transparent",
+                  cursor: safePage === 1 ? "not-allowed" : "pointer",
+                  opacity: safePage === 1 ? 0.4 : 1,
+                }}
+                aria-label="Previous page"
+              >
+                <ChevronLeft style={{ width: 13, height: 13 }} />
+              </button>
+              <span className="text-main font-semibold">
+                {safePage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="flex items-center justify-center rounded-md border border-theme"
+                style={{
+                  width: 22,
+                  height: 22,
+                  background: "transparent",
+                  cursor: safePage === totalPages ? "not-allowed" : "pointer",
+                  opacity: safePage === totalPages ? 0.4 : 1,
+                }}
+                aria-label="Next page"
+              >
+                <ChevronRight style={{ width: 13, height: 13 }} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
