@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Wrench, ArrowRightLeft, Info, Trash2 } from "lucide-react";
 
 import { MinimizableModal } from "../../components/common/MinimizableModal";
-import PaginatedRowsTable from "../../components/common/PaginatedRowsTable";
+import PaginatedRowsTable from "../../components/common/Paginatedrowstable";
 import {
   ModalInput,
   ModalSelect,
