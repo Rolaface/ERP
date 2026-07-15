@@ -7,6 +7,7 @@ import type {
   MovementRow,
   Option,
 } from "../../hooks/stock correction-movement/Usestockcorrectionform";
+import WarehouseSelect from "../selects/WarehouseSelect";
 
 // ─── Tiny atoms ─────────────────────────────────────────────────────────────
 
@@ -180,9 +181,10 @@ export const StockBatchTable: React.FC<StockBatchTableProps> = ({
                     </td>
                     <td className="px-3 py-2.5 text-main">{row.expiryDate || "—"}</td>
                     <td className="px-3 py-2.5" style={{ maxWidth: 170 }}>
-                      <ModalSelect
+                      <WarehouseSelect
                         label=""
-                        options={toOptions}
+                        compact
+                        excludeValue={row.branch}
                         value={row.to}
                         onChange={(e) => onMovementRowChange(row.id, "to", e.target.value)}
                       />
