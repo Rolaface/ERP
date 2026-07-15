@@ -14,11 +14,12 @@ import {
 import { fireManagedSwal } from "../../utils/swalManager";
 import { ChevronRight, ChevronDown, Upload } from "lucide-react";
 import XLSX from "xlsx-js-style";
-import StockCorrectionModal from "./stockcorrectionmodal";
+
 import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
+import { openStockCorrectionModal } from "../../store/modalStore";
 
 // ─── Excel export config ────────────────────────────────────────────────────
 
@@ -236,8 +237,7 @@ const Items: React.FC = () => {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewStockData, setViewStockData] = useState<any>(null);
-  const [showStockCorrection, setShowStockCorrection] = useState(false);
-  const [selectedBatch, setSelectedBatch] = useState<any>(null);
+ 
 
   const fetchItems = useCallback(async () => {
     if (!mountedRef.current) return;
@@ -293,11 +293,13 @@ const Items: React.FC = () => {
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const handleStockCorrection = (batch: any) => {
-    setSelectedBatch(batch);
-    setShowStockCorrection(true);
-  };
-
+const handleStockCorrection = (batch: any) => {
+  openStockCorrectionModal(
+    { selectedBatch: batch },
+    false,
+    { onSuccess: async () => { await fetchItems(); } },
+  );
+};
   const handleBatchDelete = (batch: any) => {
     handleDelete({ id: batch.batch_no, ...batch });
   };
@@ -522,16 +524,21 @@ const Items: React.FC = () => {
             >
               <Upload size={12} /> Bulk Upload
             </button>
-
-            <button
-              onClick={() => { setSelectedBatch(null); setShowStockCorrection(true); }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
-              style={{ border: "1.5px solid var(--primary,#c97d2e)", color: "var(--primary,#c97d2e)", boxShadow: "transparent" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.9"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
-            >
-              Stock Correction
-            </button>
+<button
+  onClick={() =>
+    openStockCorrectionModal(
+      { selectedBatch: null },
+      false,
+      { onSuccess: async () => { await fetchItems(); } },
+    )
+  }
+  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
+  style={{ border: "1.5px solid var(--primary,#c97d2e)", color: "var(--primary,#c97d2e)", boxShadow: "transparent" }}
+  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.9"; }}
+  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+>
+  Stock Correction
+</button>
           </div>
         }
         currentPage={page}
@@ -551,13 +558,7 @@ const Items: React.FC = () => {
         onClose={() => { setShowViewModal(false); setViewStockData(null); }}
         stockData={viewStockData}
       />
-      <StockCorrectionModal
-  isOpen={showStockCorrection}
-  onClose={() => setShowStockCorrection(false)}
-  selectedBatch={selectedBatch}
-  onSubmit={async (payload) => { /* call your save API here, then fetchItems() */ }}
-/>
-
+    
      
 
       <BulkUploadModal

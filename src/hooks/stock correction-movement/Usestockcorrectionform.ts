@@ -10,10 +10,10 @@ import type {
   StockCorrectionModalProps,
   StockCorrectionSubmitPayload,SingleBatchItemPickedPayload
 } from "../../types/Stock/stockcorrectionform.types";
+import { buildCorrectionPayload } from "../../mapper/stockCorrection.mapper";
+import { correctStock } from "../../api/stockApi";
 
-// Re-exported so existing imports elsewhere in the codebase
-// (e.g. Summaryui.tsx, StockCorrectionModal.tsx) keep working
-// unchanged even though the types now live in their own file.
+
 export type {
   Mode,
   Option,
@@ -69,13 +69,7 @@ export const SCM_STYLES = `
 
 const SCM_STYLE_TAG_ID = "scm-table-styles";
 
-/**
- * Default warehouse list ONLY used for the Movement tab's From/To selects
- * when the parent doesn't pass its own `branchOptions` prop. NOT used
- * anywhere for Correction rows anymore — those now come directly from the
- * item's real API `batches[].warehouse` data (see `itemBranchOptions`).
- * Replace with a real "list all warehouses" API call when you have one.
- */
+
 export const FALLBACK_BRANCHES: Option[] = [
   { label: "Stores - YC", value: "stores-yc" },
   { label: "Regional Hub A", value: "regional-hub-a" },
@@ -94,9 +88,6 @@ export const CORRECTION_COLS = "1fr 1fr 0.9fr 0.9fr 1fr 36px";
 export const MOVEMENT_COLS = "1.4fr 1fr 0.9fr 36px";
 export const ROWS_PAGE_SIZE = 5;
 
-// ─────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -124,9 +115,7 @@ const emptyMovementRow = (): MovementRow => ({
 
 const reasonLabel = (code: string) => REASON_OPTIONS.find((r) => r.value === code)?.label ?? code;
 
-// ─────────────────────────────────────────────────────────────────────────
-// Hook
-// ─────────────────────────────────────────────────────────────────────────
+
 
 type UseStockCorrectionFormArgs = Pick<
   StockCorrectionModalProps,
@@ -197,10 +186,7 @@ export function useStockCorrectionForm({
         label: selectedBatch.item_name || selectedBatch.item_code || "",
         value: selectedBatch.item_code || "",
       };
-      // Use the real warehouse if the caller passed one; otherwise we have
-      // no warehouse info at all here, so fall back to the first Movement
-      // branch option purely as a last-resort label (SelectedBatch doesn't
-      // carry warehouse from every call site yet — add it there if you can).
+     
       const branchValue = selectedBatch.warehouse || branchOptions[0]?.value || "";
       const branchLabel = selectedBatch.warehouse || branchOptions[0]?.label || "—";
       const availableQty = Number(selectedBatch.bal_qty ?? 0);
@@ -237,8 +223,7 @@ export function useStockCorrectionForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedBatch]);
 
-  // ── Item picked via StockItemSelect ─────────────────────────────────────
-// ── Item picked via StockItemSelect (single item, single batch) ─────────
+
   const handleItemPicked = (payload: SingleBatchItemPickedPayload) => {
     const item: Option = { label: payload.itemName, value: payload.itemCode };
     setSelectedItem(item);
@@ -311,11 +296,7 @@ export function useStockCorrectionForm({
         if (r.id !== id) return r;
 
         if (field === "branch") {
-          // Warehouse changed → auto-resolve its batch from stockSummary.
-          // NOTE: if an item has multiple batches in the same warehouse
-          // (real data can look like this), this picks the first match.
-          // Switch Batch No. back to a row-level select scoped by
-          // getBatchOptionsForBranch(value) if that's not good enough.
+         
           const match = stockSummary.find((s) => s.branchValue === value);
           return {
             ...r,
@@ -327,8 +308,7 @@ export function useStockCorrectionForm({
         }
 
         if (field === "batchNo") {
-          // No longer triggered from the UI (Batch No. is read-only), kept
-          // in case you wire a select back in later.
+          
           const match = stockSummary.find((s) => s.branchValue === r.branch && s.batchNo === value);
           return {
             ...r,
@@ -359,10 +339,7 @@ export function useStockCorrectionForm({
   const removeMovementRow = (id: string) =>
     setMovementRows((prev) => (prev.length === 1 ? prev : prev.filter((r) => r.id !== id)));
 
-  // ── Filtered "Available Stock" view ─────────────────────────────────────
-  // Once every correction row agrees on the same warehouse, narrow the
-  // summary table to just that warehouse's batches. If rows disagree (or
-  // none picked yet), show every warehouse the item has stock in.
+ 
   const selectedBranchForFilter = useMemo(() => {
     const picked = correctionRows.map((r) => r.branch).filter(Boolean);
     if (picked.length === 0) return "";
@@ -460,7 +437,11 @@ export function useStockCorrectionForm({
     try {
       setSaving(true);
       showLoading(mode === "correction" ? "Saving stock correction..." : "Saving stock movement...");
-      await onSubmit?.(payload);
+      const apiPayload = buildCorrectionPayload(payload);
+
+await correctStock(apiPayload);
+
+await onSubmit?.(payload);
       closeSwal();
       showSuccess(mode === "correction" ? "Stock correction saved successfully" : "Stock movement saved successfully");
       resetForm();

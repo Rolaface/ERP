@@ -492,7 +492,7 @@ export const API = {
     //  getAllStockItems:'${ERP_BASE}/api'
 
     create: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.create_item_stock_api`,
-    correct: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.correct_stock`,
+    correct: `${ERP_BASE}/api/method/custom_api.api.stock_correction.create_stock_correction`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.delete_stock_entry`,
   },
 

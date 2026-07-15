@@ -98,9 +98,10 @@ export interface SingleBatchItemPickedPayload {
 }
 
 export interface StockCorrectionModalProps {
+  modalId?: string; 
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (payload: StockCorrectionSubmitPayload) => void | Promise<void>;
+onSubmit?: (payload: StockCorrectionSubmitPayload) => Promise<void>; 
   selectedBatch?: SelectedBatch | null;
   /** Used only for the Movement tab's From/To selects (not item-specific). */
   branchOptions?: Option[];
