@@ -20,14 +20,21 @@ export const getRolaPackagingUnits = () => fetchList(RolaLookupAPI.getPackagingU
 export const getRolaCountries = () => fetchList(RolaLookupAPI.getCountries);
 
 export const getRolaUOMs = (category = "") => {
-  const orFilters = [
-    ["category", "like", `%${category}%`],
-    ["category", "like", "all"],
-  ];
-
   const params = new URLSearchParams();
-  params.append("or_filters", JSON.stringify(orFilters));
 
-  return fetchList(`${RolaLookupAPI.getUnitOfMeasure}?${params.toString()}`);
+  if (category) {
+    const orFilters = [
+      ["category", "like", `%${category}%`],
+      ["category", "like", "all"],
+    ];
+    params.append("or_filters", JSON.stringify(orFilters));
+  }
+
+  const queryString = params.toString();
+  const url = queryString
+    ? `${RolaLookupAPI.getUnitOfMeasure}?${queryString}`
+    : RolaLookupAPI.getUnitOfMeasure;
+
+  return fetchList(url);
   
 };export const getRolaItemClasses = () => fetchList(RolaLookupAPI.getItemClasses);
