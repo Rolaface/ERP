@@ -2,19 +2,12 @@ import React from "react";
 import { Wrench, ArrowRightLeft } from "lucide-react";
 
 import { MinimizableModal } from "../../components/common/MinimizableModal";
-import PaginatedRowsTable from "../../components/common/Paginatedrowstable";
 import DatePickerInput from "../../components/calendar/DatePickerInput";
 
-import {
-  useStockCorrectionForm,
-  CORRECTION_COLS,
-  MOVEMENT_COLS,
-  ROWS_PAGE_SIZE,
-  REASON_OPTIONS,
-} from "../../hooks/stock correction-movement/Usestockcorrectionform";
+import { useStockCorrectionForm } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import type { StockCorrectionModalProps } from "../../hooks/stock correction-movement/Usestockcorrectionform";
-import { SectionLabel, StockSummaryTable, SummaryRail } from "../../components/Stock-correction-movement/Summaryui";
-import { CorrectionRowFields, ItemPicker, MovementRowFields, TransactionTypeToggle } from "../../components/Stock-correction-movement/Rowfields";
+import { SectionLabel, StockBatchTable, SummaryRail } from "../../components/Stock-correction-movement/Summaryui";
+import { ItemPicker, TransactionTypeToggle } from "../../components/Stock-correction-movement/Rowfields";
 
 export type {
   StockCorrectionModalProps,
@@ -102,92 +95,19 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
             </div>
           </div>
 
-          
-
-          <StockSummaryTable rows={f.stockSummary} />
-
-          <div>
-            <SectionLabel>
-              {f.mode === "correction"
-                ? "Stock Adjustment Details"
-                : "Movement Details"}
-            </SectionLabel>
-
-            <div className="mt-2">
-              {f.mode === "correction" ? (
-                <PaginatedRowsTable
-                  columns={[
-                    "Warehouse",
-                    "Batch No.",
-                    "Expiry Date",
-                    "Available Stock",
-                    "Correction Qty",
-                    "",
-                  ]}
-                  gridTemplate={CORRECTION_COLS}
-                  rows={f.correctionRows}
-                  pageSize={ROWS_PAGE_SIZE}
-                  onAddRow={f.addCorrectionRow}
-                  addLabel="Add Row"
-                  addRowVariant="solid"
-                  renderRow={(row) => (
-                    <CorrectionRowFields
-                      row={row}
-                      branchOptions={f.branchOptions}
-                      batchOptionsForRow={f.getBatchOptionsForBranch(
-                        row.branch,
-                      )}
-                      onChange={f.updateCorrectionRow}
-                      onRemove={f.removeCorrectionRow}
-                      removeDisabled={f.correctionRows.length === 1}
-                    />
-                  )}
-                />
-              ) : (
-                <PaginatedRowsTable
-                  columns={["From", "To", "Move Qty", ""]}
-                  gridTemplate={MOVEMENT_COLS}
-                  rows={f.movementRows}
-                  pageSize={ROWS_PAGE_SIZE}
-                  onAddRow={f.addMovementRow}
-                  addLabel="Add Row"
-                  addRowVariant="solid"
-                  renderRow={(row) => (
-                    <MovementRowFields
-                      row={row}
-                      branchOptions={f.branchOptions}
-                      onChange={f.updateMovementRow}
-                      onRemove={f.removeMovementRow}
-                      removeDisabled={f.movementRows.length === 1}
-                    />
-                  )}
-                />
-              )}
-            </div>
-
-            {f.mode === "correction" ? (
-              <div className="flex justify-end gap-2 mt-2 text-[12px]">
-                <span className="text-muted">Total Correction Qty</span>
-                <span
-                  className="font-bold"
-                  style={{ color: "var(--primary,#1c3f6e)" }}
-                >
-                  {f.netCorrectionQty > 0 ? "+" : ""}
-                  {f.netCorrectionQty} {f.itemMeta.unit || "PCS"}
-                </span>
-              </div>
-            ) : (
-              <div className="flex justify-end gap-2 mt-2 text-[12px]">
-                <span className="text-muted">Total Moved Qty</span>
-                <span
-                  className="font-bold"
-                  style={{ color: "var(--primary,#1c3f6e)" }}
-                >
-                  {f.totalMovedQty} {f.itemMeta.unit || "PCS"}
-                </span>
-              </div>
-            )}
-          </div>
+          {/* ── Single merged table: available stock + inline editable
+                qty (replaces the old separate "Stock Adjustment
+                Details"/"Movement Details" section entirely) ── */}
+          <StockBatchTable
+            mode={f.mode}
+            unit={f.itemMeta.unit}
+            hasItem={!!f.selectedItem}
+            correctionRows={f.correctionRows}
+            onCorrectionQtyChange={f.updateCorrectionQty}
+            movementRows={f.movementRows}
+            onMovementRowChange={f.updateMovementRow}
+            branchOptions={f.branchOptions}
+          />
 
           <div>
             <SectionLabel>Reason / Remarks</SectionLabel>
@@ -207,11 +127,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
           mode={f.mode}
           selectedItem={f.selectedItem}
           unit={f.itemMeta.unit}
-          rowCount={
-            f.mode === "correction"
-              ? f.correctionRows.length
-              : f.movementRows.length
-          }
+          rowCount={f.mode === "correction" ? f.correctionRows.length : f.movementRows.length}
           currentTotalQty={f.currentTotalQty}
           netCorrectionQty={f.netCorrectionQty}
           totalMovedQty={f.totalMovedQty}

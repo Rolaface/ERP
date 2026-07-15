@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Info, Trash2 } from "lucide-react";
-import type { Mode, Option, StockSummaryRow } from "../../hooks/stock correction-movement/Usestockcorrectionform";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { ModalSelect, NumericInput } from "../ui/modal/modalComponent";
+import type {
+  CorrectionRow,
+  Mode,
+  MovementRow,
+  Option,
+} from "../../hooks/stock correction-movement/Usestockcorrectionform";
 
 // ─── Tiny atoms ─────────────────────────────────────────────────────────────
 
@@ -36,56 +42,57 @@ export const KeyValueRow: React.FC<{ label: string; value: React.ReactNode; badg
   </div>
 );
 
-export const RemoveRowButton: React.FC<{ onClick: () => void; disabled?: boolean }> = ({
-  onClick,
-  disabled = false,
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={disabled}
-    className="flex items-center justify-center rounded-full"
-    style={{
-      width: 26,
-      height: 26,
-      border: "none",
-      background: disabled ? "transparent" : "rgba(239,68,68,0.08)",
-      cursor: disabled ? "not-allowed" : "pointer",
-      opacity: disabled ? 0.3 : 1,
-      color: "#ef4444",
-      padding: 0,
-    }}
-  >
-    <Trash2 style={{ width: 13, height: 13 }} />
-  </button>
-);
+// ─── Merged "Available Stock" + editable qty table ─────────────────────────
 
-// ─── Available stock batches table ─────────────────────────────────────────
+const BATCH_TABLE_PAGE_SIZE = 10;
 
-const STOCK_SUMMARY_PAGE_SIZE = 5;
+interface StockBatchTableProps {
+  mode: Mode;
+  unit: string;
+  correctionRows: CorrectionRow[];
+  onCorrectionQtyChange: (id: string, qty: string) => void;
+  movementRows: MovementRow[];
+  onMovementRowChange: (id: string, field: "to" | "qty", value: string) => void;
+  branchOptions: Option[];
+  hasItem: boolean;
+}
 
-export const StockSummaryTable: React.FC<{ rows: StockSummaryRow[] }> = ({ rows }) => {
+export const StockBatchTable: React.FC<StockBatchTableProps> = ({
+  mode,
+  unit,
+  correctionRows,
+  onCorrectionQtyChange,
+  movementRows,
+  onMovementRowChange,
+  branchOptions,
+  hasItem,
+}) => {
   const [page, setPage] = useState(1);
 
-  // Reset to page 1 whenever a new item is selected (rows array identity
-  // changes in handleItemPicked / handleItemClear) or cleared.
+  const rows = mode === "correction" ? correctionRows : movementRows;
+
   useEffect(() => {
     setPage(1);
-  }, [rows]);
+  }, [mode, rows.length]);
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / STOCK_SUMMARY_PAGE_SIZE));
-  // Guard against a stale page number if rows shrink (e.g. fewer batches on a re-pick).
+  const totalPages = Math.max(1, Math.ceil(rows.length / BATCH_TABLE_PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
 
-  const pageRows = useMemo(() => {
-    const start = (safePage - 1) * STOCK_SUMMARY_PAGE_SIZE;
-    return rows.slice(start, start + STOCK_SUMMARY_PAGE_SIZE);
-  }, [rows, safePage]);
+  const pageCorrectionRows = useMemo(() => {
+    const start = (safePage - 1) * BATCH_TABLE_PAGE_SIZE;
+    return correctionRows.slice(start, start + BATCH_TABLE_PAGE_SIZE);
+  }, [correctionRows, safePage]);
 
-  if (rows.length === 0) return null;
+  const pageMovementRows = useMemo(() => {
+    const start = (safePage - 1) * BATCH_TABLE_PAGE_SIZE;
+    return movementRows.slice(start, start + BATCH_TABLE_PAGE_SIZE);
+  }, [movementRows, safePage]);
 
-  const start = (safePage - 1) * STOCK_SUMMARY_PAGE_SIZE + 1;
-  const end = Math.min(safePage * STOCK_SUMMARY_PAGE_SIZE, rows.length);
+  const colCount = 6;
+  const isEmpty = rows.length === 0;
+
+  const start = isEmpty ? 0 : (safePage - 1) * BATCH_TABLE_PAGE_SIZE + 1;
+  const end = isEmpty ? 0 : Math.min(safePage * BATCH_TABLE_PAGE_SIZE, rows.length);
 
   return (
     <div>
@@ -97,72 +104,157 @@ export const StockSummaryTable: React.FC<{ rows: StockSummaryRow[] }> = ({ rows 
               <th className="text-left px-3 py-2 font-semibold">Warehouse</th>
               <th className="text-left px-3 py-2 font-semibold">Batch No.</th>
               <th className="text-left px-3 py-2 font-semibold">Available Stock</th>
-              <th className="text-left px-3 py-2 font-semibold">Expiry Date</th>
+              {mode === "correction" ? (
+                <>
+                  <th className="text-left px-3 py-2 font-semibold">New Balance</th>
+                  <th className="text-left px-3 py-2 font-semibold">Expiry Date</th>
+                  <th className="text-left px-3 py-2 font-semibold">Correct/Quantity</th>
+                </>
+              ) : (
+                <>
+                  <th className="text-left px-3 py-2 font-semibold">Expiry Date</th>
+                  <th className="text-left px-3 py-2 font-semibold">Move To</th>
+                  <th className="text-left px-3 py-2 font-semibold">Move Qty</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
-            {pageRows.map((row) => (
-              <tr key={row.id} className="border-t border-theme">
-                <td className="px-3 py-2.5 text-main">{row.branchLabel}</td>
-                <td className="px-3 py-2.5 text-main">{row.batchNo}</td>
-                <td className="px-3 py-2.5 font-bold text-main">
-                  {row.availableQty.toLocaleString()} {row.unit}
+            {isEmpty ? (
+              <tr>
+                <td colSpan={colCount} className="px-3 py-10 text-center">
+                  <div className="flex flex-col items-center gap-1 text-muted">
+                    <Info size={18} className="opacity-50" />
+                    <span className="text-[12px] font-medium">
+                      {hasItem ? "No stock found for this item." : "Please select an item to view available stock."}
+                    </span>
+                  </div>
                 </td>
-                <td className="px-3 py-2.5 text-main">{row.expiryDate || "—"}</td>
               </tr>
-            ))}
+            ) : mode === "correction" ? (
+              pageCorrectionRows.map((row) => {
+                const qtyNum = row.qty.trim() === "" ? 0 : Number(row.qty);
+                const newBalance = row.availableQty + (isNaN(qtyNum) ? 0 : qtyNum);
+                return (
+                  <tr key={row.id} className="border-t border-theme">
+                    <td className="px-3 py-2.5 text-main">{row.branchLabel}</td>
+                    <td className="px-3 py-2.5 text-main">{row.batchNo}</td>
+                    <td className="px-3 py-2.5 font-bold text-main">
+                      {row.availableQty.toLocaleString()} {row.unit}
+                    </td>
+                    <td
+                      className="px-3 py-2.5 font-bold"
+                      style={{ color: newBalance < 0 ? "#ef4444" : "var(--primary,#1c3f6e)" }}
+                    >
+                      {newBalance.toLocaleString()} {row.unit}
+                    </td>
+                    <td className="px-3 py-2.5 text-main">{row.expiryDate || "—"}</td>
+                    <td className="px-3 py-2.5" style={{ maxWidth: 130 }}>
+                      <NumericInput
+                        value={row.qty === "" ? null : Number(row.qty)}
+                        allowNegative
+                        decimalScale={0}
+                        placeholder="0"
+                        onChange={(v) => onCorrectionQtyChange(row.id, v === null ? "" : String(v))}
+                        className="h-[30px] text-[12px] w-full"
+                      />
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              pageMovementRows.map((row) => {
+                const toOptions = branchOptions.filter((b) => b.value !== row.branch);
+                const remaining = row.availableQty - (row.to && row.qty ? Number(row.qty) || 0 : 0);
+                return (
+                  <tr key={row.id} className="border-t border-theme">
+                    <td className="px-3 py-2.5 text-main">{row.branchLabel}</td>
+                    <td className="px-3 py-2.5 text-main">{row.batchNo}</td>
+                    <td className="px-3 py-2.5 font-bold text-main">
+                      {row.availableQty.toLocaleString()} {row.unit}
+                      {row.to && (
+                        <span className="block text-[10px] font-normal text-muted mt-0.5">
+                          Remaining: {remaining.toLocaleString()}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-main">{row.expiryDate || "—"}</td>
+                    <td className="px-3 py-2.5" style={{ maxWidth: 170 }}>
+                      <ModalSelect
+                        label=""
+                        options={toOptions}
+                        value={row.to}
+                        onChange={(e) => onMovementRowChange(row.id, "to", e.target.value)}
+                      />
+                    </td>
+                    <td className="px-3 py-2.5" style={{ maxWidth: 130 }}>
+                      <NumericInput
+                        value={row.qty === "" ? null : Number(row.qty)}
+                        allowNegative={false}
+                        decimalScale={0}
+                        placeholder="0"
+                        onChange={(v) => onMovementRowChange(row.id, "qty", v === null ? "" : String(v))}
+                        className="h-[30px] text-[12px] w-full"
+                      />
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
-        <div className="flex items-center justify-between px-3 py-2 text-[11px] text-muted border-t border-theme">
-          <span>
-            Showing {start} to {end} of {rows.length} batches
-          </span>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-                className="flex items-center justify-center rounded-md border border-theme"
-                style={{
-                  width: 22,
-                  height: 22,
-                  background: "transparent",
-                  cursor: safePage === 1 ? "not-allowed" : "pointer",
-                  opacity: safePage === 1 ? 0.4 : 1,
-                }}
-                aria-label="Previous page"
-              >
-                <ChevronLeft style={{ width: 13, height: 13 }} />
-              </button>
-              <span className="text-main font-semibold">
-                {safePage} / {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={safePage === totalPages}
-                className="flex items-center justify-center rounded-md border border-theme"
-                style={{
-                  width: 22,
-                  height: 22,
-                  background: "transparent",
-                  cursor: safePage === totalPages ? "not-allowed" : "pointer",
-                  opacity: safePage === totalPages ? 0.4 : 1,
-                }}
-                aria-label="Next page"
-              >
-                <ChevronRight style={{ width: 13, height: 13 }} />
-              </button>
-            </div>
-          )}
-        </div>
+        {!isEmpty && (
+          <div className="flex items-center justify-between px-3 py-2 text-[11px] text-muted border-t border-theme">
+            <span>
+              Showing {start} to {end} of {rows.length} batches
+            </span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  className="flex items-center justify-center rounded-md border border-theme"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    background: "transparent",
+                    cursor: safePage === 1 ? "not-allowed" : "pointer",
+                    opacity: safePage === 1 ? 0.4 : 1,
+                  }}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft style={{ width: 13, height: 13 }} />
+                </button>
+                <span className="text-main font-semibold">
+                  {safePage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage === totalPages}
+                  className="flex items-center justify-center rounded-md border border-theme"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    background: "transparent",
+                    cursor: safePage === totalPages ? "not-allowed" : "pointer",
+                    opacity: safePage === totalPages ? 0.4 : 1,
+                  }}
+                  aria-label="Next page"
+                >
+                  <ChevronRight style={{ width: 13, height: 13 }} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-// ─── Right-side summary rail ───────────────────────────────────────────────
+// ─── Right-side summary rail (unchanged from before) ───────────────────────
 
 interface SummaryRailProps {
   mode: Mode;
@@ -232,7 +324,7 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
               valueClassName={netCorrectionQty < 0 ? "text-danger" : ""}
             />
           )}
-          <KeyValueRow label={mode === "correction" ? "Rows" : "Movements"} value={rowCount} />
+          <KeyValueRow label="Batches" value={rowCount} />
         </div>
       </SummaryCard>
 

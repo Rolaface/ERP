@@ -1,8 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────
 // Types for the Stock Correction / Movement form.
-// Kept separate from Usestockcorrectionform.ts so the hook file only
-// contains logic, and any component can import types without pulling
-// in the hook implementation.
 // ─────────────────────────────────────────────────────────────────────────
 
 export type Mode = "correction" | "movement";
@@ -23,19 +20,34 @@ export interface StockSummaryRow {
   expiryDate: string;
 }
 
+/**
+ * ONE ROW PER BATCH — auto-derived from stockSummary (see useStockCorrectionForm).
+ * No more free "Add Row" / pick-your-own-warehouse: branch + batchNo + expiryDate +
+ * availableQty are all fixed/read-only, only `qty` (Correct/Quantity) is editable.
+ */
 export interface CorrectionRow {
-  id: string;
-  branch: string; // real warehouse name, taken directly from the API's batches[].warehouse
-  batchNo: string; // auto-resolved (read-only) from stockSummary once branch is picked
-  expiryDate: string; // derived (read-only) from the matched batch
-  availableQty: number | null; // derived (read-only) from the matched batch
+  id: string; // same id as the matching StockSummaryRow
+  branch: string;
+  branchLabel: string;
+  batchNo: string;
+  expiryDate: string;
+  availableQty: number;
+  unit: string;
   qty: string; // string so user can type "-15" / "10" naturally
-  reasonCode: string;
 }
 
+/**
+ * ONE ROW PER BATCH (same idea as CorrectionRow) — the source warehouse/batch
+ * is fixed, user only picks a destination (`to`) and a `qty` to move.
+ */
 export interface MovementRow {
-  id: string;
-  from: string;
+  id: string; // same id as the matching StockSummaryRow
+  branch: string; // source warehouse (fixed, from the batch)
+  branchLabel: string;
+  batchNo: string;
+  expiryDate: string;
+  availableQty: number;
+  unit: string;
   to: string;
   qty: string;
 }
@@ -72,7 +84,6 @@ export interface StockItemSelectPayload {
   isServiceItem?: number;
   sku?: string;
   category?: string;
-  /** Optional: full batch breakdown for this item, if the backend provides it. */
   batches?: StockItemBatch[];
 }
 
@@ -82,7 +93,6 @@ export interface SelectedBatch {
   batch_no?: string;
   expiry_date?: string;
   bal_qty?: number;
-  /** Real warehouse name for this batch, if the caller has it. */
   warehouse?: string;
 }
 
@@ -91,7 +101,7 @@ export interface StockCorrectionModalProps {
   onClose: () => void;
   onSubmit?: (payload: StockCorrectionSubmitPayload) => void | Promise<void>;
   selectedBatch?: SelectedBatch | null;
-  /** Used only for the Movement tab's From/To selects (not item-specific). */
+  /** Used only for the Movement tab's "Move To" select (not item-specific). */
   branchOptions?: Option[];
 }
 
@@ -104,7 +114,6 @@ export interface StockCorrectionSubmitPayload {
     branch: string;
     batchNo: string;
     qty: number;
-    reasonCode: string;
   }>;
-  movementRows?: Array<{ from: string; to: string; qty: number }>;
+  movementRows?: Array<{ from: string; to: string; batchNo: string; qty: number }>;
 }
