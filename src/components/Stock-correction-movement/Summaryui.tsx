@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Info, Trash2 } from "lucide-react";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 import type { Mode, Option, StockSummaryRow } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 
 // ─── Tiny atoms ─────────────────────────────────────────────────────────────
@@ -103,7 +104,7 @@ export const StockSummaryTable: React.FC<{ rows: StockSummaryRow[] }> = ({ rows 
           <tbody>
             {pageRows.map((row) => (
               <tr key={row.id} className="border-t border-theme">
-                <td className="px-3 py-2.5 text-main">{row.branchLabel}</td>
+                <td className="px-3 py-2.5 text-main">{getGLNameWithoutAbbreviation(row.branchLabel)}</td>
                 <td className="px-3 py-2.5 text-main">{row.batchNo}</td>
                 <td className="px-3 py-2.5 font-bold text-main">
                   {row.availableQty.toLocaleString()} {row.unit}
@@ -270,11 +271,11 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
         </span>
         <div className="divide-y divide-theme">
           {isCorrection ? (
-            <KeyValueRow label="Warehouse" value={warehouseLabel || "—"} />
+            <KeyValueRow label="Warehouse" value={getGLNameWithoutAbbreviation(warehouseLabel) || "—"} />
           ) : (
             <>
-              <KeyValueRow label="From" value={fromLabel || "—"} />
-              <KeyValueRow label="To" value={toLabel || "—"} />
+              <KeyValueRow label="From" value={getGLNameWithoutAbbreviation(fromLabel) || "—"} />
+              <KeyValueRow label="To" value={getGLNameWithoutAbbreviation(toLabel) || "—"} />
             </>
           )}
           <KeyValueRow label="Batch No." value={batchNo || "—"} />
