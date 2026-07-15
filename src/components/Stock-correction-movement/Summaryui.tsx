@@ -164,120 +164,141 @@ export const StockSummaryTable: React.FC<{ rows: StockSummaryRow[] }> = ({ rows 
 
 // ─── Right-side summary rail ───────────────────────────────────────────────
 
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const formatDisplayDate = (input?: string): string => {
+  if (!input) return "—";
+  const datePart = input.slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(datePart);
+  if (!match) return input; // not plain ISO — show as-is rather than guess
+  const [, y, m, d] = match;
+  const mi = parseInt(m, 10) - 1;
+  if (mi < 0 || mi > 11) return input;
+  return `${d}-${MONTH_ABBR[mi]}-${y}`;
+};
+
+// ─── Right-side summary rail ───────────────────────────────────────────────
+
 interface SummaryRailProps {
   mode: Mode;
   selectedItem: Option | null;
   unit: string;
-  rowCount: number;
+  postingDate: string;
   currentTotalQty: number;
-  netCorrectionQty: number;
+  netCorrectionQty: number; 
   totalMovedQty: number;
-  projectedTotal: number;
-  heroValue: number;
+
+  heroValue: number; 
   heroIsNegative: boolean;
   movementExceedsStock: boolean;
-  reasonSummary: Array<{ label: string; qty: number }>;
+  fromLabel?: string;
+  toLabel?: string;
+  warehouseLabel?: string;
+  batchNo?: string;
+  expiryDate?: string;
+  batchAvailableQty?: number;
 }
+
 export const SummaryRail: React.FC<SummaryRailProps> = ({
   mode,
   selectedItem,
   unit,
-  rowCount,
+  postingDate,
   currentTotalQty,
   netCorrectionQty,
   totalMovedQty,
-  projectedTotal,
   heroValue,
   heroIsNegative,
   movementExceedsStock,
-  reasonSummary,
+  fromLabel,
+  toLabel,
+  warehouseLabel,
+  batchNo,
+  expiryDate,
+  batchAvailableQty,
 }) => {
-  const netIsNegative = mode === "correction" ? netCorrectionQty < 0 : movementExceedsStock;
+  const displayUnit = unit || "PCS";
+  const isCorrection = mode === "correction";
 
   return (
     <aside className="flex flex-col gap-2.5 h-full min-h-0 overflow-y-auto">
+      {/* ── Impact card ── */}
       <SummaryCard className="p-3">
         <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">
-          {mode === "correction" ? "Projected Stock" : "Remaining After Move"}
-        </span>
-        <div
-          className={["text-3xl font-black leading-none", heroIsNegative ? "text-danger" : "text-primary"].join(" ")}
-          style={!heroIsNegative ? { color: "var(--primary,#1c3f6e)" } : undefined}
-        >
-          {heroValue.toLocaleString()}{" "}
-          <span className="text-sm font-bold text-muted align-middle">{unit || "PCS"}</span>
-        </div>
-        <div className="flex items-center gap-1 mt-1.5 text-[11px] text-muted">
-          <Info size={12} />
-          <span>
-            {mode === "correction"
-              ? `Was ${currentTotalQty.toLocaleString()} across all warehouses`
-              : `Across all warehouses (was ${currentTotalQty.toLocaleString()})`}
-          </span>
-        </div>
-      </SummaryCard>
-
-      <SummaryCard className="p-3">
-        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">
-          Transaction Overview
+          {isCorrection ? "Inventory Impact" : "Movement Impact"}
         </span>
         <div className="divide-y divide-theme">
-          <KeyValueRow label="Mode" value={mode === "correction" ? "Correction" : "Movement"} badge />
-          <KeyValueRow label="Item" value={selectedItem?.label || "—"} />
-          <KeyValueRow label="Current Stock" value={`${currentTotalQty.toLocaleString()} ${unit || "PCS"}`} />
-          {mode === "correction" && (
+          <KeyValueRow
+            label={isCorrection ? "Current Stock" : "Available Qty"}
+            value={`${currentTotalQty.toLocaleString()} ${displayUnit}`}
+          />
+          <KeyValueRow
+            label={isCorrection ? "Correction Qty" : "Transfer Qty"}
+            value={
+              isCorrection
+                ? `${netCorrectionQty > 0 ? "+" : ""}${netCorrectionQty} ${displayUnit}`
+                : `${totalMovedQty} ${displayUnit}`
+            }
+            valueClassName={isCorrection && netCorrectionQty < 0 ? "text-danger" : ""}
+          />
+        </div>
+        <div
+          className="rounded-lg py-2 px-3 mt-2 flex items-center justify-between"
+          style={{ background: heroIsNegative ? "rgba(239,68,68,0.08)" : "rgba(28,63,110,0.06)" }}
+        >
+          <span className="text-[11px] font-semibold text-muted">
+            {isCorrection ? "Projected Stock" : "Remaining Qty"}
+          </span>
+          <span
+            className={["text-lg font-black leading-none", heroIsNegative ? "text-danger" : ""].join(" ")}
+            style={!heroIsNegative ? { color: "var(--primary,#1c3f6e)" } : undefined}
+          >
+            {heroValue.toLocaleString()} <span className="text-xs font-bold text-muted align-middle">{displayUnit}</span>
+          </span>
+        </div>
+        {heroIsNegative && (
+          <p className="text-[10px] text-danger leading-snug mt-1.5">
+            {isCorrection ? "Correction would push stock below zero." : "Move quantity exceeds available stock."}
+          </p>
+        )}
+      </SummaryCard>
+
+      {/* ── Details card ── */}
+      <SummaryCard className="p-3">
+        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">
+          {isCorrection ? "Selected Batch" : "Movement Details"}
+        </span>
+        <div className="divide-y divide-theme">
+          {isCorrection ? (
+            <KeyValueRow label="Warehouse" value={warehouseLabel || "—"} />
+          ) : (
+            <>
+              <KeyValueRow label="From" value={fromLabel || "—"} />
+              <KeyValueRow label="To" value={toLabel || "—"} />
+            </>
+          )}
+          <KeyValueRow label="Batch No." value={batchNo || "—"} />
+          <KeyValueRow label="Expiry Date" value={formatDisplayDate(expiryDate)} />
+          {isCorrection && (
             <KeyValueRow
-              label="Total Adjustment"
-              value={`${netCorrectionQty > 0 ? "+" : ""}${netCorrectionQty} ${unit || "PCS"}`}
-              valueClassName={netCorrectionQty < 0 ? "text-danger" : ""}
+              label="Available Qty"
+              value={`${(batchAvailableQty ?? currentTotalQty).toLocaleString()} ${displayUnit}`}
             />
           )}
-          <KeyValueRow label={mode === "correction" ? "Rows" : "Movements"} value={rowCount} />
         </div>
       </SummaryCard>
 
+      {/* ── Transaction card ── */}
       <SummaryCard className="p-3">
-        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">
-          {mode === "correction" ? "Net Inventory Change" : "Total Moved"}
+        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">
+          Transaction
         </span>
-        <div
-          className="rounded-lg py-2 px-3 text-center"
-          style={{ background: netIsNegative ? "rgba(239,68,68,0.08)" : "rgba(28,63,110,0.06)" }}
-        >
-          <div
-            className={["text-xl font-black leading-none", netIsNegative ? "text-danger" : ""].join(" ")}
-            style={!netIsNegative ? { color: "var(--primary,#1c3f6e)" } : undefined}
-          >
-            {mode === "correction" ? `${netCorrectionQty > 0 ? "+" : ""}${netCorrectionQty}` : totalMovedQty}{" "}
-            <span className="text-xs font-bold text-muted align-middle">{unit || "PCS"}</span>
-          </div>
+        <div className="divide-y divide-theme">
+          <KeyValueRow label="Mode" value={isCorrection ? "Correction" : "Movement"} badge />
+          <KeyValueRow label="Posting Date" value={formatDisplayDate(postingDate)} />
+          <KeyValueRow label="Item" value={selectedItem?.label || "—"} />
         </div>
-        {mode === "correction" && projectedTotal < 0 && (
-          <p className="text-[10px] text-danger leading-snug mt-1.5">Correction would push stock below zero.</p>
-        )}
-        {mode === "movement" && movementExceedsStock && (
-          <p className="text-[10px] text-danger leading-snug mt-1.5">Move quantity exceeds available stock.</p>
-        )}
       </SummaryCard>
-
-      {mode === "correction" && reasonSummary.length > 0 && (
-        <SummaryCard className="p-3">
-          <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">
-            Reason Summary
-          </span>
-          <div className="divide-y divide-theme">
-            {reasonSummary.map((r) => (
-              <div key={r.label} className="flex items-center justify-between gap-3 py-1 text-[12px]">
-                <span className="text-muted">{r.label}</span>
-                <span className={["font-semibold", r.qty < 0 ? "text-danger" : "text-main"].join(" ")}>
-                  {r.qty > 0 ? "+" : ""}
-                  {r.qty} {unit || "PCS"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </SummaryCard>
-      )}
     </aside>
   );
 };

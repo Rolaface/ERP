@@ -72,7 +72,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
         </>
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 h-full min-h-0 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_230px] gap-5 h-full min-h-0 items-stretch">
         {/* ── LEFT: form ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-5 min-w-0 overflow-y-auto pr-1">
           {/* Posting Date + Item + Transaction Type — one row */}
@@ -102,7 +102,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
             </div>
           </div>
 
-          
+
 
           <StockSummaryTable rows={f.stockSummary} />
 
@@ -207,19 +207,25 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
           mode={f.mode}
           selectedItem={f.selectedItem}
           unit={f.itemMeta.unit}
-          rowCount={
-            f.mode === "correction"
-              ? f.correctionRows.length
-              : f.movementRows.length
-          }
+          postingDate={f.correctionDate}
           currentTotalQty={f.currentTotalQty}
           netCorrectionQty={f.netCorrectionQty}
           totalMovedQty={f.totalMovedQty}
-          projectedTotal={f.projectedTotal}
           heroValue={f.heroValue}
           heroIsNegative={f.heroIsNegative}
           movementExceedsStock={f.movementExceedsStock}
-          reasonSummary={f.reasonSummary}
+          fromLabel={
+            f.branchOptions.find((b) => b.value === f.movementRows[0]?.from)?.label ??
+            f.movementRows[0]?.from
+          }
+          toLabel={
+            f.branchOptions.find((b) => b.value === f.movementRows[0]?.to)?.label ??
+            f.movementRows[0]?.to
+          }
+          warehouseLabel={f.stockSummary[0]?.branchLabel}
+          batchNo={f.stockSummary[0]?.batchNo}
+          expiryDate={f.stockSummary[0]?.expiryDate}
+          batchAvailableQty={f.stockSummary[0]?.availableQty}
         />
       </div>
     </MinimizableModal>
