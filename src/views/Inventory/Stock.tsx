@@ -257,6 +257,10 @@ const Items: React.FC = () => {
         packingUnit: item.packingUnit || "-",
         packingSize: item.packingSize || "-",
         piecesPerBox: item.piecesPerBox || "-",
+         boxAvailable:
+          item.piecesPerBox && item.piecesPerBox > 0
+            ? Math.floor((item.total_bal_qty ?? 0) / item.piecesPerBox)
+            : 0,
         totalQty: item.total_bal_qty ?? 0,
         totalBuyValue: Number(item.total_buy_value ?? 0),
         totalSellValue: Number(item.total_sell_value ?? 0),
@@ -456,6 +460,14 @@ const Items: React.FC = () => {
         <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
           {row.totalQty}
         </code>
+      ),
+    },
+     {
+      key: "boxAvailable",
+      header: "Box Available",
+      align: "center",
+      render: (row) => (
+        <span className="whitespace-nowrap">{row.boxAvailable ?? "—"}</span>
       ),
     },
     {
