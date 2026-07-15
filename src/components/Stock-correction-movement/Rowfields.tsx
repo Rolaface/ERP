@@ -104,7 +104,14 @@ export const CorrectionRowFields: React.FC<CorrectionRowFieldsProps> = ({
 }) => (
   <>
     <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-      <ModalSelect label="" options={branchOptions} value={row.branch} onChange={(e) => onChange(row.id, "branch", e.target.value)} />
+      
+  <WarehouseSelect
+  value={row.branch}
+  compact
+  onChange={(e) => onChange(row.id, "branch", e.target.value)}
+   readOnlyField
+  disabled
+/>
     </div>
     <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
       <ModalInput
