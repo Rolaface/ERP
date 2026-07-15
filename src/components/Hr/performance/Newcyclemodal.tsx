@@ -13,6 +13,7 @@ import type {
   CycleItem,
 } from "../../../api/Appraisalapi/performanceCycleApi";
 import DatePickerInput from "../../calendar/DatePickerInput";
+import { getGLNameWithoutAbbreviation } from "../../../api/utils/glAccountUtils";
 
 const ROWS_PER_PAGE = 5;
 
@@ -387,7 +388,7 @@ const NewCycleModal = ({
   );
 
   const [appraiseePage, setAppraiseePage] = useState(1);
-
+  const [deptDisplay, setDeptDisplay] = useState("");
   const totalAppraisees = hook.appraisees.length;
   const totalPages = Math.max(1, Math.ceil(totalAppraisees / ROWS_PER_PAGE));
   const safePage = Math.min(appraiseePage, totalPages);
@@ -522,9 +523,18 @@ const NewCycleModal = ({
                   />
                   <SearchSelect2
                     label="Department"
-                    value={hook.filterDepartment}
-                    fetchOptions={hook.fetchDepartments}
-                    onChange={(val) => hook.setFilterDepartment(val)}
+                    value={deptDisplay}
+                    fetchOptions={async (q) => {
+                      const results = await hook.fetchDepartments(q);
+                      return results.map((opt: any) => ({
+                        ...opt,
+                        label: getGLNameWithoutAbbreviation(opt.label),
+                      }));
+                    }}
+                    onChange={(val, option) => {
+                      hook.setFilterDepartment(val);
+                      setDeptDisplay(getGLNameWithoutAbbreviation(option?.label || val || ""));
+                    }}
                     placeholder="All departments…"
                   />
                   <SearchSelect2
