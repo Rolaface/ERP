@@ -70,7 +70,7 @@ async fetchById(invoiceId: string): Promise<NormalizedInvoice | null> {
   };
 },
   async fetchPage({ page, pageSize, partyId }: FetchParams): Promise<NormalizedPage> {
-    console.log("API supplier param:", partyId);
+    
     const res = await getPurchaseInvoices(page, pageSize, {
       supplier: partyId,
       status: ["Partly Paid", "Unpaid", "Overdue"],
@@ -93,7 +93,7 @@ async fetchById(invoiceId: string): Promise<NormalizedInvoice | null> {
   },
 
   async fetchAllForFifo(partyId): Promise<NormalizedInvoice[]> {
-    console.log("API supplier param:", partyId);
+  
     const res = await getPurchaseInvoices(1, 1000, {
       supplier: partyId,
       status: ["Partly Paid", "Unpaid", "Overdue"],

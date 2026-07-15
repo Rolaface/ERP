@@ -110,7 +110,7 @@ const columns: Column<any>[] = useMemo(() => [
 
   const handleAdd = () => {
     if (!isEditMode) return;
-console.log("FORM DATA", formData);
+
     openBankAccountModal(
       {
         accountFor: "Employee",
