@@ -63,7 +63,7 @@ const AdditionalDetailsSection: React.FC<AdditionalDetailsSectionProps> =
             label="Unit of Measure"
             value={form.unitOfMeasureCd ?? ""}
             fetchOptions={async (q) => {
-              const data = await fetchUoms();
+              const data = await fetchUoms(form.itemGroup);
               const list = data?.data ?? [];
               return list
                 .filter((item: any) =>
