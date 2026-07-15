@@ -240,7 +240,7 @@ const EmployeeAdvanceModal = lazy(
 );
 
 const StockCorrectionModal = lazy(
-  () => import("../../components/inventory/stock/stockcorrectionmodal"),
+  () => import("../../components/inventory/stock/Stockcorrectionmodal"),
 );
 
 const getModalSeedValue = (
