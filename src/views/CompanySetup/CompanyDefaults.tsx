@@ -346,6 +346,44 @@ const CreditControllerSelect: React.FC<{
   );
 };
 
+// ─── ToggleField ──────────────────────────────────────────────────────────────
+
+const ToggleField: React.FC<{
+  label: string;
+  checked: boolean;
+  onChange: (val: boolean) => void;
+  helperText?: string;
+}> = ({ label, checked, onChange, helperText }) => (
+  <div className="flex flex-col min-w-0 justify-center">
+    <span className="block text-[10px] font-medium text-main mb-1">
+      {label}
+    </span>
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={[
+          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+          checked ? "bg-primary" : "bg-gray-300",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
+            checked ? "translate-x-[18px]" : "translate-x-[3px]",
+          ].join(" ")}
+        />
+      </button>
+      <span className="text-[11px] text-muted">{checked ? "Yes" : "No"}</span>
+    </div>
+    {helperText && (
+      <span className="text-[10px] text-muted mt-1">{helperText}</span>
+    )}
+  </div>
+);
+
 // ─── Section renderer ─────────────────────────────────────────────────────────
 
 interface SectionProps {
@@ -433,6 +471,15 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
         fetcher={getUnrealizedExchangeGainLossAccounts}
         placeholder="Search unrealized exchange gain/loss account..."
       />
+          <ToggleField
+            label="USE SEPARATE SEQUENCE FOR CREDIT NOTES"
+            checked={
+              values["use_separate_sequence_for_credit_notes"] === "true" ||
+              String(values["use_separate_sequence_for_credit_notes"]) === "1"
+            }
+            onChange={(val) => onChange("use_separate_sequence_for_credit_notes", val ? "true" : "false")}
+            helperText="Credit notes get their own numbering series"
+          />
       </>
   )}
   {section.id === "payroll" && (
