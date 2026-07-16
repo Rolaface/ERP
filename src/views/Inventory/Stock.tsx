@@ -338,7 +338,7 @@ const Items: React.FC = () => {
             ? Math.floor((item.total_bal_qty ?? 0) / item.piecesPerBox)
             : 0,
         totalQty: item.total_bal_qty ?? 0,
-        totalBuyValue: Number(item.total_buy_value ?? 0),
+        totalBuyValue: Number(item.total_bal_val ?? 0),
         totalSellValue: Number(item.total_sell_value ?? 0),
         buyCurrency: item.buy_currency,
         sellCurrency: item.sell_currency,

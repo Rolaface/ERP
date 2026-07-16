@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Info, Trash2 } from "lucide-react";
+
+import { Trash2 } from "lucide-react";
 import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
-import type { Mode, Option, StockSummaryRow } from "../../hooks/stock correction-movement/Usestockcorrectionform";
+import type { Mode, Option } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 
 // ─── Tiny atoms ─────────────────────────────────────────────────────────────
 
@@ -16,17 +16,17 @@ export const SummaryCard: React.FC<{ children: React.ReactNode; className?: stri
   className = "",
 }) => <div className={["rounded-xl border border-theme bg-card p-4", className].join(" ")}>{children}</div>;
 
-export const KeyValueRow: React.FC<{ label: string; value: React.ReactNode; badge?: boolean; valueClassName?: string }> = ({
-  label,
-  value,
-  badge = false,
-  valueClassName = "",
-}) => (
-  <div className="flex items-start justify-between gap-3 py-1.5 text-[12px]">
+export const KeyValueRow: React.FC<{
+  label: string;
+  value: React.ReactNode;
+  badge?: boolean;
+  valueClassName?: string;
+}> = ({ label, value, badge = false, valueClassName = "" }) => (
+  <div className="flex items-start justify-between gap-3 py-1 text-[11px]">
     <span className="text-muted">{label}</span>
     {badge ? (
       <span
-        className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide"
+        className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide"
         style={{ background: "rgba(47,85,151,0.10)", color: "var(--primary,#2f5597)" }}
       >
         {value}
@@ -61,8 +61,6 @@ export const RemoveRowButton: React.FC<{ onClick: () => void; disabled?: boolean
   </button>
 );
 
-
-
 // ─── Right-side summary rail ───────────────────────────────────────────────
 
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -78,18 +76,16 @@ const formatDisplayDate = (input?: string): string => {
   return `${d}-${MONTH_ABBR[mi]}-${y}`;
 };
 
-// ─── Right-side summary rail ───────────────────────────────────────────────
-
 interface SummaryRailProps {
   mode: Mode;
   selectedItem: Option | null;
   unit: string;
   postingDate: string;
   currentTotalQty: number;
-  netCorrectionQty: number; 
+  netCorrectionQty: number;
   totalMovedQty: number;
 
-  heroValue: number; 
+  heroValue: number;
   heroIsNegative: boolean;
   movementExceedsStock: boolean;
   fromLabel?: string;
@@ -98,6 +94,7 @@ interface SummaryRailProps {
   batchNo?: string;
   expiryDate?: string;
   batchAvailableQty?: number;
+  valuationRate?: number;
 }
 
 export const SummaryRail: React.FC<SummaryRailProps> = ({
@@ -110,28 +107,33 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
   totalMovedQty,
   heroValue,
   heroIsNegative,
-  movementExceedsStock,
+  
   fromLabel,
   toLabel,
   warehouseLabel,
   batchNo,
   expiryDate,
-  batchAvailableQty,
+  
+  valuationRate,
 }) => {
   const displayUnit = unit || "PCS";
   const isCorrection = mode === "correction";
 
   return (
-    <aside className="flex flex-col gap-2.5 h-full min-h-0 overflow-y-auto">
+    <aside className="flex flex-col gap-2 h-full min-h-0 overflow-y-auto">
       {/* ── Impact card ── */}
-      <SummaryCard className="p-3">
-        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">
+      <SummaryCard className="p-2.5">
+        <span className="block text-[9px] font-bold uppercase tracking-widest text-muted mb-1">
           {isCorrection ? "Inventory Impact" : "Movement Impact"}
         </span>
         <div className="divide-y divide-theme">
           <KeyValueRow
             label={isCorrection ? "Current Stock" : "Available Qty"}
             value={`${currentTotalQty.toLocaleString()} ${displayUnit}`}
+          />
+          <KeyValueRow
+            label="Valuation Rate"
+            value={valuationRate != null ? valuationRate.toLocaleString() : "—"}
           />
           <KeyValueRow
             label={isCorrection ? "Correction Qty" : "Transfer Qty"}
@@ -144,29 +146,30 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
           />
         </div>
         <div
-          className="rounded-lg py-2 px-3 mt-2 flex items-center justify-between"
+          className="rounded-lg py-1.5 px-2.5 mt-1.5 flex items-center justify-between"
           style={{ background: heroIsNegative ? "rgba(239,68,68,0.08)" : "rgba(28,63,110,0.06)" }}
         >
-          <span className="text-[11px] font-semibold text-muted">
+          <span className="text-[10px] font-semibold text-muted">
             {isCorrection ? "Projected Stock" : "Remaining Qty"}
           </span>
           <span
-            className={["text-lg font-black leading-none", heroIsNegative ? "text-danger" : ""].join(" ")}
+            className={["text-base font-black leading-none", heroIsNegative ? "text-danger" : ""].join(" ")}
             style={!heroIsNegative ? { color: "var(--primary,#1c3f6e)" } : undefined}
           >
-            {heroValue.toLocaleString()} <span className="text-xs font-bold text-muted align-middle">{displayUnit}</span>
+            {heroValue.toLocaleString()}{" "}
+            <span className="text-[10px] font-bold text-muted align-middle">{displayUnit}</span>
           </span>
         </div>
         {heroIsNegative && (
-          <p className="text-[10px] text-danger leading-snug mt-1.5">
+          <p className="text-[9px] text-danger leading-snug mt-1">
             {isCorrection ? "Correction would push stock below zero." : "Move quantity exceeds available stock."}
           </p>
         )}
       </SummaryCard>
 
-      {/* ── Details card ── */}
-      <SummaryCard className="p-3">
-        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">
+      {/* ── Details card: batch/movement + transaction merged ── */}
+      <SummaryCard className="p-2.5">
+        <span className="block text-[9px] font-bold uppercase tracking-widest text-muted mb-0.5">
           {isCorrection ? "Selected Batch" : "Movement Details"}
         </span>
         <div className="divide-y divide-theme">
@@ -180,21 +183,6 @@ export const SummaryRail: React.FC<SummaryRailProps> = ({
           )}
           <KeyValueRow label="Batch No." value={batchNo || "—"} />
           <KeyValueRow label="Expiry Date" value={formatDisplayDate(expiryDate)} />
-          {isCorrection && (
-            <KeyValueRow
-              label="Available Qty"
-              value={`${(batchAvailableQty ?? currentTotalQty).toLocaleString()} ${displayUnit}`}
-            />
-          )}
-        </div>
-      </SummaryCard>
-
-      {/* ── Transaction card ── */}
-      <SummaryCard className="p-3">
-        <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">
-          Transaction
-        </span>
-        <div className="divide-y divide-theme">
           <KeyValueRow label="Mode" value={isCorrection ? "Correction" : "Movement"} badge />
           <KeyValueRow label="Posting Date" value={formatDisplayDate(postingDate)} />
           <KeyValueRow label="Item" value={selectedItem?.label || "—"} />

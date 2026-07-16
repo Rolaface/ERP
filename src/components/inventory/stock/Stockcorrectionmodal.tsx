@@ -219,6 +219,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
           batchNo={f.stockSummary[0]?.batchNo}
           expiryDate={f.stockSummary[0]?.expiryDate}
           batchAvailableQty={f.stockSummary[0]?.availableQty}
+          valuationRate={f.stockSummary[0]?.valuationRate}
         />
       </div>
     </MinimizableModal>

@@ -21,6 +21,7 @@ export interface StockSummaryRow {
   availableQty: number;
   unit: string;
   expiryDate: string;
+    valuationRate: number;
 }
 
 export interface CorrectionRow {
@@ -31,6 +32,7 @@ export interface CorrectionRow {
   availableQty: number | null; // derived (read-only) from the matched batch
   qty: string; // string so user can type "-15" / "10" naturally
   reasonCode: string;
+    valuationRate: number | null;
 }
 
 export interface MovementRow {
@@ -84,6 +86,7 @@ export interface SelectedBatch {
   bal_qty?: number;
   /** Real warehouse name for this batch, if the caller has it. */
   warehouse?: string;
+  valuation_rate?: number;
 }
 
 export interface SingleBatchItemPickedPayload {
@@ -95,6 +98,7 @@ export interface SingleBatchItemPickedPayload {
   packingUnit?: string;
   warehouse?: string;
   isServiceItem?: number;
+    valuationRate?: number;
 }
 
 export interface StockCorrectionModalProps {
@@ -105,6 +109,8 @@ onSubmit?: (payload: StockCorrectionSubmitPayload) => Promise<void>;
   selectedBatch?: SelectedBatch | null;
   /** Used only for the Movement tab's From/To selects (not item-specific). */
   branchOptions?: Option[];
+   valuation_rate?: number;
+ 
 }
 
 export interface StockCorrectionSubmitPayload {
@@ -112,11 +118,13 @@ export interface StockCorrectionSubmitPayload {
   item: Option | null;
   date: string;
   reason: string;
+  valuation_rate?: number;
   correctionRows?: Array<{
     branch: string;
     batchNo: string;
     qty: number;
     reasonCode: string;
+    valuation_rate?: number;
   }>;
   movementRows?: Array<{ from: string; to: string; qty: number }>;
 }

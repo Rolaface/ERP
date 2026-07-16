@@ -39,7 +39,7 @@ interface ItemAndModeHeaderProps {
 export const ItemPicker: React.FC<{
   mode: Mode;
   selectedItem: Option | null;
-  onItemPicked: (payload: SingleBatchItemPickedPayload) => void;
+  onItemPicked: (payload: StockItemSelectPayload) => void;
   onItemClear: () => void;
 }> = ({ mode, selectedItem, onItemPicked, onItemClear }) => (
   <div>
