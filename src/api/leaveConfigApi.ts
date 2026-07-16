@@ -87,7 +87,6 @@ export async function createLeaveType(
   payload: Omit<LeaveType, "name">,
 ): Promise<LeaveType> {
   try {
-    console.log("LEAVE_RESOURCE",LEAVE_RESOURCE.create);
     const resp: AxiosResponse<FrappeDetailResponse<LeaveType>> =
     await api.post(LEAVE_RESOURCE.create, payload);
     return resp.data?.data;

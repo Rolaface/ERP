@@ -135,9 +135,7 @@ const TermsAndCondition: React.FC<Props> = ({ terms, setTerms }) => {
   };
 
   const removePhase = (index: number) => {
-    console.log("removePhase index: ", index);
     if (!isEditing) return;
-    console.log("isEditing: ", isEditing);
 
     const phases = ensurePayment(currentTerms).phases as LocalPhase[];
 

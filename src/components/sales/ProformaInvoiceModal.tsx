@@ -69,8 +69,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
   );
 
   const domain = useDefault("primary_business_domain");
-  console.log("Domain ", domain);
-
   useEffect(() => {
     if (mode === "edit" && initialData?.items?.length > 0) {
       // Check if the first item (or any item) is a service
@@ -157,7 +155,6 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       if (mode === "edit") {
         const invoiceNumber =
           formData.invoiceNumber ?? initialData?.id ?? initialData?.proformaId;
-        console.log("Editing Proforma Invoice with number:", invoiceNumber);
 
         if (!invoiceNumber) {
           showValidationError("Invalid invoice reference");

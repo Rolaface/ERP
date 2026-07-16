@@ -336,7 +336,6 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
                   if (tax?.taxName) {
                     vatCd = tax.taxName;
                     setItemVatCode(vatCd);
-                    console.log("vatCd", vatCd);
                   }
                 }
 

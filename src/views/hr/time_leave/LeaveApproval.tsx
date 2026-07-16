@@ -29,7 +29,7 @@ interface MenuAction {
 export default function LeaveApproval() {
   const { can } = usePermission();
   const { user } = useAuth();
-  console.log("Current User:", user);
+  
 
   // Permission flag — Approve / Reject require write on Leave Application
   const canApproveReject = can("Leave Application", "write");
@@ -88,7 +88,7 @@ export default function LeaveApproval() {
 
       // Pass the pagination params to your API call
       const response = await getAllLeaveApplications(apiFilters, limit_start, limit_page_length, searchTerm);
-      console.log("API Response:", response);
+    
       setData(response || []);
     } catch (err) {
       showApiError(parseFrappeError(err) || "Failed to fetch leave applications.");

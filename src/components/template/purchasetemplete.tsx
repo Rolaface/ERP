@@ -68,9 +68,9 @@ if (company?.documents?.companyLogoUrl) {
       20
     );
   } catch (e) {
-    console.log("Logo error:", e);
+   
   }
-} // ✅ CLOSE HERE
+} 
 
   /* ═══════════════════════════════════════════════
      2. TITLE
@@ -280,7 +280,6 @@ if (company?.documents?.authorizedSignatureUrl) {
 
 doc.addImage(fullSignUrl, format, imgX, imgY, imgWidth, imgHeight);
   } catch (e) {
-    console.log("Signature error:", e);
   }
 } else {
   // fallback text if no signature uploaded

@@ -61,7 +61,6 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
  
   const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
   const domain = useDefault("primary_business_domain");
-    console.log("Domain ", domain);
   
  useEffect(() => {
   if (mode === "edit" && initialData?.items?.length > 0) {

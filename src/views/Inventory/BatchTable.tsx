@@ -149,7 +149,6 @@ const BatchMenu: React.FC<{
       color: "#c97d2e",
       danger: false,
       action: () => {
-        console.log("Stock correction clicked", batch);
         onEdit?.(batch);
         setOpen(false);
       },
