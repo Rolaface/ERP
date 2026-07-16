@@ -387,7 +387,7 @@ const Items: React.FC = () => {
   };
 
   const handleBatchLedger = (batch: any) => {
-    console.log("Open ledger for batch:", batch.batch_no);
+   
   };
 
   const handleDelete = async (item: { id: string; [key: string]: any }) => {

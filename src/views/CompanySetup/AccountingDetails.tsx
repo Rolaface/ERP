@@ -161,8 +161,7 @@ const AccountingDetails: React.FC<AccountingDetailsProps> = ({
     try {
       const response = await getCompanyById(VITE_COMPANY_ID);
       setCompanyData(response.data);
-      console.log("Fetched company details:", response);
-      console.log("Fiscal Year", response.data?.fiscalYear?.startMonth);
+      
     }catch(error){
       showApiError(parseFrappeError(error) || "Failed to fetch company details");
     }}

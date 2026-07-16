@@ -157,7 +157,7 @@ const EmployeeDashboard: React.FC = () => {
 
   const handleQuickAction = (action: string) => {
     setSelectedAction(action);
-    console.log(`Navigate to: ${action}`);
+    
   };
 
   return (
