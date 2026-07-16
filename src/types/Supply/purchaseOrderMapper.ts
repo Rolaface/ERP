@@ -2,7 +2,7 @@ import { PurchaseOrderFormData, emptyPOForm } from "./purchaseOrder";
 import type { AddressBlock } from "./purchaseOrder";
 
 export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
-  console.log("MAPPING PO TO BACKEND - Form items:", form.items);
+ 
 
   const validItems = form.items.filter((it) => {
     const hasCode = it.itemCode && it.itemCode.trim() !== "";

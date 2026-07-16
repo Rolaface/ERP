@@ -69,7 +69,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
             src={imageUrl!}
             alt={name}
             onError={(e) => {
-              console.log("IMAGE FAILED", imageUrl, e);
+             
               setImgFailed(true);
             }}
             style={{

@@ -232,13 +232,13 @@ export function useStockCorrectionForm({
     const item: Option = { label: payload.itemName, value: payload.itemCode };
     setSelectedItem(item);
     setItemPrefillName(payload.itemName);
-    setItemMeta({
-      sku: payload.itemCode || "",
-      category: "—",
-      unit: payload.packingUnit || "PCS",
-    });
+     setItemMeta({
+    sku: payload.itemCode || "",
+    category: "—",
+    unit: payload.stockUom || "-",     
+  });
 
-    const unit = payload.packingUnit || "PCS";
+ const unit = payload.stockUom || "-";
     const warehouseName = payload.warehouse || "—";
 
    const row: StockSummaryRow = {

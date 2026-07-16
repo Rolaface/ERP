@@ -174,8 +174,7 @@ export const StockCorrectionMovementPage: React.FC = () => {
               rows: moveRows.map((r) => ({ ...r, qty: Number(r.qty) })),
               reason: movementReason,
             };
-      // TODO: real save call
-      console.log("Saving:", payload);
+    
       await new Promise((res) => setTimeout(res, 400));
     } finally {
       setSaving(false);

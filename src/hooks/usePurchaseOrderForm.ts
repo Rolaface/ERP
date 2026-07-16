@@ -588,7 +588,7 @@ useFieldDefault(
 
         if (!supplier) return;
 
-        console.log("FULL SUPPLIER:", supplier);
+       
 
         const primaryContact =
           supplier.contacts?.find((c: any) => c.isPrimary) ||
@@ -780,12 +780,7 @@ useFieldDefault(
 
   const handleSaveTemplate = (html: string) => {
     setForm((p) => ({ ...p, messageHtml: html }));
-    console.log("Template saved:", {
-      name: form.templateName,
-      type: form.templateType,
-      subject: form.subject,
-      messageHtml: html,
-    });
+   
   };
 
   const resetTemplate = () => {

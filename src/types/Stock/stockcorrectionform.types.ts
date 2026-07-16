@@ -76,6 +76,7 @@ export interface StockItemSelectPayload {
   category?: string;
   /** Optional: full batch breakdown for this item, if the backend provides it. */
   batches?: StockItemBatch[];
+  stockUom?: string
 }
 
 export interface SelectedBatch {
@@ -98,7 +99,7 @@ export interface SingleBatchItemPickedPayload {
   packingUnit?: string;
   warehouse?: string;
   isServiceItem?: number;
-    valuationRate?: number;
+  
 }
 
 export interface StockCorrectionModalProps {
@@ -109,7 +110,7 @@ onSubmit?: (payload: StockCorrectionSubmitPayload) => Promise<void>;
   selectedBatch?: SelectedBatch | null;
   /** Used only for the Movement tab's From/To selects (not item-specific). */
   branchOptions?: Option[];
-   valuation_rate?: number;
+   
  
 }
 
@@ -118,13 +119,13 @@ export interface StockCorrectionSubmitPayload {
   item: Option | null;
   date: string;
   reason: string;
-  valuation_rate?: number;
+ 
   correctionRows?: Array<{
     branch: string;
     batchNo: string;
     qty: number;
     reasonCode: string;
-    valuation_rate?: number;
+    
   }>;
   movementRows?: Array<{ from: string; to: string; qty: number }>;
 }

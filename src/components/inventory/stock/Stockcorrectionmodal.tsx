@@ -63,7 +63,7 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
       }
       icon={f.mode === "correction" ? Wrench : ArrowRightLeft}
       maxWidth="5xl"
-      height="650px"
+      height="580px"
       footer={
         <>
           <button
