@@ -21,7 +21,7 @@ const TaxCategorySelect: React.FC<TaxCategorySelectProps> = ({
 }) => {
   const fetchOptions = useCallback(async (search: string) => {
     try {
-      const res = await getAllTaxCategories(1, 20, search || undefined);
+      const res = await getAllTaxCategories(1, 20, search || undefined, 0);
       const list: { name: string; title: string }[] = res?.data ?? res?.data?.categories ?? [];
       return list.map((t) => ({
         label: t.title,

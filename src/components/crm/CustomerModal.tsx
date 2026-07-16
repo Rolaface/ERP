@@ -132,11 +132,10 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${
-                  activeTab === tab
+                className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === tab
                     ? "text-primary border-b-[3px] border-primary"
                     : "text-muted border-b-[3px] border-transparent hover:text-main"
-                }`}
+                  }`}
               >
                 {tab === "details" && <User className="w-4 h-4" />}
                 {tab === "bank" && <Banknote className="w-4 h-4" />}
@@ -350,32 +349,32 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 </Tooltip>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mt-4">
-               <div className="flex flex-col text-sm group min-w-0 w-full">
-  <span className="block text-[10px] font-medium text-main mb-1">
-    Credit Limit
-  </span>
-  <Tooltip content={String(form.creditLimit ?? "") || "Enter credit limit"}>
-    <NumericInput
-      name="creditLimit"
-      value={
-        form.creditLimit === "" || form.creditLimit == null
-          ? null
-          : Number(form.creditLimit)
-      }
-      onChange={(value) =>
-        handleChange({
-          target: { name: "creditLimit", value: value ?? "" },
-        } as React.ChangeEvent<HTMLInputElement>)
-      }
-      placeholder="Enter credit limit"
-      decimalScale={4}
-      className={`w-full ${errors.creditLimit ? "border-danger" : ""}`}
-    />
-  </Tooltip>
-  {errors.creditLimit && (
-    <span className="text-[10px] text-danger mt-1">{errors.creditLimit}</span>
-  )}
-</div>
+                <div className="flex flex-col text-sm group min-w-0 w-full">
+                  <span className="block text-[10px] font-medium text-main mb-1">
+                    Credit Limit
+                  </span>
+                  <Tooltip content={String(form.creditLimit ?? "") || "Enter credit limit"}>
+                    <NumericInput
+                      name="creditLimit"
+                      value={
+                        form.creditLimit === "" || form.creditLimit == null
+                          ? null
+                          : Number(form.creditLimit)
+                      }
+                      onChange={(value) =>
+                        handleChange({
+                          target: { name: "creditLimit", value: value ?? "" },
+                        } as React.ChangeEvent<HTMLInputElement>)
+                      }
+                      placeholder="Enter credit limit"
+                      decimalScale={4}
+                      className={`w-full ${errors.creditLimit ? "border-danger" : ""}`}
+                    />
+                  </Tooltip>
+                  {errors.creditLimit && (
+                    <span className="text-[10px] text-danger mt-1">{errors.creditLimit}</span>
+                  )}
+                </div>
                 <div className="flex items-end pb-2">
                   <label className="flex items-center gap-2 text-[11px] font-medium text-main cursor-pointer">
                     <input
@@ -389,7 +388,23 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                         }))
                       }
                     />
-                    Bypass Credit Limit Check
+                    Bypass For Sales Order
+                  </label>
+                </div>
+                <div className="flex items-end pb-2">
+                  <label className="flex items-center gap-2 text-[11px] font-medium text-main cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="strictCreditLimit"
+                      checked={!!form.strictCreditLimit}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          strictCreditLimit: e.target.checked,
+                        }))
+                      }
+                    />
+                    Enforce Strict Credit Limit
                   </label>
                 </div>
               </div>

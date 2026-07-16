@@ -12,6 +12,7 @@ interface WarehouseSelectProps {
   className?: string;
   compact?: boolean;
   onDefaultLoad?: (firstWarehouse: string) => void;
+    readOnlyField?: boolean; 
 }
 
 const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
@@ -23,7 +24,7 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
   disabled = false,
   className = "",
   compact = false,
-  onDefaultLoad,
+  onDefaultLoad, readOnlyField = false,
 }) => {
   const [warehouses, setWarehouses] = useState<{ value: string; label: string }[]>([]);
 
@@ -46,15 +47,18 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
 
   if (compact) {
     return (
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        required={required}
-        // ✅ w-full so it fills whatever column width the table gives it
-        className={`w-full py-1 pl-1 pr-4 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary ${className}`}
-      >
+     <select
+  name={name}
+  value={value}
+  onChange={onChange}
+  disabled={disabled}
+  required={required}
+  className={[
+    "w-full py-1 pl-1 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary",
+    readOnlyField ? "appearance-none pr-2" : "pr-4",
+    className,
+  ].join(" ")}
+>
         <option value="">Select</option>
         {warehouses.map((opt) => (
           <option key={opt.value} value={opt.value}>

@@ -21,6 +21,7 @@ import { StatusBadge, type ActiveTab } from "../payrolldetail/Payrollsharedcompo
 import { EmployeeOverviewTab } from "../payrolldetail/Employeeoverviewtab";
 import { SalarySlipTab } from "./salaryslip/Salarysliptab";
 import { PayrollDetailsTab } from "../payrolldetail/Payrolldetailstab";
+import { getGLNameWithoutAbbreviation } from "../../../../api/utils/glAccountUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -202,7 +203,7 @@ export const PayrollEntryDetail: React.FC<Props> = ({ payrollEntryId, onBack }) 
                         </p>
                         <span className={`text-[10px] ${isSelected ? "text-white/40" : "text-muted/40"}`}>•</span>
                         <p className={`text-[10px] truncate ${isSelected ? "text-white/70" : "text-muted"}`}>
-                          {emp.department || "No Department"}
+                          {getGLNameWithoutAbbreviation(emp.department) || "No Department"}
                         </p>
                       </div>
                     </div>

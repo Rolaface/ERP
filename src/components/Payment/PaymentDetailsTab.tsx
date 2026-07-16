@@ -16,6 +16,7 @@ import {
 import DatePickerInput from "../calendar/DatePickerInput";
 import CostCenterSelect from "../selects/CostCenterSelect";
 import ProjectSelect from "../selects/ProjectSelect";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 interface PaymentDetailsTabProps {
   form: Record<string, any>;
@@ -844,14 +845,14 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                   <ModalInput
                     label="Account (GL)"
                     name="glFrom"
-                    value={form.glFromDisplay ?? form.glFrom ?? ""}
+                    value={getGLNameWithoutAbbreviation(form.glFromDisplay ?? form.glFrom ?? "")}
                     onChange={() => { }}
                     disabled
                   />
                 ) : (
                   <SearchSelect2
                     label="Account (GL)"
-                    value={form.glFromDisplay ?? form.glFrom ?? ""}
+                    value={getGLNameWithoutAbbreviation(form.glFromDisplay ?? form.glFrom ?? "")}
                     onChange={handleGlFromChange}
                     fetchOptions={handleGlFromFetchOptions}
                   />
@@ -886,14 +887,14 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
                   <ModalInput
                     label="Account (GL)"
                     name="glTo"
-                    value={form.glToDisplay ?? form.glTo ?? ""}
+                   value={getGLNameWithoutAbbreviation(form.glToDisplay ?? form.glTo ?? "")}
                     onChange={() => { }}
                     disabled
                   />
                 ) : (
                   <SearchSelect2
                     label="Account (GL)"
-                    value={form.glToDisplay ?? form.glTo ?? ""}
+                   value={getGLNameWithoutAbbreviation(form.glToDisplay ?? form.glTo ?? "")}
                     onChange={handleGlToChange}
                     fetchOptions={handleGlToFetchOptions}
                   />

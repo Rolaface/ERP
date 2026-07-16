@@ -70,7 +70,7 @@ export function useInvoiceList(
   referenceInvoice?: string,
   initialAllocated?: Record<string, number>,
 ): UseInvoiceListReturn {
-  console.log("partyId:", partyId);
+ 
 
   const adapter = getInvoiceAdapter(partyType);
   const isSupported = isSupportedPartyType(partyType);

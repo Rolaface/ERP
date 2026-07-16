@@ -694,7 +694,7 @@ const EmployeeAdvanceDetailView: React.FC<Props> = ({
                     {data.employee_name}
                   </p>
                   <p className="text-[11px] text-muted truncate">
-                    {data.employee} · {data.department}
+                    {data.employee} · {getGLNameWithoutAbbreviation(data.department)}
                   </p>
                 </div>
               </div>

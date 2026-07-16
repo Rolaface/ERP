@@ -5,7 +5,13 @@ import { useCompanyDefaults } from "../../hooks/useCompanyDefaults";
 import SearchSelect2 from "../../components/ui/modal/SearchSelect2";
 import { getAllModeOfPayment, getAllBankAccounts } from "../../api/BankAccountApi";
 import { getCurrencyList } from "../../api/lookupApi";
-import { getPayrollPayableAccounts } from "../../api/faapi";
+// import { getAllCreditLimit, AccountOption } from "../../api/companyDefaultApi";
+import { getAllCreditLimit, getExpenseAccounts, getCashAccounts, getIncomeAccounts, getReceivableAccounts, 
+  getPayableAccounts, AccountOption, getPayrollPayableAccounts, getEmployeeAdvanceAccounts,
+  getExchangeGainLossAccounts, getUnrealizedExchangeGainLossAccounts, getAllCostCenterAccounts } from "../../api/companyDefaultApi";
+import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
+import { FaLinkedin } from "react-icons/fa";
 
 interface DefaultsField {
   key: string;
@@ -32,46 +38,51 @@ export const SECTIONS: DefaultsSection[] = [
     id: "accounts",
     title: "ACCOUNTS",
     fields: [
-      { key: "default_cash_account",                    label: "DEFAULT CASH ACCOUNT" },
-      { key: "default_receivable_account",              label: "DEFAULT RECEIVABLE ACCOUNT" },
-      { key: "default_payable_account",                 label: "DEFAULT PAYABLE ACCOUNT" },
-      { key: "default_income_account",                  label: "DEFAULT INCOME ACCOUNT" },
-      { key: "default_expense_account",                 label: "DEFAULT EXPENSE ACCOUNT" },
-      { key: "round_off_account",                       label: "ROUND OFF ACCOUNT" },
-      { key: "write_off_account",                       label: "WRITE OFF ACCOUNT" },
-      { key: "exchange_gain_loss_account",              label: "EXCHANGE GAIN/LOSS ACCOUNT" },
-      { key: "unrealized_exchange_gain_loss_account",   label: "UNREALIZED EXCHANGE GAIN/LOSS ACCOUNT" },
-      { key: "default_deferred_revenue_account",        label: "DEFAULT DEFERRED REVENUE ACCOUNT" },
-      { key: "default_deferred_expense_account",        label: "DEFAULT DEFERRED EXPENSE ACCOUNT" },
-      { key: "default_advance_received_account",        label: "DEFAULT ADVANCE RECEIVED ACCOUNT" },
-      { key: "default_advance_paid_account",            label: "DEFAULT ADVANCE PAID ACCOUNT" },
+      // { key: "default_cash_account",                    label: "DEFAULT CASH ACCOUNT" },
+      // { key: "default_receivable_account",              label: "DEFAULT RECEIVABLE ACCOUNT" },
+      // { key: "default_payable_account",                 label: "DEFAULT PAYABLE ACCOUNT" },
+      // { key: "default_income_account",                  label: "DEFAULT INCOME ACCOUNT" },
+      // { key: "default_expense_account",                 label: "DEFAULT EXPENSE ACCOUNT" },
+      // { key: "round_off_account",                       label: "ROUND OFF ACCOUNT" },
+      // { key: "write_off_account",                       label: "WRITE OFF ACCOUNT" },
+      // { key: "exchange_gain_loss_account",              label: "EXCHANGE GAIN/LOSS ACCOUNT" },
+      // { key: "unrealized_exchange_gain_loss_account",   label: "UNREALIZED EXCHANGE GAIN/LOSS ACCOUNT" },
+      // { key: "default_deferred_revenue_account",        label: "DEFAULT DEFERRED REVENUE ACCOUNT" },
+      // { key: "default_deferred_expense_account",        label: "DEFAULT DEFERRED EXPENSE ACCOUNT" },
+      // { key: "default_advance_received_account",        label: "DEFAULT ADVANCE RECEIVED ACCOUNT" },
+      // { key: "default_advance_paid_account",            label: "DEFAULT ADVANCE PAID ACCOUNT" },
     ],
   },
   {
     id: "payroll",
     title: "PAYROLL",
     fields: [
-      { key: "default_payroll_payable_account",  label: "DEFAULT PAYROLL PAYABLE ACCOUNT" },
-      { key: "default_employee_advance_account", label: "DEFAULT EMPLOYEE ADVANCE ACCOUNT" },
+      // { key: "default_payroll_payable_account",  label: "DEFAULT PAYROLL PAYABLE ACCOUNT" },
+      // { key: "default_employee_advance_account", label: "DEFAULT EMPLOYEE ADVANCE ACCOUNT" },
     ],
   },
+  // {
+  //   id: "cost_center",
+  //   title: "COST CENTER & FINANCE",
+  //   fields: [
+  //     { key: "cost_center",           label: "DEFAULT COST CENTER" },
+  //     { key: "round_off_cost_center", label: "ROUND OFF COST CENTER" },
+  //     { key: "default_finance_book",  label: "DEFAULT FINANCE BOOK" },
+  //   ],
+  // },
+  // {
+  //   id: "selling_buying",
+  //   title: "SELLING / BUYING",
+  //   fields: [
+  //     { key: "default_selling_terms",       label: "DEFAULT SELLING TERMS" },
+  //     { key: "default_buying_terms",        label: "DEFAULT BUYING TERMS" },
+  //     { key: "default_in_transit_warehouse", label: "DEFAULT IN-TRANSIT WAREHOUSE" },
+  //   ],
+  // },
   {
-    id: "cost_center",
-    title: "COST CENTER & FINANCE",
-    fields: [
-      { key: "cost_center",           label: "DEFAULT COST CENTER" },
-      { key: "round_off_cost_center", label: "ROUND OFF COST CENTER" },
-      { key: "default_finance_book",  label: "DEFAULT FINANCE BOOK" },
-    ],
-  },
-  {
-    id: "selling_buying",
-    title: "SELLING / BUYING",
-    fields: [
-      { key: "default_selling_terms",       label: "DEFAULT SELLING TERMS" },
-      { key: "default_buying_terms",        label: "DEFAULT BUYING TERMS" },
-      { key: "default_in_transit_warehouse", label: "DEFAULT IN-TRANSIT WAREHOUSE" },
-    ],
+    id: "credit_limit",
+    title: "CREDIT LIMIT",
+    fields: [],
   },
   {
     id: "hr_leave",
@@ -82,7 +93,97 @@ export const SECTIONS: DefaultsSection[] = [
   },
 ];
 
-// ─── CurrencySelect ───────────────────────────────────────────────────────────
+const AccountSelect: React.FC<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  fetcher: () => Promise<AccountOption[] | { id: string; name: string }[]>;
+  placeholder: string;
+}> = ({ label, value, onChange, fetcher, placeholder }) => {
+  const fetchOptions = async (q: string) => {
+    try {
+      const accounts = await fetcher();
+      const filtered = q
+        ? accounts.filter((a) => a.name.toLowerCase().includes(q.toLowerCase()))
+        : accounts;
+      // return filtered.map((a) => ({
+      //   label: a.name,
+      //   value: a.id,
+      //   subLabel: (a as AccountOption).accountType
+      //     ? `${(a as AccountOption).accountType}`
+      //     : undefined,
+      // }));
+      return filtered.map((a) => ({
+        label: getGLNameWithoutAbbreviation(a.name),
+        value: a.id,
+        subLabel: (a as AccountOption).accountType
+          ? `${(a as AccountOption).accountType}`
+          : undefined,
+      }));
+    }
+    catch (err) {
+      console.error(`${label} fetch failed:`, err);
+      return [];
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        {label}
+      </span>
+      <div className="[&_input]:!py-1 [&_input]:!px-2 [&_input]:!text-[11px] [&_input]:!rounded [&_input]:!border-theme [&_input]:!h-auto">
+        <SearchSelect2
+          label=""
+          value={getGLNameWithoutAbbreviation(value)}
+          onChange={(val) => onChange(val)}
+          fetchOptions={fetchOptions}
+          placeholder={placeholder}
+        />
+      </div>
+    </div>
+  );
+};
+
+const CostCenterSelect: React.FC<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  placeholder: string;
+}> = ({ label, value, onChange, placeholder }) => {
+  const fetchOptions = async (q: string) => {
+    try {
+      const centers = await getAllCostCenterAccounts();
+      const filtered = q
+        ? centers.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()))
+        : centers;
+      return filtered.map((c) => ({
+        label: getGLNameWithoutAbbreviation(c.name),
+        value: c.id,
+      }));
+    } catch (err) {
+      parseFrappeError(err || "Failed to fetch cost center accounts");
+      return [];
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        {label}
+      </span>
+      <div className="[&_input]:!py-1 [&_input]:!px-2 [&_input]:!text-[11px] [&_input]:!rounded [&_input]:!border-theme [&_input]:!h-auto">
+        <SearchSelect2
+          label=""
+          value={getGLNameWithoutAbbreviation(value)}
+          onChange={(val) => onChange(val)}
+          fetchOptions={fetchOptions}
+          placeholder={placeholder}
+        />
+      </div>
+    </div>
+  );
+};
 
 const CurrencySelect: React.FC<{
   value: string;
@@ -97,6 +198,7 @@ const CurrencySelect: React.FC<{
         subLabel: item.symbol ? `${item.currency_name ?? item.name} · ${item.symbol}` : item.currency_name ?? undefined,
       }));
     } catch {
+      parseFrappeError("Failed to fetch currency list");
       return [];
     }
   };
@@ -147,8 +249,9 @@ const CompanyBankAccountSelect: React.FC<{
           .filter(Boolean)
           .join(" · "),
       }));
-    } catch {
-      return [];
+    } catch(error) {
+      parseFrappeError(error || "Failed to fetch bank accounts");
+      return [];      
     }
   };
 
@@ -206,6 +309,81 @@ const ModeOfPaymentSelect: React.FC<{
   );
 };
 
+const CreditControllerSelect: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ value, onChange }) => {
+  const fetchOptions = async (q: string) => {
+  try {
+   const roles = await getAllCreditLimit(q || undefined, 20);
+    console.log("credit controller roles:", roles);
+    return roles.map((role) => ({
+      label: role.name,
+      value: role.id,
+      subLabel: role.roleName,
+    }));
+  } catch (err) {
+    parseFrappeError(err || "Failed to fetch credit controller roles");
+    return [];
+  }
+};
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        DEFAULT CREDIT LIMIT
+      </span>
+      <div className="[&_input]:!py-1 [&_input]:!px-2 [&_input]:!text-[11px] [&_input]:!rounded [&_input]:!border-theme [&_input]:!h-auto">
+        <SearchSelect2
+          label=""
+          value={value}
+          onChange={(val) => onChange(val)}
+          fetchOptions={fetchOptions}
+          placeholder="Search role..."
+        />
+      </div>
+    </div>
+  );
+};
+
+// ─── ToggleField ──────────────────────────────────────────────────────────────
+
+const ToggleField: React.FC<{
+  label: string;
+  checked: boolean;
+  onChange: (val: boolean) => void;
+  helperText?: string;
+}> = ({ label, checked, onChange, helperText }) => (
+  <div className="flex flex-col min-w-0 justify-center">
+    <span className="block text-[10px] font-medium text-main mb-1">
+      {label}
+    </span>
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={[
+          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+          checked ? "bg-primary" : "bg-gray-300",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
+            checked ? "translate-x-[18px]" : "translate-x-[3px]",
+          ].join(" ")}
+        />
+      </button>
+      <span className="text-[11px] text-muted">{checked ? "Yes" : "No"}</span>
+    </div>
+    {helperText && (
+      <span className="text-[10px] text-muted mt-1">{helperText}</span>
+    )}
+  </div>
+);
+
 // ─── Section renderer ─────────────────────────────────────────────────────────
 
 interface SectionProps {
@@ -224,23 +402,139 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-4">
-      {/* Default Bank Account — SearchSelect2, company's own bank accounts */}
-      {section.id === "accounts" && (
-        <CompanyBankAccountSelect
-          value={values["default_bank_account"] ?? ""}
-          onChange={(val) => onChange("default_bank_account", val)}
+     {section.id === "accounts" && (
+      <>
+      <CompanyBankAccountSelect
+        value={values["default_bank_account"] ?? ""}
+        onChange={(val) => onChange("default_bank_account", val)}
+      /> 
+      <AccountSelect
+        label="DEFAULT CASH ACCOUNT"
+        value={values["default_cash_account"] ?? ""}
+        onChange={(val) => onChange("default_cash_account", val)}
+        fetcher={getCashAccounts}
+        placeholder="Search cash account..."
+      />
+      <AccountSelect
+        label="DEFAULT RECEIVABLE ACCOUNT"
+        value={values["default_receivable_account"] ?? ""}
+        onChange={(val) => onChange("default_receivable_account", val)}
+        fetcher={getReceivableAccounts}
+        placeholder="Search receivable account..."
+      />
+      <AccountSelect
+        label="DEFAULT PAYABLE ACCOUNT"
+        value={values["default_payable_account"] ?? ""}
+        onChange={(val) => onChange("default_payable_account", val)}
+        fetcher={getPayableAccounts}
+        placeholder="Search payable account..."
+      />
+      <AccountSelect
+        label="DEFAULT INCOME ACCOUNT"
+        value={values["default_income_account"] ?? ""}
+        onChange={(val) => onChange("default_income_account", val)}
+        fetcher={getIncomeAccounts}
+        placeholder="Search income account..."
+      />
+      <AccountSelect
+        label="DEFAULT EXPENSE ACCOUNT"
+        value={values["default_expense_account"] ?? ""}
+        onChange={(val) => onChange("default_expense_account", val)}
+        fetcher={getExpenseAccounts}
+        placeholder="Search expense account..."
+      />
+       <AccountSelect
+        label="DEFAULT WRITE OFF ACCOUNT"
+        value={values["default_expense_account"] ?? ""}
+        onChange={(val) => onChange("default_expense_account", val)}
+        fetcher={getExpenseAccounts}
+        placeholder="Search expense account..."
+      />
+      <AccountSelect
+        label="EXCHANGE GAIN/LOSS ACCOUNT"
+        value={values["exchange_gain_loss_account"] ?? ""}
+        onChange={(val) => onChange("exchange_gain_loss_account", val)}
+        fetcher={getExchangeGainLossAccounts}
+        placeholder="Search exchange gain/loss account..."
+      />
+       <AccountSelect
+        label="DEFAULT ROUND OFF ACCOUNT"
+        value={values["exchange_gain_loss_account"] ?? ""}
+        onChange={(val) => onChange("round_off_account", val)}
+        fetcher={getExchangeGainLossAccounts}
+        placeholder="Search round off account..."
+      />
+      <AccountSelect
+        label="UNREALIZED EXCHANGE GAIN/LOSS ACCOUNT"
+        value={values["unrealized_exchange_gain_loss_account"] ?? ""}
+        onChange={(val) => onChange("unrealized_exchange_gain_loss_account", val)}
+        fetcher={getUnrealizedExchangeGainLossAccounts}
+        placeholder="Search unrealized exchange gain/loss account..."
+      />
+          <ToggleField
+            label="USE SEPARATE SEQUENCE FOR CREDIT NOTES"
+            checked={
+              values["use_separate_sequence_for_credit_notes"] === "true" ||
+              String(values["use_separate_sequence_for_credit_notes"]) === "1"
+            }
+            onChange={(val) => onChange("use_separate_sequence_for_credit_notes", val ? "true" : "false")}
+            helperText="Credit notes get their own numbering series"
+          />
+      </>
+  )}
+  {section.id === "payroll" && (
+    <>
+      <AccountSelect
+        label="DEFAULT PAYROLL PAYABLE ACCOUNT"
+        value={values["default_payroll_payable_account"] ?? ""}
+        onChange={(val) => onChange("default_payroll_payable_account", val)}
+        fetcher={getPayrollPayableAccounts}
+        placeholder="Search payroll payable account..."
+      />
+      <AccountSelect
+        label="DEFAULT EMPLOYEE ADVANCE ACCOUNT"
+        value={values["default_employee_advance_account"] ?? ""}
+        onChange={(val) => onChange("default_employee_advance_account", val)}
+        fetcher={getEmployeeAdvanceAccounts}
+        placeholder="Search employee advance account..."
+      />
+    </>
+  )}
+
+  {section.id === "cost_center" && (
+    <>
+      <CostCenterSelect
+        label="DEFAULT COST CENTER"
+        value={values["cost_center"] ?? ""}
+        onChange={(val) => onChange("cost_center", val)}
+        placeholder="Search cost center..."
+      />
+      <CostCenterSelect
+        label="ROUND OFF COST CENTER"
+        value={values["round_off_cost_center"] ?? ""}
+        onChange={(val) => onChange("round_off_cost_center", val)}
+        placeholder="Search cost center..."
+      />
+    </>
+  )}
+
+  {section.id === "credit_limit" && (
+        <CreditControllerSelect
+          value={values["credit_controller"] ?? ""}
+          onChange={(val) => onChange("credit_controller", val)}
         />
       )}
 
-      {section.fields.map((field) => (
-        <ModalInput
-          key={field.key}
-          label={field.label}
-          name={field.key}
-          value={values[field.key] ?? ""}
-          onChange={(e) => onChange(field.key, e.target.value)}
-        />
-      ))}
+  {section.fields.map((field) => (
+    <ModalInput
+      key={field.key}
+      label={field.label}
+      name={field.key}
+      value={values[field.key] ?? ""}
+      onChange={(e) => onChange(field.key, e.target.value)}
+    />
+  ))}
+ 
 
       {/* Inject custom fields into the BASIC INFO section */}
       {section.id === "basic" && (

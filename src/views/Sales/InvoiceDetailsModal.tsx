@@ -168,7 +168,6 @@ const stripHtml = (html?: string | null): string[] => {
     .map((l) => l.trim())
     .filter(Boolean);
 };
-
 // Address card from display HTML string
 const AddressCard: React.FC<{
   label: string;
@@ -262,7 +261,20 @@ const InvoiceDetailModal: React.FC<Props> = ({
 }) => {
   if (!open) return null;
 
-  const hasAddresses = data?.billingAddress || data?.shippingAddress;
+
+ const parsedReason = (() => {
+  if (!data?.reason) return null;
+  if (typeof data.reason === "object") return data.reason;
+  try {
+    return JSON.parse(data.reason);
+  } catch {
+    return null;
+  }
+})();
+
+const displayReason = parsedReason?.reason ?? parsedReason?.name ?? data?.reason;
+const displayDescription = parsedReason?.description ?? data?.description;
+const hasAddresses = data?.billingAddress || data?.shippingAddress;
 
   const items = data?.items ?? [];
   // Support both API shapes: total / net_total
@@ -270,21 +282,6 @@ const InvoiceDetailModal: React.FC<Props> = ({
   const taxTotal = data?.total_tax ?? data?.taxTotal ?? 0;
   const grandTotal = data?.grand_total ?? 0;
   const currency = data?.currency ?? "USD";
-const parsedRemarks = (() => {
-  if (!data?.remarks) return null;
-  if (typeof data.remarks === "string") {
-    try {
-      return JSON.parse(data.remarks);
-    } catch {
-      return null;
-    }
-  }
-  return data.remarks;
-})();
-
-
-const displayReason = parsedRemarks?.reason ?? data?.reason;
-const displayDescription = parsedRemarks?.description ?? data?.description;
   const invoiceCharges =
     (data as any)?.invoiceCharges || (data as any)?.charges || [];
 

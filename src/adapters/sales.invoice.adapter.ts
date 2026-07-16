@@ -75,7 +75,7 @@ export const salesInvoiceAdapter: InvoiceAdapter = {
       1, 1000, "due_date", "desc", undefined, partyId, 0.01,
       ["Partly Paid", "Unpaid", "Overdue"]
     );
-    console.log(res?.data?.[0]) 
+  
 
     const raw: SalesInvoiceRaw[] = res?.data ?? [];
 

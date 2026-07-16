@@ -23,6 +23,7 @@ import {
   // getSalarySlipsForEntry,
   // type SalarySlip,
 } from "../../../api/payroll/payrollEntryApi";
+import { getGLNameWithoutAbbreviation } from "../../../api/utils/glAccountUtils";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 // TODO: Remove this stub and import SalarySlip from payrollEntryApi once ready
@@ -164,7 +165,7 @@ const EmployeeOverviewTab: React.FC<{
         icon={<Building2 className="w-4 h-4" />}
         label="Department"
         sublabel=""
-        value={employee.department}
+        value={getGLNameWithoutAbbreviation(employee.department)}
       />
       <InfoTile
         icon={<FileText className="w-4 h-4" />}
@@ -196,7 +197,7 @@ const EmployeeOverviewTab: React.FC<{
         <DetailRow
           icon={<Building2 className="w-3 h-3" />}
           label="Department"
-          value={employee.department}
+          value={getGLNameWithoutAbbreviation(employee.department)}
         />
         <DetailRow
           icon={<Building2 className="w-3 h-3" />}
@@ -299,8 +300,8 @@ const PayrollDetailsTab: React.FC<{ entry: PayrollEntryDetailType }> = ({
           { label: "Entry ID", value: entry.name },
           { label: "Company", value: entry.company },
           { label: "Posting Date", value: entry.posting_date },
-          { label: "Cost Center", value: entry.cost_center },
-          { label: "Payable Account", value: entry.payroll_payable_account },
+          { label: "Cost Center", value: getGLNameWithoutAbbreviation(entry.cost_center) },
+          { label: "Payable Account", value: getGLNameWithoutAbbreviation(entry.payroll_payable_account) },
           { label: "Slips Created", value: String(entry.salary_slips_created) },
           {
             label: "Slips Submitted",

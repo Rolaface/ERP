@@ -477,10 +477,7 @@ export async function getBankAccountOptions(filters: {
   party?: string;
   search?: string;
 }): Promise<BankAccountOption[]> {
-  console.log("API PARAM:", {
-    party_type: filters.party_type,
-    party: filters.party,
-  });
+  
   try {
     const params = new URLSearchParams();
     if (filters.company) params.append("company", "true");

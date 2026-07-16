@@ -52,16 +52,27 @@ const fmt = (n: number, symbol?: string) => {
   return `${symbol ? symbol + " " : ""}${isNeg ? "-" : ""}${abs.toLocaleString("en-IN")}`;
 };
 
-const fmtDateRange = (from?: string, to?: string) => {
-  if (!from && !to) return "";
+const fmtDateRange = (
+  from?: string,
+  to?: string,
+  openingBalanceDate?: string,
+) => {
   const d = (s: string) =>
     new Date(s).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+
+  if (!from && !to) {
+    return openingBalanceDate
+      ? `${d(openingBalanceDate)} – ${d(new Date().toISOString())}`
+      : "";
+  }
+
   if (from && to) return `${d(from)} – ${d(to)}`;
-  return from ? `From ${d(from)}` : `Up to ${d(to!)}`;
+  if (from) return `From ${d(from)}`;
+  return `Up to ${d(to!)}`;
 };
 
 const triggerDownload = (blob: Blob, filename: string) => {
@@ -80,9 +91,8 @@ const StatCell = ({
   valueClass,
   highlight = false,
   currencySymbol,
-// }: StatCellProps) => (
+  // }: StatCellProps) => (
 }: StatCellProps & { currencySymbol?: string }) => (
-
   <div
     className={`flex flex-col justify-center gap-1.5 px-4 sm:px-6 py-4 min-w-[120px] sm:min-w-[148px] flex-shrink-0 ${highlight ? "bg-danger/5" : ""}`}
   >
@@ -107,7 +117,7 @@ const AgingCell = ({
   active = false,
   warn = false,
   currencySymbol,
-// }: AgingCellProps) => {
+  // }: AgingCellProps) => {
 }: AgingCellProps & { currencySymbol?: string }) => {
   const isHot = warn && value > 0;
   return (
@@ -331,7 +341,7 @@ const PdfButton = ({
   const [viewer, setViewer] = useState<{ blobUrl: string; blob: Blob } | null>(
     null,
   );
-const [emailUploading, setEmailUploading] = useState(false);
+  const [emailUploading, setEmailUploading] = useState(false);
   const cachedRef = useRef<Blob | null>(null);
   const dateRange = fmtDateRange(fromDate, toDate);
   const filename = `Statement_${customerName.replace(/\s+/g, "_")}_${dateRange.replace(/[\s–]/g, "")}.pdf`;
@@ -369,7 +379,7 @@ const [emailUploading, setEmailUploading] = useState(false);
     if (action === "download") {
       triggerDownload(blob, filename);
     }
-   if (action === "share") {
+    if (action === "share") {
       try {
         setEmailUploading(true);
         const file = new File([blob], filename, { type: "application/pdf" });
@@ -379,7 +389,9 @@ const [emailUploading, setEmailUploading] = useState(false);
           invoiceNumber: customerId,
           contactEmail: defaultEmail,
           customerName,
-          invoiceAttachments: [{ name: uploaded.name, file_name: uploaded.file_name }],
+          invoiceAttachments: [
+            { name: uploaded.name, file_name: uploaded.file_name },
+          ],
           periodText,
         });
       } catch (err) {
@@ -446,8 +458,6 @@ const [emailUploading, setEmailUploading] = useState(false);
           onClose={closeViewer}
         />
       )}
-
-      
     </>
   );
 };
@@ -622,7 +632,7 @@ const CustomerStatement = ({
           icon={<TrendingUp size={12} className="text-warning" />}
           value={totalDebit}
           valueClass="text-warning"
-           currencySymbol={data.currency_symbol}
+          currencySymbol={data.currency_symbol}
         />
         <StatCell
           label="Total Credit"
@@ -658,22 +668,31 @@ const CustomerStatement = ({
             </span>
           </div>
           <div className="flex flex-1 divide-x divide-theme">
-            <AgingCell label="Not Due Yet" value={data.aging.current} active  currencySymbol={data.currency_symbol} />
-            <AgingCell label="1 - 30 Days Overdue" value={data.aging["1_30"]}   currencySymbol={data.currency_symbol}/>
+            <AgingCell
+              label="Not Due Yet"
+              value={data.aging.current}
+              active
+              currencySymbol={data.currency_symbol}
+            />
+            <AgingCell
+              label="1 - 30 Days Overdue"
+              value={data.aging["1_30"]}
+              currencySymbol={data.currency_symbol}
+            />
             <AgingCell
               label="31 - 60 Days Overdue"
               value={data.aging["31_60"]}
-               currencySymbol={data.currency_symbol}
+              currencySymbol={data.currency_symbol}
             />
             <AgingCell
               label="61 - 90 Days Overdue"
               value={data.aging["61_90"]}
-               currencySymbol={data.currency_symbol}
+              currencySymbol={data.currency_symbol}
             />
             <AgingCell
               label="90 + Days Overdue"
               value={data.aging["90_plus"]}
-               currencySymbol={data.currency_symbol}
+              currencySymbol={data.currency_symbol}
               warn
             />
           </div>
@@ -719,7 +738,11 @@ const CustomerStatement = ({
               toDate={toDate}
               voucherType={voucherType}
               defaultEmail={customerEmail ?? data.customerEmail}
-              periodText={fmtDateRange(fromDate, toDate)}
+              periodText={fmtDateRange(
+                fromDate,
+                toDate,
+                data.ledger?.[0]?.date,
+              )}
             />
           </div>
         </div>

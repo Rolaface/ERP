@@ -13,6 +13,7 @@ import type { TaxCategoryFormData } from "../../types/tax/taxTemplate";
 import { defaultForm, defaultTaxRow } from "../../types/tax/taxTemplate";
 import { getGlAccounts } from "../../api/TaxTemplateApi";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
+import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 
 const ROWS_PER_PAGE = 4;
 
@@ -303,7 +304,7 @@ export const TaxTemplateModal: React.FC<TaxTemplateModalProps> = ({
                       <td className="px-3 py-2">
                         <SearchSelect2
                           label=""
-                          value={row.tax_type_display || row.tax_type}
+                          value={getGLNameWithoutAbbreviation(row.tax_type_display || row.tax_type)}
 
                           onChange={(val, option) => {
                             markDirty();
