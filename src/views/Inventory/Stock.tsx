@@ -24,7 +24,8 @@ import { openStockCorrectionModal } from "../../store/modalStore";
 // ─── Excel export config ────────────────────────────────────────────────────
 
 const HEADERS = [
-  "ITEM NAME & SKU",
+  "ITEM CODE",
+  "ITEM NAME",
   "BATCH ID",
   "EXPIRY DATE",
   "STATUS",
@@ -162,18 +163,7 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
       return;
     }
 
-    aoa.push([
-      `  ${item.item_name || "-"}  (SKU: ${item.item_code || "-"})`,
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-    ]);
-    merges.push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: COL_COUNT - 1 } });
-    for (let c = 0; c < COL_COUNT; c++) setStyle(rowIdx, c, groupCellStyle);
-    rowIdx++;
+ 
 
     item.batches.forEach((batch: any) => {
       const balQty = Number(batch?.bal_qty ?? 0);
@@ -184,6 +174,7 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
 
       aoa.push([
         item.item_code || "-",
+        item.item_name || "-",
         batch?.batch_no || "-",
         batch?.expiry_date ? new Date(batch.expiry_date) : "",
         status,
@@ -191,16 +182,22 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
         currency,
         balVal,
       ]);
-      setStyle(rowIdx, 0, {
-        ...baseCellStyle,
-        alignment: { vertical: "center", indent: 1 },
-      });
-      setStyle(rowIdx, 1, baseCellStyle);
-      setStyle(rowIdx, 2, numCellStyle("left"));
-      setStyle(rowIdx, 3, statusCellStyle(status));
-      setStyle(rowIdx, 4, numCellStyle());
-      setStyle(rowIdx, 5, baseCellStyle);
-      setStyle(rowIdx, 6, numCellStyle());
+
+     
+   setStyle(rowIdx, 0, baseCellStyle);
+setStyle(rowIdx, 1, baseCellStyle);
+setStyle(rowIdx, 2, baseCellStyle);
+setStyle(rowIdx, 3, numCellStyle("left"));
+setStyle(rowIdx, 4, statusCellStyle(status));
+setStyle(rowIdx, 5, numCellStyle());
+setStyle(rowIdx, 6, {
+  ...baseCellStyle,
+  alignment: {
+    horizontal: "center",
+    vertical: "center",
+  },
+});
+setStyle(rowIdx, 7, numCellStyle());
 
       grandQty += balQty;
       currencyTotals[currency] = (currencyTotals[currency] || 0) + balVal;
@@ -209,53 +206,76 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
   });
 
   // ── Grand Total — Quantity (single row, currency-agnostic)
-  aoa.push(["GRAND TOTAL QTY", "", "", "", grandQty, "", ""]);
+  aoa.push([
+  "GRAND TOTAL QTY",
+  "",
+  "",
+  "",
+  "",
+  grandQty,
+  "",
+  "",
+]);
   merges.push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 3 } });
   setStyle(rowIdx, 0, grandTotalLabelStyle);
   setStyle(rowIdx, 1, grandTotalLabelStyle);
   setStyle(rowIdx, 2, grandTotalLabelStyle);
   setStyle(rowIdx, 3, grandTotalLabelStyle);
-  setStyle(rowIdx, 4, grandTotalQtyStyle);
-  setStyle(rowIdx, 5, {
-    ...grandTotalLabelStyle,
-    alignment: { vertical: "center", horizontal: "right" },
-  });
+setStyle(rowIdx, 4, grandTotalLabelStyle);
+setStyle(rowIdx, 5, grandTotalQtyStyle);
+setStyle(rowIdx, 6, grandTotalLabelStyle);
+setStyle(rowIdx, 7, grandTotalLabelStyle);
   rowIdx++;
 
-  // ── Grand Total — Value, one row PER currency (never mixed)
+  
   Object.entries(currencyTotals).forEach(([currency, total]) => {
-    aoa.push([`GRAND TOTAL VALUE (${currency})`, "", "", "", "", "", total]);
+   aoa.push([
+  `GRAND TOTAL VALUE (${currency})`,
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  total,
+]);
     merges.push({
-      s: { r: rowIdx, c: 0 },
-      e: { r: rowIdx, c: 5 },
-    });
-    for (let c = 0; c <= 4; c++) setStyle(rowIdx, c, grandTotalLabelStyle);
-    setStyle(rowIdx, 5, grandTotalValueStyle);
+    s: { r: rowIdx, c: 0 },
+    e: { r: rowIdx, c: 6 },
+});
+  for (let c = 0; c <= 6; c++) {
+  setStyle(rowIdx, c, grandTotalLabelStyle);
+}
+
+setStyle(rowIdx, 7, grandTotalValueStyle);
     rowIdx++;
   });
 
   const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+  
   const range = XLSX.utils.decode_range(worksheet["!ref"]!);
 
-for (let row = 1; row <= range.e.r; row++) {
-  const cellRef = XLSX.utils.encode_cell({ r: row, c: 2 });
-  const cell = worksheet[cellRef];
+  for (let row = 1; row <= range.e.r; row++) {
+  const cellRef = XLSX.utils.encode_cell({ r: row, c: 3 });
+    const cell = worksheet[cellRef];
 
-  if (cell && cell.v instanceof Date) {
-    cell.t = "d";
-    cell.z = "dd mmm yyyy";
+    if (cell && cell.v instanceof Date) {
+      cell.t = "d";
+      cell.z = "dd mmm yyyy";
+    }
   }
-}
   worksheet["!merges"] = merges;
   worksheet["!cols"] = [
-    { wch: 42 }, // Item
-    { wch: 16 }, // Batch
-    { wch: 16 }, // Expiry
+    { wch: 20 }, // Item Code
+    { wch: 35 }, // Item Name
+    { wch: 18 }, // Batch ID
+    { wch: 16 }, // Expiry Date
     { wch: 16 }, // Status
-    { wch: 14 }, // Qty
+    { wch: 14 }, // Quantity
     { wch: 12 }, // Currency
     { wch: 18 }, // Value
   ];
+
   worksheet["!rows"] = aoa.map((_, i) => ({ hpx: i === 0 ? 24 : 20 }));
 
   Object.entries(cellStyles).forEach(([addr, style]) => {
