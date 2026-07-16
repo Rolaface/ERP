@@ -185,7 +185,7 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
       aoa.push([
         item.item_code || "-",
         batch?.batch_no || "-",
-        fmtDate(batch?.expiry_date),
+        batch?.expiry_date ? new Date(batch.expiry_date) : "",
         status,
         balQty,
         currency,
@@ -235,6 +235,17 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
   });
 
   const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+  const range = XLSX.utils.decode_range(worksheet["!ref"]!);
+
+for (let row = 1; row <= range.e.r; row++) {
+  const cellRef = XLSX.utils.encode_cell({ r: row, c: 2 });
+  const cell = worksheet[cellRef];
+
+  if (cell && cell.v instanceof Date) {
+    cell.t = "d";
+    cell.z = "dd mmm yyyy";
+  }
+}
   worksheet["!merges"] = merges;
   worksheet["!cols"] = [
     { wch: 42 }, // Item
