@@ -29,6 +29,7 @@ export const SECTIONS: NamingSeriesSection[] = [
       { key: "sales_invoice", label: "SALES INVOICE" },
       { key: "quotation", label: "QUOTATION" },
       { key: "proforma_invoice", label: "PROFORMA INVOICE" },
+      { key: "credit_note", label: "CREDIT NOTE" },   
       { key: "customer", label: "CUSTOMER" },
     ],
   },
