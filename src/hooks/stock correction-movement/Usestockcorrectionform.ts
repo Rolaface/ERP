@@ -8,7 +8,7 @@ import type {
   MovementRow,
  
   StockCorrectionModalProps,
-  StockCorrectionSubmitPayload,SingleBatchItemPickedPayload
+  StockCorrectionSubmitPayload,StockItemSelectPayload, 
 } from "../../types/Stock/stockcorrectionform.types";
 import { buildCorrectionPayload } from "../../mapper/stockCorrection.mapper";
 import { correctStock } from "../../api/stockApi";
@@ -104,6 +104,7 @@ const emptyCorrectionRow = (): CorrectionRow => ({
   availableQty: null,
   qty: "",
   reasonCode: "",
+  valuationRate:null
 });
 
 const emptyMovementRow = (): MovementRow => ({
@@ -190,6 +191,7 @@ export function useStockCorrectionForm({
       const branchValue = selectedBatch.warehouse || branchOptions[0]?.value || "";
       const branchLabel = selectedBatch.warehouse || branchOptions[0]?.label || "—";
       const availableQty = Number(selectedBatch.bal_qty ?? 0);
+      const valuationRate = Number(selectedBatch.valuation_rate ?? 0);
       const expiryDate = selectedBatch.expiry_date ? selectedBatch.expiry_date.slice(0, 10) : "";
 
       setSelectedItem(item);
@@ -203,6 +205,7 @@ export function useStockCorrectionForm({
           batchNo: selectedBatch.batch_no || "-",
           availableQty,
           unit: "PCS",
+           valuationRate, 
           expiryDate,
         },
       ]);
@@ -213,6 +216,7 @@ export function useStockCorrectionForm({
           batchNo: selectedBatch.batch_no || "",
           expiryDate,
           availableQty,
+          valuationRate,
           qty: "",
           reasonCode: "",
         },
@@ -224,7 +228,7 @@ export function useStockCorrectionForm({
   }, [isOpen, selectedBatch]);
 
 
-  const handleItemPicked = (payload: SingleBatchItemPickedPayload) => {
+ const handleItemPicked = (payload: StockItemSelectPayload) => {
     const item: Option = { label: payload.itemName, value: payload.itemCode };
     setSelectedItem(item);
     setItemPrefillName(payload.itemName);
@@ -237,15 +241,16 @@ export function useStockCorrectionForm({
     const unit = payload.packingUnit || "PCS";
     const warehouseName = payload.warehouse || "—";
 
-    const row: StockSummaryRow = {
-      id: genId(),
-      branchValue: warehouseName,
-      branchLabel: warehouseName,
-      batchNo: payload.batchNo || "-",
-      availableQty: Number(payload.qty ?? 0),
-      unit,
-      expiryDate: payload.expiryDate ? payload.expiryDate.slice(0, 10) : "",
-    };
+   const row: StockSummaryRow = {
+    id: genId(),
+    branchValue: warehouseName,
+    branchLabel: warehouseName,
+    batchNo: payload.batchNo || "-",
+    availableQty: Number(payload.qty ?? 0),
+    valuationRate: Number(payload.valuation_rate ?? 0), 
+    unit,
+    expiryDate: payload.expiryDate ? payload.expiryDate.slice(0, 10) : "",
+  };
 
     setStockSummary([row]);
 
@@ -257,6 +262,7 @@ export function useStockCorrectionForm({
         batchNo: row.batchNo,
         expiryDate: row.expiryDate,
         availableQty: row.availableQty,
+         valuationRate: row.valuationRate, 
         qty: "",
         reasonCode: "",
       },
@@ -304,6 +310,7 @@ export function useStockCorrectionForm({
             batchNo: match?.batchNo ?? "",
             expiryDate: match?.expiryDate ?? "",
             availableQty: match?.availableQty ?? null,
+            valuationRate: match?.valuationRate ?? null,
           };
         }
 
@@ -315,6 +322,7 @@ export function useStockCorrectionForm({
             batchNo: value,
             expiryDate: match?.expiryDate ?? "",
             availableQty: match?.availableQty ?? null,
+             valuationRate: match?.valuationRate ?? null,
           };
         }
 
@@ -425,7 +433,7 @@ export function useStockCorrectionForm({
         ? {
             correctionRows: correctionRows
               .filter((r) => r.branch && r.batchNo && r.qty.trim())
-              .map((r) => ({ branch: r.branch, batchNo: r.batchNo, qty: Number(r.qty), reasonCode: r.reasonCode })),
+              .map((r) => ({ branch: r.branch, batchNo: r.batchNo, qty: Number(r.qty), reasonCode: r.reasonCode,  valuationRate: r.valuationRate,})),
           }
         : {
             movementRows: movementRows

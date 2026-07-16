@@ -12,6 +12,6 @@ export const buildCorrectionPayload = (
     item_code: payload.item!.value,
     qty: Number(row.qty),
      batch_no: row.batchNo, 
-    valuation_rate: 0,
+    valuation_rate: row.valuation_rate ?? 0,
   })),
 });
