@@ -418,9 +418,7 @@ export const useInvoiceForm = (
     if (!meaningfulItems.length) {
       throw new Error("Please add at least one item");
     }
-    if (!formData.paymentInformation?.paymentMethod) {
-      throw new Error("Please select a payment method");
-    }
+   
 
     formData.items.forEach((it, idx) => {
       if (isRowEmpty(it)) return; // never touched — nothing to validate
