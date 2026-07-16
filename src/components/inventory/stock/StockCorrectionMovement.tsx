@@ -215,8 +215,8 @@ export const StockCorrectionMovementPage: React.FC = () => {
         correctionDate,
         reason,
       };
-      // TODO: replace with actual save call
-      console.log("Saving stock correction:", payload);
+    
+    
       await new Promise((res) => setTimeout(res, 400));
     } finally {
       setSaving(false);

@@ -337,7 +337,6 @@ const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({}) => {
 
   // ── Modal handlers
   const handleAddClick = () => {
-    console.log("OPEN PURCHASE MODAL");
     openPOEdit(0);
   };
 

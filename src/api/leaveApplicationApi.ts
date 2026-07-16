@@ -92,7 +92,6 @@ export async function createLeaveApplication(
   payload: Omit<LeaveApplication, "name">,
 ): Promise<LeaveApplication> {
   try {
-    console.log("LEAVE_APP_RESOURCE", LEAVE_APP_RESOURCE.create);
     const resp: AxiosResponse<FrappeDetailResponse<LeaveApplication>> =
       await api.post(LEAVE_APP_RESOURCE.create, payload);
       

@@ -268,7 +268,6 @@ const HrAttendanceView: React.FC = () => {
             iconOnly
             onClick={() => {
               // Placeholder for viewing detailed timeline/logs for the specific day
-              console.log("View details for", row.id);
             }}
           />
         </ActionGroup>

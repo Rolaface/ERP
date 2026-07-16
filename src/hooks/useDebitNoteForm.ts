@@ -35,6 +35,7 @@ export interface DebitNoteFormState {
   update_stock: boolean;
   items: DebitNoteItem[];
   exchange_rate: number;
+  currency: string;
 }
 
 const EMPTY_FORM: DebitNoteFormState = {
@@ -43,6 +44,7 @@ const EMPTY_FORM: DebitNoteFormState = {
   update_stock: true,
   items: [],
   exchange_rate: 1, 
+  currency: "",
 };
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -113,6 +115,7 @@ useEffect(() => {
       
       // Maps exchangeRate
       exchange_rate: Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,  
+      currency: initialData.currency || initialData.currency_code || "",  
     });
   }, [initialData]);
 
@@ -172,6 +175,7 @@ const handleInvoiceSelect = useCallback(async (opt: PurchaseInvoiceOption) => {
         },
         items: mappedItems,
         exchange_rate: Number(data.exchangeRate) || 1,  
+        currency: data.currency,  
       }));
     } catch (err) {
       console.error("Failed to load invoice details", err);
@@ -274,6 +278,7 @@ const payload = {
         company: companyName,
         update_stock: form.update_stock ? (1 as const) : (0 as const),
         conversion_rate: form.exchange_rate,  
+        currency: form.currency,  
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),

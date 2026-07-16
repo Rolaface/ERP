@@ -223,7 +223,6 @@ const SalarySlipSetup = () => {
       company: companySettings,
       layout: layoutSettings,
     };
-    console.log("Saving configuration:", config);
     alert("✅ Salary slip configuration saved successfully!");
   };
 

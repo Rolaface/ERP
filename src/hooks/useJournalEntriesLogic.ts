@@ -275,7 +275,7 @@ const updateExchangeRates = async (currentEntries: JournalEntryLine[], date: str
   const missingExchanges: Set<string> = new Set();
   
   const BASE_CURRENCY = baseCurrency; 
-  console.log("Base Currency", baseCurrency);
+
    
   const processRow = async (index: number) => {
     const row = newEntries[index];

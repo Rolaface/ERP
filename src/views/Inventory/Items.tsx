@@ -602,7 +602,6 @@ const handleAddPurchaseInvoice = useCallback(() => {
           loadingPurchase={loadingPurchase}
           loadingStock={loadingStock}
           onStockSearch={(from, to) => {
-            console.log("Stock search:", from, "→", to);
           }}
         />
 
