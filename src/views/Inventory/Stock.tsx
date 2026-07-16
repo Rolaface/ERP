@@ -23,11 +23,19 @@ import { openStockCorrectionModal } from "../../store/modalStore";
 
 // ─── Excel export config ────────────────────────────────────────────────────
 
-const HEADERS = ["ITEM NAME & SKU", "BATCH ID", "EXPIRY DATE", "STATUS", "QUANTITY", "VALUE"];
+const HEADERS = [
+  "ITEM NAME & SKU",
+  "BATCH ID",
+  "EXPIRY DATE",
+  "STATUS",
+  "QUANTITY",
+  "CURRENCY",
+  "VALUE",
+];
 const COL_COUNT = HEADERS.length;
 
-const LOW_STOCK_THRESHOLD = 500;   // tune as needed
-const NEAR_EXPIRY_DAYS = 90;       // tune as needed
+const LOW_STOCK_THRESHOLD = 500; // tune as needed
+const NEAR_EXPIRY_DAYS = 90; // tune as needed
 
 type BatchStatus = "Available" | "Low Stock" | "Near Expiry" | "Out of Stock";
 
@@ -37,7 +45,8 @@ const getBatchStatus = (batch: any): BatchStatus => {
 
   if (batch?.expiry_date) {
     const daysToExpiry =
-      (new Date(batch.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      (new Date(batch.expiry_date).getTime() - Date.now()) /
+      (1000 * 60 * 60 * 24);
     if (daysToExpiry <= NEAR_EXPIRY_DAYS) return "Near Expiry";
   }
 
@@ -46,7 +55,7 @@ const getBatchStatus = (batch: any): BatchStatus => {
 };
 
 const STATUS_STYLE: Record<BatchStatus, { fill: string; font: string }> = {
-  "Available": { fill: "D1E7DD", font: "0F5132" },
+  Available: { fill: "D1E7DD", font: "0F5132" },
   "Low Stock": { fill: "FFF3CD", font: "856404" },
   "Near Expiry": { fill: "F8D7DA", font: "842029" },
   "Out of Stock": { fill: "E2E3E5", font: "41464B" },
@@ -56,14 +65,23 @@ const fmtDate = (d: string | null) => {
   if (!d) return "-";
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return "-";
-  return dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return dt.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const fmtNum = (n: number) =>
   Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
 const thinBorder = { style: "thin", color: { rgb: "D9D9D9" } };
-const cellBorder = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+const cellBorder = {
+  top: thinBorder,
+  bottom: thinBorder,
+  left: thinBorder,
+  right: thinBorder,
+};
 
 const headerCellStyle = {
   font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
@@ -131,17 +149,28 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
 
   let rowIdx = 1;
   let grandQty = 0;
- 
+
   const currencyTotals: Record<string, number> = {};
 
   rawItems.forEach((item) => {
     // Skip service items — they have no physical batches/stock
-    if (item.is_service_item === 1 || !item.batches || item.batches.length === 0) {
+    if (
+      item.is_service_item === 1 ||
+      !item.batches ||
+      item.batches.length === 0
+    ) {
       return;
     }
 
-    
-    aoa.push([`  ${item.item_name || "-"}  (SKU: ${item.item_code || "-"})`, "", "", "", "", ""]);
+    aoa.push([
+      `  ${item.item_name || "-"}  (SKU: ${item.item_code || "-"})`,
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ]);
     merges.push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: COL_COUNT - 1 } });
     for (let c = 0; c < COL_COUNT; c++) setStyle(rowIdx, c, groupCellStyle);
     rowIdx++;
@@ -149,7 +178,7 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
     item.batches.forEach((batch: any) => {
       const balQty = Number(batch?.bal_qty ?? 0);
       const balVal = Number(batch?.bal_val ?? 0);
-     
+
       const currency = item.buy_currency || batch?.buy_currency || "—";
       const status = getBatchStatus(batch);
 
@@ -158,16 +187,20 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
         batch?.batch_no || "-",
         fmtDate(batch?.expiry_date),
         status,
-        fmtNum(balQty),
-        `${currency} ${fmtNum(balVal)}`.trim(),
+        balQty,
+        currency,
+        balVal,
       ]);
-
-      setStyle(rowIdx, 0, { ...baseCellStyle, alignment: { vertical: "center", indent: 1 } });
+      setStyle(rowIdx, 0, {
+        ...baseCellStyle,
+        alignment: { vertical: "center", indent: 1 },
+      });
       setStyle(rowIdx, 1, baseCellStyle);
       setStyle(rowIdx, 2, numCellStyle("left"));
       setStyle(rowIdx, 3, statusCellStyle(status));
       setStyle(rowIdx, 4, numCellStyle());
-      setStyle(rowIdx, 5, numCellStyle());
+      setStyle(rowIdx, 5, baseCellStyle);
+      setStyle(rowIdx, 6, numCellStyle());
 
       grandQty += balQty;
       currencyTotals[currency] = (currencyTotals[currency] || 0) + balVal;
@@ -176,20 +209,26 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
   });
 
   // ── Grand Total — Quantity (single row, currency-agnostic)
-  aoa.push(["GRAND TOTAL QTY", "", "", "", fmtNum(grandQty), ""]);
+  aoa.push(["GRAND TOTAL QTY", "", "", "", grandQty, "", ""]);
   merges.push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 3 } });
   setStyle(rowIdx, 0, grandTotalLabelStyle);
   setStyle(rowIdx, 1, grandTotalLabelStyle);
   setStyle(rowIdx, 2, grandTotalLabelStyle);
   setStyle(rowIdx, 3, grandTotalLabelStyle);
   setStyle(rowIdx, 4, grandTotalQtyStyle);
-  setStyle(rowIdx, 5, { ...grandTotalLabelStyle, alignment: { vertical: "center", horizontal: "right" } });
+  setStyle(rowIdx, 5, {
+    ...grandTotalLabelStyle,
+    alignment: { vertical: "center", horizontal: "right" },
+  });
   rowIdx++;
 
   // ── Grand Total — Value, one row PER currency (never mixed)
   Object.entries(currencyTotals).forEach(([currency, total]) => {
-    aoa.push([`GRAND TOTAL VALUE (${currency})`, "", "", "", "", fmtNum(total)]);
-    merges.push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 4 } });
+    aoa.push([`GRAND TOTAL VALUE (${currency})`, "", "", "", "", "", total]);
+    merges.push({
+      s: { r: rowIdx, c: 0 },
+      e: { r: rowIdx, c: 5 },
+    });
     for (let c = 0; c <= 4; c++) setStyle(rowIdx, c, grandTotalLabelStyle);
     setStyle(rowIdx, 5, grandTotalValueStyle);
     rowIdx++;
@@ -198,12 +237,13 @@ const buildBatchWiseWorkbook = (rawItems: any[]) => {
   const worksheet = XLSX.utils.aoa_to_sheet(aoa);
   worksheet["!merges"] = merges;
   worksheet["!cols"] = [
-    { wch: 42 }, // Item Name & SKU
-    { wch: 16 }, // Batch ID
-    { wch: 16 }, // Expiry Date
+    { wch: 42 }, // Item
+    { wch: 16 }, // Batch
+    { wch: 16 }, // Expiry
     { wch: 16 }, // Status
-    { wch: 14 }, // Quantity
-    { wch: 22 }, // Value
+    { wch: 14 }, // Qty
+    { wch: 12 }, // Currency
+    { wch: 18 }, // Value
   ];
   worksheet["!rows"] = aoa.map((_, i) => ({ hpx: i === 0 ? 24 : 20 }));
 
@@ -237,14 +277,19 @@ const Items: React.FC = () => {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewStockData, setViewStockData] = useState<any>(null);
- 
 
   const fetchItems = useCallback(async () => {
     if (!mountedRef.current) return;
     setIsFetching(true);
 
     try {
-      const res = await getStockReport(page, pageSize, searchTerm, undefined, 1);
+      const res = await getStockReport(
+        page,
+        pageSize,
+        searchTerm,
+        undefined,
+        1,
+      );
       if (!mountedRef.current) return;
 
       const list = res?.message?.data || [];
@@ -257,7 +302,7 @@ const Items: React.FC = () => {
         packingUnit: item.packingUnit || "-",
         packingSize: item.packingSize || "-",
         piecesPerBox: item.piecesPerBox || "-",
-         boxAvailable:
+        boxAvailable:
           item.piecesPerBox && item.piecesPerBox > 0
             ? Math.floor((item.total_bal_qty ?? 0) / item.piecesPerBox)
             : 0,
@@ -286,7 +331,9 @@ const Items: React.FC = () => {
   useEffect(() => {
     mountedRef.current = true;
     fetchItems();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -297,13 +344,13 @@ const Items: React.FC = () => {
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
 
-const handleStockCorrection = (batch: any) => {
-  openStockCorrectionModal(
-    { selectedBatch: batch },
-    false,
-    { onSuccess: async () => { await fetchItems(); } },
-  );
-};
+  const handleStockCorrection = (batch: any) => {
+    openStockCorrectionModal({ selectedBatch: batch }, false, {
+      onSuccess: async () => {
+        await fetchItems();
+      },
+    });
+  };
   const handleBatchDelete = (batch: any) => {
     handleDelete({ id: batch.batch_no, ...batch });
   };
@@ -364,7 +411,13 @@ const handleStockCorrection = (batch: any) => {
     let pagesTotal = 1;
 
     do {
-      const res = await getStockReport(currentPage, exportPageSize, searchTerm, undefined, 1);
+      const res = await getStockReport(
+        currentPage,
+        exportPageSize,
+        searchTerm,
+        undefined,
+        1,
+      );
       const list = res?.message?.data || [];
       all = all.concat(list);
       pagesTotal = res?.message?.pagination?.total_pages ?? 1;
@@ -392,7 +445,9 @@ const handleStockCorrection = (batch: any) => {
       XLSX.writeFile(workbook, fileName);
 
       closeSwal();
-      showSuccess(`Batch-wise stock report exported (${rawItems.length} items)`);
+      showSuccess(
+        `Batch-wise stock report exported (${rawItems.length} items)`,
+      );
     } catch (err) {
       console.error(err);
       closeSwal();
@@ -409,9 +464,11 @@ const handleStockCorrection = (batch: any) => {
       align: "center",
       render: (row) => (
         <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
-          {expandedRows[row.id]
-            ? <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
-            : <ChevronRight size={16} strokeWidth={2.5} />}
+          {expandedRows[row.id] ? (
+            <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
+          ) : (
+            <ChevronRight size={16} strokeWidth={2.5} />
+          )}
         </span>
       ),
     },
@@ -419,7 +476,9 @@ const handleStockCorrection = (batch: any) => {
       key: "itemCode",
       header: "Item Code",
       render: (row) => (
-        <span className="font-medium whitespace-nowrap">{row.itemCode ?? "—"}</span>
+        <span className="font-medium whitespace-nowrap">
+          {row.itemCode ?? "—"}
+        </span>
       ),
     },
     {
@@ -464,7 +523,7 @@ const handleStockCorrection = (batch: any) => {
         </code>
       ),
     },
-     {
+    {
       key: "boxAvailable",
       header: "Box Available",
       align: "center",
@@ -530,27 +589,45 @@ const handleStockCorrection = (batch: any) => {
             <button
               onClick={() => setShowBulkModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
-              style={{ border: "1.5px solid var(--primary,#c97d2e)", color: "var(--primary,#c97d2e)", background: "transparent" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(201,125,46,0.06)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+              style={{
+                border: "1.5px solid var(--primary,#c97d2e)",
+                color: "var(--primary,#c97d2e)",
+                background: "transparent",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  "rgba(201,125,46,0.06)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  "transparent";
+              }}
             >
               <Upload size={12} /> Bulk Upload
             </button>
-<button
-  onClick={() =>
-    openStockCorrectionModal(
-      { selectedBatch: null },
-      false,
-      { onSuccess: async () => { await fetchItems(); } },
-    )
-  }
-  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
-  style={{ border: "1.5px solid var(--primary,#c97d2e)", color: "var(--primary,#c97d2e)", boxShadow: "transparent" }}
-  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.9"; }}
-  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
->
-  Stock Correction
-</button>
+            <button
+              onClick={() =>
+                openStockCorrectionModal({ selectedBatch: null }, false, {
+                  onSuccess: async () => {
+                    await fetchItems();
+                  },
+                })
+              }
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
+              style={{
+                border: "1.5px solid var(--primary,#c97d2e)",
+                color: "var(--primary,#c97d2e)",
+                boxShadow: "transparent",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = "0.9";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = "1";
+              }}
+            >
+              Stock Correction
+            </button>
           </div>
         }
         currentPage={page}
@@ -567,11 +644,12 @@ const handleStockCorrection = (batch: any) => {
 
       <ViewStockModal
         isOpen={showViewModal}
-        onClose={() => { setShowViewModal(false); setViewStockData(null); }}
+        onClose={() => {
+          setShowViewModal(false);
+          setViewStockData(null);
+        }}
         stockData={viewStockData}
       />
-    
-     
 
       <BulkUploadModal
         isOpen={showBulkModal}
