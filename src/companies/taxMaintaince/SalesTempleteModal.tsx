@@ -181,7 +181,7 @@ export const SalesTaxTemplateModal: React.FC<SalesTaxTemplateModalProps> = ({
           description: row.description.trim(),
         })),
       };
-      console.log("FORM TAXES", form.taxes);
+     
 
       if (modal?.context?.callback) {
         await modal.context.callback(payload);

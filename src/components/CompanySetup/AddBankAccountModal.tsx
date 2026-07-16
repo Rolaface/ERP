@@ -267,7 +267,7 @@ const AddBankAccountModal: React.FC<Props> = ({
                 value={form.accountFor}
                 onChange={(e) => {
                   const value = e.target.value;
-                  console.log("[plain select] onChange value:", value);
+                
                   if (!value) return;
                   markDirty();
                   handleAccountForChange(value as AccountType);
