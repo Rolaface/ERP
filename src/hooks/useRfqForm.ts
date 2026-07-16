@@ -233,12 +233,7 @@ setRfqId(id);
     setForm((p) => ({ ...p, sendPrint: value }));
 
   const handleSaveTemplate = () => {
-    console.log("Template saved:", {
-      name: form.templateName,
-      type: form.templateType,
-      subject: form.subject,
-      messageHtml: form.messageHtml,
-    });
+    
   };
 
   const resetTemplate = () => {

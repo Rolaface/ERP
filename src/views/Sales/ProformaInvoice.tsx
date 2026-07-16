@@ -212,8 +212,6 @@ const createInvoiceFromProforma = useDocumentConversion("proformaToSi");
       showLoading("Loading proforma invoice...");
 
       const res = await getProformaInvoiceById(proformaId);
-      console.log("Proforma invoice details response:", res);
-      console.log("Proforma Id", proformaId);
       const statusCode = res?.message?.status_code || res?.status_code;
       const data = res?.message?.data || res?.data;
 
@@ -256,8 +254,6 @@ const createInvoiceFromProforma = useDocumentConversion("proformaToSi");
     try {
       // const blob = await getPdf(proformId, "Proforma Invoice");
       const blob = await getPdf(proformId, "Quotation");
-      console.log("PDF blob response for drawer:", blob);
-      console.log("Proforma Id", proformId);
       setDrawerPdfBlob(blob);
       const blobUrl = URL.createObjectURL(blob);
       setDrawerPdfUrl(blobUrl);

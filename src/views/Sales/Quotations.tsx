@@ -314,8 +314,6 @@ const createProformaFromQuote = useDocumentConversion("quoteToProforma");
       showLoading("Loading proforma invoice...");
 
       const res = await getProformaInvoiceById(quotationId);
-      console.log("Proforma invoice details response:", res);
-      console.log("Proforma Id", quotationId);
       const statusCode = res?.message?.status_code || res?.status_code;
       const data = res?.message?.data || res?.data;
 
@@ -339,8 +337,6 @@ const createProformaFromQuote = useDocumentConversion("quoteToProforma");
 
     try {
       const blob = await getPdf(quotationId, "Quotation");
-      console.log("PDF blob response for drawer:", blob);
-      console.log("Proforma Id", quotationId);
       setDrawerPdfBlob(blob);
       const blobUrl = URL.createObjectURL(blob);
       setDrawerPdfUrl(blobUrl);
@@ -522,8 +518,6 @@ const handleCreateProforma = (quotationNumber: string, e?: React.MouseEvent) => 
     setDetailData(null);
     try {
       const res = await getProformaInvoiceById(quotationId);
-      console.log("Proforma invoice details response for drawer view:", res);
-      console.log("Quotation Id ", quotationId);
 
       const statusCode = res?.message?.status_code || res?.status_code;
       const data = res?.message?.data || res?.data;

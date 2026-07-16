@@ -316,7 +316,6 @@ const CreditControllerSelect: React.FC<{
   const fetchOptions = async (q: string) => {
   try {
    const roles = await getAllCreditLimit(q || undefined, 20);
-    console.log("credit controller roles:", roles);
     return roles.map((role) => ({
       label: role.name,
       value: role.id,

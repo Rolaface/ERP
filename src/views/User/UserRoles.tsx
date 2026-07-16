@@ -28,7 +28,7 @@ const mapApiRoleToUserRole = (apiRole: {
 
 const USER_ROLE_MODULE = "User Role";
 // const deleteUserRole = async (role: string): Promise<void> => {
-//   console.log("Delete role:", role);
+//   
 // };
 
 const PermissionSummary: React.FC<{ permissions: PermissionEntry[] }> = ({ permissions }) => {

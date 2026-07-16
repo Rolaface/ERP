@@ -253,7 +253,6 @@ const fetchLeavePeriodsOptions = async (query: string) => {
         onChange={(val) => {
           setSelectedPeriod(val);
           set("leave_period", val); 
-          console.log("Selected Leave Period Name:", val); 
         }}
         required={true}
         disabled={isView}
