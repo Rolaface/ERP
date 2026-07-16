@@ -42,6 +42,7 @@ interface ExpenseSummary {
   claimName: string;
   approver: string;
   date: string;
+  expenseDate: string;
   category: string;
   amount: number;
   grandTotal?: number;
@@ -123,6 +124,7 @@ const ExpenseHistory: React.FC = () => {
           name: claim.employee_name,
           employeeId: claim.employee ?? "",
           date: claim.posting_date,
+            expenseDate: claim.expense_date ?? "",
           category: claim.expense_type ?? "",
           amount: claim.total_claimed_amount ?? 0,
           grandTotal: claim.grand_total ?? 0,
@@ -415,6 +417,16 @@ const ExpenseHistory: React.FC = () => {
           </div>
         ),
       },
+          {
+     key: "expenseDate",
+     header: "Expense Date",
+    align: "center",
+    render: (exp) => (
+       <div className="py-1.5">
+         <span className="block">{formatDate(exp.expenseDate)}</span>
+        </div>
+     ),
+    },
       {
         key: "approver",
         header: "Approver",
