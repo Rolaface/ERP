@@ -530,7 +530,6 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                 }}
               >
                 <F label="Posting Date" value={fmtDate(claim.posting_date)} />
-                <F label="Created" value={fmtDate(claim.creation)} />
                 <F label="Currency" value={currency} />
               </div>
 
@@ -639,8 +638,8 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                       gap: 4,
                     }}
                   >
-                    <span>Item / Description</span>
-                    <span style={{ textAlign: "right" }}>Date</span>
+                    <span>EXpense</span>
+                    <span style={{ textAlign: "right" }}>Expense Date</span>
                     <span style={{ textAlign: "right" }}>Claimed</span>
                     <span style={{ textAlign: "right" }}>Sanctioned</span>
                   </div>
