@@ -520,11 +520,13 @@ const ExpenseHistory: React.FC = () => {
             </PermissionGate>
 
             <ActionMenu
-             customActions={
+           customActions={
   ["Paid", "Cancelled", "Rejected", "Approved"].includes(exp.approvalStatus)
     ? []
     : [
-        ...(!isEmployeeView && exp.approvalStatus === "Draft"
+        ...(!isEmployeeView &&
+          exp.approvalStatus === "Draft" &&
+          can(EXPENSE_MODULE, "submit")
           ? [
               {
                 label: "Approve",
@@ -551,7 +553,8 @@ const ExpenseHistory: React.FC = () => {
             ]
           : []),
 
-        ...(exp.approvalStatus === "Draft"
+        ...(exp.approvalStatus === "Draft" &&
+          can(EXPENSE_MODULE, "cancel")
           ? [
               {
                 label: "Cancel",
