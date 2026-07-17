@@ -52,6 +52,7 @@ export interface ExpenseFormData {
   claim_title: string;
   id?: string;
   category: string;
+  posting_date: string;
   date_incurred: string;
   amount: number | "";
   employee: string;
@@ -83,6 +84,7 @@ type ActiveTab = "expense" | "advance";
 const defaultExpenseForm: ExpenseFormData = {
   claim_title: "",
   category: "",
+  posting_date: new Date().toISOString().split("T")[0],
   date_incurred: new Date().toISOString().split("T")[0],
   amount: "",
   employee: "",
@@ -570,7 +572,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
       const payload: CreateExpenseClaimPayload = {
         employee: form.employee,
         expense_approver: form.expense_approver ?? "",
-        posting_date: new Date().toISOString().split("T")[0],
+        posting_date: form.posting_date,
         currency: getCurrencyFromStorage(),
         exchange_rate: 1,
         approval_status: "Draft",
@@ -667,19 +669,29 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           <div
              className="px-4 pb-4 pt-2 flex flex-col gap-4 overflow-y-auto flex-1 min-h-0"
           >
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-6">
-                <ModalInput
-                  label="Claim title"
-                  name="claim_title"
-                  value={form.claim_title}
-                  onChange={handleChange}
-                  error={errors.claim_title}
-                  required
-                  placeholder="For example: Client meeting lunch"
-                />
+ <div className="grid grid-cols-12 gap-4">
+             <div className="col-span-3">
+                <div className="flex flex-col gap-1">
+                  <DatePickerInput
+                    label="Posting date"
+                    name="posting_date"
+                    value={form.posting_date}
+                    disableFuture
+                    onChange={(name, value) => {
+                      setForm((prev) => ({ ...prev, [name]: value }));
+                      if (errors.posting_date)
+                        setErrors((prev) => ({ ...prev, posting_date: "" }));
+                      markDirty();
+                    }}
+                  />
+                  {errors.posting_date && (
+                    <span className="text-danger text-[10px]">
+                      {errors.posting_date}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="col-span-6">
+              <div className="col-span-3">
                 <div className="flex flex-col gap-1">
                   <DatePickerInput
                     label="Date incurred"
@@ -698,6 +710,17 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     </span>
                   )}
                 </div>
+              </div>
+              <div className="col-span-6">
+                <ModalInput
+                  label="Claim title"
+                  name="claim_title"
+                  value={form.claim_title}
+                  onChange={handleChange}
+                  error={errors.claim_title}
+                  required
+                  placeholder="For example: Client meeting lunch"
+                />
               </div>
             </div>
 
