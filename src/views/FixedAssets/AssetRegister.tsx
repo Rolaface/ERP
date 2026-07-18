@@ -17,8 +17,9 @@ import ActionButton, {
 import { deleteAsset } from "../../api/assetapi";
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
-import Swal from "sweetalert2";
-
+import { fireManagedSwal } from "../../utils/swalManager";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 
 type Asset = {
@@ -107,7 +108,7 @@ const AssetRegister: React.FC = () => {
     try {
       await submitAsset(id);
 
-      Swal.fire({
+    fireManagedSwal({
         icon: "success",
         title: "Success",
         text: "Asset submitted successfully",
@@ -115,7 +116,7 @@ const AssetRegister: React.FC = () => {
 
       fetchAssets();
     } catch (err) {
-      Swal.fire({
+      fireManagedSwal({
         icon: "error",
         title: "Operation Failed",
         text: extractBackendError(err),
@@ -126,7 +127,7 @@ const AssetRegister: React.FC = () => {
     try {
       await cancelAsset(id);
 
-      Swal.fire({
+     fireManagedSwal({
         icon: "success",
         title: "Success",
         text: "Asset cancelled successfully",
@@ -134,7 +135,7 @@ const AssetRegister: React.FC = () => {
 
       fetchAssets();
     } catch (err) {
-      Swal.fire({
+      fireManagedSwal({
         icon: "error",
         title: "Operation Failed",
         text: extractBackendError(err),
@@ -243,7 +244,7 @@ const AssetRegister: React.FC = () => {
       await deleteAsset(id);
       fetchAssets();
     } catch (err) {
-      Swal.fire({
+     fireManagedSwal({
         icon: "error",
         title: "Operation Failed",
         text: extractBackendError(err),
@@ -275,6 +276,44 @@ const AssetRegister: React.FC = () => {
 
     // Date object — use local methods
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+  const handleExportExcel = () => {
+    try {
+      if (!sortedData.length) {
+        fireManagedSwal({
+          icon: "info",
+          title: "No Data",
+          text: "No assets to export",
+        });
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(
+        sortedData.map((a) => ({
+          "Asset Name": a.name,
+          Category: a.category,
+          Location: a.location,
+          "Purchase Date": a.purchaseDate ? formatDate(a.purchaseDate) : "",
+          Value: a.value,
+        })),
+      );
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Assets");
+
+      saveAs(
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "All_Assets.xlsx",
+      );
+   } catch (err) {
+      fireManagedSwal({
+        icon: "error",
+        title: "Export Failed",
+        text: extractBackendError(err),
+      });
+    }
   };
 
   const columns: Column<Asset>[] = [
@@ -363,6 +402,8 @@ const AssetRegister: React.FC = () => {
         addLabel="Add Asset"
         onAdd={() => openFixedAssetModal(null, false, {})}
         enableColumnSelector
+        enableExport={can(ASSET_MODULE, "export")}
+        onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}

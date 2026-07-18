@@ -320,7 +320,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
             if (col.fieldname === "party" && val)
               return <span className="text-xs font-medium text-main">{String(val)}</span>;
             if (!val && val !== 0) return <span className="text-muted text-xs">—</span>;
-            return <span className="text-xs text-main">{String(val)}</span>;
+            return <span className="text-xs text-main">{getGLNameWithoutAbbreviation(String(val))}</span>;
           },
         };
       });
