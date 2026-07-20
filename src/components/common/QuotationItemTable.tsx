@@ -22,7 +22,7 @@ export interface ItemTableActions {
   addItem: () => void;
   duplicateItem: (absoluteIndex: number) => void;
   fetchByBarcode?: (index: number, barcode: string) => Promise<void>;
-   getItemMax?: (index: number) => number | undefined; 
+  getItemMax?: (index: number) => number | undefined;
 }
 
 export interface ItemTableUI {
@@ -107,57 +107,88 @@ interface InvoiceHeadersProps {
 // );
 const ProductQuoteColGroup: React.FC<InvoiceHeadersProps> = () => (
   <colgroup>
-    <col style={{ width: "24px" }} />   {/* # */}
-    <col style={{ width: "22%" }} />    {/* Item */}
-    <col style={{ width: "52px" }} />   {/* Pkg */}
-    <col style={{ width: "72px" }} />   {/* Box */}
-    <col style={{ width: "52px" }} />   {/* Qty */}
-    <col style={{ width: "60px" }} />   {/* UOM */}
-    <col style={{ width: "8%" }} />     {/* Price */}
-    <col style={{ width: "52px" }} />   {/* Dis% */}
-    <col style={{ width: "48px" }} />   {/* Tax% */}
-    <col style={{ width: "14%" }} />    {/* Tax Name */}
-    <col style={{ width: "8%" }} />     {/* Amount */}
-    <col style={{ width: "44px" }} />   {/* Actions */}
+    <col style={{ width: "24px" }} /> {/* # */}
+    <col style={{ width: "22%" }} /> {/* Item */}
+    <col style={{ width: "52px" }} /> {/* Pkg */}
+    <col style={{ width: "72px" }} /> {/* Box */}
+    <col style={{ width: "52px" }} /> {/* Qty */}
+    <col style={{ width: "60px" }} /> {/* UOM */}
+    <col style={{ width: "8%" }} /> {/* Price */}
+    <col style={{ width: "52px" }} /> {/* Dis% */}
+    <col style={{ width: "48px" }} /> {/* Tax% */}
+    <col style={{ width: "14%" }} /> {/* Tax Name */}
+    <col style={{ width: "8%" }} /> {/* Amount */}
+    <col style={{ width: "44px" }} /> {/* Actions */}
   </colgroup>
 );
 
 const ServiceQuoteColGroup: React.FC = () => (
   <colgroup>
-    <col style={{ width: "24px" }} />   {/* # */}
-    <col style={{ width: "22%" }} />    {/* Item */}
-    <col style={{ width: "30%" }} />    {/* Description */}
-    <col style={{ width: "8%" }} />     {/* Qty */}
-    <col style={{ width: "8%" }} />    {/* Price */}
-    <col style={{ width: "5%" }} />     {/* Dis% */}
-    <col style={{ width: "5%" }} />     {/* Tax% */}
-    <col style={{ width: "13%" }} />    {/* Tax Name */}
-    <col style={{ width: "11%" }} />    {/* Amount */}
-    <col style={{ width: "44px" }} />   {/* Actions */}
+    <col style={{ width: "24px" }} /> {/* # */}
+    <col style={{ width: "22%" }} /> {/* Item */}
+    <col style={{ width: "30%" }} /> {/* Description */}
+    <col style={{ width: "8%" }} /> {/* Qty */}
+    <col style={{ width: "8%" }} /> {/* UOM */}
+    <col style={{ width: "8%" }} /> {/* Price */}
+    <col style={{ width: "5%" }} /> {/* Dis% */}
+    <col style={{ width: "5%" }} /> {/* Tax% */}
+    <col style={{ width: "13%" }} /> {/* Tax Name */}
+    <col style={{ width: "11%" }} /> {/* Amount */}
+    <col style={{ width: "44px" }} /> {/* Actions */}
   </colgroup>
 );
 const QuoteColGroup: React.FC<InvoiceHeadersProps> = (props) => {
   if (props.invoiceType === "Service") return <ServiceQuoteColGroup />;
   return <ProductQuoteColGroup {...props} />;
 };
-const QuoteHeaders: React.FC<InvoiceHeadersProps> = ({ invoiceType = "Product" }) => {
+const QuoteHeaders: React.FC<InvoiceHeadersProps> = ({
+  invoiceType = "Product",
+}) => {
   const isService = invoiceType === "Service";
   return (
     <tr className="border-b border-theme">
-      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">#</th>
-      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Item</th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
+        #
+      </th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
+        Item
+      </th>
       {isService && (
-  <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Description</th>
-)}
-      {!isService && <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Pkg</th>}
-      {!isService && <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Box</th>}
-      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Qty</th>
-      {!isService &&<th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden lg:table-cell">UOM</th>}
-      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Price <span className="text-danger">*</span></th>
-      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Dis%</th>
-      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax%</th>
-      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">Tax</th>
-      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">Amount</th>
+        <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
+          Description
+        </th>
+      )}
+      {!isService && (
+        <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
+          Pkg
+        </th>
+      )}
+      {!isService && (
+        <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
+          Box
+        </th>
+      )}
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
+        Qty
+      </th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden lg:table-cell">
+  UOM
+</th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
+        Price <span className="text-danger">*</span>
+      </th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
+        Dis%
+      </th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
+        Tax%
+      </th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden md:table-cell">
+        Tax
+      </th>
+      <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
+        Amount
+      </th>
       <th className="px-1 py-1" />
     </tr>
   );
@@ -304,99 +335,103 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
         {/* # */}
-        <td data-row={i} data-col={c()} className="px-2 py-1 text-center text-[10px] text-muted">
+        <td
+          data-row={i}
+          data-col={c()}
+          className="px-2 py-1 text-center text-[10px] text-muted"
+        >
           {i + 1}
         </td>
- 
-          <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
-            <POItemSelect
-              value={it.itemName}
-              selectedId={it.itemCode}
-              invoiceType={invoiceType}
-              onChange={(item: any) => {
-                onItemSelect?.(item, i);
-                const code = item?.id || "";
-                const name = item?.itemName || code;
-                const rate = item?.sellingPrice || 0;
-                const pUnit = item?.packingUnit || "";
-                const pSize = item?.packingSize || "";
-                const unitOfMeasure = item?.unitOfMeasureCd || "";
-                setUnitOfMeasurement(unitOfMeasure);
 
-                let vatRate = item?.vatRate ?? 0;
-                let vatCd = item?.vatCd ?? "";
-                if (Array.isArray(item?.taxInfo) && item.taxInfo.length > 0) {
-                  const tax = item.taxInfo[0];
-                  if (
-                    tax?.totalTaxRate !== undefined &&
-                    tax.totalTaxRate !== null
-                  ) {
-                    vatRate = tax.totalTaxRate;
-                  }
-                  if (tax?.taxName) {
-                    vatCd = tax.taxName;
-                    setItemVatCode(vatCd);
-                  }
+        <td data-row={i} data-col={c()} className="px-1 py-1.5 overflow-hidden">
+          <POItemSelect
+            value={it.itemName}
+            selectedId={it.itemCode}
+            invoiceType={invoiceType}
+            onChange={(item: any) => {
+              onItemSelect?.(item, i);
+              const code = item?.id || "";
+              const name = item?.itemName || code;
+              const rate = item?.sellingPrice || 0;
+              const pUnit = item?.packingUnit || "";
+              const pSize = item?.packingSize || "";
+              const unitOfMeasure = item?.unitOfMeasureCd || "";
+              setUnitOfMeasurement(unitOfMeasure);
+
+              let vatRate = item?.vatRate ?? 0;
+              let vatCd = item?.vatCd ?? "";
+              if (Array.isArray(item?.taxInfo) && item.taxInfo.length > 0) {
+                const tax = item.taxInfo[0];
+                if (
+                  tax?.totalTaxRate !== undefined &&
+                  tax.totalTaxRate !== null
+                ) {
+                  vatRate = tax.totalTaxRate;
                 }
+                if (tax?.taxName) {
+                  vatCd = tax.taxName;
+                  setItemVatCode(vatCd);
+                }
+              }
 
-                // 4. Update all fields at ONCE
-                actions.updateItemDirectly?.(i, {
-                  itemCode: code,
-                  itemName: name,
-                  description: item?.description ?? "",
-                  price: rate,
-                  quantity: 1,
-                  uom: unitOfMeasure,
-                  vatRate: vatRate,
-                  vatCd: vatCd,
-                  packingUnit: pUnit,
-                  packingSize: pSize,
-                  taxCode: vatCd,
-                  piecesPerBox: Number(item?.inventoryInfo?.piecesPerBox) || 0,
-                });
-              }}
+              // 4. Update all fields at ONCE
+              actions.updateItemDirectly?.(i, {
+                itemCode: code,
+                itemName: name,
+                description: item?.description ?? "",
+                price: rate,
+                quantity: 1,
+                uom: unitOfMeasure,
+                vatRate: vatRate,
+                vatCd: vatCd,
+                packingUnit: pUnit,
+                packingSize: pSize,
+                taxCode: vatCd,
+                piecesPerBox: Number(item?.inventoryInfo?.piecesPerBox) || 0,
+              });
+            }}
+          />
+        </td>
+        {/* Description — Service only */}
+        {isService && (
+          <td data-row={i} data-col={c()} className="px-1 py-1">
+            <input
+              type="text"
+              name="description"
+              value={it.description || ""}
+              placeholder="Enter description"
+              onChange={(e) => actions.handleItemChange(i, e)}
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
             />
-          </td> 
-          {/* Description — Service only */}
-{isService && (
-  <td data-row={i} data-col={c()} className="px-1 py-1">
-    <input
-      type="text"
-      name="description"
-      value={it.description || ""}
-      placeholder="Enter description"
-      onChange={(e) => actions.handleItemChange(i, e)}
-      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-    />
-  </td>
-)}
+          </td>
+        )}
 
         {/* Pkg (U×S) — hidden < md */}
         {!isService && (
-        <td data-row={i} data-col={c()} className="px-1 py-1 md:table-cell">
-          <Tooltip
-            content={
-              it.packingUnit && it.packingSize
-                ? `Packing: ${it.packingUnit} × ${it.packingSize}`
-                : "No packing defined"
-            }
-          >
-            <input
-              type="text"
-              name="packing"
-              value={
+          <td data-row={i} data-col={c()} className="px-1 py-1 md:table-cell">
+            <Tooltip
+              content={
                 it.packingUnit && it.packingSize
-                  ? `${it.packingUnit}×${it.packingSize}`
-                  : ""
+                  ? `Packing: ${it.packingUnit} × ${it.packingSize}`
+                  : "No packing defined"
               }
-              disabled
-              className="w-full h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
-            />
-          </Tooltip>
-        </td>
+            >
+              <input
+                type="text"
+                name="packing"
+                value={
+                  it.packingUnit && it.packingSize
+                    ? `${it.packingUnit}×${it.packingSize}`
+                    : ""
+                }
+                disabled
+                className="w-full h-[22px] text-[10px] text-center bg-card text-main border border-theme rounded-sm"
+              />
+            </Tooltip>
+          </td>
         )}
         {!isService && (
-        <td data-row={i} data-col={c()} className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <div className="flex items-center gap-0.5">
               <input
                 name="boxStart"
@@ -417,14 +452,13 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
           </td>
         )}
 
-
         {/* Qty */}
         <td data-row={i} data-col={c()} className="px-0.5 py-1">
           <NumericInput
             name="quantity"
             value={it.quantity ?? ""}
             placeholder="0"
-             max={actions.getItemMax?.(i)}  
+            max={actions.getItemMax?.(i)}
             className="w-full min-w-[32px]"
             onChange={(value) =>
               actions.handleItemChange(i, {
@@ -435,19 +469,17 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         {/* UOM — quotation only */}
-        {!isService && (
-           <td data-row={i} data-col={c()} className="px-2 py-1 md:table-cell">
-            <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
-              <input
-                type="text"
-                name="uom"
-                value={it.uom || ""}
-                className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                disabled
-              />
-            </Tooltip>
-          </td> 
-        )}
+       <td data-row={i} data-col={c()} className="px-2 py-1 md:table-cell">
+  <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
+    <input
+      type="text"
+      name="uom"
+      value={it.uom || ""}
+      disabled
+      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
+    />
+  </Tooltip>
+</td>
 
         {/* Unit Price */}
         <td data-row={i} data-col={c()} className="px-0.5 py-1">
@@ -466,18 +498,18 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         <td data-row={i} data-col={c()} className="px-1 py-1">
-                    <NumericInput
-                      name="discount"
-                      value={it.discount ?? ""}
-                      placeholder="0"
-                      className="w-full min-w-[28px]"
-                      onChange={(value) =>
-                        actions.handleItemChange(i, {
-                          target: { name: "discount", value },
-                        } as any)
-                      }
-                    />
-                  </td>
+          <NumericInput
+            name="discount"
+            value={it.discount ?? ""}
+            placeholder="0"
+            className="w-full min-w-[28px]"
+            onChange={(value) =>
+              actions.handleItemChange(i, {
+                target: { name: "discount", value },
+              } as any)
+            }
+          />
+        </td>
 
         {/* Tax(%) — hidden < md */}
         <td data-row={i} data-col={c()} className="px-1 py-1 md:table-cell">
