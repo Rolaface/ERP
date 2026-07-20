@@ -14,7 +14,7 @@ interface SalesInvoice {
   invoiceDate: string;
   status: string;
   total: number;
-  outstandingAmount: number;
+  outstanding_amount: number;
 }
 
 interface Props {
@@ -114,12 +114,12 @@ const CustomerInvoices = ({ customerName }: Props) => {
       ),
     },
     {
-      key: "outstandingAmount",
+      key: "outstanding_amount",
       header: "Outstanding",
       align: "right" as const,
       render: (row: SalesInvoice) => (
         <span className="text-sm font-black text-danger">
-          {row.baseOutstandingAmount?.toLocaleString()}
+          {row.outstanding_amount?.toLocaleString()}
         </span>
       ),
     },
