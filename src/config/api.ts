@@ -85,11 +85,7 @@ export const API = {
    * SALES DASHBOARD
    * ========================= */
   salesDashboard: {
-    summary: `${ERP_BASE}/api/method/erpnext.dashboards.sale.api.summary`,
-    recentSales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.top_recent_sales`,
-    salesSummary: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.monthly_sales_breakdown`,
-    salesCount: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.get_document_counts`,
-    monthlySales: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.get_monthly_sales`,
+    sales_dashboard:`${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.sales_dashboard`
   },
 
   /* =========================

@@ -1,362 +1,621 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  LabelList,
-  Line,
-  LineChart,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Banknote,
   FileText,
   FileSignature,
-  Receipt,
+  FileStack,
+  FileBadge,
   ScrollText,
+  TrendingUp,
+  AlertTriangle,
+  Users,
+  ArrowUpRight,
+  Activity,
+  BellRing,
+  CheckCircle2,
+  Sparkles,
+  RefreshCcw,
 } from "lucide-react";
-// Make sure to export these two from your api file
-import { getRecentSales, getMonthlySalesBreakdown, getSalesCounts, getMonthlySales } from "../../api/salesDashboardApi";
-import { ChartSkeleton } from "../../components/ChartSkeleton";
-import { AppMetricCard, AppSectionCard } from "../../components/ui/app-shell";
-import { MonthlySalesBarChart } from "../../components/charts/MonthlySalesBarChart";
+
+import { EChart } from "../../components/charts/EChart";
+import MonthlySalesOverview from "../../components/charts/monthlysalesoverview";
 import { useCompanyStore } from "../../store/companyStore";
-import { NightingaleChart } from "../../components/charts/NightingaleChart";
+import {
+  getSalesDashboard,
+  type SalesDashboardData,
+  type InvoiceStatusCount,
+} from "../../api/salesDashboardApi";
 
-interface RecentSale {
-  name: string;
-  customer_name: string;
-  posting_date: string;
-  base_grand_total: number;
-  outstanding_amount: number;
-  status: string;
-  currency: string;
-}
 
-interface MonthlySales {
-  month: string;
-  totalSales: number;
-  totalReceived: number;
-  totalPending: number;
-}
+const COLORS = {
+  primary: "#4F46E5",
+  success: "#10B981",
+  warning: "#F59E0B",
+  danger: "#EF4444",
+  info: "#3B82F6",
+  purple: "#8B5CF6",
+  slate: "#94A3B8",
+};
+
+
+const STATUS_COLOR_MAP: Record<string, string> = {
+  green: COLORS.success,
+  red: COLORS.danger,
+  orange: COLORS.warning,
+  blue: COLORS.info,
+  purple: COLORS.purple,
+  gray: COLORS.slate,
+  grey: COLORS.slate,
+};
+
+const statusColor = (status: InvoiceStatusCount) =>
+  STATUS_COLOR_MAP[status.color?.toLowerCase()] ?? COLORS.slate;
+
+const AGING_BUCKET_COLORS = ["#FBBF24", "#FB923C", "#F87171", "#DC2626"];
+
+
+const CardShell: React.FC<{
+  title: string;
+  icon?: React.ElementType;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}> = ({ title, icon: Icon, action, children, className = "" }) => (
+  <div
+    className={`flex flex-col rounded-xl border border-[var(--border)] bg-card shadow-sm hover:shadow-md transition-shadow duration-200 ${className}`}
+  >
+    <div className="flex items-center justify-between px-4 pt-3 pb-2">
+      <div className="flex items-center gap-2">
+        {Icon && (
+          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+        )}
+        <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+      </div>
+      {action}
+    </div>
+    <div className="min-h-0 flex-1 px-4 pb-3">{children}</div>
+  </div>
+);
+
+const EmptyState: React.FC<{ label?: string; icon?: React.ElementType }> = ({
+  label = "No data available",
+  icon: Icon = FileText,
+}) => (
+  <div className="flex h-full min-h-[100px] flex-col items-center justify-center gap-2 text-slate-400">
+    <Icon className="h-5 w-5" />
+    <span className="text-xs font-medium">{label}</span>
+  </div>
+);
+
+const timeAgo = (isoDate: string) => {
+  const diffMs = Date.now() - new Date(isoDate).getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+};
+
+const KpiTile: React.FC<{ label: string; value: number; loading?: boolean }> = ({ label, value, loading }) => (
+  <div className="rounded-xl border border-[var(--border)] bg-card px-3 py-2.5 shadow-sm">
+    <p className="text-xs text-slate-500">{label}</p>
+    {loading ? (
+      <div className="mt-1.5 h-5 w-10 animate-pulse rounded bg-slate-100" />
+    ) : (
+      <p className="mt-0.5 text-xl font-bold text-slate-800">{value}</p>
+    )}
+  </div>
+);
+
+const CardSkeleton: React.FC<{ height?: string }> = ({ height = "h-40" }) => (
+  <div className={`w-full animate-pulse rounded-lg bg-slate-100 ${height}`} />
+);
 
 const SalesDashboard: React.FC = () => {
-  const [chartsLoading, setChartsLoading] = useState(true);
- const [monthlyEchartsData, setMonthlyEchartsData] = useState<any[]>([]);
-  const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
-  const [monthlySales, setMonthlySales] = useState<MonthlySales[]>([]);
-  const [salesCounts, setSalesCounts] = useState({
-    proforma_invoices: 0,
-    quotations: 0,
-    sales_invoices: 0,
-    credit_notes: 0,
-    debit_notes: 0
-  });
+  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || "";
+  const currencySymbol = useCompanyStore((state) => state.currencySymbol || "");
 
-  const baseCurrency = useCompanyStore((state) => state.baseCurrency) || '';
-  const currencySymbol = useCompanyStore((state) => state.currencySymbol || '');
-
-  const currencyFormatter = useMemo(() => {
-      const locale = baseCurrency === 'INR' ? 'en-IN' : 'en-US'; 
-      
-      const numberFormatter = new Intl.NumberFormat(locale, {
-        style: 'decimal', 
-        maximumFractionDigits: 2, 
-        notation: "compact"
-      });
-  
-      return {
-        format: (value: number) => {
-          const num = Number(value) || 0;
-          const formattedNumber = numberFormatter.format(Math.abs(num));
-          
-           const sign = num < 0 ? '-' : '';
-          
-           const space = currencySymbol.length > 1 ? ' ' : '';
-          
-          return `${sign}${currencySymbol}${space}${formattedNumber}`;
-        }
-      };
-    }, [baseCurrency, currencySymbol]);
- 
-
-  const dateWithDay = useMemo(
-    () =>
-      new Intl.DateTimeFormat("en-US", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-    [],
+  const currentYear = new Date().getFullYear();
+  const yearOptions = useMemo(
+    () => [currentYear, currentYear - 1, currentYear - 2].map(String),
+    [currentYear],
   );
 
-  const customerSharePieData = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of recentSales) {
-      const key = r.customer_name ?? "Unknown";
-      map.set(key, (map.get(key) ?? 0) + Number(r.base_grand_total ?? 0));
-    }
-    const base = Array.from(map.entries())
-      .map(([name, total]) => ({ name, total }))
-      .sort((a, b) => b.total - a.total);
+  const [year, setYear] = useState<string>(String(currentYear));
+  const [dashboard, setDashboard] = useState<SalesDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    if (!base.length) return [];
-    const top = base.slice(0, 5);
-    const restTotal = base.slice(5).reduce((sum, r) => sum + Number(r.total ?? 0), 0);
-    return restTotal > 0 ? [...top, { name: "Others", total: restTotal }] : top;
-  }, [recentSales]);
-
-
-  const pieColors = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#14b8a6"];
+  const fetchDashboard = useCallback(
+    async (targetYear: string, isYearSwitch = false) => {
+      isYearSwitch ? setChartLoading(true) : setLoading(true);
+      setError(null);
+      try {
+        const res = await getSalesDashboard({
+          year: Number(targetYear),
+          granularity: "monthly",
+        });
+        if (res.status_code !== 200) {
+          throw new Error(res.message || "Failed to load sales dashboard");
+        }
+        setDashboard(res.data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Something went wrong while loading the sales dashboard.",
+        );
+      } finally {
+        isYearSwitch ? setChartLoading(false) : setLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    let mounted = true;
-    const run = async () => {
-      try {
-        setChartsLoading(true);
-        // Fetch both APIs concurrently
-        const [recentRes, monthlyRes, countsRes, echartsMonthlyRes] = await Promise.all([
-          getRecentSales(),
-          getMonthlySalesBreakdown(),
-          getSalesCounts(),
-          getMonthlySales()
-        ]);
-
-        if (!mounted) return;
-        setRecentSales(recentRes?.data || []);
-        // setMonthlySales(monthlyRes?.data || []);
-        setMonthlySales(
-  (monthlyRes?.data || []).map((item: any) => ({
-    month: item.month,
-    totalSales: item.totalSales ?? 0,
-    totalReceived: item.totalReceived ?? 0,
-    totalPending: item.totalPending ?? 0,
-  }))
-);
-if (countsRes?.data) {
-          setSalesCounts(countsRes.data);
-        }
-       if (echartsMonthlyRes?.data) {
-  setMonthlyEchartsData(
-    echartsMonthlyRes.data.map((item: any) => ({
-      month: item.month,
-      year: item.year,
-      "total-sales": Number(item["total-sales"] ?? item.totalSales ?? 0),
-      received: Number(item.received ?? item.totalReceived ?? 0),
-      receivable: Number(item.receivable ?? item.totalPending ?? 0),
-    }))
-  );
-}
-      } catch (e: any) {
-        console.error("Failed to load sales dashboard charts:", e);
-      } finally {
-        if (mounted) setChartsLoading(false);
-      }
-    };
-
-    run();
-    return () => {
-      mounted = false;
-    };
+    fetchDashboard(year);
   }, []);
 
-  const chartPlaneStyle = useMemo(
-    () => ({
-      backgroundImage:
-        "linear-gradient(rgba(229,231,235,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(229,231,235,0.7) 1px, transparent 1px)",
-      backgroundSize: "24px 24px",
-      backgroundPosition: "-1px -1px",
-    }),
-    [],
-  );
-
-  const renderCurrencyDonutLabel = (props: any) => {
-    const { x, y, name, value } = props;
-    return (
-      <text x={x} y={y} fill="#374151" fontSize={11} textAnchor="middle" dominantBaseline="central">
-        {String(name)}: {currencyFormatter.format(Number(value ?? 0))}
-      </text>
-    );
+  const handleYearChange = (nextYear: string) => {
+    setYear(nextYear);
+    fetchDashboard(nextYear, true);
   };
 
-const stats = [
-    { label: "Proforma Invoices", value: salesCounts.proforma_invoices, icon: FileSignature, gradient: "from-blue-500 to-blue-600" },
-    { label: "Quotations", value: salesCounts.quotations, icon: ScrollText, gradient: "from-amber-500 to-amber-600" },
-    { label: "Sales Invoices", value: salesCounts.sales_invoices, icon: Receipt, gradient: "from-emerald-500 to-emerald-600" },
-    { label: "Credit Notes", value: salesCounts.credit_notes, icon: FileText, gradient: "from-sky-500 to-sky-600" },
-    { label: "Debit Notes", value: salesCounts.debit_notes, icon: Banknote, gradient: "from-purple-500 to-purple-600" },
+  const currencyFormatter = useMemo(() => {
+    const locale = baseCurrency === "INR" ? "en-IN" : "en-US";
+    const numberFormatter = new Intl.NumberFormat(locale, {
+      style: "decimal",
+      maximumFractionDigits: 2,
+      notation: "compact",
+    });
+    return {
+      format: (value: number) => {
+        const num = Number(value) || 0;
+        const formatted = numberFormatter.format(Math.abs(num));
+        const sign = num < 0 ? "-" : "";
+        const space = currencySymbol.length > 1 ? " " : "";
+        return `${sign}${currencySymbol}${space}${formatted}`;
+      },
+    };
+  }, [baseCurrency, currencySymbol]);
+
+
+  const summary = dashboard?.summary;
+  const monthlySalesOverview = dashboard?.monthly_sales_overview ?? [];
+  const quotationConversion = dashboard?.quotation_conversion ?? null;
+  const customerConcentration = dashboard?.customer_concentration ?? null;
+  const actionItems = dashboard?.action_items ?? [];
+  const topRecentSales = dashboard?.top_recent_sales ?? [];
+  const invoiceStatus = dashboard?.invoice_status ?? null;
+  const overdueAging = dashboard?.overdue_invoice_aging ?? null;
+  const recentActivity = dashboard?.recent_sales_activity ?? [];
+
+  const stats = [
+    { label: "Proforma Invoices", value: summary?.proforma_invoices ?? 0, icon: FileSignature },
+    { label: "Quotations", value: summary?.quotations ?? 0, icon: ScrollText },
+    { label: "Sales Invoices", value: summary?.sales_invoices ?? 0, icon: FileStack },
+    { label: "Credit Notes", value: summary?.credit_notes ?? 0, icon: FileText },
+    { label: "Debit Notes", value: summary?.debit_notes ?? 0, icon: Banknote },
   ];
 
-  // Component for 'No Data' Fallback
-  const NoDataOverlay = () => (
-    <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-xl z-10 text-sm text-gray-500 font-medium">
-      No data available
-    </div>
-  );
 
+  const topSalesOption = useMemo(() => {
+    const top = [...topRecentSales].sort((a, b) => b.amount - a.amount).slice(0, 5);
+
+    const maxTotal = Math.max(...top.map((s) => s.amount), 1);
+    const floor = maxTotal * 0.05;
+    const barData = top
+      .map((s) => ({ value: Math.max(s.amount, floor), actualValue: s.amount }))
+      .reverse();
+
+    return {
+      grid: { left: 8, right: 56, top: 4, bottom: 4, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params: any) => {
+          const p = params[0];
+          return `<b>${p.name}</b><br/>${currencyFormatter.format(p.data.actualValue)}`;
+        },
+      },
+      xAxis: { type: "value", show: false },
+      yAxis: {
+        type: "category",
+        data: top.map((s) => s.customer_name).reverse(),
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { fontSize: 10, color: "#334155", width: 150, overflow: "break", lineHeight: 12 },
+      },
+      series: [
+        {
+          type: "bar",
+          data: barData,
+          barMaxWidth: 12,
+          itemStyle: { color: COLORS.primary, borderRadius: [0, 4, 4, 0] },
+          label: {
+            show: true,
+            position: "right",
+            fontSize: 10,
+            color: "#64748B",
+            formatter: (p: any) => currencyFormatter.format(p.data.actualValue),
+          },
+        },
+      ],
+    };
+  }, [topRecentSales, currencyFormatter]);
+
+  const invoiceStatusOption = useMemo(() => {
+    const entries = (invoiceStatus?.statuses ?? []).filter((s) => s.count > 0);
+    return {
+      tooltip: { trigger: "item", formatter: "{b}: {c} ({d}%)" },
+      legend: {
+        orient: "vertical",
+        right: 0,
+        top: "center",
+        itemWidth: 9,
+        itemHeight: 9,
+        textStyle: { fontSize: 10, color: "#475569" },
+      },
+      series: [
+        {
+          type: "pie",
+          radius: ["55%", "80%"],
+          center: ["36%", "50%"],
+          avoidLabelOverlap: true,
+          label: { show: false },
+          labelLine: { show: false },
+          data: entries.map((s) => ({
+            name: s.status,
+            value: s.count,
+            itemStyle: { color: statusColor(s) },
+          })),
+        },
+      ],
+    };
+  }, [invoiceStatus]);
+
+  const conversionGaugeOption = useMemo(() => {
+    const rate = quotationConversion?.conversion_rate_percent ?? 0;
+    return {
+      series: [
+        {
+          type: "gauge",
+          startAngle: 220,
+          endAngle: -40,
+          min: 0,
+          max: 100,
+          radius: "95%",
+          center: ["50%", "62%"],
+          progress: { show: true, width: 10, itemStyle: { color: COLORS.primary } },
+          axisLine: { lineStyle: { width: 10, color: [[1, "#E2E8F0"]] } },
+          pointer: { show: false },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          axisLabel: { show: false },
+          detail: {
+            valueAnimation: true,
+            formatter: `{value}%`,
+            fontSize: 22,
+            fontWeight: 700,
+            color: "#1E293B",
+            offsetCenter: [0, "-4%"],
+          },
+          data: [{ value: rate }],
+        },
+      ],
+    };
+  }, [quotationConversion]);
+
+  const agingOption = useMemo(() => {
+    const buckets = overdueAging?.buckets ?? [];
+    const reversed = [...buckets].reverse();
+    return {
+      grid: { left: 4, right: 12, top: 2, bottom: 2, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params: any) => {
+          const p = params[0];
+          return `<b>${p.name}</b><br/>${currencyFormatter.format(p.value)}`;
+        },
+      },
+      xAxis: { type: "value", show: false },
+      yAxis: {
+        type: "category",
+        data: reversed.map((b) => b.range),
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { fontSize: 10, color: "#334155" },
+      },
+      series: [
+        {
+          type: "bar",
+          data: reversed.map((b) => b.amount),
+          barMaxWidth: 14,
+          barCategoryGap: "20%",
+          itemStyle: {
+            color: (p: any) => [...AGING_BUCKET_COLORS].reverse()[p.dataIndex] ?? COLORS.warning,
+            borderRadius: [0, 4, 4, 0],
+          },
+          label: {
+            show: true,
+            position: "right",
+            fontSize: 10,
+            color: "#64748B",
+            formatter: (p: any) => (p.value > 0 ? currencyFormatter.format(p.value) : ""),
+          },
+        },
+      ],
+    };
+  }, [overdueAging, currencyFormatter]);
+
+  const activityIcon = (type: string) => {
+    if (type.startsWith("quotation")) return { Icon: ScrollText, tint: "bg-amber-50 text-amber-600" };
+    if (type.startsWith("payment")) return { Icon: CheckCircle2, tint: "bg-emerald-50 text-emerald-600" };
+    return { Icon: FileStack, tint: "bg-indigo-50 text-indigo-600" };
+  };
+
+  const actionItemIcon = (type: string) => {
+    if (type === "overdue_invoices") return { Icon: AlertTriangle, tint: "bg-rose-50 text-rose-600" };
+    if (type === "high_outstanding") return { Icon: Users, tint: "bg-blue-50 text-blue-600" };
+    return { Icon: BellRing, tint: "bg-slate-50 text-slate-500" };
+  };
+
+
+  if (error && !dashboard) {
+    return (
+      <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-card p-6 text-center">
+        <AlertTriangle className="h-6 w-6 text-rose-500" />
+        <p className="text-sm font-medium text-slate-700">{error}</p>
+        <button
+          type="button"
+          onClick={() => fetchDashboard(year)}
+          className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+        >
+          <RefreshCcw className="h-3.5 w-3.5" /> Retry
+        </button>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   return (
-      <div className="flex flex-col gap-4 pb-6 min-h-0">
-      {/* --- TOP METRIC CARDS --- */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="flex flex-col gap-3 pb-4 min-h-0">
+      {/* KPI ROW */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
         {stats.map((stat) => (
-          <AppMetricCard
-            key={stat.label}
-            label={stat.label}
-            value={stat.value}
-            icon={stat.icon}
-            accentClassName={stat.gradient}
-          />
+          <KpiTile key={stat.label} label={stat.label} value={stat.value} loading={loading} />
         ))}
       </div>
 
-     <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
-        {/* --- MONTHLY SALES (LINE CHART) --- */}
-      <AppSectionCard title="Monthly Sales Overview">
-          <div className="relative h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
-            {chartsLoading ? (
-              <ChartSkeleton variant="bar" />
-            ) : monthlyEchartsData.length === 0 ? (
-              <NoDataOverlay />
+      {/* MAIN GRID */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        {/* LEFT + CENTER (2 cols worth) */}
+        <div className="flex flex-col gap-3 lg:col-span-2">
+          <CardShell title="Monthly Sales Overview" icon={TrendingUp}>
+            {loading ? (
+              <CardSkeleton height="h-48" />
             ) : (
-              <MonthlySalesBarChart data={monthlyEchartsData} />
+              <MonthlySalesOverview
+                currencyFormatter={currencyFormatter}
+                data={monthlySalesOverview}
+                year={year}
+                years={yearOptions}
+                loading={chartLoading}
+                onYearChange={handleYearChange}
+              />
             )}
-          </div>
-        </AppSectionCard>
+          </CardShell>
 
-        {/* --- TOP 10 RECENT SALES (BAR CHART) --- */}
-        <AppSectionCard title="Top 10 Recent Sales">
-         <div className="relative h-56 sm:h-64 lg:h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
-            {chartsLoading ? (
-              <ChartSkeleton variant="bar" />
-            ) : recentSales.length === 0 ? (
-              <NoDataOverlay />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <CardShell title="Top 5 Recent Sales" icon={ArrowUpRight}>
+              <div className="h-48">
+                {loading ? (
+                  <CardSkeleton height="h-48" />
+                ) : topRecentSales.length === 0 ? (
+                  <EmptyState label="No recent sales" />
+                ) : (
+                  <EChart option={topSalesOption} height={192} />
+                )}
+              </div>
+            </CardShell>
+
+            <CardShell title="Invoice Status" icon={FileBadge}>
+              <div className="h-40">
+                {loading ? (
+                  <CardSkeleton height="h-40" />
+                ) : !invoiceStatus || invoiceStatus.statuses.every((s) => s.count === 0) ? (
+                  <EmptyState label="No invoices yet" />
+                ) : (
+                  <EChart option={invoiceStatusOption} height={160} />
+                )}
+              </div>
+            </CardShell>
+          </div>
+
+          <CardShell
+            title="Overdue Invoice Aging"
+            icon={AlertTriangle}
+            className="h-96"
+            action={
+              !loading && overdueAging && overdueAging.invoices.length > 0 ? (
+                <span className="text-xs font-semibold text-rose-600">
+                  {currencyFormatter.format(overdueAging.total_overdue)} total
+                </span>
+              ) : null
+            }
+          >
+            {loading ? (
+              <CardSkeleton height="h-full" />
+            ) : !overdueAging || overdueAging.invoices.length === 0 ? (
+              <EmptyState label="No overdue invoices — nice work" icon={CheckCircle2} />
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={recentSales} margin={{ top: 16, right: 16, left: 8, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="customer_name"
-                    tick={{ fontSize: 11 }}
-                    interval={0}
-                    angle={-15}
-                    textAnchor="end"
-                    height={54}
-                  />
-                  <YAxis tick={{ fontSize: 12 }} width={52} tickFormatter={(v) => currencyFormatter.format(Number(v))} />
-                  <Tooltip
-                    formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))}
-                    labelFormatter={(
-                      _label: any,
-                      payload: readonly { payload?: { name?: string; customer_name?: string; posting_date?: string; status?: string } }[],
-                    ) => {
-                      const p = payload?.[0]?.payload;
-                      if (!p) return "";
-                      return (
-                        <div className="flex flex-col gap-1">
-                          <span className="font-bold text-gray-800">{p.name}</span>
-                          <span className="text-gray-600">{p.customer_name}</span>
-                          <span className="text-xs text-gray-500">
-                            {p.posting_date ? dateWithDay.format(new Date(p.posting_date)) : ""} • <span className={p.status === "Unpaid" ? "text-red-500" : "text-emerald-500"}>{p.status}</span>
+              <div className="flex h-full flex-col gap-1">
+                <div className="h-20 shrink-0">
+                  <EChart option={agingOption} height={80} />
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto border-t border-slate-100 pr-1">
+                  <div className="flex flex-col divide-y divide-slate-100">
+                    {[...overdueAging.invoices]
+                      .sort((a, b) => b.days_overdue - a.days_overdue)
+                      .map((inv) => (
+                        <div key={inv.invoice_id} className="flex items-center justify-between py-1.5 text-sm">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-slate-700">{inv.customer_name}</span>
+                            <span className="text-xs text-slate-400">{inv.invoice_id}</span>
+                          </div>
+                          <div className="flex shrink-0 flex-col items-end">
+                            <span className="font-semibold text-slate-800">
+                              {currencyFormatter.format(inv.amount)}
+                            </span>
+                            <span
+                              className={`text-xs font-medium ${
+                                inv.days_overdue > 90
+                                  ? "text-rose-600"
+                                  : inv.days_overdue > 60
+                                  ? "text-red-500"
+                                  : inv.days_overdue > 30
+                                  ? "text-orange-500"
+                                  : "text-amber-500"
+                              }`}
+                            >
+                              {inv.days_overdue}d overdue
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardShell>
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <CardShell title="Quotation Conversion" icon={Sparkles}>
+              {loading ? (
+                <CardSkeleton height="h-24" />
+              ) : !quotationConversion || quotationConversion.total_quotations === 0 ? (
+                <EmptyState label="No quotations yet" />
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="h-24 w-full">
+                    <EChart option={conversionGaugeOption} height={96} />
+                  </div>
+                  <div className="mt-1 flex w-full justify-between text-xs text-slate-500">
+                    <span>{quotationConversion.total_quotations} quotations</span>
+                    <span>{quotationConversion.converted_quotations} converted</span>
+                  </div>
+                </div>
+              )}
+            </CardShell>
+
+            <CardShell title="Customer Concentration" icon={Users}>
+              {loading ? (
+                <CardSkeleton height="h-24" />
+              ) : !customerConcentration ? (
+                <EmptyState label="No customer data" />
+              ) : (
+                <div className="flex h-24 flex-col justify-center gap-2">
+                  <div>
+                    <span className="text-xl font-bold text-slate-800">
+                      {customerConcentration.top_customer_revenue_percent}%
+                    </span>
+                    <p className="mt-0.5 text-xs leading-snug text-slate-500">
+                      <span className="font-semibold text-slate-700">
+                        {customerConcentration.top_customer_name}
+                      </span>{" "}
+                      contributes {customerConcentration.top_customer_revenue_percent}% of tracked revenue
+                    </p>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                      style={{ width: `${customerConcentration.top_customer_revenue_percent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </CardShell>
+          </div>
+
+          <CardShell title="Needs Attention" icon={BellRing} className="h-64">
+            {loading ? (
+              <CardSkeleton height="h-full" />
+            ) : actionItems.length === 0 ? (
+              <EmptyState label="Nothing needs attention" icon={CheckCircle2} />
+            ) : (
+              <div className="flex h-full flex-col divide-y divide-slate-100 overflow-y-auto pr-1">
+                {actionItems.map((item) => {
+                  const { Icon, tint } = actionItemIcon(item.type);
+                  return (
+                    <div key={item.type} className="flex items-center justify-between py-1.5 text-sm">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${tint}`}>
+                          <Icon className="h-3 w-3" />
+                        </span>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-slate-700">{item.label}</span>
+                          <span className="text-xs text-slate-400">{item.title}</span>
+                        </div>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                        {item.count}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardShell>
+
+          <CardShell title="Recent Sales Activity" icon={Activity}>
+            {loading ? (
+              <CardSkeleton height="h-48" />
+            ) : recentActivity.length === 0 ? (
+              <EmptyState label="No recent activity" />
+            ) : (
+              <div className="relative flex flex-col gap-2.5 pl-1">
+                {recentActivity.slice(0, 5).map((item, idx) => {
+                  const { Icon, tint } = activityIcon(item.type);
+                  const isLast = idx === Math.min(recentActivity.length, 5) - 1;
+                  return (
+                    <div key={`${item.reference_id}-${item.timestamp}`} className="relative flex gap-2.5">
+                      {!isLast && (
+                        <span className="absolute left-[11px] top-6 h-[calc(100%+2px)] w-px bg-slate-100" />
+                      )}
+                      <span className={`z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${tint}`}>
+                        <Icon className="h-3 w-3" />
+                      </span>
+                      <div className="flex flex-1 items-center justify-between gap-2 pb-0.5">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-slate-700">{item.title}</span>
+                          <span className="text-xs text-slate-400">
+                            {item.customer_name} • {item.reference_id}
                           </span>
                         </div>
-                      );
-                    }}
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                    cursor={{ fill: "var(--primary)", opacity: 0.1 }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="base_grand_total" fill="#10b981" radius={[6, 6, 0, 0]} name="Grand Total">
-                    <LabelList
-                      dataKey="base_grand_total"
-                      position="top"
-                      formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))}
-                      fill="#6b7280"
-                      fontSize={10}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+                        <div className="flex flex-col items-end">
+                          {item.amount != null && (
+                            <span className="text-xs font-semibold text-slate-600">
+                              {currencyFormatter.format(item.amount)}
+                            </span>
+                          )}
+                          <span className="text-[11px] text-slate-400">{timeAgo(item.timestamp)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
-          </div>
-        </AppSectionCard>
-       {/* --- SALES BREAKDOWN (PIE CHART) --- */}
-         <AppSectionCard title="Sales Breakdown">
-          <div className="relative h-72 rounded-xl border border-[var(--border)] bg-card" style={chartPlaneStyle}>
-            {chartsLoading ? (
-              <ChartSkeleton variant="pie" />
-            ) : customerSharePieData.length === 0 ? (
-              <NoDataOverlay />
-            ) : (
-              <NightingaleChart data={customerSharePieData} />
-            )}
-          </div>
-        </AppSectionCard>
-
-        {/* --- INVOICE BREAKDOWN (PIE CHART) --- */}
-        {/* <AppSectionCard title="Invoice Breakdown">
-          <div className="relative h-72 rounded-xl border border-[var(--border)] bg-card">
-            {chartsLoading ? (
-              <ChartSkeleton variant="pie" />
-            ) : customerSharePieData.length === 0 ? (
-              <NoDataOverlay />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                  <Tooltip
-                    formatter={(v: any) => currencyFormatter.format(Number(v ?? 0))}
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                    itemStyle={{ color: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: 12 }}
-                    layout="horizontal"
-                    verticalAlign="bottom"
-                    align="center"
-                    iconType="square"
-                    height={36}
-                  />
-                  <Pie
-                    data={customerSharePieData}
-                    dataKey="total"
-                    nameKey="name"
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={55}
-                    outerRadius={82}
-                    paddingAngle={2}
-                    label={renderCurrencyDonutLabel}
-                    labelLine={false}
-                  >
-                    {customerSharePieData.map((_, idx) => (
-                      <Cell key={idx} fill={pieColors[idx % pieColors.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </AppSectionCard> */}
+          </CardShell>
+        </div>
       </div>
     </div>
   );
