@@ -436,11 +436,13 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   itemCode: item.itemCode,
                   itemName: item.itemName,
                   description: item.description,
+                  uom: item.stockUom,
                   packingSize: item.packingSize,
                   packingUnit: item.packingUnit,
                   piecesPerBox: item.piecesPerBox,
                   batchNo: item.batchNo,
                   mfgDate: item.mfgDate,
+                  
                   expDate: item.expiryDate,
                   availableQty: item.qty,
                   quantity: 0,

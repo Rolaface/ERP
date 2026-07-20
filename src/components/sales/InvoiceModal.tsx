@@ -4,7 +4,7 @@ import TermsAndCondition from "../TermsAndCondition";
 import {
   showApiError,
   showSuccess,
-  showValidationError,
+ 
 } from "../../utils/alert";
 import {
   useDataRefreshStore,
@@ -19,10 +19,10 @@ import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
-import { getAllModeOfPayment } from "../../api/BankAccountApi";
 
-import { paymentMethodOptions } from "../../constants/invoice.constants";
-import PaymentInfoBlock from "./PaymentInfoBlock";
+
+
+
 import ItemTable from "../common/ItemTable";
 import type { ModalSubmitHandler } from "../../types/modal";
 import { useDefault } from "../../hooks/usedefaultdata";
