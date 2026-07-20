@@ -126,6 +126,7 @@ const ServiceInvoiceColGroup: React.FC = () => (
     <col style={{ width: "28px" }} /> {/* # */}
     <col style={{ width: "20%" }} />  {/* Item */}
     <col style={{ width: "25%" }} />  {/* Description */}
+    <col style={{ width: "8%" }} />   {/* UOM */}
     <col style={{ width: "7%" }} />   {/* Qty */}
     <col style={{ width: "6%" }} />  {/* Price */}
     <col style={{ width: "5%" }} />   {/* Discount */}
@@ -166,6 +167,12 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
       {isService && (
   <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
     Description
+  </th>
+  
+)}
+{isService && (
+  <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+    UOM
   </th>
 )}
 
@@ -477,6 +484,18 @@ const ItemTable: React.FC<ItemTableProps> = ({
       placeholder="Enter description"
       onChange={(e) => actions.handleItemChange(i, e)}
       className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+    />
+  </td>
+)}
+{/* UOM */}
+{isService && (
+  <td data-row={i} data-col={c()} className="px-1 py-1">
+    <input
+      type="text"
+      name="uom"
+      value={it.uom || ""}
+      disabled
+      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
     />
   </td>
 )}
