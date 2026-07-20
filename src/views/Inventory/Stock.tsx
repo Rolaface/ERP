@@ -504,14 +504,15 @@ const Items: React.FC = () => {
       ),
     },
     {
-      key: "itemCode",
-      header: "Item Code",
-      render: (row) => (
-        <span className="font-medium whitespace-nowrap">
-          {row.itemCode ?? "—"}
-        </span>
-      ),
-    },
+  key: "itemCode",
+  header: "Item Code",
+  align: "left",
+  render: (row) => (
+    <span className="font-medium whitespace-nowrap">
+      {row.itemCode ?? "—"}
+    </span>
+  ),
+},
     {
       key: "itemName",
       header: "Item Name",
@@ -541,7 +542,9 @@ const Items: React.FC = () => {
       header: "Pieces/Box",
       align: "center",
       render: (row) => (
-        <span className="whitespace-nowrap">{row.piecesPerBox ?? "—"}</span>
+        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+          {row.piecesPerBox ?? "—"}
+        </code>
       ),
     },
     {
@@ -549,7 +552,7 @@ const Items: React.FC = () => {
       header: "Qty",
       align: "center",
       render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
           {row.totalQty}
         </code>
       ),
@@ -559,7 +562,9 @@ const Items: React.FC = () => {
       header: "Box Available",
       align: "center",
       render: (row) => (
-        <span className="whitespace-nowrap">{row.boxAvailable ?? "—"}</span>
+        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+          {row.boxAvailable ?? "—"}
+        </code>
       ),
     },
     {
@@ -567,7 +572,7 @@ const Items: React.FC = () => {
       header: "Total Buy Value",
       align: "right",
       render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
           {row.buyCurrency} {row.totalBuyValue.toLocaleString("en-IN")}
         </code>
       ),
@@ -577,7 +582,7 @@ const Items: React.FC = () => {
       header: "Total Sell Value",
       align: "right",
       render: (row) => (
-        <code className="text-xs px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
+        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
           {row.sellCurrency} {row.totalSellValue.toLocaleString("en-IN")}
         </code>
       ),
