@@ -1,3 +1,4 @@
+import { SalesDebitNote } from './../types/sales/SalesDebitNotes';
 
 import { ENV } from "./env";
 
@@ -452,6 +453,9 @@ export const API = {
   },
   DebitNote: {
     Debit_note: `${ERP_BASE}/api/resource/Purchase Invoice`,
+  },
+  SalesDebitNote: {
+    Sales_Debit_Note: `${ERP_BASE}/api/resource/Sales Invoice`,
   },
 
   Bank: {
