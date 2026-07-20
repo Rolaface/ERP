@@ -104,6 +104,9 @@ const RfqModal = lazy(() => import("../procurement/rfq/RfqModal"));
 const CreditNoteModal = lazy(
   () => import("../../views/Sales/CreateCreditNoteModal"),
 );
+const SalesDebitNoteModal = lazy(
+  () => import("../../views/Sales/CreateSalesDebitNoteModal"),
+);
 const DebitNoteModal = lazy(
   () => import("../../views/Sales/createDebitNoteModal"),
 );
@@ -679,6 +682,18 @@ const GlobalModalHandler: React.FC = () => {
       case "CreditNote":
         return wrappedModal(
           <CreditNoteModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={handleSubmit}
+            initialData={modal.initialData as string}
+            isEdit={modal.isEdit}
+          />,
+        );
+      case "SalesDebitNote":
+        return wrappedModal(
+          <SalesDebitNoteModal
             key={modal.id}
             modalId={modal.id}
             isOpen={true}

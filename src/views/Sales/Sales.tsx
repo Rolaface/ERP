@@ -29,6 +29,7 @@ const POS = lazy(() => import("./POS"));
 const SalesDashboard = lazy(() => import("./SalesDashboard"));
 const ProformaInvoicesTable = lazy(() => import("./ProformaInvoice"));
 const CreditNotesTable = lazy(() => import("./CreditNotesTable"));
+const SalesDebitNotesTable = lazy(() => import("./SalesDebitNotesTable"));
 const SalesAnalytics = lazy(() => import("./SalesAnalytics"));
 
 type OutletContextType = {
@@ -86,6 +87,13 @@ const ALL_SALES_TAB = [
   {
     id: "creditNotes",
     label: "Credit Notes",
+    icon: <FileMinus size={16} strokeWidth={1.75} />,
+    module: "Sales Invoice",
+    action: "read" as const,
+  },
+  {
+    id: "salesDebitNotes",
+    label: "Sales Debit Notes",
     icon: <FileMinus size={16} strokeWidth={1.75} />,
     module: "Sales Invoice",
     action: "read" as const,
@@ -172,6 +180,8 @@ const SalesModule: React.FC = () => {
         return <POS />;
       case "creditNotes":
         return <CreditNotesTable />;
+      case "salesDebitNotes":
+        return <SalesDebitNotesTable />;
       case "reports":
         return <ReportTable />;
       case "salesAnalytics":
