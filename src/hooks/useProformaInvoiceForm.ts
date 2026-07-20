@@ -412,6 +412,9 @@ export const useProformaInvoiceForm = (
     if (!formData.validTill) {
       throw new Error("Please select due date");
     }
+    if (!formData.payment_mode) {
+      throw new Error("Please select mode of payment");
+    }
     if (!formData.items.length) {
       throw new Error("Please add at least one item");
     }

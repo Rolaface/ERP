@@ -28,6 +28,8 @@ import { createSalesOrder, editSalesOrder } from "../../api/SalesOrder/salesOrde
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import QuotationItemTable from "../common/QuotationItemTable";
 import { useDefault } from "../../hooks/usedefaultdata";
+import ModeOfPaymentSelect from "../selects/defaults/Modeofpaymentselect";
+import { ModalInput } from "../ui/modal/modalComponent";
 
 interface SalesOrderModalProps {
   isOpen: boolean;
@@ -171,6 +173,11 @@ const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
     await handleSave();
   };
 
+   const showExchangeRate =
+    !!ui.baseCurrency &&
+    !!formData.currencyCode &&
+    formData.currencyCode.trim().toUpperCase() !==
+      ui.baseCurrency.trim().toUpperCase();
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -306,6 +313,49 @@ const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
                       } as any)
                     }
                   />
+                </div>
+                {showExchangeRate && (
+                                                  <div className="w-full sm:w-[110px] relative">
+                                                    <ModalInput
+                                                      label="Exchange Rate"
+                                                      name="exchangeRt"
+                                                      value={
+                                                        ui.exchangeRateLoading ? "" : formData.exchangeRt || "1"
+                                                      }
+                                                      placeholder={ui.exchangeRateLoading ? "Loading..." : ""}
+                                                      onChange={actions.handleInputChange}
+                                                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                                                      disabled
+                                                    />
+                                                    {!!ui.exchangeRateError && (
+                                                      <div
+                                                        className="absolute left-0 top-full mt-0.5 text-[9px] text-danger whitespace-nowrap z-10"
+                                                        title={ui.exchangeRateError}
+                                                      >
+                                                        Rate not found
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                )}
+                 <div className="w-full sm:w-[200px]">
+                  {/* <ModeOfPaymentSelect
+                    value={formData.payment_mode ?? ""}
+                    onChange={(val) =>
+                      actions.handleInputChange({
+                        target: { name: "payment_mode", value: val },
+                      } as any)
+                    }
+                  /> */}
+                  <ModeOfPaymentSelect
+  value={formData.payment_mode ?? ""}
+  required
+  onChange={(val) => {
+    actions.handleInputChange({
+      target: { name: "payment_mode", value: val },
+    } as any);
+    
+  }}
+/>
                 </div>
 
                 {/* Order Type */}

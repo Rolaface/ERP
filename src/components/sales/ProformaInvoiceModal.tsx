@@ -371,6 +371,7 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
                   /> */}
                   <ModeOfPaymentSelect
   value={formData.payment_mode ?? ""}
+  required
   onChange={(val) => {
     actions.handleInputChange({
       target: { name: "payment_mode", value: val },
