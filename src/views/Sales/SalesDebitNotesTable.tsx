@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo } from "react";
 import Table from "../../components/ui/Table/Table";
 import type { Column } from "../../components/ui/Table/type";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
-import { openCreditNoteModal } from "../../store/modalStore";
+import { openSalesDebitNoteModal } from "../../store/modalStore";
 import {
-  getAllCreditNotes,
-  deleteCreditNote,
-  submitCreditNote,
-  cancelCreditNote,
-} from "../../api/CreditNoteapi";
+  getAllSalesDebitNotes,
+  deleteSalesDebitNote,
+  submitSalesDebitNote,
+  cancelSalesDebitNote,
+} from "../../api/SalesDebitNoteApi";
 import { getSalesInvoiceById } from "../../api/salesApi";
 import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
 import * as XLSX from "xlsx";
@@ -25,7 +25,7 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import { fireManagedSwal } from "../../utils/swalManager";
-import { CreditNote } from "../../types/sales/Creditnotes";
+import { SalesDebitNote } from "../../types/sales/SalesDebitNotes"; 
 import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
@@ -36,9 +36,8 @@ import {
   useDataRefreshStore,
 } from "../../store/dataRefreshStore";
 
-const CREDIT_NOTE_MODULE = "Sales Invoice";
+const SALES_DEBIT_NOTE_MODULE = "Sales Invoice";
 
-// Maps UI column keys to ERPNext fieldnames expected by the sort API.
 const SORT_FIELD_MAP: Record<string, string> = {
   noteNo: "name",
   invoiceNo: "return_against",
@@ -53,18 +52,8 @@ const resolveSortField = (key: string) => SORT_FIELD_MAP[key] ?? key;
 const formatDate = (date: string | Date) => {
   if (!date) return "";
   const months = [
-    "JAN",
-    "FEB",
-    "MAR",
-    "APR",
-    "MAY",
-    "JUN",
-    "JUL",
-    "AUG",
-    "SEP",
-    "OCT",
-    "NOV",
-    "DEC",
+    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
   ];
   if (typeof date === "string") {
     const [year, month, day] = date.split("T")[0].split("-").map(Number);
@@ -73,7 +62,7 @@ const formatDate = (date: string | Date) => {
   return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
 };
 
-const mapCreditNote = (item: any, fallbackStatus = "-"): CreditNote => ({
+const mapSalesDebitNote = (item: any, fallbackStatus = "-"): SalesDebitNote => ({
   noteNo: item.name,
   invoiceNo: item.return_against || "-",
   customer: item.customer_name,
@@ -83,8 +72,8 @@ const mapCreditNote = (item: any, fallbackStatus = "-"): CreditNote => ({
   currency: item.currency,
 });
 
-const CreditNotesTable: React.FC = () => {
-  const [data, setData] = useState<CreditNote[]>([]);
+const SalesDebitNotesTable: React.FC = () => {
+  const [data, setData] = useState<SalesDebitNote[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const { can } = usePermission();
@@ -115,23 +104,23 @@ const CreditNotesTable: React.FC = () => {
   useEffect(() => {
     const unsubscribe = useDataRefreshStore
       .getState()
-      .subscribeToRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST, () => {
-        fetchCreditNotes();
+      .subscribeToRefresh(REFRESH_KEYS.SALES_DEBIT_NOTE_LIST, () => {
+        fetchSalesDebitNotes();
       });
     return unsubscribe;
   }, []);
 
-  const fetchCreditNotes = async () => {
+  const fetchSalesDebitNotes = async () => {
     try {
       setLoading(true);
-      const resp = await getAllCreditNotes(
+      const resp = await getAllSalesDebitNotes(
         page,
         pageSize,
         searchTerm,
         resolveSortField(sortBy),
         sortOrder,
       );
-      setData(resp.data.map((item: any) => mapCreditNote(item)));
+      setData(resp.data.map((item: any) => mapSalesDebitNote(item)));
       setTotalPages(resp.pagination.total_pages);
       setTotalItems(resp.pagination.total);
     } catch (error: any) {
@@ -143,7 +132,7 @@ const CreditNotesTable: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCreditNotes();
+    fetchSalesDebitNotes();
   }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
   const handleSortChange = ({
@@ -161,7 +150,7 @@ const CreditNotesTable: React.FC = () => {
   const handleSubmit = async (noteNo: string) => {
     const result = await fireManagedSwal({
       icon: "question",
-      title: "Approve Credit Note?",
+      title: "Approve Sales Debit Note?",
       text: `Approve ${noteNo}? This action cannot be undone.`,
       showCancelButton: true,
       confirmButtonColor: "#22c55e",
@@ -172,11 +161,11 @@ const CreditNotesTable: React.FC = () => {
     if (!result.isConfirmed) return;
 
     try {
-      showLoading("Approving credit note...");
-      await submitCreditNote(noteNo);
+      showLoading("Approving sales debit note...");
+      await submitSalesDebitNote(noteNo);
       closeSwal();
-      showSuccess(`Credit note ${noteNo} approved successfully`);
-      fetchCreditNotes();
+      showSuccess(`Sales debit note ${noteNo} approved successfully`);
+      fetchSalesDebitNotes();
     } catch (error) {
       closeSwal();
       showApiError(error);
@@ -186,7 +175,7 @@ const CreditNotesTable: React.FC = () => {
   const handleCancel = async (noteNo: string) => {
     const result = await fireManagedSwal({
       icon: "warning",
-      title: "Cancel Credit Note?",
+      title: "Cancel Sales Debit Note?",
       text: `Cancel ${noteNo}? This cannot be undone.`,
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
@@ -197,25 +186,25 @@ const CreditNotesTable: React.FC = () => {
     if (!result.isConfirmed) return;
 
     try {
-      showLoading("Cancelling credit note...");
-      await cancelCreditNote(noteNo);
+      showLoading("Cancelling sales debit note...");
+      await cancelSalesDebitNote(noteNo);
       closeSwal();
-      showSuccess(`Credit note ${noteNo} cancelled successfully`);
-      fetchCreditNotes();
+      showSuccess(`Sales debit note ${noteNo} cancelled successfully`);
+      fetchSalesDebitNotes();
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
 
-  const fetchAllCreditNotesForExport = async (): Promise<CreditNote[]> => {
+  const fetchAllSalesDebitNotesForExport = async (): Promise<SalesDebitNote[]> => {
     try {
-      let allData: CreditNote[] = [];
+      let allData: SalesDebitNote[] = [];
       let current = 1;
       let total = 1;
 
       do {
-        const resp = await getAllCreditNotes(
+        const resp = await getAllSalesDebitNotes(
           current,
           100,
           searchTerm,
@@ -224,7 +213,7 @@ const CreditNotesTable: React.FC = () => {
         );
         allData = [
           ...allData,
-          ...resp.data.map((item: any) => mapCreditNote(item, "Draft")),
+          ...resp.data.map((item: any) => mapSalesDebitNote(item, "Draft")),
         ];
         total = resp.pagination.total_pages;
         current++;
@@ -241,7 +230,7 @@ const CreditNotesTable: React.FC = () => {
     const result = await fireManagedSwal({
       icon: "warning",
       title: "Are you sure?",
-      text: `Delete credit note ${noteNo}?`,
+      text: `Delete sales debit note ${noteNo}?`,
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
       cancelButtonColor: "#6b7280",
@@ -251,32 +240,32 @@ const CreditNotesTable: React.FC = () => {
     if (!result.isConfirmed) return;
 
     try {
-      showLoading("Deleting credit note...");
-      await deleteCreditNote(noteNo);
+      showLoading("Deleting sales debit note...");
+      await deleteSalesDebitNote(noteNo);
       closeSwal();
       setData((prev) => prev.filter((item) => item.noteNo !== noteNo));
       useDataRefreshStore
         .getState()
-        .triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
-      showSuccess("Credit note deleted successfully");
+        .triggerRefresh(REFRESH_KEYS.SALES_DEBIT_NOTE_LIST);
+      showSuccess("Sales debit note deleted successfully");
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
 
-  const handleEdit = async (note: CreditNote, e?: React.MouseEvent) => {
+  const handleEdit = async (note: SalesDebitNote, e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
-      showLoading("Loading Credit Note...");
-      const res = await getSalesInvoiceById(note.noteNo, true, false);
+      showLoading("Loading Sales Debit Note...");
+      const res = await getSalesInvoiceById(note.noteNo, false, true);
       if (!res.message || res.message.status_code !== 200) {
         closeSwal();
-        showApiError("Credit Note data could not be loaded");
+        showApiError("Sales Debit Note data could not be loaded");
         return;
       }
       closeSwal();
-      openCreditNoteModal(res.message.data, true);
+      openSalesDebitNoteModal(res.message.data, true);
     } catch (err) {
       closeSwal();
       showApiError(err);
@@ -289,7 +278,7 @@ const CreditNotesTable: React.FC = () => {
     setDrawerLoading(true);
     setDrawerData(null);
     try {
-      const res = await getSalesInvoiceById(noteNo, true, false);
+      const res = await getSalesInvoiceById(noteNo, false, true);
       if (res?.message?.status_code === 200) {
         setDrawerData(res.message.data as InvoiceDetail);
       }
@@ -319,7 +308,7 @@ const CreditNotesTable: React.FC = () => {
     const url = URL.createObjectURL(drawerPdfBlob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${drawerData.id || "credit-note"}.pdf`;
+    a.download = `${drawerData.id || "sales-debit-note"}.pdf`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -328,17 +317,17 @@ const CreditNotesTable: React.FC = () => {
 
   const handleExportExcel = async () => {
     try {
-      showLoading("Exporting Credit Notes...");
-      const dataToExport = await fetchAllCreditNotesForExport();
+      showLoading("Exporting Sales Debit Notes...");
+      const dataToExport = await fetchAllSalesDebitNotesForExport();
       if (!dataToExport.length) {
         closeSwal();
-        showApiError("No credit notes to export");
+        showApiError("No sales debit notes to export");
         return;
       }
       const worksheet = XLSX.utils.json_to_sheet(
         dataToExport.map((r) => ({
-          "Credit Note No": r.noteNo,
-          "Receipt No": r.invoiceNo,
+          "Debit Note No": r.noteNo,
+          "Original Invoice No": r.invoiceNo,
           Customer: r.customer,
           Date: r.date,
           Amount: r.amount,
@@ -347,26 +336,26 @@ const CreditNotesTable: React.FC = () => {
         })),
       );
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Credit Notes");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Sales Debit Notes");
       saveAs(
         new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
-        "Credit_Notes.xlsx",
+        "Sales_Debit_Notes.xlsx",
       );
       closeSwal();
-      showSuccess("Credit notes exported successfully");
+      showSuccess("Sales Debit notes exported successfully");
     } catch (error) {
       closeSwal();
       showApiError(error);
     }
   };
 
-  const columns: Column<CreditNote>[] = useMemo(
+  const columns: Column<SalesDebitNote>[] = useMemo(
     () => [
       {
         key: "noteNo",
-        header: "Credit Invoice No",
+        header: "Debit Note No",
         sortable: true,
         render: (o) => (
           <div className="py-1.5">
@@ -376,7 +365,7 @@ const CreditNotesTable: React.FC = () => {
       },
       {
         key: "invoiceNo",
-        header: "Receipt No",
+        header: "Original Invoice No",
         sortable: true,
         render: (o) => (
           <div className="py-1.5">
@@ -441,7 +430,7 @@ const CreditNotesTable: React.FC = () => {
               iconOnly
               onClick={(e) => handleView(r.noteNo, e)}
             />
-            <PermissionGate module={CREDIT_NOTE_MODULE} action="write">
+            <PermissionGate module={SALES_DEBIT_NOTE_MODULE} action="write">
               <ActionButton
                 type="edit"
                 onClick={(e) => handleEdit(r, e)}
@@ -450,13 +439,13 @@ const CreditNotesTable: React.FC = () => {
                 title={
                   r.status !== "Draft"
                     ? "Only Draft invoices can be edited"
-                    : "Edit Credit Note"
+                    : "Edit Sales Debit Note"
                 }
               />
             </PermissionGate>
             <ActionMenu
               {...((r.status === "Cancelled" || r.status === "Draft") &&
-              can(CREDIT_NOTE_MODULE, "delete")
+              can(SALES_DEBIT_NOTE_MODULE, "delete")
                 ? {
                     onDelete: (e) => {
                       e?.stopPropagation();
@@ -465,7 +454,7 @@ const CreditNotesTable: React.FC = () => {
                   }
                 : {})}
               customActions={[
-                ...(r.status === "Draft" && can(CREDIT_NOTE_MODULE, "write")
+                ...(r.status === "Draft" && can(SALES_DEBIT_NOTE_MODULE, "write")
                   ? [
                       {
                         label: "Approve",
@@ -474,7 +463,7 @@ const CreditNotesTable: React.FC = () => {
                       },
                     ]
                   : []),
-                ...(r.status === "Return" && can(CREDIT_NOTE_MODULE, "write")
+                ...(r.status === "Return" && can(SALES_DEBIT_NOTE_MODULE, "write")
                   ? [
                       {
                         label: "Cancel",
@@ -506,7 +495,7 @@ const CreditNotesTable: React.FC = () => {
       <Table
         columns={columns}
         data={data}
-        tableId="sales-creditnote"
+        tableId="sales-debitnote"
         rowKey={(row) => row.noteNo}
         loading={loading || initialLoad}
         showToolbar
@@ -515,12 +504,12 @@ const CreditNotesTable: React.FC = () => {
           setSearchTerm(q);
           setPage(1);
         }}
-        enableAdd={can(CREDIT_NOTE_MODULE, "create")}
-        addLabel="Add Credit Note"
-        onAdd={() => openCreditNoteModal()}
-        emptyMessage="No credit notes found"
+        enableAdd={can(SALES_DEBIT_NOTE_MODULE, "create")}
+        addLabel="Add Sales Debit Note"
+        onAdd={() => openSalesDebitNoteModal()}
+        emptyMessage="No sales debit notes found"
         enableColumnSelector
-        enableExport={can(CREDIT_NOTE_MODULE, "export")}
+        enableExport={can(SALES_DEBIT_NOTE_MODULE, "export")}
         onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}
@@ -561,4 +550,4 @@ const CreditNotesTable: React.FC = () => {
   );
 };
 
-export default CreditNotesTable;
+export default SalesDebitNotesTable;

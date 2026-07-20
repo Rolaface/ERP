@@ -95,6 +95,7 @@ export function buildInvoicePayload(
     exchangeRate: formData.exchangeRt ?? "1",
     postingDate: formData.dateOfInvoice,
     validTill: formData.validTill,
+    payment_mode: formData.payment_mode,
     tax_category: formData.taxCategory,
     updateStock: formData.updateStock ?? true,
     paymentMode: formData.mode,
@@ -188,7 +189,7 @@ export const useQuotationForm = (
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
-  const enableExchange = mode === "invoice";
+  const enableExchange = mode === "proforma";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
     const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
@@ -322,6 +323,9 @@ export const useQuotationForm = (
     }
     if (!formData.validTill) {
       throw new Error("Please select valid till date");
+    }
+    if (!formData.payment_mode) {
+      throw new Error("Please select mode of payment");
     }
     if (!formData.items.length) {
       throw new Error("Please add at least one item");
@@ -852,7 +856,8 @@ export const useQuotationForm = (
       // FIX 3: Map API `validTill` used by modal
       validTill: invoice.validTill,
 
-      mode: invoice.paymentMode ?? prev.mode ?? "",
+      // mode: invoice.paymentMode ?? prev.mode ?? "",
+      payment_mode: invoice.payment_mode ?? prev.payment_mode ?? "",
       currencyCode: invoice.currency,
       dateOfInvoice: invoice.postingDate,
       exchangeRt:

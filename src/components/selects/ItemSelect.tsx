@@ -7,6 +7,7 @@ export interface SelectedStockItem {
   itemCode: string;
   itemName: string;
   description?: string;
+  stockUom?: string;
   packingSize?: string;
   packingUnit?: string;
   batchNo?: string;

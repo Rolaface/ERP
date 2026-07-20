@@ -18,7 +18,10 @@ import ActionButton, {
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
 import { usePermission } from "../../hooks/permission/usePermission";
-
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import { showApiError } from "../../utils/alert";
+import { fireManagedSwal } from "../../utils/swalManager";
 /* ─────────────────────────────────────────────
    ASSET MOVEMENT LIST PAGE
 ───────────────────────────────────────────── */
@@ -45,6 +48,7 @@ const AssetMovement: React.FC = () => {
       await deleteAssetMovement(id);
       fetchMovements();
     } catch (err) {
+          showApiError(err);
       console.error("DELETE ERROR", err);
     }
   };
@@ -125,6 +129,7 @@ const AssetMovement: React.FC = () => {
 
       setRecords(mapped);
     } catch (err) {
+      showApiError(err);
       console.error("FETCH MOVEMENT ERROR", err);
     } finally {
       setLoading(false);
@@ -149,6 +154,41 @@ const AssetMovement: React.FC = () => {
     }
 
     return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+
+const handleExportExcel = () => {
+    if (!sortedData.length) {
+      fireManagedSwal({
+        icon: "info",
+        title: "No Data",
+        text: "No asset movements to export",
+      });
+      return;
+    }
+
+    try {
+      const worksheet = XLSX.utils.json_to_sheet(
+        sortedData.map((r) => ({
+          "Movement ID": r.id,
+          Company: r.company,
+          Purpose: r.purpose,
+          "Transaction Date": r.transactionDate ? formatDate(r.transactionDate) : "",
+          Status: r.status,
+        })),
+      );
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Asset Movements");
+
+      saveAs(
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "All_Asset_Movements.xlsx",
+      );
+    } catch (err) {
+      showApiError(err);
+    }
   };
   /* ── columns ── */
   const columns: Column<AssetMovementRecord>[] = [
@@ -255,7 +295,8 @@ const AssetMovement: React.FC = () => {
         enableAdd={can(ASSET_MOVEMENT_MODULE, "create")}
         addLabel="Add Movement"
         onAdd={() => openAssetMovementModal({ mode: "create" })}
-
+        enableExport={can(ASSET_MOVEMENT_MODULE, "export")}
+        onExport={handleExportExcel}
         enableColumnSelector
         currentPage={page}
         totalPages={totalPages}

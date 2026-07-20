@@ -27,6 +27,7 @@ export type ModalType =
   | "Rfq"
   | "JournalEntries"
   | "CreditNote"
+  | "SalesDebitNote"
   | "DebitNote"
   | "UserRole"
   | "Bank"
@@ -653,6 +654,16 @@ export const openCreditNoteModal = (
   useModalStore
     .getState()
     .openModal("CreditNote", initialData, isEdit, context, meta);
+
+export const openSalesDebitNoteModal = (
+  initialData?: unknown,
+  isEdit = false,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("SalesDebitNote", initialData, isEdit, context, meta);
 
 export const openDebitNoteModal = (
   initialData?: unknown,

@@ -543,7 +543,7 @@ const ExpenseClaimDetailView: React.FC<Props> = ({
                 }}
               >
                 <F label="Approval" value={approvalLabel} />
-                <F label="Payment" value={claim.is_paid ? "Paid" : "Unpaid"} />
+                <F label="Payment" value={claim.status} />
                 <F
                   label="Approver"
                   value={claim.expense_approver || "Not Assigned"}
