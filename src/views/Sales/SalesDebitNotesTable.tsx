@@ -8,7 +8,7 @@ import {
   deleteSalesDebitNote,
   submitSalesDebitNote,
   cancelSalesDebitNote,
-} from "../../api/salesDebitNoteApi";
+} from "../../api/SalesDebitNoteApi";
 import { getSalesInvoiceById } from "../../api/salesApi";
 import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
 import * as XLSX from "xlsx";
