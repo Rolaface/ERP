@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
-import { createCreditNote, getCreditNoteReasons, updateCreditNote } from "../api/CreditNoteapi";
+import { createSalesDebitNote, getSalesDebitNoteReasons, updateSalesDebitNote } from "../api/SalesDebitNoteApi";
 import { showApiError, showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 import { useUnsavedChanges } from "./useUnsavedChanges";
@@ -15,7 +15,7 @@ export interface InvoiceOption {
   customerName: string;
 }
 
-export interface CreditNoteItem {
+export interface SalesDebitNoteItem {
   item_code: string;
   item_name: string;
   qty: number;
@@ -31,32 +31,33 @@ export interface CustomerMeta {
   name: string;
 }
 
-export interface CreditNoteFormState {
+export interface SalesDebitNoteFormState {
   return_against: string;
   customer: CustomerMeta | null;
   update_stock: boolean;
   reason: string;
   code: string;
   description: string;
-  items: CreditNoteItem[];
+  items: SalesDebitNoteItem[];
   exchange_rate: number;
+  currency: string;
 }
 
-const EMPTY_FORM: CreditNoteFormState = {
+const EMPTY_FORM: SalesDebitNoteFormState = {
   return_against: "",
   customer: null,
   reason: "",
   code: "",
   description: "",
-  update_stock: true,
+  update_stock: false,
   items: [],
   exchange_rate: 1, 
+  currency: "",
 };
-
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useCreditNoteForm(
+export function useSalesDebitNoteForm(
   onSuccess?: (data: any) => void,
   onClose?: () => void,
   initialData?: any,
@@ -64,42 +65,43 @@ export function useCreditNoteForm(
 ) {
   const { companyName } = useCompanyStore();
 
-  const [form, setForm] = useState<CreditNoteFormState>(EMPTY_FORM);
+  const [form, setForm] = useState<SalesDebitNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
-  const [reasonOptions, setReasonOptions] = useState<{ code: string; reason: string }[]>([]); const [reasonsLoading, setReasonsLoading] = useState(false);
-  // ── Fetch credit note reasons ────────────────────────────────────────────
- useEffect(() => {
-  const fetchReasons = async () => {
-    setReasonsLoading(true);
-    try {
-      const values = await getCreditNoteReasons();
-      setReasonOptions(values);
-    } catch (err) {
-      console.error("Failed to fetch credit note reasons", err);
-    } finally {
-      setReasonsLoading(false);
-    }
-  };
-  fetchReasons();
-}, []);
+  const [reasonOptions, setReasonOptions] = useState<{ code: string; reason: string }[]>([]); 
+  const [reasonsLoading, setReasonsLoading] = useState(false);
 
-// ── Reason search ─────────────────────────────────────────────────────────
+  // ── Fetch debit note reasons ────────────────────────────────────────────
+  useEffect(() => {
+    const fetchReasons = async () => {
+      setReasonsLoading(true);
+      try {
+        const values = await getSalesDebitNoteReasons();
+        setReasonOptions(values);
+      } catch (err) {
+        console.error("Failed to fetch sales debit note reasons", err);
+      } finally {
+        setReasonsLoading(false);
+      }
+    };
+    fetchReasons();
+  }, []);
 
-const fetchReasonOptions = useCallback(
-  async (query: string): Promise<{ code: string; reason: string }[]> => {
-    try {
-      const values = await getCreditNoteReasons(query);
-      return values;
-    } catch (err) {
-      console.error("Failed to fetch credit note reasons", err);
-      return [];
-    }
-  },
-  [],
-);
+  // ── Reason search ─────────────────────────────────────────────────────────
 
-  // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
+  const fetchReasonOptions = useCallback(
+    async (query: string): Promise<{ code: string; reason: string }[]> => {
+      try {
+        const values = await getSalesDebitNoteReasons(query);
+        return values;
+      } catch (err) {
+        console.error("Failed to fetch sales debit note reasons", err);
+        return [];
+      }
+    },
+    [],
+  );
+
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   useEffect(() => {
@@ -116,6 +118,7 @@ const fetchReasonOptions = useCallback(
     } else if (initialData.remarks && typeof initialData.remarks === "object") {
       parsedRemarks = initialData.remarks;
     }
+    
     setForm({
       return_against: initialData.return_against || initialData.id || initialData.piId || "",
       customer: {
@@ -138,14 +141,13 @@ const fetchReasonOptions = useCallback(
       })),
 
       exchange_rate: Number(initialData.exchangeRate ?? initialData.exchange_rate) || 1,
+      currency: initialData.currency || initialData.currency_code || "", 
     });
   }, [initialData]);
 
-
   // ── Invoice search ───────────────────────────────────────────────────────
 
-  const RETURNABLE_INVOICE_STATUSES = "Partly Paid,Unpaid,Overdue";
-
+  const RETURNABLE_INVOICE_STATUSES = "Paid,Partly Paid,Unpaid,Overdue";
 
   const fetchInvoiceOptions = useCallback(
     async (query: string): Promise<InvoiceOption[]> => {
@@ -173,7 +175,6 @@ const fetchReasonOptions = useCallback(
     [],
   );
 
-  // ── Invoice select → fetch full details & populate form ─────────────────
 
   const handleInvoiceSelect = useCallback(async (opt: InvoiceOption) => {
     setForm((prev) => ({
@@ -182,19 +183,19 @@ const fetchReasonOptions = useCallback(
       customer: { id: opt.customerId, name: opt.customerName },
       items: [],
     }));
-    markDirty(); // user explicitly chose an invoice — mark dirty
+    markDirty();
 
     setInvoiceLoading(true);
     try {
-      const res = await getSalesInvoiceById(opt.value, true, false);
+      const res = await getSalesInvoiceById(opt.value, false, true);
       const data = res?.data ?? res?.message?.data;
       if (!data) return;
 
-      const mappedItems: CreditNoteItem[] = (data.items ?? []).map(
-        (it: any): CreditNoteItem => ({
+      const mappedItems: SalesDebitNoteItem[] = (data.items ?? []).map(
+        (it: any): SalesDebitNoteItem => ({
           item_code: it.itemCode ?? "",
           item_name: it.itemName ?? it.itemCode ?? "",
-          qty: -(Math.abs(Number(it.quantity) || 1)),
+          qty: Math.abs(Number(it.quantity)) || 1, 
           rate: Number(it.rate) || 0,
           batch_no: it.batchNo ?? "",
           warehouse: it.warehouse ?? "",
@@ -211,6 +212,7 @@ const fetchReasonOptions = useCallback(
         },
         exchange_rate: Number(data.exchangeRate ?? data.conversionRate) || 1,
         items: mappedItems,
+        currency: data.currency ,
       }));
     } catch (err) {
       console.error("Failed to load invoice details", err);
@@ -223,7 +225,7 @@ const fetchReasonOptions = useCallback(
   const handleItemChange = useCallback(
     (
       index: number,
-      field: keyof CreditNoteItem,
+      field: keyof SalesDebitNoteItem,
       value: string | number | null,
     ) => {
       setForm((prev) => {
@@ -252,7 +254,6 @@ const fetchReasonOptions = useCallback(
         items[index] = { ...items[index], warehouse };
         return { ...prev, items };
       });
-      // warehouse auto-default is not a user edit — no markDirty
     },
     [],
   );
@@ -265,11 +266,6 @@ const fetchReasonOptions = useCallback(
     markDirty();
   }, [markDirty]);
 
-  const toggleUpdateStock = useCallback(() => {
-    setForm((prev) => ({ ...prev, update_stock: !prev.update_stock }));
-    markDirty();
-  }, [markDirty]);
-
   const setReason = useCallback((reason: string, code: string) => {
     setForm((prev) => ({
       ...prev,
@@ -279,10 +275,12 @@ const fetchReasonOptions = useCallback(
     }));
     markDirty();
   }, [markDirty]);
+
   const setDescription = useCallback((description: string) => {
     setForm((prev) => ({ ...prev, description }));
     markDirty();
   }, [markDirty]);
+
   // ── Reset ────────────────────────────────────────────────────────────────
 
   const reset = useCallback(() => {
@@ -293,7 +291,7 @@ const fetchReasonOptions = useCallback(
   // ── Validation ───────────────────────────────────────────────────────────
 
   const validate = useCallback((): string | null => {
-    if (!form.reason) return "Please select a credit note reason";
+    if (!form.reason) return "Please select a debit note reason";
     if (
       form.code === "07" &&
       !form.description.trim()
@@ -304,10 +302,6 @@ const fetchReasonOptions = useCallback(
     if (!form.customer?.id)
       return "Customer could not be resolved from the selected invoice";
     if (form.items.length === 0) return "At least one item is required";
-    // for (const it of form.items) {
-    //   if (!it.warehouse)
-    //     return `Warehouse is required for: ${it.item_name || it.item_code}`;
-    // }
     return null;
   }, [form]);
 
@@ -325,23 +319,25 @@ const fetchReasonOptions = useCallback(
       }
 
       const payload = {
-        is_return: 1 as const,
+        is_debit_note: 1 as const,
         return_against: form.return_against,
         customer: form.customer!.id,
         company: companyName,
-        update_stock: form.update_stock ? (1 as const) : (0 as const),
+        update_stock: 0 as const,
         conversion_rate: form.exchange_rate,
         update_outstanding_for_self: 1 as const,
-        reason:JSON.stringify({
+        reason: JSON.stringify({
           name: form.reason,
           reason: form.reason,
           code: form.code,
           description: form.description,
         }),
+        currency: form.currency,  
         items: form.items.map((it) => ({
           item_code: it.item_code,
           qty: Number(it.qty),
-          rate: Number(it.rate),
+          // rate: Number(it.rate),
+          price_list_rate: Number(it.rate),
           ...(it.batch_no ? { batch_no: it.batch_no } : {}),
           warehouse: it.warehouse,
           conversion_factor: it.conversion_factor, 
@@ -353,12 +349,12 @@ const fetchReasonOptions = useCallback(
         const docId = initialData?.name || initialData?.piId || initialData?.id;
 
         const res = isEdit && docId
-          ? await updateCreditNote(docId, payload)
-          : await createCreditNote(payload);
+          ? await updateSalesDebitNote(docId, payload)
+          : await createSalesDebitNote(payload);
 
         if (!res || ![200, 201].includes(res.status_code)) {
           const action = isEdit ? "update" : "creation";
-          showApiError(res?.message ?? `Credit note ${action} failed`);
+          showApiError(res?.message ?? `Sales debit note ${action} failed`);
           return;
         }
 
@@ -368,13 +364,13 @@ const fetchReasonOptions = useCallback(
             msgs.forEach((raw) => {
               try {
                 const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-                console.warn("[CreditNote server message]", parsed?.message ?? parsed);
+                console.warn("[SalesDebitNote server message]", parsed?.message ?? parsed);
               } catch {
-                console.warn("[CreditNote server message]", raw);
+                console.warn("[SalesDebitNote server message]", raw);
               }
             });
           } catch {
-            console.warn("[CreditNote server messages]", res._server_messages);
+            console.warn("[SalesDebitNote server messages]", res._server_messages);
           }
         }
 
@@ -382,9 +378,9 @@ const fetchReasonOptions = useCallback(
         resetDirty(); 
         onSuccess?.(res.data);
         onClose?.();
-        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.CREDIT_NOTE_LIST);
+        useDataRefreshStore.getState().triggerRefresh(REFRESH_KEYS.SALES_DEBIT_NOTE_LIST);
       } catch (err: any) {
-        console.error("Credit note save failed", err);
+        console.error("Sales debit note save failed", err);
         console.error("Backend response:", err?.response?.data);
         showApiError(err);
       } finally {
@@ -411,11 +407,9 @@ const fetchReasonOptions = useCallback(
     handleItemChange,
     handleWarehouseDefault,
     removeItem,
-    toggleUpdateStock,
     reset,
     handleSubmit,
     validate,
-    // expose guard helpers so the modal can wire up close protection
     reasonOptions,
     reasonsLoading,
     setReason,

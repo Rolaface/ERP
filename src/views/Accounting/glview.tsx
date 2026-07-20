@@ -320,7 +320,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
             if (col.fieldname === "party" && val)
               return <span className="text-xs font-medium text-main">{String(val)}</span>;
             if (!val && val !== 0) return <span className="text-muted text-xs">—</span>;
-            return <span className="text-xs text-main">{String(val)}</span>;
+            return <span className="text-xs text-main">{getGLNameWithoutAbbreviation(String(val))}</span>;
           },
         };
       });
@@ -441,9 +441,10 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
                         <th
                           key={header.id}
                           className={`px-3 py-2 text-[9px] font-black uppercase tracking-widest
-                                      text-muted whitespace-nowrap bg-card
-                                      border-b border-[var(--border)] ${align}`}
-                        >
+                  text-muted whitespace-nowrap overflow-hidden text-ellipsis
+                  bg-card border-b border-[var(--border)] ${align}`}
+    >
+                        
                           {flexRender(header.column.columnDef.header, header.getContext())}
                         </th>
                       );
@@ -482,7 +483,7 @@ const GLView: React.FC<GLViewProps> = ({ account: accountProp, onBack }) => {
                         return (
                           <td
                             key={cell.id}
-                            className={`px-3 py-1 overflow-hidden text-ellipsis whitespace-nowrap ${align}`}
+      className={`px-3 py-1 overflow-hidden text-ellipsis whitespace-nowrap ${align}`}
                           >
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>

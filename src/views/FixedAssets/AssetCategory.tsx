@@ -5,7 +5,8 @@ import {
   getAssetCategories as fetchAssetCategoriesAPI,
   deleteAssetCategory,
 } from "../../api/faapi";
-
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import ActionButton, {
   ActionGroup,
   ActionMenu,
@@ -171,6 +172,64 @@ const AssetCategoryTable: React.FC = () => {
     showApiError(error);
   }
 };
+  const fetchAllForExport = async (): Promise<AssetCategory[]> => {
+    let allData: AssetCategory[] = [];
+    let current = 1;
+    let total = 1;
+
+    do {
+      const res = await getAssetCategories(current, 100, filters);
+
+      if (res?.data?.length) {
+        allData = [...allData, ...res.data];
+        total = res.pagination?.total_pages || 1;
+      } else {
+        break;
+      }
+
+      current++;
+    } while (current <= total);
+
+    return allData;
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      showLoading("Exporting Asset Categories...");
+      const data = await fetchAllForExport();
+
+      if (!data.length) {
+        closeSwal();
+        showApiError("No asset categories to export");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(
+        data.map((c) => ({
+          "Category ID": c.id,
+          "Category Name": c.assetCategoryName,
+          "Capital WIP": c.enableCapitalWorkInProgress ? "Enabled" : "Disabled",
+          "Non-Depreciable": c.nonDepreciableCategory ? "Yes" : "No",
+        })),
+      );
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Asset Categories");
+
+      saveAs(
+        new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        "All_Asset_Categories.xlsx",
+      );
+
+      closeSwal();
+      showSuccess("Export completed successfully");
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
+  };
 
   // ── Columns ─────────────────────────────────────────────────
   const columns: Column<AssetCategory>[] = [
@@ -271,6 +330,8 @@ const AssetCategoryTable: React.FC = () => {
         enableAdd={can(ASSET_CATEGORY_MODULE, "create")}
         addLabel="Add Asset Category"
         onAdd={handleAddClick}
+        enableExport={can(ASSET_CATEGORY_MODULE, "export")}
+        onExport={handleExportExcel}
         enableColumnSelector
         currentPage={page}
         totalPages={totalPages}
@@ -279,6 +340,7 @@ const AssetCategoryTable: React.FC = () => {
         onPageChange={setPage}
         onPageSizeChange={(size) => setPageSize(size)}
         pageSizeOptions={[pageSize, 25, 50, 100, pageSize]}
+        
       />
     </div>
   );

@@ -36,7 +36,8 @@ export interface SalesOrderForm {
   shippingAddress?: string;
   orderType?: string;
   warehouse?: string;
-  mode?: string; // payment mode
+  mode?: string;
+  payment_mode?: string;
   status?: string;
   docstatus?: number;
   paymentInformation: {
@@ -167,7 +168,7 @@ export function buildSalesOrderPayload(
     deliveryDate: formData.deliveryDate,
     taxCategory: formData.taxCategory,
     orderType: formData.orderType ?? "Sales",
-    payment_mode: formData.mode,
+    payment_mode: formData.payment_mode,
     warehouse: formData.warehouse ?? "",
     billingAddress: formData.billingAddress ?? "",
     shippingAddress: formData.shippingAddress ?? "",
@@ -391,6 +392,9 @@ export const useSalesOrderForm = (
     }
     if (!formData.items.length) {
       throw new Error("Please add at least one item");
+    }
+     if (!formData.payment_mode) {
+      throw new Error("Please select mode of payment");
     }
     if (!formData.paymentInformation?.paymentMethod) {
       throw new Error("Please select a payment method");
@@ -823,6 +827,7 @@ export const useSalesOrderForm = (
       customerPoDate: order.customerPoDate ?? "",
 
       mode: order.payment_mode ?? prev.mode ?? "",
+      payment_mode: order.payment_mode ?? prev.payment_mode ?? "",
       currencyCode: order.currency,
       postingDate: order.postingDate,
       exchangeRt:
