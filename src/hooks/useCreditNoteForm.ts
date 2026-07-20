@@ -186,7 +186,7 @@ const fetchReasonOptions = useCallback(
 
     setInvoiceLoading(true);
     try {
-      const res = await getSalesInvoiceById(opt.value);
+      const res = await getSalesInvoiceById(opt.value, true, false);
       const data = res?.data ?? res?.message?.data;
       if (!data) return;
 

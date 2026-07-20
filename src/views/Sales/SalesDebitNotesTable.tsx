@@ -258,7 +258,7 @@ const SalesDebitNotesTable: React.FC = () => {
     e?.stopPropagation();
     try {
       showLoading("Loading Sales Debit Note...");
-      const res = await getSalesInvoiceById(note.noteNo);
+      const res = await getSalesInvoiceById(note.noteNo, false, true);
       if (!res.message || res.message.status_code !== 200) {
         closeSwal();
         showApiError("Sales Debit Note data could not be loaded");
@@ -278,7 +278,7 @@ const SalesDebitNotesTable: React.FC = () => {
     setDrawerLoading(true);
     setDrawerData(null);
     try {
-      const res = await getSalesInvoiceById(noteNo);
+      const res = await getSalesInvoiceById(noteNo, false, true);
       if (res?.message?.status_code === 200) {
         setDrawerData(res.message.data as InvoiceDetail);
       }

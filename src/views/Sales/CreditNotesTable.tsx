@@ -269,7 +269,7 @@ const CreditNotesTable: React.FC = () => {
     e?.stopPropagation();
     try {
       showLoading("Loading Credit Note...");
-      const res = await getSalesInvoiceById(note.noteNo);
+      const res = await getSalesInvoiceById(note.noteNo, true, false);
       if (!res.message || res.message.status_code !== 200) {
         closeSwal();
         showApiError("Credit Note data could not be loaded");
@@ -289,7 +289,7 @@ const CreditNotesTable: React.FC = () => {
     setDrawerLoading(true);
     setDrawerData(null);
     try {
-      const res = await getSalesInvoiceById(noteNo);
+      const res = await getSalesInvoiceById(noteNo, true, false);
       if (res?.message?.status_code === 200) {
         setDrawerData(res.message.data as InvoiceDetail);
       }

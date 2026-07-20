@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
-import { createSalesDebitNote, getSalesDebitNoteReasons, updateSalesDebitNote } from "../api/salesDebitNoteApi";
+import { createSalesDebitNote, getSalesDebitNoteReasons, updateSalesDebitNote } from "../api/SalesDebitNoteApi";
 import { showApiError, showSuccess } from "../utils/alert";
 import { REFRESH_KEYS, useDataRefreshStore } from "../store/dataRefreshStore";
 import { useUnsavedChanges } from "./useUnsavedChanges";
@@ -187,7 +187,7 @@ export function useSalesDebitNoteForm(
 
     setInvoiceLoading(true);
     try {
-      const res = await getSalesInvoiceById(opt.value);
+      const res = await getSalesInvoiceById(opt.value, false, true);
       const data = res?.data ?? res?.message?.data;
       if (!data) return;
 
