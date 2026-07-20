@@ -109,7 +109,7 @@ const fetchReasonOptions = useCallback(
     const rawRemarks = initialData.reason ?? initialData.remarks; 
     if (typeof rawRemarks === "string" && rawRemarks.trim()) {
       try {
-        parsedRemarks = JSON.parse(initialData.remarks);
+        parsedRemarks = JSON.parse(rawRemarks);
       } catch {
         parsedRemarks = {};
       }
