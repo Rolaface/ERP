@@ -142,7 +142,12 @@ const SalesModule: React.FC = () => {
   const renderTab = () => {
     switch (resolvedTab) {
       case "salesdashboard":
-        return <SalesDashboard />;
+        return (
+          <SalesDashboard
+            onNavigateTab={handleTabChange}
+            availableTabIds={salesTabs.map((t) => t.id)}
+          />
+        );
       
       case "salesOrder":
         return (

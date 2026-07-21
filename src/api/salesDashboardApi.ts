@@ -14,6 +14,7 @@ export interface SalesSummary {
   quotations: number;
   sales_invoices: number;
   credit_notes: number;
+  sales_orders:number;
   debit_notes: number;
 }
 
@@ -91,7 +92,7 @@ export interface OverdueInvoiceAging {
 }
 
 export interface RecentActivityItem {
-  type: string; // e.g. "invoice_submitted" | "payment_received" | "quotation_created"
+  type: string; 
   title: string;
   customer_id: string;
   customer_name: string;
@@ -130,12 +131,7 @@ export interface GetSalesDashboardParams {
   granularity?: DashboardGranularity;
 }
 
-/**
- * Fetches the full sales dashboard payload (KPIs, monthly overview,
- * quotation conversion, customer concentration, needs-attention list,
- * top recent sales, invoice status breakdown, overdue aging, activity feed)
- * in a single call.
- */
+
 export async function getSalesDashboard(
   params?: GetSalesDashboardParams,
 ): Promise<SalesDashboardResponse> {
