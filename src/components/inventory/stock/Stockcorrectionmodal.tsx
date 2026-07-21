@@ -155,11 +155,11 @@ const StockCorrectionModal: React.FC<
              <PaginatedRowsTable
                   columns={[
                     "Warehouse",
-                    "Batch No.",
-                    "Expiry Date",
-                    "Available Stock",
-                    "Correct Qty",
-                    "Final Qty",
+                    "Batch.",
+                    "Expiry",
+                    "Available Available Qty ",
+                    "Adjustment",
+                    "Updated Qty",
                     "",
                   ]}
                   gridTemplate={CORRECTION_COLS}
