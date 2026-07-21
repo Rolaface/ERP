@@ -22,6 +22,8 @@ import { fireManagedSwal } from "../../utils/swalManager";
 import { openStockCorrectionModal } from "../../store/modalStore";
 import type { Batch, BatchRow } from "../TablesHooks/Usebatchdetailstable";
 
+import type { SelectedBatch } from "../../types/Stock/stockcorrectionform.types";
+
 // ─── Domain types ───────────────────────────────────────────────────────────
 
 export interface StockItemRow {
@@ -263,7 +265,10 @@ export function useItemsStockTable() {
             ? Math.floor((item.total_bal_qty ?? 0) / item.piecesPerBox)
             : 0,
         totalQty: item.total_bal_qty ?? 0,
-        totalBuyValue: Number(item.total_bal_val ?? 0),
+        // NOTE: was reading `total_bal_val` (current balance valuation) here —
+        // that's a different number from the actual purchase value. The
+        // "Total Buy Value" column must read `total_buy_value` instead.
+        totalBuyValue: Number(item.total_buy_value ?? 0),
         totalSellValue: Number(item.total_sell_value ?? 0),
         buyCurrency: item.buy_currency,
         sellCurrency: item.sell_currency,
@@ -297,29 +302,30 @@ export function useItemsStockTable() {
   useEffect(() => {
     if (isInitialLoad) return;
     fetchItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, searchTerm]);
 
-  // ── Hide-zero-stock filter (client side, over the currently loaded page) ──
-  // Removes items with no remaining quantity, and strips zero-qty batches
-  // out of the batches passed down to the nested batch table.
+
   const visibleItems = useMemo<StockItemRow[]>(() => {
     if (!hideZeroStock) return items;
-    return items
-      .filter((item) => Number(item.totalQty || 0) > 0)
-      .map((item) => ({
-        ...item,
-        batches: item.batches.filter((b: any) => Number(b?.bal_qty ?? 0) > 0),
-      }));
+    return items.filter((item) => Number(item.totalQty || 0) > 0);
   }, [items, hideZeroStock]);
 
   const toggleRow = useCallback((id: string) => {
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-  const handleStockCorrection = useCallback(
-    (batch: any) => {
-      openStockCorrectionModal({ selectedBatch: batch }, false, {
+const handleStockCorrection = useCallback(
+    (batch: BatchRow) => {
+      const selectedBatch: SelectedBatch = {
+        item_code: batch.itemCode,
+        item_name: batch.itemName,
+        batch_no: batch.batch_no,
+        expiry_date: batch.expiry_date,
+        bal_qty: batch.bal_qty,
+        warehouse: (batch as any).warehouse, 
+        valuation_rate: (batch as any).valuation_rate,
+      };
+      openStockCorrectionModal({ selectedBatch }, false, {
         onSuccess: async () => {
           await fetchItems();
         },
@@ -362,8 +368,17 @@ export function useItemsStockTable() {
     [handleDelete],
   );
 
-  const handleBatchLedger = useCallback((batch: any) => {
-    openStockCorrectionModal({ selectedBatch: batch }, false, { isViewMode: true });
+const handleBatchLedger = useCallback((batch: BatchRow) => {
+    const selectedBatch: SelectedBatch = {
+      item_code: batch.itemCode,
+      item_name: batch.itemName,
+      batch_no: batch.batch_no,
+      expiry_date: batch.expiry_date,
+      bal_qty: batch.bal_qty,
+      warehouse: (batch as any).warehouse,
+      valuation_rate: (batch as any).valuation_rate,
+    };
+    openStockCorrectionModal({ selectedBatch }, false, { isViewMode: true });
   }, []);
 
   const openNewStockCorrection = useCallback(() => {

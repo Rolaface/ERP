@@ -1,682 +1,270 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React from "react";
+import { flexRender } from "@tanstack/react-table";
 import {
-  showApiError,
-  showSuccess,
-  showLoading,
-  closeSwal,
-} from "../../utils/alert";
-import BatchTable from "./BatchTable";
-import {
-  getStockReport,
-  getStockById,
-  deleteStockEntry,
-} from "../../api/stockApi";
-import { fireManagedSwal } from "../../utils/swalManager";
-import { ChevronRight, ChevronDown, Upload } from "lucide-react";
-import XLSX from "xlsx-js-style";
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Package2,
+} from "lucide-react";
 
 import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
-import Table from "../../components/ui/Table/Table";
-import type { Column } from "../../components/ui/Table/type";
-import { openStockCorrectionModal } from "../../store/modalStore";
+import BatchDetailsTable from "../../views/Inventory/BatchTable";
 
-// ─── Excel export config ────────────────────────────────────────────────────
+import ItemsTableFilters from "../../utils/stockitemtablefilter";
+import { useItemsStockTable } from "../../hooks/stock/Useitemsstocktable";
 
-const HEADERS = [
-  "ITEM CODE",
-  "ITEM NAME",
-  "BATCH ID",
-  "EXPIRY DATE",
-  "STATUS",
-  "QUANTITY",
-  "CURRENCY",
-  "VALUE",
-];
-const COL_COUNT = HEADERS.length;
-
-const LOW_STOCK_THRESHOLD = 500; // tune as needed
-const NEAR_EXPIRY_DAYS = 90; // tune as needed
-
-type BatchStatus = "Available" | "Low Stock" | "Near Expiry" | "Out of Stock";
-
-const getBatchStatus = (batch: any): BatchStatus => {
-  const balQty = Number(batch?.bal_qty ?? 0);
-  if (balQty <= 0) return "Out of Stock";
-
-  if (batch?.expiry_date) {
-    const daysToExpiry =
-      (new Date(batch.expiry_date).getTime() - Date.now()) /
-      (1000 * 60 * 60 * 24);
-    if (daysToExpiry <= NEAR_EXPIRY_DAYS) return "Near Expiry";
-  }
-
-  if (balQty < LOW_STOCK_THRESHOLD) return "Low Stock";
-  return "Available";
-};
-
-const STATUS_STYLE: Record<BatchStatus, { fill: string; font: string }> = {
-  Available: { fill: "D1E7DD", font: "0F5132" },
-  "Low Stock": { fill: "FFF3CD", font: "856404" },
-  "Near Expiry": { fill: "F8D7DA", font: "842029" },
-  "Out of Stock": { fill: "E2E3E5", font: "41464B" },
-};
-
-const fmtDate = (d: string | null) => {
-  if (!d) return "-";
-  const dt = new Date(d);
-  if (isNaN(dt.getTime())) return "-";
-  return dt.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const fmtNum = (n: number) =>
-  Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
-
-const thinBorder = { style: "thin", color: { rgb: "D9D9D9" } };
-const cellBorder = {
-  top: thinBorder,
-  bottom: thinBorder,
-  left: thinBorder,
-  right: thinBorder,
-};
-
-const headerCellStyle = {
-  font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
-  fill: { fgColor: { rgb: "1F2937" } },
-  alignment: { vertical: "center", horizontal: "left" },
-  border: cellBorder,
-};
-
-const groupCellStyle = {
-  font: { bold: true, italic: true, color: { rgb: "2F5597" }, sz: 11 },
-  fill: { fgColor: { rgb: "EAF1FB" } },
-  alignment: { vertical: "center", horizontal: "left", indent: 1 },
-  border: cellBorder,
-};
-
-const baseCellStyle = {
-  font: { sz: 10, color: { rgb: "2A2A2A" } },
-  alignment: { vertical: "center" },
-  border: cellBorder,
-};
-
-const numCellStyle = (align: "left" | "right" = "right") => ({
-  ...baseCellStyle,
-  alignment: { vertical: "center", horizontal: align },
-});
-
-const statusCellStyle = (status: BatchStatus) => ({
-  font: { bold: true, sz: 9, color: { rgb: STATUS_STYLE[status].font } },
-  fill: { fgColor: { rgb: STATUS_STYLE[status].fill } },
-  alignment: { vertical: "center", horizontal: "center" },
-  border: cellBorder,
-});
-
-const grandTotalLabelStyle = {
-  font: { bold: true, sz: 11, color: { rgb: "1F2937" } },
-  fill: { fgColor: { rgb: "F1F3F6" } },
-  alignment: { vertical: "center", horizontal: "center" },
-  border: cellBorder,
-};
-
-const grandTotalQtyStyle = {
-  ...grandTotalLabelStyle,
-  font: { bold: true, sz: 11, color: { rgb: "1F2937" } },
-  alignment: { vertical: "center", horizontal: "right" },
-};
-
-const grandTotalValueStyle = {
-  ...grandTotalLabelStyle,
-  font: { bold: true, sz: 11, color: { rgb: "2F5597" } },
-  alignment: { vertical: "center", horizontal: "right" },
-};
-
-const buildBatchWiseWorkbook = (rawItems: any[]) => {
-  const aoa: any[][] = [HEADERS];
-  const merges: XLSX.Range[] = [];
-  const cellStyles: Record<string, any> = {};
-
-  const setStyle = (r: number, c: number, style: any) => {
-    const addr = XLSX.utils.encode_cell({ r, c });
-    cellStyles[addr] = style;
-  };
-
-  // header row styles
-  HEADERS.forEach((_, c) => setStyle(0, c, headerCellStyle));
-
-  let rowIdx = 1;
-  let grandQty = 0;
-
-  const currencyTotals: Record<string, number> = {};
-
-  rawItems.forEach((item) => {
-    // Skip service items — they have no physical batches/stock
-    if (
-      item.is_service_item === 1 ||
-      !item.batches ||
-      item.batches.length === 0
-    ) {
-      return;
-    }
-
- 
-
-    item.batches.forEach((batch: any) => {
-      const balQty = Number(batch?.bal_qty ?? 0);
-      const balVal = Number(batch?.bal_val ?? 0);
-
-      const currency = item.buy_currency || batch?.buy_currency || "—";
-      const status = getBatchStatus(batch);
-
-      aoa.push([
-        item.item_code || "-",
-        item.item_name || "-",
-        batch?.batch_no || "-",
-        batch?.expiry_date ? new Date(batch.expiry_date) : "",
-        status,
-        balQty,
-        currency,
-        balVal,
-      ]);
-
-     
-   setStyle(rowIdx, 0, baseCellStyle);
-setStyle(rowIdx, 1, baseCellStyle);
-setStyle(rowIdx, 2, baseCellStyle);
-setStyle(rowIdx, 3, numCellStyle("left"));
-setStyle(rowIdx, 4, statusCellStyle(status));
-setStyle(rowIdx, 5, numCellStyle());
-setStyle(rowIdx, 6, {
-  ...baseCellStyle,
-  alignment: {
-    horizontal: "center",
-    vertical: "center",
-  },
-});
-setStyle(rowIdx, 7, numCellStyle());
-
-      grandQty += balQty;
-      currencyTotals[currency] = (currencyTotals[currency] || 0) + balVal;
-      rowIdx++;
-    });
-  });
-
-  // ── Grand Total — Quantity (single row, currency-agnostic)
-  aoa.push([
-  "GRAND TOTAL QTY",
-  "",
-  "",
-  "",
-  "",
-  grandQty,
-  "",
-  "",
-]);
-  merges.push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx, c: 3 } });
-  setStyle(rowIdx, 0, grandTotalLabelStyle);
-  setStyle(rowIdx, 1, grandTotalLabelStyle);
-  setStyle(rowIdx, 2, grandTotalLabelStyle);
-  setStyle(rowIdx, 3, grandTotalLabelStyle);
-setStyle(rowIdx, 4, grandTotalLabelStyle);
-setStyle(rowIdx, 5, grandTotalQtyStyle);
-setStyle(rowIdx, 6, grandTotalLabelStyle);
-setStyle(rowIdx, 7, grandTotalLabelStyle);
-  rowIdx++;
-
-  
-  Object.entries(currencyTotals).forEach(([currency, total]) => {
-   aoa.push([
-  `GRAND TOTAL VALUE (${currency})`,
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  total,
-]);
-    merges.push({
-    s: { r: rowIdx, c: 0 },
-    e: { r: rowIdx, c: 6 },
-});
-  for (let c = 0; c <= 6; c++) {
-  setStyle(rowIdx, c, grandTotalLabelStyle);
-}
-
-setStyle(rowIdx, 7, grandTotalValueStyle);
-    rowIdx++;
-  });
-
-  const worksheet = XLSX.utils.aoa_to_sheet(aoa);
-  
-  const range = XLSX.utils.decode_range(worksheet["!ref"]!);
-
-  for (let row = 1; row <= range.e.r; row++) {
-  const cellRef = XLSX.utils.encode_cell({ r: row, c: 3 });
-    const cell = worksheet[cellRef];
-
-    if (cell && cell.v instanceof Date) {
-      cell.t = "d";
-      cell.z = "dd mmm yyyy";
-    }
-  }
-  worksheet["!merges"] = merges;
-  worksheet["!cols"] = [
-    { wch: 20 }, // Item Code
-    { wch: 35 }, // Item Name
-    { wch: 18 }, // Batch ID
-    { wch: 16 }, // Expiry Date
-    { wch: 16 }, // Status
-    { wch: 14 }, // Quantity
-    { wch: 12 }, // Currency
-    { wch: 18 }, // Value
-  ];
-
-  worksheet["!rows"] = aoa.map((_, i) => ({ hpx: i === 0 ? 24 : 20 }));
-
-  Object.entries(cellStyles).forEach(([addr, style]) => {
-    if (worksheet[addr]) worksheet[addr].s = style;
-  });
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Batch Wise Stock");
-  return workbook;
-};
-
-// ─── Component ────────────────────────────────────────────────────────────────
+const PAGE_SIZE_OPTIONS = [20, 50, 100, 200];
 
 const Items: React.FC = () => {
-  const mountedRef = useRef(true);
+  const {
+    table,
+    isInitialLoad,
+    isFetching,
+    isExporting,
+    visibleItems,
+    page,
+    pageSize,
+    totalPages,
+    totalItems,
+    setPage,
+    setPageSize,
+    searchTerm,
+    setSearchTerm,
+    hideZeroStock,
+    setHideZeroStock,
+    expandedRows,
+    toggleRow,
+    showBulkModal,
+    setShowBulkModal,
+    showViewModal,
+    setShowViewModal,
+    viewStockData,
+    setViewStockData,
+    handleStockCorrection,
+    handleBatchDelete,
+    handleBatchLedger,
+    handleBulkSaved,
+    handleExportExcel,
+    openNewStockCorrection,
+  } = useItemsStockTable();
 
-  const [items, setItems] = useState<any[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-
-  const [showBulkModal, setShowBulkModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [viewStockData, setViewStockData] = useState<any>(null);
-
-  const fetchItems = useCallback(async () => {
-    if (!mountedRef.current) return;
-    setIsFetching(true);
-
-    try {
-      const res = await getStockReport(
-        page,
-        pageSize,
-        searchTerm,
-        undefined,
-        1,
-      );
-      if (!mountedRef.current) return;
-
-      const list = res?.message?.data || [];
-
-      const mapped = list.map((item: any) => ({
-        id: item.item_code || "",
-        itemCode: item.item_code || "",
-        itemName: item.item_name || "",
-        description: item.description ?? "-",
-        packingUnit: item.packingUnit || "-",
-        packingSize: item.packingSize || "-",
-        piecesPerBox: item.piecesPerBox || "-",
-        boxAvailable:
-          item.piecesPerBox && item.piecesPerBox > 0
-            ? Math.floor((item.total_bal_qty ?? 0) / item.piecesPerBox)
-            : 0,
-        totalQty: item.total_bal_qty ?? 0,
-        totalBuyValue: Number(item.total_bal_val ?? 0),
-        totalSellValue: Number(item.total_sell_value ?? 0),
-        buyCurrency: item.buy_currency,
-        sellCurrency: item.sell_currency,
-        batches: item.batches || [],
-      }));
-
-      setItems(mapped);
-      setTotalItems(res?.message?.pagination?.total_records ?? 0);
-      setTotalPages(res?.message?.pagination?.total_pages ?? 1);
-    } catch (err) {
-      console.error(err);
-      showApiError("Failed to load stock entries");
-    } finally {
-      if (mountedRef.current) {
-        setIsFetching(false);
-        setIsInitialLoad(false);
-      }
-    }
-  }, [page, pageSize, searchTerm]);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    fetchItems();
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isInitialLoad) return;
-    fetchItems();
-  }, [page, pageSize, searchTerm]);
-
-  const toggleRow = (id: string) =>
-    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
-
-  const handleStockCorrection = (batch: any) => {
-    openStockCorrectionModal({ selectedBatch: batch }, false, {
-      onSuccess: async () => {
-        await fetchItems();
-      },
-    });
-  };
-  const handleBatchDelete = (batch: any) => {
-    handleDelete({ id: batch.batch_no, ...batch });
-  };
-
-  const handleBatchLedger = (batch: any) => {
-   
-  };
-
-  const handleDelete = async (item: { id: string; [key: string]: any }) => {
-    const confirm = await fireManagedSwal({
-      icon: "warning",
-      title: "Are you sure?",
-      text: `Delete Stock Entry ${item.id}?`,
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete",
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    try {
-      showLoading("Deleting Stock Entry...");
-      const res = await deleteStockEntry({ stock_entry_id: item.id });
-
-      if (res?.status_code !== 200 || res?.status !== "success") {
-        closeSwal();
-        showApiError(res?.message || "Delete failed");
-        return;
-      }
-
-      closeSwal();
-      showSuccess("Stock entry deleted successfully");
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
-    } catch (error: any) {
-      closeSwal();
-      showApiError(error);
-    }
-  };
-
-  const handleBulkSaved = async () => {
-    setShowBulkModal(false);
-    try {
-      await fetchItems();
-      closeSwal();
-      showSuccess("Bulk stock corrections applied");
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    }
-  };
-
-  // ── Fetch entire filtered dataset (all pages) for export
-  const fetchAllForExport = async () => {
-    const exportPageSize = 200;
-    let currentPage = 1;
-    let all: any[] = [];
-    let pagesTotal = 1;
-
-    do {
-      const res = await getStockReport(
-        currentPage,
-        exportPageSize,
-        searchTerm,
-        undefined,
-        1,
-      );
-      const list = res?.message?.data || [];
-      all = all.concat(list);
-      pagesTotal = res?.message?.pagination?.total_pages ?? 1;
-      currentPage++;
-    } while (currentPage <= pagesTotal);
-
-    return all;
-  };
-
-  const handleExportExcel = async () => {
-    try {
-      setIsExporting(true);
-      showLoading("Preparing batch-wise stock report...");
-
-      const rawItems = await fetchAllForExport();
-
-      if (!rawItems.length) {
-        closeSwal();
-        showApiError("No data available to export");
-        return;
-      }
-
-      const workbook = buildBatchWiseWorkbook(rawItems);
-      const fileName = `Batch-Wise-Stock-Report-${new Date().toISOString().slice(0, 10)}.xlsx`;
-      XLSX.writeFile(workbook, fileName);
-
-      closeSwal();
-      showSuccess(
-        `Batch-wise stock report exported (${rawItems.length} items)`,
-      );
-    } catch (err) {
-      console.error(err);
-      closeSwal();
-      showApiError("Failed to export stock report");
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const columns: Column<any>[] = [
-    {
-      key: "expand",
-      header: "",
-      align: "center",
-      render: (row) => (
-        <span className="flex items-center justify-center w-7 h-7 rounded-md text-gray-400 transition-all duration-200">
-          {expandedRows[row.id] ? (
-            <ChevronDown size={16} strokeWidth={2.5} className="text-primary" />
-          ) : (
-            <ChevronRight size={16} strokeWidth={2.5} />
-          )}
-        </span>
-      ),
-    },
-    {
-  key: "itemCode",
-  header: "Item Code",
-  align: "left",
-  render: (row) => (
-    <span className="font-medium whitespace-nowrap">
-      {row.itemCode ?? "—"}
-    </span>
-  ),
-},
-    {
-      key: "itemName",
-      header: "Item Name",
-      render: (row) => (
-        <span className="font-medium block">{row.itemName ?? "—"}</span>
-      ),
-    },
-    {
-      key: "description",
-      header: "Description",
-      render: (row) => (
-        <span className="font-medium">{row.description ?? "—"}</span>
-      ),
-    },
-    {
-      key: "packingUnit",
-      header: "Packing Unit",
-      align: "center",
-      render: (row) => (
-        <span className="whitespace-nowrap">
-          {`${row.packingUnit ?? "—"} × ${row.packingSize ?? "—"}`}
-        </span>
-      ),
-    },
-    {
-      key: "piecesPerBox",
-      header: "Pieces/Box",
-      align: "center",
-      render: (row) => (
-        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.piecesPerBox ?? "—"}
-        </code>
-      ),
-    },
-    {
-      key: "totalQty",
-      header: "Qty",
-      align: "center",
-      render: (row) => (
-        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.totalQty}
-        </code>
-      ),
-    },
-    {
-      key: "boxAvailable",
-      header: "Box Available",
-      align: "center",
-      render: (row) => (
-        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.boxAvailable ?? "—"}
-        </code>
-      ),
-    },
-    {
-      key: "totalBuyValue",
-      header: "Total Buy Value",
-      align: "right",
-      render: (row) => (
-        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.buyCurrency} {row.totalBuyValue.toLocaleString("en-IN")}
-        </code>
-      ),
-    },
-    {
-      key: "totalSellValue",
-      header: "Total Sell Value",
-      align: "right",
-      render: (row) => (
-        <code className="text-s px-2 py-0.5 rounded bg-row-hover text-main whitespace-nowrap">
-          {row.sellCurrency} {row.totalSellValue.toLocaleString("en-IN")}
-        </code>
-      ),
-    },
-  ];
+  const leafColumnCount = table.getAllLeafColumns().length;
 
   return (
-    <div className="h-full min-h-0">
-      <Table
-        columns={columns}
-        data={items}
-        tableId="inventory-stocks"
-        rowKey={(r) => r.id}
-        loading={isInitialLoad}
-        isFetching={isFetching}
-        onRowClick={(row) => toggleRow(row.id)}
-        enableExport={true}
-        onExport={handleExportExcel}
-        expandedRowRender={(row) =>
-          expandedRows[row.id] ? (
-            <BatchTable
-              batches={row.batches || []}
-              itemCode={row.itemCode}
-              itemName={row.itemName}
-              onEdit={handleStockCorrection}
-              onDelete={handleBatchDelete}
-              onLedger={handleBatchLedger}
-            />
-          ) : null
-        }
-        enableColumnSelector
-        showToolbar
-        searchValue={searchTerm}
-        onSearch={(value) => {
-          setSearchTerm(value);
+    <div className="h-full min-h-0 flex flex-col gap-2.5">
+      <ItemsTableFilters
+        searchTerm={searchTerm}
+        onSearchChange={(v) => {
+          setSearchTerm(v);
           setPage(1);
         }}
-        extraFilters={
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowBulkModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
-              style={{
-                border: "1.5px solid var(--primary,#c97d2e)",
-                color: "var(--primary,#c97d2e)",
-                background: "transparent",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "rgba(201,125,46,0.06)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "transparent";
-              }}
-            >
-              <Upload size={12} /> Bulk Upload
-            </button>
-            <button
-              onClick={() =>
-                openStockCorrectionModal({ selectedBatch: null }, false, {
-                  onSuccess: async () => {
-                    await fetchItems();
-                  },
+        hideZeroStock={hideZeroStock}
+        onHideZeroStockChange={setHideZeroStock}
+        onBulkUpload={() => setShowBulkModal(true)}
+        onStockCorrection={openNewStockCorrection}
+        onExport={handleExportExcel}
+        isExporting={isExporting}
+        exportDisabled={visibleItems.length === 0}
+      />
+
+      <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="overflow-y-auto flex-1 min-h-0 relative custom-scrollbar">
+          <table className="w-full text-left border-collapse text-sm">
+            <thead className="sticky top-0 z-10 bg-card border-b border-[var(--border)]">
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((header) => {
+                    const align = (header.column.columnDef.meta as any)?.align;
+                    const alignCls =
+                      align === "right"
+                        ? "text-right"
+                        : align === "center"
+                          ? "text-center"
+                          : "text-left";
+                    const sortable = header.column.getCanSort();
+                    const sortDir = header.column.getIsSorted();
+                    return (
+                      <th
+                        key={header.id}
+                        onClick={
+                          sortable
+                            ? header.column.getToggleSortingHandler()
+                            : undefined
+                        }
+                        className={`px-3.5 py-3 text-[10px] font-black uppercase tracking-widest text-muted whitespace-nowrap bg-card border-b border-[var(--border)] ${alignCls} ${
+                          sortable
+                            ? "cursor-pointer select-none hover:text-main"
+                            : ""
+                        }`}
+                      >
+                        <span
+                          className={`inline-flex items-center gap-1 ${
+                            align === "right" ? "flex-row-reverse" : ""
+                          }`}
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                          {sortable &&
+                            (sortDir === "asc" ? (
+                              <ChevronUp size={11} />
+                            ) : sortDir === "desc" ? (
+                              <ChevronDown size={11} />
+                            ) : (
+                              <ChevronsUpDown
+                                size={11}
+                                className="opacity-30"
+                              />
+                            ))}
+                        </span>
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {isInitialLoad ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-b border-[var(--border)]">
+                    {table.getAllLeafColumns().map((col) => (
+                      <td key={col.id} className="px-3.5 py-3.5">
+                        <div className="h-3 w-full max-w-[110px] bg-[var(--border)] rounded animate-pulse" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : visibleItems.length === 0 ? (
+                <tr>
+                  <td colSpan={leafColumnCount} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-2 text-muted">
+                      <Package2 size={22} className="opacity-30" />
+                      <span className="text-xs">
+                        {hideZeroStock
+                          ? "No items with stock on hand. Try disabling “Hide Zero Stock”."
+                          : "No stock entries found."}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map((row) => {
+                  const item = row.original;
+                  const isExpanded = !!expandedRows[item.id];
+                  return (
+                    <React.Fragment key={row.id}>
+                      <tr
+                        onClick={() => toggleRow(item.id)}
+                        className="hover:bg-row-hover transition-colors cursor-pointer"
+                        style={{
+                          borderBottom: "1px solid rgba(128,128,128,0.1)",
+                        }}
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const align = (cell.column.columnDef.meta as any)
+                            ?.align;
+                          const alignCls =
+                            align === "right"
+                              ? "text-right"
+                              : align === "center"
+                                ? "text-center"
+                                : "text-left";
+                          const isDescription =
+                            cell.column.id === "description";
+                          return (
+                            <td className="px-3.5 py-3 align-top">
+                              <div className="max-w-[280px] leading-5">
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext(),
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={leafColumnCount} className="p-0">
+                            <BatchDetailsTable
+                              batches={item.batches}
+                              itemCode={item.itemCode}
+                              itemName={item.itemName}
+                              onEdit={handleStockCorrection}
+                              onDelete={handleBatchDelete}
+                              onLedger={handleBatchLedger}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
                 })
-              }
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap"
-              style={{
-                border: "1.5px solid var(--primary,#c97d2e)",
-                color: "var(--primary,#c97d2e)",
-                boxShadow: "transparent",
+              )}
+            </tbody>
+          </table>
+          {isFetching && !isInitialLoad && (
+            <div className="absolute inset-0 bg-card/60 backdrop-blur-[1px] flex items-center justify-center z-20">
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        <div className="border-t border-[var(--border)] bg-card px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+          <span className="text-[11px]">
+            {totalItems > 0 ? (
+              <>
+                Showing{" "}
+                <span className="font-semibold text-main">
+                  {(page - 1) * pageSize + 1}–
+                  {Math.min(page * pageSize, totalItems)}
+                </span>{" "}
+                of <span className="font-semibold text-main">{totalItems}</span>
+              </>
+            ) : (
+              "No entries"
+            )}
+          </span>
+          <div className="flex items-center gap-2">
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
               }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.opacity = "0.9";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.opacity = "1";
-              }}
+              className="h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main focus:outline-none"
             >
-              Stock Correction
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {size} / page
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || isFetching}
+              className="p-1 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft size={13} />
+            </button>
+            <span className="text-[11px] font-semibold text-main tabular-nums px-1">
+              {page} / {Math.max(totalPages, 1)}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || isFetching}
+              className="p-1 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight size={13} />
             </button>
           </div>
-        }
-        currentPage={page}
-        totalPages={totalPages}
-        pageSize={pageSize}
-        totalItems={totalItems}
-        pageSizeOptions={[20, 50, 100, 200]}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-        onPageChange={setPage}
-      />
+        </div>
+      </div>
 
       <ViewStockModal
         isOpen={showViewModal}
