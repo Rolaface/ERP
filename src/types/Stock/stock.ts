@@ -2,6 +2,7 @@ export type SelectedStockItem = {
   itemCode: string;
   itemName?: string;
   description: string;
+  stockUom?: string;
   packingSize?: number;
   packingUnit?: number;
   batchNo?: string;

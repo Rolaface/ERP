@@ -107,8 +107,8 @@ const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
     {/* Pkg (U×S)  */} <col style={{ width: "5%" }} />
     {/* Box        */} {!isQuotation && <col style={{ width: "6%" }} />}
     {/* Batch No   */} {isSalesInvoice && <col style={{ width: "9%" }} />}
-    {/* UOM        */} {isQuotation && <col style={{ width: "10%" }} />}
-    {/* Qty        */} <col style={{ width: "5%" }} />
+    {/* Qty        */} <col style={{ width: "7%" }} />
+    {/* UOM */} <col style={{ width: "8%" }} />
     {/* Mfg Date   */} {!isQuotation && <col style={{ width: "10%" }} />}
     {/* Expiry     */} {!isQuotation && <col style={{ width: "10%" }} />}
     {/* Warehouse  */} {!isQuotation && <col style={{ width: "12%" }} />}
@@ -124,15 +124,15 @@ const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
 const ServiceInvoiceColGroup: React.FC = () => (
   <colgroup>
     <col style={{ width: "28px" }} /> {/* # */}
-    <col style={{ width: "20%" }} />  {/* Item */}
-    <col style={{ width: "25%" }} />  {/* Description */}
-    <col style={{ width: "8%" }} />   {/* UOM */}
-    <col style={{ width: "7%" }} />   {/* Qty */}
-    <col style={{ width: "6%" }} />  {/* Price */}
-    <col style={{ width: "5%" }} />   {/* Discount */}
-    <col style={{ width: "5%" }} />   {/* Tax% */}
-    <col style={{ width: "12%" }} />  {/* Tax Name */}
-    <col style={{ width: "10%" }} />  {/* Amount */}
+    <col style={{ width: "20%" }} /> {/* Item */}
+    <col style={{ width: "18%" }} /> {/* Description */}
+    <col style={{ width: "7%" }} /> {/* Qty */}
+    <col style={{ width: "8%" }} /> {/* UOM */}
+    <col style={{ width: "6%" }} /> {/* Price */}
+    <col style={{ width: "5%" }} /> {/* Discount */}
+    <col style={{ width: "5%" }} /> {/* Tax% */}
+    <col style={{ width: "12%" }} /> {/* Tax Name */}
+    <col style={{ width: "10%" }} /> {/* Amount */}
     <col style={{ width: "44px" }} /> {/* Actions */}
   </colgroup>
 );
@@ -165,16 +165,13 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
         Item
       </th>
       {isService && (
-  <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-    Description
-  </th>
-  
-)}
-{isService && (
-  <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-    UOM
-  </th>
-)}
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          Description
+        </th>
+      )}
+     
+        
+      
 
       {/* Hide Labels if Service */}
       {!isService && (
@@ -193,14 +190,14 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
         </th>
       )}
 
-      {isQuotation && (
-        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-          UOM
-        </th>
-      )}
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
         Qty
       </th>
+     
+        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+          UOM
+        </th>
+      
 
       {/* Hide Labels if Service */}
       {!isQuotation && !isService && (
@@ -417,7 +414,11 @@ const ItemTable: React.FC<ItemTableProps> = ({
     return (
       <tr key={i} className="border-b border-theme bg-card row-hover">
         {/* # */}
-        <td data-row={i} data-col={c()} className="px-2 py-1 text-center text-[10px] text-muted">
+        <td
+          data-row={i}
+          data-col={c()}
+          className="px-2 py-1 text-center text-[10px] text-muted"
+        >
           {i + 1}
         </td>
 
@@ -442,7 +443,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   piecesPerBox: item.piecesPerBox,
                   batchNo: item.batchNo,
                   mfgDate: item.mfgDate,
-                  
+
                   expDate: item.expiryDate,
                   availableQty: item.qty,
                   quantity: 0,
@@ -477,34 +478,23 @@ const ItemTable: React.FC<ItemTableProps> = ({
           </td>
         )}
         {/* Description — Service only */}
-{isService && (
- <td data-row={i} data-col={c()} className="px-0.5 py-1">
-    <input
-      type="text"
-      name="description"
-      value={it.description || ""}
-      placeholder="Enter description"
-      onChange={(e) => actions.handleItemChange(i, e)}
-      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-    />
-  </td>
-)}
-{/* UOM */}
-{isService && (
-  <td data-row={i} data-col={c()} className="px-1 py-1">
-    <input
-      type="text"
-      name="uom"
-      value={it.uom || ""}
-      disabled
-      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
-    />
-  </td>
-)}
+        {isService && (
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
+            <input
+              type="text"
+              name="description"
+              value={it.description || ""}
+              placeholder="Enter description"
+              onChange={(e) => actions.handleItemChange(i, e)}
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </td>
+        )}
+        
 
         {/* Pkg (U×S) */}
         {!isService && (
-        <td data-row={i} data-col={c()} className="px-1 py-1">
+          <td data-row={i} data-col={c()} className="px-1 py-1">
             <Tooltip
               content={
                 it.packingUnit && it.packingSize
@@ -552,7 +542,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Batch No */}
         {isSalesInvoice && !isService && (
-           <td data-row={i} data-col={c()} className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={`Batch No: ${it.batchNo || "—"}`}>
               <input
                 type="text"
@@ -565,23 +555,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
           </td>
         )}
 
-        {/* UOM — quotation only */}
-        {isQuotation && (
-         <td data-row={i} data-col={c()} className="px-2 py-1">
-            <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
-              <input
-                type="text"
-                name="uom"
-                value={it.uom || ""}
-                className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-                disabled
-              />
-            </Tooltip>
-          </td>
-        )}
-
         {/* Qty */}
-          <td data-row={i} data-col={c()} className="px-0.5 py-1">
+        <td data-row={i} data-col={c()} className="px-0.5 py-1">
           <NumericInput
             name="quantity"
             value={it.quantity ?? ""}
@@ -596,9 +571,22 @@ const ItemTable: React.FC<ItemTableProps> = ({
           />
         </td>
 
+    
+       <td data-row={i} data-col={c()} className="px-2 py-1">
+  <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
+    <input
+      type="text"
+      name="uom"
+      value={it.uom || ""}
+      disabled
+      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
+    />
+  </Tooltip>
+</td>
+
         {/* Mfg Date — full date visible, no truncation */}
         {!isService && (
-            <td data-row={i} data-col={c()} className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={it.mfgDate || "No Mfg Date"}>
               <DatePickerInput
                 label=""
@@ -636,7 +624,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Warehouse */}
         {!isService && (
-         <td data-row={i} data-col={c()} className="px-0.5 py-1">
+          <td data-row={i} data-col={c()} className="px-0.5 py-1">
             <Tooltip content={it.warehouse || "No warehouse selected"}>
               <WarehouseSelect
                 compact
@@ -669,7 +657,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 
         {/* Dis(%) */}
         {!isQuotation && (
-         <td data-row={i} data-col={c()} className="px-1 py-1">
+          <td data-row={i} data-col={c()} className="px-1 py-1">
             <NumericInput
               name="discount"
               value={it.discount ?? ""}
@@ -701,7 +689,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         {/* Tax Name */}
-       <td data-row={i} data-col={c()} className="px-1 py-1">
+        <td data-row={i} data-col={c()} className="px-1 py-1">
           <Tooltip
             content={
               it.taxTypes?.length
