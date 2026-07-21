@@ -60,7 +60,7 @@ const KPI_TAB_MAP: Record<string, string> = {
   "Sales Invoices": "invoices",
   "Credit Notes": "creditNotes",
   "Debit Notes": "salesDebitNotes",
-  "Sales Orders": "salesOrders",
+  "Sales Orders": "salesOrder",
 };
 
 const CardShell: React.FC<{
