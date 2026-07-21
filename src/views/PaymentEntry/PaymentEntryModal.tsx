@@ -47,7 +47,7 @@ interface Props {
     partyId?: string;
     amount?: number;
     referenceName?: string;
-    referenceType?: "Purchase Order" | "Purchase Invoice" | "Sales Invoice";
+    referenceType?: "Purchase Order" | "Purchase Invoice" | "Sales Invoice"|"Sales Order";
     date?: string;
     glTo?: string;
     glToDisplay?: string;
@@ -85,6 +85,7 @@ function buildPayload(
     if (form?.referenceType === "Sales Invoice") return "Sales Invoice";
     if (form?.referenceType === "Expense Claim") return "Expense Claim";
     if (form?.referenceType === "Employee Advance") return "Employee Advance";
+    if (form?.referenceType === "Sales Order") return "Sales Order";
 
     switch (partyType) {
       case "Supplier":
