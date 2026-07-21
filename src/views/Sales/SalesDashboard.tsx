@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Sparkles,
   RefreshCcw,
+  ShoppingCart,
 } from "lucide-react";
 
 import { EChart } from "../../components/charts/EChart";
@@ -53,6 +54,14 @@ const statusColor = (status: InvoiceStatusCount) =>
 
 const AGING_BUCKET_COLORS = ["#FBBF24", "#FB923C", "#F87171", "#DC2626"];
 
+const KPI_TAB_MAP: Record<string, string> = {
+  "Proforma Invoices": "proformaInvoice",
+  "Quotations": "quotations",
+  "Sales Invoices": "invoices",
+  "Credit Notes": "creditNotes",
+  "Debit Notes": "salesDebitNotes",
+  "Sales Orders": "salesOrders",
+};
 
 const CardShell: React.FC<{
   title: string;
@@ -99,8 +108,18 @@ const timeAgo = (isoDate: string) => {
   return `${months}mo ago`;
 };
 
-const KpiTile: React.FC<{ label: string; value: number; loading?: boolean }> = ({ label, value, loading }) => (
-  <div className="rounded-xl border border-[var(--border)] bg-card px-3 py-2.5 shadow-sm">
+const KpiTile: React.FC<{
+  label: string;
+  value: number;
+  loading?: boolean;
+  onDoubleClick?: () => void;
+}> = ({ label, value, loading, onDoubleClick }) => (
+  <div
+    onDoubleClick={onDoubleClick}
+    className={`rounded-xl border border-[var(--border)] bg-card px-3 py-2.5 shadow-sm ${onDoubleClick ? "cursor-pointer select-none" : ""
+      }`}
+    title={onDoubleClick ? "Double-click to view details" : undefined}
+  >
     <p className="text-xs text-slate-500">{label}</p>
     {loading ? (
       <div className="mt-1.5 h-5 w-10 animate-pulse rounded bg-slate-100" />
@@ -114,7 +133,12 @@ const CardSkeleton: React.FC<{ height?: string }> = ({ height = "h-40" }) => (
   <div className={`w-full animate-pulse rounded-lg bg-slate-100 ${height}`} />
 );
 
-const SalesDashboard: React.FC = () => {
+interface SalesDashboardProps {
+  onNavigateTab?: (tabId: string) => void;
+  availableTabIds?: string[];
+}
+
+const SalesDashboard: React.FC<SalesDashboardProps> = ({ onNavigateTab, availableTabIds }) => {
   const baseCurrency = useCompanyStore((state) => state.baseCurrency) || "";
   const currencySymbol = useCompanyStore((state) => state.currencySymbol || "");
 
@@ -193,8 +217,9 @@ const SalesDashboard: React.FC = () => {
   const recentActivity = dashboard?.recent_sales_activity ?? [];
 
   const stats = [
-    { label: "Proforma Invoices", value: summary?.proforma_invoices ?? 0, icon: FileSignature },
+    { label: "Sales Orders", value: summary?.sales_orders ?? 0, icon: ShoppingCart },
     { label: "Quotations", value: summary?.quotations ?? 0, icon: ScrollText },
+    { label: "Proforma Invoices", value: summary?.proforma_invoices ?? 0, icon: FileSignature },
     { label: "Sales Invoices", value: summary?.sales_invoices ?? 0, icon: FileStack },
     { label: "Credit Notes", value: summary?.credit_notes ?? 0, icon: FileText },
     { label: "Debit Notes", value: summary?.debit_notes ?? 0, icon: Banknote },
@@ -386,10 +411,23 @@ const SalesDashboard: React.FC = () => {
   return (
     <div className="flex flex-col gap-3 pb-4 min-h-0">
       {/* KPI ROW */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-        {stats.map((stat) => (
-          <KpiTile key={stat.label} label={stat.label} value={stat.value} loading={loading} />
-        ))}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        {stats.map((stat) => {
+          const targetTab = KPI_TAB_MAP[stat.label];
+          const canNavigate =
+            !!targetTab && (!availableTabIds || availableTabIds.includes(targetTab));
+          return (
+            <KpiTile
+              key={stat.label}
+              label={stat.label}
+              value={stat.value}
+              loading={loading}
+              onDoubleClick={
+                canNavigate && onNavigateTab ? () => onNavigateTab(targetTab) : undefined
+              }
+            />
+          );
+        })}
       </div>
 
       {/* MAIN GRID */}
@@ -473,15 +511,14 @@ const SalesDashboard: React.FC = () => {
                               {currencyFormatter.format(inv.amount)}
                             </span>
                             <span
-                              className={`text-xs font-medium ${
-                                inv.days_overdue > 90
+                              className={`text-xs font-medium ${inv.days_overdue > 90
                                   ? "text-rose-600"
                                   : inv.days_overdue > 60
-                                  ? "text-red-500"
-                                  : inv.days_overdue > 30
-                                  ? "text-orange-500"
-                                  : "text-amber-500"
-                              }`}
+                                    ? "text-red-500"
+                                    : inv.days_overdue > 30
+                                      ? "text-orange-500"
+                                      : "text-amber-500"
+                                }`}
                             >
                               {inv.days_overdue}d overdue
                             </span>
