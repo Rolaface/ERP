@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../utils/alert";
 import type {
   Mode,
   Option,
   StockSummaryRow,
   CorrectionRow,
   MovementRow,
- 
   StockCorrectionModalProps,
-  StockCorrectionSubmitPayload,StockItemSelectPayload, 
+  StockCorrectionSubmitPayload,
+  StockItemSelectPayload,
 } from "../../types/Stock/stockcorrectionform.types";
 import { buildCorrectionPayload } from "../../mapper/stockCorrection.mapper";
 import { correctStock } from "../../api/stockApi";
-
 
 export type {
   Mode,
@@ -24,7 +28,8 @@ export type {
   StockItemSelectPayload,
   SelectedBatch,
   StockCorrectionModalProps,
-  StockCorrectionSubmitPayload,SingleBatchItemPickedPayload
+  StockCorrectionSubmitPayload,
+  SingleBatchItemPickedPayload,
 } from "../../types/Stock/stockcorrectionform.types";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -69,7 +74,6 @@ export const SCM_STYLES = `
 
 const SCM_STYLE_TAG_ID = "scm-table-styles";
 
-
 export const FALLBACK_BRANCHES: Option[] = [
   { label: "Stores - YC", value: "stores-yc" },
   { label: "Regional Hub A", value: "regional-hub-a" },
@@ -83,11 +87,10 @@ export const REASON_OPTIONS: Option[] = [
   { label: "Other", value: "other" },
 ];
 
-export const CORRECTION_COLS = "1fr 1fr 0.9fr 0.9fr 1fr 36px";
+export const CORRECTION_COLS = "1fr 1fr 0.85fr 0.85fr 0.85fr 0.85fr 36px";
 // "From" given more breathing room than "To" / "Move Qty" for better readability.
 export const MOVEMENT_COLS = "1.4fr 1fr 0.9fr 36px";
 export const ROWS_PAGE_SIZE = 5;
-
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -95,16 +98,16 @@ const genId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `row-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
 const emptyCorrectionRow = (): CorrectionRow => ({
   id: genId(),
   branch: "",
   batchNo: "",
   expiryDate: "",
   availableQty: null,
-  qty: "",
+  correctQty: "",
+  finalQty: "",
   reasonCode: "",
-  valuationRate:null
+  valuationRate: null,
 });
 
 const emptyMovementRow = (): MovementRow => ({
@@ -114,9 +117,8 @@ const emptyMovementRow = (): MovementRow => ({
   qty: "",
 });
 
-const reasonLabel = (code: string) => REASON_OPTIONS.find((r) => r.value === code)?.label ?? code;
-
-
+const reasonLabel = (code: string) =>
+  REASON_OPTIONS.find((r) => r.value === code)?.label ?? code;
 
 type UseStockCorrectionFormArgs = Pick<
   StockCorrectionModalProps,
@@ -137,7 +139,11 @@ export function useStockCorrectionForm({
   const [mode, setMode] = useState<Mode>("correction");
 
   const [selectedItem, setSelectedItem] = useState<Option | null>(null);
-  const [itemMeta, setItemMeta] = useState<{ sku: string; category: string; unit: string }>({
+  const [itemMeta, setItemMeta] = useState<{
+    sku: string;
+    category: string;
+    unit: string;
+  }>({
     sku: "",
     category: "",
     unit: "PCS",
@@ -148,8 +154,12 @@ export function useStockCorrectionForm({
 
   const [stockSummary, setStockSummary] = useState<StockSummaryRow[]>([]);
 
-  const [correctionRows, setCorrectionRows] = useState<CorrectionRow[]>([emptyCorrectionRow()]);
-  const [movementRows, setMovementRows] = useState<MovementRow[]>([emptyMovementRow()]);
+  const [correctionRows, setCorrectionRows] = useState<CorrectionRow[]>([
+    emptyCorrectionRow(),
+  ]);
+  const [movementRows, setMovementRows] = useState<MovementRow[]>([
+    emptyMovementRow(),
+  ]);
 
   const [correctionDate, setCorrectionDate] = useState(todayISO());
   const [reason, setReason] = useState("");
@@ -187,12 +197,16 @@ export function useStockCorrectionForm({
         label: selectedBatch.item_name || selectedBatch.item_code || "",
         value: selectedBatch.item_code || "",
       };
-     
-      const branchValue = selectedBatch.warehouse || branchOptions[0]?.value || "";
-      const branchLabel = selectedBatch.warehouse || branchOptions[0]?.label || "—";
+
+      const branchValue =
+        selectedBatch.warehouse || branchOptions[0]?.value || "";
+      const branchLabel =
+        selectedBatch.warehouse || branchOptions[0]?.label || "—";
       const availableQty = Number(selectedBatch.bal_qty ?? 0);
       const valuationRate = Number(selectedBatch.valuation_rate ?? 0);
-      const expiryDate = selectedBatch.expiry_date ? selectedBatch.expiry_date.slice(0, 10) : "";
+      const expiryDate = selectedBatch.expiry_date
+        ? selectedBatch.expiry_date.slice(0, 10)
+        : "";
 
       setSelectedItem(item);
       setItemPrefillName(item.label);
@@ -205,7 +219,7 @@ export function useStockCorrectionForm({
           batchNo: selectedBatch.batch_no || "-",
           availableQty,
           unit: "PCS",
-           valuationRate, 
+          valuationRate,
           expiryDate,
         },
       ]);
@@ -217,7 +231,8 @@ export function useStockCorrectionForm({
           expiryDate,
           availableQty,
           valuationRate,
-          qty: "",
+          correctQty: "",
+          finalQty: String(availableQty),
           reasonCode: "",
         },
       ]);
@@ -227,33 +242,33 @@ export function useStockCorrectionForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedBatch]);
 
-
- const handleItemPicked = (payload: StockItemSelectPayload) => {
+  const handleItemPicked = (payload: StockItemSelectPayload) => {
     const item: Option = { label: payload.itemName, value: payload.itemCode };
     setSelectedItem(item);
     setItemPrefillName(payload.itemName);
-     setItemMeta({
-    sku: payload.itemCode || "",
-    category: "—",
-    unit: payload.stockUom || "-",     
-  });
+    setItemMeta({
+      sku: payload.itemCode || "",
+      category: "—",
+      unit: payload.stockUom || "-",
+    });
 
- const unit = payload.stockUom || "-";
+    const unit = payload.stockUom || "-";
     const warehouseName = payload.warehouse || "—";
 
-   const row: StockSummaryRow = {
-    id: genId(),
-    branchValue: warehouseName,
-    branchLabel: warehouseName,
-    batchNo: payload.batchNo || "-",
-    availableQty: Number(payload.qty ?? 0),
-    valuationRate: Number(payload.valuation_rate ?? 0), 
-    unit,
-    expiryDate: payload.expiryDate ? payload.expiryDate.slice(0, 10) : "",
-  };
+    const row: StockSummaryRow = {
+      id: genId(),
+      branchValue: warehouseName,
+      branchLabel: warehouseName,
+      batchNo: payload.batchNo || "-",
+      availableQty: Number(payload.qty ?? 0),
+      valuationRate: Number(payload.valuation_rate ?? 0),
+      unit,
+      expiryDate: payload.expiryDate ? payload.expiryDate.slice(0, 10) : "",
+    };
 
     setStockSummary([row]);
 
+    // single-batch flow: lock the one correction row to this batch/warehouse
     // single-batch flow: lock the one correction row to this batch/warehouse
     setCorrectionRows([
       {
@@ -262,8 +277,9 @@ export function useStockCorrectionForm({
         batchNo: row.batchNo,
         expiryDate: row.expiryDate,
         availableQty: row.availableQty,
-         valuationRate: row.valuationRate, 
-        qty: "",
+        valuationRate: row.valuationRate,
+        correctQty: "",
+        finalQty: String(row.availableQty),
         reasonCode: "",
       },
     ]);
@@ -294,7 +310,7 @@ export function useStockCorrectionForm({
 
   const updateCorrectionRow = (
     id: string,
-    field: keyof Omit<CorrectionRow, "id" | "expiryDate" | "availableQty">,
+    field: "branch" | "batchNo" | "correctQty",
     value: string,
   ) => {
     setCorrectionRows((prev) =>
@@ -302,52 +318,83 @@ export function useStockCorrectionForm({
         if (r.id !== id) return r;
 
         if (field === "branch") {
-         
           const match = stockSummary.find((s) => s.branchValue === value);
+          const availableQty = match?.availableQty ?? null;
           return {
             ...r,
             branch: value,
             batchNo: match?.batchNo ?? "",
             expiryDate: match?.expiryDate ?? "",
-            availableQty: match?.availableQty ?? null,
+            availableQty,
             valuationRate: match?.valuationRate ?? null,
+            // re-picking the branch changes Actual Qty, so reset the correction inputs
+            correctQty: "",
+            finalQty: availableQty !== null ? String(availableQty) : "",
           };
         }
 
         if (field === "batchNo") {
-          
-          const match = stockSummary.find((s) => s.branchValue === r.branch && s.batchNo === value);
+          const match = stockSummary.find(
+            (s) => s.branchValue === r.branch && s.batchNo === value,
+          );
+          const availableQty = match?.availableQty ?? null;
           return {
             ...r,
             batchNo: value,
             expiryDate: match?.expiryDate ?? "",
-            availableQty: match?.availableQty ?? null,
-             valuationRate: match?.valuationRate ?? null,
+            availableQty,
+            valuationRate: match?.valuationRate ?? null,
+            correctQty: "",
+            finalQty: availableQty !== null ? String(availableQty) : "",
           };
         }
 
-        return { ...r, [field]: value };
+       const actual = Number(r.availableQty ?? 0);
+
+        // ── User types the signed correction; Final Qty is always derived (read-only), never edited directly ──
+        if (field === "correctQty") {
+          if (value === "" || value === "-") {
+            return { ...r, correctQty: value, finalQty: value === "" ? String(actual) : r.finalQty };
+          }
+          let n = Number(value);
+          if (isNaN(n)) return r;
+          // clamp: can never decrease past 0
+          if (actual + n < 0) n = -actual;
+          return { ...r, correctQty: String(n), finalQty: String(actual + n) };
+        }
+
+        return r;
       }),
     );
   };
-
-  const addCorrectionRow = () => setCorrectionRows((prev) => [...prev, emptyCorrectionRow()]);
+  const addCorrectionRow = () =>
+    setCorrectionRows((prev) => [...prev, emptyCorrectionRow()]);
 
   const removeCorrectionRow = (id: string) =>
-    setCorrectionRows((prev) => (prev.length === 1 ? prev : prev.filter((r) => r.id !== id)));
+    setCorrectionRows((prev) =>
+      prev.length === 1 ? prev : prev.filter((r) => r.id !== id),
+    );
 
   // ── Movement row helpers ────────────────────────────────────────────────
 
-  const updateMovementRow = (id: string, field: keyof Omit<MovementRow, "id">, value: string) => {
-    setMovementRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  const updateMovementRow = (
+    id: string,
+    field: keyof Omit<MovementRow, "id">,
+    value: string,
+  ) => {
+    setMovementRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+    );
   };
 
-  const addMovementRow = () => setMovementRows((prev) => [...prev, emptyMovementRow()]);
+  const addMovementRow = () =>
+    setMovementRows((prev) => [...prev, emptyMovementRow()]);
 
   const removeMovementRow = (id: string) =>
-    setMovementRows((prev) => (prev.length === 1 ? prev : prev.filter((r) => r.id !== id)));
+    setMovementRows((prev) =>
+      prev.length === 1 ? prev : prev.filter((r) => r.id !== id),
+    );
 
- 
   const selectedBranchForFilter = useMemo(() => {
     const picked = correctionRows.map((r) => r.branch).filter(Boolean);
     if (picked.length === 0) return "";
@@ -357,20 +404,23 @@ export function useStockCorrectionForm({
 
   const visibleStockSummary = useMemo(() => {
     if (mode !== "correction" || !selectedBranchForFilter) return stockSummary;
-    return stockSummary.filter((s) => s.branchValue === selectedBranchForFilter);
+    return stockSummary.filter(
+      (s) => s.branchValue === selectedBranchForFilter,
+    );
   }, [stockSummary, mode, selectedBranchForFilter]);
 
   // ── Derived summary numbers ─────────────────────────────────────────────
 
   const currentTotalQty = useMemo(
-    () => stockSummary.reduce((sum, r) => sum + (Number(r.availableQty) || 0), 0),
+    () =>
+      stockSummary.reduce((sum, r) => sum + (Number(r.availableQty) || 0), 0),
     [stockSummary],
   );
 
-  const netCorrectionQty = useMemo(
+ const netCorrectionQty = useMemo(
     () =>
       correctionRows.reduce((sum, r) => {
-        const n = Number(r.qty);
+        const n = Number(r.correctQty);
         return sum + (isNaN(n) ? 0 : n);
       }, 0),
     [correctionRows],
@@ -389,7 +439,7 @@ export function useStockCorrectionForm({
   const reasonSummary = useMemo(() => {
     const totals = new Map<string, number>();
     correctionRows.forEach((r) => {
-      const n = Number(r.qty);
+      const n = Number(r.correctQty);
       if (!r.reasonCode || isNaN(n) || n === 0) return;
       totals.set(r.reasonCode, (totals.get(r.reasonCode) ?? 0) + n);
     });
@@ -398,18 +448,27 @@ export function useStockCorrectionForm({
 
   const projectedTotal = currentTotalQty + netCorrectionQty;
   const remainingAfterMove = currentTotalQty - totalMovedQty;
-  const movementExceedsStock = mode === "movement" && totalMovedQty > currentTotalQty;
+  const movementExceedsStock =
+    mode === "movement" && totalMovedQty > currentTotalQty;
   const heroValue = mode === "correction" ? projectedTotal : remainingAfterMove;
   const heroIsNegative = heroValue < 0 || movementExceedsStock;
 
   // ── Validation ───────────────────────────────────────────────────────────
 
-  const isValid = useMemo(() => {
+ const isValid = useMemo(() => {
     if (!selectedItem || !correctionDate) return false;
 
     if (mode === "correction") {
       return correctionRows.some(
-        (r) => r.branch && r.batchNo && r.qty.trim() && !isNaN(Number(r.qty)) && Number(r.qty) !== 0,
+        (r) =>
+          r.branch &&
+          r.batchNo &&
+          r.correctQty.trim() &&
+          !isNaN(Number(r.correctQty)) &&
+          Number(r.correctQty) !== 0 &&
+          r.finalQty.trim() &&
+          !isNaN(Number(r.finalQty)) &&
+          Number(r.finalQty) >= 0,
       );
     }
 
@@ -429,11 +488,17 @@ export function useStockCorrectionForm({
       item: selectedItem,
       date: correctionDate,
       reason,
-      ...(mode === "correction"
+...(mode === "correction"
         ? {
             correctionRows: correctionRows
-              .filter((r) => r.branch && r.batchNo && r.qty.trim())
-              .map((r) => ({ branch: r.branch, batchNo: r.batchNo, qty: Number(r.qty), reasonCode: r.reasonCode,  valuationRate: r.valuationRate,})),
+              .filter((r) => r.branch && r.batchNo && r.correctQty.trim() && Number(r.correctQty) !== 0)
+              .map((r) => ({
+                branch: r.branch,
+                batchNo: r.batchNo,
+                qty: Number(r.finalQty), // same key Frappe/mapper already expects — now always >= 0
+                reasonCode: r.reasonCode,
+                valuationRate: r.valuationRate,
+              })),
           }
         : {
             movementRows: movementRows
@@ -444,14 +509,22 @@ export function useStockCorrectionForm({
 
     try {
       setSaving(true);
-      showLoading(mode === "correction" ? "Saving stock correction..." : "Saving stock movement...");
+      showLoading(
+        mode === "correction"
+          ? "Saving stock correction..."
+          : "Saving stock movement...",
+      );
       const apiPayload = buildCorrectionPayload(payload);
 
-await correctStock(apiPayload);
+      await correctStock(apiPayload);
 
-await onSubmit?.(payload);
+      await onSubmit?.(payload);
       closeSwal();
-      showSuccess(mode === "correction" ? "Stock correction saved successfully" : "Stock movement saved successfully");
+      showSuccess(
+        mode === "correction"
+          ? "Stock correction saved successfully"
+          : "Stock movement saved successfully",
+      );
       resetForm();
       onClose();
     } catch (err) {
@@ -507,4 +580,6 @@ await onSubmit?.(payload);
   };
 }
 
-export type StockCorrectionFormState = ReturnType<typeof useStockCorrectionForm>;
+export type StockCorrectionFormState = ReturnType<
+  typeof useStockCorrectionForm
+>;

@@ -29,16 +29,20 @@ export type {
   StockCorrectionSubmitPayload,
 } from "../../../hooks/stock correction-movement/Usestockcorrectionform";
 
-
-
-
-const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
+// `isViewMode` is intentionally kept as a local prop (intersected here, not added
+// to the shared StockCorrectionModalProps type) so read-only rendering doesn't
+// require touching the hook/types file. When true: fields are visually + functionally
+// disabled (pointer-events off) and the footer shows only a "Close" button.
+const StockCorrectionModal: React.FC<
+  StockCorrectionModalProps & { isViewMode?: boolean }
+> = ({
   isOpen,
   onClose,
   onSubmit,
   selectedBatch,
   branchOptions,
   modalId,
+  isViewMode = false,
 }) => {
   const f = useStockCorrectionForm({
     isOpen,
@@ -55,38 +59,58 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
       modalId={resolvedModalId}
       isOpen={isOpen}
       onClose={onClose}
-      title="Stock Correction / Movement"
+      title={
+        isViewMode ? "Batch Correction — View" : "Stock Correction / Movement"
+      }
       subtitle={
         selectedBatch
-          ? `Editing batch ${selectedBatch.batch_no ?? "-"}`
+          ? `${isViewMode ? "Viewing" : "Editing"} batch ${selectedBatch.batch_no ?? "-"}`
           : "Adjust inventory levels or transfer items between warehouses with full traceability and batch control."
       }
       icon={f.mode === "correction" ? Wrench : ArrowRightLeft}
       maxWidth="5xl"
       height="580px"
       footer={
-        <>
+        isViewMode ? (
           <button
             type="button"
-            onClick={f.handleReset}
-            disabled={f.saving}
-            className="px-4 py-2 rounded-lg text-[12px] font-semibold text-muted hover:text-main transition-all disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={f.handleSave}
-            disabled={f.saving || !f.isValid}
-            className="px-5 py-2 rounded-lg text-[12px] font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onClose}
+            className="px-5 py-2 rounded-lg text-[12px] font-semibold text-white transition-all"
             style={{ background: "var(--primary,#1c3f6e)" }}
           >
-            {f.saving ? "Saving..." : "Submit Transaction"}
+            Close
           </button>
-        </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={f.handleReset}
+              disabled={f.saving}
+              className="px-4 py-2 rounded-lg text-[12px] font-semibold text-muted hover:text-main transition-all disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={f.handleSave}
+              disabled={f.saving || !f.isValid}
+              className="px-5 py-2 rounded-lg text-[12px] font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: "var(--primary,#1c3f6e)" }}
+            >
+              {f.saving ? "Saving..." : "Submit Transaction"}
+            </button>
+          </>
+        )
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_230px] gap-5 h-full min-h-0 items-stretch">
+      <div
+        className="grid grid-cols-1 lg:grid-cols-[1fr_230px] gap-5 h-full min-h-0 items-stretch"
+        style={
+          isViewMode
+            ? { pointerEvents: "none", opacity: 0.75, userSelect: "none" }
+            : undefined
+        }
+      >
         {/* ── LEFT: form ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-5 min-w-0 overflow-y-auto pr-1">
           {/* Posting Date + Item + Transaction Type — one row */}
@@ -108,15 +132,6 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
               />
             </div>
 
-            {/* <div className="flex-1 w-[150px] max-w-[250px]">
-              <ItemPicker
-                mode={f.mode}
-                selectedItem={f.selectedItem}
-                onItemPicked={f.handleItemPicked}
-                onItemClear={f.handleItemClear}
-              />
-            </div> */}
-
             <div className="flex-1 ">
               <ItemPicker
                 mode={f.mode}
@@ -125,8 +140,6 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
                 onItemClear={f.handleItemClear}
               />
             </div>
-
-
 
           </div>
 
@@ -139,13 +152,14 @@ const StockCorrectionModal: React.FC<StockCorrectionModalProps> = ({
 
             <div className="mt-2">
               {f.mode === "correction" ? (
-                <PaginatedRowsTable
+             <PaginatedRowsTable
                   columns={[
                     "Warehouse",
                     "Batch No.",
                     "Expiry Date",
                     "Available Stock",
-                    "Correction Qty",
+                    "Correct Qty",
+                    "Final Qty",
                     "",
                   ]}
                   gridTemplate={CORRECTION_COLS}
