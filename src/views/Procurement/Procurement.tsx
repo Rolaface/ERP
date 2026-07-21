@@ -8,7 +8,7 @@ import {
   FileText,
   ClipboardList,
   CheckCircle2,
-  Receipt,
+  Banknote ,
   FileMinus,
   BarChart3,
   ShoppingBag,
@@ -72,7 +72,7 @@ const ALL_PROCUREMENT_TABS = [
   {
     id: "payments",
     label: "Payment Entry",
-    icon: <Receipt {...iconProps} />,
+    icon: <Banknote  {...iconProps} />,
     module: "Payment Entry",
     action: "read" as const,
   },
