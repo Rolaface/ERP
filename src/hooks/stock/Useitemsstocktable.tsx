@@ -235,7 +235,7 @@ export function useItemsStockTable() {
   const [totalItems, setTotalItems] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [hideZeroStock, setHideZeroStock] = useState(true);
+
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -305,11 +305,7 @@ export function useItemsStockTable() {
   }, [page, pageSize, searchTerm]);
 
 
-  const visibleItems = useMemo<StockItemRow[]>(() => {
-    if (!hideZeroStock) return items;
-    return items.filter((item) => Number(item.totalQty || 0) > 0);
-  }, [items, hideZeroStock]);
-
+  const visibleItems = items;
   const toggleRow = useCallback((id: string) => {
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
@@ -428,7 +424,7 @@ const handleBatchLedger = useCallback((batch: BatchRow) => {
         return;
       }
 
-      const workbook = buildBatchWiseWorkbook(rawItems, hideZeroStock);
+      const workbook = buildBatchWiseWorkbook(rawItems, false); 
       const fileName = `Batch-Wise-Stock-Report-${new Date().toISOString().slice(0, 10)}.xlsx`;
       XLSX.writeFile(workbook, fileName);
 
@@ -441,7 +437,7 @@ const handleBatchLedger = useCallback((batch: BatchRow) => {
     } finally {
       setIsExporting(false);
     }
-  }, [fetchAllForExport, hideZeroStock]);
+  }, [fetchAllForExport]);
 
   // ── Columns ──────────────────────────────────────────────────────────────
   const columns = useMemo<ColumnDef<StockItemRow, any>[]>(
@@ -563,8 +559,8 @@ const handleBatchLedger = useCallback((batch: BatchRow) => {
     setPageSize,
     searchTerm,
     setSearchTerm,
-    hideZeroStock,
-    setHideZeroStock,
+    
+  
     expandedRows,
     toggleRow,
     showBulkModal,

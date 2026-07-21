@@ -1,13 +1,7 @@
 import React from "react";
 import { flexRender } from "@tanstack/react-table";
-import {
-  ChevronUp,
-  ChevronDown,
-  ChevronsUpDown,
-  ChevronLeft,
-  ChevronRight,
-  Package2,
-} from "lucide-react";
+import Pagination from "../../components/Pagination";
+import { ChevronUp, ChevronDown, ChevronsUpDown, Package2 } from "lucide-react";
 
 import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
@@ -33,8 +27,6 @@ const Items: React.FC = () => {
     setPageSize,
     searchTerm,
     setSearchTerm,
-    hideZeroStock,
-    setHideZeroStock,
     expandedRows,
     toggleRow,
     showBulkModal,
@@ -61,8 +53,6 @@ const Items: React.FC = () => {
           setSearchTerm(v);
           setPage(1);
         }}
-        hideZeroStock={hideZeroStock}
-        onHideZeroStockChange={setHideZeroStock}
         onBulkUpload={() => setShowBulkModal(true)}
         onStockCorrection={openNewStockCorrection}
         onExport={handleExportExcel}
@@ -70,7 +60,10 @@ const Items: React.FC = () => {
         exportDisabled={visibleItems.length === 0}
       />
 
-      <div className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+      <div
+        className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col"
+            style={{ height: "calc(95.5vh - 190px)" }}
+      >
         <div className="overflow-y-auto flex-1 min-h-0 relative custom-scrollbar">
           <table className="w-full text-left border-collapse text-sm">
             <thead className="sticky top-0 z-10 bg-card border-b border-[var(--border)]">
@@ -143,11 +136,7 @@ const Items: React.FC = () => {
                   <td colSpan={leafColumnCount} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-2 text-muted">
                       <Package2 size={22} className="opacity-30" />
-                      <span className="text-xs">
-                        {hideZeroStock
-                          ? "No items with stock on hand. Try disabling “Hide Zero Stock”."
-                          : "No stock entries found."}
-                      </span>
+                      <span className="text-xs">No stock entries found.</span>
                     </div>
                   </td>
                 </tr>
@@ -176,7 +165,10 @@ const Items: React.FC = () => {
                           const isDescription =
                             cell.column.id === "description";
                           return (
-                            <td className="px-3.5 py-3 align-top">
+                            <td
+                              key={cell.id}
+                              className={`px-3.5 py-3 align-top ${alignCls}`}
+                            >
                               <div className="max-w-[280px] leading-5">
                                 {flexRender(
                                   cell.column.columnDef.cell,
@@ -214,55 +206,20 @@ const Items: React.FC = () => {
           )}
         </div>
 
-        {/* Pagination */}
-        <div className="border-t border-[var(--border)] bg-card px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
-          <span className="text-[11px]">
-            {totalItems > 0 ? (
-              <>
-                Showing{" "}
-                <span className="font-semibold text-main">
-                  {(page - 1) * pageSize + 1}–
-                  {Math.min(page * pageSize, totalItems)}
-                </span>{" "}
-                of <span className="font-semibold text-main">{totalItems}</span>
-              </>
-            ) : (
-              "No entries"
-            )}
-          </span>
-          <div className="flex items-center gap-2">
-            <select
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setPage(1);
-              }}
-              className="h-7 px-2 text-[11px] border border-[var(--border)] bg-app rounded-md text-main focus:outline-none"
-            >
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>
-                  {size} / page
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1 || isFetching}
-              className="p-1 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronLeft size={13} />
-            </button>
-            <span className="text-[11px] font-semibold text-main tabular-nums px-1">
-              {page} / {Math.max(totalPages, 1)}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || isFetching}
-              className="p-1 rounded-md border border-[var(--border)] bg-card text-main hover:bg-row-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronRight size={13} />
-            </button>
-          </div>
+        {/* Pagination — reusing shared component */}
+        <div className="border-t border-[var(--border)] bg-card px-3 py-2">
+          <Pagination
+            currentPage={page}
+            totalPages={Math.max(totalPages, 1)}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+          />
         </div>
       </div>
 
