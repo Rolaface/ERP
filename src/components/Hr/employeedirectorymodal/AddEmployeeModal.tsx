@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { uploadEmployeePhoto } from "../../../api/employeeapi";
-import {
-  FaUserFriends,
-} from "react-icons/fa";
+import { FaUserFriends } from "react-icons/fa";
 
 import ModalFooter from "../../common/ModalFooter";
 import IdentityVerificationModal from "./IdentityVerificationModal";
@@ -107,7 +105,9 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   // ── Form state ──────────────────────────────────────────────────────────
   const [formData, setFormData] = useState<Record<string, any>>(DEFAULT_FORM);
-  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>({});
+  const [verifiedFields, setVerifiedFields] = useState<Record<string, boolean>>(
+    {},
+  );
   const [isPreFilled, setIsPreFilled] = useState(false);
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
 
@@ -188,7 +188,10 @@ const AddEmployeeModal: React.FC<Props> = ({
         const matchedEmployee = (res || []).find(
           (emp: any) => emp.value === formData.reports_to,
         );
-        if (matchedEmployee && matchedEmployee.label !== formData.reportingToLabel) {
+        if (
+          matchedEmployee &&
+          matchedEmployee.label !== formData.reportingToLabel
+        ) {
           setFormData((prev: any) => ({
             ...prev,
             reportingToLabel: matchedEmployee.label,
@@ -203,7 +206,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.department, fetcher: getAllDepartments });
+      const label = await resolveLabel({
+        value: formData.department,
+        fetcher: getAllDepartments,
+      });
       setFormData((prev: any) => ({ ...prev, departmentLabel: label }));
     };
     loadLabel();
@@ -211,7 +217,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.leavePolicy, fetcher: getAllLeavePolicies });
+      const label = await resolveLabel({
+        value: formData.leavePolicy,
+        fetcher: getAllLeavePolicies,
+      });
       setFormData((prev: any) => ({ ...prev, leavePolicyLabel: label }));
     };
     loadLabel();
@@ -219,7 +228,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.grade, fetcher: getAllGrades });
+      const label = await resolveLabel({
+        value: formData.grade,
+        fetcher: getAllGrades,
+      });
       setFormData((prev: any) => ({ ...prev, gradeLabel: label }));
     };
     loadLabel();
@@ -227,7 +239,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.designation, fetcher: getAllDesignations });
+      const label = await resolveLabel({
+        value: formData.designation,
+        fetcher: getAllDesignations,
+      });
       setFormData((prev: any) => ({ ...prev, designationLabel: label }));
     };
     loadLabel();
@@ -235,7 +250,10 @@ const AddEmployeeModal: React.FC<Props> = ({
 
   useEffect(() => {
     const loadLabel = async () => {
-      const label = await resolveLabel({ value: formData.shift, fetcher: getAllShiftTypes });
+      const label = await resolveLabel({
+        value: formData.shift,
+        fetcher: getAllShiftTypes,
+      });
       setFormData((prev: any) => ({ ...prev, shiftLabel: label }));
     };
     loadLabel();
@@ -298,7 +316,10 @@ const AddEmployeeModal: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
-    const payload = buildEmployeePayload(formData, mode === "edit" || !!editData);
+    const payload = buildEmployeePayload(
+      formData,
+      mode === "edit" || !!editData,
+    );
     const isEdit = mode === "edit" || !!editData;
 
     if (isEdit) {
@@ -315,7 +336,9 @@ const AddEmployeeModal: React.FC<Props> = ({
 
         if (!id) throw new Error("Cannot determine employee ID for update");
         if (formData._salaryChanged && !formData.effectiveFrom) {
-          showValidationError("Effective date is required when salary details are changed.");
+          showValidationError(
+            "Effective date is required when salary details are changed.",
+          );
           return;
         }
 
@@ -364,8 +387,11 @@ const AddEmployeeModal: React.FC<Props> = ({
 
       employeeId = data?.employee || res?.data?.employee || "";
       backendMsg =
-        res?.message?.message || res?.data?.message || "Employee created successfully.";
-      welcomeMsg = typeof data?.messages === "string" ? data.messages.trim() : "";
+        res?.message?.message ||
+        res?.data?.message ||
+        "Employee created successfully.";
+      welcomeMsg =
+        typeof data?.messages === "string" ? data.messages.trim() : "";
 
       try {
         if (res?._server_messages) {
@@ -458,21 +484,21 @@ const AddEmployeeModal: React.FC<Props> = ({
   // ── Guards ──────────────────────────────────────────────────────────────
   if (!isOpen) return null;
 
-if (step === "verification" && features.requireIdentityVerification) {
-  return (
-    <IdentityVerificationModal
-      modalId={`${modalId}-verification`}
-      isOpen={isOpen}
-      onVerified={handleVerified}
-      onManualEntry={() => {
-        setIsPreFilled(false);
-        setVerifiedFields({});
-        setStep("form");
-      }}
-      onClose={onClose}
-    />
-  );
-}
+  if (step === "verification" && features.requireIdentityVerification) {
+    return (
+      <IdentityVerificationModal
+        modalId={`${modalId}-verification`}
+        isOpen={isOpen}
+        onVerified={handleVerified}
+        onManualEntry={() => {
+          setIsPreFilled(false);
+          setVerifiedFields({});
+          setStep("form");
+        }}
+        onClose={onClose}
+      />
+    );
+  }
   const footer = (
     <ModalFooter
       onCancel={handleCloseRequest}
@@ -500,7 +526,8 @@ if (step === "verification" && features.requireIdentityVerification) {
         editData
           ? "Edit and manage employee details"
           : "Add and manage employees"
-      } customWidth="90vw"
+      }
+      customWidth="90vw"
       height="95vh"
       footer={footer}
     >
@@ -547,6 +574,14 @@ if (step === "verification" && features.requireIdentityVerification) {
                 Level={levelsFromSettings}
                 managers={reportingManagers}
                 hrManagers={hrManagers}
+                isEditMode={!!editData}
+                employeeId={
+                  editData?.employee ||
+                  editData?.data?.employee ||
+                  editData?.message?.data?.employee ||
+                  editData?.id ||
+                  editData?.name
+                }
               />
             )}
             {activeTab === "Attendance & Leaves" && (
@@ -567,7 +602,9 @@ if (step === "verification" && features.requireIdentityVerification) {
                 formData={formData}
                 setFormData={setFormData}
                 isEditMode={!!editData}
-                employeeId={editData?.employee || editData?.id || editData?.name}
+                employeeId={
+                  editData?.employee || editData?.id || editData?.name
+                }
               />
             )}
           </div>

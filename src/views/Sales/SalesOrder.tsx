@@ -8,7 +8,7 @@ import {
   showConfirm,
 } from "../../utils/alert";
 import { getCompanyById } from "../../api/companySetupApi";
-import { openSendEmailModal } from "../../store/modalStore";
+import { openSendEmailModal, openPaymentEntryModal } from "../../store/modalStore";
 import type { SalesOrderSummary } from "../../types/salesOrder";
 import Table from "../../components/ui/Table/Table";
 import ActionButton, {
@@ -44,6 +44,7 @@ import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
 import SalesOrderDetailModal from "./SalesOrderDetailModal";
 
 const COMPANY_ID = import.meta.env.VITE_COMPANY_ID;
+const PAYMENT_MODULE = "Payment Entry";
 
 type OutletContextType = {
   openSalesOrderCreate: () => void;
@@ -92,8 +93,8 @@ const SalesOrdersTable: React.FC<SalesOrderTableProps> = ({
   const [isFetching] = useState(false);
   const [, setCompany] = useState<any>(null);
   const { can } = usePermission();
-const createInvoiceFromSO = useDocumentConversion("soToSi");
-const createProformaFromSO = useDocumentConversion("soToProforma");
+  const createInvoiceFromSO = useDocumentConversion("soToSi");
+  const createProformaFromSO = useDocumentConversion("soToProforma");
 
   // ── Pagination state (server)
   const [page, setPage] = useState(1);
@@ -360,9 +361,9 @@ const createProformaFromSO = useDocumentConversion("soToProforma");
         closeSwal();
         showApiError(
           parseFrappeError ||
-            res?.message?.message ||
-            res?.message ||
-            "Failed to delete sales order",
+          res?.message?.message ||
+          res?.message ||
+          "Failed to delete sales order",
         );
         return;
       }
@@ -380,14 +381,14 @@ const createProformaFromSO = useDocumentConversion("soToProforma");
     }
   };
 
-const handleCreateInvoice = (orderNumber: string, e?: React.MouseEvent) => {
-  e?.stopPropagation();
-  return createInvoiceFromSO(orderNumber);
-};
-const handleCreateProforma = (orderNumber: string, e?: React.MouseEvent) => {
-  e?.stopPropagation();
-  return createProformaFromSO(orderNumber);
-};
+  const handleCreateInvoice = (orderNumber: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    return createInvoiceFromSO(orderNumber);
+  };
+  const handleCreateProforma = (orderNumber: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    return createProformaFromSO(orderNumber);
+  };
 
   const fetchAllForExport = async (): Promise<SalesOrderSummary[]> => {
     let allData: SalesOrderSummary[] = [];
@@ -423,6 +424,44 @@ const handleCreateProforma = (orderNumber: string, e?: React.MouseEvent) => {
     } while (current <= total);
 
     return allData;
+  };
+
+  const handleReceivePayment = async (so: SalesOrderSummary) => {
+    try {
+      showLoading("Loading sales order details...");
+      const res = await getSalesOrderById(so.orderNumber);
+      closeSwal();
+
+      const statusCode = res?.message?.status_code || res?.status_code;
+      const data = res?.message?.data || res?.data;
+
+      if (statusCode !== 200 || !data) {
+        showApiError("Failed to load sales order details");
+        return;
+      }
+
+      openPaymentEntryModal(
+        {
+          paymentType: "Receive",
+          partyType: "Customer",
+          partyName: so.customerName,
+          partyId: data.customerId,
+          amount: so.grandTotal,
+          referenceName: so.orderNumber,
+          referenceType: "Sales Order",
+        },
+        false,
+        {
+          onSuccess: (paymentId) => {
+            fetchSalesOrders();
+            showSuccess(`Payment ${paymentId} created`);
+          },
+        },
+      );
+    } catch (err) {
+      closeSwal();
+      showApiError(err);
+    }
   };
 
   const handleExportExcel = async () => {
@@ -514,6 +553,7 @@ const handleCreateProforma = (orderNumber: string, e?: React.MouseEvent) => {
     URL.revokeObjectURL(url);
   };
 
+
   const columns: Column<SalesOrderSummary>[] = [
     {
       key: "orderNumber",
@@ -593,33 +633,33 @@ const handleCreateProforma = (orderNumber: string, e?: React.MouseEvent) => {
             customActions={[
               ...(so.status !== "Draft"
                 ? [
-                    {
-                      label: "Compose Email",
-                      icon: ACTION_ICONS.EMAIL,
-                      onClick: async () => {
-                        let contactEmail: string | null = null;
-                        let orderAttachments: { name: string; file_name: string }[] = [];
-                        try {
-                          const res = await getSalesOrderById(so.orderNumber);
-                          const statusCode = res?.message?.status_code || res?.status_code;
-                          const data = res?.message?.data || res?.data;
-                          if (statusCode === 200 && data) {
-                            contactEmail = data.contact_email ?? null;
-                            orderAttachments = data.attachments ?? [];
-                          }
-                        } catch {
-                          // non-critical: modal opens with empty To/attachments if fetch fails
+                  {
+                    label: "Compose Email",
+                    icon: ACTION_ICONS.EMAIL,
+                    onClick: async () => {
+                      let contactEmail: string | null = null;
+                      let orderAttachments: { name: string; file_name: string }[] = [];
+                      try {
+                        const res = await getSalesOrderById(so.orderNumber);
+                        const statusCode = res?.message?.status_code || res?.status_code;
+                        const data = res?.message?.data || res?.data;
+                        if (statusCode === 200 && data) {
+                          contactEmail = data.contact_email ?? null;
+                          orderAttachments = data.attachments ?? [];
                         }
-                        openSendEmailModal({
-                          docType: "Sales Order",
-                          invoiceNumber: so.orderNumber,
-                          customerName: so.customerName,
-                          contactEmail,
-                          invoiceAttachments: orderAttachments,
-                        });
-                      },
+                      } catch {
+                        // non-critical: modal opens with empty To/attachments if fetch fails
+                      }
+                      openSendEmailModal({
+                        docType: "Sales Order",
+                        invoiceNumber: so.orderNumber,
+                        customerName: so.customerName,
+                        contactEmail,
+                        invoiceAttachments: orderAttachments,
+                      });
                     },
-                  ]
+                  },
+                ]
                 : []),
               {
                 label: "View PDF",
@@ -627,31 +667,40 @@ const handleCreateProforma = (orderNumber: string, e?: React.MouseEvent) => {
                 onClick: () => handlePreviewSalesOrderPDF(so.orderNumber),
               },
               ...(so.status !== "Draft" && so.status !== "Cancelled"
-  ? [
-      {
-        label: "Create Sales Invoice",
-        icon: ACTION_ICONS.SALES_INVOICE, 
-        onClick: () => handleCreateInvoice(so.orderNumber),
-      },
-    ]
-  : []),
-  ...(so.status !== "Draft" && so.status !== "Cancelled"
-  ? [
-      {
-        label: "Create Proforma Invoice",
-        icon: ACTION_ICONS.PROFORMA_INVOICE, 
-        onClick: () => handleCreateProforma(so.orderNumber),
-      },
-    ]
-  : []),
+                ? [
+                  {
+                    label: "Create Sales Invoice",
+                    icon: ACTION_ICONS.SALES_INVOICE,
+                    onClick: () => handleCreateInvoice(so.orderNumber),
+                  },
+                ]
+                : []),
+              ...(so.status !== "Draft" && so.status !== "Cancelled" && can(PAYMENT_MODULE, "create")
+                ? [
+                  {
+                    label: "Receive Payment",
+                    icon: ACTION_ICONS.PAYMENT,
+                    onClick: () => handleReceivePayment(so),
+                  },
+                ]
+                : []),
+              ...(so.status !== "Draft" && so.status !== "Cancelled"
+                ? [
+                  {
+                    label: "Create Proforma Invoice",
+                    icon: ACTION_ICONS.PROFORMA_INVOICE,
+                    onClick: () => handleCreateProforma(so.orderNumber),
+                  },
+                ]
+                : []),
               ...(STATUS_ACTIONS[so.status as string] ?? []).map((entry) => ({
                 label: entry.label,
                 // icon: getStatusActionIcon(entry.action),
                 icon: getStatusActionIcon(
-    entry.action === "approved" ? "Approved" : 
-    entry.action === "closed" ? "Cancelled" : 
-    entry.action
-  ),
+                  entry.action === "approved" ? "Approved" :
+                    entry.action === "closed" ? "Cancelled" :
+                      entry.action
+                ),
                 danger: entry.danger,
                 onClick: () => handleRowStatusChange(so.orderNumber, entry.action),
               })),
