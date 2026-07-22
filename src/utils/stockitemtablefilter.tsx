@@ -63,7 +63,7 @@ const ItemsTableFilters: React.FC<ItemsTableFiltersProps> = ({
       className="h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40 rounded-md transition-all"
     >
       <Upload size={11} />
-      Bulk Upload
+    Import Inventory
     </button>
 
     <button
