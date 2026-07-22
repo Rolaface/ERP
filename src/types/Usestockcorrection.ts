@@ -1,6 +1,4 @@
-// ─── Stock Correction — Business Logic Hook ──────────────────────────────────
-// All state, derived values, and API calls live here.
-// Components stay purely presentational.
+
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -122,36 +120,7 @@ export function useStockCorrection(
   };
 
   // ── Bulk submit ───────────────────────────────────────────────────────────
-  const handleBulkSubmit = async () => {
-    const validRows = bulkRows.filter((r) => r.status === "valid");
-    if (!validRows.length) return;
-    try {
-      setBulkLoading(true);
-      showLoading(`Submitting ${validRows.length} corrections…`);
-      const response = await createItemStock({
-        items: validRows.map((r) => ({
-          item_code:       r.itemCode,
-          correction_type: r.correctionType,
-          adjustment_qty:  parseFloat(r.adjustmentQty),
-          reason_code:     r.reason,
-          notes:           r.notes,
-        })),
-      });
-      closeSwal();
-      if (!response || response.status_code !== 200) {
-        showApiError(response?.message || "Bulk submission failed");
-        return;
-      }
-      showSuccess(`${validRows.length} stock corrections applied`);
-      onSubmit?.();
-      handleClose();
-    } catch (error: any) {
-      closeSwal();
-      showApiError(error);
-    } finally {
-      setBulkLoading(false);
-    }
-  };
+  
 
   // ── Close handler ─────────────────────────────────────────────────────────
   const handleClose = () => {
@@ -171,7 +140,7 @@ export function useStockCorrection(
     adjQty, curQty, newQty, diff, hasItem, hasAdj, isValid,
     // actions
     handleManualSubmit,
-    handleBulkSubmit,
+    
     handleClose,
   };
 }

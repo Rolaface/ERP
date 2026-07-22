@@ -226,6 +226,10 @@ const PayrollPreviewModal = lazy(
   () => import("../../views/hr/payroll-system/PayrollPreview"),
 );
 
+const ImportInventoryModal = lazy(
+  () => import("../../components/inventory/stock/inventoryimport"),
+);
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
@@ -1241,23 +1245,37 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
       }
-     case "stockCorrection": {
-  const d = isRecord(modal.initialData) ? modal.initialData : {};
-  return wrappedModal(
-    <StockCorrectionModal
-      key={modal.id}
-      modalId={modal.id}
-      isOpen={true}
-      onClose={handleClose}
-      onSubmit={async (payload) => {
-        await handleSubmit(payload);
-      }}
-      selectedBatch={d.selectedBatch ?? null}
-      branchOptions={(d.branchOptions as any) ?? []}
-      isViewMode={context?.isViewMode ?? false}
-    />,
+
+      case "stockCorrection": {
+        const d = isRecord(modal.initialData) ? modal.initialData : {};
+        return wrappedModal(
+          <StockCorrectionModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={async (payload) => {
+              await handleSubmit(payload);
+            }}
+            selectedBatch={d.selectedBatch ?? null}
+            branchOptions={(d.branchOptions as any) ?? []}
+            isViewMode={context?.isViewMode ?? false}
+          />,
         );
       }
+
+      case "importInventory":
+        return wrappedModal(
+          <ImportInventoryModal
+            key={modal.id}
+            modalId={modal.id}
+            isOpen={true}
+            onClose={handleClose}
+            onSubmit={async () => {
+              await handleSubmit(undefined);
+            }}
+          />,
+        );
     }
   };
 

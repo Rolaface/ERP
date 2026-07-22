@@ -21,17 +21,18 @@ export interface CorrectionFormState {
 
 // ── Bulk upload ───────────────────────────────────────────────────────────────
 export interface BulkRow {
-  id:             string;
-  itemCode:       string;
-  itemName:       string;
-  correctionType: CorrectionType;
-  adjustmentQty:  string;
-  reason:         string;
-  notes:          string;
-  currentQty?:    number;
-  newQty?:        number;
-  error?:         string;
-  status:         RowStatus;
+  id: string;
+  itemCode: string;
+  itemName: string;
+  itemGroup: string;
+  uom: string;
+  warehouse: string;
+  openingQty: string;
+  valuationRate: string;
+  description: string;
+  brand: string;
+  status: "valid" | "error";
+  error?: string;
 }
 
 // ── API payload shapes ────────────────────────────────────────────────────────
