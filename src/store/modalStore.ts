@@ -67,7 +67,7 @@ export type ModalType =
   | "coaGLAccount"
   | "sendEmail"
   | "stockCorrection" 
-  
+  | "importInventory"  
   
   
 
@@ -1003,3 +1003,13 @@ export const openSendEmailModal = (
   useModalStore
     .getState()
     .openModal("stockCorrection", initialData, isEdit, context, meta);
+
+export const openImportInventoryModal = (
+  initialData?: unknown,
+  context?: ModalContext,
+  meta?: ModalMeta,
+) =>
+  useModalStore
+    .getState()
+    .openModal("importInventory", initialData, false, context, meta);
+    

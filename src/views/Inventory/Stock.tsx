@@ -3,7 +3,7 @@ import { flexRender } from "@tanstack/react-table";
 import Pagination from "../../components/Pagination";
 import { ChevronUp, ChevronDown, ChevronsUpDown, Package2 } from "lucide-react";
 
-import BulkUploadModal from "../../components/inventory/stock/BulkUploadModal";
+import { openImportInventoryModal } from "../../store/modalStore";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
 import BatchDetailsTable from "../../views/Inventory/BatchTable";
 
@@ -29,8 +29,7 @@ const Items: React.FC = () => {
     setSearchTerm,
     expandedRows,
     toggleRow,
-    showBulkModal,
-    setShowBulkModal,
+   
     showViewModal,
     setShowViewModal,
     viewStockData,
@@ -53,7 +52,13 @@ const Items: React.FC = () => {
           setSearchTerm(v);
           setPage(1);
         }}
-        onBulkUpload={() => setShowBulkModal(true)}
+     onBulkUpload={() =>
+  openImportInventoryModal(undefined, {
+    onSuccess: async () => {
+      await handleBulkSaved();
+    },
+  })
+}
         onStockCorrection={openNewStockCorrection}
         onExport={handleExportExcel}
         isExporting={isExporting}
@@ -232,11 +237,7 @@ const Items: React.FC = () => {
         stockData={viewStockData}
       />
 
-      <BulkUploadModal
-        isOpen={showBulkModal}
-        onClose={() => setShowBulkModal(false)}
-        onSubmit={handleBulkSaved}
-      />
+      
     </div>
   );
 };

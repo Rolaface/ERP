@@ -6,19 +6,20 @@ import React, {
   useMemo,
 } from "react";
 import { useOutletContext } from "react-router-dom";
-import MultiSelectFilter from "../../components/ui/modal/MultiSelectFilter";
+
 import DateRangeFilter from "../../components/ui/modal/DateRangeFilter";
-import { openPaymentEntryModal, openSendEmailModal } from "../../store/modalStore";
+import {
+  openPaymentEntryModal,
+  openSendEmailModal,
+} from "../../store/modalStore";
 import {
   getAllSalesInvoices,
   updateInvoiceStatus,
   getSalesInvoiceById,
   deleteSalesInvoiceById,
-  editSalesInvoice,
-  createCnFromSalesInvoice,
 } from "../../api/salesApi";
 import type { InvoiceSummary, Invoice } from "../../types/invoice";
-import { generateInvoicePDF } from "../../components/template/invoice/invoiceTemplatRolaface";
+
 import PdfPreviewModal from "./PdfPreviewModal";
 import InvoiceDetailModal, { type InvoiceDetail } from "./InvoiceDetailsModal";
 import {
@@ -122,9 +123,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfInvoiceNumber, setPdfInvoiceNumber] = useState<string | null>(null);
-const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCreditNote");
-
-
+  const createCreditNoteFromSalesInvoice =
+    useDocumentConversion("siToCreditNote");
 
   const { can } = usePermission();
   // ── Drawer (same pattern as ProformaInvoicesTable)
@@ -196,7 +196,7 @@ const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCreditNote")
         filters.status && filters.status.length > 0
           ? filters.status.join(",")
           : undefined,
-          filters.from_date,
+        filters.from_date,
         filters.to_date,
       );
 
@@ -313,7 +313,6 @@ const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCreditNote")
     e?.stopPropagation();
     return createCreditNoteFromSalesInvoice(siId);
   };
-  
 
   const fetchAllInvoicesForExport = async (): Promise<InvoiceSummary[]> => {
     try {
@@ -769,30 +768,39 @@ const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCreditNote")
                     ]
                   : []),
 
-    ...(inv.invoiceStatus !== "Draft" && !isCancelled
-      ? [{
-          label: "Compose Email",
-          icon: ACTION_ICONS.EMAIL,
-          onClick: async () => {
-            let contactEmail: string | null = null;
-            let invoiceAttachments: { name: string; file_name: string }[] = [];
-            try {
-              const res = await getSalesInvoiceById(inv.invoiceNumber);
-              if (res?.message?.status_code === 200) {
-                contactEmail = res.message.data?.contact_email ?? null;
-                invoiceAttachments = res.message.data?.attachments ?? [];
-              }
-            } catch {}
-            openSendEmailModal({
-              docType: "Sales Invoice",
-              invoiceNumber: inv.invoiceNumber,
-              customerName: inv.customerName,
-              contactEmail,
-              invoiceAttachments,
-            });
-          },
-        }]
-      : []),
+                ...(inv.invoiceStatus !== "Draft" && !isCancelled
+                  ? [
+                      {
+                        label: "Compose Email",
+                        icon: ACTION_ICONS.EMAIL,
+                        onClick: async () => {
+                          let contactEmail: string | null = null;
+                          let invoiceAttachments: {
+                            name: string;
+                            file_name: string;
+                          }[] = [];
+                          try {
+                            const res = await getSalesInvoiceById(
+                              inv.invoiceNumber,
+                            );
+                            if (res?.message?.status_code === 200) {
+                              contactEmail =
+                                res.message.data?.contact_email ?? null;
+                              invoiceAttachments =
+                                res.message.data?.attachments ?? [];
+                            }
+                          } catch {}
+                          openSendEmailModal({
+                            docType: "Sales Invoice",
+                            invoiceNumber: inv.invoiceNumber,
+                            customerName: inv.customerName,
+                            contactEmail,
+                            invoiceAttachments,
+                          });
+                        },
+                      },
+                    ]
+                  : []),
 
                 ...(!isCancelled
                   ? [
@@ -803,15 +811,17 @@ const createCreditNoteFromSalesInvoice = useDocumentConversion("siToCreditNote")
                       },
                     ]
                   : []),
-                    ...(inv.invoiceStatus !== "Draft" && inv.invoiceStatus !== "Cancelled"
-                                  ? [
-                                      {
-                                        label: "Create Credit Note",
-                                        icon: ACTION_ICONS.CREDIT_NOTE ,
-                                        onClick: () => handleCreateCreditNote(inv.invoiceNumber),
-                                      },
-                                    ]
-                                  : []),
+                ...(inv.invoiceStatus !== "Draft" &&
+                inv.invoiceStatus !== "Cancelled"
+                  ? [
+                      {
+                        label: "Create Credit Note",
+                        icon: ACTION_ICONS.CREDIT_NOTE,
+                        onClick: () =>
+                          handleCreateCreditNote(inv.invoiceNumber),
+                      },
+                    ]
+                  : []),
                 ...(can(SALES_MODULE, "write")
                   ? (STATUS_TRANSITIONS[inv.invoiceStatus] ?? []).map(
                       (status) => ({
