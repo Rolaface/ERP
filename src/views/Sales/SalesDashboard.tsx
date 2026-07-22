@@ -62,6 +62,14 @@ const KPI_TAB_MAP: Record<string, string> = {
   "Debit Notes": "salesDebitNotes",
   "Sales Orders": "salesOrder",
 };
+const EMPTY_KPI_MESSAGES: Record<string, string> = {
+  "Sales Orders": "No sales orders yet",
+  Quotations: "No quotations yet",
+  "Proforma Invoices": "No proforma invoices yet",
+  "Sales Invoices": "No sales invoices yet",
+  "Credit Notes": "No credit notes yet",
+  "Debit Notes": "No debit notes yet",
+};
 
 const CardShell: React.FC<{
   title: string;
@@ -134,11 +142,18 @@ const KpiTile: React.FC<{
     ) : (
       <>
         <p className="mt-0.5 text-xl font-bold text-slate-800">{count}</p>
-        {typeof worth === "number" && worth > 0 && currencyFormatter && (
-          <p className="mt-0.5 text-xs font-bold text-slate-700">
-            {currencyFormatter.format(worth)}
-          </p>
-        )}
+        <p className="mt-0.5 text-xs font-medium text-slate-500">
+  {count === 0 ? (
+    EMPTY_KPI_MESSAGES[label]
+  ) : (
+    <>
+      Worth{" "}
+      <span className="text-slate-700">
+        {currencyFormatter?.format(worth ?? 0)}
+      </span>
+    </>
+  )}
+</p>
       </>
     )}
   </div>
