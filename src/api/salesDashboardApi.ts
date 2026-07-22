@@ -9,13 +9,18 @@ export const SalesDashboardAPI = API.salesDashboard;
 
 export type DashboardGranularity = "monthly" | "yearly";
 
+export interface SummaryMetric {
+  count: number;
+  value: number;
+}
+
 export interface SalesSummary {
-  proforma_invoices: number;
-  quotations: number;
-  sales_invoices: number;
-  credit_notes: number;
-  sales_orders:number;
-  debit_notes: number;
+  proforma_invoices: SummaryMetric;
+  quotations: SummaryMetric;
+  sales_invoices: SummaryMetric;
+  credit_notes: SummaryMetric;
+  sales_orders: SummaryMetric;
+  debit_notes: SummaryMetric;
 }
 
 export interface MonthlySalesPoint {
