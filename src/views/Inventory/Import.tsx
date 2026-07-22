@@ -1,12 +1,7 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-floating-promises */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import React, { useEffect, useState } from "react";
+import React, { useState, useMemo } from "react";
 import { toast } from "sonner";
 
-// import { getAllImportItems } from "../../api/importApi";
+// import { getAllImportItems, deleteImportItem } from "../../api/importApi";
 
 import ViewImportModal from "../../components/inventory/ViewImportModal";
 import DeleteModal from "../../components/actionModal/DeleteModal";
@@ -16,7 +11,6 @@ import ActionButton, {
   ActionGroup,
   ActionMenu,
 } from "../../components/ui/Table/ActionButton";
-
 import type { Column } from "../../components/ui/Table/type";
 
 interface ImportItemSummary {
@@ -30,74 +24,109 @@ interface ImportItemSummary {
   invoiceExchangeRate: number;
 }
 
-const Items: React.FC = () => {
+const Import: React.FC = () => {
+  // ── Data with stale-while-revalidate pattern (same as InvoiceTable) ──────
   const [items, setItems] = useState<ImportItemSummary[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
-const [initialLoad, setInitialLoad] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
 
+  // ── Pagination (server) ───────────────────────────────────────────────────
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
- 
+
+  // ── Search (server) ───────────────────────────────────────────────────────
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [sortBy, setSortBy] = useState("itemName");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // ── View / Delete modal state ─────────────────────────────────────────────
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ImportItemSummary | null>(
     null,
   );
   const [deleting, setDeleting] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
 
-  // const fetchItems = async () => {
+  // ── Fetch import items with stale-while-revalidate pattern ────────────────
+  // Wired up exactly like InvoiceTable's fetchInvoices — just swap in the
+  // real endpoint + response mapping once the backend is ready.
+  //
+  // const fetchItems = useCallback(async () => {
+  //   setIsFetching(true);
   //   try {
-  //     setLoading(true);
-  //     const apiData = await getAllImportItems();
-     
-  //     const mapped = Array.isArray(apiData)
-  //       ? apiData.map((entry: any) => ({
-  //           id: entry.id || "",
-  //           itemName: entry.itemName || entry.item_name || "",
-  //           quantity: entry.quantity || "0",
-  //           originCountryCode:
-  //             entry.originCountryCode || entry.origin_country_code || "",
-  //           exportCountryCode:
-  //             entry.exportCountryCode || entry.export_country_code || "",
-  //           invoiceAmount: entry.invoiceAmount || entry.invoice_amount || 0,
-  //           invoiceCurrency:
-  //             entry.invoiceCurrency || entry.invoice_currency || "",
-  //           invoiceExchangeRate:
-  //             entry.invoiceExchangeRate || entry.invoice_exchange_rate || 0,
-  //         }))
-  //       : [];
+  //     const res = await getAllImportItems(page, pageSize, sortBy, sortOrder, searchTerm);
+  //
+  //     if (!res || res.status_code !== 200) {
+  //       toast.error("Failed to load import items");
+  //       setItems([]);
+  //       setTotalPages(1);
+  //       setTotalItems(0);
+  //       return;
+  //     }
+  //
+  //     const mapped: ImportItemSummary[] = res.data.map((entry: any) => ({
+  //       id: entry.id || "",
+  //       itemName: entry.itemName || entry.item_name || "",
+  //       quantity: entry.quantity || "0",
+  //       originCountryCode: entry.originCountryCode || entry.origin_country_code || "",
+  //       exportCountryCode: entry.exportCountryCode || entry.export_country_code || "",
+  //       invoiceAmount: entry.invoiceAmount || entry.invoice_amount || 0,
+  //       invoiceCurrency: entry.invoiceCurrency || entry.invoice_currency || "",
+  //       invoiceExchangeRate: entry.invoiceExchangeRate || entry.invoice_exchange_rate || 0,
+  //     }));
+  //
   //     setItems(mapped);
-  //     // Calculate pagination
-  //     setTotalItems(mapped.length);
-  //     setTotalPages(Math.ceil(mapped.length / pageSize));
+  //     setTotalPages(res.pagination?.total_pages || 1);
+  //     setTotalItems(res.pagination?.total || mapped.length);
   //   } catch (err) {
   //     console.error(err);
   //     toast.error("Failed to load import items");
+  //     setItems([]);
+  //     setTotalPages(1);
+  //     setTotalItems(0);
   //   } finally {
-  //     setLoading(false);
-  //     setInitialLoad(false);
+  //     setIsFetching(false);
+  //     setIsInitialLoad(false);
   //   }
-  // };
-
+  // }, [page, pageSize, sortBy, sortOrder, searchTerm]);
+  //
   // useEffect(() => {
   //   fetchItems();
   // }, []);
+  //
+  // useEffect(() => {
+  //   if (isInitialLoad) return;
+  //   fetchItems();
+  // }, [page, pageSize, sortBy, sortOrder, searchTerm]);
 
-  /*      HANDLERS
-   */
+  // ── Sort handler (same shape as InvoiceTable's handleSortChange) ─────────
+  const handleSortChange = ({
+    sortBy: colKey,
+    sortOrder: order,
+  }: {
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }) => {
+    setSortBy(colKey);
+    setSortOrder(order);
+    setPage(1);
+  };
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleView = (importId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+    e?.stopPropagation();
     setSelectedImportId(importId);
     setViewModalOpen(true);
   };
 
   const handleDeleteClick = (item: ImportItemSummary, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+    e?.stopPropagation();
     setItemToDelete(item);
     setDeleteModalOpen(true);
   };
@@ -107,7 +136,6 @@ const [initialLoad, setInitialLoad] = useState(false);
 
     try {
       setDeleting(true);
-      // TODO: Implement delete import item API
       // await deleteImportItem(itemToDelete.id);
       setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
       toast.success("Import item deleted successfully");
@@ -115,123 +143,171 @@ const [initialLoad, setInitialLoad] = useState(false);
     } catch (err: any) {
       toast.error(
         err.response?.data?.message || "Failed to delete import item",
-        {
-          duration: 6000,
-        },
+        { duration: 6000 },
       );
     } finally {
       setDeleting(false);
       setItemToDelete(null);
     }
   };
-  
 
-  // const handleSaved = async () => {
-  //   const wasEdit = !!editItem;
-  //   setShowModal(false);
-  //   setEditItem(null);
-  //   await fetchItems();
-  //   toast.success(wasEdit ? "Item updated" : "Item created");
-  // };
+  const handleAddImport = () => {
+    // TODO: open create-import modal once backend/flow is ready
+    toast.info("Import creation coming soon");
+  };
 
-  /*      FILTER
-   */
+  const handleExportExcel = async () => {
+    // TODO: wire up real export once backend is ready (same pattern as
+    // InvoiceTable's handleExportExcel — fetch all pages, build XLSX, saveAs)
+    toast.info("Export coming soon");
+  };
 
-  const filteredItems = items.filter((i) =>
-    [
-      i.id,
-      i.itemName,
-      i.quantity,
-      i.originCountryCode,
-      i.exportCountryCode,
-      i.invoiceAmount,
-      i.invoiceCurrency,
-    ]
-      .join(" ")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase()),
+  // ── Columns ──────────────────────────────────────────────────────────────
+
+  const columns: Column<ImportItemSummary>[] = useMemo(
+    () => [
+      {
+        key: "id",
+        header: "ID",
+        align: "left",
+        sortable: true,
+        render: (i) => (
+          <div className="py-1.5">
+            <span className="block">{i.id}</span>
+          </div>
+        ),
+      },
+      {
+        key: "itemName",
+        header: "Item Name",
+        align: "left",
+        sortable: true,
+        render: (i) => (
+          <div className="py-1.5">
+            <span className="block font-medium">{i.itemName}</span>
+          </div>
+        ),
+        tooltip: (i) => `Item: ${i.itemName}`,
+      },
+      {
+        key: "quantity",
+        header: "Quantity",
+        align: "center",
+        render: (i) => (
+          <div className="py-1.5">
+            <span className="block">{i.quantity}</span>
+          </div>
+        ),
+      },
+      {
+        key: "originCountryCode",
+        header: "Origin Country",
+        align: "center",
+        render: (i) => (
+          <div className="py-1.5">
+            <span className="block">{i.originCountryCode || "—"}</span>
+          </div>
+        ),
+      },
+      {
+        key: "exportCountryCode",
+        header: "Export Country",
+        align: "center",
+        render: (i) => (
+          <div className="py-1.5">
+            <span className="block">{i.exportCountryCode || "—"}</span>
+          </div>
+        ),
+      },
+      {
+        key: "invoiceAmount",
+        header: "Invoice Amount",
+        align: "right",
+        sortable: true,
+        render: (i) => (
+          <div className="py-1.5">
+            <span className="block whitespace-nowrap">
+              {i.invoiceAmount.toFixed(2)}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: "invoiceCurrency",
+        header: "Currency",
+        align: "center",
+        render: (i) => (
+          <div className="py-1.5">
+            <span className="block">{i.invoiceCurrency || "—"}</span>
+          </div>
+        ),
+      },
+      {
+        key: "invoiceExchangeRate",
+        header: "Exchange Rate",
+        align: "right",
+        render: (i) => (
+          <div className="py-1.5">
+            <span className="block whitespace-nowrap">
+              {i.invoiceExchangeRate.toFixed(2)}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        align: "center",
+        render: (i) => (
+          <ActionGroup>
+            <ActionButton
+              type="view"
+              onClick={(e) => handleView(i.id, e)}
+              iconOnly
+            />
+            <ActionMenu onDelete={(e) => handleDeleteClick(i, e)} />
+          </ActionGroup>
+        ),
+      },
+    ],
+    [],
   );
 
-  /*      COLUMNS
-   */
-
-  const columns: Column<ImportItemSummary>[] = [
-    { key: "id", header: "ID", align: "left" },
-    { key: "itemName", header: "Item Name", align: "left" },
-    { key: "quantity", header: "Quantity", align: "left" },
-    { key: "originCountryCode", header: "Origin Country", align: "left" },
-    { key: "exportCountryCode", header: "Export Country", align: "left" },
-    {
-      key: "invoiceAmount",
-      header: "Invoice Amount",
-      align: "right",
-      render: (i) => `${i.invoiceAmount.toFixed(2)}`,
-    },
-    { key: "invoiceCurrency", header: "Currency", align: "left" },
-    {
-      key: "invoiceExchangeRate",
-      header: "Exchange Rate",
-      align: "right",
-      render: (i) => `${i.invoiceExchangeRate.toFixed(2)}`,
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      align: "center",
-      render: (i) => (
-        <ActionGroup>
-          <ActionButton
-            type="view"
-            onClick={(e?: React.MouseEvent) => handleView(i.id, e)}
-          />
-          <ActionMenu
-            onDelete={(e?: React.MouseEvent) => handleDeleteClick(i, e)}
-          />
-        </ActionGroup>
-      ),
-    },
-  ];
-
-  /*      RENDER
-   */
-
-if (items.length === 0) {
   return (
-    <div className="p-8 flex items-center justify-center h-[400px]">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold text-gray-700">
-          Coming Soon 🚧
-        </h2>
-        <p className="text-gray-500 mt-2">
-          Import items feature will be available soon.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-  return (
-    <div className="p-8">
-      
+    <div className="h-full min-h-0">
       <Table
-        loading={loading || initialLoad}
-        // serverSide={false}
         columns={columns}
-        data={filteredItems}
+        data={items}
+        rowKey={(row) => row.id}
+        tableId="import-items"
+        loading={isInitialLoad}
+        isFetching={isFetching}
         showToolbar
         searchValue={searchTerm}
-        onSearch={setSearchTerm}
+        onSearch={(q) => {
+          setSearchTerm(q);
+          setPage(1);
+        }}
+        enableAdd
+        addLabel="Add Import"
+        onAdd={handleAddImport}
+        enableColumnSelector
+        enableExport
+        onExport={handleExportExcel}
         currentPage={page}
         totalPages={totalPages}
         pageSize={pageSize}
         totalItems={totalItems}
-         pageSizeOptions={[20, 50, 100,200]}
+        pageSizeOptions={[20, 50, 100, 200]}
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
         }}
         onPageChange={setPage}
-        
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
+        onRowDoubleClick={(item) => handleView(item.id)}
       />
 
       {/* VIEW MODAL */}
@@ -265,4 +341,4 @@ if (items.length === 0) {
   );
 };
 
-export default Items;
+export default Import;

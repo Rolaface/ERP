@@ -1241,7 +1241,7 @@ const GlobalModalHandler: React.FC = () => {
           />,
         );
       }
-       case "stockCorrection": {
+     case "stockCorrection": {
   const d = isRecord(modal.initialData) ? modal.initialData : {};
   return wrappedModal(
     <StockCorrectionModal
@@ -1254,9 +1254,10 @@ const GlobalModalHandler: React.FC = () => {
       }}
       selectedBatch={d.selectedBatch ?? null}
       branchOptions={(d.branchOptions as any) ?? []}
+      isViewMode={context?.isViewMode ?? false}
     />,
-  );
-}
+        );
+      }
     }
   };
 
