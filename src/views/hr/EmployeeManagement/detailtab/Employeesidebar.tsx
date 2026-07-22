@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { getAllDepartments } from "../../../../api/utils/frappeUtilsApi";
-import { uploadEmployeePhoto, removeEmployeePhoto } from "../../../../api/employeeapi";
+import {
+  uploadEmployeePhoto,
+  removeEmployeePhoto,
+} from "../../../../api/employeeapi";
 import { resolveLabel } from "../../../../api/utils/labelResolver";
 import {
   Mail,
@@ -20,7 +23,11 @@ import {
   getFileUrl,
 } from "../detailtab/Employeehelpers";
 import { QuickStat } from "../detailtab/Employeeuiprimitives";
-import { showApiError, showSuccess, showConfirm } from "../../../../utils/alert";
+import {
+  showApiError,
+  showSuccess,
+  showConfirm,
+} from "../../../../utils/alert";
 import { PhotoUploadModal } from "../Photouploadmodal";
 
 interface Props {
@@ -235,12 +242,17 @@ export const EmployeeSidebar: React.FC<Props> = ({
 
           {!avatarSrc && !uploading && (
             <p className="text-white/40 text-[9px] -mt-1 mb-1 tracking-wide">
-              click <Camera className="inline w-2.5 h-2.5 mb-0.5" /> to add photo
+              click <Camera className="inline w-2.5 h-2.5 mb-0.5" /> to add
+              photo
             </p>
           )}
 
-          <h3 className="text-white text-sm font-bold leading-snug">{fullName}</h3>
-          <p className="text-white/70 text-[11px] mt-0.5">{fmt(emp.designation)}</p>
+          <h3 className="text-white text-sm font-bold leading-snug">
+            {fullName}
+          </h3>
+          <p className="text-white/70 text-[11px] mt-0.5">
+            {fmt(emp.designation)}
+          </p>
 
           <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
             <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/20 text-[10px] font-medium text-emerald-100">
@@ -252,14 +264,26 @@ export const EmployeeSidebar: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* ── Employee ID ─────────────────────────────────────────────────── */}
-        <div className="px-4 py-2.5 border-b border-theme bg-app text-center">
-          <p className="text-[9px] uppercase tracking-widest text-muted font-bold mb-0.5">
-            Employee ID
-          </p>
-          <p className="text-sm font-mono font-bold text-primary">
-            {fmt(emp.employee) || "—"}
-          </p>
+        <div className="border-b border-theme px-4 py-3">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">
+                Employee ID
+              </p>
+              <p className="font-mono text-sm font-semibold text-primary">
+                {fmt(emp.employee)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">
+                Employee No.
+              </p>
+              <p className="text-sm font-semibold text-main">
+                {fmt(emp.employee_number)}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* ── Quick stats ─────────────────────────────────────────────────── */}
@@ -280,20 +304,36 @@ export const EmployeeSidebar: React.FC<Props> = ({
           <div className="border-t border-theme pt-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">Gender</p>
-                <p className="text-sm font-semibold text-main">{fmt(emp.gender)}</p>
+                <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">
+                  Gender
+                </p>
+                <p className="text-sm font-semibold text-main">
+                  {fmt(emp.gender)}
+                </p>
               </div>
               <div>
-                <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">Blood Group</p>
-                <p className="text-sm font-semibold text-main">{fmt(emp.blood_group)}</p>
+                <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">
+                  Blood Group
+                </p>
+                <p className="text-sm font-semibold text-main">
+                  {fmt(emp.blood_group)}
+                </p>
               </div>
               <div>
-                <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">Grade</p>
-                <p className="text-sm font-semibold text-main">{fmt(emp.grade)}</p>
+                <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">
+                  Grade
+                </p>
+                <p className="text-sm font-semibold text-main">
+                  {fmt(emp.grade)}
+                </p>
               </div>
               <div>
-                <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">Salary Mode</p>
-                <p className="text-sm font-semibold text-main">{fmt(emp.salary_mode)}</p>
+                <p className="text-[9px] uppercase tracking-wider text-muted font-bold mb-1">
+                  Salary Mode
+                </p>
+                <p className="text-sm font-semibold text-main">
+                  {fmt(emp.salary_mode)}
+                </p>
               </div>
             </div>
           </div>
