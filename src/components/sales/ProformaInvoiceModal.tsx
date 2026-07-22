@@ -114,6 +114,14 @@ const ProformaInvoiceModal: React.FC<ProformaInvoiceModalProps> = ({
       ui.setActiveTab("details");
     }
   }, [isOpen]);
+   useEffect(() => {
+  if (isOpen && mode === "create" && initialData?.customerName) {
+   actions.handleCustomerSelect({
+      name: initialData.customerName,
+      id: initialData.customerId,
+    });
+ }
+}, [isOpen, mode, initialData?.customerName, initialData?.customerId]);
 
   const validateDetailsOrFocus = () => {
     try {

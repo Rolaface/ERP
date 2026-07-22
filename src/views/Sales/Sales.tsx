@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   FileSignature,
   FileClock,
-  Receipt,
+  File,
   FileMinus,
   BarChart3,
   TrendingUp,
@@ -80,7 +80,7 @@ const ALL_SALES_TAB = [
   {
     id: "invoices",
     label: "Invoices",
-    icon: <Receipt size={16} strokeWidth={1.75} />,
+    icon: <File size={16} strokeWidth={1.75} />,
     module: "Sales Invoice",
     action: "read" as const,
   },
@@ -142,7 +142,12 @@ const SalesModule: React.FC = () => {
   const renderTab = () => {
     switch (resolvedTab) {
       case "salesdashboard":
-        return <SalesDashboard />;
+        return (
+          <SalesDashboard
+            onNavigateTab={handleTabChange}
+            availableTabIds={salesTabs.map((t) => t.id)}
+          />
+        );
       
       case "salesOrder":
         return (

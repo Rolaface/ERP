@@ -29,10 +29,15 @@ export interface CorrectionRow {
   branch: string; // real warehouse name, taken directly from the API's batches[].warehouse
   batchNo: string; // auto-resolved (read-only) from stockSummary once branch is picked
   expiryDate: string; // derived (read-only) from the matched batch
-  availableQty: number | null; // derived (read-only) from the matched batch
-  qty: string; // string so user can type "-15" / "10" naturally
+  availableQty: number | null; // derived (read-only) from the matched batch — this is "Actual Quantity"
+
+  // Replaces the old single signed `qty` field. Both are strings so the user
+  // can type/clear freely; kept numerically in sync by updateCorrectionRow.
+  correctQty: string; // signed delta the user enters, e.g. "-30" or "20" — can be blank
+  finalQty: string;   // resulting stock = availableQty + correctQty, always >= 0, string so field can be blank
+
   reasonCode: string;
-    valuationRate: number | null;
+  valuationRate: number | null;
 }
 
 export interface MovementRow {
@@ -104,6 +109,7 @@ export interface SingleBatchItemPickedPayload {
 
 export interface StockCorrectionModalProps {
   modalId?: string; 
+  isViewMode?: boolean 
   isOpen: boolean;
   onClose: () => void;
 onSubmit?: (payload: StockCorrectionSubmitPayload) => Promise<void>; 

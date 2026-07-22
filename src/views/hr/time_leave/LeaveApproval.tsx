@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { MoreHorizontal, CheckCircle, XCircle } from "lucide-react";
+import {  CheckCircle, XCircle } from "lucide-react";
 
 import {
   getAllLeaveApplications,
   updateLeaveApplication,
 } from "../../../api/leaveApplicationApi";
 import { showApiError, showSuccess, showConfirm } from "../../../utils/alert";
-import { PortalDropdown } from "../../../components/ui/Table/ExpandableTreeTable";
+
 import Table from "../../../components/ui/Table/Table";
 import StatusBadge from "../../../components/ui/Table/StatusBadge";
 import type { Column } from "../../../components/ui/Table/type";
@@ -37,7 +37,7 @@ export default function LeaveApproval() {
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory] = useState(false);
   // const [filters, setFilters] = useState({ from_date: "", to_date: "" });
   const [filters, setFilters] = useState({ from_date: "", to_date: "", status: "Open" });
   const [page, setPage] = useState(1);

@@ -4,7 +4,7 @@ import { ModalInput, ModalSelect, NumericInput, ToggleSwitch } from "../../compo
 import type { CorrectionRow, Mode, MovementRow, Option, StockItemSelectPayload } from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import { RemoveRowButton, SectionLabel } from "../../components/Stock-correction-movement/Summaryui";
 import StockItemSelect from "../../components/selects/StockItemSelect";
-import type { SingleBatchItemPickedPayload } from "../../hooks/stock correction-movement/Usestockcorrectionform";
+
 import WarehouseSelect from "../selects/WarehouseSelect";
 
 // ─── Item picker + Correction/Movement toggle ──────────────────────────────
@@ -77,7 +77,7 @@ interface CorrectionRowFieldsProps {
   row: CorrectionRow;
   branchOptions: Option[];
   batchOptionsForRow?: Option[];
-  onChange: (id: string, field: keyof Omit<CorrectionRow, "id" | "expiryDate" | "availableQty">, value: string) => void;
+  onChange: (id: string, field: "branch" | "batchNo" | "correctQty", value: string) => void;
   onRemove: (id: string) => void;
   removeDisabled: boolean;
 }
@@ -116,16 +116,24 @@ export const CorrectionRowFields: React.FC<CorrectionRowFieldsProps> = ({
     <div className="scm-cell scm-cell-border text-[12px] font-semibold text-main" style={{ padding: "6px 10px" }}>
       {row.availableQty === null ? "—" : row.availableQty.toLocaleString()}
     </div>
+
+    {/* Correct Qty — signed delta, e.g. -30 to decrease, 20 to increase */}
     <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
       <NumericInput
-        value={row.qty === "" ? null : Number(row.qty)}
+        value={row.correctQty === "" || row.correctQty === "-" ? null : Number(row.correctQty)}
         allowNegative
         decimalScale={0}
         placeholder="0"
-        onChange={(v) => onChange(row.id, "qty", v === null ? "" : String(v))}
+        onChange={(v) => onChange(row.id, "correctQty", v === null ? "" : String(v))}
         className="h-[28px] text-[11px] w-full"
       />
     </div>
+
+    {/* Final Qty — read-only, auto-calculated from Available Stock + Correct Qty */}
+    <div className="scm-cell scm-cell-border text-[12px] font-semibold text-main" style={{ padding: "6px 10px" }}>
+      {row.finalQty === "" ? "—" : Number(row.finalQty).toLocaleString()}
+    </div>
+
     <div className="scm-cell" style={{ justifyContent: "center", padding: "6px 10px" }}>
       <RemoveRowButton onClick={() => onRemove(row.id)} disabled={removeDisabled} />
     </div>

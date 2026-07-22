@@ -9,6 +9,9 @@ import {
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { showApiError } from "../../utils/alert";
 import { getAllQuotation } from "../../api/proformaInvoiceApi";
+ import { openQuotationModal } from "../../store/modalStore";
+ import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 interface Quotation {
   id: string;
@@ -22,9 +25,11 @@ interface Quotation {
 
 interface Props {
   customerId: string;
+  customerName?: string;
+  
 }
 
-const CustomerQuotations = ({ customerId }: Props) => {
+const CustomerQuotations = ({ customerId, customerName }: Props) => {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -64,6 +69,31 @@ const CustomerQuotations = ({ customerId }: Props) => {
   useEffect(() => {
     setPage(1);
   }, [customerId]);
+
+   const handleExportExcel = () => {
+ if (!quotations.length) return;
+
+  const worksheet = XLSX.utils.json_to_sheet(
+   quotations.map((q) => ({
+      "Quotation No": q.id,
+     Date: new Date(q.transactionDate || (q as any).postingDate).toLocaleDateString("en-GB"),
+      "Valid Till": q.validTill ? new Date(q.validTill).toLocaleDateString("en-GB") : "",
+      Status: q.invoiceStatus || (q as any).status || "",
+      Currency: q.currency,
+      Amount: q.grandTotal || (q as any).total || 0,
+    })),
+  );
+
+   const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Quotations");
+ saveAs(
+    new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+   }),
+   `${customerName || "Customer"}_Quotations.xlsx`,
+ );
+};
+
 
   const summary = useMemo(() => {
     const total = quotations.length;
@@ -150,7 +180,12 @@ const CustomerQuotations = ({ customerId }: Props) => {
           columns={columns}
           data={quotations}
           loading={loading}
-          showToolbar={false}
+          showToolbar={true}
+           enableExport={true}
+             onExport={handleExportExcel}
+          enableAdd={true}
+          addLabel="Add Quotation"
+           onAdd={() => openQuotationModal({ customerName, customerId })}
           currentPage={page}
           totalPages={totalPages}
           totalItems={totalItems}

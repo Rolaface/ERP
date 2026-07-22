@@ -1,4 +1,4 @@
-import { SalesDebitNote } from './../types/sales/SalesDebitNotes';
+import { SalesDebitNote } from "./../types/sales/SalesDebitNotes";
 
 import { ENV } from "./env";
 
@@ -44,9 +44,9 @@ export const API = {
     login: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.login`,
     forgotPassword: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.forgot_password`,
     logout: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.logout`,
-    resetPassword: `${ERP_BASE}/api/method/frappe.core.doctype.user.user.update_password`
+    resetPassword: `${ERP_BASE}/api/method/frappe.core.doctype.user.user.update_password`,
   },
-  
+
   Delete: {
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
   },
@@ -61,14 +61,13 @@ export const API = {
     get_email_templates: `${ERP_BASE}/api/method/custom_api.api.email_template.api.get_all?`,
     get_email_template_by_id: `${ERP_BASE}/api/method/custom_api.api.email_template.api.get_by_id`,
     update_email_template: `${ERP_BASE}/api/method/custom_api.api.email_template.api.update`,
-    delete_email_template: `${ERP_BASE}/api/method/frappe.client.delete`
+    delete_email_template: `${ERP_BASE}/api/method/frappe.client.delete`,
   },
 
- NamingSeries: {
+  NamingSeries: {
     create_naming_series: `${ERP_BASE}/api/method/custom_api.api.document_naming_series.api.update_company_naming_settings`,
-    get_naming_series: `${ERP_BASE}/api/method/custom_api.api.document_naming_series.api.get_company_naming_settings`
+    get_naming_series: `${ERP_BASE}/api/method/custom_api.api.document_naming_series.api.get_company_naming_settings`,
   },
-  
 
   /* =========================
    * DASHBOARD
@@ -86,7 +85,7 @@ export const API = {
    * SALES DASHBOARD
    * ========================= */
   salesDashboard: {
-    sales_dashboard:`${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.sales_dashboard`
+    sales_dashboard: `${ERP_BASE}/api/method/custom_api.api.dashboard.sales.api.sales_dashboard`,
   },
 
   /* =========================
@@ -96,8 +95,8 @@ export const API = {
     summary: `${ERP_BASE}/api/method/custom_api.api.dashboard.customer.api.summary`,
   },
 
-  EmployeeDashboard:{
-     summary: `${ERP_BASE}/api/method/custom_api.api.dashboard.employee.api.employee_dashboard`
+  EmployeeDashboard: {
+    summary: `${ERP_BASE}/api/method/custom_api.api.dashboard.employee.api.employee_dashboard`,
   },
 
   /* =========================
@@ -147,8 +146,10 @@ export const API = {
     updateAccounts: `${ERP_BASE}/api/method/erpnext.company-setup.setup.update_accounts_company_info`,
     updateCompanyFiles: `${ERP_BASE}/api/method/custom_api.api.organization.company.api.upload_company_documents`,
     deleteCompanyBankAccount: `${ERP_BASE}/api/method/erpnext.company-setup.setup.delete_company_bank_account`,
-    getCompanyDefaults: "/api/method/custom_api.api.organization.company.api.get_company_defaults",
-    updateCompanyDefaults: "/api/method/custom_api.api.organization.company.api.update_company_defaults",
+    getCompanyDefaults:
+      "/api/method/custom_api.api.organization.company.api.get_company_defaults",
+    updateCompanyDefaults:
+      "/api/method/custom_api.api.organization.company.api.update_company_defaults",
     getCreditLimitRole: `${ERP_BASE}/api/method/auth_api.role_management.api.role.get`,
     getAllDefaultAccounts: `${ERP_BASE}/api/resource/Account`,
     getAllCostCenterAccount: `${ERP_BASE}/api/method/custom_api.api.search.get_cost_centers`,
@@ -166,10 +167,10 @@ export const API = {
     getUserbyId: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_user_by_id`,
     updateUser: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.update`,
     deleteUser: `${ERP_BASE}/api/method/frappe.client.delete`,
-    getUserDetails: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_login_user`
+    getUserDetails: `${ERP_BASE}/api/method/auth_api.user_management.api.auth.get_login_user`,
   },
 
-/* =========================
+  /* =========================
    * SCHEDULER
    * ========================= */
   scheduler: {
@@ -193,7 +194,7 @@ export const API = {
     getExchangeRate: `${ERP_BASE}/api/method/erpnext.setup.utils.get_exchange_rate`,
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
     getAccountsResource: `${ERP_BASE}/api/resource/Account`,
-    getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`
+    getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
   },
 
   accounting: {
@@ -235,8 +236,8 @@ export const API = {
     create: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.create_customer`,
     update: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.update_customer`,
     delete: `${ERP_BASE}/api/method/custom_api.api.selling.customer.api.delete_customer`,
-    getStatement:`${ERP_BASE}/api/method/custom_api.api.reports.customer.api.get_customer_statement`,
-    getcusotmerstatementpdf:`${ERP_BASE}/api/method/custom_api.api.reports.customer.api.generate_customer_statement_pdf`,
+    getStatement: `${ERP_BASE}/api/method/custom_api.api.reports.customer.api.get_customer_statement`,
+    getcusotmerstatementpdf: `${ERP_BASE}/api/method/custom_api.api.reports.customer.api.generate_customer_statement_pdf`,
     receivePayment: `${ERP_BASE}/api/method/custom_api.api.payment.receive_payment`,
     getAllpayements: `${ERP_BASE}/api/method/custom_api.api.payment.get_all_payments`,
     getPaymentById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
@@ -262,7 +263,10 @@ export const API = {
     employeeCheckInOut: `${ERP_BASE}/api/resource/Employee Checkin`,
     getByNrc: `${NAPSA_BASE}/v1/member/`,
     getCurrentCeiling: `${NAPSA_BASE}/v1/ceiling`,
-    getGender:`${ERP_BASE}/api/resource/Gender`,
+    getGender: `${ERP_BASE}/api/resource/Gender`,
+    // ── NEW: Employee Number suggestion/validation ──
+    getNextEmployeeNumber: `${ERP_BASE}/api/method/custom_hrms.api.employee.employee_number.get_next_employee_number`,
+    checkEmployeeNumber: `${ERP_BASE}/api/method/custom_hrms.api.employee.employee_number.check_employee_number`,
   },
 
   employeeDocumnet: {
@@ -284,7 +288,7 @@ export const API = {
     delete: `${ERP_BASE}/api/method/frappe.client.delete`,
     brand: `${ERP_BASE}/api/method/frappe.desk.search.search_link`,
     getAllItemGroup: `${ERP_BASE}/api/method/custom_api.api.search.get_item_groups`,
-    packaging_uom: `${ERP_BASE}/api/resource/Packaging Unit Of Measure`
+    packaging_uom: `${ERP_BASE}/api/resource/Packaging Unit Of Measure`,
   },
   itemClassification: {
     getAll: `${ERP_BASE}/api/method/custom_api.api.item.item_classification.api.get_classifications`,
@@ -316,7 +320,6 @@ export const API = {
     updateSalesTaxTemplate: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_template`,
     updateSalesTaxTemplateStatus: `${ERP_BASE}/api/method/custom_api.api.taxes_and_charges.sales.api.update_sales_tax_status`,
   },
-
 
   /* =========================
    * ITEM GROUP
@@ -462,8 +465,8 @@ export const API = {
     Bank: `${ERP_BASE}/api/resource/Bank`,
   },
   /* =========================
- * expanse claims
- * ========================= */
+   * expanse claims
+   * ========================= */
 
   ExpenseClaim: {
     Expense_Claim: `${ERP_BASE}/api/resource/Expense Claim`,
@@ -475,12 +478,11 @@ export const API = {
     approveClaim: `${ERP_BASE}/api/method/custom_hrms.api.expense.api.update_expense_claim_status`,
     getAdvanceById: `${ERP_BASE}/api/resource/Employee Advance`,
     getAdvanceByIdView: `${ERP_BASE}/api/method/custom_hrms.api.employee_advance.api.get_by_id`,
-    attachDocument:`${ERP_BASE}/api/method/upload_file`,
+    attachDocument: `${ERP_BASE}/api/method/upload_file`,
     advance: `${ERP_BASE}/api/resource/Employee Advance`,
     changeAdvanceStatus: `${ERP_BASE}/api/method/frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs`,
     addComment: `${ERP_BASE}/api/method/frappe.desk.form.utils.add_comment`,
-    getPdf: `${ERP_BASE}/api/method/custom_hrms.api.employee_advance.api.generate_advance_statement_pdf`
-    
+    getPdf: `${ERP_BASE}/api/method/custom_hrms.api.employee_advance.api.generate_advance_statement_pdf`,
   },
   /* =========================
    * STOCK
@@ -516,6 +518,14 @@ export const API = {
     getAll: `${ERP_BASE}/api/method/erpnext.zra_client.item.imports.api.get_all_import_items`,
     getById: `${ERP_BASE}/api/method/erpnext.zra_client.item.imports.api.get_import_item_by_id`,
     updateAutomatic: `${ERP_BASE}/api/method/erpnext.zra_client.item.imports.api.update_stock_automatic`,
+  },
+
+  /* =========================
+   * upload inventory
+   * ========================= */
+
+  inventoryImport: {
+    upload: "/api/method/custom_api.api.inventory_import.import_inventory",
   },
 
   /* =========================
@@ -565,7 +575,7 @@ export const API = {
     delete: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.delete_supplier`,
     getStatement: `${ERP_BASE}/api/method/custom_api.api.reports.supplier_statement.get_supplier_statement`,
     CreatePayment: `${ERP_BASE}/api/method/custom_api.api.payment.make_payment`,
-     updateStatus: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.update_supplier_status`,
+    updateStatus: `${ERP_BASE}/api/method/custom_api.api.buying.supplier.api.update_supplier_status`,
   },
 
   places: {
@@ -679,19 +689,17 @@ export const API = {
       runpayroll: `${ERP_BASE}/api/method/custom_hrms.api.payroll.api.run_payroll`,
       salaryslip: `${ERP_BASE}/api/resource/Salary Slip`,
       salaryslip_pdf: `${ERP_BASE}/api/method/frappe.utils.print_format.download_pdf`,
-      getpayrollpreview:`${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
+      getpayrollpreview: `${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_entry`,
       cancelpayrollentry: `${ERP_BASE}/api/resource/Payroll Entry`,
 
       SalarystructureAssignment: {
         getAll: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.get_salary_structure_assignment_list`,
       },
     },
-    
-  autoUpdatesalarycomp: {
-   
-    performUpdate: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.sync_condition_and_formula`,
-  },
 
+    autoUpdatesalarycomp: {
+      performUpdate: `${ERP_BASE}/api/method/custom_hrms.api.salary_structure_assignment.api.sync_condition_and_formula`,
+    },
   },
 
   employeeConfig: {
@@ -737,7 +745,7 @@ export const API = {
     create: `${ERP_BASE}/api/resource/Leave Application`,
     update: `${ERP_BASE}/api/resource/Leave Application`,
     delete: `${ERP_BASE}/api/resource/Leave Application`,
-    getAllHolidayList:`${ERP_BASE}/api/method/custom_hrms.api.holiday_list.api.get_all_holiday_lists`
+    getAllHolidayList: `${ERP_BASE}/api/method/custom_hrms.api.holiday_list.api.get_all_holiday_lists`,
   },
 
   performance: {
@@ -753,10 +761,9 @@ export const API = {
     cycle: {
       list: `${ERP_BASE}/api/resource/Appraisal Cycle`,
       start_cycle: `${ERP_BASE}/api/method/custom_hrms.api.appraisal.api.start_appraisal_cycle`,
-      get_appraisal: `${ERP_BASE}/api/resource/Appraisal`
-    }
+      get_appraisal: `${ERP_BASE}/api/resource/Appraisal`,
+    },
   },
-
 
   /* =========================
    * UTILS
@@ -779,17 +786,9 @@ export const API = {
     createbranch: `${ERP_BASE}/api/resource/Branch`,
     getshifts: `${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
     employeesearch: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
-    searchCustomers:`${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
-    
-
-
+    searchCustomers: `${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
   },
   salaryPreviewAPI: {
     getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
-  },  
-
-
-
-
-
+  },
 } as const;
