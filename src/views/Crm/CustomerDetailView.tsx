@@ -518,24 +518,25 @@ const visibleTabs = useMemo(
 
             {activeTab === "quotations" && (
               <div className="p-2 sm:p-3 w-full min-w-0">
-                <CustomerQuotations customerId={customer.id} />
+                <CustomerQuotations customerId={customer.id} customerName={(customer as any).name} />
               </div>
             )}
             {activeTab === "proforma-invoices" && (
               <div className="p-2 sm:p-3 w-full min-w-0">
-                <CustomerProformaInvoices customerId={customer.id} />
+                  <CustomerProformaInvoices customerId={customer.id} customerName={(customer as any).name} />
               </div>
             )}
 
             {activeTab === "invoices" && (
               <div className="p-2 sm:p-3 w-full min-w-0">
-                <CustomerInvoices customerName={(customer as any).id} />
+                {/* <CustomerInvoices customerName={(customer as any).id} /> */}
+                 <CustomerInvoices customerName={(customer as any).name} customerId={(customer as any).id} />
               </div>
             )}
 
             {activeTab === "payments" && (
               <div className="p-2 sm:p-3 w-full min-w-0">
-                <CustomerdetailviewPayment customerName={(customer as any).name} />
+               <CustomerdetailviewPayment customerName={(customer as any).name} customerId={(customer as any).id} />
               </div>
             )}
           </div>

@@ -108,6 +108,15 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
     if (isOpen) ui.setActiveTab("details");
   }, [isOpen]);
 
+  useEffect(() => {
+   if (isOpen && mode === "create" && initialData?.customerName) {
+    actions.handleCustomerSelect({
+      name: initialData.customerName,
+     id: initialData.customerId,
+   });
+  }
+}, [isOpen, mode, initialData?.customerName, initialData?.customerId]);
+
   const handleNext = () => {
     const currentIndex = tabs.indexOf(ui.activeTab as any);
     if (currentIndex < tabs.length - 1) {

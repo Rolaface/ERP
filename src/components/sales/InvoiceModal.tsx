@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Receipt, User, Mail, Phone } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import {
@@ -50,11 +50,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   mode = "create",
   modalId,
 }) => {
-  const resolvedModalId =
-    modalId ||
-    (mode === "edit" && initialData?.invoiceNumber
-      ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
-      : `invoice-create-${Date.now()}`);
+  const resolvedModalId = useMemo(
+  () =>
+   modalId ||
+   (mode === "edit" && initialData?.invoiceNumber
+     ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
+      : `invoice-create-${Date.now()}`),
+   [modalId, mode, initialData?.invoiceNumber],
+ );
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -105,9 +108,15 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     "terms",
   ];
 
-  useEffect(() => {
-    if (isOpen) ui.setActiveTab("details");
-  }, [isOpen]);
+ 
+ useEffect(() => {
+   if (isOpen && mode === "create" && initialData?.customerName) {
+     actions.handleCustomerSelect({
+       name: initialData.customerName,
+       id: initialData.customerId,
+     });
+   }
+ }, [isOpen, mode, initialData]);
 
   const showExchangeRate =
     !!ui.baseCurrency &&

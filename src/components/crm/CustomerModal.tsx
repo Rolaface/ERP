@@ -319,7 +319,19 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                     <input
                       name="mobileNumber"
                       value={primaryContact?.mobileNumber ?? ""}
-                      onChange={handlePrimaryContactChange}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, "");
+                        handlePrimaryContactChange({
+                          ...e,
+                          target: { ...e.target, name: "mobileNumber", value: digitsOnly },
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if (!/[0-9]/.test(e.key) && !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      inputMode="numeric"
                       placeholder="Enter number"
                       className="flex-1 py-1 px-2 border rounded text-[11px] text-main  bg-card border-[var(--border)] hover:border-primary/40"
                     />
