@@ -124,11 +124,18 @@ const KpiTile: React.FC<{
     <p className="text-xs text-slate-500">{label}</p>
     {loading ? (
       <div className="mt-1.5 h-5 w-10 animate-pulse rounded bg-slate-100" />
+    ) : count === 0 ? (
+      <>
+        <p className="mt-0.5 text-xl font-bold text-slate-800">0</p>
+        <p className="mt-0.5 text-xs font-medium text-slate-400">
+          No {label}
+        </p>
+      </>
     ) : (
       <>
         <p className="mt-0.5 text-xl font-bold text-slate-800">{count}</p>
         {typeof worth === "number" && worth > 0 && currencyFormatter && (
-          <p className="mt-0.5 text-xs font-medium text-slate-400">
+          <p className="mt-0.5 text-xs font-bold text-slate-700">
             {currencyFormatter.format(worth)}
           </p>
         )}
