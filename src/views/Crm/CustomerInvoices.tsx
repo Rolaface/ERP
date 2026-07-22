@@ -5,10 +5,12 @@ import {
   CheckCircle2,
   Clock,
   Download,
+  Plus,
 } from "lucide-react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { getAllSalesInvoices } from "../../api/salesApi";
 import { showApiError } from "../../utils/alert";
+import { openInvoiceModal, useModalStore } from "../../store/modalStore";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -26,9 +28,10 @@ interface SalesInvoice {
 
 interface Props {
   customerName: string;
+  customerId: string;
 }
 
-const CustomerInvoices = ({ customerName }: Props) => {
+const CustomerInvoices = ({ customerName, customerId }: Props) => {
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +41,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
   const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
-    if (!customerName) return;
+    if (!customerId) return;
 
     const loadInvoices = async () => {
       setLoading(true);
@@ -49,7 +52,7 @@ const CustomerInvoices = ({ customerName }: Props) => {
           "name",
           "desc",
           "",
-          customerName,
+          customerId,
         );
         setInvoices(res?.data || []);
         setTotalPages(res?.pagination?.total_pages || 1);
@@ -62,11 +65,11 @@ const CustomerInvoices = ({ customerName }: Props) => {
     };
 
     loadInvoices();
-  }, [customerName, page, pageSize]);
+  }, [customerId, page, pageSize]);
 
   useEffect(() => {
     setPage(1);
-  }, [customerName]);
+}, [customerId]);
   const handleExportExcel = () => {
     if (!invoices.length) return;
 
@@ -197,18 +200,12 @@ const CustomerInvoices = ({ customerName }: Props) => {
 
   return (
     <div className="max-w-[1400px] mx-auto">
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <SummaryCard icon={<ClipboardList size={14} />} label="Total Invoices" value={summary.total} />
         <SummaryCard icon={<Clock size={14} />} label="Draft" value={summary.draft} />
         <SummaryCard icon={<CheckCircle2 size={14} />} label="Paid" value={summary.paid} />
         <SummaryCard icon={<Receipt size={14} />} label="Total Value" value={`${summary.totalValue.toLocaleString()}`} />
-        <button
-          onClick={handleExportExcel}
-          className="flex items-center justify-center gap-2 rounded-xl border border-theme bg-card px-3 py-2 text-xs font-black uppercase text-main transition-colors hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 dark:hover:bg-emerald-900/20"
-        >
-          <Download size={14} />
-          Export
-        </button>
+        
       </div>
 
       <div className="bg-card border border-theme rounded-2xl overflow-hidden mt-4">
@@ -216,7 +213,12 @@ const CustomerInvoices = ({ customerName }: Props) => {
           columns={columns}
           data={invoices}
           loading={loading}
-          showToolbar={false}
+          showToolbar={true}
+          enableAdd={true}
+           addLabel="Add Invoice"
+             onAdd={() => openInvoiceModal({ customerName, customerId })}
+          enableExport={true}
+          onExport={handleExportExcel}
           currentPage={page}
           totalPages={totalPages}
           totalItems={totalItems}

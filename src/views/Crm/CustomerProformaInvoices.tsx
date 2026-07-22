@@ -3,6 +3,9 @@ import { FileText, ClipboardList, CheckCircle2, Clock } from "lucide-react";
 import ModalTable from "../../components/ui/Table/ModalTableInside";
 import { showApiError } from "../../utils/alert";
 import { getAllProformaInvoices } from "../../api/proformaInvoiceApi";
+import { openProformaModal } from "../../store/modalStore";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 interface ProformaInvoice {
   id: string;
@@ -16,9 +19,10 @@ interface ProformaInvoice {
 
 interface Props {
   customerId: string;
+  customerName?: string;
 }
 
-const CustomerProformaInvoices = ({ customerId }: Props) => {
+const CustomerProformaInvoices = ({ customerId, customerName }: Props) => {
   const [invoices, setInvoices] = useState<ProformaInvoice[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -63,6 +67,30 @@ const CustomerProformaInvoices = ({ customerId }: Props) => {
   useEffect(() => {
     setPage(1);
   }, [customerId]);
+  const handleExportExcel = () => {
+  if (!invoices.length) return;
+
+  const worksheet = XLSX.utils.json_to_sheet(
+     invoices.map((inv) => ({
+      "Proforma No": inv.id,
+      Date: new Date(inv.transactionDate || (inv as any).postingDate).toLocaleDateString("en-GB"),
+      "Due Till": inv.validTill ? new Date(inv.validTill).toLocaleDateString("en-GB") : "",
+      Status: inv.invoiceStatus || (inv as any).status || "",
+      Currency: inv.currency,
+      Amount: inv.grandTotal || (inv as any).total || 0,
+    })),
+  );
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Proforma Invoices");
+
+  saveAs(
+    new Blob([XLSX.write(workbook, { bookType: "xlsx", type: "array" })], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+   }),
+   `${customerName || "Customer"}_ProformaInvoices.xlsx`,
+ );
+};
 
   const summary = useMemo(() => {
     const total = invoices.length;
@@ -173,7 +201,12 @@ const CustomerProformaInvoices = ({ customerId }: Props) => {
           columns={columns}
           data={invoices}
           loading={loading}
-          showToolbar={false}
+          showToolbar={true}
+       enableAdd={true}
+        addLabel="Add Proforma Invoice"
+       onAdd={() => openProformaModal({ customerName, customerId })}
+       enableExport={true}
+      onExport={handleExportExcel}
           currentPage={page}
           totalPages={totalPages}
           totalItems={totalItems}
