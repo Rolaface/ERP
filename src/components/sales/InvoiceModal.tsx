@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Receipt, User, Mail, Phone } from "lucide-react";
+import { File, User, Mail, Phone } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
 import {
   showApiError,
   showSuccess,
- 
 } from "../../utils/alert";
 import {
   useDataRefreshStore,
@@ -214,7 +213,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           ? "Edit and manage invoice details"
           : "Add and manage invoices"
       }
-      icon={Receipt}
+      icon={File}
       footer={footerContent}
       maxWidth="full"
       height="700px"
