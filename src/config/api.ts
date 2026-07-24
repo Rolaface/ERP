@@ -92,7 +92,7 @@ export const API = {
    * CUSTOMER DASHBOARD
    * ========================= */
   customerDashboard: {
-    summary: `${ERP_BASE}/api/method/custom_api.api.dashboard.customer.api.summary`,
+    customer_dashboard: `${ERP_BASE}/api/method/custom_api.api.dashboard.customer.api.customer_dashboard`,
   },
 
   EmployeeDashboard: {
