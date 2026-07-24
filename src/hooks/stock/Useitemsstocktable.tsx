@@ -221,8 +221,12 @@ const buildBatchWiseWorkbook = (rawItems: any[], hideZeroStock: boolean) => {
 
 const columnHelper = createColumnHelper<StockItemRow>();
 
+const SEARCH_DEBOUNCE_MS = 400;
+
 export function useItemsStockTable() {
   const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [items, setItems] = useState<StockItemRow[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -234,7 +238,10 @@ export function useItemsStockTable() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const [searchTerm, setSearchTerm] = useState("");
+  // What the user is typing right now (updates instantly, controls the input)
+  const [searchTerm, setSearchTermRaw] = useState("");
+  // What we actually query with (updates only after the user pauses typing)
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -244,12 +251,48 @@ export function useItemsStockTable() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewStockData, setViewStockData] = useState<any>(null);
 
+  // ── Debounced search input ─────────────────────────────────────────────
+  const setSearchTerm = useCallback((value: string) => {
+    setSearchTermRaw(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(value);
+    }, SEARCH_DEBOUNCE_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  // Reset to page 1 only when the *debounced* term actually changes,
+  // not on every keystroke.
+  useEffect(() => {
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm]);
+
+  // ── Fetch ────────────────────────────────────────────────────────────
   const fetchItems = useCallback(async () => {
     if (!mountedRef.current) return;
+
+    // Cancel any in-flight request so a stale response can't clobber a newer one
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsFetching(true);
     try {
-      const res = await getStockReport(page, pageSize, searchTerm, undefined, 1);
-      if (!mountedRef.current) return;
+      const res = await getStockReport(
+        page,
+        pageSize,
+        debouncedSearchTerm,
+        undefined,
+        0,
+        // controller.signal, // pass through here if getStockReport/axios supports { signal }
+      );
+      if (!mountedRef.current || controller.signal.aborted) return;
 
       const list = res?.message?.data || [];
       const mapped: StockItemRow[] = list.map((item: any) => ({
@@ -265,9 +308,6 @@ export function useItemsStockTable() {
             ? Math.floor((item.total_bal_qty ?? 0) / item.piecesPerBox)
             : 0,
         totalQty: item.total_bal_qty ?? 0,
-        // NOTE: was reading `total_bal_val` (current balance valuation) here —
-        // that's a different number from the actual purchase value. The
-        // "Total Buy Value" column must read `total_buy_value` instead.
         totalBuyValue: Number(item.total_buy_value ?? 0),
         totalSellValue: Number(item.total_sell_value ?? 0),
         buyCurrency: item.buy_currency,
@@ -279,38 +319,36 @@ export function useItemsStockTable() {
       setItems(mapped);
       setTotalItems(res?.message?.pagination?.total_records ?? 0);
       setTotalPages(res?.message?.pagination?.total_pages ?? 1);
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === "CanceledError" || err?.name === "AbortError") return;
       console.error(err);
       showApiError("Failed to load stock entries");
     } finally {
-      if (mountedRef.current) {
+      if (mountedRef.current && !controller.signal.aborted) {
         setIsFetching(false);
         setIsInitialLoad(false);
       }
     }
-  }, [page, pageSize, searchTerm]);
+  }, [page, pageSize, debouncedSearchTerm]);
 
+  // Single source of truth: mount + whenever page/pageSize/debouncedSearchTerm change.
   useEffect(() => {
     mountedRef.current = true;
     fetchItems();
     return () => {
       mountedRef.current = false;
+      abortRef.current?.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (isInitialLoad) return;
-    fetchItems();
-  }, [page, pageSize, searchTerm]);
-
+  }, [page, pageSize, debouncedSearchTerm]);
 
   const visibleItems = items;
+
   const toggleRow = useCallback((id: string) => {
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-const handleStockCorrection = useCallback(
+  const handleStockCorrection = useCallback(
     (batch: BatchRow) => {
       const selectedBatch: SelectedBatch = {
         item_code: batch.itemCode,
@@ -318,7 +356,7 @@ const handleStockCorrection = useCallback(
         batch_no: batch.batch_no,
         expiry_date: batch.expiry_date,
         bal_qty: batch.bal_qty,
-        warehouse: (batch as any).warehouse, 
+        warehouse: (batch as any).warehouse,
         valuation_rate: (batch as any).valuation_rate,
       };
       openStockCorrectionModal({ selectedBatch }, false, {
@@ -364,7 +402,7 @@ const handleStockCorrection = useCallback(
     [handleDelete],
   );
 
-const handleBatchLedger = useCallback((batch: BatchRow) => {
+  const handleBatchLedger = useCallback((batch: BatchRow) => {
     const selectedBatch: SelectedBatch = {
       item_code: batch.itemCode,
       item_name: batch.itemName,
@@ -403,14 +441,14 @@ const handleBatchLedger = useCallback((batch: BatchRow) => {
     let all: any[] = [];
     let pagesTotal = 1;
     do {
-      const res = await getStockReport(currentPage, exportPageSize, searchTerm, undefined, 1);
+      const res = await getStockReport(currentPage, exportPageSize, debouncedSearchTerm, undefined, 1);
       const list = res?.message?.data || [];
       all = all.concat(list);
       pagesTotal = res?.message?.pagination?.total_pages ?? 1;
       currentPage++;
     } while (currentPage <= pagesTotal);
     return all;
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
   const handleExportExcel = useCallback(async () => {
     try {
@@ -424,7 +462,7 @@ const handleBatchLedger = useCallback((batch: BatchRow) => {
         return;
       }
 
-      const workbook = buildBatchWiseWorkbook(rawItems, false); 
+      const workbook = buildBatchWiseWorkbook(rawItems, false);
       const fileName = `Batch-Wise-Stock-Report-${new Date().toISOString().slice(0, 10)}.xlsx`;
       XLSX.writeFile(workbook, fileName);
 
@@ -559,8 +597,7 @@ const handleBatchLedger = useCallback((batch: BatchRow) => {
     setPageSize,
     searchTerm,
     setSearchTerm,
-    
-  
+
     expandedRows,
     toggleRow,
     showBulkModal,

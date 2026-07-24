@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { flexRender } from "@tanstack/react-table";
 import Pagination from "../../components/Pagination";
 import { ChevronUp, ChevronDown, ChevronsUpDown, Package2 } from "lucide-react";
@@ -6,13 +6,17 @@ import { ChevronUp, ChevronDown, ChevronsUpDown, Package2 } from "lucide-react";
 import { openImportInventoryModal } from "../../store/modalStore";
 import ViewStockModal from "../../components/inventory/ViewStockModal";
 import BatchDetailsTable from "../../views/Inventory/BatchTable";
+import StockLedgerView from "../../views/Inventory/StockLedgerView";
 
 import ItemsTableFilters from "../../utils/stockitemtablefilter";
 import { useItemsStockTable } from "../../hooks/stock/Useitemsstocktable";
+import type { BatchRow } from "../../hooks/TablesHooks/Usebatchdetailstable";
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 200];
 
 const Items: React.FC = () => {
+  console.count("Items");
+
   const {
     table,
     isInitialLoad,
@@ -29,37 +33,65 @@ const Items: React.FC = () => {
     setSearchTerm,
     expandedRows,
     toggleRow,
-   
     showViewModal,
     setShowViewModal,
     viewStockData,
     setViewStockData,
     handleStockCorrection,
     handleBatchDelete,
-    handleBatchLedger,
     handleBulkSaved,
     handleExportExcel,
     openNewStockCorrection,
   } = useItemsStockTable();
 
+  const [ledgerBatch, setLedgerBatch] = useState<{
+    itemCode?: string;
+    itemName?: string;
+    batchNo?: string;
+  } | null>(null);
+
+  const handleViewStockLedger = useCallback((batch: BatchRow) => {
+    setLedgerBatch({
+      itemCode: batch.itemCode ?? "",
+      itemName: batch.itemName ?? "",
+      batchNo: batch.batch_no,
+    });
+  }, []);
+
+  const handleLedgerBack = useCallback(() => {
+    setLedgerBatch(null);
+  }, []);
+  const handleViewStockLedgerGeneral = useCallback(() => {
+    setLedgerBatch({});
+  }, []);
+
   const leafColumnCount = table.getAllLeafColumns().length;
+
+  if (ledgerBatch) {
+    return (
+      <StockLedgerView
+        itemCode={ledgerBatch.itemCode}
+        itemName={ledgerBatch.itemName}
+        batchNo={ledgerBatch.batchNo}
+        onBack={handleLedgerBack}
+      />
+    );
+  }
 
   return (
     <div className="h-full min-h-0 flex flex-col gap-2.5">
       <ItemsTableFilters
         searchTerm={searchTerm}
-        onSearchChange={(v) => {
-          setSearchTerm(v);
-          setPage(1);
-        }}
-     onBulkUpload={() =>
-  openImportInventoryModal(undefined, {
-    onSuccess: async () => {
-      await handleBulkSaved();
-    },
-  })
-}
+        onSearchChange={(v) => setSearchTerm(v)}
+        onBulkUpload={() =>
+          openImportInventoryModal(undefined, {
+            onSuccess: async () => {
+              await handleBulkSaved();
+            },
+          })
+        }
         onStockCorrection={openNewStockCorrection}
+        onViewStockLedger={handleViewStockLedgerGeneral}
         onExport={handleExportExcel}
         isExporting={isExporting}
         exportDisabled={visibleItems.length === 0}
@@ -67,7 +99,7 @@ const Items: React.FC = () => {
 
       <div
         className="bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col"
-            style={{ height: "calc(95.5vh - 190px)" }}
+        style={{ height: "calc(95.5vh - 190px)" }}
       >
         <div className="overflow-y-auto flex-1 min-h-0 relative custom-scrollbar">
           <table className="w-full text-left border-collapse text-sm">
@@ -167,8 +199,6 @@ const Items: React.FC = () => {
                               : align === "center"
                                 ? "text-center"
                                 : "text-left";
-                          const isDescription =
-                            cell.column.id === "description";
                           return (
                             <td
                               key={cell.id}
@@ -193,7 +223,7 @@ const Items: React.FC = () => {
                               itemName={item.itemName}
                               onEdit={handleStockCorrection}
                               onDelete={handleBatchDelete}
-                              onLedger={handleBatchLedger}
+                              onLedger={handleViewStockLedger}
                             />
                           </td>
                         </tr>
@@ -211,7 +241,6 @@ const Items: React.FC = () => {
           )}
         </div>
 
-        {/* Pagination — reusing shared component */}
         <div className="border-t border-[var(--border)] bg-card px-3 py-2">
           <Pagination
             currentPage={page}
@@ -236,8 +265,6 @@ const Items: React.FC = () => {
         }}
         stockData={viewStockData}
       />
-
-      
     </div>
   );
 };

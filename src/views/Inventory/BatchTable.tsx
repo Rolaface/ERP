@@ -102,7 +102,7 @@ const RowActionMenu: React.FC<{
     },
     onLedger && {
       icon: BookOpen,
-      label: "View Stock Correction",
+      label: "View Stock Ledger",
       color: "#0891b2",
       action: () => onLedger(batch),
     },
