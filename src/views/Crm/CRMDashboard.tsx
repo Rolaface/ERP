@@ -151,7 +151,7 @@ const CRMDashboard: React.FC = () => {
   const creditLines = data?.credit_limit_utilization ?? [];
   const onTimeRecovery = data?.recovery_time.on_time ?? [];
   const lateRecovery = data?.recovery_time.late ?? [];
-  const NEEDS_ATTENTION_LIMIT = 8;
+  const NEEDS_ATTENTION_LIMIT = 7;
   const dormantCustomers = (data?.needs_attention.dormant_customers ?? []).slice(0, NEEDS_ATTENTION_LIMIT);
   const topOutstanding = (data?.needs_attention.top_outstanding_customers ?? []).slice(0, NEEDS_ATTENTION_LIMIT);
   const maxOutstanding = Math.max(...topOutstanding.map((o) => o.outstanding), 1);
