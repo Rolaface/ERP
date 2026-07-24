@@ -71,13 +71,33 @@ const RowActionMenu: React.FC<{
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open || !btnRef.current) return;
-    const r = btnRef.current.getBoundingClientRect();
-    const top =
-      window.innerHeight - r.bottom < 200 ? r.top - 200 : r.bottom + 4;
-    setPos({ top, left: r.right - 180 });
+
+    const updatePos = () => {
+      if (!btnRef.current) return;
+      const r = btnRef.current.getBoundingClientRect();
+      const menuHeight = menuRef.current?.offsetHeight ?? 120;
+      const spaceBelow = window.innerHeight - r.bottom;
+      const top =
+        spaceBelow < menuHeight + 12
+          ? r.top - menuHeight - 4
+          : r.bottom + 4;
+      setPos({ top, left: r.right - 180 });
+    };
+
+    updatePos();
+    // run again after the menu has actually rendered so offsetHeight is accurate
+    requestAnimationFrame(updatePos);
+
+    window.addEventListener("scroll", updatePos, true);
+    window.addEventListener("resize", updatePos);
+    return () => {
+      window.removeEventListener("scroll", updatePos, true);
+      window.removeEventListener("resize", updatePos);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -141,6 +161,7 @@ const RowActionMenu: React.FC<{
       {open &&
         ReactDOM.createPortal(
           <div
+            ref={menuRef}
             className="batch-row-menu"
             style={{
               position: "fixed",
@@ -148,11 +169,12 @@ const RowActionMenu: React.FC<{
               left: pos.left,
               zIndex: 99999,
               minWidth: 180,
-              background: "var(--card,#fff)",
+              background: "#ffffff",
               border: "1px solid var(--border,#e8e0d5)",
               borderRadius: 10,
               boxShadow: "0 8px 28px rgba(0,0,0,0.16)",
               padding: "4px 0",
+              isolation: "isolate",
             }}
           >
             {items.map((item, i) => (
@@ -175,9 +197,9 @@ const RowActionMenu: React.FC<{
                   className="w-full flex items-center gap-2 px-3.5 py-2 text-[11px] font-semibold text-left transition-colors"
                   style={{ color: item.color }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = item.danger
-                      ? "rgba(239,68,68,0.06)"
-                      : "rgba(201,125,46,0.06)")
+                  (e.currentTarget.style.background = item.danger
+                    ? "rgba(239,68,68,0.06)"
+                    : "rgba(201,125,46,0.06)")
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background = "transparent")
@@ -424,7 +446,7 @@ const BatchDetailsTable: React.FC<BatchDetailsTableProps> = (props) => {
     viewBatch,
     setViewBatch,
     onEdit,
-    onDelete,
+    
     onLedger,
   } = useBatchDetailsTable(props);
 
@@ -453,44 +475,48 @@ const BatchDetailsTable: React.FC<BatchDetailsTableProps> = (props) => {
       }}
     >
       {/* Section header bar — visually separates this block from the parent items table */}
-      <div className="flex items-center gap-2 px-4">
-        <div
-          className="w-6 h-6 rounded-md flex items-center justify-center"
-          style={{ background: BATCH_SECTION_THEME.accentSoft }}
-        >
-          <Layers size={13} style={{ color: BATCH_SECTION_THEME.accent }} />
+
+      <div className="flex items-center gap-3 px-4 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0">
+          <div
+            className="w-6 h-6 rounded-md flex items-center justify-center"
+            style={{ background: BATCH_SECTION_THEME.accentSoft }}
+          >
+            <Layers size={13} style={{ color: BATCH_SECTION_THEME.accent }} />
+          </div>
+          <span
+            className="text-[11px] font-black uppercase tracking-widest"
+            style={{ color: BATCH_SECTION_THEME.accent }}
+          >
+            Batch Details
+          </span>
+          <span
+            className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+            style={{
+              background: BATCH_SECTION_THEME.accentSoft,
+              color: BATCH_SECTION_THEME.accent,
+            }}
+          >
+            {totalRows} {totalRows === 1 ? "batch" : "batches"}
+          </span>
         </div>
-        <span
-          className="text-[11px] font-black uppercase tracking-widest"
-          style={{ color: BATCH_SECTION_THEME.accent }}
-        >
-          Batch Details
-        </span>
-        <span
-          className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-          style={{
-            background: BATCH_SECTION_THEME.accentSoft,
-            color: BATCH_SECTION_THEME.accent,
-          }}
-        >
-          {totalRows} {totalRows === 1 ? "batch" : "batches"}
-        </span>
+        <div className="flex-1 min-w-0 flex justify-end">
+          <div className="flex-1 min-w-[380px]">
+            <BatchTableFilters
+              searchTerm={searchTerm}
+              onSearchChange={onSearchChange}
+              hideZeroStock={hideZeroStock}
+              onHideZeroStockChange={onHideZeroStockChange}
+              onExport={handleExportExcel}
+              isExporting={isExporting}
+              exportDisabled={isEmpty}
+            />
+          </div>
+        </div>
+
       </div>
 
       {/* <KpiStrip kpis={kpis} /> */}
-
-      <div className="px-4">
-        <BatchTableFilters
-          searchTerm={searchTerm}
-          onSearchChange={onSearchChange}
-          hideZeroStock={hideZeroStock}
-          onHideZeroStockChange={onHideZeroStockChange}
-          onExport={handleExportExcel}
-          isExporting={isExporting}
-          exportDisabled={isEmpty}
-        />
-      </div>
-
       <div className="mx-4 bg-card border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
         <div className="overflow-x-auto relative custom-scrollbar">
           <table className="w-full text-left border-collapse text-sm">
@@ -518,16 +544,14 @@ const BatchDetailsTable: React.FC<BatchDetailsTableProps> = (props) => {
                             ? header.column.getToggleSortingHandler()
                             : undefined
                         }
-                        className={`px-3.5 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap ${alignCls} ${
-                          sortable
+                        className={`px-3.5 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap ${alignCls} ${sortable
                             ? "cursor-pointer select-none hover:text-main"
                             : ""
-                        }`}
+                          }`}
                       >
                         <span
-                          className={`inline-flex items-center gap-1 ${
-                            align === "right" ? "flex-row-reverse" : ""
-                          }`}
+                          className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""
+                            }`}
                         >
                           {flexRender(
                             header.column.columnDef.header,
@@ -601,10 +625,7 @@ const BatchDetailsTable: React.FC<BatchDetailsTableProps> = (props) => {
                     className="hover:bg-row-hover transition-colors"
                     style={{
                       borderBottom: "1px solid rgba(128,128,128,0.1)",
-                      background:
-                        idx % 2 === 1
-                          ? BATCH_SECTION_THEME.wrapperBg
-                          : "var(--card, #fff)",
+                      background: "#ffffff",
                     }}
                   >
                     {row.getVisibleCells().map((cell) => {
@@ -642,11 +663,10 @@ const BatchDetailsTable: React.FC<BatchDetailsTableProps> = (props) => {
                       return (
                         <td
                           key={cell.id}
-                          className={`px-3.5 py-2 text-xs ${alignCls} ${
-                            isWrapCol
+                          className={`px-3.5 py-2 text-xs ${alignCls} ${isWrapCol
                               ? "whitespace-normal break-words max-w-[320px]"
                               : "whitespace-nowrap"
-                          }`}
+                            }`}
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
