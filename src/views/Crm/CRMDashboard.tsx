@@ -151,8 +151,9 @@ const CRMDashboard: React.FC = () => {
   const creditLines = data?.credit_limit_utilization ?? [];
   const onTimeRecovery = data?.recovery_time.on_time ?? [];
   const lateRecovery = data?.recovery_time.late ?? [];
-  const dormantCustomers = data?.needs_attention.dormant_customers ?? [];
-  const topOutstanding = data?.needs_attention.top_outstanding_customers ?? [];
+  const NEEDS_ATTENTION_LIMIT = 8;
+  const dormantCustomers = (data?.needs_attention.dormant_customers ?? []).slice(0, NEEDS_ATTENTION_LIMIT);
+  const topOutstanding = (data?.needs_attention.top_outstanding_customers ?? []).slice(0, NEEDS_ATTENTION_LIMIT);
   const maxOutstanding = Math.max(...topOutstanding.map((o) => o.outstanding), 1);
 
   const newVsRepeatSeries = data
@@ -261,7 +262,7 @@ const CRMDashboard: React.FC = () => {
         </SectionCard>
 
         <SectionCard title="Top 5 Performing Customers" icon={Trophy} className="lg:col-span-3">
-          <div className="flex flex-col justify-between gap-1 overflow-y-auto" style={{ height: ROW2_H }}>
+          <div className="flex flex-col justify-between gap-1 overflow-hidden" style={{ height: ROW2_H }}>
             {chartsLoading ? (
               Array.from({ length: 5 }).map((_, idx) => (
                 <div key={idx} className="h-8 animate-pulse rounded-lg bg-gray-100" />
@@ -270,16 +271,16 @@ const CRMDashboard: React.FC = () => {
               <EmptyState message="No revenue data yet" height={ROW2_H} />
             ) : (
               topPerformers.map((perf, idx) => (
-                <div key={perf.customer_id} className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-2 py-1">
+                <div key={perf.customer_id} className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-2 py-0.5">
                   <div
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-bold"
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[9px] font-bold"
                     style={{ backgroundColor: `${RANK_BADGE_COLOR}1A`, color: RANK_BADGE_COLOR }}
                   >
                     {idx + 1}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11.5px] font-semibold text-gray-800">{perf.customer_name}</p>
-                    <p className="text-[10px] text-gray-500">{formatShortCurrency(perf.revenue, currencySymbol)}</p>
+                    <p className="truncate text-[11px] font-semibold leading-tight text-gray-800">{perf.customer_name}</p>
+                    <p className="text-[9.5px] leading-tight text-gray-500">{formatShortCurrency(perf.revenue, currencySymbol)}</p>
                   </div>
                 </div>
               ))
