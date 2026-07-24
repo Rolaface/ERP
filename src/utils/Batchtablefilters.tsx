@@ -21,10 +21,10 @@ const BatchTableFilters: React.FC<BatchTableFiltersProps> = ({
   exportDisabled,
 }) => {
  return (
-  <div className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex items-center">
+  <div className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex items-center flex-wrap gap-3">
 
     {/* Search */}
-    <div className="relative w-72">
+    <div className="relative w-full sm:w-64 min-w-0">
       <Search
         size={11}
         className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"
@@ -39,7 +39,7 @@ const BatchTableFilters: React.FC<BatchTableFiltersProps> = ({
     </div>
 
     {/* Filters */}
-    <div className="flex items-center gap-4 ml-4">
+    <div className="flex items-center gap-4">
       <label className="flex items-center gap-1.5 text-[11px] font-medium text-muted cursor-pointer select-none">
         <input
           type="checkbox"
@@ -52,7 +52,7 @@ const BatchTableFilters: React.FC<BatchTableFiltersProps> = ({
     </div>
 
     {/* Export */}
-    <div className="ml-auto">
+    <div className="sm:ml-auto">
       <button
         onClick={onExport}
         disabled={isExporting || exportDisabled}
