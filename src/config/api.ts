@@ -92,7 +92,7 @@ export const API = {
    * CUSTOMER DASHBOARD
    * ========================= */
   customerDashboard: {
-    summary: `${ERP_BASE}/api/method/custom_api.api.dashboard.customer.api.summary`,
+    customer_dashboard: `${ERP_BASE}/api/method/custom_api.api.dashboard.customer.api.customer_dashboard`,
   },
 
   EmployeeDashboard: {
@@ -498,6 +498,7 @@ export const API = {
     create: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.create_item_stock_api`,
     correct: `${ERP_BASE}/api/method/custom_api.api.stock_correction.create_stock_correction`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.delete_stock_entry`,
+    stockLedger: `${ERP_BASE}/api/method/frappe.desk.query_report.run`,
   },
 
   /* =========================
@@ -782,11 +783,14 @@ export const API = {
     getleavepolicy: `${ERP_BASE}/api/method/custom_hrms.api.search.get_leave_policies`,
     getUsers: `${ERP_BASE}/api/method/custom_hrms.api.search.get_users`,
     getPayrollEmployees: `${ERP_BASE}/api/method/custom_hrms.api.payroll.api.get_payroll_employee`,
-    getBranches: `${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
-    createbranch: `${ERP_BASE}/api/resource/Branch`,
-    getshifts: `${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
-    employeesearch: `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
+    getBranches:     `${ERP_BASE}/api/method/custom_hrms.api.search.get_branches`,
+    createbranch:    `${ERP_BASE}/api/resource/Branch`,
+    getshifts:       `${ERP_BASE}/api/method/custom_hrms.api.search.get_shift_types`,
+    employeesearch:  `${ERP_BASE}/api/method/custom_hrms.api.search.get_employees`,
     searchCustomers: `${ERP_BASE}/api/method/custom_api.api.search.get_customers`,
+    search_warehouse:`${ERP_BASE}/api/method/custom_api.api.search.get_warehouses`,
+    search_Items:    `${ERP_BASE}/api/method/custom_api.api.search.get_items`,
+    search_batches:  `${ERP_BASE}/api/method/custom_api.api.search.get_batches`
   },
   salaryPreviewAPI: {
     getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
