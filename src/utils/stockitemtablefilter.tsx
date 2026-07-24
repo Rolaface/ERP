@@ -5,6 +5,7 @@ import {
   Upload,
   ClipboardEdit,
   Search,
+  BookOpen,
 } from "lucide-react";
 
 interface ItemsTableFiltersProps {
@@ -14,6 +15,7 @@ interface ItemsTableFiltersProps {
   onHideZeroStockChange?: (value: boolean) => void;
   onBulkUpload: () => void;
   onStockCorrection: () => void;
+  onViewStockLedger: () => void;
   onExport: () => void;
   isExporting: boolean;
   exportDisabled?: boolean;
@@ -22,10 +24,11 @@ interface ItemsTableFiltersProps {
 const ItemsTableFilters: React.FC<ItemsTableFiltersProps> = ({
   searchTerm,
   onSearchChange,
-  
-  
+
+
   onBulkUpload,
   onStockCorrection,
+  onViewStockLedger,
   onExport,
   isExporting,
   exportDisabled,
@@ -64,6 +67,14 @@ const ItemsTableFilters: React.FC<ItemsTableFiltersProps> = ({
     >
       <Upload size={11} />
     Import Inventory
+    </button>
+
+    <button
+      onClick={onViewStockLedger}
+      className="h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40 rounded-md transition-all"
+    >
+      <BookOpen size={11} />
+      View Stock Ledger
     </button>
 
     <button

@@ -301,7 +301,7 @@ const AppLayout: React.FC = () => {
         sidebar={<Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />}
       >
         <AppMain sidebarOpen={sidebarOpen}>
-          {/* ← wrapper div hataya — flex chain unbroken rehti hai ab */}
+          
           <Suspense fallback={<PageLoader />}>
             <Outlet context={sharedProps} />
           </Suspense>

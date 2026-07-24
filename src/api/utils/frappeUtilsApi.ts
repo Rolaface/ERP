@@ -331,3 +331,97 @@ export async function searchCustomers(
     );
   }
 }
+export async function searchWarehouses(
+  search?: string,
+  page: number = 1,
+  pageSize: number = 10,
+): Promise<{ data: Array<{ value: string; label: string; description: string }>; pagination: any }> {
+  try {
+    const params = new URLSearchParams();
+    params.append("page", String(page));
+    params.append("page_size", String(pageSize));
+    if (search) params.append("search", encodeURIComponent(search));
+
+    const resp: AxiosResponse = await api.get(
+      `${FrappeUtilsAPI.search_warehouse}?${params.toString()}`
+    );
+
+    return {
+      data: resp.data?.data ?? [],
+      pagination: resp.data?.pagination ?? {},
+    };
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to search warehouses"
+    );
+  }
+}
+export async function searchItems(
+  search?: string,
+  page: number = 1,
+  pageSize: number = 10,
+  isService?: boolean,
+): Promise<{
+  data: Array<{ value: string; label: string; description: string }>;
+  pagination: any;
+}> {
+  try {
+    const params = new URLSearchParams();
+
+    params.append("page", String(page));
+    params.append("page_size", String(pageSize));
+
+    if (search) {
+      params.append("search", search);
+    }
+
+    if (isService !== undefined) {
+      params.append("is_service", isService ? "1" : "0");
+    }
+
+    const resp: AxiosResponse = await api.get(
+      `${FrappeUtilsAPI.search_Items}?${params.toString()}`
+    );
+
+    return {
+      data: resp.data?.data ?? [],
+      pagination: resp.data?.pagination ?? {},
+    };
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to search items"
+    );
+  }
+}
+
+export async function searchbatches(
+  search?: string,
+  page: number = 1,
+  pageSize: number = 10,
+): Promise<{ data: Array<{ value: string; label: string; description: string }>; pagination: any }> {
+  try {
+    const params = new URLSearchParams();
+    params.append("page", String(page));
+    params.append("page_size", String(pageSize));
+    if (search) params.append("search", encodeURIComponent(search));
+
+    const resp: AxiosResponse = await api.get(
+      `${FrappeUtilsAPI.search_batches}?${params.toString()}`
+    );
+
+    return {
+      data: resp.data?.data ?? [],
+      pagination: resp.data?.pagination ?? {},
+    };
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to search batches"
+    );
+  }
+}
