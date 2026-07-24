@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactApexChart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
+import { useCompanyStore } from "../../store/companyStore";
 import {
   Trophy,
   TrendingUp,
@@ -30,7 +31,6 @@ const palette = {
   orange: "#f97316",
 };
 
-const ACCENT_COLORS = [palette.purple, palette.blue, palette.emerald, palette.amber, palette.rose];
 const RANK_BADGE_COLOR = palette.amber;
 const DEFAULT_DORMANT_DAYS = 90;
 
@@ -73,24 +73,17 @@ const SectionCard: React.FC<{
   </div>
 );
 
-const formatCurrency = (value: number, currencyCode: string = "INR") =>
-  (value ?? 0).toLocaleString("en-IN", {
-    style: "currency",
-    currency: currencyCode,
-    maximumFractionDigits: 0,
-  });
 
-
-const formatShortCurrency = (value: number, currencyCode: string = "INR") => {
-  const symbol = currencyCode === "INR" ? "₹" : `${currencyCode} `;
+const formatShortCurrency = (value: number, symbol: string) => {
   const n = Math.abs(value ?? 0);
   const sign = value < 0 ? "-" : "";
 
-  if (n >= 1_00_00_000) return `${sign}${symbol}${(n / 1_00_00_000).toFixed(2)}Cr`;
-  if (n >= 1_00_000) return `${sign}${symbol}${(n / 1_00_000).toFixed(2)}L`;
+  if (n >= 1_000_000_000) return `${sign}${symbol}${(n / 1_000_000_000).toFixed(2)}B`;
+  if (n >= 1_000_000) return `${sign}${symbol}${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `${sign}${symbol}${(n / 1_000).toFixed(1)}K`;
   return `${sign}${symbol}${n.toFixed(0)}`;
 };
+
 const EmptyState: React.FC<{ message: string; height?: number }> = ({ message, height }) => (
   <div
     className="flex items-center justify-center text-center text-[11px] text-gray-400"
@@ -106,6 +99,7 @@ const smallFont = { style: { fontSize: "10px" } };
 const CRMDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const currencySymbol = useCompanyStore((state) => state.currencySymbol);
 
   // Year comes from URL query param (?year=2026), defaults to current year.
   const year = useMemo(() => {
@@ -141,7 +135,6 @@ const CRMDashboard: React.FC = () => {
   }, [year]);
 
   const chartsLoading = loading || !data;
-  const currencyCode = data?.currency ?? "INR";
 
   // ── Derived / mapped data ───────────────────────────────────────────────
   const months = data?.customer_growth.map((m) => m.month) ?? [];
@@ -220,9 +213,9 @@ const CRMDashboard: React.FC = () => {
       },
       { label: "Overdue Payments", value: String(data.summary.overdue_payments) },
       { label: "Dormant Customers", value: String(data.summary.dormant_customers) },
-      { label: "Total Revenue", value: formatShortCurrency(data.summary.total_revenue, currencyCode) },
+      { label: "Total Revenue", value: formatShortCurrency(data.summary.total_revenue, currencySymbol) },
       { label: "Avg Payment Delay", value: `${data.summary.avg_payment_delay_days}d` },
-      { label: "Avg Order Value", value: formatShortCurrency(data.summary.avg_order_value, currencyCode) },
+      { label: "Avg Order Value", value: formatShortCurrency(data.summary.avg_order_value, currencySymbol) },
     ]
     : [];
 
@@ -242,7 +235,7 @@ const CRMDashboard: React.FC = () => {
               sub={(k as any).sub}
               onDoubleClick={(k as any).onDoubleClick}
             />
-               ))}
+          ))}
       </div>
 
       {error && (
@@ -286,7 +279,7 @@ const CRMDashboard: React.FC = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[11.5px] font-semibold text-gray-800">{perf.customer_name}</p>
-                    <p className="text-[10px] text-gray-500">{formatShortCurrency(perf.revenue, currencyCode)}</p>
+                    <p className="text-[10px] text-gray-500">{formatShortCurrency(perf.revenue, currencySymbol)}</p>
                   </div>
                 </div>
               ))
@@ -447,7 +440,7 @@ const CRMDashboard: React.FC = () => {
                       <div key={o.customer_id}>
                         <div className="mb-0.5 flex items-center justify-between text-[11px]">
                           <span className="truncate font-medium text-gray-700">{o.customer_name}</span>
-                          <span className="font-semibold text-amber-600">{formatShortCurrency(o.outstanding, currencyCode)}</span>
+                          <span className="font-semibold text-amber-600">{formatShortCurrency(o.outstanding, currencySymbol)}</span>
                         </div>
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                           <div className="h-full rounded-full bg-amber-500" style={{ width: `${widthPct}%` }} />
@@ -461,11 +454,6 @@ const CRMDashboard: React.FC = () => {
           </div>
         </SectionCard>
       </div>
-
-      {/* TODO: BACKEND MISSING — "Avg Order Value per Customer" & "Customer-wise
-          Sales" (treemap) cards had no corresponding data in customer_dashboard
-          API response. Removed from this render rather than fake it with mock
-          data. Add back once backend exposes per-customer AOV / sales breakdown. */}
     </div>
   );
 };
