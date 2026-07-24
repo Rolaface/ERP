@@ -54,6 +54,7 @@ export interface StockLedgerFiltersState {
   dateRange: { from_date?: string; to_date?: string };
   warehouse: string;
   item: string;
+  itemName?: string;
   itemGroup: string;
   batch: string;
   brand: string;
@@ -80,17 +81,20 @@ type AppliedFilters = {
 };
 
 interface UseStockLedgerArgs {
+  itemName?: string;   
   itemCode?: string;
   batchNo?: string;
+   warehouse?: string; 
 }
 
 const PAGE_SIZE = 20;
 
-export function useStockLedger({ itemCode, batchNo }: UseStockLedgerArgs) {
+export function useStockLedger({ itemCode, batchNo ,itemName,warehouse }: UseStockLedgerArgs) {
   // ── Filter form state ────────────────────────────────────────────────
   const [filters, setFilters] = useState<StockLedgerFiltersState>({
     dateRange: { from_date: startOfYear(), to_date: today() },
-    warehouse: "",
+    warehouse: warehouse ?? "",
+    itemName: itemName ?? "",
     item: itemCode ?? "",
     itemGroup: "",
     batch: batchNo ?? "",
@@ -154,7 +158,8 @@ export function useStockLedger({ itemCode, batchNo }: UseStockLedgerArgs) {
     const initial: AppliedFilters = {
       fromDate: startOfYear(),
       toDate: today(),
-      warehouse: "",
+       warehouse: warehouse ?? "",  
+      
       item: itemCode ?? "",
       itemGroup: "",
       batch: batchNo ?? "",
@@ -168,13 +173,15 @@ export function useStockLedger({ itemCode, batchNo }: UseStockLedgerArgs) {
     setFilters((prev) => ({
       ...prev,
       dateRange: { from_date: initial.fromDate, to_date: initial.toDate },
+      itemName: itemName ?? "", 
       item: initial.item,
       batch: initial.batch,
+       warehouse: initial.warehouse,
     }));
     fetchLedger(initial);
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemCode, batchNo]);
+  }, [itemCode, batchNo,itemName,warehouse]);
 
   const handleApply = useCallback(() => {
     const f: AppliedFilters = {
