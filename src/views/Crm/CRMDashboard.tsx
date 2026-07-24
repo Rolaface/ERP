@@ -181,7 +181,13 @@ const CRMDashboard: React.FC = () => {
     colors: [palette.purple, palette.blue, palette.emerald],
     grid: { borderColor: "#f1f5f9", strokeDashArray: 0, xaxis: { lines: { show: false } }, padding: { left: 4, right: 8 } },
     xaxis: { categories: top3Months, labels: smallFont, axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { labels: smallFont, title: { text: "Orders", style: { fontSize: "10px", color: "#9ca3af" } } },
+    yaxis: {
+     labels: {
+       ...smallFont,
+       formatter: (v: number) => formatShortCurrency(v, currencySymbol),
+     },
+     title: { text: "Revenue", style: { fontSize: "10px", color: "#9ca3af" } },
+   },
     legend: {
       show: true,
       position: "top",
@@ -191,7 +197,7 @@ const CRMDashboard: React.FC = () => {
       markers: { size: 6 } as any,
       itemMargin: { horizontal: 10, vertical: 4 },
     },
-    tooltip: { shared: true, intersect: false, y: { formatter: (v: number) => `${v} orders` } },
+    tooltip: { shared: true, intersect: false, y: { formatter: (v: number) => formatShortCurrency(v, currencySymbol) } },
   };
 
   const donutOptions: ApexOptions = {
@@ -330,7 +336,7 @@ const CRMDashboard: React.FC = () => {
           </div>
         </SectionCard>
 
-        <SectionCard title="Top 3 Performers – Sales Trend" icon={LineChartIcon} className="lg:col-span-7">
+        <SectionCard title="Top 3 Performers – Revenue Trend" icon={LineChartIcon} className="lg:col-span-7">
           <div style={{ height: ROW4_H }}>
             {!chartsLoading && top3Names.length > 0 ? (
               <ReactApexChart type="line" height="100%" width="100%" options={top3TrendOptions} series={top3Series} />
