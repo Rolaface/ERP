@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactApexChart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import {
@@ -39,8 +39,18 @@ const ROW2_H = 220;
 const ROW4_H = 236;
 
 // ── Compact KPI card ─────────────────────────────────────────────────────────
-const KpiCard: React.FC<{ label: string; value: string; sub?: string }> = ({ label, value, sub }) => (
-  <div className="flex flex-col justify-center rounded-xl border border-[var(--border)] bg-card px-3 py-2 shadow-sm">
+const KpiCard: React.FC<{ label: string; value: string; sub?: string; onDoubleClick?: () => void }> = ({
+  label,
+  value,
+  sub,
+  onDoubleClick,
+}) => (
+  <div
+    onDoubleClick={onDoubleClick}
+    title={onDoubleClick ? "Double-click to view details" : undefined}
+    className={`flex flex-col justify-center rounded-xl border border-[var(--border)] bg-card px-3 py-2 shadow-sm ${onDoubleClick ? "cursor-pointer transition-colors hover:border-primary/40 hover:bg-primary/5" : ""
+      }`}
+  >
     <p className="truncate text-[11px] font-medium text-gray-500">{label}</p>
     <p className="text-base font-bold leading-tight text-gray-800">{value}</p>
     {sub && <p className="truncate text-[10px] text-gray-400">{sub}</p>}
@@ -95,6 +105,7 @@ const smallFont = { style: { fontSize: "10px" } };
 
 const CRMDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // Year comes from URL query param (?year=2026), defaults to current year.
   const year = useMemo(() => {
@@ -205,6 +216,7 @@ const CRMDashboard: React.FC = () => {
         label: "Total Customers",
         value: String(data.summary.total_customers),
         sub: `${data.summary.company_customers} Company / ${data.summary.individual_customers} Individual`,
+        onDoubleClick: () => navigate("/crm?tab=customer-managment"),
       },
       { label: "Overdue Payments", value: String(data.summary.overdue_payments) },
       { label: "Dormant Customers", value: String(data.summary.dormant_customers) },
@@ -222,7 +234,15 @@ const CRMDashboard: React.FC = () => {
           ? Array.from({ length: 6 }).map((_, idx) => (
             <div key={idx} className="h-[48px] animate-pulse rounded-xl bg-gray-100" />
           ))
-          : kpis.map((k) => <KpiCard key={k.label} label={k.label} value={k.value} sub={(k as any).sub} />)}
+          : kpis.map((k) => (
+            <KpiCard
+              key={k.label}
+              label={k.label}
+              value={k.value}
+              sub={(k as any).sub}
+              onDoubleClick={(k as any).onDoubleClick}
+            />
+               ))}
       </div>
 
       {error && (
