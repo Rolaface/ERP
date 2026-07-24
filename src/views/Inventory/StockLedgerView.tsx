@@ -8,6 +8,7 @@ export interface StockLedgerViewProps {
   itemCode?: string;
   itemName?: string;
   batchNo?: string;
+  warehouse?: string; 
   onBack: () => void;
 }
 
@@ -75,8 +76,10 @@ const StockKpiStrip: React.FC<{ kpi: KpiValues; loading: boolean }> = ({
 };
 
 const StockLedgerView: React.FC<StockLedgerViewProps> = ({
+  itemName,
   itemCode,
   batchNo,
+  warehouse,
   onBack,
 }) => {
   const {
@@ -95,7 +98,7 @@ const StockLedgerView: React.FC<StockLedgerViewProps> = ({
     setPage,
     pageSize,
     totalPages,
-  } = useStockLedger({ itemCode, batchNo });
+  } = useStockLedger({ itemCode, batchNo,itemName,warehouse });
 
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
