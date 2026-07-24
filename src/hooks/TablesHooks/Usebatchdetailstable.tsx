@@ -17,6 +17,8 @@ export interface Batch {
   batch_no?: string;
   manufacturing_date?: string;
   expiry_date?: string;
+    warehouse?: string;   
+
   bal_qty?: number;
   in_qty?: number;
   out_qty?: number;

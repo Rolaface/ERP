@@ -48,6 +48,7 @@ const Items: React.FC = () => {
     itemCode?: string;
     itemName?: string;
     batchNo?: string;
+    warehouse?: string; 
   } | null>(null);
 
   const handleViewStockLedger = useCallback((batch: BatchRow) => {
@@ -55,6 +56,7 @@ const Items: React.FC = () => {
       itemCode: batch.itemCode ?? "",
       itemName: batch.itemName ?? "",
       batchNo: batch.batch_no,
+      warehouse: batch.warehouse ?? "",
     });
   }, []);
 
@@ -73,6 +75,7 @@ const Items: React.FC = () => {
         itemCode={ledgerBatch.itemCode}
         itemName={ledgerBatch.itemName}
         batchNo={ledgerBatch.batchNo}
+        warehouse={ledgerBatch.warehouse}  
         onBack={handleLedgerBack}
       />
     );
