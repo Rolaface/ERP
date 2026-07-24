@@ -45,6 +45,7 @@ export interface InvoiceDetail {
     itemCode?: string;
     itemName?: string;
     description?: string;
+    isServiceItem?: boolean;
     uom?: string;
     quantity?: number;
     rate?: number;
@@ -277,6 +278,10 @@ const displayDescription = parsedReason?.description ?? data?.description;
 const hasAddresses = data?.billingAddress || data?.shippingAddress;
 
   const items = data?.items ?? [];
+  const hasServiceItems = items.some((it: any) => it.isServiceItem);
+  const itemsGridCols = hasServiceItems
+    ? "minmax(0,1.3fr) minmax(0,1.3fr) 60px 90px 90px 96px"
+    : "minmax(0,2fr) 60px 90px 90px 96px";
   // Support both API shapes: total / net_total
   const subtotal = data?.total ?? data?.net_total;
   const taxTotal = data?.total_tax ?? data?.taxTotal ?? 0;
@@ -757,10 +762,10 @@ const hasAddresses = data?.billingAddress || data?.shippingAddress;
                 }}
               >
                 {/* Header — wider disc column to prevent overlap of "10.145%" + amount */}
-                <div
+              <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "minmax(0,2fr) 60px 90px 90px 96px",
+                    gridTemplateColumns: itemsGridCols,
                     padding: "6px 10px",
                     background: "var(--table-head)",
                     color: "var(--table-head-text)",
@@ -772,6 +777,7 @@ const hasAddresses = data?.billingAddress || data?.shippingAddress;
                   }}
                 >
                   <span>Item</span>
+                  {hasServiceItems && <span>Description</span>}
                   <span style={{ textAlign: "right" }}>Qty</span>
                   <span style={{ textAlign: "right" }}>Price</span>
                   <span style={{ textAlign: "right" }}>Disc.</span>
@@ -802,8 +808,7 @@ const hasAddresses = data?.billingAddress || data?.shippingAddress;
                       className="idm-irow"
                       style={{
                         display: "grid",
-                        gridTemplateColumns:
-                          "minmax(0,2fr) 60px 90px 90px 96px",
+                        gridTemplateColumns: itemsGridCols,
                         padding: "7px 10px",
                         gap: 4,
                         borderTop: "1px solid var(--border)",
@@ -818,9 +823,9 @@ const hasAddresses = data?.billingAddress || data?.shippingAddress;
                               fontSize: 12,
                               fontWeight: 600,
                               color: "var(--text)",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
+                              whiteSpace: "normal",
+                              wordBreak: "break-word",
+                              lineHeight: 1.4,
                             }}
                           >
                             {displayName}
@@ -903,9 +908,35 @@ const hasAddresses = data?.billingAddress || data?.shippingAddress;
                             >
                               Exp: {fmtDate(it.expDate)}
                             </span>
-                          )}
+                         )}
                         </div>
                       </div>
+
+                      {/* ── Description (only when at least one item is a service item) ── */}
+                      {hasServiceItems && (
+                        <Tooltip
+                          content={
+                            (it as any).isServiceItem
+                              ? it.description || "—"
+                              : "—"
+                          }
+                        >
+                          <p
+                            style={{
+                              fontSize: 12,
+                            color: "var(--text)",
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            lineHeight: 1.4,
+                            paddingTop: 1,
+                            }}
+                          >
+                            {(it as any).isServiceItem
+                              ? it.description || "—"
+                              : "—"}
+                          </p>
+                        </Tooltip>
+                      )}
 
                       {/* ── Qty ── */}
                       <Tooltip
@@ -957,6 +988,7 @@ const hasAddresses = data?.billingAddress || data?.shippingAddress;
                                   color: "var(--danger)",
                                   fontVariantNumeric: "tabular-nums",
                                   lineHeight: 1.3,
+                                  
                                 }}
                               >
                                 {discountPercent}%
@@ -978,7 +1010,7 @@ const hasAddresses = data?.billingAddress || data?.shippingAddress;
                             </>
                           ) : (
                             <p style={{ fontSize: 12, color: "var(--muted)" }}>
-                              —
+                              
                             </p>
                           )}
                         </div>

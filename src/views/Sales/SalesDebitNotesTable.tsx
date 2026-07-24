@@ -278,7 +278,7 @@ const SalesDebitNotesTable: React.FC = () => {
     setDrawerLoading(true);
     setDrawerData(null);
     try {
-      const res = await getSalesInvoiceById(noteNo, false, true);
+      const res = await getSalesInvoiceById(noteNo);
       if (res?.message?.status_code === 200) {
         setDrawerData(res.message.data as InvoiceDetail);
       }
