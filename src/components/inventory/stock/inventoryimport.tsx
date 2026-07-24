@@ -13,7 +13,7 @@ interface Props {
 }
 
 const ImportInventoryModal: React.FC<Props> = ({ modalId, isOpen, onClose, onSubmit }) => {
-    const importHook = useInventoryImport(onSubmit, onClose);  ``
+    const importHook = useInventoryImport(onSubmit, onClose);  
   const correction = useStockCorrection(isOpen, onSubmit, onClose);
 
   if (!isOpen) return null;
