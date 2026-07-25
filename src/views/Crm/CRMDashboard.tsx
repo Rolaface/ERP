@@ -252,8 +252,8 @@ const CRMDashboard: React.FC = () => {
       )}
 
       {/* ── Customer Growth / Top 5 Performers / New vs Repeat ──────────────── */}
-      <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12">
-        <SectionCard title="Customer Growth" icon={TrendingUp} className="lg:col-span-6">
+      <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-[5fr_3.5fr_3.5fr]">
+        <SectionCard title="Customer Growth" icon={TrendingUp}>
           <div style={{ height: ROW2_H }}>
             {!chartsLoading && (
               <ReactApexChart
@@ -267,7 +267,7 @@ const CRMDashboard: React.FC = () => {
           </div>
         </SectionCard>
 
-        <SectionCard title="Top 5 Performing Customers" icon={Trophy} className="lg:col-span-3">
+        <SectionCard title="Top 5 Performing Customers" icon={Trophy}>
           <div className="flex flex-col justify-between gap-1 overflow-hidden" style={{ height: ROW2_H }}>
             {chartsLoading ? (
               Array.from({ length: 5 }).map((_, idx) => (
@@ -277,7 +277,7 @@ const CRMDashboard: React.FC = () => {
               <EmptyState message="No revenue data yet" height={ROW2_H} />
             ) : (
               topPerformers.map((perf, idx) => (
-                <div key={perf.customer_id} className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-2 py-0.5">
+                <div key={perf.customer_id} className="flex items-center gap-3.5 rounded-lg border border-[var(--border)] pl-3 pr-2 py-0.5">
                   <div
                     className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md text-[9px] font-bold"
                     style={{ backgroundColor: `${RANK_BADGE_COLOR}1A`, color: RANK_BADGE_COLOR }}
@@ -294,7 +294,7 @@ const CRMDashboard: React.FC = () => {
           </div>
         </SectionCard>
 
-        <SectionCard title="New vs Repeat" icon={Repeat} className="lg:col-span-3">
+        <SectionCard title="New vs Repeat" icon={Repeat}>
           <div style={{ height: ROW2_H }}>
             {!chartsLoading && (
               <ReactApexChart type="donut" height="100%" width="100%" options={donutOptions} series={newVsRepeatSeries} />

@@ -166,6 +166,42 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
     "batch",
     activeDropdown,
   );
+  useEffect(() => {
+    if (filters.item && !selectedItemLabel) {
+      setSelectedItemLabel(filters.itemName || filters.item);
+    }
+    if (!filters.item && selectedItemLabel) {
+      setSelectedItemLabel("");
+    }
+  }, [filters.item, filters.itemName]);
+
+  useEffect(() => {
+    if (filters.batch && !selectedBatchLabel) {
+      setSelectedBatchLabel(filters.batch);
+    }
+    if (!filters.batch && selectedBatchLabel) {
+      setSelectedBatchLabel("");
+    }
+  }, [filters.batch]);
+  // ▲▲▲ END OF NEW CODE ▲▲▲
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
+        setActiveDropdown(null);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (filters.warehouse && !selectedWarehouseLabel) {
+      setSelectedWarehouseLabel(filters.warehouse);
+    }
+    if (!filters.warehouse && selectedWarehouseLabel) {
+      setSelectedWarehouseLabel("");
+    }
+  }, [filters.warehouse]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

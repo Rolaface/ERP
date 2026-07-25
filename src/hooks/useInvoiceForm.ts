@@ -204,7 +204,7 @@ export const useInvoiceForm = (
   // saved item quantities have never touched the stock ledger, so the
   // quantity-cap math below needs to know which case it's in.
   const invoiceDocstatusRef = useRef<number>(0);
-  const enableExchange = mode === "invoice";
+  const enableExchange = mode === "invoice" || mode === "edit";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
