@@ -6,14 +6,23 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { FaCheck } from "react-icons/fa";
 import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
+import {
+  FilterDropdownButton,
+  LookupDropdown,
+  popoverInputClass,
+} from "../../../components/filters/Lookupdropdown";
+import { useDebouncedLookup } from "../../../api/utils/Usedebouncedlookup";
 import type { StockLedgerFiltersState } from "../../../hooks/stock/useStockLedger";
 import {
   searchWarehouses,
   searchItems,
-  searchbatches,
 } from "../../../api/utils/frappeUtilsApi";
+import {
+  searchBatches,
+  searchItemGroups,
+  searchBrands,
+} from "../../../api/utils/Resourceapi";
 
 interface StockLedgerFiltersProps {
   filters: StockLedgerFiltersState;
@@ -26,112 +35,6 @@ interface StockLedgerFiltersProps {
   loading: boolean;
 }
 
-type LookupOption = { value: string; label: string };
-
-const popoverInputClass =
-  "h-7 px-2.5 text-[11px] border border-[var(--border)] rounded-md bg-app text-main " +
-  "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary " +
-  "placeholder:text-muted disabled:opacity-70 disabled:cursor-not-allowed w-full";
-
-// ── Dropdown trigger button, same visual language as Receivables/Payables filter bars ──
-const FilterDropdownButton: React.FC<{
-  label: string;
-  active: boolean;
-  isOpen: boolean;
-  onToggle: () => void;
-  disabled?: boolean;
-  children: React.ReactNode;
-  width?: string;
-}> = ({
-  label,
-  active,
-  isOpen,
-  onToggle,
-  disabled,
-  children,
-  width = "w-56",
-}) => (
-  <div className="relative">
-    <button
-      onClick={onToggle}
-      disabled={disabled}
-      className={`h-7 px-2.5 text-[11px] font-semibold border rounded-md flex items-center gap-1.5 transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${
-        active
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-[var(--border)] bg-card text-muted hover:text-main hover:border-primary/40"
-      }`}
-    >
-      {label}
-    </button>
-    {isOpen && (
-      <div
-        className={`absolute top-full left-0 mt-1.5 bg-card border border-[var(--border)] rounded-lg z-30 ${width} shadow-xl p-2.5`}
-      >
-        {children}
-      </div>
-    )}
-  </div>
-);
-
-// ── List-style option row for API-backed dropdowns (Warehouse, Item, Batch) ──
-const DropdownItem: React.FC<{
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}> = ({ active, onClick, children }) => (
-  <button
-    onClick={onClick}
-    className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs flex justify-between items-center transition-colors ${
-      active
-        ? "bg-primary/10 text-primary font-semibold"
-        : "text-main hover:bg-row-hover"
-    }`}
-  >
-    <span className="truncate pr-2">{children}</span>
-    {active && <FaCheck className="text-[9px] shrink-0" />}
-  </button>
-);
-
-const SEARCH_DEBOUNCE_MS = 300;
-
-// ── Generic hook-like helper: server-side debounced lookup, shared shape for
-// Warehouse/Item/Batch or any future dropdown backed by the same paginated-autosuggest API ──
-function useDebouncedLookup(
-  fetcher: (query: string) => Promise<{ data: LookupOption[] }>,
-  activeKey: string,
-  activeDropdown: string | null,
-  enabled: boolean = true,
-) {
-  const [options, setOptions] = useState<LookupOption[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const run = (query: string) => {
-    if (!enabled) {
-      setOptions([]);
-      return;
-    }
-    setIsLoading(true);
-    fetcher(query)
-      .then((res) => setOptions(res.data))
-      .catch((err) => console.error(`Failed to search ${activeKey}`, err))
-      .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    if (activeDropdown !== activeKey || !enabled) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => run(search), SEARCH_DEBOUNCE_MS);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, activeDropdown, enabled]);
-
-  return { options, isLoading, search, setSearch, run };
-}
-
 const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
   filters,
   updateFilter,
@@ -142,66 +45,80 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // ── Warehouse — server-side debounced search ──
+  // ── Labels shown on the trigger buttons (kept local since the API only
+  // returns codes, not display names) ──
   const [selectedWarehouseLabel, setSelectedWarehouseLabel] = useState("");
+  const [selectedItemLabel, setSelectedItemLabel] = useState("");
+  const [selectedBatchLabel, setSelectedBatchLabel] = useState("");
+  const [selectedItemGroupLabel, setSelectedItemGroupLabel] = useState("");
+  const [selectedBrandLabel, setSelectedBrandLabel] = useState("");
+
   const warehouseLookup = useDebouncedLookup(
     (q) => searchWarehouses(q, 1, 20),
     "warehouse",
     activeDropdown,
   );
-
-  // ── Item — server-side debounced search ──
-  const [selectedItemLabel, setSelectedItemLabel] = useState("");
   const itemLookup = useDebouncedLookup(
     (q) => searchItems(q, 1, 20, false),
-
     "item",
     activeDropdown,
   );
-
-  // ── Batch — scoped to the selected Item; disabled until an Item is picked ──
-  const [selectedBatchLabel, setSelectedBatchLabel] = useState("");
+  // Batch is scoped to the selected Item; disabled until one is picked
   const batchLookup = useDebouncedLookup(
-    (q) => searchbatches(q, 1, 20),
+    (q) => searchBatches(q, 1, 20, filters.item),
     "batch",
     activeDropdown,
+    !!filters.item,
   );
+  const itemGroupLookup = useDebouncedLookup(
+    (q) => searchItemGroups(q, 1, 20),
+    "itemGroup",
+    activeDropdown,
+  );
+  const brandLookup = useDebouncedLookup(
+    (q) => searchBrands(q, 1, 20),
+    "brand",
+    activeDropdown,
+  );
+
+  // Sync labels from filter state (e.g. when filters arrive pre-populated)
   useEffect(() => {
-    if (filters.item && !selectedItemLabel) {
+    if (filters.warehouse && !selectedWarehouseLabel)
+      setSelectedWarehouseLabel(filters.warehouse);
+    if (!filters.warehouse && selectedWarehouseLabel)
+      setSelectedWarehouseLabel("");
+  }, [filters.warehouse]);
+
+  useEffect(() => {
+    if (filters.item && !selectedItemLabel)
       setSelectedItemLabel(filters.itemName || filters.item);
-    }
-    if (!filters.item && selectedItemLabel) {
-      setSelectedItemLabel("");
-    }
+    if (!filters.item && selectedItemLabel) setSelectedItemLabel("");
   }, [filters.item, filters.itemName]);
 
   useEffect(() => {
-    if (filters.batch && !selectedBatchLabel) {
+    if (filters.batch && !selectedBatchLabel)
       setSelectedBatchLabel(filters.batch);
-    }
-    if (!filters.batch && selectedBatchLabel) {
-      setSelectedBatchLabel("");
-    }
+    if (!filters.batch && selectedBatchLabel) setSelectedBatchLabel("");
   }, [filters.batch]);
-  // ▲▲▲ END OF NEW CODE ▲▲▲
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
-        setActiveDropdown(null);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (filters.itemGroup && !selectedItemGroupLabel)
+      setSelectedItemGroupLabel(filters.itemGroup);
+    if (!filters.itemGroup && selectedItemGroupLabel)
+      setSelectedItemGroupLabel("");
+  }, [filters.itemGroup]);
 
+  // Item changed -> old batch is no longer valid, reset it
   useEffect(() => {
-    if (filters.warehouse && !selectedWarehouseLabel) {
-      setSelectedWarehouseLabel(filters.warehouse);
-    }
-    if (!filters.warehouse && selectedWarehouseLabel) {
-      setSelectedWarehouseLabel("");
-    }
-  }, [filters.warehouse]);
+    setSelectedBatchLabel("");
+    updateFilter("batch", "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.item]);
+  useEffect(() => {
+    if (filters.brand && !selectedBrandLabel)
+      setSelectedBrandLabel(filters.brand);
+    if (!filters.brand && selectedBrandLabel) setSelectedBrandLabel("");
+  }, [filters.brand]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -244,7 +161,9 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
     updateFilter("batch", "");
     setSelectedBatchLabel("");
     updateFilter("itemGroup", "");
+    setSelectedItemGroupLabel("");
     updateFilter("brand", "");
+    setSelectedBrandLabel("");
     updateFilter("voucherNo", "");
     updateFilter("project", "");
     updateFilter("includeUom", "");
@@ -257,7 +176,6 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
       ref={wrapRef}
       className="bg-card border border-[var(--border)] rounded-lg px-3 py-2 flex flex-wrap items-center gap-2"
     >
-      {/* Icon + label */}
       <div className="flex items-center gap-1.5 mr-1">
         <SlidersHorizontal size={11} className="text-muted" />
         <span className="text-[9px] font-black uppercase tracking-widest text-muted">
@@ -267,7 +185,6 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
 
       <div className="w-px self-stretch bg-[var(--border)]" />
 
-      {/* Back */}
       <button
         onClick={onBack}
         className="h-7 px-2.5 flex items-center gap-1 text-[11px] font-semibold border border-[var(--border)]
@@ -277,7 +194,6 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
         Back
       </button>
 
-      {/* Date Range */}
       <div className="w-[220px]">
         <DateRangeFilter
           from={filters.dateRange.from_date}
@@ -286,168 +202,111 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
         />
       </div>
 
-      {/* Warehouse */}
-      <FilterDropdownButton
-        label={selectedWarehouseLabel || "Warehouse"}
-        active={!!filters.warehouse}
+      <LookupDropdown
+        label="Warehouse"
+        selectedLabel={selectedWarehouseLabel}
+        selectedValue={filters.warehouse}
+        options={warehouseLookup.options}
+        isLoading={warehouseLookup.isLoading}
+        search={warehouseLookup.search}
+        onSearchChange={warehouseLookup.setSearch}
         isOpen={activeDropdown === "warehouse"}
         onToggle={() => openLookup("warehouse", warehouseLookup)}
-        width="w-64"
-      >
-        <input
-          autoFocus
-          value={warehouseLookup.search}
-          onChange={(e) => warehouseLookup.setSearch(e.target.value)}
-          placeholder="Search warehouse…"
-          className={`${popoverInputClass} mb-1.5`}
-        />
-        <div className="max-h-56 overflow-y-auto flex flex-col gap-0.5">
-          <DropdownItem
-            active={!filters.warehouse}
-            onClick={() => {
-              updateFilter("warehouse", "");
-              setSelectedWarehouseLabel("");
-              setActiveDropdown(null);
-            }}
-          >
-            All Warehouses
-          </DropdownItem>
-          {warehouseLookup.isLoading ? (
-            <div className="px-2.5 py-2 text-xs text-muted text-center">
-              Searching…
-            </div>
-          ) : warehouseLookup.options.length === 0 ? (
-            <div className="px-2.5 py-2 text-xs text-muted text-center">
-              No warehouses found
-            </div>
-          ) : (
-            warehouseLookup.options.map((opt) => (
-              <DropdownItem
-                key={opt.value}
-                active={filters.warehouse === opt.value}
-                onClick={() => {
-                  updateFilter("warehouse", opt.value);
-                  setSelectedWarehouseLabel(opt.label);
-                  setActiveDropdown(null);
-                }}
-              >
-                {opt.label}
-              </DropdownItem>
-            ))
-          )}
-        </div>
-      </FilterDropdownButton>
+        placeholder="Search warehouse…"
+        allLabel="All Warehouses"
+        emptyLabel="No warehouses found"
+        onSelect={(opt) => {
+          updateFilter("warehouse", opt?.value ?? "");
+          setSelectedWarehouseLabel(opt?.label ?? "");
+          setActiveDropdown(null);
+        }}
+      />
 
-      {/* Item — debounced search via searchItems */}
-      <FilterDropdownButton
-        label={selectedItemLabel || "Item"}
-        active={!!filters.item}
+      <LookupDropdown
+        label="Item"
+        selectedLabel={selectedItemLabel}
+        selectedValue={filters.item}
+        options={itemLookup.options}
+        isLoading={itemLookup.isLoading}
+        search={itemLookup.search}
+        onSearchChange={itemLookup.setSearch}
         isOpen={activeDropdown === "item"}
         onToggle={() => openLookup("item", itemLookup)}
-        width="w-64"
-      >
-        <input
-          autoFocus
-          value={itemLookup.search}
-          onChange={(e) => itemLookup.setSearch(e.target.value)}
-          placeholder="Search item…"
-          className={`${popoverInputClass} mb-1.5`}
-        />
-        <div className="max-h-56 overflow-y-auto flex flex-col gap-0.5">
-          <DropdownItem
-            active={!filters.item}
-            onClick={() => {
-              updateFilter("item", "");
-              setSelectedItemLabel("");
-              setActiveDropdown(null);
-            }}
-          >
-            All Items
-          </DropdownItem>
-          {itemLookup.isLoading ? (
-            <div className="px-2.5 py-2 text-xs text-muted text-center">
-              Searching…
-            </div>
-          ) : itemLookup.options.length === 0 ? (
-            <div className="px-2.5 py-2 text-xs text-muted text-center">
-              No items found
-            </div>
-          ) : (
-            itemLookup.options.map((opt) => (
-              <DropdownItem
-                key={opt.value}
-                active={filters.item === opt.value}
-                onClick={() => {
-                  updateFilter("item", opt.value);
-                  setSelectedItemLabel(opt.label);
-                  setActiveDropdown(null);
-                }}
-              >
-                {opt.label}
-              </DropdownItem>
-            ))
-          )}
-        </div>
-      </FilterDropdownButton>
+        placeholder="Search item…"
+        allLabel="All Items"
+        emptyLabel="No items found"
+        onSelect={(opt) => {
+          updateFilter("item", opt?.value ?? "");
+          setSelectedItemLabel(opt?.label ?? "");
+          setActiveDropdown(null);
+        }}
+      />
 
-      {/* Batch — scoped to selected Item, disabled until one is picked */}
-      <FilterDropdownButton
-        label={selectedBatchLabel || "Batch"}
-        active={!!filters.batch}
+      <LookupDropdown
+        label="Batch"
+        selectedLabel={selectedBatchLabel}
+        selectedValue={filters.batch}
+        options={batchLookup.options}
+        isLoading={batchLookup.isLoading}
+        search={batchLookup.search}
+        onSearchChange={batchLookup.setSearch}
         isOpen={activeDropdown === "batch"}
         onToggle={() => openLookup("batch", batchLookup)}
-        width="w-64"
-      >
-        <input
-          autoFocus
-          value={batchLookup.search}
-          onChange={(e) => batchLookup.setSearch(e.target.value)}
-          placeholder="Search batch…"
-          className={`${popoverInputClass} mb-1.5`}
-        />
-        <div className="max-h-56 overflow-y-auto flex flex-col gap-0.5">
-          <DropdownItem
-            active={!filters.batch}
-            onClick={() => {
-              updateFilter("batch", "");
-              setSelectedBatchLabel("");
-              setActiveDropdown(null);
-            }}
-          >
-            All Batches
-          </DropdownItem>
-          {batchLookup.isLoading ? (
-            <div className="px-2.5 py-2 text-xs text-muted text-center">
-              Searching…
-            </div>
-          ) : batchLookup.options.length === 0 ? (
-            <div className="px-2.5 py-2 text-xs text-muted text-center">
-              No batches found
-            </div>
-          ) : (
-            batchLookup.options.map((opt) => (
-              <DropdownItem
-                key={opt.value}
-                active={filters.batch === opt.value}
-                onClick={() => {
-                  updateFilter("batch", opt.value);
-                  setSelectedBatchLabel(opt.label);
-                  setActiveDropdown(null);
-                }}
-              >
-                {opt.label}
-              </DropdownItem>
-            ))
-          )}
-        </div>
-      </FilterDropdownButton>
+        placeholder="Search batch…"
+        allLabel="All Batches"
+        emptyLabel="No batches found"
+        disabled={!filters.item}
+        disabledHint="Select an item first"
+        onSelect={(opt) => {
+          updateFilter("batch", opt?.value ?? "");
+          setSelectedBatchLabel(opt?.label ?? "");
+          setActiveDropdown(null);
+        }}
+      />
 
-      {/* More — Item Group, Brand, Voucher #, Project, Include UOM, Currency, Serial/Batch Bundle */}
+      <LookupDropdown
+        label="Item Group"
+        selectedLabel={selectedItemGroupLabel}
+        selectedValue={filters.itemGroup}
+        options={itemGroupLookup.options}
+        isLoading={itemGroupLookup.isLoading}
+        search={itemGroupLookup.search}
+        onSearchChange={itemGroupLookup.setSearch}
+        isOpen={activeDropdown === "itemGroup"}
+        onToggle={() => openLookup("itemGroup", itemGroupLookup)}
+        placeholder="Search item group…"
+        allLabel="All Groups"
+        emptyLabel="No item groups found"
+        onSelect={(opt) => {
+          updateFilter("itemGroup", opt?.value ?? "");
+          setSelectedItemGroupLabel(opt?.label ?? "");
+          setActiveDropdown(null);
+        }}
+      />
+      <LookupDropdown
+        label="Brand"
+        selectedLabel={selectedBrandLabel}
+        selectedValue={filters.brand}
+        options={brandLookup.options}
+        isLoading={brandLookup.isLoading}
+        search={brandLookup.search}
+        onSearchChange={brandLookup.setSearch}
+        isOpen={activeDropdown === "brand"}
+        onToggle={() => openLookup("brand", brandLookup)}
+        placeholder="Search brand…"
+        allLabel="All Brands"
+        emptyLabel="No brands found"
+        onSelect={(opt) => {
+          updateFilter("brand", opt?.value ?? "");
+          setSelectedBrandLabel(opt?.label ?? "");
+          setActiveDropdown(null);
+        }}
+      />
+
+      {/* More — Brand, Voucher #, Project, Include UOM, Currency, Serial/Batch Bundle */}
       <FilterDropdownButton
         label="More"
         active={
-          !!filters.itemGroup ||
-          !!filters.brand ||
           !!filters.voucherNo ||
           !!filters.project ||
           !!filters.includeUom ||
@@ -458,18 +317,6 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
         width="w-72"
       >
         <div className="flex flex-col gap-2">
-          <input
-            value={filters.itemGroup}
-            onChange={(e) => updateFilter("itemGroup", e.target.value)}
-            placeholder="All Groups"
-            className={popoverInputClass}
-          />
-          <input
-            value={filters.brand}
-            onChange={(e) => updateFilter("brand", e.target.value)}
-            placeholder="All Brands"
-            className={popoverInputClass}
-          />
           <input
             value={filters.voucherNo}
             onChange={(e) => updateFilter("voucherNo", e.target.value)}
@@ -512,7 +359,6 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
         </div>
       </FilterDropdownButton>
 
-      {/* Clear All */}
       {hasActiveFilters && (
         <button
           onClick={clearAll}
@@ -522,7 +368,6 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
         </button>
       )}
 
-      {/* Apply — pushed right */}
       <div className="ml-auto flex items-center gap-2">
         <button
           onClick={onApply}
