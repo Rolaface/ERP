@@ -171,7 +171,7 @@ export default function LeaveApproval() {
       key: "to_date",
       header: "To Date",
       align: "left",
-      render: (e) => (e.half_day === 1 ? "Half Day" : formatDate(e.to_date) || "-"),
+      render: (e) => (e.half_day === 1 ? formatDate(e.from_date) : formatDate(e.to_date) || "-"),
     },
     {
       key: "total_leave_days",
