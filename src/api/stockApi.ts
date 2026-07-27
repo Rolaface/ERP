@@ -73,7 +73,10 @@ export interface StockLedgerFilters {
   to_date: string;
   warehouse?: string[];
   item_code?: string[];
+  item_group?: string; 
+  
   batch_no?: string;
+  brand?: string; 
   valuation_field_type?: "Currency" | "Float";
   include_serial_batch_bundle?: 0 | 1;
 }
@@ -86,6 +89,8 @@ export async function getStockLedger(filters: StockLedgerFilters): Promise<any> 
     warehouse: filters.warehouse ?? [],
     item_code: filters.item_code ?? [],
     ...(filters.batch_no ? { batch_no: filters.batch_no } : {}),
+    ...(filters.item_group ? { item_group: filters.item_group } : {}),  
+    ...(filters.brand ? { brand: filters.brand } : {}),
     valuation_field_type: filters.valuation_field_type ?? "Currency",
     include_serial_batch_bundle: filters.include_serial_batch_bundle ?? 1,
   };

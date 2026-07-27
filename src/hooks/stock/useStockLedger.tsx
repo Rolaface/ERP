@@ -81,15 +81,20 @@ type AppliedFilters = {
 };
 
 interface UseStockLedgerArgs {
-  itemName?: string;   
+  itemName?: string;
   itemCode?: string;
   batchNo?: string;
-   warehouse?: string; 
+  warehouse?: string;
 }
 
 const PAGE_SIZE = 20;
 
-export function useStockLedger({ itemCode, batchNo ,itemName,warehouse }: UseStockLedgerArgs) {
+export function useStockLedger({
+  itemCode,
+  batchNo,
+  itemName,
+  warehouse,
+}: UseStockLedgerArgs) {
   // ── Filter form state ────────────────────────────────────────────────
   const [filters, setFilters] = useState<StockLedgerFiltersState>({
     dateRange: { from_date: startOfYear(), to_date: today() },
@@ -139,7 +144,9 @@ export function useStockLedger({ itemCode, batchNo ,itemName,warehouse }: UseSto
         to_date: f.toDate,
         item_code: f.item ? [f.item] : [],
         batch_no: f.batch || undefined,
+        item_group: f.itemGroup || undefined,
         warehouse: f.warehouse ? [f.warehouse] : [],
+        brand: f.brand || undefined,
         valuation_field_type: f.valuationFieldType,
         include_serial_batch_bundle: f.includeSerialBatchBundle ? 1 : 0,
       });
@@ -158,8 +165,8 @@ export function useStockLedger({ itemCode, batchNo ,itemName,warehouse }: UseSto
     const initial: AppliedFilters = {
       fromDate: startOfYear(),
       toDate: today(),
-       warehouse: warehouse ?? "",  
-      
+      warehouse: warehouse ?? "",
+
       item: itemCode ?? "",
       itemGroup: "",
       batch: batchNo ?? "",
@@ -173,15 +180,15 @@ export function useStockLedger({ itemCode, batchNo ,itemName,warehouse }: UseSto
     setFilters((prev) => ({
       ...prev,
       dateRange: { from_date: initial.fromDate, to_date: initial.toDate },
-      itemName: itemName ?? "", 
+      itemName: itemName ?? "",
       item: initial.item,
       batch: initial.batch,
-       warehouse: initial.warehouse,
+      warehouse: initial.warehouse,
     }));
     fetchLedger(initial);
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemCode, batchNo,itemName,warehouse]);
+  }, [itemCode, batchNo, itemName, warehouse]);
 
   const handleApply = useCallback(() => {
     const f: AppliedFilters = {
