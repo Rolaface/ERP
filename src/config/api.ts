@@ -766,6 +766,16 @@ export const API = {
     },
   },
 
+
+  /* =========================
+ * FRAPPE RESOURCE (generic doctype REST access)
+ * ========================= */
+resource: {
+  batch: `${ERP_BASE}/api/resource/Batch`,
+  itemGroup: `${ERP_BASE}/api/resource/Item Group`, 
+  brand: `${ERP_BASE}/api/resource/Brand`,
+},
+
   /* =========================
    * UTILS
    * ========================= */
