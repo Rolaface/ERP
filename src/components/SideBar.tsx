@@ -28,7 +28,7 @@ import {
   Star,
   Mail,
   User,
-  CreditCard,
+  CreditCard,FileUp
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -267,6 +267,14 @@ const settingsItems: SettingsItem[] = [
     modules: ["scheduler"],
     hideInEmployeeView: true,
 },
+   {
+    to: "/Import",
+    label: "Import",
+    icon: <FileUp {...iconProps} />,
+    modules: ["Import"],
+    hideInEmployeeView: true,
+},
+
   {
     to: "/settings",
     label: "User Preferences",

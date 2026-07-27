@@ -14,6 +14,7 @@ import { userModalsRegistry } from "./userModals.registry";
 import { expenseModalsRegistry } from "./expenseModals.registry";
 import { emailModalsRegistry } from "./emailModals.registry";
 import { schedulerModalsRegistry } from "./schedulerModals.registry";
+import { importModalsRegistry } from "./importModalsRegistry";
 import type { ModalRenderFn } from "./registryTypes";
 
 export const modalRegistry: Record<string, ModalRenderFn> = {
@@ -33,4 +34,5 @@ export const modalRegistry: Record<string, ModalRenderFn> = {
   ...expenseModalsRegistry,
   ...emailModalsRegistry,
   ...schedulerModalsRegistry,
+  ...importModalsRegistry,
 };
