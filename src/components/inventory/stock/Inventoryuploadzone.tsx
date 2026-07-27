@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import ReactDOM from "react-dom";
+import * as XLSX from "xlsx";
 import { Button } from "../../ui/modal/formComponent";
 import {
   Sheet,
@@ -557,6 +558,57 @@ const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
   );
 };
 
+// ─── File info card (replaces the raw filename text once a file is picked) ──
+
+const FileInfoCard: React.FC<{
+  file: File;
+  onRemove: () => void;
+  onReplace: () => void;
+}> = ({ file, onRemove, onReplace }) => {
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  const isExcel = ext === "xlsx" || ext === "xls";
+  const sizeLabel =
+    file.size < 1024 * 1024
+      ? `${(file.size / 1024).toFixed(1)} KB`
+      : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-theme bg-card px-4 py-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{
+            background: isExcel ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)",
+            border: `1px solid ${isExcel ? "rgba(34,197,94,0.25)" : "rgba(59,130,246,0.25)"}`,
+          }}
+        >
+          <Sheet size={16} color={isExcel ? "#16a34a" : "#3b82f6"} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-main truncate">{file.name}</p>
+          <p className="text-xs text-muted mt-0.5">{sizeLabel}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <button
+          type="button"
+          onClick={onReplace}
+          className="text-xs font-semibold text-primary underline underline-offset-2"
+        >
+          Replace
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-red-500 hover:bg-red-50 transition"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main BulkUploadZone ──────────────────────────────────────────────────────
 
 export const BulkUploadZone: React.FC<Props> = ({
@@ -567,7 +619,7 @@ export const BulkUploadZone: React.FC<Props> = ({
 }) => {
   const [dragging, setDragging] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [file, setFile] = useState<File | null>(null); // ← NEW: keep the real File
+  const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const downloadTemplate = useCallback(() => {
@@ -581,64 +633,79 @@ export const BulkUploadZone: React.FC<Props> = ({
     URL.revokeObjectURL(url);
   }, []);
 
+  const buildRows = useCallback((dataLines: string[][]): BulkRow[] => {
+    return dataLines.map((cols, i) => {
+      const [
+        itemCode,
+        itemName,
+        itemGroup,
+        uom,
+        warehouse,
+        openingQty,
+        valuationRate,
+        description,
+        brand,
+      ] = cols;
+
+      const qty = parseFloat(openingQty);
+
+      // valuation_rate is OPTIONAL on the backend (REQUIRED_COLUMNS doesn't include it)
+      // so only flag it as an error if it was actually provided but invalid.
+      const rateProvided = valuationRate !== undefined && valuationRate !== "";
+      const rate = rateProvided ? parseFloat(valuationRate) : undefined;
+      const rateInvalid = rateProvided && isNaN(rate as number);
+
+      const hasError =
+        !itemCode || !itemName || !uom || !warehouse || isNaN(qty) || rateInvalid;
+
+      return {
+        id: `row-${Date.now()}-${i}`,
+        itemCode: itemCode || "",
+        itemName: itemName || "",
+        itemGroup: itemGroup || "",
+        uom: uom || "",
+        warehouse: warehouse || "",
+        openingQty: openingQty || "",
+        valuationRate: valuationRate || "",
+        description: description || "",
+        brand: brand || "",
+        status: hasError ? "error" : "valid",
+        error: hasError
+          ? "Invalid row — check item code, name, uom, warehouse, qty" +
+            (rateInvalid ? " and valuation rate" : "")
+          : undefined,
+      };
+    });
+  }, []);
+
   const parseCSV = useCallback(
     (text: string) => {
       const lines = text.trim().split("\n").filter(Boolean);
       if (lines.length < 2) return;
-
-      const dataRows: BulkRow[] = lines.slice(1).map((line, i) => {
-        const cols = line.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
-        const [
-          itemCode,
-          itemName,
-          itemGroup,
-          uom,
-          warehouse,
-          openingQty,
-          valuationRate,
-          description,
-          brand,
-        ] = cols;
-
-        const qty = parseFloat(openingQty);
-
-        // valuation_rate is OPTIONAL on the backend (REQUIRED_COLUMNS doesn't include it)
-        // so only flag it as an error if it was actually provided but invalid.
-        const rateProvided =
-          valuationRate !== undefined && valuationRate !== "";
-        const rate = rateProvided ? parseFloat(valuationRate) : undefined;
-        const rateInvalid = rateProvided && isNaN(rate as number);
-
-        const hasError =
-          !itemCode ||
-          !itemName ||
-          !uom ||
-          !warehouse ||
-          isNaN(qty) ||
-          rateInvalid;
-
-        return {
-          id: `row-${Date.now()}-${i}`,
-          itemCode: itemCode || "",
-          itemName: itemName || "",
-          itemGroup: itemGroup || "",
-          uom: uom || "",
-          warehouse: warehouse || "",
-          openingQty: openingQty || "",
-          valuationRate: valuationRate || "",
-          description: description || "",
-          brand: brand || "",
-          status: hasError ? "error" : "valid",
-          error: hasError
-            ? "Invalid row — check item code, name, uom, warehouse, qty" +
-              (rateInvalid ? " and valuation rate" : "")
-            : undefined,
-        };
-      });
-
-      onRowsChange(dataRows);
+      const dataLines = lines
+        .slice(1)
+        .map((line) => line.split(",").map((c) => c.trim().replace(/^"|"$/g, "")));
+      onRowsChange(buildRows(dataLines));
     },
-    [onRowsChange],
+    [buildRows, onRowsChange],
+  );
+
+  const parseExcel = useCallback(
+    (buffer: ArrayBuffer) => {
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const sheetRows = XLSX.utils.sheet_to_json<(string | number)[]>(sheet, {
+        header: 1,
+        defval: "",
+        blankrows: false,
+      });
+      if (sheetRows.length < 2) return;
+      const dataLines = sheetRows
+        .slice(1)
+        .map((row) => row.map((c) => String(c ?? "").trim()));
+      onRowsChange(buildRows(dataLines));
+    },
+    [buildRows, onRowsChange],
   );
 
   const handleFile = useCallback(
@@ -648,134 +715,108 @@ export const BulkUploadZone: React.FC<Props> = ({
         return;
       }
 
-      setFile(selectedFile); // ← NEW: always keep the raw file for actual upload
-
+      setFile(selectedFile);
       const ext = selectedFile.name.split(".").pop()?.toLowerCase();
+      const reader = new FileReader();
 
       if (ext === "csv") {
-        const reader = new FileReader();
         reader.onload = (e) => parseCSV(e.target?.result as string);
         reader.readAsText(selectedFile);
       } else {
-        // .xlsx / .xls — reading as text + comma-split does NOT work for binary
-        // Excel files. We don't fake-parse it client-side; the backend already
-        // parses xlsx properly with openpyxl. Show a placeholder "ready to
-        // upload" row so the Submit button unlocks, and let the server do the
-        // real per-row validation.
-        onRowsChange([
-          {
-            id: `file-${Date.now()}`,
-            itemCode: "",
-            itemName: "",
-            itemGroup: "",
-            uom: "",
-            warehouse: "",
-            openingQty: "",
-            valuationRate: "",
-            description: "",
-            brand: "",
-            status: "valid",
-            error: undefined,
-          } as BulkRow,
-        ]);
+        reader.onload = (e) => parseExcel(e.target?.result as ArrayBuffer);
+        reader.readAsArrayBuffer(selectedFile);
       }
     },
-    [parseCSV, onRowsChange],
+    [parseCSV, parseExcel],
   );
 
   const validCount = rows.filter((r) => r.status === "valid").length;
   const errorCount = rows.filter((r) => r.status === "error").length;
-  const isXlsxPlaceholder =
-    rows.length === 1 && rows[0].id.startsWith("file-") && !rows[0].itemCode;
 
   return (
     <div className="flex flex-col gap-4 h-full">
       <UploadSteps />
       <TemplateCard onDownload={downloadTemplate} />
 
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          const droppedFile = e.dataTransfer.files[0];
-          if (droppedFile) handleFile(droppedFile);
-        }}
-        onClick={() => fileRef.current?.click()}
-        className={[
-          "flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed cursor-pointer",
-          "transition-all duration-200 py-8",
-          dragging
-            ? "border-primary bg-primary/5 scale-[1.005]"
-            : "border-theme hover:border-primary/50 hover:bg-app/60",
-        ].join(" ")}
-      >
+      {!file ? (
         <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const droppedFile = e.dataTransfer.files[0];
+            if (droppedFile) handleFile(droppedFile);
+          }}
+          onClick={() => fileRef.current?.click()}
           className={[
-            "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors duration-200",
+            "flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed cursor-pointer",
+            "transition-all duration-200 py-8",
             dragging
-              ? "bg-primary text-white"
-              : "bg-app border border-theme text-muted",
+              ? "border-primary bg-primary/5 scale-[1.005]"
+              : "border-theme hover:border-primary/50 hover:bg-app/60",
           ].join(" ")}
         >
-          <UploadIcon />
+          <div
+            className={[
+              "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors duration-200",
+              dragging ? "bg-primary text-white" : "bg-app border border-theme text-muted",
+            ].join(" ")}
+          >
+            <UploadIcon />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-main">
+              {dragging ? "Drop file here" : "Drag & drop your CSV or Excel file"}
+            </p>
+            <p className="text-xs text-muted mt-1">
+              Accepts .csv · .xlsx · .xls — max 5 MB
+            </p>
+          </div>
+          <span className="text-xs font-medium text-primary underline underline-offset-2">
+            or click to browse
+          </span>
         </div>
-        <div className="text-center">
-          <p className="text-sm font-semibold text-main">
-            {dragging
-              ? "Drop file here"
-              : file
-                ? file.name
-                : "Drag & drop your CSV or Excel file"}
-          </p>
-          <p className="text-xs text-muted mt-1">
-            Accepts .csv · .xlsx · .xls — max 5 MB
-          </p>
-        </div>
-        <span className="text-xs font-medium text-primary underline underline-offset-2">
-          or click to browse
-        </span>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          className="hidden"
-          onChange={(e) => {
-            const selectedFile = e.target.files?.[0];
-            if (selectedFile) handleFile(selectedFile);
-            e.target.value = "";
+      ) : (
+        <FileInfoCard
+          file={file}
+          onRemove={() => {
+            setFile(null);
+            onRowsChange([]);
           }}
+          onReplace={() => fileRef.current?.click()}
         />
-      </div>
+      )}
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".csv,.xlsx,.xls"
+        className="hidden"
+        onChange={(e) => {
+          const selectedFile = e.target.files?.[0];
+          if (selectedFile) handleFile(selectedFile);
+          e.target.value = "";
+        }}
+      />
 
       {rows.length > 0 && (
         <div className="flex-1 flex flex-col gap-2 min-h-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted">
-                {isXlsxPlaceholder ? (
-                  <span className="font-semibold text-main">
-                    Excel file ready — validated on upload
-                  </span>
-                ) : (
-                  <>
-                    <span className="font-semibold text-main">
-                      {rows.length}
-                    </span>{" "}
-                    rows loaded
-                  </>
-                )}
+                <span className="font-semibold text-main">{rows.length}</span>{" "}
+                rows loaded
               </span>
-              {!isXlsxPlaceholder && validCount > 0 && (
+              {validCount > 0 && (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full ring-1 ring-emerald-200">
                   ✓ {validCount} valid
                 </span>
               )}
-              {!isXlsxPlaceholder && errorCount > 0 && (
+              {errorCount > 0 && (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full ring-1 ring-red-200">
                   ✗ {errorCount} errors
                 </span>
@@ -783,29 +824,27 @@ export const BulkUploadZone: React.FC<Props> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              {!isXlsxPlaceholder && (
-                <button
-                  type="button"
-                  onClick={() => setSheetOpen(true)}
-                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
-                  style={{
-                    background: "rgba(34,197,94,0.08)",
-                    color: "#16a34a",
-                    border: "1px solid rgba(34,197,94,0.25)",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "rgba(34,197,94,0.14)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "rgba(34,197,94,0.08)";
-                  }}
-                >
-                  <Sheet size={13} />
-                  View in Spreadsheet
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+                style={{
+                  background: "rgba(34,197,94,0.08)",
+                  color: "#16a34a",
+                  border: "1px solid rgba(34,197,94,0.25)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "rgba(34,197,94,0.14)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "rgba(34,197,94,0.08)";
+                }}
+              >
+                <Sheet size={13} />
+                View in Spreadsheet
+              </button>
 
               <button
                 type="button"
@@ -820,41 +859,39 @@ export const BulkUploadZone: React.FC<Props> = ({
             </div>
           </div>
 
-          {!isXlsxPlaceholder && (
-            <div className="flex-1 overflow-auto rounded-xl border border-theme bg-card min-h-0">
-              <table className="w-full min-w-[820px] text-sm">
-                <thead className="sticky top-0 bg-app border-b border-theme z-10">
-                  <tr>
-                    {[
-                      "#",
-                      // "Item Code",
-                      "Item Name",
-                      "Group",
-                      "UOM",
-                      "Warehouse",
-                      "Opening Qty",
-                      "Rate",
-                      "Status",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted whitespace-nowrap"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, i) => (
-                    <BulkPreviewRow key={row.id} row={row} index={i} />
+          <div className="flex-1 overflow-auto rounded-xl border border-theme bg-card min-h-0">
+            <table className="w-full min-w-[880px] text-sm">
+              <thead className="sticky top-0 bg-app border-b border-theme z-10">
+                <tr>
+                  {[
+                    "#",
+                    "Item Code",
+                    "Item Name",
+                    "Group",
+                    "UOM",
+                    "Warehouse",
+                    "Opening Qty",
+                    "Rate",
+                    "Status",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted whitespace-nowrap"
+                    >
+                      {h}
+                    </th>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, i) => (
+                  <BulkPreviewRow key={row.id} row={row} index={i} />
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-          {file && (isXlsxPlaceholder || validCount > 0) && (
+          {file && validCount > 0 && (
             <div className="flex justify-end pt-1">
               <Button
                 variant="primary"
@@ -862,9 +899,7 @@ export const BulkUploadZone: React.FC<Props> = ({
                 type="button"
                 onClick={() => file && onSubmit(file)}
               >
-                {isXlsxPlaceholder
-                  ? "Upload & Import"
-                  : `Submit ${validCount} Item${validCount !== 1 ? "s" : ""}`}
+                {`Submit ${validCount} Item${validCount !== 1 ? "s" : ""}`}
               </Button>
             </div>
           )}

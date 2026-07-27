@@ -11,6 +11,7 @@ export type EmployeeNumberAvailability = {
   employee_number: string;
   is_available: boolean;
   existing_employee_id: string | null;
+  existing_employee_number: string | null;
 };
 
 // ── API calls ────────────────────────────────────────────────────
@@ -24,11 +25,14 @@ export async function checkEmployeeNumberAvailability(
   employeeNumber: string,
   excludeEmployeeId?: string,
 ): Promise<any> {
-  const resp: AxiosResponse = await api.get(EmployeeNumberAPI.checkEmployeeNumber, {
+  const resp = await api.get(EmployeeNumberAPI.checkEmployeeNumber, {
     params: {
       employee_number: employeeNumber,
-      ...(excludeEmployeeId ? { exclude_employee_id: excludeEmployeeId } : {}),
+      ...(excludeEmployeeId
+        ? { exclude_employee_id: excludeEmployeeId }
+        : {}),
     },
   });
+
   return resp.data;
 }
