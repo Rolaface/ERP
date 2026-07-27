@@ -10,7 +10,7 @@ export interface DebitNotePayload {
   return_against: string;
   supplier: string;
   company: string;
-  update_stock: 0 | 1;
+  update_stock:1;
   conversion_rate: number;
   items: {
     item_code: string;

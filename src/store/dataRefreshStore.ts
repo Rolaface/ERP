@@ -110,6 +110,7 @@ export const REFRESH_KEYS = {
   FEEDBACK_LIST:  "feedback_list",
   NAMING_SERIES: "naming_series",
   COMPANY_DEFAULTS: "company_defaults",
+  SALES_DEBIT_NOTE_LIST:"sales_debit_note_list"
 
 } as const;
 

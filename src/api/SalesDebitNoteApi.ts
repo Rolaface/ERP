@@ -13,7 +13,7 @@ export interface SalesDebitNotePayload {
   customer: string;
   company: string;
   
-  update_stock?: 0; 
+  update_stock: 1;
   
   reason?: string;
   items: {

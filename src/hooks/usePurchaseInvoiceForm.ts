@@ -541,18 +541,7 @@ export const usePurchaseInvoiceForm = ({
       return;
     }
 
-    if (name === "updateStock") {
-      setForm((prev) => ({
-        ...prev,
-        updateStock: target.checked,
-        warehouse: target.checked ? prev.warehouse : "",
-        items: prev.items.map((item) => ({
-          ...item,
-          warehouse: target.checked ? item.warehouse : "",
-        })),
-      }));
-      return;
-    }
+  
 
     if (
       name.startsWith("addresses.") &&
@@ -850,7 +839,7 @@ export const usePurchaseInvoiceForm = ({
           vatCd: selectedTax?.taxName || "",
 
           description: str(item.description || ""),
-          warehouse: form.updateStock ? str(item.warehouse) : "",
+          warehouse: str(item.warehouse),
           packingUnit: Number(item.packingUnit || 0),
           packingSize: Number(item.packingSize || 0),
           packing: `${item.packingUnit || 0} x ${item.packingSize || 0}`,
@@ -1082,7 +1071,7 @@ export const usePurchaseInvoiceForm = ({
       ...p,
       items: [
         ...p.items,
-        { ...emptyItem, warehouse: p.updateStock ? (p.warehouse ?? "") : "" },
+        { ...emptyItem, warehouse: p.warehouse ?? "", },
       ],
     }));
   };

@@ -49,7 +49,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
     handleItemChange,
     handleWarehouseDefault,
     removeItem,
-    toggleUpdateStock,
+  
     reset,
     handleSubmit,
     handleCloseWithConfirm, // ← from useUnsavedChanges inside the hook
@@ -106,7 +106,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
         onItemChange={handleItemChange}
         onWarehouseDefault={handleWarehouseDefault}
         onRemoveItem={removeItem}
-        onToggleUpdateStock={toggleUpdateStock}
+       
       />
     ),
     [
@@ -118,7 +118,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
       handleItemChange,
       handleWarehouseDefault,
       removeItem,
-      toggleUpdateStock,
+    
     ],
   );
 
