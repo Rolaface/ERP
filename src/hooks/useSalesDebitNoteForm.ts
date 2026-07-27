@@ -34,7 +34,7 @@ export interface CustomerMeta {
 export interface SalesDebitNoteFormState {
   return_against: string;
   customer: CustomerMeta | null;
-  update_stock: boolean;
+
   reason: string;
   code: string;
   description: string;
@@ -49,7 +49,7 @@ const EMPTY_FORM: SalesDebitNoteFormState = {
   reason: "",
   code: "",
   description: "",
-  update_stock: false,
+  
   items: [],
   exchange_rate: 1, 
   currency: "",
@@ -125,9 +125,7 @@ export function useSalesDebitNoteForm(
         id: initialData.customerId || initialData.customer || "",
         name: initialData.customerName || initialData.customer_name || initialData.customer || "",
       },
-      update_stock: initialData.updateStock !== undefined
-        ? !!initialData.updateStock
-        : !!initialData.update_stock,
+     
       reason: initialData.reason || parsedRemarks.reason || parsedRemarks.name || "",
       code: initialData.code || parsedRemarks.code || "",
       description: initialData.description || parsedRemarks.description || "",
@@ -323,7 +321,7 @@ export function useSalesDebitNoteForm(
         return_against: form.return_against,
         customer: form.customer!.id,
         company: companyName,
-        update_stock: 0 as const,
+        update_stock: 1 as const,
         conversion_rate: form.exchange_rate,
         update_outstanding_for_self: 1 as const,
         reason: JSON.stringify({

@@ -65,7 +65,7 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
       expDate: str(it.expDate),
       barCode: generate9DigitBarcode(),
       discount: num(it.discount),
-      warehouse: form.updateStock ? str(it.warehouse) : null,
+      warehouse: str(it.warehouse),
     }));
 
   // ── Taxes ──────────────────────────────────
@@ -98,7 +98,7 @@ export const mapUIToCreatePI = (form: PurchaseInvoiceFormData) => {
     supplierCode: form.supplierCode,
     supplierContact: form.supplierContact,
 
-    updateStock: form.updateStock ?? true,
+   updateStock: true,
     poDate: form.date,
 dueDate: form.dueDate,
     currency: form.currency,
@@ -308,7 +308,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
     date: str(api.piDate),
     dueDate: str(api.dueDate || api.due_date),
     taxCategory: str(api.taxCategory),
-    updateStock: api.updateStock ?? true,
+   updateStock: true,
 
     supplier: str(api.supplierName),
     supplierId: str(api.supplierId),

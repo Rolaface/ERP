@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { File, User, Mail, Phone } from "lucide-react";
 import TermsAndCondition from "../TermsAndCondition";
-import {
-  showApiError,
-  showSuccess,
-} from "../../utils/alert";
+import { showApiError, showSuccess } from "../../utils/alert";
 import {
   useDataRefreshStore,
   REFRESH_KEYS,
@@ -18,9 +15,6 @@ import { useInvoiceForm } from "../../hooks/useInvoiceForm";
 import InvoiceChargesTab from "../../views/Sales/InvoiceChargeTab";
 import DatePickerInput from "../calendar/DatePickerInput";
 import { InvoiceAddressTab } from "./InvoiceAddressTab";
-
-
-
 
 import ItemTable from "../common/ItemTable";
 import type { ModalSubmitHandler } from "../../types/modal";
@@ -50,13 +44,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
   modalId,
 }) => {
   const resolvedModalId = useMemo(
-  () =>
-   modalId ||
-   (mode === "edit" && initialData?.invoiceNumber
-     ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
-      : `invoice-create-${Date.now()}`),
-   [modalId, mode, initialData?.invoiceNumber],
- );
+    () =>
+      modalId ||
+      (mode === "edit" && initialData?.invoiceNumber
+        ? `invoice-edit-${initialData.invoiceNumber}-${Date.now()}`
+        : `invoice-create-${Date.now()}`),
+    [modalId, mode, initialData?.invoiceNumber],
+  );
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -64,7 +58,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     "Product",
   );
   const domain = useDefault("primary_business_domain");
- 
 
   useEffect(() => {
     if (mode === "edit" && initialData?.items?.length > 0) {
@@ -107,15 +100,14 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     "terms",
   ];
 
- 
- useEffect(() => {
-   if (isOpen && mode === "create" && initialData?.customerName) {
-     actions.handleCustomerSelect({
-       name: initialData.customerName,
-       id: initialData.customerId,
-     });
-   }
- }, [isOpen, mode, initialData]);
+  useEffect(() => {
+    if (isOpen && mode === "create" && initialData?.customerName) {
+      actions.handleCustomerSelect({
+        name: initialData.customerName,
+        id: initialData.customerId,
+      });
+    }
+  }, [isOpen, mode, initialData]);
 
   const showExchangeRate =
     !!ui.baseCurrency &&
@@ -132,6 +124,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       } as React.FormEvent);
 
       if (!payload) return;
+      payload.updateStock = true;
 
       if (mode === "edit") {
         const invoiceNumber =
@@ -373,45 +366,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 )}
 
                 {/* Invoice Type */}
-                {/* <div className="w-full sm:w-auto flex flex-col justify-end">
-                 <label className="text-[11px] text-muted mb-1">Invoice Type</label>
-                <div className="flex items-center gap-4 border border-theme rounded-md px-4 bg-card h-[27px]">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Product"
-                      checked={invoiceType === "Product"}
-                      onChange={(e: any) => {
-                        setInvoiceType(e.target.value);
-                        actions.handleInputChange({
-                          target: { name: "updateStock", type: "checkbox", checked: true }
-                        } as any);
-                      }}
-                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[10px] text-main whitespace-nowrap">Product</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="invoiceType"
-                      value="Service"
-                      checked={invoiceType === "Service"}
-                      onChange={(e: any) => {
-                        setInvoiceType(e.target.value);
-                        actions.handleInputChange({
-                          target: { name: "updateStock", type: "checkbox", checked: false }
-                        } as any);
-                      }}
-                      className="w-3 h-3 accent-primary cursor-pointer border-gray-300 focus:ring-primary"
-                    />
-                    <span className="text-[10px] text-main whitespace-nowrap">Service</span>
-                  </label>
-                </div>
-              </div> */}
-                {/* Invoice Type */}
                 <ToggleSwitch
                   name="invoiceType"
                   label="Invoice Type"
@@ -421,37 +375,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   onChange={(e) => {
                     const isService = e.target.checked;
                     setInvoiceType(isService ? "Service" : "Product");
-                    // Service select hote hi updateStock false karo
-                    actions.handleInputChange({
-                      target: {
-                        name: "updateStock",
-                        type: "checkbox",
-                        checked: !isService,
-                      },
-                    } as any);
                   }}
                 />
-
-                {/* Update Stock */}
-                {invoiceType === "Product" && (
-                  <div className="w-full sm:w-auto flex flex-col justify-end">
-                    <label className="text-[11px] text-transparent select-none">
-                      ‎
-                    </label>
-                    <label className="flex items-center gap-2 h-[30px]">
-                      <input
-                        type="checkbox"
-                        name="updateStock"
-                        checked={formData.updateStock ?? true}
-                        onChange={actions.handleInputChange}
-                        className="w-3.5 h-3.5 accent-primary"
-                      />
-                      <span className="text-xs text-main whitespace-nowrap">
-                        Update Stock
-                      </span>
-                    </label>
-                  </div>
-                )}
               </div>
 
               {/* ── Items table + sidebar ──

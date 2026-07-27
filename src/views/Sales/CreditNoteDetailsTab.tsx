@@ -154,7 +154,7 @@ export interface CreditNoteDetailsTabProps {
   ) => void;
   onWarehouseDefault: (index: number, warehouse: string) => void;
   onRemoveItem: (index: number) => void;
-  onToggleUpdateStock: () => void;
+ 
  reasonOptions: { code: string; reason: string }[];      
  reasonsLoading: boolean;             
 onReasonChange: (reason: string, code: string) => void;  
@@ -218,7 +218,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
   onItemChange,
   onWarehouseDefault,
   onRemoveItem,
-  onToggleUpdateStock,
+
   reasonOptions,     
   reasonsLoading,
   fetchReasonOptions,
@@ -468,19 +468,7 @@ export const CreditNoteDetailsTab: React.FC<CreditNoteDetailsTabProps> = ({
     </div>
   )}
 
-  <div className="flex flex-col justify-end">
-    <label className="text-[11px] text-transparent select-none">‎</label>
-    <label className="flex items-center gap-2 h-[30px]">
-      <input
-        type="checkbox"
-        name="updateStock"
-        checked={form.update_stock ?? true}
-        onChange={onToggleUpdateStock}
-        className="w-3.5 h-3.5 accent-primary"
-      />
-      <span className="text-xs text-main whitespace-nowrap">Update Stock</span>
-    </label>
-  </div>
+  
 </div>
 
       {/* ── Main grid: table + sidebar ── */}

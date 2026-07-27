@@ -34,7 +34,7 @@ export interface CustomerMeta {
 export interface CreditNoteFormState {
   return_against: string;
   customer: CustomerMeta | null;
-  update_stock: boolean;
+
   reason: string;
   code: string;
   description: string;
@@ -48,7 +48,7 @@ const EMPTY_FORM: CreditNoteFormState = {
   reason: "",
   code: "",
   description: "",
-  update_stock: true,
+
   items: [],
   exchange_rate: 1, 
 };
@@ -122,9 +122,7 @@ const fetchReasonOptions = useCallback(
         id: initialData.customerId || initialData.customer || "",
         name: initialData.customerName || initialData.customer_name || initialData.customer || "",
       },
-      update_stock: initialData.updateStock !== undefined
-        ? !!initialData.updateStock
-        : !!initialData.update_stock,
+      
       reason: initialData.reason || parsedRemarks.reason || parsedRemarks.name || "",
       code: initialData.code || parsedRemarks.code || "",
       description: initialData.description || parsedRemarks.description || "",
@@ -265,10 +263,6 @@ const fetchReasonOptions = useCallback(
     markDirty();
   }, [markDirty]);
 
-  const toggleUpdateStock = useCallback(() => {
-    setForm((prev) => ({ ...prev, update_stock: !prev.update_stock }));
-    markDirty();
-  }, [markDirty]);
 
   const setReason = useCallback((reason: string, code: string) => {
     setForm((prev) => ({
@@ -329,7 +323,7 @@ const fetchReasonOptions = useCallback(
         return_against: form.return_against,
         customer: form.customer!.id,
         company: companyName,
-        update_stock: form.update_stock ? (1 as const) : (0 as const),
+      update_stock: 1 as const,
         conversion_rate: form.exchange_rate,
         update_outstanding_for_self: 1 as const,
         reason:JSON.stringify({
@@ -411,7 +405,7 @@ const fetchReasonOptions = useCallback(
     handleItemChange,
     handleWarehouseDefault,
     removeItem,
-    toggleUpdateStock,
+    
     reset,
     handleSubmit,
     validate,

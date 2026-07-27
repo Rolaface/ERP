@@ -102,7 +102,7 @@ export function buildInvoicePayload(
     postingDate: formData.dateOfInvoice,
     dueDate: formData.dueDate,
     tax_category: formData.taxCategory,
-    updateStock: formData.updateStock ?? true,
+    updateStock: true,
     paymentMode: formData.mode,
     billingAddress: formData.billingAddress ?? "",
     shippingAddress: formData.shippingAddress ?? "",
@@ -451,15 +451,6 @@ export const useInvoiceForm = (
     section?: NestedSection,
   ) => {
     const { name, value } = e.target;
-
-    if (name === "updateStock") {
-      setFormData((prev) => ({
-        ...prev,
-        updateStock: (e.target as HTMLInputElement).checked,
-      }));
-      markDirty();
-      return;
-    }
 
     if (section) {
       setFormData((prev) => ({
@@ -955,7 +946,6 @@ export const useInvoiceForm = (
           : "1",
       dueDate: invoice.dueDate,
       destnCountryCd: invoice.destnCountryCd ?? "",
-      updateStock: invoice.updateStock ?? true,
       warehouse: invoice.warehouse ?? prev.warehouse ?? "",
       billingAddress:
         invoice.customerAddressId ??
@@ -1081,7 +1071,6 @@ export const useInvoiceForm = (
           dueDate,
           exchangeRt: "1",
           warehouse: "",
-          updateStock: true,
           terms: { selling: company?.terms?.selling ?? EMPTY_TERMS.selling },
           paymentInformation: {
             ...DEFAULT_INVOICE_FORM.paymentInformation,

@@ -253,7 +253,7 @@ export const DetailsTab = ({
               onChange={(e: any) =>
                 onItemChange({ target: { name: "warehouse", value: e.target?.value ?? e } } as any, i)
               }
-              disabled={!form.updateStock}
+              disabled={false}
             />
           </div>
         </td>
@@ -457,21 +457,11 @@ export const DetailsTab = ({
             name="warehouse"
             value={form.warehouse || ""}
             onChange={handleTopWarehouseChange}
-            required={form.updateStock}
-            disabled={!form.updateStock}
+           required
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            name="updateStock"
-            checked={form.updateStock ?? false}
-            onChange={onFormChange}
-            className="w-3.5 h-3.5 accent-primary"
-          />
-          <span className="text-xs text-main">Update Stock</span>
-        </div>
+       
 
       </div>
 

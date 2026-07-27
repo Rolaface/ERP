@@ -153,7 +153,7 @@ export interface DebitNoteDetailsTabProps {
   ) => void;
   onWarehouseDefault: (index: number, warehouse: string) => void;
   onRemoveItem: (index: number) => void;
-  onToggleUpdateStock: () => void;
+
 }
 const DebitNoteColGroup: React.FC = () => (
   <colgroup>
@@ -219,7 +219,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
   onItemChange,
   onWarehouseDefault,
   onRemoveItem,
-  onToggleUpdateStock,
+
 }) => {
   const [page, setPage] = useState(0);
 
@@ -414,7 +414,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
           detailsLoading={invoiceLoading}
         />
 
-        <label className="flex items-center gap-2 pb-1">
+        {/* <label className="flex items-center gap-2 pb-1">
           <input
             type="checkbox"
             name="updateStock"
@@ -425,7 +425,7 @@ export const DebitNoteDetailsTab: React.FC<DebitNoteDetailsTabProps> = ({
           <span className="text-xs text-main whitespace-nowrap">
             Update Stock
           </span>
-        </label>
+        </label> */}
       </div>
 
       {/* ── Main grid: ItemTable + sidebar ── */}
