@@ -27,7 +27,7 @@ type EmploymentTabProps = {
   managers: { name: string; employeeId: string }[];
   hrManagers: { name: string; employeeId: string }[];
   isEditMode?: boolean;
-  employeeId?: string; 
+  employeeId?: string;
 };
 
 const EMPLOYMENT_STATUS_OPTIONS = [
@@ -60,7 +60,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasPrefilledRef = useRef(false);
 
-
   const originalEmployeeNumberRef = useRef<string | null>(null);
   const hasCapturedOriginalRef = useRef(false);
 
@@ -69,7 +68,6 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
       originalEmployeeNumberRef.current = formData.employee_number ?? "";
       hasCapturedOriginalRef.current = true;
     }
-
   }, [isEditMode]);
   useEffect(() => {
     if (isEditMode) return;
@@ -89,13 +87,9 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
         if (suggested) {
           handleInputChange("employee_number", suggested);
         }
-      } catch {
-       
-      }
+      } catch {}
     })();
-    
   }, [isEditMode]);
-
 
   useEffect(() => {
     const value = formData.employee_number?.trim();
@@ -130,17 +124,13 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
           isEditMode ? employeeId : undefined,
         );
 
-        const body = res?.data ?? res?.message ?? res;
-        const inner = body?.data ?? body;
-        const isFail = body?.status === "fail" || body?.status_code >= 400;
+        const body = res?.message ?? res;
+        const inner = body?.data;
+        const isFail = body?.status === "fail" || body?.status_code === 409;
 
         if (isFail) {
           setEmployeeNumberStatus("taken");
-          setEmployeeNumberMessage(
-            typeof body?.message === "string"
-              ? body.message
-              : "This Employee Number is already in use.",
-          );
+          setEmployeeNumberMessage(body.message);
           return;
         }
 
@@ -149,30 +139,16 @@ const EmploymentTab: React.FC<EmploymentTabProps> = ({
           setEmployeeNumberMessage("");
         } else {
           setEmployeeNumberStatus("taken");
-          setEmployeeNumberMessage("This Employee Number is already in use.");
+          setEmployeeNumberMessage(
+            body.message ?? "This Employee Number is already in use.",
+          );
         }
       } catch (err: any) {
-        const status = err?.response?.status;
         const serverData = err?.response?.data;
+        const body = serverData?.message ?? serverData;
 
-        if (status === 409) {
-          setEmployeeNumberStatus("taken");
-          setEmployeeNumberMessage(
-            typeof serverData?.message === "string"
-              ? serverData.message
-              : "This Employee Number is already in use.",
-          );
-        } else if (status === 400) {
-          setEmployeeNumberStatus("error");
-          setEmployeeNumberMessage(
-            typeof serverData?.message === "string"
-              ? serverData.message
-              : "Invalid Employee Number.",
-          );
-        } else {
-          setEmployeeNumberStatus("idle");
-          setEmployeeNumberMessage("");
-        }
+        setEmployeeNumberStatus("taken");
+        setEmployeeNumberMessage(body?.message ?? "Something went wrong.");
       }
     }, 500);
 
