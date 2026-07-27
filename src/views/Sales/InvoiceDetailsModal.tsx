@@ -30,6 +30,7 @@ export interface InvoiceDetail {
   reason?: string;
   remarks?: string,
   description?: string;
+  paymentMode?: string;
   paymentInformation?: {
     paymentTerms?: string;
     paymentMethod?: string;
@@ -1148,8 +1149,8 @@ const hasAddresses = data?.billingAddress || data?.shippingAddress;
                       value={data.terms?.selling?.payment?.notes ?? null}
                     />
                     <F
-                      label="Method"
-                      value={data.paymentInformation.paymentMethod}
+                      label="Payment Mode"
+                      value={data.paymentMode}
                     />
                     <F label="Bank" value={data.paymentInformation.bankName} />
                     {data.paymentInformation.accountNumber && (
