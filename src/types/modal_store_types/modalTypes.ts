@@ -68,7 +68,8 @@ export type ModalType =
   | "sendEmail"
   | "stockCorrection" 
   | "importInventory"  
-  | "importData"
+ 
+  | string;
 
   export interface ModalContext {
     source?: string;
@@ -78,8 +79,7 @@ export type ModalType =
     onSubmit?: (data: unknown) => Promise<void> | void;
     isViewMode?: boolean;
     loading?: boolean;
-    //this specially for the import modules .becuase it did not have the  same context as other modules...
-    // like in all we have sumbit and all but import we have like ondowanlaod,on import someting..
+   
     importConfig?: {
     title: string;
     subtitle?: string;

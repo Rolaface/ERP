@@ -1,33 +1,25 @@
 import {
   Users,
   Truck,
-  Package,
+  Boxes,
   UserCog,
-  Warehouse,
   Network,
-  ShoppingBag,
-  Tags,
+  ShoppingCart,
   Receipt,
 } from "lucide-react";
 import type { ImportModuleConfig } from "../../types/importdata/importdata_type";
 
-// ── API integration is disabled for now — modules are plain data below.
-// When APIs are ready, come back here and:
-//   1. import * as customersApi from "../../api/customersApi"; (etc. per module)
-//   2. add back a `handlers: { downloadTemplate, uploadFile }` block per module
-//      (see ImportModuleHandlers in the types file for the expected shape)
-//
-// import * as customersApi from "../../api/customersApi";
-// import * as suppliersApi from "../../api/suppliersApi";
-// import * as itemsApi from "../../api/itemsApi";
-// import * as productsApi from "../../api/productsApi";
-// import * as ordersApi from "../../api/ordersApi";
-// import * as transactionsApi from "../../api/transactionsApi";
+import { customerImportApi } from "../../api/imports/customer import/customerimportapi";
+import { inventoryItemImportApi } from "../../api/imports/inventory import/inventoryimportapi";
+import { purchaseInvoiceImportApi } from "../../api/imports/purchase import/purchaseinvoice_importapi";
 
 // ── This is the ONE place to look when:
-// - adding a new importable module
-// - changing which API a module's import/template hits (once wired back in)
-// - flipping a module from "soon" to "active" once its API is ready
+// - adding a new importable module: write its api file (see createImportApi.ts
+//   for the pattern), import it here, add one object below.
+// - adding/removing a sub-type: add/remove an entry in that module's subTypes array.
+// - flipping a module from "soon" to "active": set status once its api exists.
+// - wiring a module/sub-type to its backend: just set `api: yourImportApi` —
+//   no other file needs to change.
 export const IMPORT_MODULES: ImportModuleConfig[] = [
   {
     key: "customers",
@@ -36,11 +28,7 @@ export const IMPORT_MODULES: ImportModuleConfig[] = [
     category: "General",
     icon: Users,
     status: "active",
-    lastImport: "2 hours ago",
-    // handlers: {
-    //   downloadTemplate: customersApi.downloadImportTemplate,
-    //   uploadFile: customersApi.importFromFile,
-    // },
+    api: customerImportApi,
   },
   {
     key: "suppliers",
@@ -48,61 +36,50 @@ export const IMPORT_MODULES: ImportModuleConfig[] = [
     description: "Supplier records, tax IDs, and procurement preferences.",
     category: "General",
     icon: Truck,
-    status: "active",
-    lastImport: "Yesterday",
-    // handlers: {
-    //   downloadTemplate: suppliersApi.downloadImportTemplate,
-    //   uploadFile: suppliersApi.importFromFile,
-    // },
-  },
-  {
-    key: "items",
-    title: "Items",
-    description: "Inventory items, SKUs, and pricing tiers.",
-    category: "General",
-    icon: Package,
-    status: "active",
-    lastImport: "3 days ago",
-    // handlers: {
-    //   downloadTemplate: itemsApi.downloadImportTemplate,
-    //   uploadFile: itemsApi.importFromFile,
-    // },
-  },
-  {
-    key: "products",
-    title: "Products",
-    description: "Product catalogs, variants, and categorization data.",
-    category: "General",
-    icon: Tags,
-    status: "active",
-    lastImport: "3 days ago",
-    // handlers: {
-    //   downloadTemplate: productsApi.downloadImportTemplate,
-    //   uploadFile: productsApi.importFromFile,
-    // },
-  },
-  {
-    key: "orders",
-    title: "Orders",
-    description: "Sales orders, purchase orders, and historical transactions.",
-    category: "Logistics",
-    icon: ShoppingBag,
-    status: "active",
-    lastImport: "5 hours ago",
-    // handlers: {
-    //   downloadTemplate: ordersApi.downloadImportTemplate,
-    //   uploadFile: ordersApi.importFromFile,
-    // },
-  },
-  {
-    key: "warehouses",
-    title: "Warehouses",
-    description: "Warehouse locations, zones, and storage capacity.",
-    category: "Logistics",
-    icon: Warehouse,
     status: "soon",
-    // No handlers yet — wire these up once the warehouses API exists,
-    // then flip status to "active".
+    lastImport: "Yesterday",
+  },
+  {
+    key: "inventory",
+    title: "Inventory",
+    description: "Items, warehouses, and stock records.",
+    category: "Logistics",
+    icon: Boxes,
+    status: "active",
+    subTypes: [
+      { key: "item", label: "Item", api: inventoryItemImportApi },
+      { key: "warehouse", label: "Warehouse" },
+      { key: "stock", label: "Stock" },
+    ],
+  },
+  {
+    key: "sales",
+    title: "Sales",
+    description: "Sales orders, quotations, proforma invoices, invoices, and credit notes.",
+    category: "Sales",
+    icon: ShoppingCart,
+    status: "active",
+    subTypes: [
+      { key: "sales-order", label: "Sales Order" },
+      { key: "quotation", label: "Quotation" },
+      { key: "proforma-invoice", label: "Proforma Invoice" },
+      { key: "invoice", label: "Invoice" },
+      { key: "credit-note", label: "Credit Note" },
+    ],
+  },
+  {
+    key: "procurement",
+    title: "Procurement",
+    description: "Purchase orders, RFQs, purchase invoices, and debit notes.",
+    category: "General",
+    icon: Receipt,
+    status: "active",
+    subTypes: [
+      { key: "purchase-order", label: "Purchase Order" },
+      { key: "rfq", label: "RFQ" },
+      { key: "purchase-invoice", label: "Purchase Invoice", api: purchaseInvoiceImportApi },
+      { key: "debit-note", label: "Debit Note" },
+    ],
   },
   {
     key: "transactions",
@@ -110,12 +87,8 @@ export const IMPORT_MODULES: ImportModuleConfig[] = [
     description: "Ledger entries, payment records, and reconciliations.",
     category: "Finance",
     icon: Receipt,
-    status: "active",
+    status: "soon",
     lastImport: "1 day ago",
-    // handlers: {
-    //   downloadTemplate: transactionsApi.downloadImportTemplate,
-    //   uploadFile: transactionsApi.importFromFile,
-    // },
   },
   {
     key: "chart-of-accounts",

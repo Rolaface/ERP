@@ -354,12 +354,13 @@ ModalTextarea.displayName = "ModalTextarea";
 
 interface FilterSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options?: SelectOption[];
-}
+  hideAllOption?: boolean;
 
+}
 export const FilterSelect = React.forwardRef<
   HTMLSelectElement,
   FilterSelectProps
->(({ options = [], className = "", ...props }, ref) => (
+>(({ options = [], className = "", hideAllOption = false, ...props }, ref) => (
   <select
     ref={ref}
     {...props}
@@ -372,7 +373,7 @@ export const FilterSelect = React.forwardRef<
       className,
     ].join(" ")}
   >
-    <option value="">ALL</option>
+    {!hideAllOption && <option value="">ALL</option>}
     {options.map((opt, idx) => (
       <option key={`${opt.value}-${idx}`} value={opt.value}>
         {opt.label}

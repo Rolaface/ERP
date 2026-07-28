@@ -1,10 +1,12 @@
-import { Search, Download, Upload, History, Clock, Inbox, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Search, Download, Upload, History, Inbox, Loader2 } from "lucide-react";
 import { AppPage, AppPageHeader, AppPageBody } from "../../components/ui/app-shell";
 import MultiSelectFilter from "../../components/ui/modal/MultiSelectFilter";
+import { FilterSelect } from "../../components/ui/modal/modalComponent";
 import { useImportData } from "../../hooks/import Data/Useimportdata";
 import { CATEGORY_OPTIONS } from "./Importmodules.config";
 import type { ImportModuleConfig } from "../../types/importdata/importdata_type";
-import { openImportDataModal } from "../../store/modal/action"; // 👈 apna actual barrel path (jaha index.ts hai)
+import { openImportDataModal } from "../../components/feature/import-data/importData.modal";
 
 export default function ImportData() {
   const {
@@ -19,14 +21,15 @@ export default function ImportData() {
     pendingImportKey,
   } = useImportData();
 
-  const handleImportClick = (module: ImportModuleConfig) => {
+  const handleImportClick = (module: ImportModuleConfig, subTypeKey?: string) => {
+    const subType = module.subTypes?.find((st) => st.key === subTypeKey);
     openImportDataModal({
-      title: `Import ${module.title}`,
+      title: `Import ${subType ? subType.label : module.title}`,
       subtitle: module.description,
-      onImport: async (file) => {
-        await importFile(module.key, file);
+      onImport: async (file: File) => {
+        await importFile(module.key, file, subTypeKey);
       },
-      onDownloadTemplate: () => downloadTemplate(module.key),
+      onDownloadTemplate: () => downloadTemplate(module.key, subTypeKey),
     });
   };
 
@@ -82,10 +85,10 @@ export default function ImportData() {
               <ModuleCard
                 key={module.key}
                 module={module}
-                downloading={pendingTemplateKey === module.key}
-                importing={pendingImportKey === module.key}
-                onDownloadTemplate={() => downloadTemplate(module.key)}
-                onImportClick={() => handleImportClick(module)}
+                pendingTemplateKey={pendingTemplateKey}
+                pendingImportKey={pendingImportKey}
+                onDownloadTemplate={(subTypeKey) => downloadTemplate(module.key, subTypeKey)}
+                onImportClick={(subTypeKey) => handleImportClick(module, subTypeKey)}
               />
             ))}
           </div>
@@ -102,20 +105,28 @@ const statusStyle = {
 
 function ModuleCard({
   module,
-  downloading,
-  importing,
+  pendingTemplateKey,
+  pendingImportKey,
   onDownloadTemplate,
   onImportClick,
 }: {
   module: ImportModuleConfig;
-  downloading: boolean;
-  importing: boolean;
-  onDownloadTemplate: () => void;
-  onImportClick: () => void;
+  pendingTemplateKey: string | null;
+  pendingImportKey: string | null;
+  onDownloadTemplate: (subTypeKey?: string) => void;
+  onImportClick: (subTypeKey?: string) => void;
 }) {
   const Icon = module.icon;
   const isActive = module.status === "active";
   const status = statusStyle[module.status];
+  const hasSubTypes = !!module.subTypes?.length;
+
+  // Default to the first sub-type so the select always has a valid value.
+  const [subTypeKey, setSubTypeKey] = useState<string | undefined>(module.subTypes?.[0]?.key);
+
+  const pendingKey = subTypeKey && hasSubTypes ? `${module.key}:${subTypeKey}` : module.key;
+  const downloading = pendingTemplateKey === pendingKey;
+  const importing = pendingImportKey === pendingKey;
 
   return (
     <div
@@ -151,11 +162,22 @@ function ModuleCard({
       </div>
 
       <div className="flex flex-col gap-1.5">
+        {hasSubTypes && (
+          <FilterSelect
+            value={subTypeKey}
+            onChange={(e) => setSubTypeKey(e.target.value)}
+            disabled={!isActive}
+            options={module.subTypes!.map((st) => ({ label: st.label, value: st.key }))}
+            hideAllOption
+            className="w-full !h-8"
+          />
+        )}
+
         <div className="flex gap-1.5">
           <button
             className="btn btn-outline flex-1 justify-center !py-1.5 !text-xs"
             disabled={!isActive || downloading}
-            onClick={onDownloadTemplate}
+            onClick={() => onDownloadTemplate(subTypeKey)}
           >
             {downloading ? (
               <Loader2 size={13} className="mr-1.5 animate-spin" />
@@ -168,7 +190,7 @@ function ModuleCard({
             className="btn btn-primary flex-1 justify-center !py-1.5 !text-xs"
             disabled={!isActive || importing}
             style={!isActive ? { background: "var(--muted)", boxShadow: "none" } : undefined}
-            onClick={onImportClick}
+            onClick={() => onImportClick(subTypeKey)}
           >
             {importing ? (
               <Loader2 size={13} className="mr-1.5 animate-spin" />
@@ -178,15 +200,6 @@ function ModuleCard({
             {importing ? "Importing..." : "Import"}
           </button>
         </div>
-
-        <p className="flex h-3.5 items-center gap-1 text-[11px] text-muted">
-          {isActive && module.lastImport ? (
-            <>
-              <Clock size={11} />
-              Last import: {module.lastImport}
-            </>
-          ) : null}
-        </p>
       </div>
     </div>
   );

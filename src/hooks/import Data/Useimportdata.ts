@@ -2,13 +2,32 @@ import { useMemo, useState } from "react";
 import { saveAs } from "file-saver";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
 import { IMPORT_MODULES } from "../../views/Import/Importmodules.config";
+import type { ImportApi } from "../../api/imports/createImportApi";
+
+// Builds a single tracking key so pending state stays granular per
+// module *and* per sub-type (Sales/Invoice spinner shouldn't affect
+// Sales/Quotation button).
+const pendingKeyFor = (moduleKey: string, subTypeKey?: string) =>
+  subTypeKey ? `${moduleKey}:${subTypeKey}` : moduleKey;
+
+// Looks up the module/sub-type's own bound api object directly off the
+// config — no separate handlers file, no string-key matching to keep
+// in sync.
+const resolveApi = (moduleKey: string, subTypeKey?: string): ImportApi | undefined => {
+  const mod = IMPORT_MODULES.find((m) => m.key === moduleKey);
+  if (!mod) return undefined;
+  if (subTypeKey) {
+    return mod.subTypes?.find((st) => st.key === subTypeKey)?.api;
+  }
+  return mod.api;
+};
 
 export function useImportData() {
   const [query, setQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  // Tracks which single module currently has a request in flight, so
-  // only that module's card shows a spinner/disabled state.
+  // Tracks which module (or module:subType) currently has a request in
+  // flight, so only that card/button shows a spinner/disabled state.
   const [pendingTemplateKey, setPendingTemplateKey] = useState<string | null>(null);
   const [pendingImportKey, setPendingImportKey] = useState<string | null>(null);
 
@@ -21,16 +40,21 @@ export function useImportData() {
     });
   }, [query, selectedCategories]);
 
-  // Looks up the module and calls its own bound API — the caller
-  // (the UI) never needs to know which api file that is.
-  const downloadTemplate = async (moduleKey: string) => {
-    const mod = IMPORT_MODULES.find((m) => m.key === moduleKey);
-    if (!mod?.handlers) return;
+  const downloadTemplate = async (moduleKey: string, subTypeKey?: string) => {
+    const api = resolveApi(moduleKey, subTypeKey);
 
-    setPendingTemplateKey(moduleKey);
+    // Guard: some modules/sub-types don't have an api wired up yet —
+    // fail gracefully instead of crashing.
+    if (!api?.downloadTemplate) {
+      showApiError("Template download isn't available for this yet.");
+      return;
+    }
+
+    const pendingKey = pendingKeyFor(moduleKey, subTypeKey);
+    setPendingTemplateKey(pendingKey);
     try {
-      const blob = await mod.handlers.downloadTemplate();
-      saveAs(blob, `${moduleKey}_import_template.xlsx`);
+      const file = await api.downloadTemplate();
+      saveAs(file.blob, file.fileName);
     } catch (err) {
       showApiError(err);
     } finally {
@@ -38,29 +62,36 @@ export function useImportData() {
     }
   };
 
-  const importFile = async (moduleKey: string, file: File): Promise<boolean> => {
-    const mod = IMPORT_MODULES.find((m) => m.key === moduleKey);
-    if (!mod?.handlers) {
-      // API not wired yet for this module (see importModules.config.ts).
-      showApiError("Import isn't connected for this module yet.");
+  const importFile = async (
+    moduleKey: string,
+    file: File,
+    subTypeKey?: string,
+  ): Promise<boolean> => {
+    const api = resolveApi(moduleKey, subTypeKey);
+
+    if (!api?.uploadFile) {
+      // API not wired yet (see Importmodules.config.ts).
+      showApiError("Import isn't connected for this yet.");
       return false;
     }
 
-    setPendingImportKey(moduleKey);
+    const pendingKey = pendingKeyFor(moduleKey, subTypeKey);
+    setPendingImportKey(pendingKey);
     try {
       showLoading("Uploading and processing file...");
-      const res = await mod.handlers.uploadFile(file);
+      const res = await api.uploadFile(file);
       closeSwal();
 
-      if (!res || res.status_code !== 200) {
-        showApiError(res?.message || "Import failed");
+      if (!res.success) {
+        const errorDetail = res.errors?.length ? ` (${res.errors[0]})` : "";
+        showApiError((res.message || "Import failed") + errorDetail);
         return false;
       }
 
       showSuccess(
-        res.data?.importedCount
-          ? `Imported ${res.data.importedCount} records successfully`
-          : "Import completed successfully",
+        res.items_processed
+          ? `Imported ${res.items_processed} records successfully`
+          : res.message || "Import completed successfully",
       );
       return true;
     } catch (err) {

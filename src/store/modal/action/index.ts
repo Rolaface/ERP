@@ -14,4 +14,3 @@ export * from "./userModal.actions";
 export * from "./expenseModal.actions";
 export * from "./emailModal.actions";
 export * from "./schedulerModal.actions";
-export* from "./importDataModal.actions";
