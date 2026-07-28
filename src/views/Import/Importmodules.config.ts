@@ -12,14 +12,9 @@ import type { ImportModuleConfig } from "../../types/importdata/importdata_type"
 import { customerImportApi } from "../../api/imports/customer import/customerimportapi";
 import { inventoryItemImportApi } from "../../api/imports/inventory import/inventoryimportapi";
 import { purchaseInvoiceImportApi } from "../../api/imports/purchase import/purchaseinvoice_importapi";
+import { supplierImportApi } from "../../api/imports/supplier import/supplierimportapi";
 
-// ── This is the ONE place to look when:
-// - adding a new importable module: write its api file (see createImportApi.ts
-//   for the pattern), import it here, add one object below.
-// - adding/removing a sub-type: add/remove an entry in that module's subTypes array.
-// - flipping a module from "soon" to "active": set status once its api exists.
-// - wiring a module/sub-type to its backend: just set `api: yourImportApi` —
-//   no other file needs to change.
+
 export const IMPORT_MODULES: ImportModuleConfig[] = [
   {
     key: "customers",
@@ -30,15 +25,15 @@ export const IMPORT_MODULES: ImportModuleConfig[] = [
     status: "active",
     api: customerImportApi,
   },
-  {
-    key: "suppliers",
-    title: "Suppliers",
-    description: "Supplier records, tax IDs, and procurement preferences.",
-    category: "General",
-    icon: Truck,
-    status: "soon",
-    lastImport: "Yesterday",
-  },
+ {
+  key: "suppliers",
+  title: "Suppliers",
+  description: "Supplier records, tax IDs, and procurement preferences.",
+  category: "General",
+  icon: Truck,
+  status: "active",         
+  api: supplierImportApi,
+},
   {
     key: "inventory",
     title: "Inventory",
