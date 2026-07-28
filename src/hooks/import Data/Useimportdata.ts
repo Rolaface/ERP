@@ -8,9 +8,7 @@ import type { ImportApi } from "../../api/imports/createImportApi";
 const pendingKeyFor = (moduleKey: string, subTypeKey?: string) =>
   subTypeKey ? `${moduleKey}:${subTypeKey}` : moduleKey;
 
-// Looks up the module/sub-type's own bound api object directly off the
-// config — no separate handlers file, no string-key matching to keep
-// in sync.
+
 const resolveApi = (moduleKey: string, subTypeKey?: string): ImportApi | undefined => {
   const mod = IMPORT_MODULES.find((m) => m.key === moduleKey);
   if (!mod) return undefined;
@@ -39,8 +37,6 @@ export function useImportData() {
   const downloadTemplate = async (moduleKey: string, subTypeKey?: string) => {
     const api = resolveApi(moduleKey, subTypeKey);
 
-    // Guard: some modules/sub-types don't have an api wired up yet —
-    // fail gracefully instead of crashing.
     if (!api?.downloadTemplate) {
       showApiError("Template download isn't available for this yet.");
       return;
