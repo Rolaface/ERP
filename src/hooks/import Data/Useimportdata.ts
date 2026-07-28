@@ -4,9 +4,7 @@ import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/a
 import { IMPORT_MODULES } from "../../views/Import/Importmodules.config";
 import type { ImportApi } from "../../api/imports/createImportApi";
 
-// Builds a single tracking key so pending state stays granular per
-// module *and* per sub-type (Sales/Invoice spinner shouldn't affect
-// Sales/Quotation button).
+
 const pendingKeyFor = (moduleKey: string, subTypeKey?: string) =>
   subTypeKey ? `${moduleKey}:${subTypeKey}` : moduleKey;
 
@@ -26,8 +24,6 @@ export function useImportData() {
   const [query, setQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  // Tracks which module (or module:subType) currently has a request in
-  // flight, so only that card/button shows a spinner/disabled state.
   const [pendingTemplateKey, setPendingTemplateKey] = useState<string | null>(null);
   const [pendingImportKey, setPendingImportKey] = useState<string | null>(null);
 
