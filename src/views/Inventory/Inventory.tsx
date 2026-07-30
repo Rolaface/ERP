@@ -23,6 +23,7 @@ const Items = lazy(() => import("./Items"));
 const Movements = lazy(() => import("./Movements"));
 const ItemsCategory = lazy(() => import("./ItemsCategory"));
 const WarehouseView = lazy(() => import("./Warehouse"));
+const ImportedItemsView = lazy(() => import("./ImportedItems"));
 const Stock = lazy(() => import("./Stock"));
 const Import = lazy(() => import("./Import"));
 const InventoryDashboard = lazy(() => import("./InventoryDashboard"));
@@ -53,10 +54,17 @@ const ALL_INVENTORY_TAB = [
     action: "read" as const,
   },
   {
+    id: "importedItems",
+    label: "Imported Items",
+    icon: <Package {...iconProps} />, 
+    module: "Item",
+    action: "read" as const,
+  },
+  {
     id: "itemsCategory",
     label: "Item Group",
     icon: <Layers {...iconProps} />,
-     module: "Item Group",
+    module: "Item Group",
     action: "read" as const,
   },
   {
@@ -105,6 +113,7 @@ const Inventory: React.FC = () => {
   const tabComponents = useMemo(() => ({
     dashboard: <InventoryDashboard />,
     items: <Items />,
+    importedItems: <ImportedItemsView />,
     taxCategory: <TaxCategory />,
     itemsCategory: <ItemsCategory />,
     warehouse: <WarehouseView openWarehouseCreate={openWarehouseCreate} openWarehouseEdit={openWarehouseEdit} />,
