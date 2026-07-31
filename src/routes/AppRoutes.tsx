@@ -46,6 +46,7 @@ const ExpenseManagement = lazy(() => import("../views/ExpenseManagement/expenseM
 const EmailTemplate = lazy(() => import("../views/Email/EmailTemplate"));
 const Performance = lazy(() => import("../views/hr/performace/PerformanceModule"));
 const Scheduler = lazy(() => import("../views/Scheduler/SchedulerTable"));
+const SelectApp = lazy(() => import("../views/SelectApp")); 
 
 // ── Component Helpers ──
 interface PermissionRouteProps {
@@ -154,6 +155,7 @@ const RootLayout = () => {
 
         {/* ── Protected Routes ── */}
         <Route element={<ProtectedRoute />}>
+        <Route path="/select-app" element={<SelectApp />} />
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardRedirect />} />
             <Route path="/sales" element={<PermissionRoute modules={["Sales Invoice"]}><SalesModule /></PermissionRoute>} />
