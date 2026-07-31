@@ -792,3 +792,40 @@ export async function getTaxAccounts(
     return [];
   }
 }
+export async function cancelPaymentEntry(payload: {
+  payment_entry_name: string;
+}) {
+  try {
+    const resp: AxiosResponse = await api.post(
+      Account.cancelPaymentEntry,
+      payload
+    );
+
+    const data = resp?.data;
+    const result = data?.message;
+
+    const failedCount = result?.failed_count ?? result?.failed?.length ?? 0;
+    const successCount = result?.success_count ?? result?.success?.length ?? 0;
+
+    if (failedCount > 0 || successCount === 0) {
+      const failReason =
+        result?.failed?.[0]?.reason ||
+        result?.failed?.[0]?.error ||
+        "Failed to cancel payment entry";
+      throw new Error(failReason);
+    }
+
+    return data;
+  } catch (error: any) {
+    const rawMsg = error?.response?.data?.message;
+    const msg =
+      typeof rawMsg === "string"
+        ? rawMsg
+        : typeof rawMsg?.message === "string"
+        ? rawMsg.message
+        : typeof error?.message === "string"
+        ? error.message
+        : "Something went wrong";
+    throw new Error(msg);
+  }
+}

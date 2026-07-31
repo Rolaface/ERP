@@ -195,6 +195,7 @@ export const API = {
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
     getAccountsResource: `${ERP_BASE}/api/resource/Account`,
     getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
+    cancelPaymentEntry:`${ERP_BASE}/api/method/custom_api.api.payment_entry_delete.delete_payment_entry`,
   },
 
   accounting: {
