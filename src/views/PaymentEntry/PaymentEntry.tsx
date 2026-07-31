@@ -11,7 +11,7 @@ import { showApiError } from "../../utils/alert";
 import StatusBadge from "../../components/ui/Table/StatusBadge";
 import { openPaymentEntryModal,openSendEmailModal } from "../../store/modalStore";
 import { usePermission } from "../../hooks/permission/usePermission";
-import { getPaymentEntryById } from "../../api/BankAccountApi";
+import { getPaymentEntryById,cancelPaymentEntry } from "../../api/BankAccountApi";
 import { ActionMenu } from "../../components/ui/Table/ActionButton";
 import PaymentEntryDetailModal from "./PaymetnEntryDetailModal";
 import ActionButton from "../../components/ui/Table/ActionButton";
@@ -19,6 +19,8 @@ import type { PaymentEntryDetail } from "./PaymetnEntryDetailModal";
 import { ACTION_ICONS } from "../../components/UI_Utils/statusActionIcons";
 import { useCurrencySymbols } from "../../hooks/Usecurrencysymbols";
 import { extractCurrencyCodesFlat } from "../../utils/Extractcurrencycodes";
+import { showSuccess, showLoading, closeSwal } from "../../utils/alert";
+import { fireManagedSwal } from "../../utils/swalManager";
 interface PaymentAPI {
   paymentId: string;
   paymentDate: string;
@@ -267,6 +269,36 @@ const PaymentEntry: React.FC<PaymentEntryProps> = ({ defaultPartyType }) => {
                     });
                   },
                 },
+  ...(row.status !== "Cancelled" ? [{
+  label: "Cancel",
+  icon: ACTION_ICONS.CANCEL,
+  danger: true,
+  onClick: async () => {
+    const result = await fireManagedSwal({
+      icon: "warning",
+      title: "Cancel Payment Entry?",
+      text: `Are you sure you want to cancel payment entry "${row.id}"? This action cannot be undone.`,
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, Cancel",
+      cancelButtonText: "No",
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      showLoading("Cancelling payment entry...");
+      await cancelPaymentEntry({ payment_entry_name: row.id });
+      closeSwal();
+
+      showSuccess("Payment entry cancelled successfully");
+      await fetchPayments();
+    } catch (error: any) {
+      closeSwal();
+      showApiError(error?.message || "Failed to cancel payment entry");
+    }
+  },
+}] : []),
               ]}
             />
           </div>
