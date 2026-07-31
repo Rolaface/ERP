@@ -9,7 +9,7 @@ import {
   Wallet,
   Building2,
   UserCog,
-  CalendarClock ,
+  CalendarClock,
   Settings,
   Menu,
   ChevronDown,
@@ -28,7 +28,7 @@ import {
   Star,
   Mail,
   User,
-  CreditCard,
+  CreditCard, House
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
@@ -260,13 +260,13 @@ const settingsItems: SettingsItem[] = [
     modules: ["Email Template"],
     hideInEmployeeView: true,
   },
-   {
+  {
     to: "/scheduler",
     label: "Scheduler",
     icon: <CalendarClock {...iconProps} />,
     modules: ["scheduler"],
     hideInEmployeeView: true,
-},
+  },
   {
     to: "/settings",
     label: "User Preferences",
@@ -274,7 +274,7 @@ const settingsItems: SettingsItem[] = [
     modules: [],
     hideInEmployeeView: true, // ← hidden in employee view
   },
- 
+
 ];
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
@@ -385,11 +385,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
 
   const companyInitials = company?.name
     ? company.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
     : "CO";
 
   // ── Load company ──────────────────────────────────────────────────────────
@@ -443,34 +443,52 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           fixed inset-y-0 left-0 flex flex-col
           border-r border-[var(--border)] bg-sidebar
           transition-[width] duration-300 ease-out overflow-hidden
-          ${
-            open
-              ? "w-[var(--app-sidebar-width)]"
-              : "w-[var(--app-sidebar-width-collapsed)]"
+          ${open
+            ? "w-[var(--app-sidebar-width)]"
+            : "w-[var(--app-sidebar-width-collapsed)]"
           }
         `}
         style={{ zIndex: MODAL_LAYER.sidebar }}
       >
         {/* ── Top bar ── */}
-        <div className="flex h-[var(--app-topbar-height)] shrink-0 items-center justify-between border-b border-[var(--border)] px-3">
-          <div
-            className={`
-              flex items-center gap-2 overflow-hidden transition-all duration-300
-              ${open ? "opacity-100 w-auto" : "opacity-0 w-0 pointer-events-none"}
-            `}
-          >
-            <span className="text-xl font-black tracking-tight text-primary select-none">
+        <div
+          className={`border-b border-[var(--border)]
+  ${open
+              ? "flex h-[var(--app-topbar-height)] items-center justify-between px-3"
+              : "flex flex-col items-center py-3 gap-2"
+            }`}
+        >
+          <div className="flex items-center">
+            <span className="text-xl font-black tracking-tight text-primary">
               ERP
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen(!open)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-row-hover hover:text-primary transition"
-            title={open ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            <Menu size={18} />
-          </button>
+
+          <div className={`flex items-center ${open ? "gap-1" : "flex-col gap-2"}`}>
+
+            {user?.subscribedProducts && user.subscribedProducts.length > 1 && (
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={() => navigate("/select-app")}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-row-hover hover:text-primary transition"
+                  title="Switch Workspace"
+                >
+                  <House size={18} />
+                </button>
+
+                {!open && <Tooltip label="Switch Workspace" />}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setOpen(!open)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-row-hover hover:text-primary"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
         </div>
 
         {/* ── Company badge ── */}
@@ -504,10 +522,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             <div
               className={`
                 flex flex-col min-w-0 transition-all duration-200
-                ${
-                  open
-                    ? "opacity-100 w-auto"
-                    : "opacity-0 w-0 overflow-hidden pointer-events-none"
+                ${open
+                  ? "opacity-100 w-auto"
+                  : "opacity-0 w-0 overflow-hidden pointer-events-none"
                 }
               `}
             >
@@ -529,10 +546,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               to={item.to}
               className={({ isActive }) =>
                 `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
-                ${
-                  isActive
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-muted hover:bg-row-hover hover:text-main"
+                ${isActive
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-muted hover:bg-row-hover hover:text-main"
                 }`
               }
             >
@@ -584,10 +600,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                         className={`
                           group relative flex h-10 w-full items-center rounded-lg
                           transition-all duration-150
-                          ${
-                            isActive
-                              ? "bg-primary/10 text-primary font-semibold"
-                              : "text-muted hover:bg-row-hover hover:text-main"
+                          ${isActive
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "text-muted hover:bg-row-hover hover:text-main"
                           }
                         `}
                       >
@@ -628,10 +643,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 to="/hr"
                 className={({ isActive }) =>
                   `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
-                  ${
-                    isActive
-                      ? "bg-primary/10 text-primary font-semibold"
-                      : "text-muted hover:bg-row-hover hover:text-main"
+                  ${isActive
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted hover:bg-row-hover hover:text-main"
                   }`
                 }
               >
@@ -656,15 +670,14 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               </NavLink>
             ))}
 
-            {!isEmployeeView && canAccessAnyOf(["Expense Claim", "Expense Claim Type", "Employee Advance"]) && (
+          {!isEmployeeView && canAccessAnyOf(["Expense Claim", "Expense Claim Type", "Employee Advance"]) && (
             <NavLink
               to="/Expense-Management"
               className={({ isActive }) =>
                 `group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
-                ${
-                  isActive
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-muted hover:bg-row-hover hover:text-main"
+                ${isActive
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-muted hover:bg-row-hover hover:text-main"
                 }`
               }
             >
@@ -688,10 +701,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 title={!open ? "Settings" : undefined}
                 className={`
                   group relative flex h-10 w-full items-center rounded-lg transition-all duration-150
-                  ${
-                    settingsOpen || isSettingsRoute
-                      ? "bg-primary/10 text-primary font-semibold"
-                      : "text-muted hover:bg-row-hover hover:text-main"
+                  ${settingsOpen || isSettingsRoute
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-muted hover:bg-row-hover hover:text-main"
                   }
                 `}
               >
@@ -732,10 +744,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                       to={sub.to}
                       className={({ isActive }) =>
                         `flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all
-                        ${
-                          isActive
-                            ? "bg-primary text-white shadow-sm"
-                            : "text-muted hover:bg-row-hover hover:text-primary"
+                        ${isActive
+                          ? "bg-primary text-white shadow-sm"
+                          : "text-muted hover:bg-row-hover hover:text-primary"
                         }`
                       }
                     >
@@ -750,6 +761,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         </nav>
 
         {/* ── User footer ── */}
+        {/* ── User footer ── */}
         <div className="shrink-0 border-t border-[var(--border)] px-2 py-3">
           <div className={`flex items-center gap-2 ${open ? "" : "flex-col"}`}>
             <div className="relative group">
@@ -758,30 +770,25 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               </div>
               {!open && <Tooltip label={username} />}
             </div>
-            <div
-              className={`
-                flex min-w-0 flex-1 flex-col leading-tight transition-all duration-200
-                ${
-                  open
-                    ? "opacity-100"
-                    : "opacity-0 w-0 overflow-hidden pointer-events-none"
-                }
-              `}
-            >
-              <span className="truncate text-sm font-bold text-main">
-                {username}
-              </span>
+            <div className={`
+      flex min-w-0 flex-1 flex-col leading-tight transition-all duration-200
+      ${open ? "opacity-100" : "opacity-0 w-0 overflow-hidden pointer-events-none"}
+    `}>
+              <span className="truncate text-sm font-bold text-main">{username}</span>
               <span className="text-[10px] font-black uppercase tracking-tight text-muted">
                 {user?.username || "User"}
               </span>
             </div>
+
+
+
             <button
               onClick={() => setLogoutOpen(true)}
               className={`
-                flex shrink-0 items-center justify-center rounded-lg p-2
-                text-danger hover:bg-red-50 dark:hover:bg-red-950/30 transition
-                ${!open ? "w-9 h-9" : ""}
-              `}
+        flex shrink-0 items-center justify-center rounded-lg p-2
+        text-danger hover:bg-red-50 dark:hover:bg-red-950/30 transition
+        ${!open ? "w-9 h-9" : ""}
+      `}
               title="Logout"
             >
               <LogOut size={16} />
