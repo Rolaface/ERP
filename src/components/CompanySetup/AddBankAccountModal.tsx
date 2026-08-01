@@ -55,7 +55,7 @@ const AddBankAccountModal: React.FC<Props> = ({
     isCompany,
     isSubmitting,
     handleAccountForChange,
-  } = useBankAccLogic({ onSubmit, onClose, isEdit: !!initialData });
+  } = useBankAccLogic({ onSubmit, onClose, isEdit: !!initialData, initialData });
 
   const handleClose = () => {
     resetDirty();

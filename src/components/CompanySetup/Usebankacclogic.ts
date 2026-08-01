@@ -1,7 +1,7 @@
 import { useEffect, useState , useCallback} from "react";
 import { showApiError, showSuccess } from "../../utils/alert";
 import { getBankAccounts } from "../../api/BankAccountApi";
-import { createNewBankAccount } from "../../api/BankAccountApi";
+import { createNewBankAccount,updateBankAccount } from "../../api/BankAccountApi";
 import type { AccountType } from "../../types/BankAccount/bank";
 
 const today = () => new Date().toISOString().split("T")[0];
@@ -35,7 +35,7 @@ const getInitialForm = () => ({
 });
 
 
-export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false }: any) => {
+export const useBankAccLogic = ({ onSubmit, onClose, isEdit = false, initialData = null }: any) => {
   const [form, setForm] = useState(getInitialForm());
 
   const [banks, setBanks] = useState<Option[]>([]);
@@ -161,7 +161,9 @@ const handleAccountForChange = (accountFor: AccountType) => {
       };
 
 
-      const res = await createNewBankAccount(payload);
+      const res = isEdit && initialData?.id
+        ? await updateBankAccount(String(initialData.id), payload)
+        : await createNewBankAccount(payload);
 
       const isSuccess =
         res?.status === "success" ||
