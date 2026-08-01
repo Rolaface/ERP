@@ -179,6 +179,7 @@ export const API = {
 
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
+    updateBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.update`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
     getBankAccountById: `${ERP_BASE}/api/method/custom_api.api.bank_account.get_by_id`,
     getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,

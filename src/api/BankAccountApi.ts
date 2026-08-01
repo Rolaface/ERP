@@ -21,6 +21,29 @@ export async function createNewBankAccount(payload: any) {
 
   return resp.data;
 }
+
+export async function updateBankAccount(id: string, payload: any) {
+  try {
+    const resp: AxiosResponse = await api.put(
+      `${Account.updateBankaccount}?id=${id}`,
+      payload
+    );
+
+    const data = resp?.data;
+
+    if (data?.status_code !== 200) {
+      throw new Error(data?.message || "Failed to update bank account");
+    }
+
+    return data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error.message ||
+      "Something went wrong"
+    );
+  }
+}
 export async function updateModeOfPayment(payload: {
   name: string;
   type: string;
