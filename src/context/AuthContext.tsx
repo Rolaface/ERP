@@ -12,7 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;   
   logout: () => Promise<void>;
   refreshPermissions: () => Promise<void>;   // ← manual trigger for role updates
 }
@@ -48,11 +48,17 @@ const login = useCallback(async (email: string, password: string) => {
 
   try {
     const fullUser = await fetchLoginUser();
-    setUser(fullUser);
-    useCompanyStore.getState().setZraEnabled(fullUser.isZraEnabled ?? false); 
+    setUser({
+      ...fullUser,
+      sid: basicUser.sid,
+      subscribedProducts: basicUser.subscribedProducts,   
+    });
+    useCompanyStore.getState().setZraEnabled(fullUser.isZraEnabled ?? false);
   } catch (err) {
     console.error("[AuthContext] fetchLoginUser failed after login:", err);
   }
+
+  return basicUser;
 }, []);
 
 const refreshPermissions = useCallback(async () => {

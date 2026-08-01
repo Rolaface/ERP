@@ -55,72 +55,63 @@ export const useLogin = () => {
   };
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting) return;
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (isSubmitting) return;
 
-    setError("");
-    setIsSubmitting(true);
-    try {
-      // 1. login
-      await login(email, password);
+  setError("");
+  setIsSubmitting(true);
+  try {
+    // 1. login
+    const basicUser = await login(email, password);
+    const products = basicUser.subscribedProducts ?? ["erp"];
+    const LMS_URL = import.meta.env.VITE_LMS_URL as string;
 
-      // 2. fetch company
-      const companyRes = await getCompanyById(COMPANY_ID);
-      const company = companyRes?.data;
-
-      // 3. store in zustand
-const { setCompanyInfo } =
-  useCompanyStore.getState();
-
-const currencies =
-  await getCurrencyList({
-    search:
-      company?.baseCurrency,
-  });
-
-const matchedCurrency =
-  currencies.find(
-    (c) =>
-      c.name ===
-      company?.baseCurrency,
-  );
-
-setCompanyInfo({
-  companyName:
-    company?.companyName,
-
-  baseCurrency:
-    company?.baseCurrency,
-
-  currencySymbol:
-    matchedCurrency?.symbol ||
-    company?.baseCurrency ||
-    "",
-    domain: company?.primaryBusinessDomain ?? "",   
-  industryType: company?.industryType ?? "",    
-companyAddress:
-  company?.address || {},
-});
-
-
-
-
-      // 4. navigate
-      navigate("/dashboard");
-
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        setError("Invalid username or password");
-      } else if (!err.response) {
-        setError("Network error. Please check your connection.");
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
+    // ── only lms forward sid ─────────────
+    if (products.length === 1 && products[0] === "lms") {
+      const sid = basicUser.sid;
+      localStorage.removeItem("session_id");
+      localStorage.removeItem("auth_user");
+      window.location.href = `${LMS_URL}?sid=${encodeURIComponent(sid ?? "")}`;
+      return;
     }
-  };
+
+    // ── both subscribed go to launcher ───────
+    if (products.length === 2) {
+      navigate("/select-app");
+      return;
+    }
+
+    const companyRes = await getCompanyById(COMPANY_ID);
+    const company = companyRes?.data;
+
+    const { setCompanyInfo } = useCompanyStore.getState();
+    const currencies = await getCurrencyList({ search: company?.baseCurrency });
+    const matchedCurrency = currencies.find((c) => c.name === company?.baseCurrency);
+
+    setCompanyInfo({
+      companyName: company?.companyName,
+      baseCurrency: company?.baseCurrency,
+      currencySymbol: matchedCurrency?.symbol || company?.baseCurrency || "",
+      domain: company?.primaryBusinessDomain ?? "",
+      industryType: company?.industryType ?? "",
+      companyAddress: company?.address || {},
+    });
+
+    navigate("/dashboard");
+
+  } catch (err: any) {
+    if (err.response?.status === 401) {
+      setError("Invalid username or password");
+    } else if (!err.response) {
+      setError("Network error. Please check your connection.");
+    } else {
+      setError("Something went wrong. Please try again.");
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return {
     email,

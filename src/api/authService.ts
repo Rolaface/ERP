@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
 import { createAxiosInstance } from "./axiosInstance";
 import { ERP_BASE, API } from "../config/api";
+import { deriveSubscribedProducts, type ProductId } from "../utils/productClassifier";
 
 const api = createAxiosInstance(ERP_BASE);
 
@@ -32,6 +33,8 @@ export interface AuthUser {
   permissions?: RawPermissionEntry[];  // ← stored from get_login_user
   employeeId?: string;
   isZraEnabled?: boolean;
+  subscribedProducts?: ProductId[];   
+  sid?: string; 
 }
 
 // ─── Login ────────────────────────────────────────────────────────────────────
@@ -46,6 +49,7 @@ interface LoginApiResponse {
       full_name?: string;
       gender?: string | null;
       roles?: string[];
+       subscribed_modules?: string[]; 
     };
   };
 }
@@ -65,6 +69,7 @@ export const loginApi = async (
   }
 
   const sid = data.message.data?.sid;
+  const subscribedModules = data.message.data?.subscribed_modules ?? [];
 
   const user: AuthUser = {
     username: data.message.data?.username,
@@ -72,11 +77,12 @@ export const loginApi = async (
     fullName: data.message.data?.full_name,
     gender:   data.message.data?.gender ?? null,
     roles:    data.message.data?.roles ?? [],
+    subscribedProducts: deriveSubscribedProducts(subscribedModules),
+    sid,  
   };
 
   if (sid) {
     localStorage.setItem(SID_KEY, sid);
-    // permissions not stored here — fetchLoginUser handles it
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   }
 
@@ -110,12 +116,14 @@ export const fetchLoginUser = async (): Promise<AuthUser> => {
   );
 
   const data = resp.data;
-
   if (!data?.message || data.message.status !== "success") {
     throw new Error("FETCH_LOGIN_USER_FAILED");
   }
 
   const d = data.message.data;
+
+  const existingUserRaw = localStorage.getItem(USER_KEY);
+  const existingUser: AuthUser | null = existingUserRaw ? JSON.parse(existingUserRaw) : null;
 
   const user: AuthUser = {
     username:    d.username,
@@ -124,13 +132,13 @@ export const fetchLoginUser = async (): Promise<AuthUser> => {
     gender:      d.gender,
     roles:       d.roles ?? [],
     permissions: d.permission ?? [],
-     employeeId:  d.employeeId,
-     isZraEnabled: d.is_zra_enabled ,  
+    employeeId:  d.employeeId,
+    isZraEnabled: d.is_zra_enabled,
+    sid: existingUser?.sid,                                   
+    subscribedProducts: existingUser?.subscribedProducts,       
   };
 
-  // Update localStorage with fresh data
   localStorage.setItem(USER_KEY, JSON.stringify(user));
-
   return user;
 };
 
