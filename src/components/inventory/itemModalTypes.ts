@@ -78,6 +78,11 @@ packingSize: number | null;
   batchNo: string;
   create_new_batch: boolean;
   has_expiry_date: boolean;
+
+  isMtvItem: boolean;
+  mtvItemCode: string;
+  mtvManufacturerTpin: string;
+  mtvRrp: string;
 }
 
 export type ItemFormChangeHandler = (

@@ -807,4 +807,8 @@ resource: {
   salaryPreviewAPI: {
     getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
   },
+  getZraMTVAPI: {
+    getRrpItem: `${ERP_BASE}/api/method/zra_smart_invoice.modules.mtv.api.get_rrp_items`
+  },
+
 } as const;

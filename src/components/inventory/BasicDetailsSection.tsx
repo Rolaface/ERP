@@ -9,18 +9,21 @@ import type {
 import { getBrands, getItemGroups } from "../../api/itemApi";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 import HsnSearchPopover from "./Hsnsearchpopover";
+import MtvItemPickerModal from "./MtvItemPickerModal";
 
 interface BasicDetailsSectionProps {
   form: ItemFormData;
   isServiceItem: boolean;
+  isZraEnabled?: boolean;
   onFormChange: ItemFormChangeHandler;
   errors?: Partial<Record<keyof ItemFormData, string>>;
   setField: ItemFieldSetter;
 }
 
 const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
-  ({ form, onFormChange, errors, setField, isServiceItem }) => {
+  ({ form, onFormChange, errors, setField, isServiceItem, isZraEnabled = false }) => {
     const [hsnPopoverOpen, setHsnPopoverOpen] = useState(false);
+    const [mtvPickerOpen, setMtvPickerOpen] = useState(false);
     // Popover anchors to this button, not to the screen center.
     const hsnTriggerRef = useRef<HTMLButtonElement>(null);
 
@@ -34,6 +37,48 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
         setField("itemClassCode", code);
       },
       [setField],
+    );
+
+    const handleMtvToggle = useCallback(
+      (checked: boolean) => {
+        setField("isMtvItem", checked);
+        if (!checked) {
+          setField("mtvRrp", "");
+          setField("mtvItemCode", "");
+          setField("mtvManufacturerTpin", "");
+        }
+      },
+      [setField],
+    );
+
+    const handleMtvSelect = useCallback(
+      (selection: {
+        itemCode: string;
+        itemName: string;
+        itemDescription: string;
+        itemClassCode: string;
+        itemTypeCode: string;
+        packagingUnitCode: string;
+        quantityUnitCode: string;
+        originNationCode: string;
+        rrp: string;
+        manufacturerTpin: string;
+      }) => {
+        setField("itemName", selection.itemName || form.itemName);
+        setField("description", selection.itemDescription || "");
+        setField("itemClassCode", selection.itemClassCode || "");
+        setField("itemTypeCode", selection.itemTypeCode || "");
+        setField("packagingUnitCode", selection.packagingUnitCode || "");
+        setField("packaging_uom", selection.packagingUnitCode || "");
+        setField("unitOfMeasureCd", selection.quantityUnitCode || "");
+        setField("originNationCode", selection.originNationCode || "");
+        setField("sku", selection.itemCode || "");
+        setField("mtvItemCode", selection.itemCode || "");
+        setField("mtvManufacturerTpin", selection.manufacturerTpin || "");
+        setField("mtvRrp", selection.rrp || "");
+        setField("brand", selection.itemName || "")
+      },
+      [form.itemName, setField],
     );
 
     return (
@@ -77,16 +122,50 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
             error={errors?.description}
           />
 
-          {/* Brand */}
-          <SearchSelect2
-            label="Brand"
-            value={form.brand ?? ""}
-            fetchOptions={fetchBrandOptions}
-            onChange={(value) => setField("brand", value)}
-            placeholder="Search brand..."
-            allowCustomInput
-            disabled={isServiceItem}
-          />
+          {/* Brand / MTV Item */}
+          <div className="flex min-w-0 items-end gap-2">
+            {isZraEnabled ? (
+              <label className="flex h-[25px] items-center gap-2 rounded border border-[var(--border)] bg-card px-2 text-[10px] font-medium text-main shadow-sm">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.isMtvItem)}
+                  onChange={(event) => handleMtvToggle(event.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-[var(--border)] text-primary focus:ring-primary"
+                />
+                <span className="whitespace-nowrap">MTV Item</span>
+              </label>
+            ) : null}
+            <div className="min-w-0 flex-1">
+              {form.isMtvItem && isZraEnabled ? (
+                <div className="flex flex-col">
+                  <span className="mb-1 block text-[10px] font-medium text-main">
+                    Brand
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMtvPickerOpen(true)}
+                    className="flex h-[25px] w-full items-center justify-between rounded border border-[var(--border)] bg-card px-2 text-left text-[11px] text-main transition-all hover:border-primary/50"
+                  >
+                    <span className="truncate">
+                      {form.mtvItemCode
+                        ? `${form.itemName} (${form.mtvItemCode})`
+                        : "Select MTV imported item..."}
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <SearchSelect2
+                  label="Brand"
+                  value={form.brand ?? ""}
+                  fetchOptions={fetchBrandOptions}
+                  onChange={(value) => setField("brand", value)}
+                  placeholder="Search brand..."
+                  allowCustomInput
+                  disabled={isServiceItem}
+                />
+              )}
+            </div>
+          </div>
           {/* HSN Code — trailing icon button doubles as the popover anchor */}
           {/* HSN Code — trailing button is a full-height attached action zone,
     visually separated by a divider so it reads as "search this field",
@@ -127,6 +206,13 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
           onClose={() => setHsnPopoverOpen(false)}
           value={form.itemClassCode}
           onSelect={handleHsnSelect}
+        />
+
+        <MtvItemPickerModal
+          isOpen={mtvPickerOpen}
+          onClose={() => setMtvPickerOpen(false)}
+          onSelectItem={handleMtvSelect}
+          initialManufacturerTpin={form.mtvManufacturerTpin ?? ""}
         />
       </>
     );

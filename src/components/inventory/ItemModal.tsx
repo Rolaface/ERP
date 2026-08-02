@@ -520,6 +520,7 @@ const ItemModal: React.FC<ItemModalProps> = ({
                 <BasicDetailsSection
                   form={form}
                   isServiceItem={isServiceItem}
+                  isZraEnabled={isZraEnabled}
                   onFormChange={handleFormChange}
                   setField={setField}
                   errors={fieldErrors}
@@ -532,7 +533,11 @@ const ItemModal: React.FC<ItemModalProps> = ({
                   errors={fieldErrors}
                 />
 
-                <PricingSection form={form} onFormChange={handleFormChange} />
+                <PricingSection
+                  form={form}
+                  onFormChange={handleFormChange}
+                  isZraEnabled={isZraEnabled}
+                />
               </div>
 
               <ItemAttributesPanel
