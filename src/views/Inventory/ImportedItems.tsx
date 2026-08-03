@@ -15,13 +15,15 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = 
 };
 const DEFAULT_STATUS_STYLE = { bg: "bg-gray-100", text: "text-gray-700", dot: "bg-gray-400" };
 
-const formatDate = (raw: string) => {
+const formatDate = (raw: string | null | undefined) => {
+  if (!raw) return "—";
   const d = new Date(raw);
   if (isNaN(d.getTime())) return raw;
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
-const formatDateTime = (raw: string) => {
+const formatDateTime = (raw: string | null | undefined) => {
+  if (!raw) return "—";
   const d = new Date(raw.replace(" ", "T"));
   if (isNaN(d.getTime())) return raw;
   const datePart = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
