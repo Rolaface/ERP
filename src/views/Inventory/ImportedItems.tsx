@@ -115,16 +115,18 @@ const ImportedItem: React.FC = () => {
         </div>
       ),
     },
-    {
-      key: "checker",
-      header: "CHECKER",
-      align: "left",
-      render: (i) => (
-        <div className="py-1.5">
-          <span className="block text-gray-700">{i.checker}</span>
-        </div>
-      ),
-    },
+   {
+  key: "checker",
+  header: "CHECKER",
+  align: "left",
+  render: (i) => (
+    <div className="py-1.5 max-w-[180px]">
+      <span className="block text-gray-700 whitespace-normal break-words">
+        {i.checker}
+      </span>
+    </div>
+  ),
+},
     {
       key: "checked_at",
       header: "CHECKED AT",

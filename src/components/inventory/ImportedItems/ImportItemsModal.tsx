@@ -1,4 +1,4 @@
-import React, { useMemo ,useState,useCallback} from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   Package,
   RefreshCw,
@@ -7,11 +7,10 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
-import ItemSelect from "../../selects/ItemSelect";
+import ItemSelect from "../../selects/itemGenriSelect";
+import ExpandableDetailRow from "../../../components/common/ExpandableDetailRow";
+import RowExpandToggle from "../../../components/common/RowExpandToggle";
 import { useProcessImportModal } from "../../../hooks/inventory/Useprocessimportmodal";
-import { getAllItems } from "../../../api/itemApi";
-
-
 
 interface ProcessImportModalProps {
   isOpen: boolean;
@@ -26,21 +25,19 @@ function formatApiDate(raw: string): string {
   const month = Number(raw.slice(4, 6)) - 1;
   const day = raw.slice(6, 8);
   const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
   return `${Number(day)} ${months[month] ?? ""} ${year}`;
 }
+
+const fmtNum = (n: number) =>
+  n.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+const PENDING_TABLE_COLSPAN = 9;
 
 const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
   isOpen,
@@ -70,9 +67,39 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
     submit,
   } = useProcessImportModal(isOpen);
 
-  const [erpItems, setErpItems] = useState<
-  { value: string; label: string }[]
->([]);
+  // ── expand + select state ──
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedRows((prev) =>
+      prev.size === items.length ? new Set() : new Set(items.map((i) => i.id)),
+    );
+  }, [items]);
+
+  const bulkDecision = useCallback(
+    (decision: "approve" | "reject") => {
+      selectedRows.forEach((id) => handleDecision(id, decision));
+      setSelectedRows(new Set());
+    },
+    [selectedRows, handleDecision],
+  );
 
   const customSubtitle = (
     <div className="flex items-center justify-between w-full pr-8">
@@ -85,24 +112,6 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
       </div>
     </div>
   );
-  const loadErpItems = useCallback(async () => {
-  try {
-    const res = await getAllItems(1, 1000);
-
-    const list = Array.isArray(res?.data?.data)
-      ? res.data.data
-      : [];
-
-    setErpItems(
-      list.map((item: any) => ({
-        value: item.id,
-        label: `${item.id} - ${item.itemName}`,
-      }))
-    );
-  } catch (err) {
-    console.error(err);
-  }
-}, []);
 
   const footerContent = (
     <div className="flex items-center justify-between w-full px-6 py-4 bg-card border-t border-theme">
@@ -148,22 +157,37 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
           </div>
         )}
 
-        {/* ── Imported Items Table Card ── */}
         <div className="bg-card border border-theme rounded-xl flex flex-col shadow-sm flex-1 min-h-0">
           <div className="px-5 py-4 border-b border-theme bg-app/50 flex justify-between items-center">
             <h3 className="text-[13px] font-semibold text-main">
               Imported Items ({totals.totalItems})
             </h3>
             <div className="flex items-center gap-4">
+              {selectedRows.size > 0 && (
+                <>
+                  <span className="text-[12px] text-muted">
+                    {selectedRows.size} selected
+                  </span>
+                  <button
+                    onClick={() => bulkDecision("approve")}
+                    className="flex items-center gap-1 text-[12px] font-medium text-emerald-600 hover:underline"
+                  >
+                    <Check size={12} /> Approve selected
+                  </button>
+                  <button
+                    onClick={() => bulkDecision("reject")}
+                    className="flex items-center gap-1 text-[12px] font-medium text-danger hover:underline"
+                  >
+                    <XIcon size={12} /> Reject selected
+                  </button>
+                </>
+              )}
               <button
                 onClick={refresh}
                 className="flex items-center gap-1.5 text-[12px] font-medium text-muted hover:text-main transition-colors"
                 disabled={isLoading}
               >
-                <RefreshCw
-                  size={13}
-                  className={isLoading ? "animate-spin" : ""}
-                />
+                <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
                 Refresh
               </button>
               <button
@@ -176,33 +200,23 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
           </div>
 
           <div className="overflow-auto scrollbar-thin flex-1">
-            <table className="w-full text-left whitespace-nowrap">
+            <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-theme text-[10px] text-muted font-semibold uppercase tracking-wider bg-app">
-                  <th className="px-5 py-3 w-12 text-center">#</th>
-                  <th className="px-3 py-3">Declaration No</th>
-                  <th className="px-3 py-3">Declaration Ref</th>
-                  <th className="px-3 py-3">Declaration Date</th>
-                  <th className="px-3 py-3 min-w-[140px]">Item Name</th>
-                  <th className="px-3 py-3">HS Code</th>
-                  <th className="px-3 py-3">Task Code</th>
-                  <th className="px-3 py-3 text-center">Status</th>
-                  <th className="px-3 py-3">Origin</th>
-                  <th className="px-3 py-3">Export Nation</th>
-                  <th className="px-3 py-3 text-right">Qty</th>
-                  <th className="px-3 py-3 text-center">Unit</th>
-                  <th className="px-3 py-3 text-right">Weight</th>
-                  <th className="px-3 py-3 text-right">Net Weight</th>
-                  <th className="px-3 py-3 text-right">Pkg</th>
-                  <th className="px-3 py-3 text-center">Pkg Unit</th>
-                  <th className="px-3 py-3 min-w-[160px]">Agent</th>
-                  <th className="px-3 py-3 min-w-[160px]">Supplier</th>
-                  <th className="px-3 py-3 text-right">Amount</th>
-                  <th className="px-3 py-3 text-right">Exch. Rate</th>
-                  <th className="px-3 py-3 min-w-[200px]">
-                    Map to Existing Item
+                  <th className="px-3 py-3 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={items.length > 0 && selectedRows.size === items.length}
+                      onChange={toggleSelectAll}
+                    />
                   </th>
-                  <th className="px-3 py-3 min-w-[160px]">Remark</th>
+                  <th className="px-2 py-3 w-8"></th>
+                  <th className="px-3 py-3 w-10 text-center">#</th>
+                  <th className="px-3 py-3 min-w-[180px]">Item Name</th>
+                  <th className="px-3 py-3">HS Code</th>
+                  <th className="px-3 py-3 text-right">Qty</th>
+                  <th className="px-3 py-3 text-right min-w-[120px]">Amount</th>
+                  <th className="px-3 py-3 min-w-[220px]">Map to Existing Item</th>
                   <th className="px-5 py-3 text-center w-40">Decision</th>
                 </tr>
               </thead>
@@ -210,7 +224,7 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                 {items.length === 0 && (
                   <tr>
                     <td
-                      colSpan={22}
+                      colSpan={PENDING_TABLE_COLSPAN}
                       className="px-5 py-8 text-center text-muted text-[12px]"
                     >
                       {isLoading
@@ -219,127 +233,124 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                     </td>
                   </tr>
                 )}
-                {items.map((item, index) => (
-                  <tr key={item.id} className="hover:bg-app transition-colors">
-                    <td className="px-5 py-3 text-center text-muted text-[11px]">
-                      {index + 1}
-                    </td>
-                    <td className="px-3 py-3 text-main text-[11px]">
-                      {item.dclNo}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-[11px]">
-                      {item.dclRefNum ?? "—"}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-[11px]">
-                      {formatApiDate(item.dclDe)}
-                    </td>
-                    <td className="px-3 py-3 font-medium text-main">
-                      {item.itemNm}
-                    </td>
-                    <td className="px-3 py-3 text-primary cursor-pointer hover:underline text-[11px]">
-                      {item.hsCd}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-[11px]">
-                      {item.taskCd}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-center text-[11px]">
-                      {item.statusCd}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-[11px]">
-                      {item.orgnNatCd}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-[11px]">
-                      {item.exptNatCd}
-                    </td>
-                    <td className="px-3 py-3 tabular-nums text-main text-right">
-                      {item.qty.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-center text-[11px]">
-                      {item.qtyUnitCd}
-                    </td>
-                    <td className="px-3 py-3 tabular-nums text-main text-right">
-                      {item.totWt.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="px-3 py-3 tabular-nums text-main text-right">
-                      {item.netWt.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="px-3 py-3 tabular-nums text-main text-right">
-                      {item.pkg.toLocaleString()}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-center text-[11px]">
-                      {item.pkgUnitCd}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-[11px] truncate">
-                      {item.agntNm}
-                    </td>
-                    <td className="px-3 py-3 text-muted text-[11px] truncate">
-                      {item.supplierNm ?? "—"}
-                    </td>
-                    <td className="px-3 py-3 tabular-nums text-main text-right">
-                      {item.currencyCd}{" "}
-                      {item.amount.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="px-3 py-3 tabular-nums text-muted text-right text-[11px]">
-                      {item.exchangeRate.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="px-3 py-3">
-                      <ItemSelect
-                        value={mappedItems[item.id] ?? ""}
-                        onChange={(selected) => {
-                          handleMappedItemChange(item.id, selected.itemCode);
-                        }}
-                        className="w-full"
-                      />
-                    </td>
-                    <td className="px-3 py-3">
-                      <input
-                        type="text"
-                        value={remarks[item.id] ?? ""}
-                        onChange={(e) =>
-                          handleRemarkChange(item.id, e.target.value)
-                        }
-                        placeholder="Add a remark..."
-                        className="w-full py-1.5 px-3 border border-theme rounded text-[11px] text-main bg-app focus:outline-none focus:border-primary"
-                      />
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleDecision(item.id, "approve")}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded border text-[10px] font-semibold transition-colors ${
-                            decisions[item.id] === "approve"
-                              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                              : "border-theme text-muted hover:bg-app"
-                          }`}
+                {items.map((item, index) => {
+                  const isExpanded = expandedRows.has(item.id);
+                  const isSelected = selectedRows.has(item.id);
+                  return (
+                    <React.Fragment key={item.id}>
+                      <tr
+                        onClick={() => toggleExpand(item.id)}
+                        className={`hover:bg-app transition-colors cursor-pointer ${
+                          isSelected ? "bg-primary/5" : ""
+                        }`}
+                      >
+                        <td
+                          className="px-3 py-3 text-center"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Check size={12} /> Approve
-                        </button>
-                        <button
-                          onClick={() => handleDecision(item.id, "reject")}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded border text-[10px] font-semibold transition-colors ${
-                            decisions[item.id] === "reject"
-                              ? "bg-danger/10 border-danger/30 text-danger"
-                              : "border-theme text-muted hover:bg-app"
-                          }`}
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(item.id)}
+                          />
+                        </td>
+                        <td className="px-2 py-3 text-center">
+                          <RowExpandToggle
+                            isExpanded={isExpanded}
+                            onToggle={() => toggleExpand(item.id)}
+                          />
+                        </td>
+                        <td className="px-3 py-3 text-center text-muted text-[11px]">
+                          {index + 1}
+                        </td>
+                        <td className="px-3 py-3 font-medium text-main">
+                          {item.itemNm}
+                        </td>
+                        <td className="px-3 py-3 text-primary cursor-pointer hover:underline text-[11px]">
+                          {item.hsCd}
+                        </td>
+                        <td className="px-3 py-3 tabular-nums text-main text-right">
+                          {item.qty.toLocaleString()} {item.qtyUnitCd}
+                        </td>
+                        <td className="px-3 py-3 tabular-nums text-main text-right">
+                          {item.currencyCd} {fmtNum(item.amount)}
+                        </td>
+                        <td
+                          className="px-3 py-3"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <XIcon size={12} /> Reject
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <ItemSelect
+                            value={mappedItems[item.id] ?? ""}
+                            selectedId={mappedItems[item.id] ?? ""}
+                            onChange={(selected) =>
+                              handleMappedItemChange(item.id, selected.itemCode)
+                            }
+                            className="w-full"
+                          />
+                        </td>
+                        <td
+                          className="px-5 py-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleDecision(item.id, "approve")}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded border text-[10px] font-semibold transition-colors ${
+                                decisions[item.id] === "approve"
+                                  ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                  : "border-theme text-muted hover:bg-app"
+                              }`}
+                            >
+                              <Check size={12} /> Approve
+                            </button>
+                            <button
+                              onClick={() => handleDecision(item.id, "reject")}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded border text-[10px] font-semibold transition-colors ${
+                                decisions[item.id] === "reject"
+                                  ? "bg-danger/10 border-danger/30 text-danger"
+                                  : "border-theme text-muted hover:bg-app"
+                              }`}
+                            >
+                              <XIcon size={12} /> Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {isExpanded && (
+                        <ExpandableDetailRow
+                          colSpan={PENDING_TABLE_COLSPAN}
+                          fields={[
+                            { label: "Declaration No", value: item.dclNo },
+                            { label: "Declaration Ref", value: item.dclRefNum },
+                            { label: "Declaration Date", value: formatApiDate(item.dclDe) },
+                            { label: "Task Code", value: item.taskCd },
+                            { label: "Status", value: item.statusCd },
+                            { label: "Origin", value: item.orgnNatCd },
+                            { label: "Export Nation", value: item.exptNatCd },
+                            { label: "Weight", value: fmtNum(item.totWt) },
+                            { label: "Net Weight", value: fmtNum(item.netWt) },
+                            { label: "Package", value: `${item.pkg.toLocaleString()} ${item.pkgUnitCd}` },
+                            { label: "Agent", value: item.agntNm },
+                            { label: "Supplier", value: item.supplierNm },
+                            { label: "Exchange Rate", value: fmtNum(item.exchangeRate) },
+                          ]}
+                        >
+                          <div className="max-w-md">
+                            <span className="text-muted block mb-1 text-[11px]">Remark</span>
+                            <input
+                              type="text"
+                              value={remarks[item.id] ?? ""}
+                              onChange={(e) => handleRemarkChange(item.id, e.target.value)}
+                              placeholder="Add a remark..."
+                              className="w-full py-1.5 px-3 border border-theme rounded text-[11px] text-main bg-app focus:outline-none focus:border-primary"
+                            />
+                          </div>
+                        </ExpandableDetailRow>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
