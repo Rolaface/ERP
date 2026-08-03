@@ -50,6 +50,7 @@ jobs:
             --build-arg VITE_API_AUTH_TOKEN="${{ secrets.ERP_AUTH_TOKEN }}" \
             --build-arg VITE_COMPANY_ID="${{ secrets.ERP_COMPANY_ID }}" \
             --build-arg VITE_NAPSA_BASE_URL="${{ secrets.ERP_NAPSA_BASE_URL }}" \
+            --build-arg VITE_LMS_URL="${{ secrets.ERP_LMS_URL }}" \
             .
 
           docker push ${IMAGE_NAME}:${IMAGE_TAG}

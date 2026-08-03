@@ -5,6 +5,7 @@ export type ItemModalTab = "details" | "taxDetails" | "inventoryDetails";
 export interface ItemTaxRow {
   taxCategory: string;
   taxTemplate: string;
+  taxTemplateDisplay?: string;
 }
 
 export interface ItemTaxInfo {
@@ -78,6 +79,11 @@ packingSize: number | null;
   batchNo: string;
   create_new_batch: boolean;
   has_expiry_date: boolean;
+
+  isMtvItem: boolean;
+  mtvItemCode: string;
+  mtvManufacturerTpin: string;
+  mtvRrp: string;
 }
 
 export type ItemFormChangeHandler = (

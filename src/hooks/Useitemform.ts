@@ -158,6 +158,10 @@ export const emptyForm: ItemFormData = {
   batchNo: "",
   create_new_batch: false,
   has_expiry_date: false,
+  isMtvItem: false,
+  mtvItemCode: "",
+  mtvManufacturerTpin: "",
+  mtvRrp: "",
 };
 
 const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
@@ -187,6 +191,10 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   dimensionUOM: form.dimensionUnit, 
   brand: form.brand,
   countryOfOrigin: form.originNationCode,
+  isMtvItem: form.isMtvItem,
+  manufacturerItemCd: form.mtvItemCode,
+  mtvManufacturerTpin: form.mtvManufacturerTpin,
+  mtvRrp: form.mtvRrp,
   is_stock_item: form.trackInventory,
   is_sales_item: form.allowSales,
   is_purchase_item: form.allowPurchase,
@@ -278,6 +286,12 @@ dimensionUnit: item.dimensionUOM || "cm",
     has_batch_no: item.batchInfo?.has_batch_no || false,
     has_expiry_date: item.batchInfo?.has_expiry_date || false,
     shelfLife: String(item.batchInfo?.shelfLife || ""),
+
+    // MTV
+    isMtvItem: Boolean(item.isMtvItem ?? false),
+    mtvItemCode: item.mtvItemCode || "",
+    mtvManufacturerTpin: item.mtvManufacturerTpin || "",
+    mtvRrp: item.mtvRrp || "",
 
     // TAX
     taxRows: item.taxInfo?.map((t: any) => ({

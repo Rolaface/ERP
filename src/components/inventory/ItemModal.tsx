@@ -231,6 +231,21 @@ const ItemModal: React.FC<ItemModalProps> = ({
     [isServiceItem, setActiveTab],
   );
 
+    const handleMtvTaxSelect = useCallback(
+   (taxName: string, taxTitle: string) => {
+      setTaxRows((previous) => {
+        const next = [...previous];
+        next[0] = {
+          ...next[0],
+          taxTemplate: taxName,
+         taxTemplateDisplay: taxTitle,
+        };
+        return next;
+      });
+    },
+    [],
+ );
+
   const handleTaxRowChange = useCallback(
     (absoluteIndex: number, field: keyof ItemTaxRow, value: string) => {
       setTaxRows((previous) =>
@@ -454,8 +469,8 @@ const ItemModal: React.FC<ItemModalProps> = ({
           : "Add and manage items"
       } icon={Package}
       footer={footer}
-      customWidth="min(92vw, 1280px)"
-      height="60vh"
+      customWidth="70vw"
+      height="67vh"
       summaryBar={<ItemSummaryBar form={form} taxRows={taxRows} />}
     >
 
@@ -520,9 +535,11 @@ const ItemModal: React.FC<ItemModalProps> = ({
                 <BasicDetailsSection
                   form={form}
                   isServiceItem={isServiceItem}
+                  isZraEnabled={isZraEnabled}
                   onFormChange={handleFormChange}
                   setField={setField}
                   errors={fieldErrors}
+                  onMtvTaxSelect={handleMtvTaxSelect}
                 />
 
                 <AdditionalDetailsSection
@@ -532,7 +549,11 @@ const ItemModal: React.FC<ItemModalProps> = ({
                   errors={fieldErrors}
                 />
 
-                <PricingSection form={form} onFormChange={handleFormChange} />
+                <PricingSection
+                  form={form}
+                  onFormChange={handleFormChange}
+                  isZraEnabled={isZraEnabled}
+                />
               </div>
 
               <ItemAttributesPanel

@@ -179,6 +179,7 @@ export const API = {
 
   Account: {
     createnewBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.create`,
+    updateBankaccount: `${ERP_BASE}/api/method/custom_api.api.bank_account.update`,
     getBankAccounts: `${ERP_BASE}/api/method/custom_api.api.search.parties_and_accounts`,
     getBankAccountById: `${ERP_BASE}/api/method/custom_api.api.bank_account.get_by_id`,
     getAllBankAccounts: `${ERP_BASE}/api/method/custom_api.api.bank_account.get`,
@@ -195,6 +196,7 @@ export const API = {
     createPaymentEntry: `${ERP_BASE}/api/method/custom_api.api.payment.create_payment_entry`,
     getAccountsResource: `${ERP_BASE}/api/resource/Account`,
     getPaymentEntryById: `${ERP_BASE}/api/method/custom_api.api.payment.get_payment_by_id`,
+    cancelPaymentEntry:`${ERP_BASE}/api/method/custom_api.api.payment_entry_delete.delete_payment_entry`,
   },
 
   accounting: {
@@ -805,4 +807,8 @@ resource: {
   salaryPreviewAPI: {
     getSalaryPreview: `${ERP_BASE}/api/method/custom_hrms.api.salary_preview.api.get_salary_breakdown`,
   },
+  getZraMTVAPI: {
+    getRrpItem: `${ERP_BASE}/api/method/zra_smart_invoice.modules.mtv.api.get_rrp_items`
+  },
+
 } as const;

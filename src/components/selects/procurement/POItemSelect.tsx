@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { getAllItems } from "../../../api/itemApi";
 import { showApiError } from "../../../utils/alert";
 import { Package, ChevronDown, Search, X, Loader2 } from "lucide-react";
+import { useCompanyStore } from "../../../store/companyStore";
 
 type Item = {
   id: string;
@@ -14,6 +15,8 @@ type Item = {
   vatCd?: string;
   taxCode?: string;
   is_stock_item?: number;
+   isMtvItem?: number;   
+  rrp_rate?: number; 
 };
 
 interface POItemSelectProps {
@@ -73,6 +76,7 @@ export default function POItemSelect({
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
   const loadedRef = useRef(false);
 
   const fetchItems = useCallback(

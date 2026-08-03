@@ -9,6 +9,7 @@ import {
 } from "../utils/alert";
 import type { ApiAddress, BoxType } from "../hooks/useAddressLogic";
 import { getPurchaseOrders } from "../api/procurement/PurchaseOrderApi";
+import { useCompanyStore } from "../store/companyStore";
 import type {
   PurchaseInvoiceFormData,
   POTab,
@@ -124,6 +125,7 @@ export const usePurchaseInvoiceForm = ({
   const [companyDefaults, setCompanyDefaults] = useState<
     Partial<PurchaseInvoiceFormData>
   >({});
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
   // Address selector state — mirrors PO hook exactly
   const [selected, setSelected] = useState<Record<BoxType, ApiAddress | null>>({
@@ -1112,6 +1114,11 @@ export const usePurchaseInvoiceForm = ({
         .map((r: any) => r.tax_type)
         .filter((t: string) => t && t.trim() !== "");
 
+        const useRrpPrice = isZraEnabled && Number(data?.isMtvItem) === 1;
+const resolvedRate = useRrpPrice
+  ? Number(data?.rrp_rate ?? 0)
+  : Number(data.buyingPrice || 0);
+
       setForm((prev) => {
         const items = [...prev.items];
         items[idx] = {
@@ -1119,7 +1126,7 @@ export const usePurchaseInvoiceForm = ({
           itemCode: data.id,
           itemName: data.itemName,
           description: data.description,
-          rate: Number(data.buyingPrice || 0),
+          rate: resolvedRate,
           uom: data.unitOfMeasureCd,
           vatRate: Number(selectedTax?.totalTaxRate || 0),
           vatCd: selectedTax?.taxName || "",

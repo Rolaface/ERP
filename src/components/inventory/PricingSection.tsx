@@ -12,10 +12,11 @@ import type {
 interface PricingSectionProps {
   form: ItemFormData;
   onFormChange: ItemFormChangeHandler;
+  isZraEnabled?: boolean;
 }
 
 const PricingSection: React.FC<PricingSectionProps> = React.memo(
-  ({ form, onFormChange }) => {
+  ({ form, onFormChange, isZraEnabled = false }) => {
 
 const fetchSupplierOptions = useCallback(async (q: string) => {
   try {
@@ -74,6 +75,19 @@ const fetchSupplierOptions = useCallback(async (q: string) => {
   fetchOptions={fetchSupplierOptions}
   placeholder="Search supplier..."
 />
+
+          {isZraEnabled && Boolean(form.isMtvItem) ? (
+            <ModalInput
+              label="RRP"
+              name="mtvRrp"
+              type="number"
+              value={form.mtvRrp ?? ""}
+              onChange={onFormChange}
+              readOnly
+              disabled
+              placeholder="RRP"
+            />
+          ) : null}
         </div>
       </>
     );

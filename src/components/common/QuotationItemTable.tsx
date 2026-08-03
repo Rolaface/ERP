@@ -9,6 +9,7 @@ import { useBarcodeScanner } from "../../api/utils/BarCodeScanner";
 import { getStockReport } from "../../api/stockApi";
 import POItemSelect from "../selects/procurement/POItemSelect";
 import { useSpreadsheetNavigation } from "../../hooks/common/useSpreadsheetNavigation";
+import { useCompanyStore } from "../../store/companyStore";
 
 export interface ItemTableActions {
   handleItemChange: (
@@ -172,8 +173,8 @@ const QuoteHeaders: React.FC<InvoiceHeadersProps> = ({
         Qty
       </th>
       <th className="px-1 py-1 text-left text-muted font-medium text-[10px] hidden lg:table-cell">
-  UOM
-</th>
+        UOM
+      </th>
       <th className="px-1 py-1 text-left text-muted font-medium text-[10px]">
         Price <span className="text-danger">*</span>
       </th>
@@ -215,9 +216,9 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
 }) => {
   const isService = invoiceType === "Service";
 
-  // ── Row/column keyboard navigation — same wiring as ItemTable.tsx ──────
   const tableWrapperRef = useRef<HTMLDivElement>(null);
   const onGridKeyDown = useSpreadsheetNavigation(tableWrapperRef);
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
   useBarcodeScanner(async (barcode) => {
     try {
@@ -229,6 +230,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
       let matchedPackingSize = "";
       let matchedPackingUnit = "";
       let matchedTaxName = "";
+      let resolvedPrice = itemData.rate || 0;
       try {
         const stockRes = await getStockReport(1, 1000, itemData.item_code, "");
         const stockItems = stockRes?.message?.data || [];
@@ -242,6 +244,11 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
         if (stockItem.taxInfo && stockItem.taxInfo.length > 0) {
           matchedTaxName = stockItem.taxInfo[0].taxName || "";
         }
+        const useRrpPrice = isZraEnabled && Number(stockItem?.is_mtv_item) === 1;
+        if (useRrpPrice) {
+          resolvedPrice = Number(stockItem?.rrp_rate ?? 0);
+        }
+
         if (stockItem && stockItem.batches) {
           const matchingBatch = stockItem.batches.find(
             (b: any) => b.batch_no === itemData.batch_no,
@@ -285,7 +292,7 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
       actions.updateItemDirectly?.(targetIndex, {
         itemCode: itemData.item_code,
         itemName: itemData.item_name,
-        price: itemData.rate || 0,
+        price: resolvedPrice,
         batchNo: itemData.batch_no || "",
         quantity: 1,
         availableQty: Number(itemData.quantity || 0),
@@ -352,7 +359,11 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
               onItemSelect?.(item, i);
               const code = item?.id || "";
               const name = item?.itemName || code;
-              const rate = item?.sellingPrice || 0;
+
+              const useRrpPrice = isZraEnabled && Number(item?.isMtvItem) === 1;
+              const rate = useRrpPrice
+                ? Number(item?.rrp_rate ?? 0)
+                : (item?.sellingPrice || 0);
               const pUnit = item?.packingUnit || "";
               const pSize = item?.packingSize || "";
               const unitOfMeasure = item?.unitOfMeasureCd || "";
@@ -469,17 +480,17 @@ const QuotationItemTable: React.FC<ItemTableProps> = ({
         </td>
 
         {/* UOM — quotation only */}
-       <td data-row={i} data-col={c()} className="px-2 py-1 md:table-cell">
-  <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
-    <input
-      type="text"
-      name="uom"
-      value={it.uom || ""}
-      disabled
-      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
-    />
-  </Tooltip>
-</td>
+        <td data-row={i} data-col={c()} className="px-2 py-1 md:table-cell">
+          <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
+            <input
+              type="text"
+              name="uom"
+              value={it.uom || ""}
+              disabled
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
+            />
+          </Tooltip>
+        </td>
 
         {/* Unit Price */}
         <td data-row={i} data-col={c()} className="px-0.5 py-1">
