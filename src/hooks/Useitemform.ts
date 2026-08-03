@@ -192,7 +192,7 @@ const buildPayload = (form: ItemFormData, taxRows: ItemTaxRow[]) => ({
   brand: form.brand,
   countryOfOrigin: form.originNationCode,
   isMtvItem: form.isMtvItem,
-  mtvItemCode: form.mtvItemCode,
+  manufacturerItemCd: form.mtvItemCode,
   mtvManufacturerTpin: form.mtvManufacturerTpin,
   mtvRrp: form.mtvRrp,
   is_stock_item: form.trackInventory,

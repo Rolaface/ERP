@@ -5,6 +5,7 @@ export type ItemModalTab = "details" | "taxDetails" | "inventoryDetails";
 export interface ItemTaxRow {
   taxCategory: string;
   taxTemplate: string;
+  taxTemplateDisplay?: string;
 }
 
 export interface ItemTaxInfo {

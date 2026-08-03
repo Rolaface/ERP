@@ -18,10 +18,11 @@ interface BasicDetailsSectionProps {
   onFormChange: ItemFormChangeHandler;
   errors?: Partial<Record<keyof ItemFormData, string>>;
   setField: ItemFieldSetter;
+  onMtvTaxSelect?: (taxName: string, taxTitle: string) => void;
 }
 
 const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
-  ({ form, onFormChange, errors, setField, isServiceItem, isZraEnabled = false }) => {
+  ({ form, onFormChange, errors, setField, isServiceItem, isZraEnabled = false, onMtvTaxSelect }) => {
     const [hsnPopoverOpen, setHsnPopoverOpen] = useState(false);
     const [mtvPickerOpen, setMtvPickerOpen] = useState(false);
     // Popover anchors to this button, not to the screen center.
@@ -63,6 +64,8 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
         originNationCode: string;
         rrp: string;
         manufacturerTpin: string;
+        taxName: string;
+       taxTitle: string;
       }) => {
         setField("itemName", selection.itemName || form.itemName);
         setField("description", selection.itemDescription || "");
@@ -77,53 +80,64 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
         setField("mtvManufacturerTpin", selection.manufacturerTpin || "");
         setField("mtvRrp", selection.rrp || "");
         setField("brand", selection.itemName || "")
+        if (selection.taxName) {
+          onMtvTaxSelect?.(selection.taxName, selection.taxTitle);
+        }
       },
-      [form.itemName, setField],
+       [form.itemName, setField, onMtvTaxSelect],
     );
 
     return (
       <>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-5">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-12">
           {/* Item Category */}
-          <SearchSelect2
-            label="Item Category"
-            value={form.itemGroup ?? ""}
-            fetchOptions={async (q) => {
-              const list = await getItemGroups(q || undefined);
-              return list.map((g) => ({
-                label: g.label,
-                value: g.value,
-                subLabel: g.description !== g.label ? g.description : undefined,
-              }));
-            }}
-            onChange={(value) => setField("itemGroup", value)}
-            placeholder="Search category..."
-            required
-            error={errors?.itemGroup}
-          />
+          <div className="md:col-span-2">
+            <SearchSelect2
+              label="Item Category"
+              value={form.itemGroup ?? ""}
+              fetchOptions={async (q) => {
+                const list = await getItemGroups(q || undefined);
+                return list.map((g) => ({
+                  label: g.label,
+                  value: g.value,
+                  subLabel: g.description !== g.label ? g.description : undefined,
+                }));
+              }}
+              onChange={(value) => setField("itemGroup", value)}
+              placeholder="Search category..."
+              required
+              error={errors?.itemGroup}
+            />
+          </div>
 
           {/* Item Name */}
-          <ModalInput
-            label="Item Name"
-            name="itemName"
-            value={form.itemName ?? ""}
-            onChange={onFormChange}
-            required
-            error={errors?.itemName}
-          />
+          <div className="md:col-span-2">
+            <ModalInput
+              label="Item Name"
+              name="itemName"
+              value={form.itemName ?? ""}
+              onChange={onFormChange}
+              required
+              error={errors?.itemName}
+            />
+          </div>
 
           {/* Description */}
-          <ModalInput
-            label="Description"
-            name="description"
-            value={form.description ?? ""}
-            onChange={onFormChange}
-            required
-            error={errors?.description}
-          />
+          <div className="md:col-span-2">
+            <ModalInput
+              label="Description"
+              name="description"
+              value={form.description ?? ""}
+              onChange={onFormChange}
+              required
+              error={errors?.description}
+            />
+          </div>
+
 
           {/* Brand / MTV Item */}
-          <div className="flex min-w-0 items-end gap-2">
+            <div className="flex min-w-0 items-end gap-2 md:col-span-4">
+
             {isZraEnabled ? (
               <label className="flex h-[25px] items-center gap-2 rounded border border-[var(--border)] bg-card px-2 text-[10px] font-medium text-main shadow-sm">
                 <input
@@ -166,37 +180,37 @@ const BasicDetailsSection: React.FC<BasicDetailsSectionProps> = React.memo(
               )}
             </div>
           </div>
-          {/* HSN Code — trailing icon button doubles as the popover anchor */}
-          {/* HSN Code — trailing button is a full-height attached action zone,
-    visually separated by a divider so it reads as "search this field",
-    not just a decorative icon. */}
-<ModalInput
-  label="HSN Code"
-  name="itemClassCode"
-  value={form.itemClassCode ?? ""}
-  onChange={onFormChange}
-  placeholder="Search or tpye..."
-  required
-  error={errors?.itemClassCode}
-  trailingIcon={
-    <button
-      ref={hsnTriggerRef}
-      type="button"
-      onClick={() => setHsnPopoverOpen((v) => !v)}
-      aria-label="Browse HSN codes"
-      title="Browse HSN codes"
-      tabIndex={-1}
-      className="group flex h-full w-7 shrink-0 cursor-pointer items-center justify-center rounded-r border-l border-theme bg-primary/5 text-primary transition-colors hover:bg-primary/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--input-border-focus)] focus-visible:ring-inset"
-    >
-      <ScanSearch
-        size={13}
-        strokeWidth={2}
-        className="transition-transform group-hover:scale-110 group-active:scale-95"
-      />
-    </button>
-  }
-/>
+
+          <div className="md:col-span-2">
+            <ModalInput
+              label="HSN Code"
+              name="itemClassCode"
+              value={form.itemClassCode ?? ""}
+              onChange={onFormChange}
+              placeholder="Search or tpye..."
+              required
+              error={errors?.itemClassCode}
+              trailingIcon={
+                <button
+                  ref={hsnTriggerRef}
+                  type="button"
+                  onClick={() => setHsnPopoverOpen((v) => !v)}
+                  aria-label="Browse HSN codes"
+                  title="Browse HSN codes"
+                  tabIndex={-1}
+                  className="group flex h-full w-7 shrink-0 cursor-pointer items-center justify-center rounded-r border-l border-theme bg-primary/5 text-primary transition-colors hover:bg-primary/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--input-border-focus)] focus-visible:ring-inset"
+                >
+                  <ScanSearch
+                    size={13}
+                    strokeWidth={2}
+                    className="transition-transform group-hover:scale-110 group-active:scale-95"
+                  />
+                </button>
+              }
+            />
+          </div>
         </div>
+
 
         {/* Anchored to the button above — opens beside the field, not as a
             second full-screen modal. */}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { getStockReport } from "../../api/stockApi";
+import { useCompanyStore } from "../../store/companyStore";
 import {
   Search,
   Package,
@@ -132,6 +133,7 @@ export default function StockItemSelect({
   const [loading, setLoading] = useState(false);
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
   // Tracks which row in the open list is currently keyboard-highlighted.
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -162,6 +164,8 @@ export default function StockItemSelect({
           piecesPerBox: item.piecesPerBox,
           taxInfo: item.taxInfo || [],
           isServiceItem: item.is_service_item,
+          is_mtv_item: item.is_mtv_item,   
+  rrp_rate: item.rrp_rate,  
         };
         if (item.batches?.length) {
           item.batches.forEach((b: any) => {
@@ -206,6 +210,11 @@ export default function StockItemSelect({
     setSearch("");
     const selectedTax = row.taxInfo?.[0] || {};
     const totalTaxRate = Number(selectedTax.totalTaxRate || 0);
+      const useRrpPrice = isZraEnabled && Number(row?.is_mtv_item) === 1;
+  const resolvedPrice = useRrpPrice
+    ? Number(row?.rrp_rate ?? 0)
+    : (row.price_list ?? 0);
+
     onChange({
       itemCode: row.itemCode,
       itemName: row.itemName,
@@ -215,7 +224,7 @@ export default function StockItemSelect({
       mfgDate: row.mfgDate,
       qty: row.qty,
       price_list: row.price_list,
-      price: row.price_list ?? 0,
+      price: resolvedPrice, 
       packingSize: row.packingSize,
       packingUnit: row.packingUnit,
       stockUom: row.stockUom,

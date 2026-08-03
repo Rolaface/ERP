@@ -20,12 +20,18 @@ export interface ZraRrpItem {
   regrNm?: string;
   modrNm?: string;
   modrId?: string;
+  tax?: {
+    name: string;
+    title: string;
+  };
 }
 
 interface ZraRrpItemsResponse {
-  tpin?: string;
-  bhfId?: string;
-  itemList?: ZraRrpItem[];
+  message?: {
+    tpin?: string;
+    bhfId?: string;
+    itemList?: ZraRrpItem[];
+  };
 }
 
 export async function getZraRrpItems(

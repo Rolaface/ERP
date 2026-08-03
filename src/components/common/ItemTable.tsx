@@ -13,6 +13,7 @@ import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFr
 import { useBarcodeScanner } from "../../api/utils/BarCodeScanner";
 import { getStockReport } from "../../api/stockApi";
 import { useSpreadsheetNavigation } from "../../hooks/common/useSpreadsheetNavigation";
+import { useCompanyStore } from "../../store/companyStore";
 
 export interface ItemTableActions {
   handleItemChange: (
@@ -169,9 +170,9 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
           Description
         </th>
       )}
-     
-        
-      
+
+
+
 
       {/* Hide Labels if Service */}
       {!isService && (
@@ -193,11 +194,11 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
         Qty
       </th>
-     
-        <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
-          UOM
-        </th>
-      
+
+      <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
+        UOM
+      </th>
+
 
       {/* Hide Labels if Service */}
       {!isQuotation && !isService && (
@@ -300,6 +301,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
 }) => {
   const tableWrapperRef = useRef<HTMLDivElement>(null);
   const onGridKeyDown = useSpreadsheetNavigation(tableWrapperRef);
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
   useBarcodeScanner(async (barcode) => {
     try {
@@ -311,6 +313,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
       let matchedPackingSize = "";
       let matchedPackingUnit = "";
       let matchedTaxName = "";
+      let resolvedPrice = itemData.rate || 0;
       try {
         const stockRes = await getStockReport(1, 1000, itemData.item_code, "");
         const stockItems = stockRes?.message?.data || [];
@@ -323,6 +326,11 @@ const ItemTable: React.FC<ItemTableProps> = ({
         }
         if (stockItem.taxInfo && stockItem.taxInfo.length > 0) {
           matchedTaxName = stockItem.taxInfo[0].taxName || "";
+        }
+
+        const useRrpPrice = isZraEnabled && Number(stockItem?.is_mtv_item) === 1;
+        if (useRrpPrice) {
+          resolvedPrice = Number(stockItem?.rrp_rate ?? 0);   
         }
         if (stockItem && stockItem.batches) {
           const matchingBatch = stockItem.batches.find(
@@ -342,6 +350,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
           it.itemCode === itemData.item_code &&
           it.batchNo === itemData.batch_no,
       );
+
+
 
       if (existingIndex >= 0) {
         const currentQty = Number(formData.items[existingIndex].quantity || 0);
@@ -367,7 +377,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
       actions.updateItemDirectly?.(targetIndex, {
         itemCode: itemData.item_code,
         itemName: itemData.item_name,
-        price: itemData.rate || 0,
+        price: resolvedPrice,
         batchNo: itemData.batch_no || "",
         quantity: 1,
         availableQty: Number(itemData.quantity || 0),
@@ -490,7 +500,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
             />
           </td>
         )}
-        
+
 
         {/* Pkg (U×S) */}
         {!isService && (
@@ -571,18 +581,18 @@ const ItemTable: React.FC<ItemTableProps> = ({
           />
         </td>
 
-    
-       <td data-row={i} data-col={c()} className="px-2 py-1">
-  <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
-    <input
-      type="text"
-      name="uom"
-      value={it.uom || ""}
-      disabled
-      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
-    />
-  </Tooltip>
-</td>
+
+        <td data-row={i} data-col={c()} className="px-2 py-1">
+          <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>
+            <input
+              type="text"
+              name="uom"
+              value={it.uom || ""}
+              disabled
+              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main"
+            />
+          </Tooltip>
+        </td>
 
         {/* Mfg Date — full date visible, no truncation */}
         {!isService && (

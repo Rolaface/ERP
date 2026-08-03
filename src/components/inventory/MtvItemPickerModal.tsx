@@ -4,6 +4,7 @@ import {
   getZraRrpItems,
   type ZraRrpItem,
 } from "../../api/zraItemApi";
+import { createPortal } from "react-dom";
 
 interface MtvItemPickerModalProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ interface MtvItemPickerModalProps {
     originNationCode: string;
     rrp: string;
     manufacturerTpin: string;
+    taxName: string;
+    taxTitle: string;
   }) => void;
   initialManufacturerTpin?: string;
 }
@@ -91,9 +94,9 @@ const MtvItemPickerModal: React.FC<MtvItemPickerModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-3">
-      <div className="w-full max-w-3xl rounded-2xl border border-[var(--border)] bg-card shadow-2xl">
+  return createPortal(
+     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/40 p-3">
+      <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-card shadow-2xl">
         <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
           <div>
             <h3 className="text-sm font-semibold text-main">Select MTV Imported Item</h3>
@@ -181,6 +184,8 @@ const MtvItemPickerModal: React.FC<MtvItemPickerModalProps> = ({
                       originNationCode: item.orgnNatCd,
                       rrp: String(item.rrp ?? ""),
                       manufacturerTpin: manufacturerTpin.trim(),
+                      taxName: item.tax?.name ?? "",
+                      taxTitle: item.tax?.title ?? "",
                     });
                     onClose();
                   }}
@@ -209,7 +214,8 @@ const MtvItemPickerModal: React.FC<MtvItemPickerModalProps> = ({
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

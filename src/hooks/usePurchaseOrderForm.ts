@@ -24,6 +24,7 @@ import {
   createPurchaseOrder,
   updatePurchaseOrder,
 } from "../api/procurement/PurchaseOrderApi";
+import { useCompanyStore } from "../store/companyStore";
 import { mapUIToCreatePO } from "../types/Supply/purchaseOrderMapper";
 import { getPurchaseOrderById } from "../api/procurement/PurchaseOrderApi";
 import { mapApiToUI } from "../types/Supply/purchaseOrderMapper";
@@ -57,6 +58,7 @@ export const usePurchaseOrderForm = ({
   const [saving, setSaving] = useState(false);
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
   const [addressSelected, setAddressSelected] = useState<
     Record<BoxType, ApiAddress | null>
   >({
@@ -876,6 +878,10 @@ useFieldDefault(
           .flatMap((tax: any) => tax.taxRates || [])
           .map((r: any) => r.tax_type)
           .filter((t: string) => t && t.trim() !== "");
+          const useRrpPrice = isZraEnabled && Number(data?.isMtvItem) === 1;
+const resolvedRate = useRrpPrice
+  ? Number(data?.rrp_rate ?? 0)
+  : Number(data.buyingPrice || 0);
 
         setForm((prev) => {
           const items = [...prev.items];
@@ -889,7 +895,7 @@ useFieldDefault(
 
             warehouse: items[idx].warehouse || prev.warehouse || "",
 
-            rate: Number(data.buyingPrice || 0),
+            rate: resolvedRate, 
             uom: data.unitOfMeasureCd,
 
             vatRate: totalTaxRate,
@@ -911,7 +917,7 @@ useFieldDefault(
         showApiError(err);
       }
     },
-    [form.taxCategory],
+    [form.taxCategory, isZraEnabled],
   );
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
