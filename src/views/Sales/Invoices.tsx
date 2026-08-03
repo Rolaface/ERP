@@ -331,18 +331,19 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
 
         if (res?.status_code === 200) {
           const mapped: InvoiceSummary[] = res.data.map((inv: any) => ({
-            invoiceNumber: inv.invoiceNumber,
+            invoiceNumber: inv.id,
             customerName: inv.customerName,
             receiptNumber: inv.receiptNumber,
             currency: inv.currency,
             exchangeRate: inv.exchangeRate,
             dueDate: inv.dueDate,
-            dateOfInvoice: new Date(inv.dateOfInvoice),
-            total: Number(inv.totalAmount),
+            dateOfInvoice: new Date(inv.invoiceDate),
+            total: Number(inv.total),
+            outstanding_amount: Number(inv.outstanding_amount),
             totalTax: inv.totalTax,
-            invoiceStatus: inv.invoiceStatus,
-            invoiceTypeParent: inv.invoiceTypeParent,
-            invoiceType: inv.invoiceType,
+            invoiceStatus: inv.status,
+            // invoiceTypeParent: inv.invoiceTypeParent,
+            // invoiceType: inv.invoiceType,
           }));
 
           allData = [...allData, ...mapped];
@@ -403,11 +404,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
           "Due Date": inv.dueDate
             ? new Date(inv.dueDate).toLocaleDateString()
             : "",
-          // Raw numeric values — kept as real numbers in Excel (not
-          // pre-formatted strings) so the cells stay sortable/summable.
+          Currency: inv.currency,
           Amount: inv.total,
           OutStanding: inv.outstanding_amount,
-          Currency: inv.currency,
           Status: inv.invoiceStatus,
         })),
       );
