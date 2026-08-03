@@ -53,9 +53,17 @@ export interface MappedItemsMap {
   [itemId: string]: string;
 }
 
+// Per-item warehouse selection — keyed the same way as DecisionsMap/RemarksMap
+// (by ImportItem.id), since target_warehouse is now chosen per row, not once
+// for the whole modal.
+export type WarehouseMap = Record<string, string>;
+
 // ─── Submit payload shapes (confirmed backend format) ──────────────────────────
 // Submitted per-declaration: one POST per dclNo group, each containing only
 // the items that have a decision (approve/reject) — pending items are not sent.
+// target_warehouse and the full item detail (origin/export country, qty,
+// weights, supplier/agent, currency) now live on each item payload, not on
+// the declaration wrapper — see confirmed sample payload.
 
 export type SubmitStatusCode = "3" | "4"; // 3 = approve, 4 = reject
 
@@ -67,16 +75,27 @@ export interface SubmitImportItemPayload {
   imptItemSttsCd: SubmitStatusCode;
   remark: string;
   mapped_erp_item: string;
+  target_warehouse: string; // moved from declaration level — chosen per item
+  orgnNatCd: string;
+  exptNatCd: string;
+  pkg: number;
+  pkgUnitCd: string;
   qty: number;
   qtyUnitCd: string;
+  totWt: number;
+  netWt: number;
+  spplrNm: string | null;
+  agntNm: string;
   invcFcurAmt: number;
+  invcFcurCd: string;
+  invcFcurExcrt: number;
+  dclRefNum: string | null;
 }
 
 export interface SubmitDeclarationPayload {
   taskCd: string;
   dclDe: string;
   dclNo: string;
-  target_warehouse: string;
   importItemList: SubmitImportItemPayload[];
 }
 

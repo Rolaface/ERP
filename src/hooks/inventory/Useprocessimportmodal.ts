@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fetchPendingImportDeclarations,
   submitImportDecisions,
@@ -10,6 +10,7 @@ import type {
   ImportItemsTotals,
   MappedItemsMap,
   RemarksMap,
+  WarehouseMap,
 } from "../../types/inventory/Processimportmodal.types";
 
 function mapRawItem(raw: ImportItemApiRaw): ImportItem {
@@ -45,6 +46,7 @@ export function useProcessImportModal(isOpen: boolean) {
   const [decisions, setDecisions] = useState<DecisionsMap>({});
   const [remarks, setRemarks] = useState<RemarksMap>({});
   const [mappedItems, setMappedItems] = useState<MappedItemsMap>({});
+  const [warehouses, setWarehouses] = useState<WarehouseMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function useProcessImportModal(isOpen: boolean) {
     setError(null);
     try {
       const response = await fetchPendingImportDeclarations();
-      setItems(response.data.map(mapRawItem));
+      setItems(response.data.itemList.map(mapRawItem));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load import declarations");
     } finally {
@@ -93,6 +95,13 @@ export function useProcessImportModal(isOpen: boolean) {
     setMappedItems((prev) => ({ ...prev, [itemId]: value }));
   }, []);
 
+  const handleWarehouseChange = useCallback(
+    (itemId: string, e: React.ChangeEvent<HTMLSelectElement>) => {
+      setWarehouses((prev) => ({ ...prev, [itemId]: e.target.value }));
+    },
+    []
+  );
+
   const approveAllRemaining = useCallback(() => {
     setDecisions((prev) => {
       const next = { ...prev };
@@ -116,20 +125,35 @@ export function useProcessImportModal(isOpen: boolean) {
 
   const submit = useCallback(async () => {
     if (items.length === 0) return;
+
+    // Every item with a decision (approve/reject) needs its own warehouse now —
+    // there's no single modal-level warehouse to fall back on anymore.
+    const decidedItems = items.filter(
+      (item) => decisions[item.id] === "approve" || decisions[item.id] === "reject"
+    );
+    if (decidedItems.length === 0) return;
+
+    const missingWarehouse = decidedItems.find((item) => !warehouses[item.id]);
+    if (missingWarehouse) {
+      setError(`Please select a warehouse for "${missingWarehouse.itemNm}"`);
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     try {
-      await submitImportDecisions(items, decisions, remarks, mappedItems);
+      await submitImportDecisions(items, decisions, remarks, mappedItems, warehouses);
       await loadItems();
       setDecisions({});
       setRemarks({});
       setMappedItems({});
+      setWarehouses({});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit decisions");
     } finally {
       setIsSubmitting(false);
     }
-  }, [items, decisions, remarks, mappedItems, loadItems]);
+  }, [items, decisions, remarks, mappedItems, warehouses, loadItems]);
 
   return {
     items,
@@ -137,6 +161,8 @@ export function useProcessImportModal(isOpen: boolean) {
     decisions,
     remarks,
     mappedItems,
+    warehouses,
+    handleWarehouseChange,
     handleDecision,
     handleRemarkChange,
     handleMappedItemChange,

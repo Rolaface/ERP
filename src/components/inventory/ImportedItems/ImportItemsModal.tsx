@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import ItemSelect from "../../selects/itemGenriSelect";
+import WarehouseSelect from "../../selects/WarehouseSelect";
 import ExpandableDetailRow from "../../../components/common/ExpandableDetailRow";
 import RowExpandToggle from "../../../components/common/RowExpandToggle";
 import { useProcessImportModal } from "../../../hooks/inventory/Useprocessimportmodal";
@@ -37,7 +38,7 @@ const fmtNum = (n: number) =>
     maximumFractionDigits: 2,
   });
 
-const PENDING_TABLE_COLSPAN = 9;
+const PENDING_TABLE_COLSPAN = 10;
 
 const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
   isOpen,
@@ -55,6 +56,8 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
     decisions,
     remarks,
     mappedItems,
+    warehouses,
+    handleWarehouseChange,
     handleDecision,
     handleRemarkChange,
     handleMappedItemChange,
@@ -217,6 +220,7 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                   <th className="px-3 py-3 text-right">Qty</th>
                   <th className="px-3 py-3 text-right min-w-[120px]">Amount</th>
                   <th className="px-3 py-3 min-w-[220px]">Map to Existing Item</th>
+                  <th className="px-3 py-3 min-w-[160px]">Warehouse</th>
                   <th className="px-5 py-3 text-center w-40">Decision</th>
                 </tr>
               </thead>
@@ -286,6 +290,16 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                               handleMappedItemChange(item.id, selected.itemCode)
                             }
                             className="w-full"
+                          />
+                        </td>
+                        <td
+                          className="px-3 py-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <WarehouseSelect
+                            compact
+                            value={warehouses[item.id] ?? ""}
+                            onChange={(e) => handleWarehouseChange(item.id, e)}
                           />
                         </td>
                         <td

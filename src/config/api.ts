@@ -330,7 +330,7 @@ export const API = {
   submitDecisions: "/api/method/zra_smart_invoice.imports_item.api.process_imported_declarations",      
   getImportedDeclarations: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_logs`, 
   getImportedDeclarationById: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_log_by_id`, 
-  },
+},
 
   /* =========================
    * ITEM GROUP
