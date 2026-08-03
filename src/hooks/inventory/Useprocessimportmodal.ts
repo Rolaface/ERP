@@ -54,7 +54,7 @@ export function useProcessImportModal(isOpen: boolean) {
     setError(null);
     try {
       const response = await fetchPendingImportDeclarations();
-      setItems(response.data.itemList.map(mapRawItem));
+      setItems(response.data.map(mapRawItem));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load import declarations");
     } finally {

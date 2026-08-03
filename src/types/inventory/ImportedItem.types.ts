@@ -1,46 +1,55 @@
+// If the backend returns extra ERP-specific fields for saved records, 
+// they are marked as optional here so they don't conflict with the raw API payload.
 export interface ImportedDeclarationItemRaw {
-    name: string; 
-
-  task_code: string;
-  declaration_no: string;
-  declaration_date: string; // "YYYY-MM-DD"
-  item_sequence: number;
-  hs_code: string;
-  item_name: string;
-  origin_country: string;
-  export_country: string;
-  quantity: number;
-  quantity_unit: string;
-  package_count: number;
-  package_unit: string;
-  total_weight: number;
-  net_weight: number;
-  invoice_amount: number;
-  currency: string;
-  exchange_rate: number;
-  base_invoice_amount: number;
-  supplier_name: string | null;
-  agent_name: string;
-  status: string;
-  status_code: string;
-  mapped_erp_item: string | null;
-  remarks: string | null;
-  checker: string;
-  checked_at: string; // "YYYY-MM-DD HH:mm:ss"
+  taskCd: string;
+  dclDe: string; // e.g., "20231209"
+  itemSeq: number;
+  dclNo: string;
+  hsCd: string;
+  itemNm: string;
+  imptItemsttsCd: string;
+  orgnNatCd: string;
+  exptNatCd: string;
+  pkg: number;
+  pkgUnitCd: string;
+  qty: number;
+  qtyUnitCd: string;
+  totWt: number;
+  netWt: number;
+  spplrNm: string | null;
+  agntNm: string;
+  invcFcurAmt: number;
+  invcFcurCd: string;
+  invcFcurExcrt: number;
+  dclRefNum: string | null;
+  
+  // Custom/ERP-specific fields (optional, in case they only appear after saving/mapping)
+  name?: string; 
+  mapped_erp_item?: string | null;
+  remarks?: string | null;
+  checker?: string;
+  checked_at?: string; // "YYYY-MM-DD HH:mm:ss"
 }
 
-// Endpoint returns a flat array of these directly — no wrapper.
+// Endpoint actually returns a wrapper with status, message, data, and pagination.
 export interface ImportedDeclarationsApiResponse {
   status_code: number;
   status: string;
   message: string;
   data: ImportedDeclarationItemRaw[];
   pagination?: {
-
-    [key: string]: unknown;
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
   };
 }
 
+// Assuming the detail view comes from your internal ERP/database and 
+// uses snake_case natively, we leave this intact. If the detail endpoint 
+// ALSO returns camelCase like the list endpoint, you should update these to match above.
 export interface ImportedDeclarationDetailRaw {
   name: string;
   task_code: string | null;

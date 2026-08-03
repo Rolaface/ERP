@@ -34,8 +34,8 @@ const getApiBaseUrl = (): string => {
   // return "";
 };
 
-export const ERP_BASE = getApiBaseUrl();
-// export const ERP_BASE = "";
+// export const ERP_BASE = getApiBaseUrl();
+export const ERP_BASE = "";
 export const CODES_BASE = ENV.zraCodesBaseUrl;
 export const NAPSA_BASE = ENV.napsaBaseUrl;
 
@@ -326,8 +326,8 @@ export const API = {
    * IMPORTED ITEMS
    * ========================= */
   imports: {
-  getPendingDeclarations: "/api/customs/pending-import-declarations", 
-  submitDecisions: "/api/customs/import-declarations/decisions",      
+  getPendingDeclarations: "/api/method/zra_smart_invoice.imports_item.api.get_import_items", 
+  submitDecisions: "/api/method/zra_smart_invoice.imports_item.api.process_imported_declarations",      
   getImportedDeclarations: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_logs`, 
   getImportedDeclarationById: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_log_by_id`, 
   },

@@ -32,9 +32,12 @@ export async function fetchPendingImportDeclarations(): Promise<ImportDeclaratio
   const resp: AxiosResponse<ImportDeclarationsApiResponse> = await api.get(
     ImportsAPI.getPendingDeclarations
   );
+  console.log("🚀 ~ fetchPendingImportDeclarations ~ resp:", resp);
 
-  if (resp.data.resultCd !== "000") {
-    throw new Error(resp.data.resultMsg || "Import declarations request failed");
+  // Updated to check for the numeric 200 
+  if (resp.data.status_code !== 200) {
+    // Updated to use the 'message' field from the response
+    throw new Error((resp.data as any).message || "Import declarations request failed");
   }
 
   return resp.data;
