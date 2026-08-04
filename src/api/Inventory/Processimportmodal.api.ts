@@ -24,7 +24,7 @@ const api = createAxiosInstance(ERP_BASE);
 export const ImportsAPI = API.imports;
 
 // TODO: remove once backend endpoint for pending declarations is confirmed stable.
-const USE_MOCK_PENDING_DATA = true;
+const USE_MOCK_PENDING_DATA = false;
 
 const MOCK_PENDING_ITEMS: ImportItemApiRaw[] = [
   {
@@ -145,18 +145,18 @@ function buildDeclarationPayloads(
 
   items.forEach((item) => {
     const decision = decisions[item.id];
-    if (decision !== "approve" && decision !== "reject") return; // skip pending
+    if (decision !== "approve" && decision !== "reject") return;
 
-    const mappedCode = mappedItems[item.id] ?? "";
+    const mapped = mappedItems[item.id];
 
     const itemPayload: SubmitImportItemPayload = {
       itemSeq: item.itemSeq,
       hsCd: item.hsCd,
-      itemClsCd: "", // TODO: no source yet
-      itemCd: mappedCode,
+      itemClsCd: mapped?.itemClassCode ?? "",
+      itemCd: mapped?.itemCode ?? "",
       imptItemSttsCd: decision === "approve" ? "3" : "4",
       remark: remarks[item.id] ?? "",
-      mapped_erp_item: mappedCode,
+      mapped_erp_item: mapped?.itemCode ?? "",
       target_warehouse: warehouses[item.id] ?? "",
       orgnNatCd: item.orgnNatCd,
       exptNatCd: item.exptNatCd,

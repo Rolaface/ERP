@@ -284,10 +284,10 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                           onClick={(e) => e.stopPropagation()}
                         >
                           <ItemSelect
-                            value={mappedItems[item.id] ?? ""}
-                            selectedId={mappedItems[item.id] ?? ""}
+                            value={mappedItems[item.id]?.itemCode ?? ""}
+                            selectedId={mappedItems[item.id]?.itemCode ?? ""}
                             onChange={(selected) =>
-                              handleMappedItemChange(item.id, selected.itemCode)
+                              handleMappedItemChange(item.id, selected)
                             }
                             className="w-full"
                           />

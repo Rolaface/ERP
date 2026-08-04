@@ -9,6 +9,7 @@ export interface SelectedStockItem {
   id: string;
   itemCode: string;
   itemName: string;
+  itemClassCode?: string;
   packingSize?: string;
   packingUnit?: string;
   batchNo?: string;
@@ -121,6 +122,7 @@ export default function ItemSelect({
           id: it.id,
           itemCode: it.id,
           itemName: it.itemName,
+          itemClassCode: it.itemClassCode,
           packingSize: it.packingSize,
           packingUnit: it.packingUnit,
           batchNo: it.batchNo,

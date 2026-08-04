@@ -49,8 +49,13 @@ export interface RemarksMap {
   [itemId: string]: string;
 }
 
+export interface MappedItem {
+  itemCode: string;
+  itemClassCode: string;
+}
+
 export interface MappedItemsMap {
-  [itemId: string]: string;
+  [itemId: string]: MappedItem;
 }
 
 // Per-item warehouse selection — keyed the same way as DecisionsMap/RemarksMap

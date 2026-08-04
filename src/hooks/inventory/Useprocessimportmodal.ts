@@ -56,7 +56,7 @@ export function useProcessImportModal(isOpen: boolean) {
     setError(null);
     try {
       const response = await fetchPendingImportDeclarations();
-      setItems(response.data.itemList.map(mapRawItem));
+      setItems(response.data.map(mapRawItem));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load import declarations");
     } finally {
@@ -91,9 +91,15 @@ export function useProcessImportModal(isOpen: boolean) {
     setRemarks((prev) => ({ ...prev, [itemId]: value }));
   }, []);
 
-  const handleMappedItemChange = useCallback((itemId: string, value: string) => {
-    setMappedItems((prev) => ({ ...prev, [itemId]: value }));
-  }, []);
+  const handleMappedItemChange = useCallback(
+  (itemId: string, item: { itemCode: string; itemClassCode: string }) => {
+    setMappedItems((prev) => ({
+      ...prev,
+      [itemId]: item,
+    }));
+  },
+  []
+);
 
   const handleWarehouseChange = useCallback(
     (itemId: string, e: React.ChangeEvent<HTMLSelectElement>) => {
