@@ -365,7 +365,7 @@ export function useBatchDetailsTable({
 }: UseBatchDetailsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [hideZeroStock, setHideZeroStock] = useState(false);
+  const [hideZeroStock, setHideZeroStock] = useState(true);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [viewBatch, setViewBatch] = useState<BatchRow | null>(null);
   const [isExporting, setIsExporting] = useState(false);
