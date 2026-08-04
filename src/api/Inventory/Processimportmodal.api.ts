@@ -8,7 +8,7 @@ import type {
   DecisionsMap,
   RemarksMap,
   MappedItemsMap,
-  WarehouseMap,
+  WarehouseMap,SuppliersMap,
   SubmitDeclarationPayload,
   SubmitImportItemPayload,
 } from "../../types/inventory/Processimportmodal.types";
@@ -23,123 +23,139 @@ const api = createAxiosInstance(ERP_BASE);
 
 export const ImportsAPI = API.imports;
 
-// TODO: remove once backend endpoint for pending declarations is confirmed stable.
-const USE_MOCK_PENDING_DATA = false;
 
-const MOCK_PENDING_ITEMS: ImportItemApiRaw[] = [
+const USE_MOCK_PENDING_DECLARATIONS = false;
+
+const MOCK_PENDING_DECLARATIONS: ImportItemApiRaw[] = [
   {
-    taskCd: "7969427",
-    dclDe: "20231209",
-    itemSeq: 15,
-    dclNo: "C 82386-2023-KZU",
-    hsCd: "21039000",
-    itemNm: "VERI PERI VERI HOT AFRICAN SAUCE 250ML",
-    imptItemsttsCd: "2",
-    orgnNatCd: "ZA",
-    exptNatCd: "ZA",
-    pkg: 1,
-    pkgUnitCd: "PK",
-    qty: 100,
-    qtyUnitCd: "GRO",
-    totWt: 5.92,
-    netWt: 5.92,
-    spplrNm: null,
-    agntNm: "PENTAGRAND CONSORTIUM LIMITED",
-    invcFcurAmt: 13.8,
-    invcFcurCd: "USD",
-    invcFcurExcrt: 23.05,
-    dclRefNum: null,
-  },
-  {
-    taskCd: "7949193",
-    dclDe: "20231209",
+    dclNo: "24ZM000123456",
+    dclDe: "20240115",
     itemSeq: 1,
-    dclNo: "C 80633-2023-KZU",
-    hsCd: "19021900",
-    itemNm: "SPAGHETTI TOSCANA 1KG",
-    imptItemsttsCd: "2",
-    orgnNatCd: "LT",
-    exptNatCd: "ZA",
-    pkg: 1,
-    pkgUnitCd: "PK",
-    qty: 100,
-    qtyUnitCd: "GRO",
-    totWt: 76.2,
-    netWt: 76.2,
-    spplrNm: null,
-    agntNm: "PENTAGRAND CONSORTIUM LIMITED",
-    invcFcurAmt: 93.24,
-    invcFcurCd: "USD",
-    invcFcurExcrt: 23.05,
-    dclRefNum: null,
-  },
-  {
-    taskCd: "7101003",
-    dclDe: "20231118",
-    itemSeq: 3,
-    dclNo: "C3458-2019-TZDL",
-    hsCd: "48203000",
-    itemNm: "LEVER ARCH FILE A4",
+    itemNm: "Stainless Steel Bolts M8x40",
+    hsCd: "7318159000",
+    taskCd: "IM",
     imptItemsttsCd: "2",
     orgnNatCd: "CN",
-    exptNatCd: "ZA",
-    pkg: 5,
-    pkgUnitCd: "PK",
-    qty: 100,
-    qtyUnitCd: "GRO",
-    totWt: 30.8,
-    netWt: 30.8,
-    spplrNm: null,
-    agntNm: "GLOBAL SUPPLIES ZM",
-    invcFcurAmt: 86.8,
+    exptNatCd: "CN",
+    qty: 5000,
+    qtyUnitCd: "PCS",
+    totWt: 250.5,
+    netWt: 240,
+    pkg: 10,
+    pkgUnitCd: "CTN",
+    agntNm: "Zamlink Clearing Agents",
+    spplrNm: "Shenzhen Hardware Co. Ltd",
+    invcFcurAmt: 1200.0,
     invcFcurCd: "USD",
-    invcFcurExcrt: 22.05,
-    dclRefNum: null,
+    invcFcurExcrt: 26.35,
+    dclRefNum: "REF-24-001123",
+  },
+  {
+    dclNo: "24ZM000123456",
+    dclDe: "20240115",
+    itemSeq: 2,
+    itemNm: "PVC Pipe Fittings 32mm",
+    hsCd: "3917400000",
+    taskCd: "IM",
+    imptItemsttsCd: "2",
+    orgnNatCd: "CN",
+    exptNatCd: "CN",
+    qty: 2000,
+    qtyUnitCd: "PCS",
+    totWt: 180,
+    netWt: 172,
+    pkg: 4,
+    pkgUnitCd: "CTN",
+    agntNm: "Zamlink Clearing Agents",
+    spplrNm: "Shenzhen Hardware Co. Ltd",
+    invcFcurAmt: 640.0,
+    invcFcurCd: "USD",
+    invcFcurExcrt: 26.35,
+    dclRefNum: "REF-24-001123",
+  },
+  {
+    dclNo: "24ZM000198765",
+    dclDe: "20240202",
+    itemSeq: 1,
+    itemNm: "Cotton T-Shirts (Assorted)",
+    hsCd: "6109100000",
+    taskCd: "IM",
+    imptItemsttsCd: "2",
+    orgnNatCd: "IN",
+    exptNatCd: "IN",
+    qty: 1500,
+    qtyUnitCd: "PCS",
+    totWt: 450,
+    netWt: 430,
+    pkg: 30,
+    pkgUnitCd: "BAG",
+    agntNm: "Lusaka Freight Solutions",
+    spplrNm: "Mumbai Textiles Pvt Ltd",
+    invcFcurAmt: 4500.0,
+    invcFcurCd: "USD",
+    invcFcurExcrt: 26.4,
+    dclRefNum: "REF-24-001987",
+  },
+  {
+    dclNo: "24ZM000255111",
+    dclDe: "20240310",
+    itemSeq: 1,
+    itemNm: "Laptop Batteries Li-ion 4400mAh",
+    hsCd: "8507600000",
+    taskCd: "IM",
+    imptItemsttsCd: "2",
+    orgnNatCd: "VN",
+    exptNatCd: "SG",
+    qty: 800,
+    qtyUnitCd: "PCS",
+    totWt: 320,
+    netWt: 300,
+    pkg: 16,
+    pkgUnitCd: "CTN",
+    agntNm: "Copperbelt Logistics",
+    spplrNm: "Vietnam Power Cells Co.",
+    invcFcurAmt: 9600.0,
+    invcFcurCd: "USD",
+    invcFcurExcrt: 26.28,
+    dclRefNum: "REF-24-002551",
   },
 ];
-
-function getMockPendingResponse(): ImportDeclarationsApiResponse {
-  return {
-    resultCd: "000",
-    resultMsg: "It is succeeded",
-    resultDt: new Date().toISOString().replace(/\D/g, "").slice(0, 14),
-    data: { itemList: MOCK_PENDING_ITEMS },
-  };
-}
 
 // ─────────────────────────────────────────────────────────────────────────
 // Pending declarations (process-import modal)
 // ─────────────────────────────────────────────────────────────────────────
 
 export async function fetchPendingImportDeclarations(): Promise<ImportDeclarationsApiResponse> {
-  if (USE_MOCK_PENDING_DATA) {
-    console.log("[fetchPendingImportDeclarations] MOCK response injected");
-    return getMockPendingResponse();
+  console.log("Fetching pending import declarations...", USE_MOCK_PENDING_DECLARATIONS ? "(using mock data)" : "");
+  if (USE_MOCK_PENDING_DECLARATIONS) {
+    // Simulated network delay so loading states are visible while testing
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    return {
+      status_code: 200,
+      message: "OK (mock data)",
+      data: MOCK_PENDING_DECLARATIONS,
+    } as ImportDeclarationsApiResponse;
   }
 
   const resp: AxiosResponse<ImportDeclarationsApiResponse> = await api.get(
     ImportsAPI.getPendingDeclarations
   );
-  console.log("🚀 ~ fetchPendingImportDeclarations ~ resp:", resp);
 
-  // Updated to check for the numeric 200
   if (resp.data.status_code !== 200) {
-    // Updated to use the 'message' field from the response
     throw new Error((resp.data as any).message || "Import declarations request failed");
   }
 
   return resp.data;
 }
 
-// target_warehouse and the rest of the item's customs detail now live on
-// each item payload (see confirmed sample), not on the declaration wrapper —
-// so this needs a per-item WarehouseMap instead of one global warehouse.
+
 function buildDeclarationPayloads(
   items: ImportItem[],
   decisions: DecisionsMap,
   remarks: RemarksMap,
   mappedItems: MappedItemsMap,
-  warehouses: WarehouseMap
+  warehouses: WarehouseMap,
+  suppliers: SuppliersMap
 ): SubmitDeclarationPayload[] {
   const byDclNo = new Map<string, SubmitDeclarationPayload>();
 
@@ -157,6 +173,7 @@ function buildDeclarationPayloads(
       imptItemSttsCd: decision === "approve" ? "3" : "4",
       remark: remarks[item.id] ?? "",
       mapped_erp_item: mapped?.itemCode ?? "",
+      mapped_erp_supplier: suppliers[item.id]?.id ?? "",
       target_warehouse: warehouses[item.id] ?? "",
       orgnNatCd: item.orgnNatCd,
       exptNatCd: item.exptNatCd,
@@ -195,14 +212,17 @@ export async function submitImportDecisions(
   decisions: DecisionsMap,
   remarks: RemarksMap,
   mappedItems: MappedItemsMap,
-  warehouses: WarehouseMap
+  warehouses: WarehouseMap,
+    suppliers: SuppliersMap
 ): Promise<{ resultCd: string; resultMsg: string }[]> {
   const declarationPayloads = buildDeclarationPayloads(
     items,
     decisions,
     remarks,
     mappedItems,
-    warehouses
+    warehouses,
+    suppliers
+
   );
 
   // One POST per declaration, matching the confirmed backend shape

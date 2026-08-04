@@ -44,6 +44,9 @@ interface CustomerSelectProps {
   error?: string;
 }
 
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 300;
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 const mapCustomer = (c: any): Customer => ({
@@ -80,6 +83,15 @@ function getDropStyle(
   return { position: "fixed", ...vertPos, left, width, zIndex: 9999 };
 }
 
+// getAllCustomers() returns resp.data directly — backend body shape is
+// { status_code, message, data: Customer[] } based on the `res.status_code`
+// / `res.data` check already used below, so no extra unwrap needed here.
+function extractCustomerList(res: any): any[] {
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  return [];
+}
+
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
 export default function CustomerSelect({
@@ -97,7 +109,6 @@ export default function CustomerSelect({
 }: CustomerSelectProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
@@ -107,6 +118,9 @@ export default function CustomerSelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<Array<HTMLLIElement | null>>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // guards against a slow, stale request overwriting a newer one
+  const requestIdRef = useRef(0);
 
   // ── Sync display value ────────────────────────────────────────────────────
   useEffect(() => {
@@ -154,46 +168,60 @@ export default function CustomerSelect({
     };
   }, [open]);
 
-  // ── Load customers once ───────────────────────────────────────────────────
-  const loadCustomers = useCallback(async () => {
-    if (fetched) return;
-    try {
-      setLoading(true);
-      const res = await getAllCustomers(1, 1000, taxCategory, "", "active");
-      if (res?.status_code !== 200) return;
-      const raw: any[] = Array.isArray(res.data) ? res.data : [];
-      setCustomers(raw.map(mapCustomer));
-      setFetched(true);
-    } catch (err) {
-      console.error("CustomerSelect: failed to load customers", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetched, taxCategory]);
+  // ── Server-side search (backend supports page, page_size, taxCategory, search, status) ──
+  const fetchCustomers = useCallback(
+    async (searchTerm: string) => {
+      const requestId = ++requestIdRef.current;
+      try {
+        setLoading(true);
+        const res = await getAllCustomers(
+          1,
+          PAGE_SIZE,
+          taxCategory,
+          searchTerm,
+          "active",
+        );
+        if (requestId !== requestIdRef.current) return; // stale response, ignore
+        if (res?.status_code !== 200) {
+          setCustomers([]);
+          return;
+        }
+        const raw = extractCustomerList(res);
+        setCustomers(raw.map(mapCustomer));
+      } catch (err) {
+        console.error("CustomerSelect: failed to load customers", err);
+        if (requestId === requestIdRef.current) setCustomers([]);
+      } finally {
+        if (requestId === requestIdRef.current) setLoading(false);
+      }
+    },
+    [taxCategory],
+  );
+
+  // Debounced trigger whenever the search text changes while the dropdown is open
+  useEffect(() => {
+    if (!open) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchCustomers(search);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [search, open, fetchCustomers]);
 
   const handleOpen = useCallback(() => {
     if (disabled) return;
     setDropRect(containerRef.current?.getBoundingClientRect() ?? null);
     setOpen(true);
     inputRef.current?.select();
-    loadCustomers();
-  }, [disabled, loadCustomers]);
+    fetchCustomers(search);
+  }, [disabled, fetchCustomers, search]);
 
-  // ── Filtered list ─────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.id.toLowerCase().includes(q) ||
-        (c.customerCode ?? "").toLowerCase().includes(q),
-    );
-  }, [customers, search]);
-
-  // ── Reset highlight whenever the filtered list changes ────────────────────
+  // ── Reset highlight whenever the list changes ──────────────────────────────
   useEffect(() => {
-    setHighlightedIndex(filtered.length > 0 ? 0 : -1);
-  }, [filtered]);
+    setHighlightedIndex(customers.length > 0 ? 0 : -1);
+  }, [customers]);
 
   // ── Keep highlighted option in view ────────────────────────────────────────
   useEffect(() => {
@@ -234,21 +262,21 @@ export default function CustomerSelect({
       case "ArrowDown":
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          filtered.length === 0 ? -1 : (prev + 1) % filtered.length,
+          customers.length === 0 ? -1 : (prev + 1) % customers.length,
         );
         break;
       case "ArrowUp":
         e.preventDefault();
         setHighlightedIndex((prev) =>
-          filtered.length === 0
+          customers.length === 0
             ? -1
-            : (prev - 1 + filtered.length) % filtered.length,
+            : (prev - 1 + customers.length) % customers.length,
         );
         break;
       case "Enter":
         e.preventDefault();
-        if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
-          handleSelect(filtered[highlightedIndex]);
+        if (highlightedIndex >= 0 && customers[highlightedIndex]) {
+          handleSelect(customers[highlightedIndex]);
         }
         break;
       case "Escape":
@@ -308,7 +336,6 @@ export default function CustomerSelect({
                 containerRef.current?.getBoundingClientRect() ?? null,
               );
               setOpen(true);
-              loadCustomers();
             }
           }}
           onFocus={handleOpen}
@@ -334,12 +361,12 @@ export default function CustomerSelect({
                 <li className="px-3 py-2 text-muted text-[11px]">
                   Loading…
                 </li>
-              ) : filtered.length === 0 ? (
+              ) : customers.length === 0 ? (
                 <li className="px-3 py-2 text-muted text-[11px]">
                   {search ? `No match for "${search}"` : "No customers found"}
                 </li>
               ) : (
-                filtered.map((c, idx) => (
+                customers.map((c, idx) => (
                   <li
                     key={c.id}
                     ref={(el) => {

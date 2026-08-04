@@ -9,8 +9,9 @@ import type {
   ImportItemApiRaw,
   ImportItemsTotals,
   MappedItemsMap,
+  MappedSupplier,
   RemarksMap,
-  WarehouseMap,
+  WarehouseMap,SuppliersMap, 
 } from "../../types/inventory/Processimportmodal.types";
 
 function mapRawItem(raw: ImportItemApiRaw): ImportItem {
@@ -47,6 +48,7 @@ export function useProcessImportModal(isOpen: boolean) {
   const [remarks, setRemarks] = useState<RemarksMap>({});
   const [mappedItems, setMappedItems] = useState<MappedItemsMap>({});
   const [warehouses, setWarehouses] = useState<WarehouseMap>({});
+  const [suppliers, setSuppliers] = useState<SuppliersMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +109,9 @@ export function useProcessImportModal(isOpen: boolean) {
     },
     []
   );
+const handleSupplierChange = useCallback((itemId: string, supplier: MappedSupplier) => {
+  setSuppliers((prev) => ({ ...prev, [itemId]: supplier }));
+}, []);
 
   const approveAllRemaining = useCallback(() => {
     setDecisions((prev) => {
@@ -148,18 +153,19 @@ export function useProcessImportModal(isOpen: boolean) {
     setIsSubmitting(true);
     setError(null);
     try {
-      await submitImportDecisions(items, decisions, remarks, mappedItems, warehouses);
+      await submitImportDecisions(items, decisions, remarks, mappedItems, warehouses, suppliers);
       await loadItems();
       setDecisions({});
       setRemarks({});
       setMappedItems({});
       setWarehouses({});
+      setSuppliers({});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit decisions");
     } finally {
       setIsSubmitting(false);
     }
-  }, [items, decisions, remarks, mappedItems, warehouses, loadItems]);
+  }, [items, decisions, remarks, mappedItems, warehouses, suppliers, loadItems]);
 
   return {
     items,
@@ -168,10 +174,12 @@ export function useProcessImportModal(isOpen: boolean) {
     remarks,
     mappedItems,
     warehouses,
+    suppliers,
     handleWarehouseChange,
     handleDecision,
     handleRemarkChange,
     handleMappedItemChange,
+    handleSupplierChange,
     approveAllRemaining,
     counts,
     isLoading,

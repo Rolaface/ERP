@@ -30,6 +30,7 @@ export interface ImportItemApiRaw {
 
 export interface ImportDeclarationsApiResponse {
   resultCd: string; // "000" = success
+  status_code: number; // 200 = success
   resultMsg: string;
   resultDt: string; // YYYYMMDDHHmmss
   data: {
@@ -58,6 +59,12 @@ export interface MappedItemsMap {
   [itemId: string]: MappedItem;
 }
 
+export interface MappedSupplier {
+  id: string;
+  name: string;
+}
+export type SuppliersMap = Record<string, MappedSupplier>;
+
 // Per-item warehouse selection — keyed the same way as DecisionsMap/RemarksMap
 // (by ImportItem.id), since target_warehouse is now chosen per row, not once
 // for the whole modal.
@@ -81,6 +88,7 @@ export interface SubmitImportItemPayload {
   remark: string;
   mapped_erp_item: string;
   target_warehouse: string; // moved from declaration level — chosen per item
+  mapped_erp_supplier: string;
   orgnNatCd: string;
   exptNatCd: string;
   pkg: number;

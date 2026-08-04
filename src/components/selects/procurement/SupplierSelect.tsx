@@ -45,6 +45,9 @@ interface SupplierSelectProps {
   error?: string;
 }
 
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 300;
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 const mapSupplier = (s: any): Supplier => ({
@@ -82,6 +85,15 @@ function getDropStyle(
   return { position: "fixed", ...vertPos, left, width, zIndex: 9999 };
 }
 
+// getSuppliers() returns resp.data directly (the whole backend body), which
+// looks like: { status, message, data: { data: Supplier[], pagination: {...} } }
+// This pulls the actual array out regardless of which shape shows up.
+function extractSupplierList(res: any): any[] {
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  if (Array.isArray(res?.data)) return res.data;
+  return [];
+}
+
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
 export default function SupplierSelect({
@@ -98,7 +110,6 @@ export default function SupplierSelect({
 }: SupplierSelectProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
@@ -106,6 +117,9 @@ export default function SupplierSelect({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // guards against a slow, stale request overwriting a newer one
+  const requestIdRef = useRef(0);
 
   // ── Sync display value ────────────────────────────────────────────────────
   useEffect(() => {
@@ -151,40 +165,43 @@ export default function SupplierSelect({
     };
   }, [open]);
 
-  // ── Load suppliers once ───────────────────────────────────────────────────
-  const loadSuppliers = useCallback(async () => {
-    if (fetched) return;
+  // ── Server-side search (backend supports page, page_size, search) ──────────
+  const fetchSuppliers = useCallback(async (searchTerm: string) => {
+    const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
-      const res = await getSuppliers(1, 1000);
-      const raw: any[] = Array.isArray(res?.data) ? res.data : [];
+      const res = await getSuppliers(1, PAGE_SIZE, { search: searchTerm });
+      const raw = extractSupplierList(res);
+      // ignore stale responses if a newer search fired in the meantime
+      if (requestId !== requestIdRef.current) return;
       setSuppliers(raw.map(mapSupplier));
-      setFetched(true);
     } catch (err) {
       console.error("SupplierSelect: failed to load suppliers", err);
+      if (requestId === requestIdRef.current) setSuppliers([]);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [fetched]);
+  }, []);
+
+  // Debounced trigger whenever the search text changes while the dropdown is open
+  useEffect(() => {
+    if (!open) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchSuppliers(search);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [search, open, fetchSuppliers]);
 
   const handleOpen = useCallback(() => {
     if (disabled) return;
     setDropRect(containerRef.current?.getBoundingClientRect() ?? null);
     setOpen(true);
     inputRef.current?.select();
-    loadSuppliers();
-  }, [disabled, loadSuppliers]);
-
-  // ── Filtered list ─────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return suppliers.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.id.toLowerCase().includes(q) ||
-        (s.tpin ?? "").toLowerCase().includes(q),
-    );
-  }, [suppliers, search]);
+    fetchSuppliers(search);
+  }, [disabled, fetchSuppliers, search]);
 
   // ── Select ────────────────────────────────────────────────────────────────
   const handleSelect = (s: Supplier) => {
@@ -241,7 +258,6 @@ export default function SupplierSelect({
                 containerRef.current?.getBoundingClientRect() ?? null,
               );
               setOpen(true);
-              loadSuppliers();
             }
           }}
           onFocus={handleOpen}
@@ -252,7 +268,7 @@ export default function SupplierSelect({
         )}
       </div>
 
-     
+
       {open &&
         dropRect &&
         createPortal(
@@ -264,12 +280,12 @@ export default function SupplierSelect({
             <ul className="max-h-56 overflow-y-auto text-[11px]">
               {loading ? (
                 <li className="px-3 py-2 text-muted text-[11px]">Loading…</li>
-              ) : filtered.length === 0 ? (
+              ) : suppliers.length === 0 ? (
                 <li className="px-3 py-2 text-muted text-[11px]">
                   {search ? `No match for "${search}"` : "No suppliers found"}
                 </li>
               ) : (
-                filtered.map((s) => (
+                suppliers.map((s) => (
                   <li
                     key={s.id}
                     onMouseDown={(e) => {

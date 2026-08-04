@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   Package,
   RefreshCw,
@@ -12,6 +12,8 @@ import WarehouseSelect from "../../selects/WarehouseSelect";
 import ExpandableDetailRow from "../../../components/common/ExpandableDetailRow";
 import RowExpandToggle from "../../../components/common/RowExpandToggle";
 import { useProcessImportModal } from "../../../hooks/inventory/Useprocessimportmodal";
+import SupplierSelect from "../../selects/procurement/SupplierSelect";
+import { getSuppliers } from "../../../api/procurement/supplierApi";
 
 interface ProcessImportModalProps {
   isOpen: boolean;
@@ -38,7 +40,16 @@ const fmtNum = (n: number) =>
     maximumFractionDigits: 2,
   });
 
-const PENDING_TABLE_COLSPAN = 10;
+const PENDING_TABLE_COLSPAN = 11;
+
+// getSuppliers() returns resp.data directly (the whole backend body), which
+// looks like: { status, message, data: { data: Supplier[], pagination: {...} } }
+// This pulls the actual array out regardless of which shape shows up.
+function extractSupplierList(res: any): any[] {
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  if (Array.isArray(res?.data)) return res.data;
+  return [];
+}
 
 const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
   isOpen,
@@ -57,10 +68,12 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
     remarks,
     mappedItems,
     warehouses,
+    suppliers,
     handleWarehouseChange,
     handleDecision,
     handleRemarkChange,
     handleMappedItemChange,
+    handleSupplierChange,
     approveAllRemaining,
     counts,
     isLoading,
@@ -73,6 +86,91 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
   // ── expand + select state ──
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
+  // ── supplier filter ──
+  // The filter dropdown is populated from the full supplier list (same API
+  // SupplierSelect itself uses), NOT just the ones mapped on rows so far —
+  // otherwise the dropdown stays empty until the user manually maps a
+  // supplier on at least one row.
+  const [supplierFilter, setSupplierFilter] = useState<string>("");
+  const [supplierFilterName, setSupplierFilterName] = useState<string>("");
+  const [filterResults, setFilterResults] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterContainerRef = useRef<HTMLDivElement>(null);
+  const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filterRequestIdRef = useRef(0);
+
+  // server-side search, same as SupplierSelect
+  const fetchFilterSuppliers = useCallback(async (searchTerm: string) => {
+    const requestId = ++filterRequestIdRef.current;
+    try {
+      setFilterLoading(true);
+      const res = await getSuppliers(1, 20, { search: searchTerm });
+      const raw = extractSupplierList(res);
+      if (requestId !== filterRequestIdRef.current) return;
+      setFilterResults(raw.map((s: any) => ({ id: s.id, name: s.name })));
+    } catch (err) {
+      console.error("Failed to search suppliers for filter", err);
+      if (requestId === filterRequestIdRef.current) setFilterResults([]);
+    } finally {
+      if (requestId === filterRequestIdRef.current) setFilterLoading(false);
+    }
+  }, []);
+
+  // debounce search-as-you-type while dropdown is open
+  useEffect(() => {
+    if (!filterOpen) return;
+    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    filterDebounceRef.current = setTimeout(() => {
+      fetchFilterSuppliers(filterSearch);
+    }, 300);
+    return () => {
+      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    };
+  }, [filterSearch, filterOpen, fetchFilterSuppliers]);
+
+  const handleFilterFocus = () => {
+    setFilterOpen(true);
+    fetchFilterSuppliers(filterSearch);
+  };
+
+  // close the filter dropdown on outside click
+  useEffect(() => {
+    if (!filterOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (filterContainerRef.current?.contains(e.target as Node)) return;
+      setFilterOpen(false);
+      // restore last valid selection text if user typed something and clicked away
+      setFilterSearch(supplierFilterName);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [filterOpen, supplierFilterName]);
+
+  const handleFilterSelect = (s: { id: string; name: string }) => {
+    setSupplierFilter(s.id);
+    setSupplierFilterName(s.name);
+    setFilterSearch(s.name);
+    setFilterOpen(false);
+  };
+
+  const clearFilter = () => {
+    setSupplierFilter("");
+    setSupplierFilterName("");
+    setFilterSearch("");
+    setFilterOpen(false);
+  };
+
+  // Filters by the supplier the user mapped via SupplierSelect on each row
+  // (there's no real supplier field from the API — spplrNm is always null).
+  const filteredItems = useMemo(() => {
+    if (!supplierFilter) return items;
+    return items.filter((item) => suppliers[item.id]?.id === supplierFilter);
+  }, [items, suppliers, supplierFilter]);
 
   const toggleExpand = useCallback((id: string) => {
     setExpandedRows((prev) => {
@@ -92,9 +190,11 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
 
   const toggleSelectAll = useCallback(() => {
     setSelectedRows((prev) =>
-      prev.size === items.length ? new Set() : new Set(items.map((i) => i.id)),
+      prev.size === filteredItems.length
+        ? new Set()
+        : new Set(filteredItems.map((i) => i.id)),
     );
-  }, [items]);
+  }, [filteredItems]);
 
   const bulkDecision = useCallback(
     (decision: "approve" | "reject") => {
@@ -185,6 +285,82 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                   </button>
                 </>
               )}
+              <div className="flex items-center gap-2">
+                <label className="text-[12px] text-muted font-medium whitespace-nowrap">
+                  Filter by Supplier:
+                </label>
+                <div ref={filterContainerRef} className="relative w-48">
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    value={filterSearch}
+                    placeholder={filterLoading ? "Loading..." : "All Suppliers"}
+                    onFocus={handleFilterFocus}
+                    onChange={(e) => {
+                      setFilterSearch(e.target.value);
+                      if (supplierFilter) setSupplierFilter("");
+                      if (!filterOpen) setFilterOpen(true);
+                    }}
+                    className="py-1 pl-2 pr-6 border border-theme rounded text-[11px] text-main bg-card w-full focus:outline-none focus:border-primary"
+                  />
+                  {supplierFilter && (
+                    <button
+                      type="button"
+                      onClick={clearFilter}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted hover:text-main"
+                      aria-label="Clear supplier filter"
+                    >
+                      <XIcon size={12} />
+                    </button>
+                  )}
+
+                  {filterOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-full bg-card border border-theme rounded-lg shadow-xl overflow-hidden z-50">
+                      <ul className="max-h-56 overflow-y-auto text-[11px]">
+                        <li
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            clearFilter();
+                          }}
+                          className={[
+                            "px-3 py-1.5 cursor-pointer border-b border-theme transition-colors",
+                            !supplierFilter
+                              ? "bg-primary/10 text-primary font-semibold"
+                              : "hover:bg-primary/5 text-main",
+                          ].join(" ")}
+                        >
+                          All Suppliers
+                        </li>
+                        {filterLoading ? (
+                          <li className="px-3 py-2 text-muted text-[11px]">Loading…</li>
+                        ) : filterResults.length === 0 ? (
+                          <li className="px-3 py-2 text-muted text-[11px]">
+                            {filterSearch ? `No match for "${filterSearch}"` : "No suppliers found"}
+                          </li>
+                        ) : (
+                          filterResults.map((s) => (
+                            <li
+                              key={s.id}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleFilterSelect(s);
+                              }}
+                              className={[
+                                "px-3 py-1.5 cursor-pointer border-b border-theme last:border-none transition-colors truncate",
+                                s.id === supplierFilter
+                                  ? "bg-primary/10 text-primary font-semibold"
+                                  : "hover:bg-primary/5 text-main",
+                              ].join(" ")}
+                            >
+                              {s.name}
+                            </li>
+                          ))
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
               <button
                 onClick={refresh}
                 className="flex items-center gap-1.5 text-[12px] font-medium text-muted hover:text-main transition-colors"
@@ -209,7 +385,7 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                   <th className="px-3 py-3 w-10 text-center">
                     <input
                       type="checkbox"
-                      checked={items.length > 0 && selectedRows.size === items.length}
+                      checked={filteredItems.length > 0 && selectedRows.size === filteredItems.length}
                       onChange={toggleSelectAll}
                     />
                   </th>
@@ -220,6 +396,7 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                   <th className="px-3 py-3 text-right">Qty</th>
                   <th className="px-3 py-3 text-right min-w-[120px]">Amount</th>
                   <th className="px-3 py-3 min-w-[220px]">Map to Existing Item</th>
+                  <th className="px-3 py-3 min-w-[200px]">Supplier</th>
                   <th className="px-3 py-3 min-w-[160px]">Warehouse</th>
                   <th className="px-5 py-3 text-center w-40">Decision</th>
                 </tr>
@@ -237,7 +414,7 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                     </td>
                   </tr>
                 )}
-                {items.map((item, index) => {
+                {filteredItems.map((item, index) => {
                   const isExpanded = expandedRows.has(item.id);
                   const isSelected = selectedRows.has(item.id);
                   return (
@@ -289,6 +466,20 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                             onChange={(selected) =>
                               handleMappedItemChange(item.id, selected)
                             }
+                            className="w-full"
+                          />
+                        </td>
+                        <td
+                          className="px-3 py-3"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <SupplierSelect
+                            selectedId={suppliers[item.id]?.id ?? ""}
+                            onChange={(selected) =>
+                              handleSupplierChange(item.id, selected)
+                            }
+                            label=""
+                            placeholder="Map supplier..."
                             className="w-full"
                           />
                         </td>
