@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   Package,
   RefreshCw,
@@ -19,8 +25,9 @@ interface ProcessImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   modalId?: string;
-}
 
+  onSuccess?: () => void;
+}
 // YYYYMMDD -> "20 Nov 2023"
 function formatApiDate(raw: string): string {
   if (!raw || raw.length !== 8) return "—";
@@ -28,8 +35,18 @@ function formatApiDate(raw: string): string {
   const month = Number(raw.slice(4, 6)) - 1;
   const day = raw.slice(6, 8);
   const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
   return `${Number(day)} ${months[month] ?? ""} ${year}`;
 }
@@ -55,6 +72,7 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
   isOpen,
   onClose,
   modalId,
+  onSuccess,
 }) => {
   const resolvedModalId = useMemo(
     () => modalId || `process-import-${Date.now()}`,
@@ -231,7 +249,11 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
           <span className="text-amber-500">{counts.pending} pending</span>
         </div>
         <button
-          onClick={submit}
+          onClick={async () => {
+            await submit();
+            onSuccess?.();
+            onClose();
+          }}
           disabled={items.length === 0 || isSubmitting}
           className="px-6 py-2 bg-primary hover:opacity-90 text-primary-foreground rounded-md text-sm font-medium transition-opacity shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -332,10 +354,14 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                           All Suppliers
                         </li>
                         {filterLoading ? (
-                          <li className="px-3 py-2 text-muted text-[11px]">Loading…</li>
+                          <li className="px-3 py-2 text-muted text-[11px]">
+                            Loading…
+                          </li>
                         ) : filterResults.length === 0 ? (
                           <li className="px-3 py-2 text-muted text-[11px]">
-                            {filterSearch ? `No match for "${filterSearch}"` : "No suppliers found"}
+                            {filterSearch
+                              ? `No match for "${filterSearch}"`
+                              : "No suppliers found"}
                           </li>
                         ) : (
                           filterResults.map((s) => (
@@ -366,7 +392,10 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                 className="flex items-center gap-1.5 text-[12px] font-medium text-muted hover:text-main transition-colors"
                 disabled={isLoading}
               >
-                <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
+                <RefreshCw
+                  size={13}
+                  className={isLoading ? "animate-spin" : ""}
+                />
                 Refresh
               </button>
               <button
@@ -385,7 +414,10 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                   <th className="px-3 py-3 w-10 text-center">
                     <input
                       type="checkbox"
-                      checked={filteredItems.length > 0 && selectedRows.size === filteredItems.length}
+                      checked={
+                        filteredItems.length > 0 &&
+                        selectedRows.size === filteredItems.length
+                      }
                       onChange={toggleSelectAll}
                     />
                   </th>
@@ -395,7 +427,9 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                   <th className="px-3 py-3">HS Code</th>
                   <th className="px-3 py-3 text-right">Qty</th>
                   <th className="px-3 py-3 text-right min-w-[120px]">Amount</th>
-                  <th className="px-3 py-3 min-w-[220px]">Map to Existing Item</th>
+                  <th className="px-3 py-3 min-w-[220px]">
+                    Map to Existing Item
+                  </th>
                   <th className="px-3 py-3 min-w-[200px]">Supplier</th>
                   <th className="px-3 py-3 min-w-[160px]">Warehouse</th>
                   <th className="px-5 py-3 text-center w-40">Decision</th>
@@ -528,25 +562,38 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                           fields={[
                             { label: "Declaration No", value: item.dclNo },
                             { label: "Declaration Ref", value: item.dclRefNum },
-                            { label: "Declaration Date", value: formatApiDate(item.dclDe) },
+                            {
+                              label: "Declaration Date",
+                              value: formatApiDate(item.dclDe),
+                            },
                             { label: "Task Code", value: item.taskCd },
                             { label: "Status", value: item.statusCd },
                             { label: "Origin", value: item.orgnNatCd },
                             { label: "Export Nation", value: item.exptNatCd },
                             { label: "Weight", value: fmtNum(item.totWt) },
                             { label: "Net Weight", value: fmtNum(item.netWt) },
-                            { label: "Package", value: `${item.pkg.toLocaleString()} ${item.pkgUnitCd}` },
+                            {
+                              label: "Package",
+                              value: `${item.pkg.toLocaleString()} ${item.pkgUnitCd}`,
+                            },
                             { label: "Agent", value: item.agntNm },
                             { label: "Supplier", value: item.supplierNm },
-                            { label: "Exchange Rate", value: fmtNum(item.exchangeRate) },
+                            {
+                              label: "Exchange Rate",
+                              value: fmtNum(item.exchangeRate),
+                            },
                           ]}
                         >
                           <div className="max-w-md">
-                            <span className="text-muted block mb-1 text-[11px]">Remark</span>
+                            <span className="text-muted block mb-1 text-[11px]">
+                              Remark
+                            </span>
                             <input
                               type="text"
                               value={remarks[item.id] ?? ""}
-                              onChange={(e) => handleRemarkChange(item.id, e.target.value)}
+                              onChange={(e) =>
+                                handleRemarkChange(item.id, e.target.value)
+                              }
                               placeholder="Add a remark..."
                               className="w-full py-1.5 px-3 border border-theme rounded text-[11px] text-main bg-app focus:outline-none focus:border-primary"
                             />
