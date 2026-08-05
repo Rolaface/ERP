@@ -28,8 +28,8 @@ import {
   Star,
   Mail,
   User,
-  CreditCard, House
-  ,FileUp
+  CreditCard, House,
+FileUp
 } from "lucide-react";
 import { getCompanyById } from "../api/companySetupApi";
 import { ERP_BASE } from "../config/api";
