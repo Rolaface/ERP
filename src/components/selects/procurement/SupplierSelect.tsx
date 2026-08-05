@@ -6,7 +6,9 @@ import React, {
   useMemo,
 } from "react";
 import { createPortal } from "react-dom";
+import { Truck } from "lucide-react";
 import { getSuppliers } from "../../../api/procurement/supplierApi";
+import SelectShell from "../../../components/ui/select/SelectShell";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -236,38 +238,37 @@ export default function SupplierSelect({
       )}
 
       <div ref={containerRef} className="relative w-full">
-        <input
-          ref={inputRef}
-          type="text"
-          autoComplete="off"
+        <SelectShell
+          icon={!search ? <Truck /> : undefined}
+          showChevron
+          error={Boolean(error)}
           disabled={disabled}
-          className={[
-            "py-1 px-2 border rounded text-[11px] text-main bg-card w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap",
-            disabled
-              ? "opacity-50 cursor-not-allowed border-theme"
-              : error
-                ? "border-red-400/60"
-                : "border-theme hover:border-primary/40 focus:outline-none focus:border-primary",
-          ].join(" ")}
-          placeholder={loading ? "Loading..." : placeholder}
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            if (!open) {
-              setDropRect(
-                containerRef.current?.getBoundingClientRect() ?? null,
-              );
-              setOpen(true);
-            }
-          }}
-          onFocus={handleOpen}
-        />
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            autoComplete="off"
+            disabled={disabled}
+            placeholder={loading ? "Loading..." : placeholder}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              if (!open) {
+                setDropRect(
+                  containerRef.current?.getBoundingClientRect() ?? null,
+                );
+                setOpen(true);
+              }
+            }}
+            onFocus={handleOpen}
+            className="overflow-hidden text-ellipsis whitespace-nowrap"
+          />
+        </SelectShell>
 
         {error && (
           <p className="text-[10px] text-red-500 mt-1 font-medium">{error}</p>
         )}
       </div>
-
 
       {open &&
         dropRect &&

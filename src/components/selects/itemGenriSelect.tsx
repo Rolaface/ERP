@@ -3,7 +3,8 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { getAllItems } from "../../api/itemApi";
 import { showApiError } from "../../utils/alert";
-import { Package, ChevronDown, Search, X, Loader2 } from "lucide-react";
+import { Package, Search, X, Loader2 } from "lucide-react";
+import SelectShell from "../../components/ui/select/SelectShell";
 
 export interface SelectedStockItem {
   id: string;
@@ -226,46 +227,38 @@ export default function ItemSelect({
   };
 
   return (
-    <div
-      className={`w-full min-w-0 ${className}`}
-      data-nav-ignore={open ? "true" : undefined}
-    >
-      {/* ── Trigger — name only ── */}
-      <div
-        ref={triggerRef}
-        role="combobox"
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        tabIndex={disabled ? -1 : 0}
-        onClick={handleOpen}
-        onKeyDown={(e) => {
-          if (!disabled && (e.key === "Enter" || e.key === " " || e.key === "ArrowDown")) {
-            e.preventDefault();
-            handleOpen();
-          }
-        }}
-        className={`flex items-center gap-1.5 px-2 py-1.5 border border-theme rounded min-h-[28px]
-          bg-card text-main text-[11px] select-none w-full transition-colors duration-150
-          ${disabled
-            ? "opacity-50 cursor-not-allowed"
-            : "cursor-pointer hover:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"}`}
+    <>
+      <SelectShell
+        icon={!selectedItem ? <Package /> : undefined}
+        chevronOpen={open}
+        disabled={disabled}
+        className={className}
       >
-        {!selectedItem && <Package className="w-3.5 h-3.5 text-muted shrink-0" />}
-
-        <span
-          className={`flex-1 min-w-0 truncate leading-tight ${
-            selectedItem ? "text-main" : "text-muted"
-          }`}
+        <div
+          ref={triggerRef}
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          tabIndex={disabled ? -1 : 0}
+          onClick={handleOpen}
+          onKeyDown={(e) => {
+            if (!disabled && (e.key === "Enter" || e.key === " " || e.key === "ArrowDown")) {
+              e.preventDefault();
+              handleOpen();
+            }
+          }}
+          data-nav-ignore={open ? "true" : undefined}
+          className={`select-none ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
         >
-          {selectedItem ? selectedItem.itemName : "Search item…"}
-        </span>
-
-        <ChevronDown
-          className={`w-3.5 h-3.5 text-muted shrink-0 transition-transform duration-150 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </div>
+          <span
+            className={`flex-1 min-w-0 truncate leading-tight ${
+              selectedItem ? "text-main" : "text-muted"
+            }`}
+          >
+            {selectedItem ? selectedItem.itemName : "Search item…"}
+          </span>
+        </div>
+      </SelectShell>
 
       {/* ── Dropdown — compact name + code list ── */}
       {open &&
@@ -393,6 +386,6 @@ export default function ItemSelect({
           </div>,
           document.body,
         )}
-    </div>
+    </>
   );
 }

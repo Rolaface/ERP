@@ -6,7 +6,9 @@ import React, {
   useMemo,
 } from "react";
 import { createPortal } from "react-dom";
+import { User } from "lucide-react";
 import { getAllCustomers } from "../../api/customerApi";
+import SelectShell from "../../components/ui/select/SelectShell";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
@@ -314,33 +316,32 @@ export default function CustomerSelect({
         className="relative w-full"
         data-nav-ignore={open ? "true" : undefined}
       >
-        <input
-          ref={inputRef}
-          type="text"
-          autoComplete="off"
+        <SelectShell
+          icon={!search ? <User /> : undefined}
+          error={Boolean(error)}
           disabled={disabled}
-          className={[
-            "py-1 px-2 border rounded text-[11px] text-main bg-card w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap",
-            disabled
-              ? "opacity-50 cursor-not-allowed border-theme"
-              : error
-                ? "border-red-400/60"
-                : "border-theme hover:border-primary/40 focus:outline-none focus:border-primary",
-          ].join(" ")}
-          placeholder={loading ? "Loading..." : placeholder}
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            if (!open) {
-              setDropRect(
-                containerRef.current?.getBoundingClientRect() ?? null,
-              );
-              setOpen(true);
-            }
-          }}
-          onFocus={handleOpen}
-          onKeyDown={handleKeyDown}
-        />
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            autoComplete="off"
+            disabled={disabled}
+            placeholder={loading ? "Loading..." : placeholder}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              if (!open) {
+                setDropRect(
+                  containerRef.current?.getBoundingClientRect() ?? null,
+                );
+                setOpen(true);
+              }
+            }}
+            onFocus={handleOpen}
+            onKeyDown={handleKeyDown}
+            className="overflow-hidden text-ellipsis whitespace-nowrap"
+          />
+        </SelectShell>
 
         {error && (
           <p className="text-[10px] text-red-500 mt-1 font-medium">{error}</p>
