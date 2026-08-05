@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
-import { uploadInventoryImportFile } from "../../api/imports/inventory import/inventoryimportapi";
+import { inventoryItemImportApi } from "../../api/imports/inventory import/inventoryimportapi";
 import type { BulkRow } from "../../types/inventory/InventoryImport.types";
 
 export function useInventoryImport(onSuccess?: () => void, onClose?: () => void) {
@@ -19,7 +19,7 @@ export function useInventoryImport(onSuccess?: () => void, onClose?: () => void)
       setBulkLoading(true);
       showLoading("Uploading inventory file…");
 
-      const response = await uploadInventoryImportFile(file);
+   const response = await inventoryItemImportApi.uploadFile(file);
       closeSwal();
 
       if (!response?.success) {
