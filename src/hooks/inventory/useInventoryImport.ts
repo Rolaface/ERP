@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { showApiError, showSuccess, showLoading, closeSwal } from "../../utils/alert";
-import { uploadInventoryImportFile } from "../../api/Inventory/inventoryimportapi";
+import { uploadInventoryImportFile } from "../../api/imports/inventory import/inventoryimportapi";
 import type { BulkRow } from "../../types/inventory/InventoryImport.types";
 
 export function useInventoryImport(onSuccess?: () => void, onClose?: () => void) {

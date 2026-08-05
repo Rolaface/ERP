@@ -1,0 +1,4 @@
+customer_name,customer_group,customer_type,territory,tax_id,mobile_no,email_id
+Acme Pharmaceuticals,Commercial,Company,Zambia,1234567,+260971234567,acme@example.com
+John Doe Distributors,Retail,Individual,Lusaka,,+260977654321,johndoe@example.com
+Bhatt Traders,,,, , ,
