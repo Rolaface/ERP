@@ -44,5 +44,5 @@ export async function getZraRrpItems(
   const response = await api.get<ZraRrpItemsResponse>(
     `${SELECT_RRP_ITEMS_PATH.getRrpItem}?${params.toString()}`
   );
-  return response.data?.message?.itemList ?? [];
+  return response.data?.message?.data?.itemList ?? [];
 }
