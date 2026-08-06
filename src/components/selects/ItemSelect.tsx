@@ -238,12 +238,11 @@ return (
             return (
               <div
                 ref={dropdownRef}
-                // NEW: portal content renders outside this DOM subtree, so it
-                // needs its own nav-ignore flag too.
+                
                 data-nav-ignore="true"
                 style={{
                   position: "fixed",
-                  top: rect.bottom + 4, // slight offset
+                  top: rect.bottom + 4, 
                   left,
                   width: dropdownWidth,
                   zIndex: 9999,
@@ -252,9 +251,7 @@ return (
               >
                 <div className="max-h-64 overflow-x-auto overflow-y-auto">
                   <table className="w-full min-w-[760px] border-collapse text-[10px] leading-tight">
-                    <thead className="sticky top-0 bg-card z-10 shadow-sm">
-                      <InvoiceHeaders />
-                    </thead>
+                   
                     <tbody>
                       {filtered.map((it, idx) => {
                         // NEW: is this the keyboard-highlighted row?

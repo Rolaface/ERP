@@ -52,6 +52,7 @@ interface TableProps<T> {
   onPageSizeChange?: (size: number) => void;
   defaultVisibleCount?: number;
   onRowDoubleClick?: (item: T) => void;
+  primaryAction?: React.ReactNode;
 }
 
 const SkeletonRow: React.FC<{ columnsCount: number; rowIdx: number }> = ({
@@ -134,6 +135,7 @@ const TableInner = <T extends Record<string, any>>({
   enableExport = false,
   onExport,
   enableColumnSelector = false,
+  primaryAction,
   sortBy,
   sortOrder: sortOrderProp,
   onSortChange,
@@ -255,6 +257,7 @@ const TableInner = <T extends Record<string, any>>({
                 Export
               </button>
             )}
+            {primaryAction}
           </div>
         </div>
       )}

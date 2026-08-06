@@ -801,21 +801,16 @@
   /* =========================
    PREMIUM CARD HOVER
 ========================= */
-  .card-interactive {
-    transition:
-      transform var(--motion-base) var(--ease-standard),
-      box-shadow var(--motion-base) var(--ease-standard),
-      border-color var(--motion-base) var(--ease-standard);
+.card-interactive {
+  transition:
+    box-shadow var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard);
+}
 
-    will-change: transform;
-    transform: translateZ(0);
-  }
-
-  .card-interactive:hover {
-    transform: translateY(-6px) scale(1.01);
-    box-shadow: var(--shadow-lg);
-    border-color: rgba(0, 0, 0, 0.06);
-  }
+.card-interactive:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(0, 0, 0, 0.06);
+}
 
   /* Premium Card */
   /* Premium Card */
@@ -1354,8 +1349,8 @@
   }
 
   /* Hover interactions */
-  .motion-hover-lift:hover {
-    transform: translateY(-4px);
+.motion-hover-lift:hover {
+    transform: translateY(-4px) translateZ(0);
     box-shadow: var(--shadow-md);
   }
 
@@ -1364,15 +1359,19 @@
   }
 
   /* Lift interaction (for any element) */
-  .interactive-lift {
+.interactive-lift {
     transition:
       transform var(--motion-base) var(--ease-standard),
       box-shadow var(--motion-base) var(--ease-standard);
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   .interactive-lift:hover {
-    transform: translateY(-6px) scale(1.01);
+    .interactive-lift:hover {
+    transform: translateY(-6px) scale(1.01) translateZ(0);
     box-shadow: var(--shadow-lg);
+  }
   }
 
   /* Smooth press */
