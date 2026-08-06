@@ -6,6 +6,7 @@ import {
   MapPin,
   Users,
   User,
+  Search,
 } from "lucide-react";
 import Tooltip from "../Tooltip";
 import TaxCategorySelect from "../selects/TaxCategorySelect";
@@ -32,6 +33,10 @@ import type { CustomerDetail } from "../../types/customer";
 import type { StandardModalProps } from "../../types/modal";
 import PhoneCodeSelect from "../common/PhoneCodeSelect";
 import type { ActiveTab } from "../../hooks/Usecustomerform";
+import { useCompanyStore } from "../../store/companyStore";
+import { useCompanyDefaultsStore } from "../../store/Companydefaultsstore";
+import { selectPrincipals } from "../../api/customerApi";
+import { showApiError } from "../../utils/alert";
 
 type CustomerModalProps = StandardModalProps<unknown, CustomerDetail>;
 
@@ -50,6 +55,25 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       : `customer-create-${Date.now()}`);
 
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+  const isRvatAgent = useCompanyDefaultsStore((s) => {
+    const value = s.defaults?.is_rvat_agent;
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      return ["1", "true", "yes", "y"].includes(normalized);
+    }
+    return false;
+  });
+  const [isPrincipalModalOpen, setIsPrincipalModalOpen] = React.useState(false);
+  const [principalOptions, setPrincipalOptions] = React.useState<any[]>([]);
+  const [principalLoading, setPrincipalLoading] = React.useState(false);
+  const [selectedPrincipalName, setSelectedPrincipalName] = React.useState("");
+
+  React.useEffect(() => {
+    useCompanyDefaultsStore.getState().fetchDefaults();
+  }, []);
 
   const {
     form,
@@ -86,6 +110,73 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     const didSave = await handleSubmitInternal();
     if (didSave) resetDirty();
     return didSave;
+  };
+
+  const showPrincipalLookup = isZraEnabled && isRvatAgent;
+
+  const handleOpenPrincipalLookup = async () => {
+    if (!showPrincipalLookup) return;
+
+    setPrincipalLoading(true);
+    setIsPrincipalModalOpen(true);
+
+    try {
+      const res = await selectPrincipals();
+      const list =
+        res?.data?.taxpayerPrincipalList ??
+        res?.taxpayerPrincipalList ??
+        res?.message?.data?.taxpayerPrincipalList ??
+        [];
+
+      setPrincipalOptions(list);
+    } catch (error) {
+      setPrincipalOptions([]);
+      showApiError(error);
+    } finally {
+      setPrincipalLoading(false);
+    }
+  };
+
+  const handleSelectPrincipal = (principal: any) => {
+    const fullName = principal?.principalNm || "";
+    const email = principal?.principalEmail || "";
+    const phone = principal?.principalTelNo || "";
+    const address = principal?.principalAddress || "";
+    const tpin = principal?.tpin || "";
+    const tin = principal?.tin || "";
+    const accountNo = principal?.accountNo || "";
+    const principalId = principal?.id || ""; 
+  
+    setForm((prev) => ({
+      ...prev,
+      name: fullName || prev.name,
+      tpin: tpin || prev.tpin,
+      displayName: fullName || prev.displayName,
+      registration_no: tin || prev.registration_no || "",
+      accountNumber: accountNo || prev.accountNumber,
+      principalId: principalId || prev.principalId,
+      contacts: prev.contacts.map((contact) =>
+        contact.isPrimary
+          ? {
+              ...contact,
+              firstName: fullName || contact.firstName,
+              email: email || contact.email,
+              mobileNumber: phone.replace(/\D/g, "") || contact.mobileNumber,
+              mobile: phone
+                ? `${contact.mobileCode || ""}${phone.replace(/\D/g, "")}`
+                : contact.mobile,
+            }
+          : contact,
+      ),
+      addresses: prev.addresses.map((addressEntry) =>
+        addressEntry.type === "Billing"
+          ? { ...addressEntry, line1: address || addressEntry.line1 }
+          : addressEntry,
+      ),
+    }));
+
+    setSelectedPrincipalName(fullName);
+    setIsPrincipalModalOpen(false);
   };
 
   const footer = (
@@ -160,6 +251,37 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               subtitle="Essential customer details"
               icon={<User className="w-5 h-5 text-primary" />}
             >
+            {showPrincipalLookup && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-4">
+                <div className="md:col-span-3 flex items-center justify-between gap-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Search className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold text-main truncate">
+                        {selectedPrincipalName
+                          ? `Prefilled from ${selectedPrincipalName}`
+                          : "Have a ZRA Principal?"}
+                      </p>
+                      <p className="text-[10px] text-muted">
+                        {selectedPrincipalName
+                          ? "Details imported — click to pick a different principal."
+                          : "Auto-fill name, contact and address instantly from ZRA."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenPrincipalLookup}
+                    className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-[11px] font-medium text-white hover:bg-primary/90 transition-colors"
+                  >
+                    {selectedPrincipalName ? "Change" : "Import from ZRA"}
+                  </button>
+                </div>
+              </div>
+            )}
+
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5  mt-4">
                 <Tooltip content={form.type || "Select Customer Type"}>
                   <ModalSelect
@@ -502,6 +624,46 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
           )}
         </div>
       </form>
+
+      <MinimizableModal
+        modalId={`${resolvedModalId}-principals`}
+        isOpen={isPrincipalModalOpen}
+        onClose={() => setIsPrincipalModalOpen(false)}
+        title="Select Principal"
+        subtitle="Choose a principal to prefill the customer form"
+        icon={Users}
+        maxWidth="lg"
+        height="70vh"
+      >
+        <div className="p-4">
+          {principalLoading ? (
+            <div className="text-sm text-muted">Loading principals...</div>
+          ) : principalOptions.length === 0 ? (
+            <div className="text-sm text-muted">No principals found.</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {principalOptions.map((principal) => (
+                <button
+                  key={principal.id ?? `${principal.tpin}-${principal.accountNo}`}
+                  type="button"
+                  onClick={() => handleSelectPrincipal(principal)}
+                  className="w-full rounded-lg border border-[var(--border)] bg-card p-3 text-left hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <div className="text-sm font-medium text-main">
+                    {principal.principalNm || principal.tpin}
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted">
+                    {principal.principalEmail}
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted">
+                    {principal.principalAddress}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </MinimizableModal>
     </MinimizableModal>
   );
 };

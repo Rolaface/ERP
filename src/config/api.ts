@@ -813,5 +813,8 @@ resource: {
   getZraMTVAPI: {
     getRrpItem: `${ERP_BASE}/api/method/zra_smart_invoice.modules.mtv.api.get_rrp_items`
   },
+  getZraRvatPrincipalAPI: {
+    getPrincipal: `${ERP_BASE}/api/method/zra_smart_invoice.modules.rvat.api.get_principals`
+  }
 
 } as const;
