@@ -34,6 +34,7 @@ export interface CompanyDefaults {
   // extended — saved from CompanyDefaults form
   primary_business_domain:               string | null;
   default_payment_mode:                   string | null;
+  is_rvat_agent:                          string | null;
 }
 
 type FetchStatus = "idle" | "loading" | "success" | "error";
@@ -89,6 +90,7 @@ const emptyDefaults: CompanyDefaults = {
   default_employee_advance_account:       null,
   primary_business_domain:               null,
   default_payment_mode:                   null,
+  is_rvat_agent:                          null
 };
 
 // ─── Store ────────────────────────────────────────────────────────────────────

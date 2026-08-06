@@ -5,6 +5,16 @@ import { API, ERP_BASE } from "../config/api";
 
 const api = createAxiosInstance(ERP_BASE);
 export const CustomerAPI = API.customer;
+export const SELECT_PRICIPAL = API.getZraRvatPrincipalAPI;
+
+export async function selectPrincipals(): Promise<any> {
+
+  const resp: AxiosResponse = await api.get(
+    SELECT_PRICIPAL.getPrincipal,
+  );
+
+  return resp.data;
+}
 
 export async function getAllCustomers(
   page: number = 1,
