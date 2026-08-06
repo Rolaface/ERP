@@ -69,6 +69,7 @@ export interface CustomerFormState {
   terms: {
     selling: TermSection;
   };
+  principalId?: string;
 }
 
 export interface CustomerFormErrors {
@@ -165,6 +166,7 @@ export const emptyForm: CustomerFormState = {
   addresses: [{ ...defaultBillingAddress }, { ...defaultShippingAddress }],
   sameAsBilling: true,
   terms: { selling: defaultSellingTerms },
+  principalId: "",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -211,6 +213,7 @@ export function mapApiResponseToFormState(
         phone: c.phone ?? "",
         isPrimary: c.isPrimary ?? false,
         isBilling: c.isBilling ?? false,
+        principalId: (data as any).principalId ?? "",
       };
     });
   } else {
@@ -307,6 +310,7 @@ export function mapApiResponseToFormState(
     terms: data.terms ?? {
       selling: companySellingTerms ?? defaultSellingTerms,
     },
+    principalId: (data as any).principalId ?? "",
   };
 }
 
