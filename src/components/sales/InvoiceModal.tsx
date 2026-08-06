@@ -349,21 +349,19 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   />
                 </div>
 
-                {/* LPO Number — only when LPO tax category */}
-                {ui.isLocal && (
-                  <div className="w-full sm:w-[120px]">
+                {/* PO Number */}
+                <div className="w-full sm:w-[160px]">
                     <ModalInput
-                      label="LPO Number"
+                      label="PO Number"
                       name="lpoNumber"
                       value={formData.lpoNumber}
                       onChange={actions.handleInputChange}
                       inputMode="numeric"
                       pattern="\d{10}"
-                      placeholder="Enter 10 digits"
+                      placeholder="Enter Purchase Order No"
                       className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
                     />
                   </div>
-                )}
 
                 {/* Invoice Type */}
                 <ToggleSwitch
