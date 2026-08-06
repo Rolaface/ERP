@@ -132,8 +132,12 @@ export default function StockItemSelect({
   const [selected, setSelected] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [dropRect, setDropRect] = useState<DOMRect | null>(null);
-  const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  // Defaults to hiding zero-stock items on open.
+  const [stockFilter, setStockFilter] = useState<StockFilter>("instock");
   const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+
+  // Service items have no stock concept, so the stock filter UI is irrelevant for them.
+  const showStockFilter = invoiceType !== "Service";
 
   // Tracks which row in the open list is currently keyboard-highlighted.
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -158,14 +162,13 @@ export default function StockItemSelect({
           price_list: item.price_list,
           description: item.description,
           packingSize: item.packingSize,
-          
           packingUnit: item.packingUnit,
-           stockUom: item.stock_uom,  
+          stockUom: item.stock_uom,
           piecesPerBox: item.piecesPerBox,
           taxInfo: item.taxInfo || [],
           isServiceItem: item.is_service_item,
-          is_mtv_item: item.is_mtv_item,   
-  rrp_rate: item.rrp_rate,  
+          is_mtv_item: item.is_mtv_item,
+          rrp_rate: item.rrp_rate,
         };
         if (item.batches?.length) {
           item.batches.forEach((b: any) => {
@@ -210,10 +213,10 @@ export default function StockItemSelect({
     setSearch("");
     const selectedTax = row.taxInfo?.[0] || {};
     const totalTaxRate = Number(selectedTax.totalTaxRate || 0);
-      const useRrpPrice = isZraEnabled && Number(row?.is_mtv_item) === 1;
-  const resolvedPrice = useRrpPrice
-    ? Number(row?.rrp_rate ?? 0)
-    : (row.price_list ?? 0);
+    const useRrpPrice = isZraEnabled && Number(row?.is_mtv_item) === 1;
+    const resolvedPrice = useRrpPrice
+      ? Number(row?.rrp_rate ?? 0)
+      : (row.price_list ?? 0);
 
     onChange({
       itemCode: row.itemCode,
@@ -224,7 +227,7 @@ export default function StockItemSelect({
       mfgDate: row.mfgDate,
       qty: row.qty,
       price_list: row.price_list,
-      price: resolvedPrice, 
+      price: resolvedPrice,
       packingSize: row.packingSize,
       packingUnit: row.packingUnit,
       stockUom: row.stockUom,
@@ -273,6 +276,8 @@ export default function StockItemSelect({
           `${r.itemName ?? ""} ${r.itemCode ?? ""} ${r.batchNo ?? ""}`.toLowerCase();
         if (tokens.length && !tokens.every((t) => hay.includes(t)))
           return false;
+        // Stock filter never applies to service items/invoices.
+        if (!showStockFilter) return true;
         if (stockFilter === "instock")
           return r.isServiceItem || Number(r.qty ?? 0) > 0;
         if (stockFilter === "expired")
@@ -280,7 +285,7 @@ export default function StockItemSelect({
         return true;
       })
       .sort((a, b) => Number(b.qty ?? 0) - Number(a.qty ?? 0));
-  }, [flatRows, search, stockFilter]);
+  }, [flatRows, search, stockFilter, showStockFilter]);
 
   // Whenever the visible list changes (typing, filter pill, opening), jump
   // the keyboard highlight back to the top row.
@@ -387,19 +392,25 @@ export default function StockItemSelect({
             style={dropStyle}
           >
             <div className="flex items-center gap-2 px-3 py-2 border-b border-theme bg-app">
-              <div className="flex items-center gap-1 shrink-0">
-                {(["all", "instock", "expired"] as StockFilter[]).map((f) => (
-                  <FilterPill
-                    key={f}
-                    value={f}
-                    active={stockFilter === f}
-                    onClick={() => setStockFilter(f)}
-                  />
-                ))}
-              </div>
-              <div className="w-px h-4 bg-theme shrink-0" />
+              {showStockFilter && (
+                <>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {(["all", "instock", "expired"] as StockFilter[]).map(
+                      (f) => (
+                        <FilterPill
+                          key={f}
+                          value={f}
+                          active={stockFilter === f}
+                          onClick={() => setStockFilter(f)}
+                        />
+                      ),
+                    )}
+                  </div>
+                  <div className="w-px h-4 bg-theme shrink-0" />
+                </>
+              )}
               <Search className="w-3.5 h-3.5 text-muted shrink-0" />
-              {stockFilter !== "all" && (
+              {showStockFilter && stockFilter !== "all" && (
                 <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium shrink-0">
                   {stockFilter === "instock" ? "In Stock" : "Expired"}
                   <button
@@ -575,7 +586,7 @@ export default function StockItemSelect({
                 {flatRows.length !== filtered.length &&
                   ` of ${flatRows.length}`}
               </span>
-              {(stockFilter !== "all" || search) && (
+              {((showStockFilter && stockFilter !== "all") || search) && (
                 <button
                   type="button"
                   className="text-primary hover:underline font-medium"

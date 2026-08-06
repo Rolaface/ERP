@@ -48,6 +48,7 @@ import { usePermission } from "../../hooks/permission/usePermission";
 import PermissionGate from "../PermissionGate";
 import { fireManagedSwal } from "../../utils/swalManager";
 import { getSalesInvoicePdf } from "../../api/PDF/pdfApi";
+import { generateShipperLabelsPDF } from "../../components/template/invoice/shipperLabelPdf";
 import {
   ACTION_ICONS,
   getStatusActionIcon,
@@ -460,6 +461,27 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
       setDrawerPdfLoading(false);
     }
   };
+  
+  const handleShipperLabels = async (
+  inv: InvoiceSummary,
+  e?: React.MouseEvent,
+) => {
+  e?.stopPropagation();
+  try {
+    showLoading("Generating shipper labels...");
+    const res = await getSalesInvoiceById(inv.invoiceNumber);
+    if (!res?.message || res.message.status_code !== 200) {
+      closeSwal();
+      showApiError(res?.message?.message || "Failed to load invoice");
+      return;
+    }
+    generateShipperLabelsPDF(res.message.data, company, "save");
+    closeSwal();
+  } catch (err) {
+    closeSwal();
+    showApiError(err);
+  }
+};
 
   // ── PDF preview modal (table row action — kept, do not remove)
   const handlePreviewPDF = async (
@@ -807,6 +829,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                         label: "View PDF",
                         icon: ACTION_ICONS.PDF,
                         onClick: () => handlePreviewPDF(inv),
+                      },
+                      {
+                      label: "Shipper Labels",
+                        icon: ACTION_ICONS.PDF,
+                        onClick: () => handleShipperLabels(inv),
                       },
                     ]
                   : []),

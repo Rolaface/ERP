@@ -68,6 +68,8 @@ export type ModalType =
   | "sendEmail"
   | "stockCorrection" 
   | "importInventory"  
+ 
+  | string;
 
   export interface ModalContext {
     source?: string;
@@ -77,8 +79,17 @@ export type ModalType =
     onSubmit?: (data: unknown) => Promise<void> | void;
     isViewMode?: boolean;
     loading?: boolean;
+   
+    importConfig?: {
+    title: string;
+    subtitle?: string;
+    accept?: string;
+    onImport: (file: File) => Promise<void> | void;
+    onDownloadTemplate?: () => void;
+  };
   
   }
+  
   
   export interface ModalMeta {
     title: string;
@@ -114,3 +125,5 @@ export type ModalType =
     modalPanelOffset: 10,
     minimizedTaskbar: 1800,
   } as const;
+
+  

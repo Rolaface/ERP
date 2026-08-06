@@ -47,6 +47,7 @@ const EmailTemplate = lazy(() => import("../views/Email/EmailTemplate"));
 const Performance = lazy(() => import("../views/hr/performace/PerformanceModule"));
 const Scheduler = lazy(() => import("../views/Scheduler/SchedulerTable"));
 const SelectApp = lazy(() => import("../views/SelectApp")); 
+const Imports =   lazy(()=>import("../views/Import/importdata"))
 
 // ── Component Helpers ──
 interface PermissionRouteProps {
@@ -175,6 +176,8 @@ const RootLayout = () => {
             <Route path="/Email-Template" element={<PermissionRoute modules={["Email Template"]}><EmailTemplate /></PermissionRoute>} />
             <Route path="/performance" element={<PermissionRoute modules={["Appraisal"]}><Performance /></PermissionRoute>} />
             <Route path="/scheduler" element={<PermissionRoute modules={["Scheduler"]}><Scheduler/></PermissionRoute>} />
+             <Route path="/Import" element={<PermissionRoute modules={["Imports"]}><Imports/></PermissionRoute>} />
+
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Route>

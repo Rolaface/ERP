@@ -324,6 +324,16 @@ export const API = {
   },
 
   /* =========================
+   * IMPORTED ITEMS
+   * ========================= */
+  imports: {
+  getPendingDeclarations: "/api/method/zra_smart_invoice.imports_item.api.get_import_items", 
+  submitDecisions: "/api/method/zra_smart_invoice.imports_item.api.process_imported_declarations",      
+  getImportedDeclarations: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_logs`, 
+  getImportedDeclarationById: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_log_by_id`, 
+},
+
+  /* =========================
    * ITEM GROUP
    * ========================= */
   itemGroup: {
@@ -514,14 +524,7 @@ export const API = {
     getAllWarehouses: `${ERP_BASE}/api/method/custom_api.api.warehouse.get_all_warehouse`,
   },
 
-  /* =========================
-   * IMPORT
-   * ========================= */
-  import: {
-    getAll: `${ERP_BASE}/api/method/erpnext.zra_client.item.imports.api.get_all_import_items`,
-    getById: `${ERP_BASE}/api/method/erpnext.zra_client.item.imports.api.get_import_item_by_id`,
-    updateAutomatic: `${ERP_BASE}/api/method/erpnext.zra_client.item.imports.api.update_stock_automatic`,
-  },
+
 
   /* =========================
    * upload inventory

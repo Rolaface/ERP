@@ -622,7 +622,7 @@ export const useProformaInvoiceForm = (
       }
       if (name === "quantity" && nextValue !== null) {
         const item = items[idx];
-        if (!item._skipCap) {
+       if (!item._skipCap && item.itemCode) {
           if (!item.isServiceItem) {
             const stockAvailable = item.availableQty ?? item.qty ?? 0;
             const thisRowOriginal = Number(item.originalQty ?? 0);

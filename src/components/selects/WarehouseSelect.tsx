@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { Warehouse as WarehouseIcon } from "lucide-react";
 import { ModalSelect } from "../ui/modal/modalComponent";
 import { getAllWarehouses } from "../../api/WarehouseApi";
 import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
+import SelectShell from "../../components/ui/select/SelectShell";
+
 interface WarehouseSelectProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -12,7 +15,7 @@ interface WarehouseSelectProps {
   className?: string;
   compact?: boolean;
   onDefaultLoad?: (firstWarehouse: string) => void;
-    readOnlyField?: boolean; 
+  readOnlyField?: boolean;
 }
 
 const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
@@ -24,7 +27,8 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
   disabled = false,
   className = "",
   compact = false,
-  onDefaultLoad, readOnlyField = false,
+  onDefaultLoad,
+  readOnlyField = false,
 }) => {
   const [warehouses, setWarehouses] = useState<{ value: string; label: string }[]>([]);
 
@@ -46,26 +50,30 @@ const WarehouseSelect: React.FC<WarehouseSelectProps> = ({
   }, []);
 
   if (compact) {
+    const hasValue = Boolean(value);
     return (
-     <select
-  name={name}
-  value={value}
-  onChange={onChange}
-  disabled={disabled}
-  required={required}
-  className={[
-    "w-full py-1 pl-1 border border-theme rounded text-[11px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary",
-    readOnlyField ? "appearance-none pr-2" : "pr-4",
-    className,
-  ].join(" ")}
->
-        <option value="">Select</option>
-        {warehouses.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+      <SelectShell
+        icon={!hasValue ? <WarehouseIcon /> : undefined}
+        showChevron={!readOnlyField}
+        disabled={disabled}
+        className={className}
+      >
+        <select
+          name={name}
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          required={required}
+          className="appearance-none cursor-pointer"
+        >
+          <option value="">Select</option>
+          {warehouses.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </SelectShell>
     );
   }
 
