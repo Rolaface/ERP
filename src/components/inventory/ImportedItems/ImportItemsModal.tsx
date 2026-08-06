@@ -500,6 +500,7 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                             onChange={(selected) =>
                               handleMappedItemChange(item.id, selected)
                             }
+                               placeholder="Map item.."
                             className="w-full"
                           />
                         </td>

@@ -32,6 +32,7 @@ interface ItemSelectProps {
   onAddNew?: () => void;
   className?: string;
   disabled?: boolean;
+  placeholder?: string;
 }
 
 const DROPDOWN_OFFSET = 4;
@@ -73,6 +74,7 @@ export default function ItemSelect({
   onAddNew,
   className = "",
   disabled = false,
+  placeholder = "Search item…",
 }: ItemSelectProps) {
   const [rawItems, setRawItems] = useState<SelectedStockItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -255,7 +257,7 @@ export default function ItemSelect({
               selectedItem ? "text-main" : "text-muted"
             }`}
           >
-            {selectedItem ? selectedItem.itemName : "Search item…"}
+           {selectedItem ? selectedItem.itemName : placeholder}
           </span>
         </div>
       </SelectShell>
