@@ -30,7 +30,9 @@ interface ZraRrpItemsResponse {
   message?: {
     tpin?: string;
     bhfId?: string;
-    itemList?: ZraRrpItem[];
+    data?: {
+      itemList?: ZraRrpItem[];
+    };
   };
 }
 
