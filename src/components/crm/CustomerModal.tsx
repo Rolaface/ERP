@@ -70,6 +70,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
   const [principalOptions, setPrincipalOptions] = React.useState<any[]>([]);
   const [principalLoading, setPrincipalLoading] = React.useState(false);
   const [selectedPrincipalName, setSelectedPrincipalName] = React.useState("");
+  const [principalSearch, setPrincipalSearch] = React.useState("");
 
   React.useEffect(() => {
     useCompanyDefaultsStore.getState().fetchDefaults();
@@ -114,8 +115,20 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 
   const showPrincipalLookup = isZraEnabled && isRvatAgent;
 
+  const filteredPrincipalOptions = React.useMemo(() => {
+    const q = principalSearch.trim().toLowerCase();
+    if (!q) return principalOptions;
+    return principalOptions.filter((p: any) =>
+      [p.principalNm, p.tpin, p.tin, p.principalEmail, p.accountNo]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(q)),
+    );
+  }, [principalOptions, principalSearch]);
+
   const handleOpenPrincipalLookup = async () => {
     if (!showPrincipalLookup) return;
+
+    setPrincipalSearch("");
 
     setPrincipalLoading(true);
     setIsPrincipalModalOpen(true);
@@ -145,8 +158,8 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     const tpin = principal?.tpin || "";
     const tin = principal?.tin || "";
     const accountNo = principal?.accountNo || "";
-    const principalId = principal?.id || ""; 
-  
+    const principalId = principal?.id || "";
+
     setForm((prev) => ({
       ...prev,
       name: fullName || prev.name,
@@ -158,14 +171,14 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       contacts: prev.contacts.map((contact) =>
         contact.isPrimary
           ? {
-              ...contact,
-              firstName: fullName || contact.firstName,
-              email: email || contact.email,
-              mobileNumber: phone.replace(/\D/g, "") || contact.mobileNumber,
-              mobile: phone
-                ? `${contact.mobileCode || ""}${phone.replace(/\D/g, "")}`
-                : contact.mobile,
-            }
+            ...contact,
+            firstName: fullName || contact.firstName,
+            email: email || contact.email,
+            mobileNumber: phone.replace(/\D/g, "") || contact.mobileNumber,
+            mobile: phone
+              ? `${contact.mobileCode || ""}${phone.replace(/\D/g, "")}`
+              : contact.mobile,
+          }
           : contact,
       ),
       addresses: prev.addresses.map((addressEntry) =>
@@ -224,8 +237,8 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={`py-2.5 bg-transparent border-none text-xs font-medium cursor-pointer transition-all flex items-center gap-2 ${activeTab === tab
-                    ? "text-primary border-b-[3px] border-primary"
-                    : "text-muted border-b-[3px] border-transparent hover:text-main"
+                  ? "text-primary border-b-[3px] border-primary"
+                  : "text-muted border-b-[3px] border-transparent hover:text-main"
                   }`}
               >
                 {tab === "details" && <User className="w-4 h-4" />}
@@ -251,36 +264,36 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
               subtitle="Essential customer details"
               icon={<User className="w-5 h-5 text-primary" />}
             >
-            {showPrincipalLookup && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-4">
-                <div className="md:col-span-3 flex items-center justify-between gap-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-4 py-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                      <Search className="w-4 h-4 text-primary" />
+              {showPrincipalLookup && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-4">
+                  <div className="md:col-span-3 flex items-center justify-between gap-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                        <Search className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-semibold text-main truncate">
+                          {selectedPrincipalName
+                            ? `Prefilled from ${selectedPrincipalName}`
+                            : "Have a ZRA Principal?"}
+                        </p>
+                        <p className="text-[10px] text-muted">
+                          {selectedPrincipalName
+                            ? "Details imported — click to pick a different principal."
+                            : "Auto-fill name, contact and address instantly from ZRA."}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-semibold text-main truncate">
-                        {selectedPrincipalName
-                          ? `Prefilled from ${selectedPrincipalName}`
-                          : "Have a ZRA Principal?"}
-                      </p>
-                      <p className="text-[10px] text-muted">
-                        {selectedPrincipalName
-                          ? "Details imported — click to pick a different principal."
-                          : "Auto-fill name, contact and address instantly from ZRA."}
-                      </p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleOpenPrincipalLookup}
+                      className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-[11px] font-medium text-white hover:bg-primary/90 transition-colors"
+                    >
+                      {selectedPrincipalName ? "Change" : "Import from ZRA"}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleOpenPrincipalLookup}
-                    className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-[11px] font-medium text-white hover:bg-primary/90 transition-colors"
-                  >
-                    {selectedPrincipalName ? "Change" : "Import from ZRA"}
-                  </button>
                 </div>
-              </div>
-            )}
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5  mt-4">
                 <Tooltip content={form.type || "Select Customer Type"}>
@@ -628,7 +641,10 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
       <MinimizableModal
         modalId={`${resolvedModalId}-principals`}
         isOpen={isPrincipalModalOpen}
-        onClose={() => setIsPrincipalModalOpen(false)}
+        onClose={() => {
+          setIsPrincipalModalOpen(false);
+          setPrincipalSearch("");
+        }}
         title="Select Principal"
         subtitle="Choose a principal to prefill the customer form"
         icon={Users}
@@ -636,13 +652,29 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
         height="70vh"
       >
         <div className="p-4">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <input
+              type="text"
+              value={principalSearch}
+              onChange={(e) => setPrincipalSearch(e.target.value)}
+              placeholder="Search by name, TPIN or email..."
+              className="w-64 pl-9 pr-3 py-2 border rounded text-[12px] text-main bg-card border-[var(--border)] hover:border-primary/40"
+              autoFocus
+            />
+          </div>
+
           {principalLoading ? (
             <div className="text-sm text-muted">Loading principals...</div>
-          ) : principalOptions.length === 0 ? (
-            <div className="text-sm text-muted">No principals found.</div>
+          ) : filteredPrincipalOptions.length === 0 ? (
+            <div className="text-sm text-muted">
+              {principalOptions.length === 0
+                ? "No principals found."
+                : "No principals match your search."}
+            </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {principalOptions.map((principal) => (
+              {filteredPrincipalOptions.map((principal) => (
                 <button
                   key={principal.id ?? `${principal.tpin}-${principal.accountNo}`}
                   type="button"

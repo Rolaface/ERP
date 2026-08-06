@@ -310,6 +310,7 @@ export function mapApiResponseToFormState(
     terms: data.terms ?? {
       selling: companySellingTerms ?? defaultSellingTerms,
     },
+    principalId: (data as any).principalId ?? "",
   };
 }
 
