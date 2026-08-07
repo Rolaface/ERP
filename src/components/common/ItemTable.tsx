@@ -45,7 +45,7 @@ interface ItemTableProps {
   symbol: string;
   ITEMS_PER_PAGE: number;
   taxCategory?: string;
-  invoiceType?: "Product" | "Service";
+  invoiceType?: "Product" | "Service" | "RVAT";
   isSalesInvoice?: boolean;
   title?: string;
   isQuotation?: boolean;
@@ -95,7 +95,7 @@ interface ItemTableProps {
 interface InvoiceHeadersProps {
   isSalesInvoice: boolean;
   isQuotation: boolean;
-  invoiceType?: "Product" | "Service"; // Ensure this is here
+  invoiceType?: "Product" | "Service" | "RVAT";
 }
 
 const ProductInvoiceColGroup: React.FC<InvoiceHeadersProps> = ({
@@ -138,10 +138,10 @@ const ServiceInvoiceColGroup: React.FC = () => (
   </colgroup>
 );
 
-// 3. Main ColGroup Component that switches between them
 const InvoiceColGroup: React.FC<InvoiceHeadersProps> = (props) => {
   // const isService = props.isSalesInvoice && props.invoiceType === "Service";
-  const isService = props.invoiceType === "Service";
+  const isService =
+    props.invoiceType === "Service" || props.invoiceType === "RVAT";
 
   if (isService) {
     return <ServiceInvoiceColGroup />;
@@ -156,7 +156,7 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
   invoiceType = "Product",
 }) => {
   // const isService = isSalesInvoice && invoiceType === "Service";
-  const isService = invoiceType === "Service";
+  const isService = invoiceType === "Service" || invoiceType === "RVAT";
   return (
     <tr className="border-b border-theme">
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
@@ -170,9 +170,6 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
           Description
         </th>
       )}
-
-
-
 
       {/* Hide Labels if Service */}
       {!isService && (
@@ -198,7 +195,6 @@ const InvoiceHeaders: React.FC<InvoiceHeadersProps> = ({
       <th className="px-2 py-1 text-left text-muted font-medium text-[11px]">
         UOM
       </th>
-
 
       {/* Hide Labels if Service */}
       {!isQuotation && !isService && (
@@ -328,9 +324,10 @@ const ItemTable: React.FC<ItemTableProps> = ({
           matchedTaxName = stockItem.taxInfo[0].taxName || "";
         }
 
-        const useRrpPrice = isZraEnabled && Number(stockItem?.is_mtv_item) === 1;
+        const useRrpPrice =
+          isZraEnabled && Number(stockItem?.is_mtv_item) === 1;
         if (useRrpPrice) {
-          resolvedPrice = Number(stockItem?.rrp_rate ?? 0);   
+          resolvedPrice = Number(stockItem?.rrp_rate ?? 0);
         }
         if (stockItem && stockItem.batches) {
           const matchingBatch = stockItem.batches.find(
@@ -350,8 +347,6 @@ const ItemTable: React.FC<ItemTableProps> = ({
           it.itemCode === itemData.item_code &&
           it.batchNo === itemData.batch_no,
       );
-
-
 
       if (existingIndex >= 0) {
         const currentQty = Number(formData.items[existingIndex].quantity || 0);
@@ -402,7 +397,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
   });
 
   // const isService = isSalesInvoice && invoiceType === "Service";
-  const isService = invoiceType === "Service";
+  const isService = invoiceType === "Service" || invoiceType === "RVAT";
 
   const handleCopyRow = (absoluteIndex: number) => {
     actions.duplicateItem(absoluteIndex);
@@ -501,7 +496,6 @@ const ItemTable: React.FC<ItemTableProps> = ({
           </td>
         )}
 
-
         {/* Pkg (U×S) */}
         {!isService && (
           <td data-row={i} data-col={c()} className="px-1 py-1">
@@ -580,7 +574,6 @@ const ItemTable: React.FC<ItemTableProps> = ({
             }
           />
         </td>
-
 
         <td data-row={i} data-col={c()} className="px-2 py-1">
           <Tooltip content={it.uom ? `UOM: ${it.uom}` : "No UOM"}>

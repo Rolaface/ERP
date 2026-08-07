@@ -136,8 +136,7 @@ export default function StockItemSelect({
   const [stockFilter, setStockFilter] = useState<StockFilter>("instock");
   const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
-  // Service items have no stock concept, so the stock filter UI is irrelevant for them.
-  const showStockFilter = invoiceType !== "Service";
+  const showStockFilter = invoiceType !== "Service" && invoiceType !== "RVAT";
 
   // Tracks which row in the open list is currently keyboard-highlighted.
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -154,8 +153,10 @@ export default function StockItemSelect({
       const rows: any[] = [];
       raw.forEach((item: any) => {
         const isService = item.is_service_item === 1;
-        if (invoiceType === "Service" && !isService) return;
-        if (invoiceType === "Product" && isService) return;
+        const wantsServiceItems =
+          invoiceType === "Service" || invoiceType === "RVAT";
+        if (wantsServiceItems && !isService) return;
+        if (!wantsServiceItems && isService) return;
         const base = {
           itemCode: item.item_code,
           itemName: item.item_name,
