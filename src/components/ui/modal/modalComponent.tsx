@@ -265,13 +265,13 @@ export const ModalInput = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             {...props}
             value={props.value ?? ""}
-             onChange={(e) => {
-    if (props.type === "text" || !props.type) {
-      e.target.value = capitalizeFirstLetter(e.target.value);
-    }
+            onChange={(e) => {
+              if (props.type === "text" || !props.type) {
+                e.target.value = capitalizeFirstLetter(e.target.value);
+              }
 
-    props.onChange?.(e);
-  }}
+              props.onChange?.(e);
+            }}
             className={inputClass}
             onWheel={isNumber ? numberInputProps.onWheel : props.onWheel}
             onKeyDown={
@@ -355,7 +355,6 @@ ModalTextarea.displayName = "ModalTextarea";
 interface FilterSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options?: SelectOption[];
   hideAllOption?: boolean;
-
 }
 export const FilterSelect = React.forwardRef<
   HTMLSelectElement,
@@ -603,6 +602,10 @@ interface ToggleSwitchProps {
   onLabel?: string;
   offLabel?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+
+  options?: { label: string; value: string }[];
+  value?: string;
+  onValueChange?: (value: string) => void;
 }
 
 export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
@@ -614,49 +617,92 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   onLabel = "Yes",
   offLabel = "No",
   onChange,
-}) => (
-  <div className="flex flex-col min-w-0">
-    <span className="block text-[10px] font-medium text-main mb-1">
-      {label}
-      {required && <span className="text-danger">*</span>}
-    </span>
-    <div
-      className={`flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max ${disabled ? "opacity-50 pointer-events-none" : ""}`}
-    >
-      <label
-        className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${!checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}
+  options,
+  value,
+  onValueChange,
+}) => {
+  if (options && options.length > 0) {
+    return (
+      <div className="flex flex-col min-w-0">
+        <span className="block text-[10px] font-medium text-main mb-1">
+          {label}
+          {required && <span className="text-danger">*</span>}
+        </span>
+        <div
+          className={`flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max ${disabled ? "opacity-50 pointer-events-none" : ""}`}
+        >
+          {options.map((opt) => {
+            const isActive = value === opt.value;
+            return (
+              <label
+                key={opt.value}
+                className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${
+                  isActive
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-muted hover:text-main bg-transparent"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name={name}
+                  checked={isActive}
+                  disabled={disabled}
+                  onChange={() => onValueChange?.(opt.value)}
+                  className="hidden"
+                />
+                {opt.label}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="block text-[10px] font-medium text-main mb-1">
+        {label}
+        {required && <span className="text-danger">*</span>}
+      </span>
+      <div
+        className={`flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max ${disabled ? "opacity-50 pointer-events-none" : ""}`}
       >
-        <input
-          type="radio"
-          name={name}
-          checked={!checked}
-          disabled={disabled}
-          onChange={() =>
-            onChange({
-              target: { name, type: "checkbox", checked: false },
-            } as any)
-          }
-          className="hidden"
-        />
-        {offLabel}
-      </label>
-      <label
-        className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}
-      >
-        <input
-          type="radio"
-          name={name}
-          checked={checked}
-          disabled={disabled}
-          onChange={() =>
-            onChange({
-              target: { name, type: "checkbox", checked: true },
-            } as any)
-          }
-          className="hidden"
-        />
-        {onLabel}
-      </label>
+        <label
+          className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${!checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}
+        >
+          <input
+            type="radio"
+            name={name}
+            checked={!checked}
+            disabled={disabled}
+            onChange={() =>
+              onChange({
+                target: { name, type: "checkbox", checked: false },
+              } as any)
+            }
+            className="hidden"
+          />
+          {offLabel}
+        </label>
+        <label
+          className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${checked ? "bg-primary text-white shadow-sm" : "text-muted hover:text-main bg-transparent"}`}
+        >
+          <input
+            type="radio"
+            name={name}
+            checked={checked}
+            disabled={disabled}
+            onChange={() =>
+              onChange({
+                target: { name, type: "checkbox", checked: true },
+              } as any)
+            }
+            className="hidden"
+          />
+          {onLabel}
+        </label>
+      </div>
     </div>
-  </div>
-);
+  );
+};

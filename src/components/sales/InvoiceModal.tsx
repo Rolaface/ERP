@@ -20,6 +20,7 @@ import ItemTable from "../common/ItemTable";
 import type { ModalSubmitHandler } from "../../types/modal";
 import { useDefault } from "../../hooks/usedefaultdata";
 import ModeOfPaymentSelect from "../selects/defaults/Modeofpaymentselect";
+import { useCompanyStore } from "../../store/companyStore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,10 +55,21 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const [submitting, setSubmitting] = useState(false);
 
-  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
-    "Product",
-  );
+  const [invoiceType, setInvoiceType] = useState<
+    "Product" | "Service" | "RVAT"
+  >("Product");
   const domain = useDefault("primary_business_domain");
+  const isRvatAgent = useDefault("is_rvat_agent");
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+
+  // RVAT tab sirf tab dikhega jab dono conditions true ho
+  const showRvatOption = !!isZraEnabled && Number(isRvatAgent) === 1;
+
+  const invoiceTypeOptions = [
+    { label: "Product", value: "Product" },
+    { label: "Service", value: "Service" },
+    ...(showRvatOption ? [{ label: "RVAT", value: "RVAT" }] : []),
+  ];
 
   useEffect(() => {
     if (mode === "edit" && initialData?.items?.length > 0) {
@@ -69,6 +81,12 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       setInvoiceType(domain === "Service" ? "Service" : "Product");
     }
   }, [initialData, mode, isOpen, domain]);
+
+  useEffect(() => {
+    if (invoiceType === "RVAT" && !showRvatOption) {
+      setInvoiceType("Product");
+    }
+  }, [invoiceType, showRvatOption]);
 
   const {
     formData,
@@ -125,6 +143,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
       if (!payload) return;
       payload.updateStock = true;
+      payload.invoiceType = invoiceType;
 
       if (mode === "edit") {
         const invoiceNumber =
@@ -248,21 +267,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
-                {/* Invoice Type  */}
-                {/* <div className="w-full sm:w-[130px]">
-                  <ModalSelect
-                    label="Invoice Type"
-                    name="invoiceType"
-                    value={invoiceType} // Use local state
-                    onChange={(e: any) => setInvoiceType(e.target.value)} // Update local state
-                    options={[
-                      { value: "Product", label: "Product" },
-                      { value: "Service", label: "Service" },
-                    ]}
-                    className="w-full border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                </div> */}
-
                 {/* Customer — full width on mobile, fixed on sm+ */}
                 <div className="w-full sm:w-[280px]">
                   <CustomerSelect
@@ -329,15 +333,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 )}
                 {/* Mode of Payment */}
                 <div className="w-full sm:w-[200px]">
-                  {/* <ModeOfPaymentSelect
-                    value={formData.mode ?? ""}
-                    onChange={(val) =>
-                      actions.handleInputChange({
-                        target: { name: "mode", value: val },
-                      } as any)
-                    }
-                    required
-                  /> */}
                   <ModeOfPaymentSelect
                     value={formData.mode ?? ""}
                     onChange={(val) => {
@@ -351,29 +346,31 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
                 {/* PO Number */}
                 <div className="w-full sm:w-[160px]">
-                    <ModalInput
-                      label="PO Number"
-                      name="lpoNumber"
-                      value={formData.lpoNumber}
-                      onChange={actions.handleInputChange}
-                      inputMode="numeric"
-                      pattern="\d{10}"
-                      placeholder="Enter Purchase Order No"
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  </div>
+                  <ModalInput
+                    label="PO Number"
+                    name="lpoNumber"
+                    value={formData.lpoNumber}
+                    onChange={actions.handleInputChange}
+                    inputMode="numeric"
+                    pattern="\d{10}"
+                    placeholder="Enter Purchase Order No"
+                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                  />
+                </div>
 
-                {/* Invoice Type */}
+                {/* Invoice Type — Product / Service / RVAT */}
                 <ToggleSwitch
                   name="invoiceType"
                   label="Invoice Type"
                   checked={invoiceType === "Service"}
                   onLabel="Service"
                   offLabel="Product"
-                  onChange={(e) => {
-                    const isService = e.target.checked;
-                    setInvoiceType(isService ? "Service" : "Product");
-                  }}
+                  onChange={() => {}}
+                  options={invoiceTypeOptions}
+                  value={invoiceType}
+                  onValueChange={(val) =>
+                    setInvoiceType(val as "Product" | "Service" | "RVAT")
+                  }
                 />
               </div>
 
@@ -519,14 +516,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           {/* ──────────── ADDITIONAL DETAILS ──────────── */}
           {ui.activeTab === "address" && (
             <div className="space-y-6">
-              {/* <PaymentInfoBlock
-                data={formData.paymentInformation}
-                onChange={(e) =>
-                  actions.handleInputChange(e, "paymentInformation")
-                }
-                paymentMethodOptions={paymentMethodOptions}
-                showPaymentMethod={false}
-              /> */}
               <InvoiceAddressTab
                 customerId={formData.customerId}
                 formData={formData}

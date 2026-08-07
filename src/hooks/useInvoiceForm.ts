@@ -122,6 +122,7 @@ export function buildInvoicePayload(
     addresses: formData.addresses,
     taxes: mappedTaxes,
     salesTaxTemplate: formData.salesTaxTemplate ?? "",
+    invoiceType: formData.invoiceType ?? "",
   };
 }
 
@@ -418,7 +419,6 @@ export const useInvoiceForm = (
     if (!meaningfulItems.length) {
       throw new Error("Please add at least one item");
     }
-   
 
     formData.items.forEach((it, idx) => {
       if (isRowEmpty(it)) return; // never touched — nothing to validate
