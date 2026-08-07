@@ -296,7 +296,13 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
     0;
   const subTotal =
     data?.summary?.subTotal ??
+    (data as any)?.totalBeforeDiscount ??
     (data?.grandTotal ?? 0) - Number((data as any)?.totalTaxes ?? 0);
+  const discountTotal = Number(
+    (data as any)?.summary?.discountAmount ??
+      (data as any)?.totalDiscountAmount ??
+      0,
+  );
   const taxTotal = Number(
     data?.summary?.taxTotal ?? (data as any)?.totalTaxes ?? 0,
   );
@@ -1023,6 +1029,15 @@ const PurchaseInvoiceDetailModal: React.FC<Props> = ({
                       val: fmt(subTotal, currency),
                       big: false,
                     },
+                    ...(discountTotal !== 0
+                      ? [
+                          {
+                            label: "Discount",
+                            val: fmt(discountTotal, currency),
+                            big: false,
+                          },
+                        ]
+                      : []),
                     {
                       label: "Tax",
                       val: fmt(taxTotal, currency),
