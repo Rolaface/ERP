@@ -335,9 +335,9 @@ addressBoxes.forEach((box, index) => {
   packing,  
   Number(item.quantity ?? 0),
   item.uom ?? "-",
-  fmt2(item.rate),
+  fmt2(item.priceListRate),
   `${tax?.taxName ?? ""} (${tax?.totalTaxRate ?? 0}%)`,
-  fmt2((item.quantity ?? 0) * (item.rate ?? 0)),
+  fmt2((item.quantity ?? 0) * (item.priceListRate ?? 0)),
 ];
     }),
     styles: {
@@ -383,32 +383,42 @@ addressBoxes.forEach((box, index) => {
 
   const LABEL_X = AMOUNT_COL_X - 4;
 
-  const subTotal = Number((pi?.grandTotal ?? 0) - (pi?.totalTaxes ?? 0));
+  const subTotal = Number(
+    pi?.totalBeforeDiscount ?? (pi?.grandTotal ?? 0) - (pi?.totalTaxes ?? 0),
+  );
+  const discountTotal = Number(pi?.totalDiscountAmount ?? 0);
   const taxTotal = Number(pi?.totalTaxes ?? 0);
   const rounding = Number((pi?.roundedTotal ?? 0) - (pi?.grandTotal ?? 0));
- 
+
+  const summaryRows: { label: string; value: string; bold?: boolean }[] = [
+    { label: "Sub Total", value: `${fmt2(subTotal)} ${cur}`, bold: true },
+    ...(discountTotal !== 0
+      ? [{ label: "Discount", value: `${fmt2(discountTotal)} ${cur}` }]
+      : []),
+    { label: "Tax", value: `${fmt2(taxTotal)} ${cur}` },
+    { label: "Rounding", value: `${fmt2(rounding)} ${cur}` },
+    {
+      label: "Grand Total",
+      value: `${fmt2(pi.roundedTotal)} ${cur}`,
+      bold: true,
+    },
+  ];
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
 
-  doc.setFont("helvetica", "bold");
-  doc.text("Sub Total", LABEL_X, SEC_Y + ROW_H * 0.7, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.text("Tax", LABEL_X, SEC_Y + ROW_H * 1.7, { align: "right" });
-  doc.text("Rounding", LABEL_X, SEC_Y + ROW_H * 2.7, { align: "right" });
-  doc.setFont("helvetica", "bold");
-  doc.text("Grand Total", LABEL_X, SEC_Y + ROW_H * 3.7, { align: "right" });
+  summaryRows.forEach((row, i) => {
+    doc.setFont("helvetica", row.bold ? "bold" : "normal");
+    doc.text(row.label, LABEL_X, SEC_Y + ROW_H * (i + 0.7), {
+      align: "right",
+    });
+  });
 
   autoTable(doc, {
     startY: SEC_Y,
     head: [],
-    body: [
-      [`${fmt2(subTotal)} ${cur}`],
-      [`${fmt2(taxTotal)} ${cur}`],
-      [`${fmt2(rounding)} ${cur}`],
-      [`${fmt2(pi.roundedTotal)} ${cur}`],
-    ],
+    body: summaryRows.map((r) => [r.value]),
     styles: {
       fontSize: 8,
       halign: "right",
@@ -420,7 +430,7 @@ addressBoxes.forEach((box, index) => {
       0: { cellWidth: TOTAL_W },
     },
     didParseCell: (data) => {
-      if (data.row.index === 0 || data.row.index === 3) {
+      if (summaryRows[data.row.index]?.bold) {
         data.cell.styles.fontStyle = "bold";
       }
     },
