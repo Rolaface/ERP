@@ -13,7 +13,8 @@ import {
   BarChart3,
   ShoppingBag,
   Barcode,
-  ShoppingCart 
+  ShoppingCart, 
+  Ship
 } from "lucide-react";
 import {
   AppPage,
@@ -33,6 +34,7 @@ const SupplierManagement = lazy(() => import("./SupplierManagement"));
 const PurchaseInvoiceTable = lazy(() => import("./PurchaseInvoice"));
 const Payments = lazy(() => import("../PaymentEntry/PaymentEntry"));
 const PurchaseAnalytics = lazy(() => import("./PurchaseAnalytics"));
+const ImportedPurchaseInvoice = lazy(() => import("./purchaseinvoice_imported/purchaseimported"));
 const BarCode = lazy(() => import("./PurchaseInvoiceBarCode"));
 
 type OutletContextType = {
@@ -95,6 +97,13 @@ const ALL_PROCUREMENT_TABS = [
     label: "Purchase Invoice",
     icon: <ShoppingCart  {...iconProps} />,
     module: "Purchase Invoice",
+    action: "read" as const,
+  },
+   {
+    id: "importedPurchase",
+    label: "Imported P_I",
+    icon: <Ship  {...iconProps} />,
+    module: "imported Purchase Invoice",
     action: "read" as const,
   },
   {
@@ -160,6 +169,7 @@ const Procurement: React.FC = () => {
     purchaseAnalytics:    <PurchaseAnalytics />,
     barCode:               <BarCode />,
     debitNotes:           <DebitNotesTable />,
+    importedPurchase:     <ImportedPurchaseInvoice />,
   }), [handleAdd]);
 
   const currentTabComponent =
