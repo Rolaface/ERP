@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Check,
   X as XIcon,
-  AlertTriangle,
 } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import ItemSelect from "../../selects/itemGenriSelect";
@@ -68,6 +67,11 @@ function extractSupplierList(res: any): any[] {
   return [];
 }
 
+type SupplierFilterResult = {
+  id: string;
+  name: string;
+};
+
 const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
   isOpen,
   onClose,
@@ -96,7 +100,6 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
     counts,
     isLoading,
     isSubmitting,
-    error,
     refresh,
     submit,
   } = useProcessImportModal(isOpen);
@@ -106,15 +109,11 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   // ── supplier filter ──
-  // The filter dropdown is populated from the full supplier list (same API
-  // SupplierSelect itself uses), NOT just the ones mapped on rows so far —
-  // otherwise the dropdown stays empty until the user manually maps a
-  // supplier on at least one row.
   const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [supplierFilterName, setSupplierFilterName] = useState<string>("");
-  const [filterResults, setFilterResults] = useState<
-    { id: string; name: string }[]
-  >([]);
+
+
+const [filterResults, setFilterResults] = useState<SupplierFilterResult[]>([]);
   const [filterLoading, setFilterLoading] = useState(false);
   const [filterSearch, setFilterSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -122,7 +121,6 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const filterRequestIdRef = useRef(0);
 
-  // server-side search, same as SupplierSelect
   const fetchFilterSuppliers = useCallback(async (searchTerm: string) => {
     const requestId = ++filterRequestIdRef.current;
     try {
@@ -139,7 +137,6 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
     }
   }, []);
 
-  // debounce search-as-you-type while dropdown is open
   useEffect(() => {
     if (!filterOpen) return;
     if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
@@ -156,13 +153,11 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
     fetchFilterSuppliers(filterSearch);
   };
 
-  // close the filter dropdown on outside click
   useEffect(() => {
     if (!filterOpen) return;
     const handler = (e: MouseEvent) => {
       if (filterContainerRef.current?.contains(e.target as Node)) return;
       setFilterOpen(false);
-      // restore last valid selection text if user typed something and clicked away
       setFilterSearch(supplierFilterName);
     };
     document.addEventListener("mousedown", handler);
@@ -183,8 +178,6 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
     setFilterOpen(false);
   };
 
-  // Filters by the supplier the user mapped via SupplierSelect on each row
-  // (there's no real supplier field from the API — spplrNm is always null).
   const filteredItems = useMemo(() => {
     if (!supplierFilter) return items;
     return items.filter((item) => suppliers[item.id]?.id === supplierFilter);
@@ -222,18 +215,6 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
     [selectedRows, handleDecision],
   );
 
-  const customSubtitle = (
-    <div className="flex items-center justify-between w-full pr-8">
-      <span className="text-muted text-sm">
-        Review imported items and submit your decisions.
-      </span>
-      <div className="flex items-center gap-2 text-muted text-sm">
-        <RefreshCw size={14} />
-        <span>{totals.totalItems} items pending</span>
-      </div>
-    </div>
-  );
-
   const footerContent = (
     <div className="flex items-center justify-between w-full px-6 py-4 bg-card border-t border-theme">
       <button
@@ -250,9 +231,12 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
         </div>
         <button
           onClick={async () => {
-            await submit();
-            onSuccess?.();
-            onClose();
+            if (isSubmitting) return;
+            const success = await submit();
+            if (success) {
+              onSuccess?.();
+              onClose();
+            }
           }}
           disabled={items.length === 0 || isSubmitting}
           className="px-6 py-2 bg-primary hover:opacity-90 text-primary-foreground rounded-md text-sm font-medium transition-opacity shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -275,13 +259,6 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
       height="700px"
     >
       <div className="h-full flex flex-col bg-app p-4 gap-4 overflow-hidden">
-        {error && (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-[13px]">
-            <AlertTriangle size={16} />
-            <span>{error}</span>
-          </div>
-        )}
-
         <div className="bg-card border border-theme rounded-xl flex flex-col shadow-sm flex-1 min-h-0">
           <div className="px-5 py-4 border-b border-theme bg-app/50 flex justify-between items-center">
             <h3 className="text-[13px] font-semibold text-main">
@@ -500,7 +477,7 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
                             onChange={(selected) =>
                               handleMappedItemChange(item.id, selected)
                             }
-                               placeholder="Map item.."
+                            placeholder="Map item.."
                             className="w-full"
                           />
                         </td>

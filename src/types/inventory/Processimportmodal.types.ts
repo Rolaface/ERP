@@ -29,15 +29,19 @@ export interface ImportItemApiRaw {
 }
 
 export interface ImportDeclarationsApiResponse {
-  resultCd: string; // "000" = success
-  status_code: number; // 200 = success
-  resultMsg: string;
-  resultDt: string; // YYYYMMDDHHmmss
-  data: {
-    itemList: ImportItemApiRaw[];
+  status_code: number; 
+  status: string; 
+  message: string;
+  data: ImportItemApiRaw[]; 
+  pagination?: {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
   };
 }
-
 // ─── UI-facing (derived) shapes ────────────────────────────────────────────────
 
 export type DecisionType = "approve" | "reject" | null;
