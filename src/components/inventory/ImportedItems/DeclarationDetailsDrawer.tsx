@@ -308,7 +308,7 @@ const DeclarationDetailsDrawer: React.FC<Props> = ({
                     {d.status}
                   </span>
                 )}
-                {docstatusInfo && (
+                {/* {docstatusInfo && (
                   <span
                     style={{
                       padding: "2px 8px",
@@ -321,7 +321,7 @@ const DeclarationDetailsDrawer: React.FC<Props> = ({
                   >
                     {docstatusInfo.label}
                   </span>
-                )}
+                )} */}
               </div>
             </div>
           </div>

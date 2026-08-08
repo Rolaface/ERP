@@ -332,6 +332,16 @@ export const API = {
   getImportedDeclarations: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_logs`, 
   getImportedDeclarationById: `${ERP_BASE}/api/method/custom_api.api.imported_item.api.get_import_log_by_id`, 
 },
+  /* =========================
+   * IMPORTED pi
+   * ========================= */
+
+purchaseInvoiceImports :{
+get :`${ERP_BASE}/api/method/zra_smart_invoice.modules.purchase_invoice.api.get_purchase_sales`,
+submitDecisions:`${ERP_BASE}/api/method/zra_smart_inv.......`,
+getImportedPurchaseInvoices:`${ERP_BASE}/api/method/zra_smart_inv.......`,
+
+},
 
   /* =========================
    * ITEM GROUP
@@ -813,5 +823,8 @@ resource: {
   getZraMTVAPI: {
     getRrpItem: `${ERP_BASE}/api/method/zra_smart_invoice.modules.mtv.api.get_rrp_items`
   },
+  getZraRvatPrincipalAPI: {
+    getPrincipal: `${ERP_BASE}/api/method/zra_smart_invoice.modules.rvat.api.get_principals`
+  }
 
 } as const;

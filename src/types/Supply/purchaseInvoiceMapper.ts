@@ -167,7 +167,7 @@ export const mapApiToUI = (apiResponse: any): PurchaseInvoiceFormData => {
       itemCode: str(item.item_code || item.itemCode),
       itemName: str(item.item_name || item.itemName),
       quantity: num(item.qty || item.quantity),
-      rate: num(item.rate || item.price),
+      rate: num(item.priceListRate ?? item.rate ?? item.price),
       uom: str(item.uom),
       vatCd: str(
         item.vatCd ||

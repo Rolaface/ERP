@@ -1,13 +1,13 @@
 import type { TermSection } from "./termsAndCondition";
 
-
 export type InvoiceStatus =
   | "Draft"
   | "Paid"
   | "Cancelled"
   | "Approved"
-  |"Unpaid"|"Overdue"
-  |"Partly Paid"
+  | "Unpaid"
+  | "Overdue"
+  | "Partly Paid";
 // export type InvoiceStatus =
 //   | "Draft"
 //   | "Rejected"
@@ -16,10 +16,20 @@ export type InvoiceStatus =
 //   | "Approved"
 //   | "Amend";
 
-
 export interface Invoice {
+  invoiceType: string;
   invoiceNumber?: string;
   customerId: string;
+  principal?: {
+    id: number;
+    tpin: string;
+    tin: string;
+    principalNm: string;
+    principalAddress: string;
+    principalEmail: string;
+    principalTelNo: string;
+    accountNo: string;
+  } | null;
   currencyCode: string;
   exchangeRt: string;
   dateOfInvoice: string;
@@ -28,35 +38,35 @@ export interface Invoice {
   destnCountryCd?: string;
   lpoNumber?: string;
   mode?: string;
-  updateStock?: boolean
-  warehouse?: string
-billingAddress: string;
-shippingAddress: string;
+  updateStock?: boolean;
+  warehouse?: string;
+  billingAddress: string;
+  shippingAddress: string;
   paymentInformation: PaymentInformation;
   industryBases?: string;
   items: InvoiceItem[];
   terms: InvoiceTerms;
- shippingCharges?:number;
- insuranceCharges?:number;
+  shippingCharges?: number;
+  insuranceCharges?: number;
   invoiceCharges: {
     charge_type: string;
     amount: string;
-    rate:string;
+    rate: string;
   }[];
   taxes?: {
-  chargeType: string;
-  accountHead: string;
-  description?: string;
-  rate: number| null;
-  amount: number;
-}[];
-  salesTaxTemplate:string;
+    chargeType: string;
+    accountHead: string;
+    description?: string;
+    rate: number | null;
+    amount: number;
+  }[];
+  salesTaxTemplate: string;
   addresses?: {
-  companyBillingAddress?: any;
-  supplierAddress?: any;
-  shippingAddress?: any;
-  dispatchAddress?: any;
-};
+    companyBillingAddress?: any;
+    supplierAddress?: any;
+    shippingAddress?: any;
+    dispatchAddress?: any;
+  };
 }
 
 export interface InvoiceSummary {
@@ -101,17 +111,16 @@ export interface InvoiceItem {
   piecesPerBox?: number;
   mfgDate?: string;
   expDate?: string;
- boxStart?: number;
+  boxStart?: number;
   boxEnd?: number;
-  
-qty?: number;
-availableQty?: number;
-warehouse?: string;
- isServiceItem?: boolean;
+
+  qty?: number;
+  availableQty?: number;
+  warehouse?: string;
+  isServiceItem?: boolean;
   originalQty?: number;
   _skipCap?: boolean;
-  _stockLoaded ?:boolean;
-
+  _stockLoaded?: boolean;
 }
 
 export interface PaymentInformation {

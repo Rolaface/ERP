@@ -7,7 +7,9 @@ import {
   REFRESH_KEYS,
 } from "../../store/dataRefreshStore";
 import { createSalesInvoice, editSalesInvoice } from "../../api/salesApi";
+import { selectPrincipals } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import ModalFooter from "../common/ModalFooter";
 import { ModalInput, ToggleSwitch } from "../ui/modal/modalComponent";
@@ -20,6 +22,7 @@ import ItemTable from "../common/ItemTable";
 import type { ModalSubmitHandler } from "../../types/modal";
 import { useDefault } from "../../hooks/usedefaultdata";
 import ModeOfPaymentSelect from "../selects/defaults/Modeofpaymentselect";
+import { useCompanyStore } from "../../store/companyStore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,13 +57,31 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const [submitting, setSubmitting] = useState(false);
 
-  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
-    "Product",
-  );
+  const [principalOptions, setPrincipalOptions] = useState<any[]>([]);
+  const [principalsFetched, setPrincipalsFetched] = useState(false);
+
+  const [invoiceType, setInvoiceType] = useState<
+    "Product" | "Service" | "RVAT"
+  >("Product");
   const domain = useDefault("primary_business_domain");
+  const isRvatAgent = useDefault("is_rvat_agent");
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+
+  // RVAT tab sirf tab dikhega jab dono conditions true ho
+  const showRvatOption = !!isZraEnabled && Number(isRvatAgent) === 1;
+
+  const invoiceTypeOptions = [
+    { label: "Product", value: "Product" },
+    { label: "Service", value: "Service" },
+    ...(showRvatOption ? [{ label: "RVAT", value: "RVAT" }] : []),
+  ];
 
   useEffect(() => {
     if (mode === "edit" && initialData?.items?.length > 0) {
+      if (initialData.invoiceType === "RVAT") {
+        setInvoiceType("RVAT");
+        return;
+      }
       // Check if the first item (or any item) is a service
       const isService = initialData.items[0]?.isServiceItem;
       setInvoiceType(isService ? "Service" : "Product");
@@ -69,6 +90,19 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       setInvoiceType(domain === "Service" ? "Service" : "Product");
     }
   }, [initialData, mode, isOpen, domain]);
+
+  useEffect(() => {
+    if (invoiceType === "RVAT" && !showRvatOption) {
+      setInvoiceType("Product");
+    }
+  }, [invoiceType, showRvatOption]);
+
+  useEffect(() => {
+    actions.handleInputChange({
+      target: { name: "invoiceType", value: invoiceType },
+    } as any);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceType]);
 
   const {
     formData,
@@ -109,11 +143,53 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     }
   }, [isOpen, mode, initialData]);
 
-  const showExchangeRate =
+ const showExchangeRate =
     !!ui.baseCurrency &&
     !!formData.currencyCode &&
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
+
+const mapPrincipalsToOptions = (list: any[], query: string) => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? list.filter((p: any) =>
+          [p.principalNm, p.tpin, p.tin, p.principalEmail, p.accountNo]
+            .filter(Boolean)
+            .some((field: any) => String(field).toLowerCase().includes(q)),
+        )
+      : list;
+    return filtered.map((p: any) => ({
+      value: p.principalNm,
+      label: `${p.principalNm} (${p.tpin})`,
+    }));
+  };
+
+  const fetchPrincipalOptions = async (query: string) => {
+    try {
+      if (!principalsFetched) {
+        const res = await selectPrincipals();
+        const list =
+          res?.data?.taxpayerPrincipalList ??
+          res?.taxpayerPrincipalList ??
+          res?.message?.data?.taxpayerPrincipalList ??
+          [];
+        setPrincipalOptions(list);
+        setPrincipalsFetched(true);
+        return mapPrincipalsToOptions(list, query);
+      }
+      return mapPrincipalsToOptions(principalOptions, query);
+    } catch (error) {
+      showApiError(error);
+      return [];
+    }
+  };
+
+const handlePrincipalSelect = (value: string) => {
+    const selected = principalOptions.find(
+      (p: any) => p.principalNm === value,
+    );
+    if (selected) actions.setPrincipal(selected);
+  };
 
   const handleSubmitForm = async () => {
     if (submitting) return;
@@ -125,6 +201,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
       if (!payload) return;
       payload.updateStock = true;
+      payload.invoiceType = invoiceType;
 
       if (mode === "edit") {
         const invoiceNumber =
@@ -248,21 +325,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <div className="flex flex-col gap-4">
               {/* ── Top fields row — flex-wrap so they flow on any width ── */}
               <div className="flex flex-wrap gap-3 items-end">
-                {/* Invoice Type  */}
-                {/* <div className="w-full sm:w-[130px]">
-                  <ModalSelect
-                    label="Invoice Type"
-                    name="invoiceType"
-                    value={invoiceType} // Use local state
-                    onChange={(e: any) => setInvoiceType(e.target.value)} // Update local state
-                    options={[
-                      { value: "Product", label: "Product" },
-                      { value: "Service", label: "Service" },
-                    ]}
-                    className="w-full border border-theme rounded text-[11px] text-main bg-card"
-                  />
-                </div> */}
-
                 {/* Customer — full width on mobile, fixed on sm+ */}
                 <div className="w-full sm:w-[280px]">
                   <CustomerSelect
@@ -329,15 +391,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                 )}
                 {/* Mode of Payment */}
                 <div className="w-full sm:w-[200px]">
-                  {/* <ModeOfPaymentSelect
-                    value={formData.mode ?? ""}
-                    onChange={(val) =>
-                      actions.handleInputChange({
-                        target: { name: "mode", value: val },
-                      } as any)
-                    }
-                    required
-                  /> */}
                   <ModeOfPaymentSelect
                     value={formData.mode ?? ""}
                     onChange={(val) => {
@@ -349,34 +402,47 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   />
                 </div>
 
-                {/* LPO Number — only when LPO tax category */}
-                {ui.isLocal && (
-                  <div className="w-full sm:w-[120px]">
-                    <ModalInput
-                      label="LPO Number"
-                      name="lpoNumber"
-                      value={formData.lpoNumber}
-                      onChange={actions.handleInputChange}
-                      inputMode="numeric"
-                      pattern="\d{10}"
-                      placeholder="Enter 10 digits"
-                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                    />
-                  </div>
-                )}
+                {/* PO Number */}
+                <div className="w-full sm:w-[160px]">
+                  <ModalInput
+                    label="PO Number"
+                    name="lpoNumber"
+                    value={formData.lpoNumber}
+                    onChange={actions.handleInputChange}
+                    inputMode="numeric"
+                    pattern="\d{10}"
+                    placeholder="Enter Purchase Order No"
+                    className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                  />
+                </div>
 
-                {/* Invoice Type */}
+                {/* Invoice Type — Product / Service / RVAT */}
                 <ToggleSwitch
                   name="invoiceType"
                   label="Invoice Type"
                   checked={invoiceType === "Service"}
                   onLabel="Service"
                   offLabel="Product"
-                  onChange={(e) => {
-                    const isService = e.target.checked;
-                    setInvoiceType(isService ? "Service" : "Product");
-                  }}
+                  onChange={() => {}}
+                  options={invoiceTypeOptions}
+                  value={invoiceType}
+                  onValueChange={(val) =>
+                    setInvoiceType(val as "Product" | "Service" | "RVAT")
+                  }
                 />
+
+                {invoiceType === "RVAT" && (
+                  <div className="w-full sm:w-[240px]">
+                    <SearchSelect2
+                      label="Principal"
+                      value={formData.principal?.principalNm ?? ""}
+                      onChange={handlePrincipalSelect}
+                      fetchOptions={fetchPrincipalOptions}
+                      placeholder="Search principal..."
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               {/* ── Items table + sidebar ──
@@ -521,14 +587,6 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
           {/* ──────────── ADDITIONAL DETAILS ──────────── */}
           {ui.activeTab === "address" && (
             <div className="space-y-6">
-              {/* <PaymentInfoBlock
-                data={formData.paymentInformation}
-                onChange={(e) =>
-                  actions.handleInputChange(e, "paymentInformation")
-                }
-                paymentMethodOptions={paymentMethodOptions}
-                showPaymentMethod={false}
-              /> */}
               <InvoiceAddressTab
                 customerId={formData.customerId}
                 formData={formData}

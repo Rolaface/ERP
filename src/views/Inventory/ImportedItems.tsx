@@ -227,7 +227,7 @@ const [supplierName, setSupplierName] = useState("");
               className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               <RefreshCw size={16} />
-              Process Declarations
+              Process Imported Items
             </button>
           }
           currentPage={page}

@@ -3,6 +3,11 @@ import {
   fetchPendingImportDeclarations,
   submitImportDecisions,
 } from "../../api/Inventory/Processimportmodal.api";
+import {
+  showApiError,
+  showSuccess,
+  showValidationError,
+} from "../../utils/alert";
 import type {
   DecisionsMap,
   ImportItem,
@@ -11,7 +16,8 @@ import type {
   MappedItemsMap,
   MappedSupplier,
   RemarksMap,
-  WarehouseMap,SuppliersMap, 
+  WarehouseMap,
+  SuppliersMap,
 } from "../../types/inventory/Processimportmodal.types";
 
 function mapRawItem(raw: ImportItemApiRaw): ImportItem {
@@ -51,16 +57,14 @@ export function useProcessImportModal(isOpen: boolean) {
   const [suppliers, setSuppliers] = useState<SuppliersMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const loadItems = useCallback(async () => {
     setIsLoading(true);
-    setError(null);
     try {
       const response = await fetchPendingImportDeclarations();
       setItems(response.data.map(mapRawItem));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load import declarations");
+      showApiError(err);
     } finally {
       setIsLoading(false);
     }
@@ -94,14 +98,14 @@ export function useProcessImportModal(isOpen: boolean) {
   }, []);
 
   const handleMappedItemChange = useCallback(
-  (itemId: string, item: { itemCode: string; itemClassCode: string }) => {
-    setMappedItems((prev) => ({
-      ...prev,
-      [itemId]: item,
-    }));
-  },
-  []
-);
+    (itemId: string, item: { itemCode: string; itemClassCode: string }) => {
+      setMappedItems((prev) => ({
+        ...prev,
+        [itemId]: item,
+      }));
+    },
+    []
+  );
 
   const handleWarehouseChange = useCallback(
     (itemId: string, e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -109,9 +113,13 @@ export function useProcessImportModal(isOpen: boolean) {
     },
     []
   );
-const handleSupplierChange = useCallback((itemId: string, supplier: MappedSupplier) => {
-  setSuppliers((prev) => ({ ...prev, [itemId]: supplier }));
-}, []);
+
+  const handleSupplierChange = useCallback(
+    (itemId: string, supplier: MappedSupplier) => {
+      setSuppliers((prev) => ({ ...prev, [itemId]: supplier }));
+    },
+    []
+  );
 
   const approveAllRemaining = useCallback(() => {
     setDecisions((prev) => {
@@ -134,34 +142,60 @@ const handleSupplierChange = useCallback((itemId: string, supplier: MappedSuppli
     return { approved, rejected, pending: items.length - approved - rejected };
   }, [items, decisions]);
 
-  const submit = useCallback(async () => {
-    if (items.length === 0) return;
+  const submit = useCallback(async (): Promise<boolean> => {
+    if (items.length === 0) return false;
 
-    // Every item with a decision (approve/reject) needs its own warehouse now —
-    // there's no single modal-level warehouse to fall back on anymore.
     const decidedItems = items.filter(
       (item) => decisions[item.id] === "approve" || decisions[item.id] === "reject"
     );
-    if (decidedItems.length === 0) return;
+    if (decidedItems.length === 0) {
+      showValidationError("Please approve or reject at least one item.");
+      return false;
+    }
 
     const missingWarehouse = decidedItems.find((item) => !warehouses[item.id]);
     if (missingWarehouse) {
-      setError(`Please select a warehouse for "${missingWarehouse.itemNm}"`);
-      return;
+      showValidationError(`Please select a warehouse for "${missingWarehouse.itemNm}".`);
+      return false;
+    }
+
+    const missingSupplier = decidedItems.find((item) => !suppliers[item.id]?.id);
+    if (missingSupplier) {
+      showValidationError(`Please map a supplier for "${missingSupplier.itemNm}".`);
+      return false;
+    }
+
+    const missingMappedItem = decidedItems.find(
+      (item) => !mappedItems[item.id]?.itemCode
+    );
+    if (missingMappedItem) {
+      showValidationError(`Please map "${missingMappedItem.itemNm}" to an existing item.`);
+      return false;
     }
 
     setIsSubmitting(true);
-    setError(null);
     try {
-      await submitImportDecisions(items, decisions, remarks, mappedItems, warehouses, suppliers);
+      const results = await submitImportDecisions(
+        items,
+        decisions,
+        remarks,
+        mappedItems,
+        warehouses,
+        suppliers
+      );
       await loadItems();
       setDecisions({});
       setRemarks({});
       setMappedItems({});
       setWarehouses({});
       setSuppliers({});
+      const successMsg =
+        results?.[0]?.resultMsg || "Import decisions submitted to ZRA successfully.";
+      showSuccess(successMsg);
+      return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit decisions");
+      showApiError(err);
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -184,7 +218,6 @@ const handleSupplierChange = useCallback((itemId: string, supplier: MappedSuppli
     counts,
     isLoading,
     isSubmitting,
-    error,
     refresh: loadItems,
     submit,
   };

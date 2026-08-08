@@ -12,6 +12,7 @@ import { getAllCreditLimit, getExpenseAccounts, getCashAccounts, getIncomeAccoun
 import { parseFrappeError } from "../hr/tabs/leave-config/hooks/parseFrappeError";
 import { getGLNameWithoutAbbreviation } from "../../api/utils/glAccountUtils";
 import { FaLinkedin } from "react-icons/fa";
+import { useCompanyStore } from "../../store/companyStore";
 
 interface DefaultsField {
   key: string;
@@ -391,7 +392,9 @@ interface SectionProps {
   onChange: (key: string, value: string) => void;
 }
 
-const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChange }) => (
+const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChange }) => {
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+  return (
   <div className="mb-8 max-w-7xl">
     <div className="flex items-center gap-3 mb-4">
       <span className="text-[11px] font-semibold tracking-widest text-primary uppercase">
@@ -479,7 +482,15 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
             onChange={(val) => onChange("use_separate_sequence_for_credit_notes", val ? "true" : "false")}
             helperText="Credit notes get their own numbering series"
           />
-      </>
+      {isZraEnabled && (
+        <ToggleField
+          label="Is RVAT Agent"
+          checked={values["is_rvat_agent"] === "true" || String(values["is_rvat_agent"]) === "1"}
+          onChange={(val) => onChange("is_rvat_agent", val ? "true" : "false")}
+          helperText="This company is an agent and will be using the agent module"
+        />
+      )}
+      </>  
   )}
   {section.id === "payroll" && (
     <>
@@ -566,7 +577,7 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
       )}
     </div>
   </div>
-);
+)};
 
 // ─── CompanyDefaults ──────────────────────────────────────────────────────────
 

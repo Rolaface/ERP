@@ -122,6 +122,10 @@ export function buildInvoicePayload(
     addresses: formData.addresses,
     taxes: mappedTaxes,
     salesTaxTemplate: formData.salesTaxTemplate ?? "",
+    invoiceType: formData.invoiceType ?? "",
+    ...(formData.invoiceType === "RVAT" && formData.principal
+      ? { principal: formData.principal }
+      : {}),
   };
 }
 
@@ -134,13 +138,14 @@ export const useInvoiceForm = (
   mode?: "invoice" | "proforma" | "edit",
   initialData?: any,
 ) => {
-  const [formData, setFormData] = useState<Invoice>({
+const [formData, setFormData] = useState<Invoice>({
     ...DEFAULT_INVOICE_FORM,
     terms: { ...EMPTY_TERMS },
     invoiceCharges: [],
     addresses: {},
     taxes: [],
     salesTaxTemplate: "",
+    principal: null,
   });
 
   // Set today's date on open
@@ -418,7 +423,6 @@ export const useInvoiceForm = (
     if (!meaningfulItems.length) {
       throw new Error("Please add at least one item");
     }
-   
 
     formData.items.forEach((it, idx) => {
       if (isRowEmpty(it)) return; // never touched — nothing to validate
@@ -906,6 +910,20 @@ export const useInvoiceForm = (
 
   // ─── Load invoice for edit ───────────────────────────────────────────────────
 
+  const parsePrincipal = (raw: any): any => {
+    if (!raw) return null;
+    if (typeof raw === "object") return raw;
+    try {
+      let parsed = JSON.parse(raw);
+      if (typeof parsed === "string") {
+        parsed = JSON.parse(parsed);
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
   const setFormDataFromInvoice = (invoice: any) => {
     isLoadingRef.current = true;
     invoiceDocstatusRef.current = Number(invoice.docstatus ?? 0);
@@ -936,6 +954,7 @@ export const useInvoiceForm = (
       invoiceNumber: invoice.id ?? invoice.invoiceNumber,
       customerId: invoice.customerId ?? prev.customerId,
       invoiceType: invoice.invoiceType ?? "",
+      principal: parsePrincipal(invoice.principal),
       taxCategory: invoice.tax_category ?? prev.taxCategory,
       mode: invoice.paymentMode ?? prev.mode ?? "",
       currencyCode: invoice.currency,
@@ -1046,6 +1065,11 @@ export const useInvoiceForm = (
     markDirty();
   };
 
+  const setPrincipal = (principal: any) => {
+    setFormData((prev: any) => ({ ...prev, principal }));
+    markDirty();
+  };
+
   const handleSameAsBillingChange = (checked: boolean) => {
     setSameAsBilling(checked);
     if (!checked) shippingEditedRef.current = false;
@@ -1067,6 +1091,7 @@ export const useInvoiceForm = (
           ...DEFAULT_INVOICE_FORM,
           invoiceCharges: [],
           salesTaxTemplate: "",
+          principal: null,
           dateOfInvoice: today,
           dueDate,
           exchangeRt: "1",
@@ -1225,6 +1250,7 @@ export const useInvoiceForm = (
       removeItem,
       duplicateItem,
       setTerms,
+      setPrincipal,
       handleSameAsBillingChange,
       handleReset,
       handleSubmit,
