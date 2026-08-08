@@ -14,7 +14,7 @@ import {
   ShoppingBag,
   Barcode,
   ShoppingCart, 
-  Ship
+  Ship,FileInput
 } from "lucide-react";
 import {
   AppPage,
@@ -101,8 +101,8 @@ const ALL_PROCUREMENT_TABS = [
   },
    {
     id: "importedPurchase",
-    label: "Imported P_I",
-    icon: <Ship  {...iconProps} />,
+    label: "Import PI",
+    icon: <FileInput  {...iconProps} />,
     module: "imported Purchase Invoice",
     action: "read" as const,
   },

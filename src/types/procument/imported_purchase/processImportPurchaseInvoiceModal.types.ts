@@ -34,7 +34,7 @@ export interface ImportPurchaseInvoiceSaleRaw {
   spplrTpin: string;
   spplrNm: string;
   spplrBhfId: string;
-  spplrInvcNo: number;
+  spplrInvcNo: string;
   rcptTyCd: string;
   pmtTyCd: string;
   cfmDt: string; // "2026-07-08 20:03:36"

@@ -13,7 +13,6 @@ import { getSuppliers } from "../../../api/procurement/supplierApi";
 import { submitPurchaseInvoiceImportDecisions } from "../../../api/procurement/Importedpurchaseinvoice.api";
 import type {
   DecisionsMap,
-  ImportPurchaseInvoiceItem,
   RemarksMap,
 } from "../../../types/procument/imported_purchase/processImportPurchaseInvoiceModal.types";
 import { fireManagedSwal } from "../../../utils/swalManager";
@@ -23,51 +22,14 @@ import {
   showLoading,
   closeSwal,
 } from "../../../utils/alert";
-
-function formatApiDate(raw: string): string {
-  if (!raw || raw.length !== 8) return "—";
-  const year = raw.slice(0, 4);
-  const month = Number(raw.slice(4, 6)) - 1;
-  const day = raw.slice(6, 8);
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  return `${Number(day)} ${months[month] ?? ""} ${year}`;
-}
-
-const fmtNum = (n: number) =>
-  n.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-// cfmDt / stockRlsDt come as "2026-07-08 20:03:36"
-function formatDateTime(raw: string | null | undefined): string {
-  if (!raw) return "—";
-  const d = new Date(raw.replace(" ", "T"));
-  if (isNaN(d.getTime())) return raw;
-  const datePart = d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-  const timePart = d.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `${datePart}, ${timePart}`;
-}
+import type { InvoiceGroup } from "../../../types/procument/imported_purchase/Importedpurchaseinvoice.types ";
+import {
+  formatAmount,
+  formatCompactDate,
+} from "../../../utils/day-time formatter/Format";
+import InvoiceExpandedRow from "./Invoiceexpandedrow";
+import { useCompanyDefaultsStore } from "../../../store/Companydefaultsstore";
+import { useCurrencySymbols } from "../../../hooks/Usecurrencysymbols";
 
 function extractSupplierList(res: any): any[] {
   if (Array.isArray(res?.data?.data)) return res.data.data;
@@ -80,30 +42,19 @@ interface SupplierOption {
   name: string;
 }
 
-// One row per supplier invoice (PI) — decisions (approve/reject) are made
-// at this invoice level only. Item rows underneath are read-only detail
-// lines shown on expand.
-interface InvoiceGroup {
-  key: string;
-  supplierTpin: string;
-  supplierName: string;
-  invoiceNo: string | number;
-  salesDate: string;
-  items: ImportPurchaseInvoiceItem[];
-  totalTaxable: number;
-  totalTax: number;
-  totalAmount: number;
-}
-
 const ImportedPurchaseInvoice: React.FC = () => {
   const {
     items,
-
+    totals,
     remarks,
     handleRemarkChange,
     isLoading,
     error,
     refresh,
+    mappedItems,
+    warehouses,
+    handleMappedItemChange,
+    handleWarehouseChange,
   } = useProcessImportPurchaseInvoiceModal(true);
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -241,14 +192,6 @@ const ImportedPurchaseInvoice: React.FC = () => {
     });
   }, []);
 
-  const toggleSelectAllGroups = useCallback(() => {
-    setSelectedGroups((prev) =>
-      prev.size === invoiceGroups.length
-        ? new Set()
-        : new Set(invoiceGroups.map((g) => g.key)),
-    );
-  }, [invoiceGroups]);
-
   // Single entry point for approve/reject — used for a single row, a bulk
   // selection, or "approve all remaining". Validates remarks (reject only),
   // confirms with the user, then submits straight to the existing API and
@@ -315,6 +258,8 @@ const ImportedPurchaseInvoice: React.FC = () => {
           allItems,
           decisionsMap,
           remarksMap,
+          mappedItems,
+          warehouses,
         );
         closeSwal();
         showSuccess(
@@ -339,41 +284,51 @@ const ImportedPurchaseInvoice: React.FC = () => {
     },
     [remarks, refresh],
   );
+  const currency = useCompanyDefaultsStore(
+    (state) => state.defaults?.default_currency ?? "",
+  );
+
+  const { getNumberFormat } = useCurrencySymbols(currency ? [currency] : []);
+  const pattern = getNumberFormat(currency);
 
   const columns: Column<InvoiceGroup>[] = useMemo(
     () => [
+      // {
+      //   key: "select",
+      //   header: "",
+      //   align: "center",
+      //   width: "36px",
+      //   render: (g) => (
+      //     <div onClick={(e) => e.stopPropagation()}>
+      //       <input
+      //         type="checkbox"
+      //         checked={selectedGroups.has(g.key)}
+      //         onChange={() => toggleSelectGroup(g.key)}
+      //       />
+      //     </div>
+      //   ),
+      // },
       {
-        key: "select",
-        header: "",
-        align: "center",
-        width: "36px",
+        key: "supplierTpin",
+        header: "SUPPLIER TPIN",
+        align: "left",
+        minWidth: "110px",
         render: (g) => (
-          <div onClick={(e) => e.stopPropagation()}>
-            <input
-              type="checkbox"
-              checked={selectedGroups.has(g.key)}
-              onChange={() => toggleSelectGroup(g.key)}
-            />
-          </div>
+          <span className="text-[12px] text-main">{g.supplierTpin}</span>
         ),
       },
       {
         key: "supplierName",
-        header: "SUPPLIER",
+        header: "SUPPLIER NAME",
         align: "left",
         minWidth: "170px",
         render: (g) => (
-          <div>
-            <span className="font-medium text-main">{g.supplierName}</span>
-            <div className="text-[10px] text-muted">TPIN {g.supplierTpin}</div>
-          </div>
+          <span className="font-medium text-main">{g.supplierName}</span>
         ),
       },
       {
-        // Invoice no. now carries the item count too (e.g. "INV-2201 · 4 items"),
-        // so we don't need a dedicated ITEMS column eating up horizontal space.
         key: "invoiceNo",
-        header: "INVOICE",
+        header: "INVOICE NUMBER",
         align: "left",
         minWidth: "110px",
         render: (g) => (
@@ -387,76 +342,46 @@ const ImportedPurchaseInvoice: React.FC = () => {
       },
       {
         key: "salesDate",
-        header: "SALES DATE",
+        header: "INVOICE DATE",
         align: "left",
         minWidth: "90px",
         render: (g) => (
           <span className="text-muted text-[12px]">
-            {formatApiDate(g.salesDate)}
+            {formatCompactDate(g.salesDate)}
           </span>
         ),
       },
       {
-        // Taxable / Tax / Total collapsed into one stacked column — the per-item
-        // breakdown is still available in the expanded row below.
         key: "amounts",
-        header: "TOTAL (TAX / TAXABLE)",
+        header: "TOTAL",
         align: "right",
         minWidth: "130px",
         render: (g) => (
           <div className="text-right leading-tight">
             <div className="tabular-nums font-medium">
-              ZMW {fmtNum(g.totalAmount)}
+              {currency} {formatAmount(g.totalAmount, pattern)}
             </div>
             <div className="tabular-nums text-[10px] text-muted">
-              Tax {fmtNum(g.totalTax)} · Taxable {fmtNum(g.totalTaxable)}
+              Tax {formatAmount(g.totalTax, pattern)} · Taxable{" "}
+              {formatAmount(g.totalTaxable, pattern)}
             </div>
           </div>
         ),
-      },
-      {
-        key: "status",
-        header: "STATUS",
-        align: "center",
-        minWidth: "100px",
-        render: (g) =>
-          processingGroups.has(g.key) ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
-              <RefreshCw size={10} className="animate-spin" />
-              Processing
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-              Pending
-            </span>
-          ),
       },
       {
         key: "remarks",
         header: "REMARKS",
         align: "left",
         minWidth: "140px",
+
         render: (g) => (
           <div onClick={(e) => e.stopPropagation()}>
             <input
               type="text"
               value={remarks[g.items[0].id] ?? ""}
-              onChange={(e) => {
-                handleRemarkChange(g.items[0].id, e.target.value);
-                if (remarkErrors[g.key]) {
-                  setRemarkErrors((prev) => {
-                    const next = { ...prev };
-                    delete next[g.key];
-                    return next;
-                  });
-                }
-              }}
-              placeholder="Remarks..."
-              className={`w-full rounded-md border bg-card px-2 py-1.5 text-xs focus:outline-none ${
-                remarkErrors[g.key]
-                  ? "border-danger focus:border-danger"
-                  : "border-theme focus:border-primary"
-              }`}
+              placeholder="Remarks"
+              disabled
+              className="w-full rounded-md border border-theme bg-muted/50 px-2 py-1.5 text-xs text-muted cursor-not-allowed"
             />
             {remarkErrors[g.key] && (
               <p className="text-[10px] text-danger mt-1">
@@ -468,7 +393,7 @@ const ImportedPurchaseInvoice: React.FC = () => {
       },
       {
         key: "actions",
-        header: "ACTIONS",
+        header: "ACCEPT / REJECT",
         align: "center",
         width: "140px",
         render: (g) => {
@@ -507,6 +432,8 @@ const ImportedPurchaseInvoice: React.FC = () => {
       handleRemarkChange,
       processGroups,
       toggleSelectGroup,
+      currency,
+      pattern,
     ],
   );
 
@@ -525,155 +452,17 @@ const ImportedPurchaseInvoice: React.FC = () => {
               : "No pending imported purchase invoices."
           }
           onRowClick={(g) => toggleGroupExpand(g.key)}
-          expandedRowRender={(g) => {
-            if (!expandedGroups.has(g.key)) return null;
-            const first = g.items[0];
-            return (
-              <div className="bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.015),rgba(0,0,0,0.015)_10px,transparent_10px,transparent_20px)] bg-app border-y-2 border-primary/20 px-5 py-4 space-y-4">
-                {/* Invoice-level details — same for every item in this invoice */}
-                <div className="rounded-lg border border-primary/20 bg-card px-4 py-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-2">
-                    Invoice Details
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-[12px]">
-                    <div>
-                      <div className="text-[10px] text-muted uppercase">
-                        Supplier TPIN
-                      </div>
-                      <div className="text-main font-medium">
-                        {g.supplierTpin}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted uppercase">
-                        Branch
-                      </div>
-                      <div className="text-main font-medium">
-                        {first.supplierBranchId || "—"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted uppercase">
-                        Payment Type
-                      </div>
-                      <div className="text-main font-medium">
-                        {first.paymentTypeCd || "—"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted uppercase">
-                        Receipt Type
-                      </div>
-                      <div className="text-main font-medium">
-                        {first.receiptTypeCd || "—"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted uppercase">
-                        Confirmation Date
-                      </div>
-                      <div className="text-main font-medium">
-                        {formatDateTime(first.confirmedAt)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted uppercase">
-                        Stock Release Date
-                      </div>
-                      <div className="text-main font-medium">
-                        {formatDateTime(first.stockReleaseDate)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Items — one merged table (line info + discount/tax-category/package/barcode
-                    that used to live in a duplicate second table). Height is capped and scrolls
-                    internally so a long invoice doesn't blow up page height; header stays pinned
-                    while scrolling. */}
-                <div className="rounded-lg border border-theme bg-card overflow-hidden">
-                  <div className="px-4 py-2 border-b border-theme text-[10px] font-semibold uppercase tracking-wider text-muted bg-app/60">
-                    Items ({g.items.length})
-                  </div>
-                  <div className="max-h-64 overflow-y-auto overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead className="sticky top-0 z-10">
-                        <tr className="border-b border-theme text-[10px] text-muted font-semibold uppercase tracking-wider bg-app">
-                          <th className="px-3 py-2 w-10 text-center">#</th>
-                          <th className="px-3 py-2 min-w-[140px]">Item</th>
-                          <th className="px-3 py-2">Class</th>
-                          <th className="px-3 py-2 text-right">Qty</th>
-                          <th className="px-3 py-2 text-center">UOM</th>
-                          <th className="px-3 py-2 text-right">Unit Price</th>
-                          <th className="px-3 py-2 text-right min-w-[100px]">
-                            Total (Tax)
-                          </th>
-                          <th className="px-3 py-2">Discount</th>
-                          <th className="px-3 py-2">Tax Cat</th>
-                          <th className="px-3 py-2">Package</th>
-                          <th className="px-3 py-2">Barcode</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-theme text-[12px]">
-                        {g.items.map((item, index) => (
-                          <tr
-                            key={item.id}
-                            className="hover:bg-app/40 transition-colors"
-                          >
-                            <td className="px-3 py-2 text-center text-muted text-[11px]">
-                              {index + 1}
-                            </td>
-                            <td className="px-3 py-2">
-                              <div className="font-medium text-main">
-                                {item.itemName}
-                              </div>
-                              <div className="text-[10px] text-primary">
-                                {item.itemCd}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-muted">
-                              {item.itemClassCd}
-                            </td>
-                            <td className="px-3 py-2 tabular-nums text-main text-right">
-                              {item.qty.toLocaleString()}
-                            </td>
-                            <td className="px-3 py-2 text-center text-[11px] text-muted">
-                              {item.qtyUnitCd}
-                            </td>
-                            <td className="px-3 py-2 tabular-nums text-main text-right">
-                              {fmtNum(item.unitPrice)}
-                            </td>
-                            <td className="px-3 py-2 tabular-nums text-right">
-                              <div className="font-medium text-main">
-                                ZMW {fmtNum(item.itemTotalAmount)}
-                              </div>
-                              <div className="text-[10px] text-muted">
-                                Tax {fmtNum(item.vatAmount)}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-main">
-                              {item.discountRate > 0 || item.discountAmount > 0
-                                ? `${item.discountRate}% (ZMW ${fmtNum(item.discountAmount)})`
-                                : "—"}
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-main">
-                              {item.vatCategoryCd || "—"}
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-main">
-                              {item.packageCount} {item.packageUnitCd}
-                            </td>
-                            <td className="px-3 py-2 text-[11px] text-main">
-                              {item.barcode || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            );
-          }}
+          expandedRowRender={(g) =>
+            expandedGroups.has(g.key) ? (
+              <InvoiceExpandedRow
+                group={g}
+                mappedItems={mappedItems}
+                warehouses={warehouses}
+                onMappedItemChange={handleMappedItemChange}
+                onWarehouseChange={handleWarehouseChange}
+              />
+            ) : null
+          }
           showToolbar
           searchValue={searchTerm}
           onSearch={setSearchTerm}
@@ -762,17 +551,6 @@ const ImportedPurchaseInvoice: React.FC = () => {
           }
           primaryAction={
             <div className="flex items-center gap-4 flex-wrap">
-              <label className="flex items-center gap-1.5 text-[12px] text-muted font-medium cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={
-                    invoiceGroups.length > 0 &&
-                    selectedGroups.size === invoiceGroups.length
-                  }
-                  onChange={toggleSelectAllGroups}
-                />
-                Select all
-              </label>
               {selectedGroups.size > 0 && (
                 <>
                   <span className="text-[12px] text-muted">
@@ -802,12 +580,6 @@ const ImportedPurchaseInvoice: React.FC = () => {
                   </button>
                 </>
               )}
-              <button
-                onClick={() => processGroups(invoiceGroups, "approve")}
-                className="text-[12px] font-medium text-primary hover:underline"
-              >
-                Approve all remaining
-              </button>
               <button
                 onClick={refresh}
                 disabled={isLoading}

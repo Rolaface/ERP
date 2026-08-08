@@ -6,6 +6,7 @@ import type {
   ImportPurchaseInvoiceItemsTotals,
   RemarksMap,
 } from "../../types/procument/imported_purchase/processImportPurchaseInvoiceModal.types";
+import type { SelectedStockItem } from "../../components/selects/itemGenriSelect"; // ← adjust path
 
 function mapRawItem(raw: ImportPurchaseInvoiceItemApiRaw): ImportPurchaseInvoiceItem {
   return {
@@ -44,9 +45,15 @@ function mapRawItem(raw: ImportPurchaseInvoiceItemApiRaw): ImportPurchaseInvoice
   };
 }
 
+// ── Mapper state types ─────────────────────────────────────────────────
+export type MappedItemsMap = Record<string, SelectedStockItem | undefined>;
+export type WarehousesMap = Record<string, string | undefined>;
+
 export function useProcessImportPurchaseInvoiceModal(isOpen: boolean) {
   const [items, setItems] = useState<ImportPurchaseInvoiceItem[]>([]);
   const [remarks, setRemarks] = useState<RemarksMap>({});
+  const [mappedItems, setMappedItems] = useState<MappedItemsMap>({});
+  const [warehouses, setWarehouses] = useState<WarehousesMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,11 +91,28 @@ export function useProcessImportPurchaseInvoiceModal(isOpen: boolean) {
     setRemarks((prev) => ({ ...prev, [itemId]: value }));
   }, []);
 
+  // ── Item mapper (→ mapped_erp_item) ──
+  const handleMappedItemChange = useCallback(
+    (itemId: string, selected: SelectedStockItem) => {
+      setMappedItems((prev) => ({ ...prev, [itemId]: selected }));
+    },
+    [],
+  );
+
+  // ── Warehouse mapper (→ mapped_erp_warehouse) ──
+  const handleWarehouseChange = useCallback((itemId: string, warehouseId: string) => {
+    setWarehouses((prev) => ({ ...prev, [itemId]: warehouseId }));
+  }, []);
+
   return {
     items,
     totals,
     remarks,
     handleRemarkChange,
+    mappedItems,
+    warehouses,
+    handleMappedItemChange,
+    handleWarehouseChange,
     isLoading,
     error,
     refresh: loadItems,

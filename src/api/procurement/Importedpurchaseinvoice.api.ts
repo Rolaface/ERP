@@ -8,55 +8,11 @@ import type {
   DecisionsMap,
   RemarksMap,
 } from "../../types/procument/imported_purchase/processImportPurchaseInvoiceModal.types";
-import type {
-  ImportedPurchaseInvoicesApiResponse,
-  ImportedPurchaseInvoiceItemRaw,
-  ImportedPurchaseInvoiceDetailApiResponse,
-  ImportedPurchaseInvoiceDetailRaw,
-} from "../../types/procument/imported_purchase/Importedpurchaseinvoice.types";
+
 
 const api = createAxiosInstance(ERP_BASE);
 
-// ASSUMPTION: config/api.ts purchaseInvoiceImports namespace — see earlier note.
 export const PurchaseInvoiceImportsAPI = API.purchaseInvoiceImports;
-
-const USE_DUMMY_PENDING_IMPORTS = false;
-
-const dummyPendingImports: ImportPurchaseInvoiceItemApiRaw[] = [
-  {
-    spplrTpin: "1000000000",
-    spplrNm: "Dummy Supplier Pvt Ltd",
-    spplrBhfId: "000",
-    spplrInvcNo: "DUMMY-INV-001",
-    rcptTyCd: "S",
-    pmtTyCd: "01",
-    cfmDt: "20260101120000",
-    salesDt: "20260101",
-    stockRlsDt: "20260101120000",
-    invTotItemCnt: 1,
-    invTotTaxblAmt: 1000,
-    invTotTaxAmt: 160,
-    invTotAmt: 1160,
-    invRemark: "Dummy invoice remark",
-    itemSeq: 1,
-    itemCd: "DUMMY-ITEM-001",
-    itemClsCd: "50101500",
-    itemNm: "Dummy Item",
-    bcd: "",
-    pkgUnitCd: "NT",
-    pkg: 1,
-    qtyUnitCd: "U",
-    qty: 1,
-    prc: 1000,
-    splyAmt: 1000,
-    dcRt: 0,
-    dcAmt: 0,
-    vatCatCd: "A",
-    taxblAmt: 1000,
-    vatAmt: 160,
-    totAmt: 1160,
-  },
-];
 
 // ─────────────────────────────────────────────────────────────────────────
 // The ZRA-style endpoint wraps everything under a top-level "message" key:
@@ -119,10 +75,6 @@ function flattenSales(
 }
 
 export async function fetchPendingPurchaseInvoiceImports(): Promise<ImportPurchaseInvoiceItemApiRaw[]> {
-  if (USE_DUMMY_PENDING_IMPORTS) {
-    return dummyPendingImports;
-  }
-
   const resp: AxiosResponse<PendingImportsEnvelope> = await api.get(
     PurchaseInvoiceImportsAPI.get
   );
@@ -163,6 +115,9 @@ export async function fetchPendingPurchaseInvoiceImports(): Promise<ImportPurcha
 const SAVE_PURCHASE_SALES_ENDPOINT =
   "/api/method/zra_smart_invoice.modules.purchase_invoice.api.save_purchase_sales";
 
+type MappedItemsMap = Record<string, { itemCode: string } | undefined>;
+type WarehousesMap = Record<string, string | undefined>;
+
 interface SaveSalesItemPayload {
   itemSeq: number;
   itemCd: string;
@@ -191,6 +146,8 @@ interface SaveSalesItemPayload {
   tlAmt: number;
   exciseTxAmt: number;
   totAmt: number;
+  mapped_erp_item: string | null;
+  mapped_erp_warehouse: string | null;
 }
 
 interface SaveSalesInvoicePayload {
@@ -212,10 +169,12 @@ interface SaveSalesInvoicePayload {
   itemList: SaveSalesItemPayload[];
 }
 
-function buildSaveSalesPayloads(
+export function buildSaveSalesPayloads(
   items: ImportPurchaseInvoiceItem[],
   decisions: DecisionsMap,
-  remarks: RemarksMap
+  remarks: RemarksMap,
+  mappedItems: MappedItemsMap = {},
+  warehouses: WarehousesMap = {},
 ): SaveSalesInvoicePayload[] {
   const byInvoice = new Map<string, SaveSalesInvoicePayload>();
 
@@ -255,6 +214,8 @@ function buildSaveSalesPayloads(
       tlAmt: 0,
       exciseTxAmt: 0,
       totAmt: item.itemTotalAmount,
+      mapped_erp_item: mappedItems[item.id]?.itemCode ?? null,
+      mapped_erp_warehouse: warehouses[item.id] ?? null,
     };
 
     const existing = byInvoice.get(key);
@@ -264,8 +225,6 @@ function buildSaveSalesPayloads(
       existing.totTaxblAmt += item.taxableAmount;
       existing.totTaxAmt += item.vatAmount;
       existing.totAmt += item.itemTotalAmount;
-      // UI only allows whole-invoice approve/reject (group-level actions),
-      // so all items in a group should already share the same decision.
       existing.transaction_progress = progress;
     } else {
       byInvoice.set(key, {
@@ -295,9 +254,11 @@ function buildSaveSalesPayloads(
 export async function submitPurchaseInvoiceImportDecisions(
   items: ImportPurchaseInvoiceItem[],
   decisions: DecisionsMap,
-  remarks: RemarksMap
+  remarks: RemarksMap,
+  mappedItems: MappedItemsMap = {},
+  warehouses: WarehousesMap = {},
 ): Promise<any[]> {
-  const payloads = buildSaveSalesPayloads(items, decisions, remarks);
+  const payloads = buildSaveSalesPayloads(items, decisions, remarks, mappedItems, warehouses);
 
   return Promise.all(
     payloads.map(async (payload) => {
@@ -308,58 +269,23 @@ export async function submitPurchaseInvoiceImportDecisions(
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Imported purchase invoices (main list page) — unchanged, separate endpoint
+// Imported purchase invoices (main list page)
 // ─────────────────────────────────────────────────────────────────────────
 
-const USE_DUMMY_IMPORTED_PURCHASE_INVOICES = true;
-
-const dummyImportedPurchaseInvoices: ImportedPurchaseInvoiceItemRaw[] = [
-  {
-    id: "1",
-    declaration_no: "DEC-2026-0001",
-    declaration_date: "2026-08-07",
-    item_name: "RVAT Testing Item",
-    supplier_name: "Dummy Supplier Pvt Ltd",
-    quantity: 10,
-    quantity_unit: "BX",
-    currency: "ZMW",
-    invoice_amount: 1160,
-    checker: "John Doe",
-    checked_at: "2026-08-07 14:30:00",
-    status: "Imported",
-    status_code: "3",
-  },
-  {
-    id: "2",
-    declaration_no: "DEC-2026-0002",
-    declaration_date: "2026-08-06",
-    item_name: "Software Maintenance",
-    supplier_name: "ABC Technologies",
-    quantity: 5,
-    quantity_unit: "EA",
-    currency: "ZMW",
-    invoice_amount: 522,
-    checker: "Jane Smith",
-    checked_at: "2026-08-06 11:45:00",
-    status: "Rejected",
-    status_code: "4",
-  },
-];
-
-export async function fetchImportedPurchaseInvoices(): Promise<ImportedPurchaseInvoiceItemRaw[]> {
-  if (USE_DUMMY_IMPORTED_PURCHASE_INVOICES) {
-    return dummyImportedPurchaseInvoices;
-  }
-
-  const resp: AxiosResponse<ImportedPurchaseInvoicesApiResponse> = await api.get(
+export async function fetchImportedPurchaseInvoices(): Promise<
+  ImportPurchaseInvoiceItemApiRaw[]
+> {
+  const resp: AxiosResponse = await api.get(
     PurchaseInvoiceImportsAPI.getImportedPurchaseInvoices
   );
 
-  if (resp.data.status_code !== 200) {
+  if (resp.data?.status_code !== 200) {
     throw new Error(
-      resp.data.message || "Imported purchase invoices request failed"
+      resp.data?.message || "Imported purchase invoices request failed"
     );
   }
 
-  return resp.data.data;
+  const saleList = resp.data?.data?.saleList ?? [];
+
+  return flattenSales(saleList);
 }
