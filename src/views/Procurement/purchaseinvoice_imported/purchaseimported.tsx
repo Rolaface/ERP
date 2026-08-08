@@ -265,7 +265,7 @@ const ImportedPurchaseInvoice: React.FC = () => {
         });
       }
     },
-    [remarks, refresh],
+    [remarks, refresh, mappedItems, warehouses],
   );
   const currency = useCompanyDefaultsStore(
     (state) => state.defaults?.default_currency ?? "",
