@@ -200,24 +200,7 @@ const ImportedPurchaseInvoice: React.FC = () => {
     async (groups: InvoiceGroup[], decision: "approve" | "reject") => {
       if (groups.length === 0) return;
 
-      if (decision === "reject") {
-        const missing = groups.filter((g) => !remarks[g.items[0].id]?.trim());
-        if (missing.length > 0) {
-          setRemarkErrors((prev) => {
-            const next = { ...prev };
-            missing.forEach((g) => {
-              next[g.key] = "Remark is required to reject";
-            });
-            return next;
-          });
-          showApiError(
-            `Add a remark before rejecting: ${missing
-              .map((g) => g.invoiceNo)
-              .join(", ")}`,
-          );
-          return;
-        }
-      }
+    
 
       const isBulk = groups.length > 1;
       const result = await fireManagedSwal({
