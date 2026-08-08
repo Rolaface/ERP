@@ -20,6 +20,16 @@ export interface Invoice {
   invoiceType: string;
   invoiceNumber?: string;
   customerId: string;
+  principal?: {
+    id: number;
+    tpin: string;
+    tin: string;
+    principalNm: string;
+    principalAddress: string;
+    principalEmail: string;
+    principalTelNo: string;
+    accountNo: string;
+  } | null;
   currencyCode: string;
   exchangeRt: string;
   dateOfInvoice: string;

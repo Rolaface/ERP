@@ -7,7 +7,9 @@ import {
   REFRESH_KEYS,
 } from "../../store/dataRefreshStore";
 import { createSalesInvoice, editSalesInvoice } from "../../api/salesApi";
+import { selectPrincipals } from "../../api/customerApi";
 import CustomerSelect from "../selects/CustomerSelect";
+import SearchSelect2 from "../ui/modal/SearchSelect2";
 import { MinimizableModal } from "../../components/common/MinimizableModal";
 import ModalFooter from "../common/ModalFooter";
 import { ModalInput, ToggleSwitch } from "../ui/modal/modalComponent";
@@ -55,6 +57,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const [submitting, setSubmitting] = useState(false);
 
+  const [principalOptions, setPrincipalOptions] = useState<any[]>([]);
+  const [principalsFetched, setPrincipalsFetched] = useState(false);
+
   const [invoiceType, setInvoiceType] = useState<
     "Product" | "Service" | "RVAT"
   >("Product");
@@ -73,6 +78,10 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   useEffect(() => {
     if (mode === "edit" && initialData?.items?.length > 0) {
+      if (initialData.invoiceType === "RVAT") {
+        setInvoiceType("RVAT");
+        return;
+      }
       // Check if the first item (or any item) is a service
       const isService = initialData.items[0]?.isServiceItem;
       setInvoiceType(isService ? "Service" : "Product");
@@ -87,6 +96,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
       setInvoiceType("Product");
     }
   }, [invoiceType, showRvatOption]);
+
+  useEffect(() => {
+    actions.handleInputChange({
+      target: { name: "invoiceType", value: invoiceType },
+    } as any);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceType]);
 
   const {
     formData,
@@ -127,11 +143,53 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
     }
   }, [isOpen, mode, initialData]);
 
-  const showExchangeRate =
+ const showExchangeRate =
     !!ui.baseCurrency &&
     !!formData.currencyCode &&
     formData.currencyCode.trim().toUpperCase() !==
       ui.baseCurrency.trim().toUpperCase();
+
+const mapPrincipalsToOptions = (list: any[], query: string) => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? list.filter((p: any) =>
+          [p.principalNm, p.tpin, p.tin, p.principalEmail, p.accountNo]
+            .filter(Boolean)
+            .some((field: any) => String(field).toLowerCase().includes(q)),
+        )
+      : list;
+    return filtered.map((p: any) => ({
+      value: p.principalNm,
+      label: `${p.principalNm} (${p.tpin})`,
+    }));
+  };
+
+  const fetchPrincipalOptions = async (query: string) => {
+    try {
+      if (!principalsFetched) {
+        const res = await selectPrincipals();
+        const list =
+          res?.data?.taxpayerPrincipalList ??
+          res?.taxpayerPrincipalList ??
+          res?.message?.data?.taxpayerPrincipalList ??
+          [];
+        setPrincipalOptions(list);
+        setPrincipalsFetched(true);
+        return mapPrincipalsToOptions(list, query);
+      }
+      return mapPrincipalsToOptions(principalOptions, query);
+    } catch (error) {
+      showApiError(error);
+      return [];
+    }
+  };
+
+const handlePrincipalSelect = (value: string) => {
+    const selected = principalOptions.find(
+      (p: any) => p.principalNm === value,
+    );
+    if (selected) actions.setPrincipal(selected);
+  };
 
   const handleSubmitForm = async () => {
     if (submitting) return;
@@ -372,6 +430,19 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     setInvoiceType(val as "Product" | "Service" | "RVAT")
                   }
                 />
+
+                {invoiceType === "RVAT" && (
+                  <div className="w-full sm:w-[240px]">
+                    <SearchSelect2
+                      label="Principal"
+                      value={formData.principal?.principalNm ?? ""}
+                      onChange={handlePrincipalSelect}
+                      fetchOptions={fetchPrincipalOptions}
+                      placeholder="Search principal..."
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               {/* ── Items table + sidebar ──
