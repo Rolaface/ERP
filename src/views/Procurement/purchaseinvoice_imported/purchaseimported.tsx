@@ -1,40 +1,59 @@
-import React, { useState } from "react";
-import { RefreshCw } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { RefreshCw, Check, X as XIcon } from "lucide-react";
 import Table from "../../../components/ui/Table/Table";
-import ActionButton, {
-  ActionGroup,
-  ActionMenu,
-} from "../../../components/ui/Table/ActionButton";
 import type { Column } from "../../../components/ui/Table/type";
+import { useProcessImportPurchaseInvoiceModal } from "../../../hooks/procument/useProcessImportPurchaseInvoiceModal";
+import { getSuppliers } from "../../../api/procurement/supplierApi";
+import { submitPurchaseInvoiceImportDecisions } from "../../../api/procurement/Importedpurchaseinvoice.api";
+import type {
+  DecisionsMap,
+  ImportPurchaseInvoiceItem,
+  RemarksMap,
+} from "../../../types/procument/imported_purchase/processImportPurchaseInvoiceModal.types";
+import { fireManagedSwal } from "../../../utils/swalManager";
+import {
+  showApiError,
+  showSuccess,
+  showLoading,
+  closeSwal,
+} from "../../../utils/alert";
 
-// import PurchaseInvoiceDetailsDrawer from "../../../views/Procurement/purchaseinvoice_imported/PurchaseInvoiceDetailsDrawer";
-import { useImportedPurchaseInvoices } from "../../../hooks/procument/useImportedPurchaseInvoices";
-import type { ImportedPurchaseInvoiceItemRaw } from "../../../types/procument/imported_purchase/Importedpurchaseinvoice.types";
-import { openProcessImportModal } from "../../../components/feature/procument/processimportpi.modal";
+function formatApiDate(raw: string): string {
+  if (!raw || raw.length !== 8) return "—";
+  const year = raw.slice(0, 4);
+  const month = Number(raw.slice(4, 6)) - 1;
+  const day = raw.slice(6, 8);
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  return `${Number(day)} ${months[month] ?? ""} ${year}`;
+}
 
-const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> =
-  {
-    "3": { bg: "bg-[#f0fdf4]", text: "text-[#16a34a]", dot: "bg-[#22c55e]" },
-    "4": { bg: "bg-[#fef2f2]", text: "text-[#dc2626]", dot: "bg-[#ef4444]" },
-  };
-const DEFAULT_STATUS_STYLE = {
-  bg: "bg-gray-100",
-  text: "text-gray-700",
-  dot: "bg-gray-400",
-};
-
-const formatDate = (raw: string | null | undefined) => {
-  if (!raw) return "—";
-  const d = new Date(raw);
-  if (isNaN(d.getTime())) return raw;
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+const fmtNum = (n: number) =>
+  n.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
-};
 
-const formatDateTime = (raw: string | null | undefined) => {
+// cfmDt / stockRlsDt come as "2026-07-08 20:03:36"
+function formatDateTime(raw: string | null | undefined): string {
   if (!raw) return "—";
   const d = new Date(raw.replace(" ", "T"));
   if (isNaN(d.getTime())) return raw;
@@ -48,205 +67,771 @@ const formatDateTime = (raw: string | null | undefined) => {
     minute: "2-digit",
   });
   return `${datePart}, ${timePart}`;
-};
+}
+
+function extractSupplierList(res: any): any[] {
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  if (Array.isArray(res?.data)) return res.data;
+  return [];
+}
+
+interface SupplierOption {
+  id: string;
+  name: string;
+}
+
+// One row per supplier invoice (PI) — decisions (approve/reject) are made
+// at this invoice level only. Item rows underneath are read-only detail
+// lines shown on expand.
+interface InvoiceGroup {
+  key: string;
+  supplierTpin: string;
+  supplierName: string;
+  invoiceNo: string | number;
+  salesDate: string;
+  items: ImportPurchaseInvoiceItem[];
+  totalTaxable: number;
+  totalTax: number;
+  totalAmount: number;
+}
 
 const ImportedPurchaseInvoice: React.FC = () => {
-  const { invoices, isLoading, refresh } = useImportedPurchaseInvoices();
+  const {
+    items,
+
+    remarks,
+    handleRemarkChange,
+    isLoading,
+    error,
+    refresh,
+  } = useProcessImportPurchaseInvoiceModal(true);
+
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
+  const [processingGroups, setProcessingGroups] = useState<Set<string>>(
+    new Set(),
+  );
+  const [remarkErrors, setRemarkErrors] = useState<Record<string, string>>({});
+
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [supplierFilter, setSupplierFilter] = useState<string>("");
+  const [supplierFilterName, setSupplierFilterName] = useState<string>("");
+  const [filterResults, setFilterResults] = useState<SupplierOption[]>([]);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterContainerRef = useRef<HTMLDivElement>(null);
+  const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filterRequestIdRef = useRef(0);
 
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] =
-    useState<ImportedPurchaseInvoiceItemRaw | null>(null);
+  const fetchFilterSuppliers = useCallback(async (searchTerm: string) => {
+    const requestId = ++filterRequestIdRef.current;
+    try {
+      setFilterLoading(true);
+      const res = await getSuppliers(1, 20, { search: searchTerm });
+      const raw = extractSupplierList(res);
+      if (requestId !== filterRequestIdRef.current) return;
+      setFilterResults(raw.map((s: any) => ({ id: s.id, name: s.name })));
+    } catch (err) {
+      console.error("Failed to search suppliers for filter", err);
+      if (requestId === filterRequestIdRef.current) setFilterResults([]);
+    } finally {
+      if (requestId === filterRequestIdRef.current) setFilterLoading(false);
+    }
+  }, []);
 
-  const handleViewDrawer = (item: ImportedPurchaseInvoiceItemRaw) => {
-    setSelectedInvoice(item);
-    setIsDrawerOpen(true);
+  useEffect(() => {
+    if (!filterOpen) return;
+    if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    filterDebounceRef.current = setTimeout(() => {
+      fetchFilterSuppliers(filterSearch);
+    }, 300);
+    return () => {
+      if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
+    };
+  }, [filterSearch, filterOpen, fetchFilterSuppliers]);
+
+  const handleFilterFocus = () => {
+    setFilterOpen(true);
+    fetchFilterSuppliers(filterSearch);
   };
 
-  const columns: Column<ImportedPurchaseInvoiceItemRaw>[] = [
-    {
-      key: "declaration_no",
-      header: "DECLARATION NO",
-      align: "left",
-      render: (i) => (
-        <div className="py-1.5">
-          <span
-            className="block font-medium text-[#2563eb] hover:underline cursor-pointer"
-            onClick={() => handleViewDrawer(i)}
-          >
-            {i.declaration_no}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "declaration_date",
-      header: "DECLARATION DATE",
-      align: "left",
-      render: (i) => (
-        <div className="py-1.5">
-          <span className="block text-gray-700">
-            {formatDate(i.declaration_date)}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "item_name",
-      header: "ITEM NAME",
-      align: "left",
-      render: (i) => (
-        <div className="py-1.5">
-          <span className="block text-gray-700">{i.item_name}</span>
-        </div>
-      ),
-    },
-    {
-      key: "supplier_name",
-      header: "SUPPLIER NAME",
-      align: "left",
-      render: (i) => (
-        <div className="py-1.5">
-          <span className="block text-gray-700">{i.supplier_name ?? "—"}</span>
-        </div>
-      ),
-    },
-    {
-      key: "quantity",
-      header: "ITEM QUANTITY",
-      align: "center",
-      render: (i) => (
-        <div className="py-1.5">
-          <span className="block text-gray-700">
-            {i.quantity} {i.quantity_unit}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "invoice_amount",
-      header: "INVOICE AMOUNT",
-      align: "right",
-      render: (i) => (
-        <div className="py-1.5">
-          <span className="block text-gray-700">
-            {i.currency} {i.invoice_amount.toFixed(2)}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "checker",
-      header: "CHECKER",
-      align: "left",
-      render: (i) => (
-        <div className="py-1.5 max-w-[180px]">
-          <span className="block text-gray-700 whitespace-normal break-words">
-            {i.checker}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "checked_at",
-      header: "CHECKED AT",
-      align: "left",
-      render: (i) => (
-        <div className="py-1.5">
-          <span className="block text-gray-700">
-            {formatDateTime(i.checked_at)}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "STATUS",
-      align: "center",
-      render: (i) => {
-        const style = STATUS_STYLE[i.status_code] ?? DEFAULT_STATUS_STYLE;
-        return (
-          <div className="py-1.5 flex justify-center">
-            <span
-              className={`px-2.5 py-1 text-xs font-medium rounded-md ${style.bg} ${style.text} flex items-center gap-1.5`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`}></span>
-              {i.status}
-            </span>
-          </div>
+  useEffect(() => {
+    if (!filterOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (filterContainerRef.current?.contains(e.target as Node)) return;
+      setFilterOpen(false);
+      setFilterSearch(supplierFilterName);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [filterOpen, supplierFilterName]);
+
+  const handleFilterSelect = (s: { id: string; name: string }) => {
+    setSupplierFilter(s.id);
+    setSupplierFilterName(s.name);
+    setFilterSearch(s.name);
+    setFilterOpen(false);
+  };
+
+  const clearFilter = () => {
+    setSupplierFilter("");
+    setSupplierFilterName("");
+    setFilterSearch("");
+    setFilterOpen(false);
+  };
+
+  const filteredItems = useMemo(() => {
+    let result = items;
+    if (supplierFilter) {
+      result = result.filter((item) => item.supplierTpin === supplierFilter);
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.supplierName?.toLowerCase().includes(q) ||
+          String(item.invoiceNo).toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [items, supplierFilter, searchTerm]);
+
+  const invoiceGroups = useMemo<InvoiceGroup[]>(() => {
+    const groups = new Map<string, InvoiceGroup>();
+    filteredItems.forEach((item) => {
+      const key = `${item.supplierTpin}-${item.invoiceNo}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.items.push(item);
+        existing.totalTaxable += item.taxableAmount ?? 0;
+        existing.totalTax += item.vatAmount ?? 0;
+        existing.totalAmount += item.itemTotalAmount ?? 0;
+      } else {
+        groups.set(key, {
+          key,
+          supplierTpin: item.supplierTpin,
+          supplierName: item.supplierName ?? item.supplierTpin,
+          invoiceNo: item.invoiceNo,
+          salesDate: item.salesDate,
+          items: [item],
+          totalTaxable: item.taxableAmount ?? 0,
+          totalTax: item.vatAmount ?? 0,
+          totalAmount: item.itemTotalAmount ?? 0,
+        });
+      }
+    });
+    return Array.from(groups.values());
+  }, [filteredItems]);
+
+  const toggleGroupExpand = useCallback((key: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectGroup = useCallback((key: string) => {
+    setSelectedGroups((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAllGroups = useCallback(() => {
+    setSelectedGroups((prev) =>
+      prev.size === invoiceGroups.length
+        ? new Set()
+        : new Set(invoiceGroups.map((g) => g.key)),
+    );
+  }, [invoiceGroups]);
+
+  // Single entry point for approve/reject — used for a single row, a bulk
+  // selection, or "approve all remaining". Validates remarks (reject only),
+  // confirms with the user, then submits straight to the existing API and
+  // refreshes. No local "pending decision" state — the action IS the submit.
+  const processGroups = useCallback(
+    async (groups: InvoiceGroup[], decision: "approve" | "reject") => {
+      if (groups.length === 0) return;
+
+      if (decision === "reject") {
+        const missing = groups.filter((g) => !remarks[g.items[0].id]?.trim());
+        if (missing.length > 0) {
+          setRemarkErrors((prev) => {
+            const next = { ...prev };
+            missing.forEach((g) => {
+              next[g.key] = "Remark is required to reject";
+            });
+            return next;
+          });
+          showApiError(
+            `Add a remark before rejecting: ${missing
+              .map((g) => g.invoiceNo)
+              .join(", ")}`,
+          );
+          return;
+        }
+      }
+
+      const isBulk = groups.length > 1;
+      const result = await fireManagedSwal({
+        icon: "warning",
+        title: decision === "approve" ? "Approve Invoice?" : "Reject Invoice?",
+        text: isBulk
+          ? `Are you sure you want to ${decision} ${groups.length} invoices?`
+          : `Are you sure you want to ${decision} invoice ${groups[0].invoiceNo} from ${groups[0].supplierName}?`,
+        showCancelButton: true,
+        confirmButtonColor: decision === "approve" ? "#22c55e" : "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText:
+          decision === "approve" ? "Yes, Approve" : "Yes, Reject",
+        cancelButtonText: "Cancel",
+      });
+      if (!result.isConfirmed) return;
+
+      const allItems = groups.flatMap((g) => g.items);
+      const decisionsMap: DecisionsMap = {};
+      const remarksMap: RemarksMap = {};
+      allItems.forEach((item) => {
+        decisionsMap[item.id] = decision;
+        remarksMap[item.id] = remarks[item.id] ?? "";
+      });
+
+      setProcessingGroups((prev) => {
+        const next = new Set(prev);
+        groups.forEach((g) => next.add(g.key));
+        return next;
+      });
+      try {
+        showLoading(
+          decision === "approve"
+            ? "Approving invoice..."
+            : "Rejecting invoice...",
         );
+        await submitPurchaseInvoiceImportDecisions(
+          allItems,
+          decisionsMap,
+          remarksMap,
+        );
+        closeSwal();
+        showSuccess(
+          decision === "approve" ? "Invoice approved" : "Invoice rejected",
+        );
+        setSelectedGroups((prev) => {
+          const next = new Set(prev);
+          groups.forEach((g) => next.delete(g.key));
+          return next;
+        });
+        await refresh();
+      } catch (err) {
+        closeSwal();
+        showApiError(err);
+      } finally {
+        setProcessingGroups((prev) => {
+          const next = new Set(prev);
+          groups.forEach((g) => next.delete(g.key));
+          return next;
+        });
+      }
+    },
+    [remarks, refresh],
+  );
+
+  const columns: Column<InvoiceGroup>[] = useMemo(
+    () => [
+      {
+        key: "select",
+        header: "",
+        align: "center",
+        width: "36px",
+        render: (g) => (
+          <div onClick={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              checked={selectedGroups.has(g.key)}
+              onChange={() => toggleSelectGroup(g.key)}
+            />
+          </div>
+        ),
       },
-    },
-    {
-      key: "actions",
-      header: "ACTIONS",
-      align: "center",
-      render: (i) => (
-        <ActionGroup>
-          <ActionButton
-            type="view"
-            iconOnly
-            title="View Purchase Invoice Details"
-            onClick={(e?: React.MouseEvent) => {
-              e?.stopPropagation();
-              handleViewDrawer(i);
-            }}
-          />
-          <ActionMenu />
-        </ActionGroup>
-      ),
-    },
-  ];
+      {
+        key: "supplierName",
+        header: "SUPPLIER",
+        align: "left",
+        minWidth: "170px",
+        render: (g) => (
+          <div>
+            <span className="font-medium text-main">{g.supplierName}</span>
+            <div className="text-[10px] text-muted">TPIN {g.supplierTpin}</div>
+          </div>
+        ),
+      },
+      {
+        // Invoice no. now carries the item count too (e.g. "INV-2201 · 4 items"),
+        // so we don't need a dedicated ITEMS column eating up horizontal space.
+        key: "invoiceNo",
+        header: "INVOICE",
+        align: "left",
+        minWidth: "110px",
+        render: (g) => (
+          <div>
+            <span className="text-primary text-[12px]">{g.invoiceNo}</span>
+            <div className="text-[10px] text-muted">
+              {g.items.length} {g.items.length === 1 ? "item" : "items"}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: "salesDate",
+        header: "SALES DATE",
+        align: "left",
+        minWidth: "90px",
+        render: (g) => (
+          <span className="text-muted text-[12px]">
+            {formatApiDate(g.salesDate)}
+          </span>
+        ),
+      },
+      {
+        // Taxable / Tax / Total collapsed into one stacked column — the per-item
+        // breakdown is still available in the expanded row below.
+        key: "amounts",
+        header: "TOTAL (TAX / TAXABLE)",
+        align: "right",
+        minWidth: "130px",
+        render: (g) => (
+          <div className="text-right leading-tight">
+            <div className="tabular-nums font-medium">
+              ZMW {fmtNum(g.totalAmount)}
+            </div>
+            <div className="tabular-nums text-[10px] text-muted">
+              Tax {fmtNum(g.totalTax)} · Taxable {fmtNum(g.totalTaxable)}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: "status",
+        header: "STATUS",
+        align: "center",
+        minWidth: "100px",
+        render: (g) =>
+          processingGroups.has(g.key) ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+              <RefreshCw size={10} className="animate-spin" />
+              Processing
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+              Pending
+            </span>
+          ),
+      },
+      {
+        key: "remarks",
+        header: "REMARKS",
+        align: "left",
+        minWidth: "140px",
+        render: (g) => (
+          <div onClick={(e) => e.stopPropagation()}>
+            <input
+              type="text"
+              value={remarks[g.items[0].id] ?? ""}
+              onChange={(e) => {
+                handleRemarkChange(g.items[0].id, e.target.value);
+                if (remarkErrors[g.key]) {
+                  setRemarkErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[g.key];
+                    return next;
+                  });
+                }
+              }}
+              placeholder="Remarks..."
+              className={`w-full rounded-md border bg-card px-2 py-1.5 text-xs focus:outline-none ${
+                remarkErrors[g.key]
+                  ? "border-danger focus:border-danger"
+                  : "border-theme focus:border-primary"
+              }`}
+            />
+            {remarkErrors[g.key] && (
+              <p className="text-[10px] text-danger mt-1">
+                {remarkErrors[g.key]}
+              </p>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: "actions",
+        header: "ACTIONS",
+        align: "center",
+        width: "140px",
+        render: (g) => {
+          const isProcessing = processingGroups.has(g.key);
+          return (
+            <div
+              className="flex items-center justify-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => processGroups([g], "approve")}
+                disabled={isProcessing}
+                className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[10px] font-semibold border border-theme text-muted hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Check size={12} />
+                Accept
+              </button>
+              <button
+                onClick={() => processGroups([g], "reject")}
+                disabled={isProcessing}
+                className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[10px] font-semibold border border-theme text-muted hover:bg-red-50 hover:border-red-300 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <XIcon size={12} />
+                Reject
+              </button>
+            </div>
+          );
+        },
+      },
+    ],
+    [
+      selectedGroups,
+      processingGroups,
+      remarks,
+      remarkErrors,
+      handleRemarkChange,
+      processGroups,
+      toggleSelectGroup,
+    ],
+  );
 
   return (
     <div className="flex flex-1 flex-col min-h-0 h-full">
       <div className="flex flex-1 flex-col min-h-0 bg-card rounded-lg">
         <Table
-          loading={isLoading}
+          tableId="imported-purchase-invoices"
           columns={columns}
-          data={invoices}
+          data={invoiceGroups}
+          rowKey={(g) => g.key}
+          loading={isLoading}
+          emptyMessage={
+            isLoading
+              ? "Loading items..."
+              : "No pending imported purchase invoices."
+          }
+          onRowClick={(g) => toggleGroupExpand(g.key)}
+          expandedRowRender={(g) => {
+            if (!expandedGroups.has(g.key)) return null;
+            const first = g.items[0];
+            return (
+              <div className="bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.015),rgba(0,0,0,0.015)_10px,transparent_10px,transparent_20px)] bg-app border-y-2 border-primary/20 px-5 py-4 space-y-4">
+                {/* Invoice-level details — same for every item in this invoice */}
+                <div className="rounded-lg border border-primary/20 bg-card px-4 py-3">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-2">
+                    Invoice Details
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-[12px]">
+                    <div>
+                      <div className="text-[10px] text-muted uppercase">
+                        Supplier TPIN
+                      </div>
+                      <div className="text-main font-medium">
+                        {g.supplierTpin}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted uppercase">
+                        Branch
+                      </div>
+                      <div className="text-main font-medium">
+                        {first.supplierBranchId || "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted uppercase">
+                        Payment Type
+                      </div>
+                      <div className="text-main font-medium">
+                        {first.paymentTypeCd || "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted uppercase">
+                        Receipt Type
+                      </div>
+                      <div className="text-main font-medium">
+                        {first.receiptTypeCd || "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted uppercase">
+                        Confirmation Date
+                      </div>
+                      <div className="text-main font-medium">
+                        {formatDateTime(first.confirmedAt)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted uppercase">
+                        Stock Release Date
+                      </div>
+                      <div className="text-main font-medium">
+                        {formatDateTime(first.stockReleaseDate)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Items — one merged table (line info + discount/tax-category/package/barcode
+                    that used to live in a duplicate second table). Height is capped and scrolls
+                    internally so a long invoice doesn't blow up page height; header stays pinned
+                    while scrolling. */}
+                <div className="rounded-lg border border-theme bg-card overflow-hidden">
+                  <div className="px-4 py-2 border-b border-theme text-[10px] font-semibold uppercase tracking-wider text-muted bg-app/60">
+                    Items ({g.items.length})
+                  </div>
+                  <div className="max-h-64 overflow-y-auto overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead className="sticky top-0 z-10">
+                        <tr className="border-b border-theme text-[10px] text-muted font-semibold uppercase tracking-wider bg-app">
+                          <th className="px-3 py-2 w-10 text-center">#</th>
+                          <th className="px-3 py-2 min-w-[140px]">Item</th>
+                          <th className="px-3 py-2">Class</th>
+                          <th className="px-3 py-2 text-right">Qty</th>
+                          <th className="px-3 py-2 text-center">UOM</th>
+                          <th className="px-3 py-2 text-right">Unit Price</th>
+                          <th className="px-3 py-2 text-right min-w-[100px]">
+                            Total (Tax)
+                          </th>
+                          <th className="px-3 py-2">Discount</th>
+                          <th className="px-3 py-2">Tax Cat</th>
+                          <th className="px-3 py-2">Package</th>
+                          <th className="px-3 py-2">Barcode</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-theme text-[12px]">
+                        {g.items.map((item, index) => (
+                          <tr
+                            key={item.id}
+                            className="hover:bg-app/40 transition-colors"
+                          >
+                            <td className="px-3 py-2 text-center text-muted text-[11px]">
+                              {index + 1}
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="font-medium text-main">
+                                {item.itemName}
+                              </div>
+                              <div className="text-[10px] text-primary">
+                                {item.itemCd}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-[11px] text-muted">
+                              {item.itemClassCd}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums text-main text-right">
+                              {item.qty.toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 text-center text-[11px] text-muted">
+                              {item.qtyUnitCd}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums text-main text-right">
+                              {fmtNum(item.unitPrice)}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums text-right">
+                              <div className="font-medium text-main">
+                                ZMW {fmtNum(item.itemTotalAmount)}
+                              </div>
+                              <div className="text-[10px] text-muted">
+                                Tax {fmtNum(item.vatAmount)}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-[11px] text-main">
+                              {item.discountRate > 0 || item.discountAmount > 0
+                                ? `${item.discountRate}% (ZMW ${fmtNum(item.discountAmount)})`
+                                : "—"}
+                            </td>
+                            <td className="px-3 py-2 text-[11px] text-main">
+                              {item.vatCategoryCd || "—"}
+                            </td>
+                            <td className="px-3 py-2 text-[11px] text-main">
+                              {item.packageCount} {item.packageUnitCd}
+                            </td>
+                            <td className="px-3 py-2 text-[11px] text-main">
+                              {item.barcode || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          }}
           showToolbar
           searchValue={searchTerm}
           onSearch={setSearchTerm}
+          toolbarPlaceholder="Search supplier or invoice no..."
           enableAdd={false}
-          enableExport
-          enableColumnSelector
-      primaryAction={
-  <button
-    onClick={() =>
-      openProcessImportModal({
-        onSuccess: refresh,
-      })
-    }
-    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-  >
-    <RefreshCw size={16} />
-    Process Declarations
-  </button>
-}
-          currentPage={page}
-          totalPages={Math.max(1, Math.ceil(invoices.length / pageSize))}
-          pageSize={pageSize}
-          totalItems={invoices.length}
-          pageSizeOptions={[20, 50, 100]}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
-          onPageChange={setPage}
-          onRowDoubleClick={handleViewDrawer}
+          extraFilters={
+            <div className="flex items-center gap-2">
+              <label className="text-[12px] text-muted font-medium whitespace-nowrap">
+                Filter by Supplier:
+              </label>
+              <div ref={filterContainerRef} className="relative w-48">
+                <input
+                  type="text"
+                  autoComplete="off"
+                  value={filterSearch}
+                  placeholder={filterLoading ? "Loading..." : "All Suppliers"}
+                  onFocus={handleFilterFocus}
+                  onChange={(e) => {
+                    setFilterSearch(e.target.value);
+                    if (supplierFilter) setSupplierFilter("");
+                    if (!filterOpen) setFilterOpen(true);
+                  }}
+                  className="py-1 pl-2 pr-6 border border-theme rounded text-[11px] text-main bg-card w-full focus:outline-none focus:border-primary"
+                />
+                {supplierFilter && (
+                  <button
+                    type="button"
+                    onClick={clearFilter}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted hover:text-main"
+                    aria-label="Clear supplier filter"
+                  >
+                    <XIcon size={12} />
+                  </button>
+                )}
+                {filterOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-full bg-card border border-theme rounded-lg shadow-xl overflow-hidden z-50">
+                    <ul className="max-h-56 overflow-y-auto text-[11px]">
+                      <li
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          clearFilter();
+                        }}
+                        className={[
+                          "px-3 py-1.5 cursor-pointer border-b border-theme transition-colors",
+                          !supplierFilter
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "hover:bg-primary/5 text-main",
+                        ].join(" ")}
+                      >
+                        All Suppliers
+                      </li>
+                      {filterLoading ? (
+                        <li className="px-3 py-2 text-muted text-[11px]">
+                          Loading…
+                        </li>
+                      ) : filterResults.length === 0 ? (
+                        <li className="px-3 py-2 text-muted text-[11px]">
+                          {filterSearch
+                            ? `No match for "${filterSearch}"`
+                            : "No suppliers found"}
+                        </li>
+                      ) : (
+                        filterResults.map((s) => (
+                          <li
+                            key={s.id}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleFilterSelect(s);
+                            }}
+                            className={[
+                              "px-3 py-1.5 cursor-pointer border-b border-theme last:border-none transition-colors truncate",
+                              s.id === supplierFilter
+                                ? "bg-primary/10 text-primary font-semibold"
+                                : "hover:bg-primary/5 text-main",
+                            ].join(" ")}
+                          >
+                            {s.name}
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          }
+          primaryAction={
+            <div className="flex items-center gap-4 flex-wrap">
+              <label className="flex items-center gap-1.5 text-[12px] text-muted font-medium cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={
+                    invoiceGroups.length > 0 &&
+                    selectedGroups.size === invoiceGroups.length
+                  }
+                  onChange={toggleSelectAllGroups}
+                />
+                Select all
+              </label>
+              {selectedGroups.size > 0 && (
+                <>
+                  <span className="text-[12px] text-muted">
+                    {selectedGroups.size} selected
+                  </span>
+                  <button
+                    onClick={() =>
+                      processGroups(
+                        invoiceGroups.filter((g) => selectedGroups.has(g.key)),
+                        "approve",
+                      )
+                    }
+                    className="flex items-center gap-1 text-[12px] font-medium text-emerald-600 hover:underline"
+                  >
+                    <Check size={12} /> Approve selected
+                  </button>
+                  <button
+                    onClick={() =>
+                      processGroups(
+                        invoiceGroups.filter((g) => selectedGroups.has(g.key)),
+                        "reject",
+                      )
+                    }
+                    className="flex items-center gap-1 text-[12px] font-medium text-danger hover:underline"
+                  >
+                    <XIcon size={12} /> Reject selected
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => processGroups(invoiceGroups, "approve")}
+                className="text-[12px] font-medium text-primary hover:underline"
+              >
+                Approve all remaining
+              </button>
+              <button
+                onClick={refresh}
+                disabled={isLoading}
+                className="flex items-center gap-1.5 text-[12px] font-medium text-muted hover:text-main transition-colors"
+              >
+                <RefreshCw
+                  size={13}
+                  className={isLoading ? "animate-spin" : ""}
+                />
+                Refresh
+              </button>
+            </div>
+          }
+          currentPage={1}
+          totalPages={1}
+          pageSize={Math.max(invoiceGroups.length, 1)}
+          totalItems={invoiceGroups.length}
         />
+        {error && (
+          <div className="px-5 py-2 text-[12px] text-danger border-t border-theme">
+            {error}
+          </div>
+        )}
       </div>
-
-      {/* {isDrawerOpen && selectedInvoice && (
-        <PurchaseInvoiceDetailsDrawer
-          invoice={selectedInvoice}
-          onClose={() => setIsDrawerOpen(false)}
-        />
-      )} */}
     </div>
   );
 };

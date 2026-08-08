@@ -113,6 +113,21 @@ const ExpandedPanel: React.FC<{ children: React.ReactNode; open: boolean }> = ({
   );
 };
 
+// Parses a CSS width string like "140px", "12rem", or "20%" down to a
+// plain px number for summing. Non-px units fall back to a sane default
+// rather than being silently treated as 0 (which would shrink the table
+// below what the column actually needs).
+const parseWidthToPx = (val?: string): number => {
+  if (!val) return 0;
+  const trimmed = val.trim();
+  if (trimmed.endsWith("px")) {
+    const n = parseFloat(trimmed);
+    return isNaN(n) ? 0 : n;
+  }
+  const n = parseFloat(trimmed);
+  return isNaN(n) ? 0 : n; // best-effort for unitless/other units
+};
+
 const TableInner = <T extends Record<string, any>>({
   columns = [],
   data = [],
@@ -177,6 +192,26 @@ const TableInner = <T extends Record<string, any>>({
     columns.filter((col) => visibleKeys.includes(col.key)),
     [columns, visibleKeys]
   );
+
+  // The table's minimum width used to be a hardcoded 900px regardless of
+  // what columns were actually passed in. That meant even a lean 5-column
+  // table was forced to be at least 900px wide, causing horizontal scroll
+  // on containers narrower than that for no real reason. Instead, derive
+  // the floor from the columns actually being rendered: sum each column's
+  // explicit width (or minWidth as a fallback, or 100px as a last resort),
+  // then apply a small sane floor so a table with very few columns doesn't
+  // look oddly squeezed.
+  const tableMinWidth = useMemo(() => {
+    const total = visibleColumns.reduce((sum, column) => {
+      const w =
+        parseWidthToPx(column.width) ||
+        parseWidthToPx(column.minWidth) ||
+        parseWidthToPx(column.maxWidth) ||
+        100;
+      return sum + w;
+    }, 0);
+    return Math.max(total, 480);
+  }, [visibleColumns]);
 
 
   const handleColumnSort = (colKey: string) => {
@@ -264,18 +299,28 @@ const TableInner = <T extends Record<string, any>>({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="shrink-0 border-b-2 border-[var(--border)] bg-card w-full overflow-x-auto">
-          <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
+          <table
+            className="w-full table-fixed border-separate border-spacing-0"
+            style={{ minWidth: `${tableMinWidth}px` }}
+          >
             <colgroup>
               {visibleColumns.map((column) => (
                 <col
                   key={column.key}
                   style={{
+                    // table-layout: fixed ignores min-width on <col> and,
+                    // for any column left as "auto", divides *leftover*
+                    // table space evenly among those columns rather than
+                    // sizing them to their content or minWidth. That's
+                    // what caused columns like STATUS/REMARKS/ACTIONS to
+                    // balloon with dead space while the table still
+                    // overflowed overall. Always resolve to a concrete
+                    // pixel width so every column is sized deterministically.
                     width:
                       column.width ||
-                      (column.maxWidth ? column.maxWidth : "auto"),
-                    minWidth:
                       column.minWidth ||
-                      (column.maxWidth ? column.maxWidth : "100px"),
+                      column.maxWidth ||
+                      "100px",
                   }}
                 />
               ))}
@@ -334,7 +379,10 @@ const TableInner = <T extends Record<string, any>>({
         </div>
 
         <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-auto">
-          <table className="min-w-[900px] w-full table-fixed border-separate border-spacing-0">
+          <table
+            className="w-full table-fixed border-separate border-spacing-0"
+            style={{ minWidth: `${tableMinWidth}px` }}
+          >
             <colgroup>
               {visibleColumns.map((column) => (
                 <col
@@ -342,10 +390,9 @@ const TableInner = <T extends Record<string, any>>({
                   style={{
                     width:
                       column.width ||
-                      (column.maxWidth ? column.maxWidth : "auto"),
-                    minWidth:
                       column.minWidth ||
-                      (column.maxWidth ? column.maxWidth : "100px"),
+                      column.maxWidth ||
+                      "100px",
                   }}
                 />
               ))}
@@ -407,6 +454,10 @@ const TableInner = <T extends Record<string, any>>({
                                 ? "-"
                                 : String(rawValue);
 
+                            // Only truncate (single line, ellipsis) when the
+                            // column explicitly opts in via `truncate` or
+                            // `maxWidth`. Everything else wraps by default
+                            // instead of being cut off.
                             const needsTruncation =
                               column.truncate === true ||
                               column.maxWidth !== undefined;
@@ -418,8 +469,12 @@ const TableInner = <T extends Record<string, any>>({
                               if (column.render) {
                                 return column.render(item);
                               }
-                              return (
+                              return needsTruncation ? (
                                 <span className="block truncate opacity-90">
+                                  {fallbackText}
+                                </span>
+                              ) : (
+                                <span className="block break-words opacity-90">
                                   {fallbackText}
                                 </span>
                               );
@@ -435,7 +490,7 @@ const TableInner = <T extends Record<string, any>>({
                                 className={
                                   needsTruncation
                                     ? "min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap"
-                                    : "min-w-0"
+                                    : "min-w-0 w-full whitespace-normal break-words"
                                 }
                               >
                                 {getCellContent()}

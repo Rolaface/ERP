@@ -95,7 +95,7 @@ export interface ImportPurchaseInvoiceItemApiRaw {
   totAmt: number; // item-level total
 }
 
-// UI-facing row used by the modal table/hook.
+// UI-facing row used by the page/hook.
 export interface ImportPurchaseInvoiceItem {
   id: string; // `${spplrTpin}-${spplrInvcNo}-${itemSeq}`
   invoiceNo: string;
@@ -106,10 +106,12 @@ export interface ImportPurchaseInvoiceItem {
   paymentTypeCd: string;
   confirmedAt: string;
   salesDate: string; // YYYYMMDD
+  stockReleaseDate: string | null; // NEW — was in raw/flattened data, wasn't mapped through before
   itemSeq: number;
   itemCd: string;
   itemClassCd: string;
   itemName: string;
+  barcode: string | null; // NEW — same story, was dropped in mapRawItem
   packageUnitCd: string;
   packageCount: number;
   qtyUnitCd: string;
