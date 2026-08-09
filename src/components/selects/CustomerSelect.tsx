@@ -121,41 +121,40 @@ export default function CustomerSelect({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<Array<HTMLLIElement | null>>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // guards against a slow, stale request overwriting a newer one
   const requestIdRef = useRef(0);
 
-  // ── Sync display value ────────────────────────────────────────────────────
   useEffect(() => {
-    setSearch(value);
-  }, [value]);
-
-  useEffect(() => {
+    if (open) return;
     if (value) {
       setSearch(value);
       return;
     }
     if (selectedId && customers.length > 0) {
       const found = customers.find((c) => c.id === selectedId);
-      if (found) setSearch(found.name);
+      if (found) {
+        setSearch(found.name);
+        return;
+      }
     }
-  }, [value, selectedId, customers]);
+    setSearch("");
+  }, [value, selectedId, customers, open]);
 
-  // ── Outside click ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (
-        dropdownRef.current?.contains(t) ||
-        containerRef.current?.contains(t)
-      )
+      if (dropdownRef.current?.contains(t) || containerRef.current?.contains(t))
         return;
       setOpen(false);
+      if (!search.trim()) {
+        onClear?.();
+        return;
+      }
       if (!customers.find((c) => c.name === search)) setSearch(value);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open, search, customers, value]);
+  }, [open, search, customers, value, onClear]);
 
   // ── Reposition on scroll / resize ────────────────────────────────────────
   useEffect(() => {
@@ -285,7 +284,12 @@ export default function CustomerSelect({
         e.preventDefault();
         setOpen(false);
         setHighlightedIndex(-1);
-        if (!customers.find((c) => c.name === search)) setSearch(value);
+        // Same intentional-clear handling as the outside-click case.
+        if (!search.trim()) {
+          onClear?.();
+        } else if (!customers.find((c) => c.name === search)) {
+          setSearch(value);
+        }
         break;
       case "Tab":
         // Let Tab move focus naturally; just close the dropdown.
@@ -359,9 +363,7 @@ export default function CustomerSelect({
           >
             <ul className="max-h-56 overflow-y-auto text-[11px]">
               {loading ? (
-                <li className="px-3 py-2 text-muted text-[11px]">
-                  Loading…
-                </li>
+                <li className="px-3 py-2 text-muted text-[11px]">Loading…</li>
               ) : customers.length === 0 ? (
                 <li className="px-3 py-2 text-muted text-[11px]">
                   {search ? `No match for "${search}"` : "No customers found"}
