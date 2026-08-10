@@ -35,6 +35,8 @@ interface PaymentDetailsTabProps {
 }
 
 const PARTY_FILLED_FIELDS = {
+    partyId: "",         
+
   partyName: "",
   glFrom: "",
   glTo: "",
@@ -318,6 +320,7 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
 
   const handlePartyNameSelect = useCallback(
     async (_: string, option: PartyOption | null) => {
+       const requestId = ++requestRef.current;
 
       if (!option?.value) {
         onFormChange({
@@ -346,6 +349,8 @@ const PaymentDetailsTab: React.FC<PaymentDetailsTabProps> = ({
         fetchCompanyBanks(),
         fetchPartyBanks(partyType, option.value),
       ]);
+          if (requestId !== requestRef.current) return;  
+
 
       if (!details) return;
 
