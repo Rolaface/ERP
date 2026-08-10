@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import { getAllSalesInvoices, getSalesInvoiceById } from "../api/salesApi";
 import { createCreditNote, getCreditNoteReasons, updateCreditNote } from "../api/CreditNoteapi";
@@ -67,6 +67,7 @@ export function useCreditNoteForm(
   const [form, setForm] = useState<CreditNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const invoiceSelectTokenRef = useRef(0);
   const [reasonOptions, setReasonOptions] = useState<{ code: string; reason: string }[]>([]); const [reasonsLoading, setReasonsLoading] = useState(false);
   // ── Fetch credit note reasons ────────────────────────────────────────────
  useEffect(() => {
@@ -172,34 +173,62 @@ const fetchReasonOptions = useCallback(
   );
 
   // ── Invoice select → fetch full details & populate form ─────────────────
+const handleInvoiceSelect = useCallback(
+  async (opt: InvoiceOption) => {
+    if (!opt?.value) {
+      invoiceSelectTokenRef.current += 1;
+      setInvoiceLoading(false);
 
-  const handleInvoiceSelect = useCallback(async (opt: InvoiceOption) => {
+      setForm((prev) => ({
+        ...prev,
+        return_against: "",
+        customer: null,
+        items: [],
+        exchange_rate: 1,
+      }));
+
+      markDirty();
+      return;
+    }
+
+    const token = ++invoiceSelectTokenRef.current;
+
     setForm((prev) => ({
       ...prev,
       return_against: opt.value,
-      customer: { id: opt.customerId, name: opt.customerName },
+      customer: {
+        id: opt.customerId,
+        name: opt.customerName,
+      },
       items: [],
     }));
-    markDirty(); // user explicitly chose an invoice — mark dirty
 
+    markDirty();
     setInvoiceLoading(true);
+
     try {
       const res = await getSalesInvoiceById(opt.value, true, false);
+
+      if (token !== invoiceSelectTokenRef.current) return;
+
       const data = res?.data ?? res?.message?.data;
+
       if (!data) return;
 
       const mappedItems: CreditNoteItem[] = (data.items ?? []).map(
         (it: any): CreditNoteItem => ({
           item_code: it.itemCode ?? "",
           item_name: it.itemName ?? it.itemCode ?? "",
-          qty: -(Math.abs(Number(it.quantity) || 1)),
+          qty: -(Math.abs(Number(it.quantity)) || 1),
           rate: Number(it.rate) || 0,
           batch_no: it.batchNo ?? "",
           warehouse: it.warehouse ?? "",
           conversion_factor: Number(it.conversion_factor) || 1,
-          max_qty: Math.abs(Number(it.quantity)) || 1, 
+          max_qty: Math.abs(Number(it.quantity)) || 1,
         }),
       );
+
+      if (token !== invoiceSelectTokenRef.current) return;
 
       setForm((prev) => ({
         ...prev,
@@ -207,17 +236,23 @@ const fetchReasonOptions = useCallback(
           id: data.customerId ?? opt.customerId,
           name: data.customerName ?? opt.customerName,
         },
-        exchange_rate: Number(data.exchangeRate ?? data.conversionRate) || 1,
+        exchange_rate:
+          Number(data.exchangeRate ?? data.conversionRate) || 1,
         items: mappedItems,
       }));
     } catch (err) {
+      if (token !== invoiceSelectTokenRef.current) return;
+
       console.error("Failed to load invoice details", err);
       showApiError("Failed to load invoice details");
     } finally {
-      setInvoiceLoading(false);
+      if (token === invoiceSelectTokenRef.current) {
+        setInvoiceLoading(false);
+      }
     }
-  }, [markDirty]);
-
+  },
+  [markDirty],
+);
   const handleItemChange = useCallback(
     (
       index: number,
@@ -279,10 +314,12 @@ const fetchReasonOptions = useCallback(
   }, [markDirty]);
   // ── Reset ────────────────────────────────────────────────────────────────
 
-  const reset = useCallback(() => {
-    setForm(EMPTY_FORM);
-    resetDirty();
-  }, [resetDirty]);
+const reset = useCallback(() => {
+  invoiceSelectTokenRef.current += 1;
+  setInvoiceLoading(false);
+  setForm(EMPTY_FORM);
+  resetDirty();
+}, [resetDirty]);
 
   // ── Validation ───────────────────────────────────────────────────────────
 

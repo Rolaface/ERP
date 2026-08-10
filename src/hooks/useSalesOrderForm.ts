@@ -9,10 +9,7 @@ import { useUnsavedChanges } from "./useUnsavedChanges";
 import { getExchangeRate } from "../api/currencyExchangeApi";
 
 import { showApiError, showValidationError } from "../utils/alert";
-import {
-  EMPTY_ITEM,
-  EMPTY_TERMS,
-} from "../constants/profromaInvoiceConstants";
+import { EMPTY_ITEM, EMPTY_TERMS } from "../constants/profromaInvoiceConstants";
 import dayjs from "dayjs";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -260,6 +257,7 @@ export const useSalesOrderForm = (
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
+  const customerSelectTokenRef = useRef(0);
   // Unlike Quotation/Proforma, a Sales Order is a firm commitment, so we
   // always auto-fetch the exchange rate rather than gating it behind a mode.
   const enableExchange = true;
@@ -393,7 +391,7 @@ export const useSalesOrderForm = (
     if (!formData.items.length) {
       throw new Error("Please add at least one item");
     }
-     if (!formData.payment_mode) {
+    if (!formData.payment_mode) {
       throw new Error("Please select mode of payment");
     }
     if (!formData.paymentInformation?.paymentMethod) {
@@ -483,6 +481,27 @@ export const useSalesOrderForm = (
     return "";
   };
 
+  const handleCustomerClear = () => {
+    customerSelectTokenRef.current += 1;
+    customerTaxCategoryRef.current = "";
+
+    setCustomerDetails(null);
+    setCustomerNameDisplay("");
+
+    setFormData((prev) => ({
+      ...prev,
+      customerId: "",
+      taxCategory: "",
+      destnCountryCd: "",
+      billingAddress: "",
+      shippingAddress: sameAsBilling ? "" : prev.shippingAddress,
+      paymentInformation: DEFAULT_SALES_ORDER_FORM.paymentInformation,
+      terms: { selling: { ...EMPTY_TERMS.selling } },
+    }));
+
+    markDirty();
+  };
+
   const handleCustomerSelect = async ({
     name,
     id,
@@ -490,6 +509,13 @@ export const useSalesOrderForm = (
     name: string;
     id: string;
   }) => {
+    if (!id) {
+      handleCustomerClear();
+      return;
+    }
+
+    const token = ++customerSelectTokenRef.current;
+
     setCustomerNameDisplay(name);
     setFormData((p) => ({ ...p, customerId: id }));
     markDirty();
@@ -499,7 +525,7 @@ export const useSalesOrderForm = (
         getCustomerByCustomerCode(id),
         getCompanyById(COMPANY_ID),
       ]);
-
+      if (token !== customerSelectTokenRef.current) return;
       if (!customerRes || customerRes?.message?.status_code !== 200) return;
       const data = customerRes?.message?.data;
       const company = companyRes?.data;
@@ -511,6 +537,7 @@ export const useSalesOrderForm = (
       }));
 
       const countryLookupList = await getRolaCountryList();
+      if (token !== customerSelectTokenRef.current) return;
       const formattedCountries = countryLookupList.map((c: any) => ({
         code: c.code || c.name,
         name: c.country_name || c.name,
@@ -590,7 +617,11 @@ export const useSalesOrderForm = (
               : null;
       }
 
-      const updatedItem: any = { ...items[idx], [name]: nextValue, _skipCap: false };
+      const updatedItem: any = {
+        ...items[idx],
+        [name]: nextValue,
+        _skipCap: false,
+      };
 
       if (
         (name === "boxStart" || name === "boxEnd") &&
@@ -703,8 +734,7 @@ export const useSalesOrderForm = (
         const totalBoxes = Math.ceil(
           Number(updatedItem.quantity) / piecesPerBox,
         );
-        updatedItem.boxEnd =
-          Number(updatedItem.boxStart || 1) + totalBoxes - 1;
+        updatedItem.boxEnd = Number(updatedItem.boxStart || 1) + totalBoxes - 1;
       }
 
       items[index] = updatedItem;
@@ -839,7 +869,9 @@ export const useSalesOrderForm = (
       billingAddress:
         order.customerAddressId ?? order.billingAddress ?? prev.billingAddress,
       shippingAddress:
-        order.shippingAddressId ?? order.shippingAddress ?? prev.shippingAddress,
+        order.shippingAddressId ??
+        order.shippingAddress ??
+        prev.shippingAddress,
       paymentInformation: order.paymentInformation ?? prev.paymentInformation,
       taxes: mappedTaxesFromCharges,
       invoiceCharges:
@@ -966,6 +998,8 @@ export const useSalesOrderForm = (
     shippingEditedRef.current = false;
     lastCurrencyRef.current = baseCurrency;
     lastRateRef.current = 1;
+    customerSelectTokenRef.current += 1;
+
     customerTaxCategoryRef.current = "";
     setCustomerDetails(null);
     setCustomerNameDisplay("");
@@ -1095,6 +1129,7 @@ export const useSalesOrderForm = (
       validateForm,
       handleInputChange,
       handleCustomerSelect,
+      handleCustomerClear,
 
       handleItemChange,
       updateItemDirectly,

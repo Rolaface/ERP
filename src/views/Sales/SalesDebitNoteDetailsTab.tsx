@@ -17,7 +17,7 @@ export interface SalesDebitNoteDetailsTabProps {
   invoiceLoading: boolean;
   grandTotal: number;
   fetchInvoiceOptions: (q: string) => Promise<InvoiceOption[]>;
-  onInvoiceSelect: (opt: InvoiceOption) => Promise<void>;
+  onInvoiceSelect: (opt?: InvoiceOption) => Promise<void>;
   onItemChange: (
     index: number,
     field: keyof SalesDebitNoteItem,
@@ -267,7 +267,14 @@ export const SalesDebitNoteDetailsTab: React.FC<SalesDebitNoteDetailsTabProps> =
           <SearchSelect2
             label="Invoice Number"
             value={form.return_against}
-            onChange={(_: string, option: any) => onInvoiceSelect(option?.meta)}
+          onChange={(value: string, option: any) => {
+  if (!value) {
+    onInvoiceSelect(undefined);
+    return;
+  }
+
+  onInvoiceSelect(option?.meta);
+}}
             fetchOptions={async (q) => {
               const results = await fetchInvoiceOptions(q);
               return results.map((opt) => ({
@@ -284,24 +291,33 @@ export const SalesDebitNoteDetailsTab: React.FC<SalesDebitNoteDetailsTabProps> =
 
         <div className="flex flex-col gap-1 w-full sm:w-[220px]">
           <SearchSelect2
-            label="Debit Note Reason"
-            value={form.reason}
-            onChange={(_: string, option: any) => {
-              const opt = option?.meta;
-              if (opt) onReasonChange(opt.reason, opt.code);
-            }}
-            fetchOptions={async (q) => {
-              const results = await fetchReasonOptions(q);
-              return results.map((r) => ({
-                label: r.reason,
-                value: r.reason,
-                meta: r,
-              }));
-            }}
-            placeholder="Search reason…"
-            required
-            loading={reasonsLoading}
-          />
+  label="Debit Note Reason"
+  value={form.reason}
+  onChange={(value: string, option: any) => {
+    if (!value) {
+      onReasonChange("", "");
+      return;
+    }
+
+    const opt = option?.meta;
+
+    if (opt) {
+      onReasonChange(opt.reason, opt.code);
+    }
+  }}
+  fetchOptions={async (q) => {
+    const results = await fetchReasonOptions(q);
+
+    return results.map((r) => ({
+      label: r.reason,
+      value: r.reason,
+      meta: r,
+    }));
+  }}
+  placeholder="Search reason…"
+  required
+  loading={reasonsLoading}
+/>
         </div>
 
         {form.code === "07" && (  

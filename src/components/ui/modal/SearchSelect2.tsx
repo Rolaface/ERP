@@ -60,16 +60,23 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
     const searchRef = useRef(search);
     const prevValueRef = useRef(value);
 
-    useEffect(() => {
-      if (value !== prevValueRef.current) {
-        prevValueRef.current = value;
-        if (!userEditingRef.current) {
-          setSearch(value ?? "");
-        }
-      } else if (!open && value && !userEditingRef.current) {
-        setSearch(value);
-      }
-    }, [value, open]);
+   useEffect(() => {
+  if (value !== prevValueRef.current) {
+    prevValueRef.current = value;
+
+    if (!userEditingRef.current) {
+      setSearch(value ?? "");
+      setIsCustom(false);
+    }
+
+    return;
+  }
+
+  if (!open && !userEditingRef.current) {
+    setSearch(value ?? "");
+    setIsCustom(false);
+  }
+}, [value, open]);
 
     useEffect(() => {
       fetchOptionsRef.current = fetchOptions;
@@ -112,30 +119,40 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
       }
     }, [open]);
 
-    useEffect(() => {
-      const handleClick = (e: MouseEvent) => {
-        const target = e.target as Node;
-        if (
-          !wrapperRef.current?.contains(target) &&
-          !dropdownRef.current?.contains(target)
-        ) {
-          setOpen(false);
-          if (userEditingRef.current) {
-            if (allowCustomInput) {
-              if (searchRef.current === "") {
-                onChange("", { label: "", value: "" });
-              }
-            } else {
-              // Not a valid selection — discard the typed text, snap back to last committed value
-              setSearch(value ?? "");
-            }
-          }
-          userEditingRef.current = false;
+   useEffect(() => {
+  const handleClick = (e: MouseEvent) => {
+    const target = e.target as Node;
+
+    if (
+      !wrapperRef.current?.contains(target) &&
+      !dropdownRef.current?.contains(target)
+    ) {
+      setOpen(false);
+
+      if (userEditingRef.current) {
+        if (searchRef.current.trim() === "") {
+          onChange("", {
+            label: "",
+            value: "",
+          });
+        } else if (allowCustomInput) {
+          onChange(searchRef.current, {
+            label: searchRef.current,
+            value: searchRef.current,
+          });
         }
-      };
-      document.addEventListener("click", handleClick);
-      return () => document.removeEventListener("click", handleClick);
-    }, [onChange]);
+      }
+
+      userEditingRef.current = false;
+    }
+  };
+
+  document.addEventListener("click", handleClick);
+
+  return () => {
+    document.removeEventListener("click", handleClick);
+  };
+}, [allowCustomInput, onChange]);
 
     // Initialize search with value on mount
     useEffect(() => {

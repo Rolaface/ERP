@@ -265,7 +265,10 @@ const QuotationModal: React.FC<QuotationModalProps> = ({
             <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
+                     selectedId={formData.customerId}
                     onChange={actions.handleCustomerSelect}
+                      onClear={actions.handleCustomerClear}
+
                     className="w-full"
                     required
                   />

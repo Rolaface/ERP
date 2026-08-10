@@ -210,9 +210,9 @@ const [formData, setFormData] = useState<Invoice>({
   const lastCurrencyRef = useRef<string>("");
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
-  // Frappe only deducts stock on submit (docstatus 1). A draft invoice's
-  // saved item quantities have never touched the stock ledger, so the
-  // quantity-cap math below needs to know which case it's in.
+
+  const customerSelectTokenRef = useRef(0);
+
   const invoiceDocstatusRef = useRef<number>(0);
   const enableExchange = mode === "invoice" || mode === "edit";
   const [baseCurrency, setBaseCurrency] = useState<string>("");
@@ -237,20 +237,14 @@ const [formData, setFormData] = useState<Invoice>({
     }
   }, [isOpen, initialData, mode]);
 
-  // Re-sync line items with LIVE stock right after loading an existing invoice
-  // for edit. Read taxCategory from initialData directly — not from formData —
-  // to avoid a stale-closure race where formData.taxCategory hasn't settled yet
-  // when this effect fires.
-  //
-  // FIX #2: use initialData?.tax_category instead of formData.taxCategory
+
   useEffect(() => {
     if (!isOpen || mode !== "edit" || !initialData?.id) return;
     if (!formData.items.length) return;
 
     let cancelled = false;
 
-    // Read taxCategory from the raw server payload, not from React state,
-    // to avoid a race where formData hasn't finished updating yet.
+
     const taxCategoryForFetch = initialData?.tax_category ?? "";
 
     (async () => {
@@ -308,8 +302,7 @@ const [formData, setFormData] = useState<Invoice>({
     return () => {
       cancelled = true;
     };
-    // Intentionally NOT depending on formData.items — fires once per edit-load.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [isOpen, mode, initialData?.id]);
 
   useEffect(() => {
@@ -516,6 +509,26 @@ const [formData, setFormData] = useState<Invoice>({
     return "";
   };
 
+  const handleCustomerClear = () => {
+    customerSelectTokenRef.current += 1;
+    customerTaxCategoryRef.current = "";
+
+    setCustomerDetails(null);
+    setCustomerNameDisplay("");
+
+    setFormData((prev) => ({
+      ...prev,
+      customerId: "",
+      taxCategory: "",
+      destnCountryCd: "",
+      billingAddress: "",
+      shippingAddress: sameAsBilling ? "" : prev.shippingAddress,
+      paymentInformation: DEFAULT_INVOICE_FORM.paymentInformation,
+      terms: { selling: EMPTY_TERMS.selling },
+    }));
+    markDirty();
+  };
+
   const handleCustomerSelect = async ({
     name,
     id,
@@ -523,11 +536,16 @@ const [formData, setFormData] = useState<Invoice>({
     name: string;
     id: string;
   }) => {
+
+    if (!id) {
+      handleCustomerClear();
+      return;
+    }
+
+    const token = ++customerSelectTokenRef.current;
+
     setCustomerNameDisplay(name);
 
-    // FIX #4: was two separate setFormData calls (one redundant, one real).
-    // Merged into a single call to avoid the redundant render and stale-closure
-    // race between the two setState calls.
     setFormData((p) => ({
       ...p,
       customerId: id,
@@ -541,6 +559,9 @@ const [formData, setFormData] = useState<Invoice>({
         getCompanyById(COMPANY_ID),
       ]);
 
+      // A newer select (or a clear) happened while this was in flight — drop it.
+      if (token !== customerSelectTokenRef.current) return;
+
       if (!customerRes || customerRes?.message?.status_code !== 200) return;
       const data = customerRes?.message?.data;
       const company = companyRes?.data;
@@ -552,6 +573,8 @@ const [formData, setFormData] = useState<Invoice>({
       }));
 
       const countryLookupList = await getRolaCountryList();
+      if (token !== customerSelectTokenRef.current) return;
+
       const formattedCountries = countryLookupList.map((c: any) => ({
         code: c.code || c.name,
         name: c.country_name || c.name,
@@ -581,6 +604,8 @@ const [formData, setFormData] = useState<Invoice>({
         swiftCode: getDefaultBank(company?.bankAccounts)?.swiftCode ?? "",
       };
 
+      if (token !== customerSelectTokenRef.current) return;
+
       setFormData((prev) => {
         const billingId = billingAddressObj?.id || "";
         const shippingId = sameAsBilling
@@ -605,6 +630,7 @@ const [formData, setFormData] = useState<Invoice>({
         };
       });
     } catch (err: any) {
+      if (token !== customerSelectTokenRef.current) return;
       showApiError("Failed to load customer details");
     }
   };
@@ -643,15 +669,10 @@ const [formData, setFormData] = useState<Invoice>({
           let maxAllowed: number;
 
           if (isSubmitted) {
-            // Frappe already deducted ALL rows on submit.
-            // liveStock = total remaining after every row was consumed.
-            // Add back only THIS row's original allocation — its personal ceiling.
-            // Other rows' originals are already baked into liveStock.
+
             maxAllowed = liveStock + thisRowOriginal;
           } else {
-            // Draft: stock ledger is untouched. liveStock is the full shared pool.
-            // Only subtract other rows when they share the SAME real batch.
-            // Non-batched rows each carry their own availableQty from the picker.
+          
             const usedByOthers = hasBatch
               ? items
                   .filter(
@@ -932,6 +953,8 @@ const [formData, setFormData] = useState<Invoice>({
   const setFormDataFromInvoice = (invoice: any) => {
     isLoadingRef.current = true;
     invoiceDocstatusRef.current = Number(invoice.docstatus ?? 0);
+    // Loading a fresh invoice for edit supersedes any in-flight customer fetch.
+    customerSelectTokenRef.current += 1;
 
     // charges[] from GET response map to taxes[] in formData
     // (taxes[] in GET is always empty; actual applied charges are in charges[])
@@ -1082,6 +1105,7 @@ const [formData, setFormData] = useState<Invoice>({
   };
 
   const handleReset = async () => {
+    customerSelectTokenRef.current += 1;
     if (initialData) {
       setFormDataFromInvoice(initialData);
     } else {
@@ -1257,6 +1281,7 @@ const [formData, setFormData] = useState<Invoice>({
       validateForm,
       handleInputChange,
       handleCustomerSelect,
+      handleCustomerClear,
       handleItemChange,
       updateItemDirectly,
       addItem,
