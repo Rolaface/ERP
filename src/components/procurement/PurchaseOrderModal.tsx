@@ -57,6 +57,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     handleFormChange,
     handleSupplierChange,
     handleItemChange,
+    handleSupplierClear,
     addItem,
     removeItem,
     duplicateItem,
@@ -96,6 +97,10 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
   const handleSupplierChangeWithDirty = useCallback(
     (val: any) => { markDirty(); handleSupplierChange(val); },
     [markDirty, handleSupplierChange],
+  );
+  const handleSupplierClearWithDirty = useCallback(
+    () => { markDirty(); handleSupplierClear(); },
+    [markDirty, handleSupplierClear],
   );
 
   const handleItemChangeWithDirty = useCallback(
@@ -167,6 +172,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
             items={form.items}
             onFormChange={handleFormChangeWithDirty}
             onSupplierChange={handleSupplierChangeWithDirty}
+            onSupplierClear={handleSupplierClearWithDirty} 
             onItemChange={handleItemChangeWithDirty}
             onAddItem={addItem}
             onRemoveItem={removeItem}
@@ -232,6 +238,7 @@ const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
       form,
       handleFormChangeWithDirty,
       handleSupplierChangeWithDirty,
+      handleSupplierClearWithDirty,
       handleItemChangeWithDirty,
       addItem,
       removeItem,

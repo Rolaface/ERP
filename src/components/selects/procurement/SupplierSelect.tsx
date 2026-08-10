@@ -147,8 +147,17 @@ export default function SupplierSelect({
       if (dropdownRef.current?.contains(t) || containerRef.current?.contains(t))
         return;
       setOpen(false);
-      // restore last valid value if search doesn't match
-      if (!suppliers.find((s) => s.name === search)) setSearch(value);
+
+if (!search.trim()) {
+  requestIdRef.current += 1;
+  setSuppliers([]);
+  onClear?.();
+  return;
+}
+
+if (!suppliers.find((s) => s.name === search)) {
+  setSearch(value);
+}
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -252,14 +261,25 @@ export default function SupplierSelect({
             placeholder={loading ? "Loading..." : placeholder}
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value);
-              if (!open) {
-                setDropRect(
-                  containerRef.current?.getBoundingClientRect() ?? null,
-                );
-                setOpen(true);
-              }
-            }}
+  const nextValue = e.target.value;
+
+  setSearch(nextValue);
+
+  if (!nextValue.trim()) {
+    requestIdRef.current += 1;
+    setOpen(false);
+    setSuppliers([]);
+    onClear?.();
+    return;
+  }
+
+  if (!open) {
+    setDropRect(
+      containerRef.current?.getBoundingClientRect() ?? null,
+    );
+    setOpen(true);
+  }
+}}
             onFocus={handleOpen}
             className="overflow-hidden text-ellipsis whitespace-nowrap"
           />

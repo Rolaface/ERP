@@ -6,7 +6,7 @@ import {
   showLoading,
   closeSwal,
 } from "../utils/alert";
-import { useAddressLogic, BOX_CONFIGS } from "./useAddressLogic";
+import { useAddressLogic } from "./useAddressLogic";
 import type {
   PurchaseOrderFormData,
   POTab,
@@ -56,6 +56,7 @@ export const usePurchaseOrderForm = ({
   const [form, setForm] = useState<PurchaseOrderFormData>(emptyPOForm);
   const [activeTab, setActiveTab] = useState<POTab>("details");
   const [saving, setSaving] = useState(false);
+  const supplierSelectTokenRef = useRef(0);
   const [customShippingRule, setCustomShippingRule] = useState("");
   const [customIncoterm, setCustomIncoterm] = useState("");
   const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
@@ -430,44 +431,44 @@ export const usePurchaseOrderForm = ({
   }, [isOpen, poId]);
 
   // Calculate totals (Items + Taxes + Rounding) - NO STATE UPDATE, pure derived value
-const totals = useMemo(() => {
-  let qty_sum  = 0;
-  let gross    = 0;
-  let disc_sum = 0;
-  let sub      = 0;
-  let tax      = 0;
+  const totals = useMemo(() => {
+    let qty_sum = 0;
+    let gross = 0;
+    let disc_sum = 0;
+    let sub = 0;
+    let tax = 0;
 
-  for (const item of form.items) {
-    const qty      = Number(item.quantity || 0);
-    const rate     = Number(item.rate     || 0);
-    const discount = Number(item.discount || 0);  
-    const vatRate  = Number(item.vatRate  || 0);
+    for (const item of form.items) {
+      const qty = Number(item.quantity || 0);
+      const rate = Number(item.rate || 0);
+      const discount = Number(item.discount || 0);
+      const vatRate = Number(item.vatRate || 0);
 
-    const lineGross    = qty * rate;
-    const lineDiscount = lineGross * (discount / 100);
-    const lineNet      = lineGross - lineDiscount;
-    const lineTax      = lineNet   * (vatRate  / 100);
+      const lineGross = qty * rate;
+      const lineDiscount = lineGross * (discount / 100);
+      const lineNet = lineGross - lineDiscount;
+      const lineTax = lineNet * (vatRate / 100);
 
-    qty_sum  += qty;
-    gross    += lineGross;
-    disc_sum += lineDiscount;
-    sub      += lineNet;
-    tax      += lineTax;
-  }
+      qty_sum += qty;
+      gross += lineGross;
+      disc_sum += lineDiscount;
+      sub += lineNet;
+      tax += lineTax;
+    }
 
-  for (const t of form.taxRows) {
-    tax += (Number(t.amount || 0) * Number(t.taxRate || 0)) / 100;
-  }
+    for (const t of form.taxRows) {
+      tax += (Number(t.amount || 0) * Number(t.taxRate || 0)) / 100;
+    }
 
-  return {
-    totalQuantity: qty_sum,
-    totalAmount:   gross,    // ← add
-    totalDiscount: disc_sum, // ← add
-    subTotal:      sub,
-    totalTax:      tax,
-    grandTotal:    sub + tax,
-  };
-}, [form.items, form.taxRows]);
+    return {
+      totalQuantity: qty_sum,
+      totalAmount: gross, // ← add
+      totalDiscount: disc_sum, // ← add
+      subTotal: sub,
+      totalTax: tax,
+      grandTotal: sub + tax,
+    };
+  }, [form.items, form.taxRows]);
 
   useFieldDefault(isOpen, form.costCenter, fetchCostCenters, (val) =>
     setForm((prev) => ({ ...prev, costCenter: val })),
@@ -477,25 +478,25 @@ const totals = useMemo(() => {
     setForm((prev) => ({ ...prev, project: val })),
   );
 
- // usePurchaseOrderForm.ts
+  // usePurchaseOrderForm.ts
 
-useFieldDefault(
-  isOpen && !poId,  
-  form.warehouse,
-  () =>
-    getAllWarehouses().then((list: string[]) =>
-      list.map((w) => ({ value: w, label: w })),
-    ),
-  (val) =>
-    setForm((prev) => ({
-      ...prev,
-      warehouse: val,
-      items: prev.items.map((item) => ({
-        ...item,
-        warehouse: item.warehouse?.trim() ? item.warehouse : val,
+  useFieldDefault(
+    isOpen && !poId,
+    form.warehouse,
+    () =>
+      getAllWarehouses().then((list: string[]) =>
+        list.map((w) => ({ value: w, label: w })),
+      ),
+    (val) =>
+      setForm((prev) => ({
+        ...prev,
+        warehouse: val,
+        items: prev.items.map((item) => ({
+          ...item,
+          warehouse: item.warehouse?.trim() ? item.warehouse : val,
+        })),
       })),
-    })),
-);
+  );
 
   type AddressKey = keyof PurchaseOrderFormData["addresses"];
 
@@ -521,6 +522,7 @@ useFieldDefault(
       freshSupplierId: string,
       boxKey: "supplierBilling" | "supplierDispatch",
       autoSelect = true,
+      requestToken?: number,
     ) => {
       if (!freshSupplierId) return;
 
@@ -537,6 +539,14 @@ useFieldDefault(
 
       try {
         const data = await getAddressList(apiParams);
+
+        if (
+          requestToken !== undefined &&
+          requestToken !== supplierSelectTokenRef.current
+        ) {
+          return;
+        }
+
         setAddressList((prev) => ({ ...prev, [boxKey]: data }));
 
         if (autoSelect && data?.length > 0) {
@@ -583,14 +593,16 @@ useFieldDefault(
     async (sup: any) => {
       if (!sup?.id) return;
 
+      const requestToken = ++supplierSelectTokenRef.current;
+
       try {
         const res = await getSupplierById(sup.id);
+
+        if (requestToken !== supplierSelectTokenRef.current) return;
 
         const supplier = res?.message?.data;
 
         if (!supplier) return;
-
-       
 
         const primaryContact =
           supplier.contacts?.find((c: any) => c.isPrimary) ||
@@ -656,9 +668,20 @@ useFieldDefault(
         }));
 
         // ── Auto-load supplier address boxes on supplier select ──
+        if (requestToken !== supplierSelectTokenRef.current) return;
         await Promise.all([
-          loadAddressesForSupplier(supplier.id, "supplierBilling"),
-          loadAddressesForSupplier(supplier.id, "supplierDispatch"),
+          loadAddressesForSupplier(
+            supplier.id,
+            "supplierBilling",
+            true,
+            requestToken,
+          ),
+          loadAddressesForSupplier(
+            supplier.id,
+            "supplierDispatch",
+            true,
+            requestToken,
+          ),
         ]);
       } catch (err) {
         console.error("Supplier fetch failed:", err);
@@ -666,6 +689,44 @@ useFieldDefault(
     },
     [loadAddressesForSupplier],
   );
+
+  const handleSupplierClear = useCallback(() => {
+    // Invalidate any in-flight supplier/address fetches so their
+    // responses can't repopulate the form after this clear.
+    supplierSelectTokenRef.current++;
+
+    setForm((prev) => ({
+      ...prev,
+      supplier: emptyPOForm.supplier,
+      supplierId: emptyPOForm.supplierId,
+      supplierCode: emptyPOForm.supplierCode,
+      supplierEmail: emptyPOForm.supplierEmail,
+      supplierPhone: emptyPOForm.supplierPhone,
+      supplierContact: emptyPOForm.supplierContact,
+      supplierContactDisplay: emptyPOForm.supplierContactDisplay,
+      taxCategory: emptyPOForm.taxCategory,
+      addresses: {
+        ...prev.addresses,
+        supplierAddress: emptyPOForm.addresses.supplierAddress,
+      },
+    }));
+
+    setAddressSelected((prev) => ({
+      ...prev,
+      supplierBilling: null,
+      supplierDispatch: null,
+    }));
+    setAddressSelectedIds((prev) => ({
+      ...prev,
+      supplierBilling: "",
+      supplierDispatch: "",
+    }));
+    setAddressList((prev) => ({
+      ...prev,
+      supplierBilling: [],
+      supplierDispatch: [],
+    }));
+  }, []);
 
   const handleItemChange = useCallback(
     (
@@ -782,7 +843,6 @@ useFieldDefault(
 
   const handleSaveTemplate = (html: string) => {
     setForm((p) => ({ ...p, messageHtml: html }));
-   
   };
 
   const resetTemplate = () => {
@@ -878,10 +938,10 @@ useFieldDefault(
           .flatMap((tax: any) => tax.taxRates || [])
           .map((r: any) => r.tax_type)
           .filter((t: string) => t && t.trim() !== "");
-          const useRrpPrice = isZraEnabled && Number(data?.isMtvItem) === 1;
-const resolvedRate = useRrpPrice
-  ? Number(data?.rrp_rate ?? 0)
-  : Number(data.buyingPrice || 0);
+        const useRrpPrice = isZraEnabled && Number(data?.isMtvItem) === 1;
+        const resolvedRate = useRrpPrice
+          ? Number(data?.rrp_rate ?? 0)
+          : Number(data.buyingPrice || 0);
 
         setForm((prev) => {
           const items = [...prev.items];
@@ -895,7 +955,7 @@ const resolvedRate = useRrpPrice
 
             warehouse: items[idx].warehouse || prev.warehouse || "",
 
-            rate: resolvedRate, 
+            rate: resolvedRate,
             uom: data.unitOfMeasureCd,
 
             vatRate: totalTaxRate,
@@ -1044,7 +1104,7 @@ const resolvedRate = useRrpPrice
     validateTab,
     setForm,
     customShippingRule,
-    
+
     setCustomShippingRule,
     customIncoterm,
     setCustomIncoterm,
@@ -1063,5 +1123,6 @@ const resolvedRate = useRrpPrice
     handleCopySupplierToDispatch,
     loadAddresses,
     handleAddressRemove,
+    handleSupplierClear,
   };
 };

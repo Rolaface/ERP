@@ -25,6 +25,7 @@ interface DetailsTabProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   onSupplierChange: (s: any) => void;
+    onSupplierClear?: () => void;
   onItemChange: (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -106,7 +107,7 @@ export const DetailsTab = ({
   form,
   items,
   onFormChange,
-  onSupplierChange,
+  onSupplierChange,onSupplierClear,
   onItemChange,
   onItemSelect,
   onAddItem,
@@ -343,6 +344,7 @@ export const DetailsTab = ({
           <SupplierSelect
             className="w-full"
             selectedId={form.supplierId}
+             onClear={onSupplierClear}
             value={form.supplier}
             onChange={onSupplierChange}
           />
