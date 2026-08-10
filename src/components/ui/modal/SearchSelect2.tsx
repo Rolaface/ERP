@@ -60,23 +60,22 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
     const searchRef = useRef(search);
     const prevValueRef = useRef(value);
 
-   useEffect(() => {
-  if (value !== prevValueRef.current) {
-    prevValueRef.current = value;
+    useEffect(() => {
+      if (value !== prevValueRef.current) {
+        prevValueRef.current = value;
 
-    if (!userEditingRef.current) {
-      setSearch(value ?? "");
-      setIsCustom(false);
-    }
+        setSearch(value ?? "");
+        setIsCustom(false);
+        userEditingRef.current = false;
 
-    return;
-  }
+        return;
+      }
 
-  if (!open && !userEditingRef.current) {
-    setSearch(value ?? "");
-    setIsCustom(false);
-  }
-}, [value, open]);
+      if (!open && !userEditingRef.current) {
+        setSearch(value ?? "");
+        setIsCustom(false);
+      }
+    }, [value, open]);
 
     useEffect(() => {
       fetchOptionsRef.current = fetchOptions;
@@ -119,47 +118,40 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
       }
     }, [open]);
 
-   useEffect(() => {
-  const handleClick = (e: MouseEvent) => {
-    const target = e.target as Node;
-
-    if (
-      !wrapperRef.current?.contains(target) &&
-      !dropdownRef.current?.contains(target)
-    ) {
-      setOpen(false);
-
-      if (userEditingRef.current) {
-        if (searchRef.current.trim() === "") {
-          onChange("", {
-            label: "",
-            value: "",
-          });
-        } else if (allowCustomInput) {
-          onChange(searchRef.current, {
-            label: searchRef.current,
-            value: searchRef.current,
-          });
-        }
-      }
-
-      userEditingRef.current = false;
-    }
-  };
-
-  document.addEventListener("click", handleClick);
-
-  return () => {
-    document.removeEventListener("click", handleClick);
-  };
-}, [allowCustomInput, onChange]);
-
-    // Initialize search with value on mount
     useEffect(() => {
-      if (value && !search) {
-        setSearch(value);
-      }
-    }, [value]);
+      const handleClick = (e: MouseEvent) => {
+        const target = e.target as Node;
+
+        if (
+          !wrapperRef.current?.contains(target) &&
+          !dropdownRef.current?.contains(target)
+        ) {
+          setOpen(false);
+
+          if (userEditingRef.current) {
+            if (searchRef.current.trim() === "") {
+              onChange("", {
+                label: "",
+                value: "",
+              });
+            } else if (allowCustomInput) {
+              onChange(searchRef.current, {
+                label: searchRef.current,
+                value: searchRef.current,
+              });
+            }
+          }
+
+          userEditingRef.current = false;
+        }
+      };
+
+      document.addEventListener("click", handleClick);
+
+      return () => {
+        document.removeEventListener("click", handleClick);
+      };
+    }, [allowCustomInput, onChange]);
 
     useEffect(() => {
       if (open && inputRef.current) inputRef.current.focus();
@@ -206,7 +198,8 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
               className={[
                 "py-1 px-2 pr-6 border rounded text-[11px] w-full transition-colors duration-150",
                 "bg-card text-main placeholder:text-muted",
-                "focus:outline-none", "truncate",
+                "focus:outline-none",
+                "truncate",
                 disabled
                   ? "opacity-50 cursor-not-allowed border-theme"
                   : error
@@ -221,10 +214,17 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
+                  requestIdRef.current += 1;
+                  userEditingRef.current = true;
+
                   setSearch("");
                   setIsCustom(false);
-                  userEditingRef.current = false; // ← CHANGED: explicit clear, stop blocking sync
-                  onChange("", { label: "", value: "" });
+
+                  onChange("", {
+                    label: "",
+                    value: "",
+                  });
+
                   setOpen(true);
                 }}
                 className="absolute right-1 top-1/2 -translate-y-1/2 text-muted hover:text-danger text-xs transition-colors"
@@ -259,6 +259,8 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                   key={opt.value || opt.label}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
+                    requestIdRef.current += 1;
+
                     onChange(opt.value, opt);
                     setSearch(opt.label);
                     setIsCustom(false);
@@ -267,7 +269,9 @@ const SearchSelect2: React.FC<SearchSelectProps> = React.memo(
                   }}
                   className="px-3 py-2 cursor-pointer row-hover transition-colors"
                 >
-                  <span className="block text-[13px] text-main">{opt.label}</span>
+                  <span className="block text-[13px] text-main">
+                    {opt.label}
+                  </span>
                   {opt.subLabel && (
                     <span className="block text-[11px] text-muted leading-tight">
                       {opt.subLabel}
