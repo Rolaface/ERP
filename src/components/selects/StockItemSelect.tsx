@@ -229,6 +229,8 @@ export default function StockItemSelect({
       qty: row.qty,
       price_list: row.price_list,
       price: resolvedPrice,
+       is_mtv_item: row.is_mtv_item,
+     rrp_rate: row.rrp_rate,
       packingSize: row.packingSize,
       packingUnit: row.packingUnit,
       stockUom: row.stockUom,

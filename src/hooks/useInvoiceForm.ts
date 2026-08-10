@@ -4,6 +4,7 @@ import { getCompanyById } from "../api/companySetupApi";
 import type { TermSection } from "../types/termsAndCondition";
 import type { Invoice, InvoiceItem } from "../types/invoice";
 import { getRolaCountryList } from "../api/lookupApi";
+import { useCompanyStore } from "../store/companyStore";
 
 import { getExchangeRate } from "../api/currencyExchangeApi";
 import { getStockReport } from "../api/stockApi";
@@ -35,6 +36,9 @@ type NestedSection =
   | "billingAddress"
   | "shippingAddress"
   | "paymentInformation";
+
+
+
 
 const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!invoiceDate) return "";
@@ -138,6 +142,7 @@ export const useInvoiceForm = (
   mode?: "invoice" | "proforma" | "edit",
   initialData?: any,
 ) => {
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 const [formData, setFormData] = useState<Invoice>({
     ...DEFAULT_INVOICE_FORM,
     terms: { ...EMPTY_TERMS },
@@ -1169,7 +1174,15 @@ const [formData, setFormData] = useState<Invoice>({
       const lineGross = qty * price;
       const lineDiscount = lineGross * (discount / 100);
       const lineNet = lineGross - lineDiscount;
-      const lineTax = lineNet * (vatRate / 100);
+
+   let lineTax = lineNet * (vatRate / 100);
+    if (isZraEnabled && Number(item.is_mtv_item) === 1) {
+        const rrpRate = Number(item.rrp_rate || 0);
+        const inclusiveAmount = lineNet + lineTax;
+        if (rrpRate > 0 && inclusiveAmount < rrpRate * qty) {
+          lineTax = rrpRate * qty * (vatRate / 100);
+        }
+      }
 
       qty_sum += qty;
       gross += lineGross;
@@ -1186,7 +1199,7 @@ const [formData, setFormData] = useState<Invoice>({
       totalTax: tax,
       grandTotal: sub + tax,
     };
-  }, [formData.items]);
+  }, [formData.items, isZraEnabled]);
 
   const paginatedItems = formData.items.slice(
     page * ITEMS_PER_PAGE,

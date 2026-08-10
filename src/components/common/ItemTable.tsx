@@ -453,6 +453,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   availableQty: item.qty,
                   quantity: 0,
                   price: item.price ?? 0,
+                  is_mtv_item: item.is_mtv_item,
+                 rrp_rate: item.rrp_rate,
                   warehouse: item.warehouse,
                   isServiceItem: item.isServiceItem,
                   vatRate: item.vatRate,
