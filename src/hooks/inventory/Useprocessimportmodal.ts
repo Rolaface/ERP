@@ -120,6 +120,13 @@ export function useProcessImportModal(isOpen: boolean) {
     },
     []
   );
+    const handleSupplierClear = useCallback((itemId: string) => {
+    setSuppliers((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+  }, []);
 
   const approveAllRemaining = useCallback(() => {
     setDecisions((prev) => {
@@ -213,7 +220,7 @@ export function useProcessImportModal(isOpen: boolean) {
     handleDecision,
     handleRemarkChange,
     handleMappedItemChange,
-    handleSupplierChange,
+    handleSupplierChange,handleSupplierClear,
     approveAllRemaining,
     counts,
     isLoading,

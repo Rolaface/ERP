@@ -5,12 +5,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import {
-  Package,
-  RefreshCw,
-  Check,
-  X as XIcon,
-} from "lucide-react";
+import { Package, RefreshCw, Check, X as XIcon } from "lucide-react";
 import { MinimizableModal } from "../../../components/common/MinimizableModal";
 import ItemSelect from "../../selects/itemGenriSelect";
 import WarehouseSelect from "../../selects/WarehouseSelect";
@@ -96,6 +91,8 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
     handleRemarkChange,
     handleMappedItemChange,
     handleSupplierChange,
+    handleSupplierClear,
+
     approveAllRemaining,
     counts,
     isLoading,
@@ -112,8 +109,9 @@ const ProcessImportModal: React.FC<ProcessImportModalProps> = ({
   const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [supplierFilterName, setSupplierFilterName] = useState<string>("");
 
-
-const [filterResults, setFilterResults] = useState<SupplierFilterResult[]>([]);
+  const [filterResults, setFilterResults] = useState<SupplierFilterResult[]>(
+    [],
+  );
   const [filterLoading, setFilterLoading] = useState(false);
   const [filterSearch, setFilterSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -487,9 +485,11 @@ const [filterResults, setFilterResults] = useState<SupplierFilterResult[]>([]);
                         >
                           <SupplierSelect
                             selectedId={suppliers[item.id]?.id ?? ""}
+                            value={suppliers[item.id]?.name ?? ""}
                             onChange={(selected) =>
                               handleSupplierChange(item.id, selected)
                             }
+                            onClear={() => handleSupplierClear(item.id)}
                             label=""
                             placeholder="Map supplier..."
                             className="w-full"
