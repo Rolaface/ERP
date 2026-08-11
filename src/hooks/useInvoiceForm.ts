@@ -123,6 +123,8 @@ export function buildInvoicePayload(
     subTotal: totals.subTotal,
     totalTax: totals.totalTax,
     grandTotal: totals.grandTotal,
+    additional_discount_percentage: Number(formData.additionalDiscountPercentage) || 0,
+    discount_amount: Number(formData.discountAmount) || 0,
     addresses: formData.addresses,
     taxes: mappedTaxes,
     salesTaxTemplate: formData.salesTaxTemplate ?? "",
@@ -789,11 +791,44 @@ const [formData, setFormData] = useState<Invoice>({
   const handleTaxChange = (index: number, field: string, value: any) => {
     setFormData((prev) => {
       const updated = [...(prev.taxes || [])];
-      updated[index] = { ...updated[index], [field]: value };
+       updated[index] = { ...updated[index], [field]: value };
       return { ...prev, taxes: updated };
     });
     markDirty();
   };
+
+  const handleDiscountPercentChange = (value: string) => {
+    setFormData((prev) => {
+      const pct = value === "" ? null : Number(value);
+      const grandTotalBase = subTotal + totalTax;
+      const amount =
+        pct != null && Number.isFinite(pct) ? (grandTotalBase * pct) / 100 : 0;
+      return {
+        ...prev,
+        additionalDiscountPercentage: value,
+        discountAmount: amount ? amount.toFixed(2) : "",
+      };
+    });
+    markDirty();
+  };
+
+  const handleDiscountAmountChange = (value: string) => {
+    setFormData((prev) => {
+      const amt = value === "" ? null : Number(value);
+      const grandTotalBase = subTotal + totalTax;
+      const pct =
+        amt != null && Number.isFinite(amt) && grandTotalBase > 0
+          ? (amt / grandTotalBase) * 100
+          : 0;
+      return {
+        ...prev,
+        discountAmount: value,
+        additionalDiscountPercentage: pct ? pct.toFixed(2) : "",
+      };
+    });
+    markDirty();
+  };
+
   const getItemMax = (idx: number): number | undefined => {
     const item = formData.items[idx];
     if (!item || !item._stockLoaded || item.isServiceItem) return undefined;
@@ -981,8 +1016,14 @@ const [formData, setFormData] = useState<Invoice>({
       ...prev,
       invoiceNumber: invoice.id ?? invoice.invoiceNumber,
       customerId: invoice.customerId ?? prev.customerId,
-      invoiceType: invoice.invoiceType ?? "",
+       invoiceType: invoice.invoiceType ?? "",
       principal: parsePrincipal(invoice.principal),
+      additionalDiscountPercentage:
+        invoice.additional_discount_percentage != null
+          ? String(invoice.additional_discount_percentage)
+          : "",
+      discountAmount:
+        invoice.discount_amount != null ? String(invoice.discount_amount) : "",
       taxCategory: invoice.tax_category ?? prev.taxCategory,
       mode: invoice.paymentMode ?? prev.mode ?? "",
       currencyCode: invoice.currency,
@@ -1116,11 +1157,13 @@ const [formData, setFormData] = useState<Invoice>({
         const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
         const dueDate = calculateDueDate(today, paymentTerms);
 
-        setFormData({
+         setFormData({
           ...DEFAULT_INVOICE_FORM,
           invoiceCharges: [],
           salesTaxTemplate: "",
           principal: null,
+          additionalDiscountPercentage: "",
+          discountAmount: "",
           dateOfInvoice: today,
           dueDate,
           exchangeRt: "1",
@@ -1215,15 +1258,17 @@ const [formData, setFormData] = useState<Invoice>({
       tax += lineTax;
     });
 
+     const additionalDiscount = Number(formData.discountAmount || 0);
+
     return {
       totalQuantity: qty_sum,
       totalAmount: gross,
       totalDiscount: disc_sum,
       subTotal: sub,
       totalTax: tax,
-      grandTotal: sub + tax,
+      grandTotal: sub + tax - additionalDiscount,
     };
-  }, [formData.items, isZraEnabled]);
+  }, [formData.items, isZraEnabled, formData.discountAmount]);
 
   const paginatedItems = formData.items.slice(
     page * ITEMS_PER_PAGE,
@@ -1299,6 +1344,8 @@ const [formData, setFormData] = useState<Invoice>({
       handleTemplateSelect,
       getItemMax,
       handleTaxChange,
+      handleDiscountPercentChange,
+      handleDiscountAmountChange,
     },
     markDirty,
     resetDirty,
