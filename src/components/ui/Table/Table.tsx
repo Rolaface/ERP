@@ -5,7 +5,9 @@ import Pagination from "../../Pagination";
 import Tooltip from "../../Tooltip";
 import { FaSearch, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { useColumnStore } from "../../../store/useColumnStore";
-import MultiSelectFilter, {type MultiSelectOption} from "../modal/MultiSelectFilter";
+import MultiSelectFilter, {
+  type MultiSelectOption,
+} from "../modal/MultiSelectFilter";
 interface SortState {
   sortBy: string;
   sortOrder: "asc" | "desc";
@@ -180,7 +182,6 @@ const TableInner = <T extends Record<string, any>>({
     return allKeys;
   });
 
-
   const handleApplyColumns = (keys: string[]) => {
     setVisibleKeys(keys);
     if (tableId) {
@@ -188,9 +189,9 @@ const TableInner = <T extends Record<string, any>>({
     }
   };
 
-  const visibleColumns = useMemo(() =>
-    columns.filter((col) => visibleKeys.includes(col.key)),
-    [columns, visibleKeys]
+  const visibleColumns = useMemo(
+    () => columns.filter((col) => visibleKeys.includes(col.key)),
+    [columns, visibleKeys],
   );
 
   // The table's minimum width used to be a hardcoded 900px regardless of
@@ -213,7 +214,6 @@ const TableInner = <T extends Record<string, any>>({
     return Math.max(total, 480);
   }, [visibleColumns]);
 
-
   const handleColumnSort = (colKey: string) => {
     if (!onSortChange) return;
     const isSameColumn = sortBy === colKey;
@@ -222,16 +222,20 @@ const TableInner = <T extends Record<string, any>>({
     onSortChange({ sortBy: colKey, sortOrder: newOrder });
   };
 
-  const getAlignment = useMemo(() => (align?: "left" | "center" | "right"): string => {
-    switch (align) {
-      case "center":
-        return "text-center";
-      case "right":
-        return "text-right";
-      default:
-        return "text-left";
-    }
-  }, []);
+  const getAlignment = useMemo(
+    () =>
+      (align?: "left" | "center" | "right"): string => {
+        switch (align) {
+          case "center":
+            return "text-center";
+          case "right":
+            return "text-right";
+          default:
+            return "text-left";
+        }
+      },
+    [],
+  );
 
   return (
     <div
@@ -417,7 +421,8 @@ const TableInner = <T extends Record<string, any>>({
                   </td>
                 </tr>
               ) : (
-                <>{/* Subtle fetching indicator - show only when isFetching and data exists */}
+                <>
+                  {/* Subtle fetching indicator - show only when isFetching and data exists */}
                   {isFetching && data.length > 0 && (
                     <tr className="absolute top-0 left-0 right-0 z-20 h-full bg-white/30">
                       <td colSpan={visibleColumns.length}>
@@ -433,18 +438,18 @@ const TableInner = <T extends Record<string, any>>({
                     const itemKey = rowKey ? rowKey(item) : `row-${idx}`;
 
                     return (
-                      <React.Fragment
-                        key={itemKey}
-                      >
+                      <React.Fragment key={itemKey}>
                         <tr
                           onClick={() => onRowClick?.(item)}
                           onDoubleClick={() => onRowDoubleClick?.(item)}
                           className={[
                             "group transition-colors duration-150",
                             onRowClick ? "cursor-pointer" : "",
-                            idx % 2 === 0 ? "bg-transparent" : "bg-row-hover/10",
+                            idx % 2 === 0
+                              ? "bg-transparent"
+                              : "bg-row-hover/10",
                             "hover:bg-row-hover",
-                            isExpanded ? "bg-row-hover/20" : "",
+                            isExpanded ? "row-highlighted" : "",
                           ].join(" ")}
                         >
                           {visibleColumns.map((column) => {
@@ -581,13 +586,12 @@ const TableInner = <T extends Record<string, any>>({
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={totalItems}
-          onPageChange={onPageChange ?? (() => { })}
+          onPageChange={onPageChange ?? (() => {})}
         />
       </div>
     </div>
   );
 };
-
 
 const Table = memo(TableInner) as typeof TableInner;
 export default Table;
