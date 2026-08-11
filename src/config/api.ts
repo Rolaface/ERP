@@ -521,6 +521,7 @@ getImportedPurchaseInvoices:`${ERP_BASE}/api/method/zra_smart_inv.......`,
     correct: `${ERP_BASE}/api/method/custom_api.api.stock_correction.create_stock_correction`,
     delete: `${ERP_BASE}/api/method/erpnext.zra_client.stock.stock.delete_stock_entry`,
     stockLedger: `${ERP_BASE}/api/method/frappe.desk.query_report.run`,
+    stockEntry:`${ERP_BASE}/api/method/custom_api.api.stock.stock_entry_api.create_stock_entry`
   },
 
   /* =========================

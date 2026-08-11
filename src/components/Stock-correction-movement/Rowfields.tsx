@@ -1,7 +1,14 @@
 import React from "react";
 // import StockItemNameCodeSelect from "../../components/selects/StockCorrectionItemSelect";
 import { ModalInput, ModalSelect, NumericInput, ToggleSwitch } from "../../components/ui/modal/modalComponent";
-import type { CorrectionRow, Mode, MovementRow, Option, StockItemSelectPayload } from "../../hooks/stock correction-movement/Usestockcorrectionform";
+import type {
+  CorrectionRow,
+  Mode,
+  MovementRow,
+  Option,
+  StockEntryType,
+  StockItemSelectPayload,
+} from "../../hooks/stock correction-movement/Usestockcorrectionform";
 import { RemoveRowButton, SectionLabel } from "../../components/Stock-correction-movement/Summaryui";
 import StockItemSelect from "../../components/selects/StockItemSelect";
 
@@ -72,12 +79,26 @@ export const TransactionTypeToggle: React.FC<{ mode: Mode; onModeChange: (mode: 
   />
 );
 
+export const StockEntryTypeToggle: React.FC<{
+  stockEntryType: StockEntryType;
+  onChange: (type: StockEntryType) => void;
+}> = ({ stockEntryType, onChange }) => (
+  <ToggleSwitch
+    name="stockEntryType"
+    label="Entry Type"
+    checked={stockEntryType === "Material Issue"}
+    offLabel="Transfer"
+    onLabel="Issue"
+    onChange={(e) => onChange(e.target.checked ? "Material Issue" : "Material Transfer")}
+  />
+);
 
 interface CorrectionRowFieldsProps {
   row: CorrectionRow;
   branchOptions: Option[];
   batchOptionsForRow?: Option[];
-  onChange: (id: string, field: "branch" | "batchNo" | "correctQty", value: string) => void;
+  isOpeningStock: boolean;
+  onChange: (id: string, field: "branch" | "batchNo" | "correctQty" | "valuationRate", value: string) => void;
   onRemove: (id: string) => void;
   removeDisabled: boolean;
 }
@@ -85,20 +106,20 @@ interface CorrectionRowFieldsProps {
 export const CorrectionRowFields: React.FC<CorrectionRowFieldsProps> = ({
   row,
   branchOptions,
+  isOpeningStock,
   onChange,
   onRemove,
   removeDisabled,
 }) => (
   <>
     <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-      
-  <WarehouseSelect
-  value={row.branch}
-  compact
-  onChange={(e) => onChange(row.id, "branch", e.target.value)}
-   readOnlyField
-  disabled
-/>
+      <WarehouseSelect
+        value={row.branch}
+        compact
+        onChange={(e) => onChange(row.id, "branch", e.target.value)}
+        readOnlyField
+        disabled
+      />
     </div>
     <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
       <ModalInput
@@ -115,6 +136,24 @@ export const CorrectionRowFields: React.FC<CorrectionRowFieldsProps> = ({
     </div>
     <div className="scm-cell scm-cell-border text-[12px] font-semibold text-main" style={{ padding: "6px 10px" }}>
       {row.availableQty === null ? "—" : row.availableQty.toLocaleString()}
+    </div>
+
+    {/* Valuation Rate — editable only when this is an Opening Stock entry, otherwise derived from the batch */}
+    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+      {isOpeningStock ? (
+        <NumericInput
+          value={row.valuationRate}
+          allowNegative={false}
+          decimalScale={2}
+          placeholder="0.00"
+          onChange={(v) => onChange(row.id, "valuationRate", v === null ? "" : String(v))}
+          className="h-[28px] text-[11px] w-full"
+        />
+      ) : (
+        <span className="text-[12px] font-semibold text-main">
+          {row.valuationRate != null ? row.valuationRate.toLocaleString() : "—"}
+        </span>
+      )}
     </div>
 
     {/* Correct Qty — signed delta, e.g. -30 to decrease, 20 to increase */}
@@ -144,6 +183,7 @@ export const CorrectionRowFields: React.FC<CorrectionRowFieldsProps> = ({
 
 interface MovementRowFieldsProps {
   row: MovementRow;
+  stockEntryType: StockEntryType;
   onChange: (
     id: string,
     field: keyof Omit<MovementRow, "id">,
@@ -152,39 +192,47 @@ interface MovementRowFieldsProps {
   onRemove: (id: string) => void;
   removeDisabled: boolean;
 }
+
 export const MovementRowFields: React.FC<MovementRowFieldsProps> = ({
   row,
+  stockEntryType,
   onChange,
   onRemove,
   removeDisabled,
-}) => (
-  <>
-    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-     <WarehouseSelect
-  value={row.from}
-  compact
-  onChange={(e) => onChange(row.id, "from", e.target.value)}
-/>
-    </div>
-    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-    <WarehouseSelect
-  value={row.to}
-  compact
-  onChange={(e) => onChange(row.id, "to", e.target.value)}
-/>
-    </div>
-    <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
-      <NumericInput
-        value={row.qty === "" ? null : Number(row.qty)}
-        allowNegative={false}
-        decimalScale={0}
-        placeholder="0"
-        onChange={(v) => onChange(row.id, "qty", v === null ? "" : String(v))}
-        className="h-[28px] text-[11px] w-full"
-      />
-    </div>
-    <div className="scm-cell" style={{ justifyContent: "center", padding: "6px 10px" }}>
-      <RemoveRowButton onClick={() => onRemove(row.id)} disabled={removeDisabled} />
-    </div>
-  </>
-);
+}) => {
+  const isIssue = stockEntryType === "Material Issue";
+
+  return (
+    <>
+      <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+        <WarehouseSelect
+          value={row.from}
+          compact
+          onChange={(e) => onChange(row.id, "from", e.target.value)}
+        />
+      </div>
+      <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+        <WarehouseSelect
+          value={isIssue ? "" : row.to}
+          compact
+          disabled={isIssue}
+          readOnlyField={isIssue}
+          onChange={(e) => onChange(row.id, "to", e.target.value)}
+        />
+      </div>
+      <div className="scm-cell scm-cell-border" style={{ padding: "6px 10px" }}>
+        <NumericInput
+          value={row.qty === "" ? null : Number(row.qty)}
+          allowNegative={false}
+          decimalScale={0}
+          placeholder="0"
+          onChange={(v) => onChange(row.id, "qty", v === null ? "" : String(v))}
+          className="h-[28px] text-[11px] w-full"
+        />
+      </div>
+      <div className="scm-cell" style={{ justifyContent: "center", padding: "6px 10px" }}>
+        <RemoveRowButton onClick={() => onRemove(row.id)} disabled={removeDisabled} />
+      </div>
+    </>
+  );
+};
