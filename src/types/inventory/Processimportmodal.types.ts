@@ -85,6 +85,7 @@ export type SubmitStatusCode = "3" | "4"; // 3 = approve, 4 = reject
 
 export interface SubmitImportItemPayload {
   itemSeq: number;
+  itemNm:string;
   hsCd: string;
   itemClsCd: string; // no source yet — sent as "" until a real value exists
   itemCd: string; // same value as mapped_erp_item in the confirmed sample

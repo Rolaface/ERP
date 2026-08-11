@@ -40,7 +40,16 @@ const consigneePhone = invoice.customerContactNo ?? "";
  const companyPhone = useCompanyStore.getState().companyPhone || company?.contactInfo?.companyPhone || "";
 
 
-  const entries: LabelEntry[] = [];
+ const entries: LabelEntry[] = [];
+
+  const totalBoxes = (invoice.items ?? []).reduce((sum: number, item: any) => {
+    const start = Number(item.boxStart);
+    const end = Number(item.boxEnd);
+    if (!start || !end || end < start) return sum;
+    return sum + (end - start + 1);
+  }, 0);
+
+  let runningBoxNumber = 0;
 
   (invoice.items ?? []).forEach((item: any) => {
     const start = Number(item.boxStart);
@@ -49,7 +58,11 @@ const consigneePhone = invoice.customerContactNo ?? "";
 
      const boxCount = end - start + 1;
 
-    for (let boxNumber = 1; boxNumber <= boxCount; boxNumber++) {
+    for (let itemBoxNumber = 1; itemBoxNumber <= boxCount; itemBoxNumber++) {
+      runningBoxNumber++;
+      const baseName = item.brand
+        ? `${item.brand} (${item.itemName || item.itemCode || "-"})`
+        : item.itemName || item.itemCode || "-";
       entries.push({
         consigneeName,
         consigneeCity,
@@ -57,11 +70,9 @@ const consigneePhone = invoice.customerContactNo ?? "";
         companyName,
         companyCity,
         companyPhone,
-        productName: item.brand
-  ? `${item.brand} (${item.itemName || item.itemCode || "-"})`
-  : item.itemName || item.itemCode || "-",
-        boxNumber,
-        boxTotal: boxCount,
+        productName: `${baseName} (${itemBoxNumber}/${boxCount})`,
+        boxNumber: runningBoxNumber,
+        boxTotal: totalBoxes,
       });
     }
   });
@@ -105,7 +116,7 @@ const drawLabel = (
 );
   writeLine(
      `SEND By: ${entry.companyName}`,
-    13,
+    16,
     3
   );
   writeLine(`CONTACT NO. ${entry.companyPhone}`, 13, 3);

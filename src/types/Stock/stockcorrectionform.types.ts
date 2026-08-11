@@ -7,6 +7,9 @@
 
 export type Mode = "correction" | "movement";
 
+/** Stock Entry sub-type for the Movement tab — mirrors Frappe's Stock Entry Type. */
+export type StockEntryType = "Material Transfer" | "Material Issue";
+
 export interface Option {
   label: string;
   value: string;
@@ -21,7 +24,7 @@ export interface StockSummaryRow {
   availableQty: number;
   unit: string;
   expiryDate: string;
-    valuationRate: number;
+  valuationRate: number;
 }
 
 export interface CorrectionRow {
@@ -34,16 +37,18 @@ export interface CorrectionRow {
   // Replaces the old single signed `qty` field. Both are strings so the user
   // can type/clear freely; kept numerically in sync by updateCorrectionRow.
   correctQty: string; // signed delta the user enters, e.g. "-30" or "20" — can be blank
-  finalQty: string;   // resulting stock = availableQty + correctQty, always >= 0, string so field can be blank
+  finalQty: string; // resulting stock = availableQty + correctQty, always >= 0, string so field can be blank
 
   reasonCode: string;
+  // Derived (read-only) from the matched batch by default. Becomes user-editable
+  // when the form's "Opening Stock" checkbox is on (no existing batch to derive from).
   valuationRate: number | null;
 }
 
 export interface MovementRow {
   id: string;
   from: string;
-  to: string;
+  to: string; // ignored / cleared when stockEntryType is "Material Issue" (no target warehouse)
   qty: string;
 }
 
@@ -81,7 +86,7 @@ export interface StockItemSelectPayload {
   category?: string;
   /** Optional: full batch breakdown for this item, if the backend provides it. */
   batches?: StockItemBatch[];
-  stockUom?: string
+  stockUom?: string;
 }
 
 export interface SelectedBatch {
@@ -104,20 +109,17 @@ export interface SingleBatchItemPickedPayload {
   packingUnit?: string;
   warehouse?: string;
   isServiceItem?: number;
-  
 }
 
 export interface StockCorrectionModalProps {
-  modalId?: string; 
-  isViewMode?: boolean 
+  modalId?: string;
+  isViewMode?: boolean;
   isOpen: boolean;
   onClose: () => void;
-onSubmit?: (payload: StockCorrectionSubmitPayload) => Promise<void>; 
+  onSubmit?: (payload: StockCorrectionSubmitPayload) => Promise<void>;
   selectedBatch?: SelectedBatch | null;
   /** Used only for the Movement tab's From/To selects (not item-specific). */
   branchOptions?: Option[];
-   
- 
 }
 
 export interface StockCorrectionSubmitPayload {
@@ -125,13 +127,22 @@ export interface StockCorrectionSubmitPayload {
   item: Option | null;
   date: string;
   reason: string;
- 
+  /** Correction-only: marks this entry as opening stock, unlocking manual valuation rate. */
+  isOpeningStock?: boolean;
+  /** Movement-only: Material Transfer (needs target warehouse) or Material Issue (doesn't). */
+  stockEntryType?: StockEntryType;
+
   correctionRows?: Array<{
     branch: string;
     batchNo: string;
     qty: number;
     reasonCode: string;
-    
+    valuationRate?: number | null;
   }>;
-  movementRows?: Array<{ from: string; to: string; qty: number }>;
+  movementRows?: Array<{
+    from: string;
+    to: string;
+    qty: number;
+    batchNo?: string;
+  }>;
 }

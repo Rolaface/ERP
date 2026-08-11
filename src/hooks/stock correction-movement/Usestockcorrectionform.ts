@@ -7,6 +7,7 @@ import {
 } from "../../utils/alert";
 import type {
   Mode,
+  StockEntryType,
   Option,
   StockSummaryRow,
   CorrectionRow,
@@ -16,10 +17,11 @@ import type {
   StockItemSelectPayload,
 } from "../../types/Stock/stockcorrectionform.types";
 import { buildCorrectionPayload } from "../../mapper/stockCorrection.mapper";
-import { correctStock } from "../../api/stockApi";
+import { correctStock,createStockEntry  } from "../../api/stockApi";
 
 export type {
   Mode,
+  StockEntryType,
   Option,
   StockSummaryRow,
   CorrectionRow,
@@ -87,7 +89,8 @@ export const REASON_OPTIONS: Option[] = [
   { label: "Other", value: "other" },
 ];
 
-export const CORRECTION_COLS = "1fr 1fr 0.85fr 0.85fr 0.85fr 0.85fr 36px";
+// 8 columns: Warehouse, Batch, Expiry, Available Qty, Valuation Rate, Adjustment, Updated Qty, remove-btn
+export const CORRECTION_COLS = "1fr 1fr 0.75fr 0.75fr 0.85fr 0.75fr 0.75fr 36px";
 // "From" given more breathing room than "To" / "Move Qty" for better readability.
 export const MOVEMENT_COLS = "1.4fr 1fr 0.9fr 36px";
 export const ROWS_PAGE_SIZE = 5;
@@ -98,6 +101,7 @@ const genId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `row-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
 const emptyCorrectionRow = (): CorrectionRow => ({
   id: genId(),
   branch: "",
@@ -126,7 +130,6 @@ type UseStockCorrectionFormArgs = Pick<
 > & {
   branchOptions?: Option[];
 };
-
 export function useStockCorrectionForm({
   isOpen,
   onClose,
@@ -137,6 +140,9 @@ export function useStockCorrectionForm({
   const modalIdRef = useRef(`stock-correction-movement-${genId()}`);
 
   const [mode, setMode] = useState<Mode>("correction");
+
+  // ── Correction-only: opening stock flag ──────────────────────────────────
+  const [isOpeningStock, setIsOpeningStock] = useState(false);
 
   const [selectedItem, setSelectedItem] = useState<Option | null>(null);
   const [itemMeta, setItemMeta] = useState<{
@@ -161,6 +167,16 @@ export function useStockCorrectionForm({
     emptyMovementRow(),
   ]);
 
+  // ── Movement-only: Material Transfer vs Material Issue ───────────────────
+  const [stockEntryType, setStockEntryTypeRaw] = useState<StockEntryType>("Material Transfer");
+  // Material Issue has no target warehouse — clear any already-picked "to" when switching into it
+  const setStockEntryType = (type: StockEntryType) => {
+    setStockEntryTypeRaw(type);
+    if (type === "Material Issue") {
+      setMovementRows((prev) => prev.map((r) => ({ ...r, to: "" })));
+    }
+  };
+
   const [correctionDate, setCorrectionDate] = useState(todayISO());
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
@@ -177,6 +193,8 @@ export function useStockCorrectionForm({
 
   const resetForm = () => {
     setMode("correction");
+    setIsOpeningStock(false);
+    setStockEntryTypeRaw("Material Transfer");
     setSelectedItem(null);
     setItemMeta({ sku: "", category: "", unit: "PCS" });
     setItemPrefillName("");
@@ -208,6 +226,7 @@ export function useStockCorrectionForm({
         ? selectedBatch.expiry_date.slice(0, 10)
         : "";
 
+      setIsOpeningStock(false);
       setSelectedItem(item);
       setItemPrefillName(item.label);
       setMode("correction");
@@ -269,7 +288,6 @@ export function useStockCorrectionForm({
     setStockSummary([row]);
 
     // single-batch flow: lock the one correction row to this batch/warehouse
-    // single-batch flow: lock the one correction row to this batch/warehouse
     setCorrectionRows([
       {
         id: genId(),
@@ -310,7 +328,7 @@ export function useStockCorrectionForm({
 
   const updateCorrectionRow = (
     id: string,
-    field: "branch" | "batchNo" | "correctQty",
+    field: "branch" | "batchNo" | "correctQty" | "valuationRate",
     value: string,
   ) => {
     setCorrectionRows((prev) =>
@@ -349,7 +367,7 @@ export function useStockCorrectionForm({
           };
         }
 
-       const actual = Number(r.availableQty ?? 0);
+        const actual = Number(r.availableQty ?? 0);
 
         // ── User types the signed correction; Final Qty is always derived (read-only), never edited directly ──
         if (field === "correctQty") {
@@ -363,10 +381,18 @@ export function useStockCorrectionForm({
           return { ...r, correctQty: String(n), finalQty: String(actual + n) };
         }
 
+        // ── Opening-stock only: manual valuation rate override ──
+        if (field === "valuationRate") {
+          if (value === "") return { ...r, valuationRate: null };
+          const n = Number(value);
+          return isNaN(n) ? r : { ...r, valuationRate: n };
+        }
+
         return r;
       }),
     );
   };
+
   const addCorrectionRow = () =>
     setCorrectionRows((prev) => [...prev, emptyCorrectionRow()]);
 
@@ -417,7 +443,7 @@ export function useStockCorrectionForm({
     [stockSummary],
   );
 
- const netCorrectionQty = useMemo(
+  const netCorrectionQty = useMemo(
     () =>
       correctionRows.reduce((sum, r) => {
         const n = Number(r.correctQty);
@@ -455,7 +481,7 @@ export function useStockCorrectionForm({
 
   // ── Validation ───────────────────────────────────────────────────────────
 
- const isValid = useMemo(() => {
+  const isValid = useMemo(() => {
     if (!selectedItem || !correctionDate) return false;
 
     if (mode === "correction") {
@@ -468,12 +494,17 @@ export function useStockCorrectionForm({
           Number(r.correctQty) !== 0 &&
           r.finalQty.trim() &&
           !isNaN(Number(r.finalQty)) &&
-          Number(r.finalQty) >= 0,
+          Number(r.finalQty) >= 0 &&
+          (!isOpeningStock || (r.valuationRate !== null && r.valuationRate >= 0)),
       );
     }
 
-    return movementRows.some((r) => r.from && r.to && r.from !== r.to && r.qty.trim() && Number(r.qty) > 0);
-  }, [mode, selectedItem, correctionDate, correctionRows, movementRows]);
+    return movementRows.some((r) => {
+      if (!r.from || !r.qty.trim() || isNaN(Number(r.qty)) || Number(r.qty) <= 0) return false;
+      if (stockEntryType === "Material Issue") return true; // no target warehouse needed
+      return !!r.to && r.from !== r.to;
+    });
+  }, [mode, selectedItem, correctionDate, correctionRows, movementRows, isOpeningStock, stockEntryType]);
 
   // ── Save ─────────────────────────────────────────────────────────────────
 
@@ -488,8 +519,9 @@ export function useStockCorrectionForm({
       item: selectedItem,
       date: correctionDate,
       reason,
-...(mode === "correction"
+      ...(mode === "correction"
         ? {
+            isOpeningStock,
             correctionRows: correctionRows
               .filter((r) => r.branch && r.batchNo && r.correctQty.trim() && Number(r.correctQty) !== 0)
               .map((r) => ({
@@ -501,38 +533,48 @@ export function useStockCorrectionForm({
               })),
           }
         : {
+            stockEntryType,
             movementRows: movementRows
-              .filter((r) => r.from && r.to && r.qty.trim())
-              .map((r) => ({ from: r.from, to: r.to, qty: Number(r.qty) })),
+              .filter((r) => r.from && r.qty.trim() && (stockEntryType === "Material Issue" || r.to))
+              .map((r) => ({
+                from: r.from,
+                to: stockEntryType === "Material Issue" ? "" : r.to,
+                qty: Number(r.qty),
+                batchNo: stockSummary[0]?.batchNo,
+              })),
           }),
     };
 
     try {
-      setSaving(true);
-      showLoading(
-        mode === "correction"
-          ? "Saving stock correction..."
-          : "Saving stock movement...",
-      );
-      const apiPayload = buildCorrectionPayload(payload);
+  setSaving(true);
+  showLoading(
+    mode === "correction"
+      ? "Saving stock correction..."
+      : "Saving stock movement...",
+  );
+  const apiPayload = buildCorrectionPayload(payload);
 
-      await correctStock(apiPayload);
+  if (mode === "correction") {
+    await correctStock(apiPayload);
+  } else {
+    await createStockEntry(apiPayload);
+  }
 
-      await onSubmit?.(payload);
-      closeSwal();
-      showSuccess(
-        mode === "correction"
-          ? "Stock correction saved successfully"
-          : "Stock movement saved successfully",
-      );
-      resetForm();
-      onClose();
-    } catch (err) {
-      closeSwal();
-      showApiError(err);
-    } finally {
-      setSaving(false);
-    }
+  await onSubmit?.(payload);
+  closeSwal();
+  showSuccess(
+    mode === "correction"
+      ? "Stock correction saved successfully"
+      : "Stock movement saved successfully",
+  );
+  resetForm();
+  onClose();
+} catch (err) {
+  closeSwal();
+  showApiError(err);
+} finally {
+  setSaving(false);
+}
   };
 
   const handleReset = () => resetForm();
@@ -543,6 +585,10 @@ export function useStockCorrectionForm({
     itemBranchOptions,
     mode,
     setMode,
+    isOpeningStock,
+    setIsOpeningStock,
+    stockEntryType,
+    setStockEntryType,
     selectedItem,
     itemMeta,
     itemPrefillName,
