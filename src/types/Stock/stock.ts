@@ -9,7 +9,9 @@ export type SelectedStockItem = {
   mfgDate?: string;
   expiryDate?: string;
   qty?: number;
-  price?: number;     
+  price?: number; 
+  is_mtv_item?: number;
+  rrp_rate?: number;
   valuation_rate?: number;
   sellingPrice?: number;
   purchasePrice?: number;

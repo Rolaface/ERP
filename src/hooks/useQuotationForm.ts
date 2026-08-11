@@ -190,8 +190,9 @@ export const useQuotationForm = (
   const lastRateRef = useRef<number>(1);
   const customerTaxCategoryRef = useRef<string>("");
   const enableExchange = mode === "proforma";
+  const customerSelectTokenRef = useRef(0);
   const [baseCurrency, setBaseCurrency] = useState<string>("");
-    const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
+  const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
 
   const getBaseCurrencyFromStorage = () => {
     try {
@@ -367,7 +368,7 @@ export const useQuotationForm = (
         ...prev,
         updateStock: (e.target as HTMLInputElement).checked,
       }));
-           markDirty();
+      markDirty();
       return;
     }
 
@@ -405,7 +406,7 @@ export const useQuotationForm = (
       }
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
-        markDirty();
+    markDirty();
   };
 
   const getCountryCode = (
@@ -426,6 +427,27 @@ export const useQuotationForm = (
     return "";
   };
 
+  const handleCustomerClear = () => {
+    customerSelectTokenRef.current += 1;
+    customerTaxCategoryRef.current = "";
+
+    setCustomerDetails(null);
+    setCustomerNameDisplay("");
+
+    setFormData((prev) => ({
+      ...prev,
+      customerId: "",
+      taxCategory: "",
+      destnCountryCd: "",
+      billingAddress: "",
+      shippingAddress: sameAsBilling ? "" : prev.shippingAddress,
+      paymentInformation: DEFAULT_INVOICE_FORM.paymentInformation,
+      terms: { selling: EMPTY_TERMS.selling },
+    }));
+
+    markDirty();
+  };
+
   const handleCustomerSelect = async ({
     name,
     id,
@@ -433,15 +455,30 @@ export const useQuotationForm = (
     name: string;
     id: string;
   }) => {
+    if (!id) {
+      handleCustomerClear();
+      return;
+    }
+
+    const token = ++customerSelectTokenRef.current;
+
     setCustomerNameDisplay(name);
-    setFormData((p) => ({ ...p, customerId: id }));
-       markDirty();
+
+    setFormData((prev) => ({
+      ...prev,
+      customerId: id,
+      terms: { selling: EMPTY_TERMS.selling },
+    }));
+
+    markDirty();
 
     try {
       const [customerRes, companyRes] = await Promise.all([
         getCustomerByCustomerCode(id),
         getCompanyById(COMPANY_ID),
       ]);
+
+      if (token !== customerSelectTokenRef.current) return;
 
       if (!customerRes || customerRes?.message?.status_code !== 200) return;
       const data = customerRes?.message?.data;
@@ -454,11 +491,13 @@ export const useQuotationForm = (
       }));
 
       const countryLookupList = await getRolaCountryList();
+
+      if (token !== customerSelectTokenRef.current) return;
+
       const formattedCountries = countryLookupList.map((c: any) => ({
         code: c.code || c.name,
         name: c.country_name || c.name,
       }));
-
       setCustomerDetails({ ...data });
       const billingAddressObj = data.addresses?.find(
         (addr: any) => addr.type === "Billing",
@@ -612,7 +651,7 @@ export const useQuotationForm = (
       // (Stock quantity validation block removed for Quotations)
       // ─────────────────────────────────────────────────────
 
-        const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
+      const updatedItem = { ...items[idx], [name]: nextValue, _skipCap: false };
 
       if (
         (name === "boxStart" || name === "boxEnd") &&
@@ -718,7 +757,7 @@ export const useQuotationForm = (
     });
   };
 
-    const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
+  const updateItemDirectly = (index: number, updated: Partial<InvoiceItem>) => {
     setFormData((prev) => {
       const items = [...prev.items];
       const updatedItem = { ...items[index], ...updated };
@@ -728,8 +767,7 @@ export const useQuotationForm = (
         const totalBoxes = Math.ceil(
           Number(updatedItem.quantity) / piecesPerBox,
         );
-        updatedItem.boxEnd =
-          Number(updatedItem.boxStart || 1) + totalBoxes - 1;
+        updatedItem.boxEnd = Number(updatedItem.boxStart || 1) + totalBoxes - 1;
       }
 
       items[index] = updatedItem;
@@ -929,7 +967,7 @@ export const useQuotationForm = (
           itemCode: it.itemCode,
           itemName: it.itemName ?? "",
           description: it.description ?? "",
-          isServiceItem: it.isServiceItem ?? false, 
+          isServiceItem: it.isServiceItem ?? false,
           quantity,
           price,
           discount,
@@ -949,7 +987,8 @@ export const useQuotationForm = (
           boxStart: Number(it.boxStart) || "",
           boxEnd: Number(it.boxEnd) || "",
           mfgDate: it.mfgDate ?? "",
-          expDate: it.expDate ?? "", warehouse: it.warehouse ?? "",
+          expDate: it.expDate ?? "",
+          warehouse: it.warehouse ?? "",
           originalQty: Number(it.quantity),
           piecesPerBox: (() => {
             const stored = Number(it.piecesPerBox) || 0;
@@ -1026,6 +1065,7 @@ export const useQuotationForm = (
     lastCurrencyRef.current = baseCurrency;
     lastRateRef.current = 1;
     customerTaxCategoryRef.current = "";
+    customerSelectTokenRef.current += 1;
     setCustomerDetails(null);
     setCustomerNameDisplay("");
 
@@ -1154,7 +1194,9 @@ export const useQuotationForm = (
     actions: {
       validateForm,
       handleInputChange,
+
       handleCustomerSelect,
+      handleCustomerClear,
 
       handleItemChange,
       updateItemDirectly,
@@ -1169,7 +1211,7 @@ export const useQuotationForm = (
       addOtherCharge,
       handleOtherChargeChange,
       removeOtherCharge,
-handleTemplateSelect,
+      handleTemplateSelect,
       handleTaxChange,
     },
     markDirty,

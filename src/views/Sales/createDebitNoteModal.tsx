@@ -39,13 +39,14 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
         : `debit-note-create-${Date.now()}`),
   ).current;
 
-  const {
+const {
     form,
     saving,
     invoiceLoading,
     grandTotal,
     fetchInvoiceOptions,
     handleInvoiceSelect,
+    handleInvoiceClear,
     handleItemChange,
     handleWarehouseDefault,
     removeItem,
@@ -95,7 +96,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
 
   // ── Tab content ──────────────────────────────────────────────────────────
 
-  const tabContent = useMemo(
+const tabContent = useMemo(
     () => (
       <DebitNoteDetailsTab
         form={form}
@@ -103,6 +104,7 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
         grandTotal={grandTotal}
         fetchInvoiceOptions={fetchInvoiceOptions}
         onInvoiceSelect={handleInvoiceSelect}
+        onInvoiceClear={handleInvoiceClear}
         onItemChange={handleItemChange}
         onWarehouseDefault={handleWarehouseDefault}
         onRemoveItem={removeItem}
@@ -115,13 +117,13 @@ const CreateDebitNoteModal: React.FC<CreateDebitNoteModalProps> = ({
       grandTotal,
       fetchInvoiceOptions,
       handleInvoiceSelect,
+      handleInvoiceClear,
       handleItemChange,
       handleWarehouseDefault,
       removeItem,
     
     ],
   );
-
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (

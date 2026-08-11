@@ -64,6 +64,7 @@ export const mapUIToCreatePO = (form: PurchaseOrderFormData) => {
     contactPerson: form.supplierContact,
     currency: form.currency,
     status: form.status,
+    transaction_date: form.date,
     taxCategory: form.taxCategory,
     referenceNumber: form.referenceNumber,
     ...(form.costCenter && { costCenter: form.costCenter }),

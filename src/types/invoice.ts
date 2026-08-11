@@ -1,3 +1,4 @@
+import { is } from "date-fns/locale";
 import type { TermSection } from "./termsAndCondition";
 
 export type InvoiceStatus =
@@ -113,7 +114,8 @@ export interface InvoiceItem {
   expDate?: string;
   boxStart?: number;
   boxEnd?: number;
-
+  is_mtv_item?: number;
+rrp_rate?: number;
   qty?: number;
   availableQty?: number;
   warehouse?: string;

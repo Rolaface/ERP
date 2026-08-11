@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "../../ui/modal/formComponent";
 import { ModalSelect, NumericInput } from "../../ui/modal/modalComponent";
@@ -54,6 +54,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
 
   const [supPage, setSupPage] = useState(0);
   const [itemPage, setItemPage] = useState(0);
+   const supplierTokenRef = useRef<Record<number, number>>({});
 
   useEffect(() => {
     const newPage = Math.max(
@@ -139,7 +140,7 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                     <tr key={i} className="border-b border-theme row-hover">
                       <td className="px-2 py-1 text-[10px]">{i + 1}</td>
 
-                      <td className="px-2 py-1">
+                   <td className="px-2 py-1">
                         <div className="w-[180px]">
                           <SupplierSelect
                             label=""
@@ -148,6 +149,10 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                             required
                             disabled={isViewMode}
                             onChange={async (selected: any) => {
+                              const requestToken =
+                                (supplierTokenRef.current[i] ?? 0) + 1;
+                              supplierTokenRef.current[i] = requestToken;
+
                               onMarkDirty?.();
                               onSupplierChange(
                                 i,
@@ -161,6 +166,14 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                               );
                               try {
                                 const res = await getSupplierById(selected.id);
+
+                                // A clear (or a newer selection on this row)
+                                // happened while this was in flight.
+                                if (
+                                  requestToken !== supplierTokenRef.current[i]
+                                )
+                                  return;
+
                                 const detail =
                                   res?.message?.data ?? res?.data ?? res;
                                 const primaryContact =
@@ -178,6 +191,16 @@ export const DetailsTab: React.FC<DetailsTabProps> = ({
                                   primaryContact?.email ?? "",
                                 );
                               } catch {}
+                            }}
+                            onClear={() => {
+                              supplierTokenRef.current[i] =
+                                (supplierTokenRef.current[i] ?? 0) + 1;
+
+                              onMarkDirty?.();
+                              onSupplierChange(i, "supplier", "");
+                              onSupplierChange(i, "supplierName", "");
+                              onSupplierChange(i, "contact", "");
+                              onSupplierChange(i, "email", "");
                             }}
                           />
                         </div>

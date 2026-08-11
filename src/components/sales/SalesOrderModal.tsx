@@ -24,7 +24,10 @@ import {
   useDataRefreshStore,
   REFRESH_KEYS,
 } from "../../store/dataRefreshStore";
-import { createSalesOrder, editSalesOrder } from "../../api/SalesOrder/salesOrderAPi";
+import {
+  createSalesOrder,
+  editSalesOrder,
+} from "../../api/SalesOrder/salesOrderAPi";
 import { parseFrappeError } from "../../views/hr/tabs/leave-config/hooks/parseFrappeError";
 import QuotationItemTable from "../common/QuotationItemTable";
 import { useDefault } from "../../hooks/usedefaultdata";
@@ -57,7 +60,9 @@ const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
   );
   const [submitting, setSubmitting] = useState(false);
 
-  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">("Product");
+  const [invoiceType, setInvoiceType] = useState<"Product" | "Service">(
+    "Product",
+  );
   const domain = useDefault("primary_business_domain");
 
   useEffect(() => {
@@ -147,7 +152,10 @@ const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
       const res = response?.message || response;
       if (!res || ![200, 201].includes(res.status_code)) {
         showApiError(
-          parseFrappeError || res?.message || res || "Failed to save Sales Order",
+          parseFrappeError ||
+            res?.message ||
+            res ||
+            "Failed to save Sales Order",
         );
         return;
       }
@@ -173,7 +181,7 @@ const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
     await handleSave();
   };
 
-   const showExchangeRate =
+  const showExchangeRate =
     !!ui.baseCurrency &&
     !!formData.currencyCode &&
     formData.currencyCode.trim().toUpperCase() !==
@@ -250,7 +258,9 @@ const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
                 <div className="w-full sm:w-[280px]">
                   <CustomerSelect
                     value={customerNameDisplay}
+                    selectedId={formData.customerId}
                     onChange={actions.handleCustomerSelect}
+                    onClear={actions.handleCustomerClear}
                     className="w-full"
                     required
                   />
@@ -315,29 +325,29 @@ const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
                   />
                 </div>
                 {showExchangeRate && (
-                                                  <div className="w-full sm:w-[110px] relative">
-                                                    <ModalInput
-                                                      label="Exchange Rate"
-                                                      name="exchangeRt"
-                                                      value={
-                                                        ui.exchangeRateLoading ? "" : formData.exchangeRt || "1"
-                                                      }
-                                                      placeholder={ui.exchangeRateLoading ? "Loading..." : ""}
-                                                      onChange={actions.handleInputChange}
-                                                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
-                                                      disabled
-                                                    />
-                                                    {!!ui.exchangeRateError && (
-                                                      <div
-                                                        className="absolute left-0 top-full mt-0.5 text-[9px] text-danger whitespace-nowrap z-10"
-                                                        title={ui.exchangeRateError}
-                                                      >
-                                                        Rate not found
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                )}
-                 <div className="w-full sm:w-[200px]">
+                  <div className="w-full sm:w-[110px] relative">
+                    <ModalInput
+                      label="Exchange Rate"
+                      name="exchangeRt"
+                      value={
+                        ui.exchangeRateLoading ? "" : formData.exchangeRt || "1"
+                      }
+                      placeholder={ui.exchangeRateLoading ? "Loading..." : ""}
+                      onChange={actions.handleInputChange}
+                      className="w-full py-1 px-2 border border-theme rounded text-[11px] text-main bg-card"
+                      disabled
+                    />
+                    {!!ui.exchangeRateError && (
+                      <div
+                        className="absolute left-0 top-full mt-0.5 text-[9px] text-danger whitespace-nowrap z-10"
+                        title={ui.exchangeRateError}
+                      >
+                        Rate not found
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="w-full sm:w-[200px]">
                   {/* <ModeOfPaymentSelect
                     value={formData.payment_mode ?? ""}
                     onChange={(val) =>
@@ -347,20 +357,21 @@ const SalesOrderModal: React.FC<SalesOrderModalProps> = ({
                     }
                   /> */}
                   <ModeOfPaymentSelect
-  value={formData.payment_mode ?? ""}
-  required
-  onChange={(val) => {
-    actions.handleInputChange({
-      target: { name: "payment_mode", value: val },
-    } as any);
-    
-  }}
-/>
+                    value={formData.payment_mode ?? ""}
+                    required
+                    onChange={(val) => {
+                      actions.handleInputChange({
+                        target: { name: "payment_mode", value: val },
+                      } as any);
+                    }}
+                  />
                 </div>
 
                 {/* Order Type */}
                 <div className="w-full sm:w-auto flex flex-col justify-end">
-                  <label className="text-[11px] text-muted mb-1">Order Type</label>
+                  <label className="text-[11px] text-muted mb-1">
+                    Order Type
+                  </label>
                   <div className="flex items-center p-0.5 border border-theme rounded-md bg-card/50 h-[27px] w-max">
                     <label
                       className={`flex items-center justify-center px-3 h-full rounded-sm cursor-pointer transition-all text-[10px] font-medium ${

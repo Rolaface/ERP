@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useCompanyStore } from "../store/companyStore";
 import {
   getPurchaseInvoices,
@@ -63,6 +63,7 @@ export function useDebitNoteForm(
   const [form, setForm] = useState<DebitNoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const invoiceSelectTokenRef = useRef(0);
 
   // ── Unsaved changes guard (same pattern as Asset modal) ──────────────────
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
@@ -145,6 +146,8 @@ export function useDebitNoteForm(
 
   const handleInvoiceSelect = useCallback(
     async (opt: PurchaseInvoiceOption) => {
+      const requestToken = ++invoiceSelectTokenRef.current;
+
       setForm((prev) => ({
         ...prev,
         return_against: opt.value,
@@ -157,6 +160,9 @@ export function useDebitNoteForm(
       setInvoiceLoading(true);
       try {
         const res = await getPurchaseInvoiceById(opt.value);
+
+        if (requestToken !== invoiceSelectTokenRef.current) return;
+
         const data = res?.data ?? res?.message?.data;
         if (!data) return;
 
@@ -170,6 +176,8 @@ export function useDebitNoteForm(
             warehouse: it.warehouse ?? "",
           }),
         );
+
+        if (requestToken !== invoiceSelectTokenRef.current) return;
 
         setForm((prev) => ({
           ...prev,
@@ -185,11 +193,32 @@ export function useDebitNoteForm(
         console.error("Failed to load invoice details", err);
         showApiError("Failed to load invoice details");
       } finally {
-        setInvoiceLoading(false);
+        if (requestToken === invoiceSelectTokenRef.current) {
+          setInvoiceLoading(false);
+        }
       }
     },
     [markDirty],
   );
+
+  // ── Invoice clear ────────────────────────────────────────────────────────
+
+  const handleInvoiceClear = useCallback(() => {
+    // Invalidate any in-flight invoice-detail fetch so its response
+    // can't repopulate the form after this clear.
+    invoiceSelectTokenRef.current++;
+
+    setForm((prev) => ({
+      ...prev,
+      return_against: "",
+      supplier: null,
+      items: [],
+      exchange_rate: 1,
+      currency: "",
+    }));
+    setInvoiceLoading(false);
+    markDirty();
+  }, [markDirty]);
 
   // ── Item mutations ───────────────────────────────────────────────────────
 
@@ -368,6 +397,8 @@ export function useDebitNoteForm(
     grandTotal,
     fetchInvoiceOptions,
     handleInvoiceSelect,
+    handleInvoiceClear,
+
     handleItemChange,
     handleWarehouseDefault,
     removeItem,

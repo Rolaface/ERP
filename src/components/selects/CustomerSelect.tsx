@@ -123,21 +123,75 @@ export default function CustomerSelect({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
 
+  // ── Hydration guards ────────────────────────────────────────────────────
+  // Problem this solves: the old code re-derived `search` from
+  // `customers.find(c => c.id === selectedId)` inside an effect that also
+  // depended on `customers`. Since `customers` is overwritten by every
+  // debounced fetch (including ones already in flight when the user clears
+  // the field), that effect kept re-firing after a clear and silently
+  // re-selected the last record — as long as the *old* selectedId hadn't
+  // been wiped from the parent yet.
+  //
+  // Fix: only hydrate `search` from `customers` ONCE per distinct
+  // `selectedId`. Track which id we've already hydrated for, and track
+  // explicit "user just cleared this" intent so a stale/in-flight
+  // `customers` update or a late-propagating parent prop can never
+  // resurrect the value.
+  const hydratedIdRef = useRef<string | undefined>(undefined);
+  const suppressUntilIdChangesRef = useRef(false);
+
   useEffect(() => {
     if (open) return;
+
+    // Controlled `value` (a display name) always wins when present.
     if (value) {
+      suppressUntilIdChangesRef.current = false;
+      hydratedIdRef.current = selectedId;
       setSearch(value);
       return;
     }
-    if (selectedId && customers.length > 0) {
-      const found = customers.find((c) => c.id === selectedId);
-      if (found) {
-        setSearch(found.name);
-        return;
-      }
+
+    // No value and no id → field is genuinely empty.
+    if (!selectedId) {
+      hydratedIdRef.current = undefined;
+      suppressUntilIdChangesRef.current = false;
+      setSearch("");
+      return;
     }
-    setSearch("");
+
+    // A selectedId is present but user explicitly cleared it moments ago
+    // and the parent hasn't propagated the clear yet — do NOT re-hydrate,
+    // even though selectedId is technically still the old value.
+    if (suppressUntilIdChangesRef.current) {
+      setSearch("");
+      return;
+    }
+
+    // Already hydrated this exact id — don't redo it every time
+    // `customers` refetches (e.g. from reopening / re-searching later).
+    if (hydratedIdRef.current === selectedId) return;
+
+    const found = customers.find((c) => c.id === selectedId);
+    if (found) {
+      hydratedIdRef.current = selectedId;
+      setSearch(found.name);
+    }
+    // If not found yet (customers hasn't loaded that id), wait for the
+    // next `customers` update — effect re-runs via the dependency array.
   }, [value, selectedId, customers, open]);
+
+  // Once the parent actually propagates a new/different selectedId
+  // (including becoming undefined), lift the suppression.
+  useEffect(() => {
+    suppressUntilIdChangesRef.current = false;
+  }, [selectedId]);
+
+  const clearSelection = useCallback(() => {
+    suppressUntilIdChangesRef.current = true;
+    hydratedIdRef.current = undefined;
+    setSearch("");
+    onClear?.();
+  }, [onClear]);
 
   useEffect(() => {
     if (!open) return;
@@ -147,14 +201,14 @@ export default function CustomerSelect({
         return;
       setOpen(false);
       if (!search.trim()) {
-        onClear?.();
+        clearSelection();
         return;
       }
       if (!customers.find((c) => c.name === search)) setSearch(value);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open, search, customers, value, onClear]);
+  }, [open, search, customers, value, clearSelection]);
 
   // ── Reposition on scroll / resize ────────────────────────────────────────
   useEffect(() => {
@@ -232,6 +286,8 @@ export default function CustomerSelect({
 
   // ── Select ────────────────────────────────────────────────────────────────
   const handleSelect = (c: Customer) => {
+    suppressUntilIdChangesRef.current = false;
+    hydratedIdRef.current = c.id;
     setSearch(c.name);
     setOpen(false);
     setHighlightedIndex(-1);
@@ -286,7 +342,7 @@ export default function CustomerSelect({
         setHighlightedIndex(-1);
         // Same intentional-clear handling as the outside-click case.
         if (!search.trim()) {
-          onClear?.();
+          clearSelection();
         } else if (!customers.find((c) => c.name === search)) {
           setSearch(value);
         }
@@ -333,7 +389,12 @@ export default function CustomerSelect({
             placeholder={loading ? "Loading..." : placeholder}
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value);
+              const next = e.target.value;
+              // Any manual typing counts as leaving the previously
+              // selected record — don't let a trailing hydration effect
+              // stomp over what the user is typing.
+              suppressUntilIdChangesRef.current = !next.trim();
+              setSearch(next);
               if (!open) {
                 setDropRect(
                   containerRef.current?.getBoundingClientRect() ?? null,
