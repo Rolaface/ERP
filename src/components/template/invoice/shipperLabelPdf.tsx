@@ -14,7 +14,11 @@ const parseAddressParts = (html?: any): string[] => {
     .map((l) => l.trim())
     .filter(Boolean);
 };
-
+const formatPhone = (phone?: any): string => {
+  if (!phone) return "";
+  const str = String(phone).trim();
+  return str.replace(/^(\+233|233)/, "");
+};
 interface LabelEntry {
   consigneeName: string;
   consigneeCity: string;
@@ -32,12 +36,12 @@ const buildLabelEntries = (invoice: any, company: any): LabelEntry[] => {
   const companyParts = parseAddressParts(
   useCompanyStore.getState().companyAddress || company?.address
  );
-const consigneePhone = invoice.customerContactNo ?? "";
+const consigneePhone = formatPhone(invoice.customerContactNo ?? "");
   const consigneeName = invoice.customerName ?? "-";
-  const consigneeCity = consigneeParts[1] ?? consigneeParts[0] ?? "";
+  const consigneeCity = (consigneeParts[1] ?? consigneeParts[0] ?? "").replace(/,\s*$/, "");
   const companyName = company?.companyName ?? "";
-  const companyCity = companyParts[1] ?? companyParts[0] ?? "";
- const companyPhone = useCompanyStore.getState().companyPhone || company?.contactInfo?.companyPhone || "";
+  const companyCity = (companyParts[1] ?? companyParts[0] ?? "").replace(/,\s*$/, "");
+  const companyPhone = formatPhone(useCompanyStore.getState().companyPhone || company?.contactInfo?.companyPhone || "");
 
 
  const entries: LabelEntry[] = [];
