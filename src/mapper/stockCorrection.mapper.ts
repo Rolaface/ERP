@@ -7,6 +7,8 @@ export const buildCorrectionPayload = (
     return {
       stock_entry_type: payload.stockEntryType,
       posting_date: payload.date,
+      posting_time: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+      remarks: payload.reason,
       items: (payload.movementRows ?? []).map((row) => ({
         item_code: payload.item!.value,
         qty: Number(row.qty),
