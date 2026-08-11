@@ -45,6 +45,13 @@ export async function correctStock(payload: any): Promise<any> {
   return resp.data;
 }
 
+
+export async function createStockEntry(payload: any): Promise<any> {
+  const resp: AxiosResponse = await api.post(StockAPI.stockEntry, payload);
+  return resp.data;
+}
+
+
 export async function getStockReport(
   page: number,
   page_size: number,

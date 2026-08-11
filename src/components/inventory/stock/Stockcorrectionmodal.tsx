@@ -22,6 +22,7 @@ import {
   ItemPicker,
   MovementRowFields,
   TransactionTypeToggle,
+  StockEntryTypeToggle,
 } from "../../Stock-correction-movement/Rowfields";
 
 export type {
@@ -120,6 +121,14 @@ const StockCorrectionModal: React.FC<
               <TransactionTypeToggle mode={f.mode} onModeChange={f.setMode} />
             </div>
 
+            {f.mode === "movement" && (
+              <div className="shrink-0">
+                <StockEntryTypeToggle
+                  stockEntryType={f.stockEntryType}
+                  onChange={f.setStockEntryType}
+                />
+              </div>
+            )}
 
             <div className="w-[100px] shrink-0">
               <DatePickerInput
@@ -141,6 +150,18 @@ const StockCorrectionModal: React.FC<
               />
             </div>
 
+            {f.mode === "correction" && (
+              <label className="flex items-center gap-1.5 h-9 text-[12px] font-semibold text-main cursor-pointer select-none shrink-0">
+                <input
+                  type="checkbox"
+                  checked={f.isOpeningStock}
+                  onChange={(e) => f.setIsOpeningStock(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded accent-[var(--primary,#1c3f6e)]"
+                />
+                Opening Stock
+              </label>
+            )}
+
           </div>
 
           <div>
@@ -157,7 +178,8 @@ const StockCorrectionModal: React.FC<
                     "Warehouse",
                     "Batch.",
                     "Expiry",
-                    "Available Available Qty ",
+                    "Available Qty",
+                    "Valuation Rate",
                     "Adjustment",
                     "Updated Qty",
                     "",
@@ -170,6 +192,7 @@ const StockCorrectionModal: React.FC<
                       row={row}
                       branchOptions={f.branchOptions}
                       batchOptionsForRow={f.getBatchOptionsForBranch(row.branch)}
+                      isOpeningStock={f.isOpeningStock}
                       onChange={f.updateCorrectionRow}
                       onRemove={f.removeCorrectionRow}
                       removeDisabled
@@ -186,6 +209,7 @@ const StockCorrectionModal: React.FC<
                   renderRow={(row) => (
                     <MovementRowFields
                       row={row}
+                      stockEntryType={f.stockEntryType}
                       onChange={f.updateMovementRow}
                       onRemove={f.removeMovementRow}
                       removeDisabled={f.movementRows.length === 1}
@@ -226,14 +250,28 @@ const StockCorrectionModal: React.FC<
               ?.label ?? f.movementRows[0]?.from
           }
           toLabel={
-            f.branchOptions.find((b) => b.value === f.movementRows[0]?.to)
-              ?.label ?? f.movementRows[0]?.to
+            f.stockEntryType === "Material Issue"
+              ? undefined
+              : f.branchOptions.find((b) => b.value === f.movementRows[0]?.to)
+                  ?.label ?? f.movementRows[0]?.to
           }
-          warehouseLabel={f.stockSummary[0]?.branchLabel}
-          batchNo={f.stockSummary[0]?.batchNo}
-          expiryDate={f.stockSummary[0]?.expiryDate}
-          batchAvailableQty={f.stockSummary[0]?.availableQty}
-          valuationRate={f.stockSummary[0]?.valuationRate}
+          warehouseLabel={
+            f.visibleStockSummary[0]?.branchLabel ?? f.correctionRows[0]?.branch
+          }
+          batchNo={f.visibleStockSummary[0]?.batchNo ?? f.correctionRows[0]?.batchNo}
+          expiryDate={
+            f.visibleStockSummary[0]?.expiryDate ?? f.correctionRows[0]?.expiryDate
+          }
+          batchAvailableQty={
+            f.visibleStockSummary[0]?.availableQty ??
+            f.correctionRows[0]?.availableQty ??
+            undefined
+          }
+          valuationRate={
+            f.isOpeningStock
+              ? f.correctionRows[0]?.valuationRate ?? undefined
+              : f.visibleStockSummary[0]?.valuationRate
+          }
         />
       </div>
     </MinimizableModal>
