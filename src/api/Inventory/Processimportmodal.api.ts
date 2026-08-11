@@ -166,7 +166,9 @@ function buildDeclarationPayloads(
     const mapped = mappedItems[item.id];
 
     const itemPayload: SubmitImportItemPayload = {
-      itemSeq: item.itemSeq,
+      itemSeq: item.itemSeq, 
+       itemNm: item.itemNm,         
+
       hsCd: item.hsCd,
       itemClsCd: mapped?.itemClassCode ?? "",
       itemCd: mapped?.itemCode ?? "",

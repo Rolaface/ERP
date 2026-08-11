@@ -124,7 +124,8 @@ export default function StockItemSelect({
   invoiceType = "Product",
   taxCategory,
   disabled = false,
-  isQuotation = false,
+  isQuotation = false,  formatDisplayName,
+
 }: any) {
   const [flatRows, setFlatRows] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -335,7 +336,9 @@ export default function StockItemSelect({
     handleSelect(row);
   };
 
-  const displayName = selected?.itemName || itemName;
+ const displayName = selected
+    ? (formatDisplayName ? formatDisplayName(selected) : selected.itemName)
+    : itemName;
 
   return (
     // data-nav-ignore stops the parent spreadsheet grid's arrow-key handler
