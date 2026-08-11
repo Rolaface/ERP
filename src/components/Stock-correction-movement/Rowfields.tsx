@@ -60,6 +60,13 @@ export const ItemPicker: React.FC<{
         // correction ke liye 0-stock items bhi pick karne dena hai (loss/damage likhne ke liye),
         // movement ke liye sirf stock wale items — isQuotation=true disable check ko bypass kar deta hai
         isQuotation={mode === "correction"}
+        // Sirf is Stock Correction/Movement modal ke liye — dropdown me item pick karte hi
+        // "Select item" box me ItemName-BatchNo-Warehouse format me dikhta hai.
+        // StockItemSelect ke andar formatDisplayName na diya jaye to default behavior
+        // (sirf item name) hi chalta hai, isliye baaki jagah kuch nahi badalta.
+        formatDisplayName={(row: any) =>
+          [row.itemName, row.batchNo, row.warehouse].filter(Boolean).join("-")
+        }
       />
     </div>
   </div>
