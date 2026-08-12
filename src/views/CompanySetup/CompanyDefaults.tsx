@@ -482,6 +482,15 @@ const DefaultsSectionBlock: React.FC<SectionProps> = ({ section, values, onChang
             onChange={(val) => onChange("use_separate_sequence_for_credit_notes", val ? "true" : "false")}
             helperText="Credit notes get their own numbering series"
           />
+          <ToggleField
+            label="USE SEPARATE SEQUENCE FOR SALE DEBIT NOTES"
+            checked={
+              values["use_separate_sequence_for_sales_debit_notes"] === "true" ||
+              String(values["use_separate_sequence_for_sales_debit_notes"]) === "1"
+            }
+            onChange={(val) => onChange("use_separate_sequence_for_sales_debit_notes", val ? "true" : "false")}
+            helperText="Sales debit notes get their own numbering series"
+          />
       {isZraEnabled && (
         <ToggleField
           label="Is RVAT Agent"

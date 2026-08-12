@@ -8,7 +8,9 @@ export type InvoiceStatus =
   | "Approved"
   | "Unpaid"
   | "Overdue"
-  | "Partly Paid";
+  | "Partly Paid"
+  | "Failed"
+  | "Pending";
 // export type InvoiceStatus =
 //   | "Draft"
 //   | "Rejected"

@@ -65,6 +65,8 @@ type OutletContextType = {
 
 const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   Draft: ["Approved"],
+  Failed: ["Approved"],
+  Pending: ["Approved"],
   Paid: ["Cancelled"],
   Cancelled: [],
   Approved: ["Paid", "Cancelled"],
@@ -762,10 +764,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                 type="edit"
                 onClick={(e) => handleEdit(inv.invoiceNumber, e)}
                 iconOnly
-                disabled={inv.invoiceStatus !== "Draft"}
+                disabled={inv.invoiceStatus !== "Draft" && inv.invoiceStatus !== "Failed"}
                 title={
                   inv.invoiceStatus !== "Draft"
-                    ? "Only Draft invoices can be edited"
+                    ? "Only Draft and Failed invoices can be edited"
                     : "Edit Invoice"
                 }
               />
@@ -773,10 +775,12 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
             {(() => {
               const isCancelled = inv.invoiceStatus === "Cancelled";
               const hasDelete =
-                can(SALES_MODULE, "delete") && inv.invoiceStatus === "Draft";
+                can(SALES_MODULE, "delete") && (inv.invoiceStatus === "Draft" || inv.invoiceStatus === "Failed");
 
               const customActions = [
                 ...(inv.invoiceStatus !== "Draft" &&
+                  inv.invoiceStatus !== "Failed" &&
+                  inv.invoiceStatus !== "Pending" &&
                 inv.invoiceStatus !== "Cancelled" &&
                 inv.outstanding_amount > 0 &&
                 can(PAYMENT_MODULE, "create")
@@ -789,7 +793,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                     ]
                   : []),
 
-                ...(inv.invoiceStatus !== "Draft" && !isCancelled
+                ...(inv.invoiceStatus !== "Draft" && 
+                     inv.invoiceStatus!== "Failed" &&
+                     inv.invoiceStatus !== "Pending" &&
+                     !isCancelled
                   ? [
                       {
                         label: "Compose Email",
@@ -823,7 +830,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                     ]
                   : []),
 
-                ...(!isCancelled
+                ...(!isCancelled && inv.invoiceStatus !== "Pending"
                   ? [
                       {
                         label: "View PDF",
@@ -838,6 +845,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
                     ]
                   : []),
                 ...(inv.invoiceStatus !== "Draft" &&
+                  inv.invoiceStatus !== "Failed" &&
+                  inv.invoiceStatus !== "Pending" &&
                 inv.invoiceStatus !== "Cancelled"
                   ? [
                       {
