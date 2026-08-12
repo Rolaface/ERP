@@ -41,6 +41,7 @@ export const SECTIONS: NamingSeriesSection[] = [
       { key: "purchase_invoice", label: "PURCHASE INVOICE" },
       { key: "supplier_quotation", label: "SUPPLIER QUOTATION"},
       { key: "rfq", label: "RFQ (REQUEST FOR QUOTATION)" },
+      { key: "sales_debit_notes", label: "DEBIT NOTE" },
       { key: "purchase_receipt", label: "PURCHASE RECEIPT" },
       { key: "supplier", label: "SUPPLIER"},
     ],
