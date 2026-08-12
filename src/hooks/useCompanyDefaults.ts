@@ -63,6 +63,10 @@ const handleSave = useCallback(async () => {
     payload.use_separate_sequence_for_credit_notes =
       payload.use_separate_sequence_for_credit_notes === "true";
   }
+  if ("use_separate_sequence_for_sales_debit_notes" in payload) {
+  payload.use_separate_sequence_for_sales_debit_notes =
+     payload.use_separate_sequence_for_sales_debit_notes === "true";
+ }
 
   setIsSaving(true);
   setError(null);
