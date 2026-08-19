@@ -90,7 +90,7 @@ export const DEFAULT_INVOICE_FORM: Invoice = {
     swiftCode: "",
   },
 
-  items: [{ ...EMPTY_ITEM }],
+ items: [{ ...EMPTY_ITEM }],
   terms: {
     selling: {
       payment: {
@@ -98,6 +98,8 @@ export const DEFAULT_INVOICE_FORM: Invoice = {
       },
     },
   },
+  additionalDiscountPercentage: "",
+  discountAmount: "",
 };
 
 
