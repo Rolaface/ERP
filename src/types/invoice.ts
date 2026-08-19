@@ -63,7 +63,9 @@ export interface Invoice {
     rate: number | null;
     amount: number;
   }[];
-  salesTaxTemplate: string;
+    salesTaxTemplate: string;
+  additionalDiscountPercentage?: string;
+  discountAmount?: string;
   addresses?: {
     companyBillingAddress?: any;
     supplierAddress?: any;
