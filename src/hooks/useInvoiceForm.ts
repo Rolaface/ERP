@@ -1015,6 +1015,7 @@ const [formData, setFormData] = useState<Invoice>({
     setFormData((prev: any) => ({
       ...prev,
       invoiceNumber: invoice.id ?? invoice.invoiceNumber,
+      lpoNumber: invoice.lpoNumber ?? invoice.poNumber ?? prev.lpoNumber,
       customerId: invoice.customerId ?? prev.customerId,
        invoiceType: invoice.invoiceType ?? "",
       principal: parsePrincipal(invoice.principal),
