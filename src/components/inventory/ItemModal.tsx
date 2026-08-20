@@ -27,13 +27,12 @@ import type {
 } from "./itemModalTypes";
 import { useCompanyStore } from "../../store/companyStore";
 
-
 export interface ItemInitialData extends Partial<ItemFormData> {
   taxes?: ItemTaxRow[];
   taxInfo?: Partial<ItemTaxInfo> | Array<Partial<ItemTaxInfo>>;
 }
 
-interface ItemModalProps extends StandardModalProps<unknown, ItemInitialData> { }
+interface ItemModalProps extends StandardModalProps<unknown, ItemInitialData> {}
 
 interface TaxTemplateOption {
   label: string;
@@ -100,7 +99,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
-
   const { markDirty, resetDirty, handleCloseWithConfirm } = useUnsavedChanges();
   const {
     form,
@@ -116,7 +114,14 @@ const ItemModal: React.FC<ItemModalProps> = ({
     handleNext,
     getFirstValidationError,
     getValidationErrorForTab,
-  } = useItemForm({ isOpen, isEditMode, initialData, onSubmit, onClose });
+  } = useItemForm({
+    isOpen,
+    isEditMode,
+    initialData,
+    onSubmit,
+    onClose,
+    isZraEnabled,
+  });
 
   const [taxRows, setTaxRows] = useState<ItemTaxRow[]>([EMPTY_TAX_ROW]);
   const [taxPage, setTaxPage] = useState(0);
@@ -124,7 +129,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
   const templateTaxCacheRef = useRef<Map<string, TemplateTax[]>>(new Map());
   const prevIsServiceRef = useRef(false);
   const savedTrackInventoryRef = useRef(true);
-
 
   useEffect(() => {
     if (!isOpen) return;
@@ -147,7 +151,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
     }
   }, [form.trackInventory, activeTab, setActiveTab]);
 
-
   useEffect(() => {
     const isServiceCategory = ["service", "services"].includes(
       (form.itemGroup ?? "").trim().toLowerCase(),
@@ -168,7 +171,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
     prevIsServiceRef.current = isServiceCategory;
   }, [form.itemGroup, setForm]);
 
-
   const fetchTaxTemplateOptions = useCallback(
     async (search: string): Promise<TaxTemplateOption[]> => {
       try {
@@ -178,7 +180,6 @@ const ItemModal: React.FC<ItemModalProps> = ({
           search || undefined,
         )) as TaxTemplateResponse;
         const templates = response.data?.templates ?? [];
-
 
         templates.forEach((template) => {
           if (template.taxes) {
@@ -225,26 +226,27 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   const handleTabChange = useCallback(
     (tab: ItemModalTab) => {
-      if (tab === "inventoryDetails" && (!form.trackInventory || isServiceItem)) return;
+      if (tab === "inventoryDetails" && (!form.trackInventory || isServiceItem))
+        return;
       setActiveTab(tab);
     },
     [isServiceItem, setActiveTab],
   );
 
-    const handleMtvTaxSelect = useCallback(
-   (taxName: string, taxTitle: string) => {
+  const handleMtvTaxSelect = useCallback(
+    (taxName: string, taxTitle: string) => {
       setTaxRows((previous) => {
         const next = [...previous];
         next[0] = {
           ...next[0],
           taxTemplate: taxName,
-         taxTemplateDisplay: taxTitle,
+          taxTemplateDisplay: taxTitle,
         };
         return next;
       });
     },
     [],
- );
+  );
 
   const handleTaxRowChange = useCallback(
     (absoluteIndex: number, field: keyof ItemTaxRow, value: string) => {
@@ -393,19 +395,22 @@ const ItemModal: React.FC<ItemModalProps> = ({
     [handleForm],
   );
 
-  const showValidationError = useCallback((scope: "all" | "current") => {
-    const error =
-      scope === "all"
-        ? getFirstValidationError(taxRows)
-        : getValidationErrorForTab(activeTab, taxRows);
-    if (!error) {
-      setFieldErrors({});
-      return false;
-    }
+  const showValidationError = useCallback(
+    (scope: "all" | "current") => {
+      const error =
+        scope === "all"
+          ? getFirstValidationError(taxRows)
+          : getValidationErrorForTab(activeTab, taxRows);
+      if (!error) {
+        setFieldErrors({});
+        return false;
+      }
 
-    setFieldErrors({ [error.field ?? error.tab]: error.message });
-    return true;
-  }, [activeTab, getFirstValidationError, getValidationErrorForTab, taxRows]);
+      setFieldErrors({ [error.field ?? error.tab]: error.message });
+      return true;
+    },
+    [activeTab, getFirstValidationError, getValidationErrorForTab, taxRows],
+  );
 
   const handleSaveClick = useCallback(async () => {
     const hasError = showValidationError("all");
@@ -439,14 +444,13 @@ const ItemModal: React.FC<ItemModalProps> = ({
 
   const footer = (
     <>
-
       <ModalFooter
         onCancel={handleCloseRequest}
         onReset={handleReset}
         onSubmit={handleFormSubmit}
         onNext={
           activeTab === "inventoryDetails" ||
-            (activeTab === "taxDetails" && isServiceItem)
+          (activeTab === "taxDetails" && isServiceItem)
             ? undefined
             : handleNextClick
         }
@@ -464,16 +468,14 @@ const ItemModal: React.FC<ItemModalProps> = ({
       onClose={handleCloseRequest}
       title={isEditMode ? "Edit Item" : "Add Item"}
       subtitle={
-        isEditMode
-          ? "Edit and manage item details"
-          : "Add and manage items"
-      } icon={Package}
+        isEditMode ? "Edit and manage item details" : "Add and manage items"
+      }
+      icon={Package}
       footer={footer}
       customWidth="70vw"
-      height="67vh"
+      height="70vh"
       summaryBar={<ItemSummaryBar form={form} taxRows={taxRows} />}
     >
-
       <form
         id={itemFormId}
         onChange={markDirty}
@@ -547,12 +549,14 @@ const ItemModal: React.FC<ItemModalProps> = ({
                   onFormChange={handleFormChange}
                   setField={setField}
                   errors={fieldErrors}
+                  isZraEnabled={isZraEnabled}
                 />
 
                 <PricingSection
                   form={form}
                   onFormChange={handleFormChange}
                   isZraEnabled={isZraEnabled}
+                  errors={fieldErrors}
                 />
               </div>
 

@@ -110,7 +110,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                       );
                     }}
                     fetchOptions={fetchTaxTemplateOptions}
-                    placeholder="Search tax template..."
+                    placeholder="Search tax type..."
                   />
                 );
 
@@ -135,6 +135,7 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                         >
                           <TaxCategorySelect
                             value={row.taxCategory}
+                            placeholder="Search sales category..."
                             onChange={(value) =>
                               onTaxRowChange(
                                 absoluteIndex,

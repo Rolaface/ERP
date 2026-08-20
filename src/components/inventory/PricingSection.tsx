@@ -3,41 +3,41 @@ import { ModalInput } from "../ui/modal/modalComponent";
 import SearchSelect2 from "../ui/modal/SearchSelect2";
 
 import { getSupplierList } from "../../api/lookupApi";
-import type {
-  ItemFormChangeHandler,
-  ItemFormData,
-  
-} from "./itemModalTypes";
+import type { ItemFormChangeHandler, ItemFormData } from "./itemModalTypes";
 
 interface PricingSectionProps {
   form: ItemFormData;
   onFormChange: ItemFormChangeHandler;
   isZraEnabled?: boolean;
+  errors?: Partial<Record<keyof ItemFormData, string>>;
 }
 
 const PricingSection: React.FC<PricingSectionProps> = React.memo(
-  ({ form, onFormChange, isZraEnabled = false }) => {
-
-const fetchSupplierOptions = useCallback(async (q: string) => {
-  try {
-    const raw = await getSupplierList({ search: q, page: 1, page_size: 50 });
-    return raw; 
-  } catch {
-    return [];
-  }
-}, []);
+  ({ form, onFormChange, isZraEnabled = false, errors }) => {
+    const fetchSupplierOptions = useCallback(async (q: string) => {
+      try {
+        const raw = await getSupplierList({
+          search: q,
+          page: 1,
+          page_size: 50,
+        });
+        return raw;
+      } catch {
+        return [];
+      }
+    }, []);
 
     const handleSupplierChange = useCallback(
-  (_: string, option: any) => {
-    onFormChange({
-      target: { name: "preferredVendor", value: option?.value ?? "" },
-    } as React.ChangeEvent<HTMLInputElement>);
-    onFormChange({
-      target: { name: "preferredVendorName", value: option?.label ?? "" },
-    } as React.ChangeEvent<HTMLInputElement>);
-  },
-  [onFormChange],
-);
+      (_: string, option: any) => {
+        onFormChange({
+          target: { name: "preferredVendor", value: option?.value ?? "" },
+        } as React.ChangeEvent<HTMLInputElement>);
+        onFormChange({
+          target: { name: "preferredVendorName", value: option?.label ?? "" },
+        } as React.ChangeEvent<HTMLInputElement>);
+      },
+      [onFormChange],
+    );
 
     return (
       <>
@@ -54,6 +54,8 @@ const fetchSupplierOptions = useCallback(async (q: string) => {
             value={form.sellingPrice ?? ""}
             onChange={onFormChange}
             className="no-spinner"
+            required={isZraEnabled}
+            error={errors?.sellingPrice}
           />
 
           {/* Buying Price */}
@@ -68,13 +70,13 @@ const fetchSupplierOptions = useCallback(async (q: string) => {
           />
 
           {/* Preferred Vendor — SearchSelect2 */}
-         <SearchSelect2
-  label="Preferred Vendor"
-  value={form.preferredVendorName ?? form.preferredVendor ?? ""}
-  onChange={handleSupplierChange}
-  fetchOptions={fetchSupplierOptions}
-  placeholder="Search supplier..."
-/>
+          <SearchSelect2
+            label="Preferred Vendor"
+            value={form.preferredVendorName ?? form.preferredVendor ?? ""}
+            onChange={handleSupplierChange}
+            fetchOptions={fetchSupplierOptions}
+            placeholder="Search supplier..."
+          />
 
           {isZraEnabled && Boolean(form.isMtvItem) ? (
             <ModalInput

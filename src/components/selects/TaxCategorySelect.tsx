@@ -9,6 +9,7 @@ interface TaxCategorySelectProps {
   error?: string;
   required?: boolean;
   disabled?: boolean;
+  placeholder?: string;
 }
 
 const TaxCategorySelect: React.FC<TaxCategorySelectProps> = ({
@@ -17,7 +18,8 @@ const TaxCategorySelect: React.FC<TaxCategorySelectProps> = ({
   onChange,
   error,
   required,
-  disabled,
+  disabled,  placeholder,
+
 }) => {
   const fetchOptions = useCallback(async (search: string) => {
     try {
@@ -43,7 +45,7 @@ const TaxCategorySelect: React.FC<TaxCategorySelectProps> = ({
       value={value}
       onChange={handleChange}
       fetchOptions={fetchOptions}
-      placeholder="Search tax category..."
+     placeholder={placeholder || "Search tax category..."}
       error={error}
       required={required}
       disabled={disabled}
