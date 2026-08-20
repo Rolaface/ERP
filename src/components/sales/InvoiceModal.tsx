@@ -548,8 +548,8 @@ const handlePrincipalSelect = (value: string) => {
                         </span>
                       </div>
 
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-muted">Discount</span>
+ <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Item Discount</span>
                         <span className="font-medium text-main tabular-nums">
                           {totals.totalDiscount.toFixed(2)}
                         </span>
@@ -569,10 +569,47 @@ const handlePrincipalSelect = (value: string) => {
                         </span>
                       </div>
 
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted">Grand Total</span>
+                        <span className="font-medium text-main tabular-nums">
+                          {(totals.subTotal + totals.totalTax).toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs gap-2">
+                        <span className="text-muted whitespace-nowrap">
+                          Discount %
+                        </span>
+                       <input
+                          type="number"
+                          value={formData.additionalDiscountPercentage ?? ""}
+                          onChange={(e) =>
+                            actions.handleDiscountPercentChange(e.target.value)
+                          }
+                          className="w-16 text-right text-xs bg-transparent border border-theme rounded px-1 py-0.5 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          placeholder="0"
+                        />
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs gap-2">
+                        <span className="text-muted whitespace-nowrap">
+                          Discount Amt
+                        </span>
+                        <input
+                          type="number"
+                          value={formData.discountAmount ?? ""}
+                          onChange={(e) =>
+                            actions.handleDiscountAmountChange(e.target.value)
+                          }
+                          className="w-20 text-right text-xs bg-transparent border border-theme rounded px-1 py-0.5 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          placeholder="0.00"
+                        />
+                      </div>
+
                       <div className="border-t border-theme mt-1 pt-2">
                         <div className="flex justify-between items-center bg-primary rounded-lg px-2 py-1.5">
                           <span className="text-xs font-semibold text-white">
-                            Grand Total
+                            Net Payable
                           </span>
                           <span className="text-xs font-bold text-white tabular-nums">
                             {totals.grandTotal.toFixed(2)}

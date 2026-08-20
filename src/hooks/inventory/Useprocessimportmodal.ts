@@ -160,19 +160,25 @@ export function useProcessImportModal(isOpen: boolean) {
       return false;
     }
 
-    const missingWarehouse = decidedItems.find((item) => !warehouses[item.id]);
+    // Mapping (warehouse/supplier/item) only applies to approved items —
+    // rejected items never enter stock, so they skip these checks entirely.
+    const approvedItems = decidedItems.filter(
+      (item) => decisions[item.id] === "approve"
+    );
+
+    const missingWarehouse = approvedItems.find((item) => !warehouses[item.id]);
     if (missingWarehouse) {
       showValidationError(`Please select a warehouse for "${missingWarehouse.itemNm}".`);
       return false;
     }
 
-    const missingSupplier = decidedItems.find((item) => !suppliers[item.id]?.id);
+    const missingSupplier = approvedItems.find((item) => !suppliers[item.id]?.id);
     if (missingSupplier) {
       showValidationError(`Please map a supplier for "${missingSupplier.itemNm}".`);
       return false;
     }
 
-    const missingMappedItem = decidedItems.find(
+    const missingMappedItem = approvedItems.find(
       (item) => !mappedItems[item.id]?.itemCode
     );
     if (missingMappedItem) {
