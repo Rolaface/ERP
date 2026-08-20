@@ -82,12 +82,12 @@ const ALL_INVENTORY_TAB = [
     module: "Stock Entry",
     action: "read" as const,
   },
-  {
-    id: "import",
-    label: "Import",
-    icon: <Upload {...iconProps} />,
-    module: null,
-  },
+  // {
+  //   id: "import",
+  //   label: "Import",
+  //   icon: <Upload {...iconProps} />,
+  //   module: null,
+  // },
 ];
 const DEFAULT_TAB = "dashboard";
 
