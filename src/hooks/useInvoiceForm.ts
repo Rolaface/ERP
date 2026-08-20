@@ -37,9 +37,6 @@ type NestedSection =
   | "shippingAddress"
   | "paymentInformation";
 
-
-
-
 const calculateDueDate = (invoiceDate: string, terms: string) => {
   if (!invoiceDate) return "";
 
@@ -123,7 +120,8 @@ export function buildInvoicePayload(
     subTotal: totals.subTotal,
     totalTax: totals.totalTax,
     grandTotal: totals.grandTotal,
-    additional_discount_percentage: Number(formData.additionalDiscountPercentage) || 0,
+    additional_discount_percentage:
+      Number(formData.additionalDiscountPercentage) || 0,
     discount_amount: Number(formData.discountAmount) || 0,
     addresses: formData.addresses,
     taxes: mappedTaxes,
@@ -145,7 +143,7 @@ export const useInvoiceForm = (
   initialData?: any,
 ) => {
   const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
-const [formData, setFormData] = useState<Invoice>({
+  const [formData, setFormData] = useState<Invoice>({
     ...DEFAULT_INVOICE_FORM,
     terms: { ...EMPTY_TERMS },
     invoiceCharges: [],
@@ -239,13 +237,11 @@ const [formData, setFormData] = useState<Invoice>({
     }
   }, [isOpen, initialData, mode]);
 
-
   useEffect(() => {
     if (!isOpen || mode !== "edit" || !initialData?.id) return;
     if (!formData.items.length) return;
 
     let cancelled = false;
-
 
     const taxCategoryForFetch = initialData?.tax_category ?? "";
 
@@ -304,7 +300,6 @@ const [formData, setFormData] = useState<Invoice>({
     return () => {
       cancelled = true;
     };
-
   }, [isOpen, mode, initialData?.id]);
 
   useEffect(() => {
@@ -538,7 +533,6 @@ const [formData, setFormData] = useState<Invoice>({
     name: string;
     id: string;
   }) => {
-
     if (!id) {
       handleCustomerClear();
       return;
@@ -671,10 +665,8 @@ const [formData, setFormData] = useState<Invoice>({
           let maxAllowed: number;
 
           if (isSubmitted) {
-
             maxAllowed = liveStock + thisRowOriginal;
           } else {
-          
             const usedByOthers = hasBatch
               ? items
                   .filter(
@@ -791,7 +783,7 @@ const [formData, setFormData] = useState<Invoice>({
   const handleTaxChange = (index: number, field: string, value: any) => {
     setFormData((prev) => {
       const updated = [...(prev.taxes || [])];
-       updated[index] = { ...updated[index], [field]: value };
+      updated[index] = { ...updated[index], [field]: value };
       return { ...prev, taxes: updated };
     });
     markDirty();
@@ -1017,7 +1009,7 @@ const [formData, setFormData] = useState<Invoice>({
       invoiceNumber: invoice.id ?? invoice.invoiceNumber,
       lpoNumber: invoice.lpoNumber ?? invoice.poNumber ?? prev.lpoNumber,
       customerId: invoice.customerId ?? prev.customerId,
-       invoiceType: invoice.invoiceType ?? "",
+      invoiceType: invoice.invoiceType ?? "",
       principal: parsePrincipal(invoice.principal),
       additionalDiscountPercentage:
         invoice.additional_discount_percentage != null
@@ -1093,6 +1085,10 @@ const [formData, setFormData] = useState<Invoice>({
           .flatMap((tax: any) => tax.taxRates || [])
           .map((r: any) => r.tax_type)
           .filter((t: string) => t && t.trim() !== "");
+        const taxTitles = (it.taxInfo || [])
+          .map((tax: any) => tax.taxTitle)
+          .filter((t: string) => t && t.trim() !== "");
+
         return {
           itemCode: it.itemCode,
           itemName: it.itemName ?? "",
@@ -1103,6 +1099,8 @@ const [formData, setFormData] = useState<Invoice>({
           vatRate: it.taxInfo?.[0]?.totalTaxRate ?? taxRate,
           vatCode: it.itemTaxTemplate ?? it.vatCode ?? "",
           taxTypes,
+          taxTitles,
+          uom: it.uom ?? "",
           packingUnit: it.packingUnit ?? "",
           packingSize: it.packingSize ?? "",
           batchNo: it.batchNo ?? "",
@@ -1158,7 +1156,7 @@ const [formData, setFormData] = useState<Invoice>({
         const paymentTerms = company?.terms?.selling?.payment?.dueDates ?? "";
         const dueDate = calculateDueDate(today, paymentTerms);
 
-         setFormData({
+        setFormData({
           ...DEFAULT_INVOICE_FORM,
           invoiceCharges: [],
           salesTaxTemplate: "",
@@ -1243,8 +1241,8 @@ const [formData, setFormData] = useState<Invoice>({
       const lineDiscount = lineGross * (discount / 100);
       const lineNet = lineGross - lineDiscount;
 
-   let lineTax = lineNet * (vatRate / 100);
-    if (isZraEnabled && Number(item.is_mtv_item) === 1) {
+      let lineTax = lineNet * (vatRate / 100);
+      if (isZraEnabled && Number(item.is_mtv_item) === 1) {
         const rrpRate = Number(item.rrp_rate || 0);
         const inclusiveAmount = lineNet + lineTax;
         if (rrpRate > 0 && inclusiveAmount < rrpRate * qty) {
@@ -1259,7 +1257,7 @@ const [formData, setFormData] = useState<Invoice>({
       tax += lineTax;
     });
 
-     const additionalDiscount = Number(formData.discountAmount || 0);
+    const additionalDiscount = Number(formData.discountAmount || 0);
 
     return {
       totalQuantity: qty_sum,
