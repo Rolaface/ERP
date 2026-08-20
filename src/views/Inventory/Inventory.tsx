@@ -1,10 +1,10 @@
-import React, {lazy, useMemo } from "react";
+import React, { lazy, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
   Boxes,
-  ReceiptText,
+
   Warehouse,
   Layers,
   Upload,
@@ -17,6 +17,7 @@ import {
 } from "../../components/ui/app-shell";
 import { usePermission } from "../../hooks/permission/usePermission";
 import { useUrlTab } from "../../hooks/useUrlTab";
+import { useCompanyStore } from "../../store/companyStore";
 
 
 const Items = lazy(() => import("./Items"));
@@ -44,19 +45,19 @@ const ALL_INVENTORY_TAB = [
     id: "dashboard",
     label: "Dashboard",
     icon: <LayoutDashboard {...iconProps} />,
-     module: null,
+    module: null,
   },
   {
     id: "items",
     label: "Items",
-    icon: <Package {...iconProps} />, 
-     module: "Item",
+    icon: <Package {...iconProps} />,
+    module: "Item",
     action: "read" as const,
   },
   {
     id: "importedItems",
     label: "Imported Items",
-    icon: <Package {...iconProps} />, 
+    icon: <Package {...iconProps} />,
     module: "Item",
     action: "read" as const,
   },
@@ -71,20 +72,20 @@ const ALL_INVENTORY_TAB = [
     id: "warehouse",
     label: "Warehouse",
     icon: <Warehouse {...iconProps} />,
-     module: "Warehouse",
+    module: "Warehouse",
     action: "read" as const,
   },
   {
     id: "stock",
     label: "Stock",
-    icon: <Boxes {...iconProps} />, 
-     module: "Stock Entry",
+    icon: <Boxes {...iconProps} />,
+    module: "Stock Entry",
     action: "read" as const,
   },
   {
     id: "import",
     label: "Import",
-    icon: <Upload {...iconProps} />, 
+    icon: <Upload {...iconProps} />,
     module: null,
   },
 ];
@@ -92,12 +93,21 @@ const DEFAULT_TAB = "dashboard";
 
 const Inventory: React.FC = () => {
   const { openWarehouseCreate, openWarehouseEdit } = useOutletContext<OutletContextType>();
-   const { can } = usePermission();       
-    
-     const inventoryTabs = useMemo(
-    () => ALL_INVENTORY_TAB.filter((t) => !t.module || can(t.module, t.action)),
-    [can]
-  );   
+  const { can } = usePermission();
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
+
+  const inventoryTabs = useMemo(
+    () =>
+      ALL_INVENTORY_TAB.filter((t) => {
+        const hasPermission = !t.module || can(t.module, t.action);
+       
+        if (t.id === "importedItems") {
+          return hasPermission && isZraEnabled;
+        }
+        return hasPermission;
+      }),
+    [can, isZraEnabled],
+  );
 
   const fallbackTab = inventoryTabs[0]?.id ?? DEFAULT_TAB;
   const [resolvedTab, handleTabChange] = useUrlTab({
@@ -107,9 +117,9 @@ const Inventory: React.FC = () => {
     pathPrefix: "/inventory",
   });
 
-  const isDashboardTab = resolvedTab === "dashboard";
 
-  // Stable tab components - NO remounting on tab switch
+
+
   const tabComponents = useMemo(() => ({
     dashboard: <InventoryDashboard />,
     items: <Items />,
@@ -124,18 +134,18 @@ const Inventory: React.FC = () => {
   const currentTabComponent = tabComponents[resolvedTab as keyof typeof tabComponents] || <InventoryDashboard />;
 
   return (
-    <AppPage >
+    <AppPage>
       <AppPageHeader
         title="Inventory"
         description="Track, manage, and optimize inventory in one unified workflow."
-          icon={<Boxes size={20} strokeWidth={1.75} />}
+        icon={<Boxes size={20} strokeWidth={1.75} />}
       />
       <AppTabs
         tabs={inventoryTabs}
         activeTab={resolvedTab}
         onChange={handleTabChange}
       />
-      <AppPageBody >
+      <AppPageBody>
         {currentTabComponent}
       </AppPageBody>
     </AppPage>

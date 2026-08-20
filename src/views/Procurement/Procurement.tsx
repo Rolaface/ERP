@@ -4,17 +4,15 @@ import ApprovalModal from "../../components/procurement/ApprovalModal";
 import {
   LayoutDashboard,
   Users,
-  CreditCard,
   FileText,
   ClipboardList,
-  CheckCircle2,
-  Banknote ,
+  Banknote,
   FileMinus,
   BarChart3,
   ShoppingBag,
   Barcode,
-  ShoppingCart, 
-  Ship,FileInput
+  ShoppingCart,
+  FileInput,
 } from "lucide-react";
 import {
   AppPage,
@@ -25,6 +23,7 @@ import {
 import DebitNotesTable from "../Sales/DebitNotesTable";
 import { usePermission } from "../../hooks/permission/usePermission";
 import { useUrlTab } from "../../hooks/useUrlTab";
+import { useCompanyStore } from "../../store/companyStore";
 
 const RFQsTable = lazy(() => import("./Rfqs"));
 const PurchaseOrdersTable = lazy(() => import("./PurchaseOrders"));
@@ -34,7 +33,9 @@ const SupplierManagement = lazy(() => import("./SupplierManagement"));
 const PurchaseInvoiceTable = lazy(() => import("./PurchaseInvoice"));
 const Payments = lazy(() => import("../PaymentEntry/PaymentEntry"));
 const PurchaseAnalytics = lazy(() => import("./PurchaseAnalytics"));
-const ImportedPurchaseInvoice = lazy(() => import("./purchaseinvoice_imported/purchaseimported"));
+const ImportedPurchaseInvoice = lazy(
+  () => import("./purchaseinvoice_imported/purchaseimported"),
+);
 const BarCode = lazy(() => import("./PurchaseInvoiceBarCode"));
 
 type OutletContextType = {
@@ -74,7 +75,7 @@ const ALL_PROCUREMENT_TABS = [
   {
     id: "payments",
     label: "Payment Entry",
-    icon: <Banknote  {...iconProps} />,
+    icon: <Banknote {...iconProps} />,
     module: "Payment Entry",
     action: "read" as const,
   },
@@ -95,14 +96,14 @@ const ALL_PROCUREMENT_TABS = [
   {
     id: "purchase",
     label: "Purchase Invoice",
-    icon: <ShoppingCart  {...iconProps} />,
+    icon: <ShoppingCart {...iconProps} />,
     module: "Purchase Invoice",
     action: "read" as const,
   },
-   {
+  {
     id: "importedPurchase",
     label: "Import PI",
-    icon: <FileInput  {...iconProps} />,
+    icon: <FileInput {...iconProps} />,
     module: "imported Purchase Invoice",
     action: "read" as const,
   },
@@ -125,18 +126,27 @@ const ALL_PROCUREMENT_TABS = [
     label: "PI BarCode",
     icon: <Barcode {...iconProps} />,
     module: "Purchase Invoice",
-    action: "report" as const, 
+    action: "report" as const,
   },
 ];
 const DEFAULT_TAB = "procurementdashboard";
 
 const Procurement: React.FC = () => {
   const { can } = usePermission();
+  const isZraEnabled = useCompanyStore((s) => s.isZraEnabled);
 
   // Filter tabs based on permissions
   const procurementTabs = useMemo(
-    () => ALL_PROCUREMENT_TABS.filter((t) => !t.module || can(t.module, t.action)),
-    [can]
+    () =>
+      ALL_PROCUREMENT_TABS.filter((t) => {
+        const hasPermission = !t.module || can(t.module, t.action);
+        // "Import PI" tab is only relevant when ZRA is enabled for the company.
+        if (t.id === "importedPurchase") {
+          return hasPermission && isZraEnabled;
+        }
+        return hasPermission;
+      }),
+    [can, isZraEnabled],
   );
 
   const fallbackTab = procurementTabs[0]?.id ?? DEFAULT_TAB;
@@ -146,9 +156,8 @@ const Procurement: React.FC = () => {
     basePath: "/procurement",
   });
 
-
-  const isDashboardTab = resolvedTab === "procurementdashboard";
-  const { openSupplierCreate, openPOCreate } = useOutletContext<OutletContextType>();
+  const { openSupplierCreate, openPOCreate } =
+    useOutletContext<OutletContextType>();
 
   const [showApprovalModal, setShowApprovalModal] = useState(false);
 
@@ -158,35 +167,41 @@ const Procurement: React.FC = () => {
     else if (resolvedTab === "approvals") setShowApprovalModal(true);
   }, [resolvedTab, openSupplierCreate, openPOCreate]);
 
-  const tabComponents = useMemo(() => ({
-    procurementdashboard: <Dashboard />,
-    supplier:             <SupplierManagement onAdd={handleAdd} />,
-    rfqs:                 <RFQsTable onAdd={handleAdd} />,
-    orders:               <PurchaseOrdersTable onAdd={handleAdd} />,
-    approvals:            <ApprovalsSection onAdd={handleAdd} />,
-    purchase:             <PurchaseInvoiceTable onAdd={handleAdd} />,
-     payments: <Payments defaultPartyType="Supplier" />,
-    purchaseAnalytics:    <PurchaseAnalytics />,
-    barCode:               <BarCode />,
-    debitNotes:           <DebitNotesTable />,
-    importedPurchase:     <ImportedPurchaseInvoice />,
-  }), [handleAdd]);
+  const tabComponents = useMemo(
+    () => ({
+      procurementdashboard: <Dashboard />,
+      supplier: <SupplierManagement onAdd={handleAdd} />,
+      rfqs: <RFQsTable onAdd={handleAdd} />,
+      orders: <PurchaseOrdersTable onAdd={handleAdd} />,
+      approvals: <ApprovalsSection onAdd={handleAdd} />,
+      purchase: <PurchaseInvoiceTable onAdd={handleAdd} />,
+      payments: <Payments defaultPartyType="Supplier" />,
+      purchaseAnalytics: <PurchaseAnalytics />,
+      barCode: <BarCode />,
+      debitNotes: <DebitNotesTable />,
+      importedPurchase: <ImportedPurchaseInvoice />,
+    }),
+    [handleAdd],
+  );
 
-  const currentTabComponent =
-    tabComponents[resolvedTab as keyof typeof tabComponents] ?? <Dashboard />;
+  const currentTabComponent = tabComponents[
+    resolvedTab as keyof typeof tabComponents
+  ] ?? <Dashboard />;
 
   return (
-    <AppPage >
+    <AppPage>
       <AppPageHeader
         title="Procurement"
         description="Manage the full procurement cycle—from RFQs and POs to payments."
         icon={<ShoppingBag size={20} strokeWidth={1.75} />}
       />
-      <AppTabs tabs={procurementTabs} activeTab={resolvedTab} onChange={handleTabChange} />
-      <AppPageBody >
-        <Suspense fallback={null}>
-          {currentTabComponent}
-        </Suspense>
+      <AppTabs
+        tabs={procurementTabs}
+        activeTab={resolvedTab}
+        onChange={handleTabChange}
+      />
+      <AppPageBody>
+        <Suspense fallback={null}>{currentTabComponent}</Suspense>
       </AppPageBody>
 
       {showApprovalModal && (
