@@ -464,7 +464,12 @@ const ItemTable: React.FC<ItemTableProps> = ({
                     .flatMap((tax: any) => tax.taxRates || [])
                     .map((r: any) => r.tax_type)
                     .filter((t: string) => t && t.trim() !== ""),
-                });
+
+                    taxTitles: (item.taxInfo || [])
+      .map((tax: any) => tax.taxTitle)
+      .filter((t: string) => t && t.trim() !== ""),
+  });
+              
               }}
               onClear={() =>
                 actions.updateItemDirectly?.(i, {
@@ -693,25 +698,25 @@ const ItemTable: React.FC<ItemTableProps> = ({
           />
         </td>
 
-        {/* Tax Name */}
-        <td data-row={i} data-col={c()} className="px-1 py-1">
-          <Tooltip
-            content={
-              it.taxTypes?.length
-                ? `Tax Types: ${it.taxTypes.join(", ")}`
-                : "No Tax Types"
-            }
-          >
-            <input
-              type="text"
-              name="vatCode"
-              value={it.taxTypes || "" || it.taxTypes}
-              className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
-              disabled
-              onChange={(e) => actions.handleItemChange(i, e)}
-            />
-          </Tooltip>
-        </td>
+  
+       {/* Tax Name */}
+<td data-row={i} data-col={c()} className="px-1 py-1">
+  <Tooltip
+    content={
+      it.taxTitles?.length
+        ? `Tax Types: ${it.taxTitles.join(", ")}`
+        : "No Tax Types"
+    }
+  >
+    <input
+      type="text"
+      name="taxTitles"
+      value={it.taxTitles || ""}
+      className="w-full py-1 px-1.5 border border-theme rounded text-[10px] bg-card text-main focus:outline-none focus:ring-1 focus:ring-primary"
+      disabled
+    />
+  </Tooltip>
+</td>
 
         {/* Amount */}
         <td className="px-1 py-1">

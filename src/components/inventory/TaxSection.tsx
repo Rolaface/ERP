@@ -81,10 +81,10 @@ const TaxSection: React.FC<TaxSectionProps> = React.memo(
                   #
                 </th>
                 <th className="w-[130px] px-2 py-1 text-left text-[11px] font-medium text-muted">
-                  Tax Category
+                  Sales Category
                 </th>
                 <th className="w-[200px] pl-6 pr-2 py-1 text-left text-[11px] font-medium text-muted">
-                  Tax Template
+                  Tax Type
                 </th>
                 {/* Action column — only trash, no duplicate */}
                 <th className="w-[44px]" />

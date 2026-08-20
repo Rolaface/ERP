@@ -152,7 +152,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ onAddInvoice }) => {
   // ── Search (server)
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [sortBy, setSortBy] = useState("invoiceNumber");
+  const [sortBy, setSortBy] = useState("creation");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // ── Currency symbols + per-currency number formatting for the currencies
