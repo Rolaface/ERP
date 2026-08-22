@@ -82,9 +82,7 @@ const RowActionMenu: React.FC<{
       const menuHeight = menuRef.current?.offsetHeight ?? 120;
       const spaceBelow = window.innerHeight - r.bottom;
       const top =
-        spaceBelow < menuHeight + 12
-          ? r.top - menuHeight - 4
-          : r.bottom + 4;
+        spaceBelow < menuHeight + 12 ? r.top - menuHeight - 4 : r.bottom + 4;
       setPos({ top, left: r.right - 180 });
     };
 
@@ -197,9 +195,9 @@ const RowActionMenu: React.FC<{
                   className="w-full flex items-center gap-2 px-3.5 py-2 text-[11px] font-semibold text-left transition-colors"
                   style={{ color: item.color }}
                   onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = item.danger
-                    ? "rgba(239,68,68,0.06)"
-                    : "rgba(201,125,46,0.06)")
+                    (e.currentTarget.style.background = item.danger
+                      ? "rgba(239,68,68,0.06)"
+                      : "rgba(201,125,46,0.06)")
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background = "transparent")
@@ -293,6 +291,9 @@ const BatchDetailModal: React.FC<{
             <Row label="Batch No" value={batch.batch_no || "—"} />
             {batch.itemCode && <Row label="Item Code" value={batch.itemCode} />}
             {batch.itemName && <Row label="Item Name" value={batch.itemName} />}
+            {batch.warehouse && (
+              <Row label="Warehouse" value={batch.warehouse} />
+            )}
           </div>
 
           <p className="px-4 pt-3 pb-1 text-[9px] font-black uppercase tracking-widest text-muted/70">
@@ -320,8 +321,23 @@ const BatchDetailModal: React.FC<{
           </p>
           <div className="mx-3 mb-2 bg-app rounded-xl border border-[var(--border)] overflow-hidden">
             <Row
+              label="Buy Price (Latest)"
+              value={formatCurrencyValue(
+                batch.buy_currency,
+                batch.buy_price_latest,
+              )}
+            />
+            <Row
               label="Buy Value"
               value={formatCurrencyValue(batch.buy_currency, batch.buy_value)}
+            />
+
+            <Row
+              label="Sell Price (Latest)"
+              value={formatCurrencyValue(
+                batch.sell_currency,
+                batch.sell_price_latest,
+              )}
             />
             <Row
               label="Sell Value"
@@ -446,7 +462,7 @@ const BatchDetailsTable: React.FC<BatchDetailsTableProps> = (props) => {
     viewBatch,
     setViewBatch,
     onEdit,
-    
+
     onLedger,
   } = useBatchDetailsTable(props);
 
@@ -513,7 +529,6 @@ const BatchDetailsTable: React.FC<BatchDetailsTableProps> = (props) => {
             />
           </div>
         </div>
-
       </div>
 
       {/* <KpiStrip kpis={kpis} /> */}
@@ -544,14 +559,16 @@ const BatchDetailsTable: React.FC<BatchDetailsTableProps> = (props) => {
                             ? header.column.getToggleSortingHandler()
                             : undefined
                         }
-                        className={`px-3.5 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap ${alignCls} ${sortable
+                        className={`px-3.5 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted whitespace-nowrap ${alignCls} ${
+                          sortable
                             ? "cursor-pointer select-none hover:text-main"
                             : ""
-                          }`}
+                        }`}
                       >
                         <span
-                          className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""
-                            }`}
+                          className={`inline-flex items-center gap-1 ${
+                            align === "right" ? "flex-row-reverse" : ""
+                          }`}
                         >
                           {flexRender(
                             header.column.columnDef.header,
@@ -663,10 +680,11 @@ const BatchDetailsTable: React.FC<BatchDetailsTableProps> = (props) => {
                       return (
                         <td
                           key={cell.id}
-                          className={`px-3.5 py-2 text-xs ${alignCls} ${isWrapCol
+                          className={`px-3.5 py-2 text-xs ${alignCls} ${
+                            isWrapCol
                               ? "whitespace-normal break-words max-w-[320px]"
                               : "whitespace-nowrap"
-                            }`}
+                          }`}
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
