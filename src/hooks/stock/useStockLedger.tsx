@@ -126,11 +126,7 @@ export function useStockLedger({
     null,
   );
   const [loading, setLoading] = useState(false);
-  // True only until the very first fetch completes. Kept separate from
-  // `loading` so the table can show a full-height spinner on first load,
-  // but a lightweight overlay (existing rows still visible) on every
-  // subsequent "Apply" refetch — avoids the table blanking/flashing empty
-  // each time the user re-applies filters.
+
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -160,8 +156,7 @@ export function useStockLedger({
     }
   }, []);
 
-  // Re-fetch (and reset the form) whenever the caller hands us a new
-  // item/batch to focus on — e.g. drilling in from a different screen.
+
   useEffect(() => {
     const initial: AppliedFilters = {
       fromDate: startOfYear(),
@@ -188,7 +183,7 @@ export function useStockLedger({
     }));
     fetchLedger(initial);
     setPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [itemCode, batchNo, itemName, warehouse]);
 
   const handleApply = useCallback(() => {
@@ -212,10 +207,7 @@ export function useStockLedger({
 
   const rows = ledgerData?.result ?? [];
 
-  // Stable-reference paged slice — without this useMemo, `data` passed to
-  // useReactTable gets a brand-new array every render, which makes
-  // TanStack Table recompute internal state -> re-render -> new array
-  // again -> infinite loop.
+
   const pagedRows = useMemo(
     () => rows.slice((page - 1) * pageSize, page * pageSize),
     [rows, page, pageSize],
@@ -319,13 +311,13 @@ export function useStockLedger({
   const exportToExcel = useCallback(() => {
     if (!ledgerData?.columns || !rows.length) return;
 
-    // sirf wahi columns jo table me visible hain (hidden nahi)
+
     const exportCols = ledgerData.columns.filter((c) => !c.hidden);
 
-    // headers row
+
     const headers = exportCols.map((c) => c.label);
 
-    // data rows
+
     const body = rows.map((row) =>
       exportCols.map((c) => {
         const val = row[c.fieldname];
@@ -349,10 +341,10 @@ export function useStockLedger({
       }),
     );
 
-    // sheet banao
+
     const ws = XLSX.utils.aoa_to_sheet([headers, ...body]);
 
-    // column width auto-adjust
+
     ws["!cols"] = headers.map((h, i) => {
       const maxLen = Math.max(
         h.length,
@@ -361,7 +353,7 @@ export function useStockLedger({
       return { wch: Math.min(Math.max(maxLen + 2, 10), 40) };
     });
 
-    // workbook banao aur download karo
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Stock Ledger");
     XLSX.writeFile(
