@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import {
   useReactTable,
   getCoreRowModel,
@@ -315,6 +316,60 @@ export function useStockLedger({
       });
   }, [ledgerData?.columns]);
 
+  const exportToExcel = useCallback(() => {
+    if (!ledgerData?.columns || !rows.length) return;
+
+    // sirf wahi columns jo table me visible hain (hidden nahi)
+    const exportCols = ledgerData.columns.filter((c) => !c.hidden);
+
+    // headers row
+    const headers = exportCols.map((c) => c.label);
+
+    // data rows
+    const body = rows.map((row) =>
+      exportCols.map((c) => {
+        const val = row[c.fieldname];
+        const isCurrency = c.fieldtype === "Currency";
+        const isFloat = c.fieldtype === "Float";
+        const isDate = c.fieldtype === "Datetime" || c.fieldtype === "Date";
+
+        if ((isCurrency || isFloat) && val !== undefined && val !== null) {
+          return Number(val); // Excel me raw number jaayega, formula-friendly
+        }
+        if (isDate && val) {
+          return new Date(String(val)).toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        }
+        return val ?? "";
+      }),
+    );
+
+    // sheet banao
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...body]);
+
+    // column width auto-adjust
+    ws["!cols"] = headers.map((h, i) => {
+      const maxLen = Math.max(
+        h.length,
+        ...body.map((r) => String(r[i] ?? "").length),
+      );
+      return { wch: Math.min(Math.max(maxLen + 2, 10), 40) };
+    });
+
+    // workbook banao aur download karo
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Stock Ledger");
+    XLSX.writeFile(
+      wb,
+      `stock-ledger_${filters.dateRange.from_date}_to_${filters.dateRange.to_date}.xlsx`,
+    );
+  }, [ledgerData, rows, filters.dateRange]);
+
   const table = useReactTable({
     data: pagedRows,
     columns,
@@ -339,5 +394,6 @@ export function useStockLedger({
     setPage,
     pageSize,
     totalPages,
+    exportToExcel,
   };
 }

@@ -5,6 +5,7 @@ import {
   Boxes,
   SlidersHorizontal,
   X,
+  FileSpreadsheet,
 } from "lucide-react";
 import DateRangeFilter from "../../../components/ui/modal/DateRangeFilter";
 import {
@@ -33,6 +34,7 @@ interface StockLedgerFiltersProps {
   onApply: () => void;
   onBack: () => void;
   loading: boolean;
+  onExportExcel: () => void;
 }
 
 const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
@@ -41,6 +43,7 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
   onApply,
   onBack,
   loading,
+  onExportExcel,
 }) => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -369,6 +372,15 @@ const StockLedgerFilters: React.FC<StockLedgerFiltersProps> = ({
       )}
 
       <div className="ml-auto flex items-center gap-2">
+        <button
+          onClick={onExportExcel}
+          className="h-7 px-2.5 flex items-center gap-1.5 text-[11px] font-semibold border border-[var(--border)]
+                     rounded-md hover:bg-row-hover text-muted transition-all whitespace-nowrap"
+        >
+          <FileSpreadsheet size={12} />
+          Export
+        </button>
+
         <button
           onClick={onApply}
           disabled={loading}
